@@ -1,0 +1,7 @@
+*
+**/*
+!LICENSE
+!package.json
+!out/*
+!syntaxes/*
+!language-configuration.json

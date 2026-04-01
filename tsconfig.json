@@ -1,0 +1,17 @@
+{
+	"compilerOptions": {
+		"module": "CommonJS",
+		"moduleResolution": "node",
+		"target": "ES2022",
+		"lib": ["ES2022"],
+		"outDir": "out",
+		"sourceMap": true,
+		"strict": true,
+		"forceConsistentCasingInFileNames": true,
+		"skipLibCheck": true,
+		"noUncheckedIndexedAccess": true,
+		"types": ["mocha", "node", "vscode"]
+	},
+	"include": ["src/**/*.ts", "build.ts"],
+	"exclude": ["node_modules"]
+}

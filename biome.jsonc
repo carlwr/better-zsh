@@ -1,0 +1,21 @@
+{
+	"$schema": "https://biomejs.dev/schemas/2.4.10/schema.json",
+	"files": {
+		"includes": [
+			"**",
+			"!.vscode-test",
+			"!node_modules",
+			"!out",
+			"!syntaxes",
+			"!test-fixtures"
+		]
+	},
+	"linter": {
+		"rules": {
+			"suspicious": {
+				// zsh code embedded in strings uses ${...} extensively
+				"noTemplateCurlyInString": "off"
+			}
+		}
+	}
+}

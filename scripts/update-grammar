@@ -1,0 +1,11 @@
+#!/bin/sh
+set -eu
+
+# download the tm grammar from the upstream repo, adjust the scope name, and put the result in the designated location of this package/repo.
+
+UPSTREAM="https://raw.githubusercontent.com/microsoft/vscode/main/extensions/shellscript/syntaxes/shell-unix-bash.tmLanguage.json"
+TARGET="syntaxes/shell-unix-bash.tmLanguage.json"
+
+curl -fSL "$UPSTREAM" -o "$TARGET"
+jq '.scopeName = "source.shell.zsh"' "$TARGET" > "$TARGET.tmp"
+mv "$TARGET.tmp" "$TARGET"

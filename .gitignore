@@ -1,0 +1,6 @@
+.eslintcache
+node_modules/
+*.vsix
+out/
+.vscode-test/
+.non-vcs/

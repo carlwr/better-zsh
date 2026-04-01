@@ -1,0 +1,17 @@
+#!/usr/bin/env zsh
+
+emulate -L zsh
+setopt errexit nounset pipefail
+
+if [[ ${1:-} == -- ]]; then
+	shift
+fi
+
+tmp=$(mktemp -d ${TMPDIR:-/tmp}/better-zsh-vscode.XXXXXX)
+trap 'rm -rf -- $tmp' EXIT
+
+userData=$tmp/ud
+mkdir -p $userData
+
+VSCODE_TEST_USER_DATA=$userData \
+	vscode-test --label integration "$@"

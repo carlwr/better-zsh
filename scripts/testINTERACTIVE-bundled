@@ -1,0 +1,40 @@
+#!/usr/bin/env zsh
+
+emulate -L zsh
+setopt errexit nounset pipefail
+
+vsix=${TEST_BUNDLED_VSIX:-better-zsh.vsix}
+stub=${TEST_BUNDLED_STUB_SRC:-src/test/bundled/stub-ext}
+
+die() { print -u2 -r -- $@; exit 1; }
+
+[[ -f $vsix ]] || die "missing vsix $vsix"
+
+tmp=$(mktemp -d)
+trap 'rm -rf -- $tmp' EXIT
+
+unz=$tmp/unpacked
+mkdir -p $unz
+unzip -q $vsix -d $unz
+
+pkg=$unz/extension/package.json
+[[ -f $pkg ]] || die "bad vsix ($pkg)"
+
+# Read the bundled manifest to recover the versioned extension dir name.
+ext_id=$(node -e 'const fs = require("node:fs"); const pkg = JSON.parse(fs.readFileSync(process.argv[1], "utf8")); process.stdout.write(`${pkg.publisher}.${pkg.name}-${pkg.version}`)' "$pkg")
+exts=$tmp/exts
+mkdir -p $exts
+ext=$exts/$ext_id
+mv $unz/extension $ext
+
+# copy stub dev-extension outside project tree
+stubExt=$tmp/stub-ext
+cp -r $stub $stubExt
+
+ud=$tmp/user-data
+mkdir -p $ud
+
+BUNDLED_EXT_DIR=$exts     \
+BUNDLED_STUB_DIR=$stubExt \
+BUNDLED_USER_DATA=$ud     \
+	vscode-test --label bundled

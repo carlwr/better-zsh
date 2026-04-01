@@ -1,0 +1,53 @@
+#!/usr/bin/env zsh
+
+emulate -L zsh
+setopt errexit nounset pipefail
+
+wf=.github/workflows/ci.yml
+job=${ACT_JOB:-integration}
+img=${ACT_RUNNER_IMAGE:-catthehacker/ubuntu:act-latest}
+
+die() { print -u2 -r -- "$@"; exit 1; }
+
+have() { command -v "$1" >/dev/null 2>&1 }
+
+[[ -f $wf ]] || die "missing workflow $wf"
+have act || die "missing act"
+have docker || die "missing docker"
+
+if ! docker info >/dev/null 2>&1; then
+	if [[ $(uname -s) == Darwin ]] && have colima; then
+		die "docker unavailable; start colima or another docker-compatible engine reachable via docker"
+	fi
+	die "docker unavailable; start a docker-compatible engine reachable via docker"
+fi
+
+if [[ ${1:-} == -- ]]; then
+	shift
+fi
+
+arch=${ACT_CONTAINER_ARCHITECTURE:-}
+if [[ -z $arch && $(uname -s) == Darwin && $(uname -m) == arm64 ]]; then
+	arch=linux/arm64
+fi
+
+args=()
+if [[ -n ${ACT_EVENT:-} ]]; then
+	args+=($ACT_EVENT)
+fi
+args+=(
+	--workflows
+	$wf
+	--job
+	$job
+	--platform
+	ubuntu-latest=$img
+	--container-daemon-socket
+	-
+)
+
+if [[ -n $arch ]]; then
+	args+=(--container-architecture $arch)
+fi
+
+exec act "${args[@]}" "$@"
