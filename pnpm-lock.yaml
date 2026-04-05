@@ -41,6 +41,9 @@ importers:
       fast-check:
         specifier: ^4.6.0
         version: 4.6.0
+      jsonc-parser:
+        specifier: ^3.3.1
+        version: 3.3.1
       tsup:
         specifier: ^8.5.1
         version: 8.5.1(postcss@8.5.8)(tsx@4.21.0)(typescript@5.9.3)
@@ -53,6 +56,9 @@ importers:
       vitest:
         specifier: ^4.1.2
         version: 4.1.2(@types/node@22.19.15)(vite@8.0.3(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(@types/node@22.19.15)(esbuild@0.27.5)(tsx@4.21.0))
+      zod:
+        specifier: ^4.3.6
+        version: 4.3.6
       zzz_LAST_dummy:
         specifier: npm:empty-npm-package@1.0.0
         version: empty-npm-package@1.0.0
@@ -2480,6 +2486,9 @@ packages:
     resolution: {integrity: sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==}
     engines: {node: '>=10'}
 
+  zod@4.3.6:
+    resolution: {integrity: sha512-rftlrkhHZOcjDwkGlnUtZZkvaPHCsDATp4pGpuOOMDaTdDDXF91wuVDJoWoPsKX/3YPQ5fHuF3STjcYyKr+Qhg==}
+
 snapshots:
 
   '@azu/format-text@1.0.2': {}
@@ -4884,3 +4893,5 @@ snapshots:
       buffer-crc32: 0.2.13
 
   yocto-queue@0.1.0: {}
+
+  zod@4.3.6: {}

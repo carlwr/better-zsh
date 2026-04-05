@@ -1,163 +1,33 @@
-import type { ZshSnippet } from "../types/snippet"
+import { readFileSync } from "node:fs"
+import { join } from "node:path"
+import { type ParseError, parse, printParseErrorCode } from "jsonc-parser"
+import { z } from "zod"
+import { type ZshSnippet, zshSnippetSchema } from "../types/snippet"
 
-export const snippets: ZshSnippet[] = [
-  {
-    prefix: "if",
-    name: "if/then/fi",
-    body: ["if ${1:condition}; then", "\t${0}", "fi"],
-    desc: "if/then/fi block",
-    category: "complex-cmd",
-  },
-  {
-    prefix: "ife",
-    name: "if/then/else/fi",
-    body: ["if ${1:condition}; then", "\t${2}", "else", "\t${0}", "fi"],
-    desc: "if/then/else/fi block",
-    category: "complex-cmd",
-  },
-  {
-    prefix: "elif",
-    name: "elif/then",
-    body: ["elif ${1:condition}; then", "\t${0}"],
-    desc: "elif clause",
-    category: "complex-cmd",
-  },
-  {
-    prefix: "for",
-    name: "for/in/do/done",
-    body: ["for ${1:item} in ${2:list}; do", "\t${0}", "done"],
-    desc: "for-in loop",
-    category: "complex-cmd",
-  },
-  {
-    prefix: "forc",
-    name: "for C-style",
-    body: [
-      "for (( ${1:i} = ${2:0}; $1 < ${3:n}; $1++ )); do",
-      "\t${0}",
-      "done",
-    ],
-    desc: "C-style for loop",
-    category: "complex-cmd",
-  },
-  {
-    prefix: "while",
-    name: "while/do/done",
-    body: ["while ${1:condition}; do", "\t${0}", "done"],
-    desc: "while loop",
-    category: "complex-cmd",
-  },
-  {
-    prefix: "until",
-    name: "until/do/done",
-    body: ["until ${1:condition}; do", "\t${0}", "done"],
-    desc: "until loop",
-    category: "complex-cmd",
-  },
-  {
-    prefix: "case",
-    name: "case/in/esac",
-    body: [
-      "case ${1:word} in",
-      "\t${2:pattern})",
-      "\t\t${0}",
-      "\t\t;;",
-      "esac",
-    ],
-    desc: "case statement",
-    category: "complex-cmd",
-  },
-  {
-    prefix: "select",
-    name: "select/do/done",
-    body: ["select ${1:item} in ${2:list}; do", "\t${0}", "done"],
-    desc: "select menu loop",
-    category: "complex-cmd",
-  },
-  {
-    prefix: "repeat",
-    name: "repeat/do/done",
-    body: ["repeat ${1:count}; do", "\t${0}", "done"],
-    desc: "repeat N times",
-    category: "complex-cmd",
-  },
-  {
-    prefix: "fn",
-    name: "function",
-    body: ["${1:name}() {", "\t${0}", "}"],
-    desc: "function definition",
-    category: "complex-cmd",
-  },
-  {
-    prefix: "try",
-    name: "try/always",
-    body: ["{", "\t${1}", "} always {", "\t${0}", "}"],
-    desc: "try/always block (zsh exception handling)",
-    category: "complex-cmd",
-  },
-  {
-    prefix: "anon",
-    name: "anonymous function",
-    body: ["() {", "\t${0}", "}"],
-    desc: "anonymous function (scope isolation)",
-    category: "complex-cmd",
-  },
-  {
-    prefix: "local",
-    name: "local variable",
-    body: ["local ${1:var}=${0}"],
-    desc: "local scalar variable",
-    category: "declaration",
-  },
-  {
-    prefix: "locala",
-    name: "local array",
-    body: ["local -a ${1:arr}=(${0})"],
-    desc: "local indexed array",
-    category: "declaration",
-  },
-  {
-    prefix: "localA",
-    name: "local associative array",
-    body: ["local -A ${1:assoc}=(${0})"],
-    desc: "local associative array",
-    category: "declaration",
-  },
-  {
-    prefix: "typeset",
-    name: "typeset -g",
-    body: ["typeset -g ${1:var}=${0}"],
-    desc: "typeset global variable",
-    category: "declaration",
-  },
-  {
-    prefix: "autoload",
-    name: "autoload -Uz",
-    body: ["autoload -Uz ${0}"],
-    desc: "autoload function (zsh-native, no aliases)",
-    category: "declaration",
-  },
-  {
-    prefix: "emulate",
-    name: "emulate -LR zsh",
-    body: ["emulate -LR zsh"],
-    desc: "set strict zsh mode (local, reset all options)",
-    category: "idiom",
-  },
-  {
-    prefix: "emulatefn",
-    name: "emulate -L zsh in function",
-    body: ["${1:name}() {", "\temulate -L zsh", "\t${0}", "}"],
-    desc: "function with emulate -L zsh guard",
-    category: "idiom",
-  },
-]
+const snippetsPath = join("src", "assets", "zsh", "snippets.jsonc")
+const zshSnippetsSchema = z.array(zshSnippetSchema)
+
+export function readSnippets(): ZshSnippet[] {
+  const src = readFileSync(snippetsPath, "utf8")
+  const errs: ParseError[] = []
+  const json = parse(src, errs, {
+    allowTrailingComma: true,
+    disallowComments: false,
+  })
+  if (errs.length > 0) {
+    const msg = errs
+      .map((e) => `${printParseErrorCode(e.error)} @ ${e.offset}`)
+      .join(", ")
+    throw new Error(`Invalid JSONC in ${snippetsPath}: ${msg}`)
+  }
+
+  return zshSnippetsSchema.parse(json)
+}
 
 /** Convert snippets to VS Code snippet JSON format */
-export function buildSnippetJson(): Record<
-  string,
-  { prefix: string; body: string[]; description: string }
-> {
+export function buildSnippetJson(
+  snippets: readonly ZshSnippet[],
+): Record<string, { prefix: string; body: string[]; description: string }> {
   const out: Record<
     string,
     { prefix: string; body: string[]; description: string }
