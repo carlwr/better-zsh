@@ -1,7 +1,9 @@
 import * as vscode from "vscode";
 import { asyncDocCache } from "./cache";
+import { syntacticContext } from "./context";
 import { matchOptions } from "./option-match";
-import { isSetoptContext } from "./setopt-context";
+import { mkOptName } from "./types/brand";
+import type { CondOperator, ZshOption } from "./types/zsh-data";
 import { filterTokens, WORD, WORD_EXACT, zshTokenize } from "./zsh";
 
 const getIds = asyncDocCache(async (doc) =>
@@ -13,11 +15,15 @@ export interface CompletionData {
 	reswords: string[];
 	options: string[];
 	params: Map<string, string>;
+	zshOptions?: ZshOption[];
+	condOps?: CondOperator[];
 }
 
 export class CompletionProvider implements vscode.CompletionItemProvider {
 	private general: vscode.CompletionItem[];
 	private options: string[];
+	private optionMap: Map<string, ZshOption> | undefined;
+	private condOps: CondOperator[];
 
 	constructor(data: CompletionData) {
 		this.general = [
@@ -41,11 +47,22 @@ export class CompletionProvider implements vscode.CompletionItemProvider {
 				),
 		];
 		this.options = data.options;
+		if (data.zshOptions) {
+			this.optionMap = new Map(
+				data.zshOptions.map((o) => [o.name as string, o]),
+			);
+		}
+		this.condOps = data.condOps ?? [];
 	}
 
 	async provideCompletionItems(doc: vscode.TextDocument, pos: vscode.Position) {
-		if (isSetoptContext(doc, pos.line)) {
+		const ctx = syntacticContext(doc, pos.line, pos.character);
+
+		if (ctx.kind === "setopt") {
 			return this.optionCompletions(doc, pos);
+		}
+		if (ctx.kind === "cond") {
+			return this.condCompletions(doc, pos);
 		}
 		return this.generalCompletions(doc, pos);
 	}
@@ -75,8 +92,30 @@ export class CompletionProvider implements vscode.CompletionItemProvider {
 				vscode.CompletionItemKind.Property,
 			);
 			item.filterText = typed || m.label;
+			// Enrich with description from parsed options data
+			if (this.optionMap) {
+				const opt = this.optionMap.get(mkOptName(m.canonical));
+				if (opt) item.detail = opt.desc;
+			}
 			return item;
 		});
 		return new vscode.CompletionList(items, true);
+	}
+
+	private condCompletions(_doc: vscode.TextDocument, _pos: vscode.Position) {
+		const items = this.condOps.map((cop) => {
+			const item = new vscode.CompletionItem(
+				cop.op as string,
+				vscode.CompletionItemKind.Operator,
+			);
+			item.detail = cop.desc;
+			item.documentation = new vscode.MarkdownString(
+				cop.kind === "unary"
+					? `\`${cop.op}\` *${cop.operands.join(" ")}*`
+					: `*${cop.operands[0] ?? ""}* \`${cop.op}\` *${cop.operands[1] ?? ""}*`,
+			);
+			return item;
+		});
+		return new vscode.CompletionList(items, false);
 	}
 }

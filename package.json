@@ -48,7 +48,7 @@
 					"zprofile",
 					"zlogout"
 				],
-				"configuration": "./language-configuration.json"
+				"configuration": "./out/language-configuration.json"
 			}
 		],
 		"grammars": [
@@ -56,6 +56,12 @@
 				"language": "zsh",
 				"scopeName": "source.shell.zsh",
 				"path": "./syntaxes/shell-unix-bash.tmLanguage.json"
+			}
+		],
+		"snippets": [
+			{
+				"language": "zsh",
+				"path": "./out/snippets.json"
 			}
 		],
 		"semanticTokenScopes": [
@@ -66,6 +72,33 @@
 						"support.function.builtin.shell"
 					]
 				}
+			}
+		],
+		"configurationDefaults": {
+			"[zsh]": {
+				"editor.tabSize": 2,
+				"editor.insertSpaces": false
+			}
+		},
+		"configuration": {
+			"title": "Better Zsh",
+			"properties": {
+				"betterZsh.diagnostics.enabled": {
+					"type": "boolean",
+					"default": true,
+					"description": "Enable syntax checking via zsh -n"
+				},
+				"betterZsh.zshPath": {
+					"type": "string",
+					"default": "",
+					"markdownDescription": "Path to the zsh binary. Leave empty to use `zsh` from PATH. Set to `off` to never invoke any zsh binary."
+				}
+			}
+		},
+		"chatInstructions": [
+			{
+				"file": "out/zsh-chat-instructions.md",
+				"when": "resourceLangId == zsh"
 			}
 		]
 	},
@@ -90,7 +123,7 @@
 	"devDependencies": {
 		"@biomejs/biome": "^2.4.10",
 		"@carlwr/fastcheck-utils": "^0.5.0",
-		"@carlwr/typescript-extra": "0.6.1",
+		"@carlwr/typescript-extra": "0.7.0",
 		"@fast-check/vitest": "^0.4.0",
 		"@types/mocha": "^10.0.10",
 		"@types/node": "^22.15.0",
@@ -98,6 +131,7 @@
 		"@vscode/test-cli": "^0.0.12",
 		"@vscode/test-electron": "^2.5.2",
 		"@vscode/vsce": "^3.7.1",
+		"fast-check": "^4.6.0",
 		"tsup": "^8.5.1",
 		"tsx": "^4.21.0",
 		"typescript": "^5.8.0",

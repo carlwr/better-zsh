@@ -2,6 +2,6 @@
 **/*
 !LICENSE
 !package.json
-!out/*
+!out/**
 !syntaxes/*
-!language-configuration.json
+!src/data/**

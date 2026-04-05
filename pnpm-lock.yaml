@@ -15,8 +15,8 @@ importers:
         specifier: ^0.5.0
         version: 0.5.0(fast-check@4.6.0)
       '@carlwr/typescript-extra':
-        specifier: 0.6.1
-        version: 0.6.1
+        specifier: 0.7.0
+        version: 0.7.0
       '@fast-check/vitest':
         specifier: ^0.4.0
         version: 0.4.0(vitest@4.1.2(@types/node@22.19.15)(vite@8.0.3(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(@types/node@22.19.15)(esbuild@0.27.5)(tsx@4.21.0)))
@@ -38,6 +38,9 @@ importers:
       '@vscode/vsce':
         specifier: ^3.7.1
         version: 3.7.1
+      fast-check:
+        specifier: ^4.6.0
+        version: 4.6.0
       tsup:
         specifier: ^8.5.1
         version: 8.5.1(postcss@8.5.8)(tsx@4.21.0)(typescript@5.9.3)
@@ -177,8 +180,8 @@ packages:
     peerDependencies:
       fast-check: ^4.6.0
 
-  '@carlwr/typescript-extra@0.6.1':
-    resolution: {integrity: sha512-UKtb4LBnGxVImRsc2M5i/MeCJmJTflrF0w7YJXg9HUkIZtKXAbFBOqSQZzJNa2uJuM3DBjTvvvsmknRhRpOoqw==}
+  '@carlwr/typescript-extra@0.7.0':
+    resolution: {integrity: sha512-LhMei8V166IFz6Mckr6WTPZcfVu8Z+t1ss8+AUgzqc3d95BJ9exi/xeAohaE5DonX02bcp8/zRJ+cED/AjiaWg==}
     engines: {node: '>=20.0.0'}
 
   '@emnapi/core@1.9.2':
@@ -2617,7 +2620,7 @@ snapshots:
     dependencies:
       fast-check: 4.6.0
 
-  '@carlwr/typescript-extra@0.6.1': {}
+  '@carlwr/typescript-extra@0.7.0': {}
 
   '@emnapi/core@1.9.2':
     dependencies:

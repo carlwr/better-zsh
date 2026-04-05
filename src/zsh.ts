@@ -2,13 +2,28 @@ import { execFile } from "node:child_process";
 import { constants, existsSync } from "node:fs";
 import { access } from "node:fs/promises";
 import * as path from "node:path";
-import { memoized } from "@carlwr/typescript-extra";
 import { log, warn } from "./log";
 
 export const WORD = /[\w][\w-]*/g;
 export const WORD_EXACT = /^[\w][\w-]*$/;
 
-const ZSH = "zsh";
+let zshBinary = "zsh";
+let zshDisabled = false;
+
+/** Update zsh binary path from settings. Call on activation and config change. */
+export function setZshPath(setting: string) {
+	if (setting === "off") {
+		zshDisabled = true;
+		zshBinary = "zsh"; // unused when disabled
+	} else {
+		zshDisabled = false;
+		zshBinary = setting || "zsh";
+	}
+}
+
+export function isZshDisabled() {
+	return zshDisabled;
+}
 const ZSH_VERSION_ARGS = ["--version"];
 const ZSH_BASE_ARGS = ["-f"];
 const ZSH_ENV_KEEP = [
@@ -103,7 +118,7 @@ function execZsh({
 		// easy to inspect in one place; that is safer and more transparent than
 		// scattering ad-hoc exec calls across features.
 		const proc = execFile(
-			ZSH,
+			zshBinary,
 			args,
 			{
 				timeout: 5000,
@@ -129,7 +144,7 @@ function resolveZshPath(env: NodeJS.ProcessEnv): string | undefined {
 			: [""];
 	for (const dir of dirs) {
 		for (const ext of exts) {
-			const full = path.join(dir, `${ZSH}${ext}`);
+			const full = path.join(dir, `${zshBinary}${ext}`);
 			if (existsSync(full)) return full;
 		}
 	}
@@ -196,12 +211,16 @@ function runZsh({
 	});
 }
 
-export const zshAvailable = memoized(async () => {
+export async function zshAvailable(): Promise<boolean> {
+	if (zshDisabled) {
+		log("zsh invocation disabled by betterZsh.zshPath = off");
+		return false;
+	}
 	const r = await runZsh({ args: ZSH_VERSION_ARGS });
 	const ok = r.code === 0;
 	if (!ok) warn("zsh not found on PATH; zsh-dependent features disabled");
 	return ok;
-});
+}
 
 export async function zshCheck(
 	text: string,

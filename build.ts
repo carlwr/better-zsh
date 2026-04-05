@@ -1,4 +1,5 @@
 import { build } from "tsup";
+import { generateAssets } from "./src/build/generate-assets";
 
 (async () => {
 	await build({
@@ -10,4 +11,5 @@ import { build } from "tsup";
 		external: ["vscode"],
 		watch: process.argv.includes("--watch"),
 	});
+	await generateAssets();
 })();

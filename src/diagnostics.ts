@@ -1,8 +1,13 @@
 import * as vscode from "vscode";
 import { zshCheck } from "./zsh";
 
-const DIAGNOSE_ON_CHANGE = true;
 const DEBOUNCE_MS = 500;
+
+function isDiagnosticsEnabled(): boolean {
+	return vscode.workspace
+		.getConfiguration("betterZsh")
+		.get("diagnostics.enabled", true);
+}
 
 export function setupDiagnostics(ctx: vscode.ExtensionContext) {
 	const dc = vscode.languages.createDiagnosticCollection("zsh");
@@ -10,6 +15,10 @@ export function setupDiagnostics(ctx: vscode.ExtensionContext) {
 
 	async function lint(doc: vscode.TextDocument) {
 		if (doc.languageId !== "zsh") return;
+		if (!isDiagnosticsEnabled()) {
+			dc.set(doc.uri, []);
+			return;
+		}
 		const r = await zshCheck(doc.getText());
 		if (r.ok) {
 			dc.set(doc.uri, []);
@@ -52,15 +61,14 @@ export function setupDiagnostics(ctx: vscode.ExtensionContext) {
 			}
 			dc.delete(doc.uri);
 		}),
+		vscode.workspace.onDidChangeTextDocument((e) => lintDebounced(e.document)),
+		vscode.workspace.onDidChangeConfiguration((e) => {
+			if (e.affectsConfiguration("betterZsh.diagnostics.enabled")) {
+				if (!isDiagnosticsEnabled()) dc.clear();
+				else for (const doc of vscode.workspace.textDocuments) lint(doc);
+			}
+		}),
 	);
-
-	if (DIAGNOSE_ON_CHANGE) {
-		ctx.subscriptions.push(
-			vscode.workspace.onDidChangeTextDocument((e) =>
-				lintDebounced(e.document),
-			),
-		);
-	}
 
 	for (const doc of vscode.workspace.textDocuments) lint(doc);
 }

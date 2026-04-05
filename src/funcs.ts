@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import { docCache } from "./cache";
+import { commentStart } from "./comment";
 import { escRe, WORD, WORD_EXACT } from "./zsh";
 
 const FUNC_DECL = /^(\s*)([\w][\w-]*)\s*\(\)/;
@@ -64,56 +65,7 @@ export function hasFunc(doc: vscode.TextDocument, name: string) {
 	return getData(doc).names.has(name);
 }
 
-export function commentStart(line: string): number | undefined {
-	let sq = false;
-	let dq = false;
-	let bq = false;
-	let esc = false;
-	for (let i = 0; i < line.length; i++) {
-		const ch = line[i];
-		if (esc) {
-			esc = false;
-			continue;
-		}
-		if (sq) {
-			if (ch === "'") sq = false;
-			continue;
-		}
-		if (dq) {
-			if (ch === "\\") {
-				esc = true;
-				continue;
-			}
-			if (ch === '"') dq = false;
-			continue;
-		}
-		if (bq) {
-			if (ch === "\\") {
-				esc = true;
-				continue;
-			}
-			if (ch === "`") bq = false;
-			continue;
-		}
-		if (ch === "\\") {
-			esc = true;
-			continue;
-		}
-		if (ch === "'") {
-			sq = true;
-			continue;
-		}
-		if (ch === '"') {
-			dq = true;
-			continue;
-		}
-		if (ch === "`") {
-			bq = true;
-			continue;
-		}
-		if (ch === "#") return i;
-	}
-}
+export { commentStart } from "./comment";
 
 function buildData(doc: vscode.TextDocument): FuncData {
 	const docs = new Map<string, string>();
