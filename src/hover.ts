@@ -1,11 +1,18 @@
 import * as vscode from "vscode"
 import { syntacticContext } from "./context"
 import { activeWordRangeAt, commentStart, funcDocs } from "./funcs"
-import { mdCond, mdOpt, mdParam } from "./hover-md"
+import {
+  type HoverMdCtx,
+  mdCond,
+  mdOpt,
+  mdParam,
+  mkHoverMdCtx,
+} from "./hover-md"
 import { mkCondOp, mkOptName } from "./types/brand"
 import type { CondOperator, OptFlagAlias, ZshOption } from "./types/zsh-data"
 
 export class HoverProvider implements vscode.HoverProvider {
+  private md: HoverMdCtx
   private params: Map<string, string> | undefined
   private optionMap: Map<string, ZshOption> | undefined
   private flagMap:
@@ -18,6 +25,7 @@ export class HoverProvider implements vscode.HoverProvider {
     options?: ZshOption[],
     condOps?: CondOperator[],
   ) {
+    this.md = mkHoverMdCtx(options)
     this.params = params
     if (options) {
       this.optionMap = new Map(options.map((o) => [o.name as string, o]))
@@ -44,7 +52,10 @@ export class HoverProvider implements vscode.HoverProvider {
       const token = doc.getText(range)
       const opt = this.optionAt(token)
       if (opt)
-        return new vscode.Hover(new vscode.MarkdownString(mdOpt(opt)), range)
+        return new vscode.Hover(
+          new vscode.MarkdownString(mdOpt(opt, this.md)),
+          range,
+        )
     }
 
     // cond context: operator hover
@@ -54,7 +65,10 @@ export class HoverProvider implements vscode.HoverProvider {
         const op = mkCondOp(doc.getText(range))
         const cop = this.condOpMap.get(op)
         if (cop)
-          return new vscode.Hover(new vscode.MarkdownString(mdCond(cop)), range)
+          return new vscode.Hover(
+            new vscode.MarkdownString(mdCond(cop, this.md)),
+            range,
+          )
       }
     }
 

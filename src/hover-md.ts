@@ -1,3 +1,4 @@
+import { mkOptName, type OptName } from "./types/brand"
 import type {
   CondOperator,
   Emulation,
@@ -21,8 +22,33 @@ export interface HoverRegression {
   note: string
 }
 
+export interface HoverMdCtx {
+  optNames: ReadonlySet<OptName>
+}
+
 // Add known markdown/render regressions here as they are discovered.
 export const hoverMdRegressions: HoverRegression[] = []
+
+const emptyHoverMdCtx: HoverMdCtx = { optNames: new Set<OptName>() }
+const OPT_REF_RE = /\b(?:NO_?)?[A-Z][A-Z0-9_]*\b/g
+const inlineCodeRe = /(`[^`\n]+`)/
+
+function code(s: string): string {
+  return `\`${s}\``
+}
+
+function strong(s: string): string {
+  return `**${s}**`
+}
+
+const hoverFmt = {
+  code,
+  optRef: (s: string) => strong(code(s)),
+}
+
+export function mkHoverMdCtx(options: readonly ZshOption[] = []): HoverMdCtx {
+  return { optNames: new Set(options.map((opt) => opt.name)) }
+}
 
 export function fmtParamType(raw: string): string {
   const parts = raw.split("-")
@@ -34,8 +60,32 @@ export function fmtParamType(raw: string): string {
   return flags.length ? `${base} (${flags.join(", ")})` : base
 }
 
-export function mdOpt(opt: ZshOption): string {
-  const title = `\`${opt.display}\``
+export function fmtOptRefsInMd(
+  md: string,
+  optNames: ReadonlySet<OptName>,
+): string {
+  if (optNames.size === 0) return md
+
+  const out: string[] = []
+  let fenced = false
+
+  for (const line of md.split("\n")) {
+    if (line.startsWith("```")) {
+      out.push(line)
+      fenced = !fenced
+      continue
+    }
+    out.push(fenced ? line : fmtOptRefsInLine(line, optNames))
+  }
+
+  return out.join("\n")
+}
+
+export function mdOpt(
+  opt: ZshOption,
+  ctx: HoverMdCtx = emptyHoverMdCtx,
+): string {
+  const title = hoverFmt.code(opt.display)
   const long = opt.display.toLowerCase()
   // Keep the preamble to executable zsh forms; status/context lines read better outside it.
   const preamble = [
@@ -53,7 +103,7 @@ export function mdOpt(opt: ZshOption): string {
     "",
     defaultLine,
     "",
-    opt.desc,
+    fmtOptRefsInMd(opt.desc, ctx.optNames),
     "",
     `_Option category:_ ${opt.category}`,
   ].join("\n")
@@ -61,16 +111,19 @@ export function mdOpt(opt: ZshOption): string {
 
 export function sigCond(cop: CondOperator): string {
   return cop.kind === "unary"
-    ? `\`${cop.op}\` *${cop.operands.join(" ")}*`
-    : `*${cop.operands[0] ?? ""}* \`${cop.op}\` *${cop.operands[1] ?? ""}*`
+    ? `${hoverFmt.code(cop.op as string)} *${cop.operands.join(" ")}*`
+    : `*${cop.operands[0] ?? ""}* ${hoverFmt.code(cop.op as string)} *${cop.operands[1] ?? ""}*`
 }
 
-export function mdCond(cop: CondOperator): string {
-  return `${sigCond(cop)}\n\n${cop.desc}`
+export function mdCond(
+  cop: CondOperator,
+  ctx: HoverMdCtx = emptyHoverMdCtx,
+): string {
+  return `${sigCond(cop)}\n\n${fmtOptRefsInMd(cop.desc, ctx.optNames)}`
 }
 
 export function mdParam(name: string, raw: string): string {
-  return `\`${name}\`: ${fmtParamType(raw)} — zsh special parameter`
+  return `${hoverFmt.code(name)}: ${fmtParamType(raw)} — zsh special parameter`
 }
 
 export function defaultStateIn(opt: ZshOption, emulation: Emulation): OptState {
@@ -101,6 +154,7 @@ export function hoverDocs({
   condOps: readonly CondOperator[]
   params: ReadonlyMap<string, string>
 }): HoverDoc[] {
+  const ctx = mkHoverMdCtx(options)
   const paramDocs = [...params.entries()]
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([key, raw]) => ({
@@ -113,13 +167,34 @@ export function hoverDocs({
     ...options.map((opt) => ({
       kind: "option" as const,
       key: opt.display,
-      md: mdOpt(opt),
+      md: mdOpt(opt, ctx),
     })),
     ...condOps.map((cop) => ({
       kind: "cond-op" as const,
       key: cop.op as string,
-      md: mdCond(cop),
+      md: mdCond(cop, ctx),
     })),
     ...paramDocs,
   ]
+}
+
+function fmtOptRefsInLine(
+  line: string,
+  optNames: ReadonlySet<OptName>,
+): string {
+  return line
+    .split(inlineCodeRe)
+    .map((part, i) =>
+      i % 2 === 1
+        ? part
+        : part.replace(OPT_REF_RE, (raw, offset, whole) => {
+            const prev = whole[offset - 1]
+            const prevPrev = whole[offset - 2]
+            if (prev === "$" || (prev === "{" && prevPrev === "$")) return raw
+            return optNames.has(mkOptName(raw.replace(/^NO_?/, "")))
+              ? hoverFmt.optRef(raw)
+              : raw
+          }),
+    )
+    .join("")
 }

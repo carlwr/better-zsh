@@ -5,11 +5,13 @@ import { describe, expect, test } from "vitest"
 import { dumpText, writeHoverDump } from "../hover-dump"
 import {
   defaultStateIn,
+  fmtOptRefsInMd,
   hoverDocs,
   hoverMdRegressions,
   mdCond,
   mdOpt,
   mdParam,
+  mkHoverMdCtx,
 } from "../hover-md"
 import { mkCondOp, mkOptFlagChar, mkOptName } from "../types/brand"
 import type { CondOperator, ZshOption } from "../types/zsh-data"
@@ -50,6 +52,46 @@ describe("hover markdown", () => {
     expect(mdOpt(opt)).toContain("set +J")
     expect(mdOpt(opt)).toContain("**Default in zsh: `on`**")
     expect(mdOpt(opt)).toContain("_Option category:_ Changing Directories")
+  })
+
+  test("formats option refs in prose variants", () => {
+    const ctx = mkHoverMdCtx([opt])
+    expect(
+      fmtOptRefsInMd("AUTO_CD AUTOCD NO_AUTO_CD NOAUTOCD", ctx.optNames),
+    ).toBe("**`AUTO_CD`** **`AUTOCD`** **`NO_AUTO_CD`** **`NOAUTOCD`**")
+  })
+
+  test("skips vars and existing markdown code when formatting option refs", () => {
+    const ctx = mkHoverMdCtx([opt])
+    expect(
+      fmtOptRefsInMd(
+        [
+          "$AUTO_CD ${AUTO_CD} $NO_AUTO_CD ${NOAUTOCD}",
+          "`AUTO_CD` AUTO_CD",
+          "```zsh",
+          "AUTO_CD",
+          "```",
+          "AUTOCD",
+        ].join("\n"),
+        ctx.optNames,
+      ),
+    ).toBe(
+      [
+        "$AUTO_CD ${AUTO_CD} $NO_AUTO_CD ${NOAUTOCD}",
+        "`AUTO_CD` **`AUTO_CD`**",
+        "```zsh",
+        "AUTO_CD",
+        "```",
+        "**`AUTOCD`**",
+      ].join("\n"),
+    )
+  })
+
+  test("formats only known options", () => {
+    const ctx = mkHoverMdCtx([opt])
+    expect(fmtOptRefsInMd("AUTO_CD CDPATH POSIX", ctx.optNames)).toBe(
+      "**`AUTO_CD`** CDPATH POSIX",
+    )
   })
 
   test("renders cond op markdown", () => {
@@ -178,6 +220,21 @@ describe("hover dump", () => {
       expect(files.get("options.md")).not.toContain("See \\ .")
       expect(files.get("cond-ops.md")).not.toContain("See .")
       expect(files.get("suspicious.md")).toBe("")
+    })
+
+    test("formats real option cross-references but not env vars", () => {
+      const byName = new Map(options.map((o) => [o.name, o]))
+      const cdSilent = byName.get(mkOptName("CD_SILENT"))
+      expect(cdSilent).toBeTruthy()
+      const md = mdOpt(
+        // biome-ignore lint/style/noNonNullAssertion: asserted above
+        cdSilent!,
+        mkHoverMdCtx(options),
+      )
+      expect(md).toContain("**`AUTO_CD`**")
+      expect(md).toContain("**`PUSHD_SILENT`**")
+      expect(md).toContain("**`POSIX_CD`**")
+      expect(md).not.toContain("`CDPATH`")
     })
   })
 })

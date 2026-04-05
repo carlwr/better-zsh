@@ -60,4 +60,13 @@ suite("ZshHoverProvider", () => {
     assert.match(errReturnText, /`&&` `\|\|` does not trigger a return/)
     assert.match(errReturnText, /```zsh\nsummit \|\| true\n```/)
   })
+
+  test("rendered option docs format option refs but not env vars", async () => {
+    const doc = await openText("setopt cd_silent")
+    const text = await hoverText(doc, new vscode.Position(0, 9))
+    assert.match(text, /\*\*`AUTO_CD`\*\*/)
+    assert.match(text, /\*\*`PUSHD_SILENT`\*\*/)
+    assert.match(text, /\*\*`POSIX_CD`\*\*/)
+    assert.doesNotMatch(text, /`CDPATH`/)
+  })
 })
