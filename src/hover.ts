@@ -3,11 +3,14 @@ import { syntacticContext } from "./context";
 import { activeWordRangeAt, commentStart, funcDocs } from "./funcs";
 import { mdCond, mdOpt, mdParam } from "./hover-md";
 import { mkCondOp, mkOptName } from "./types/brand";
-import type { CondOperator, ZshOption } from "./types/zsh-data";
+import type { CondOperator, OptFlagAlias, ZshOption } from "./types/zsh-data";
 
 export class HoverProvider implements vscode.HoverProvider {
 	private params: Map<string, string> | undefined;
 	private optionMap: Map<string, ZshOption> | undefined;
+	private flagMap:
+		| Map<string, { opt: ZshOption; alias: OptFlagAlias }>
+		| undefined;
 	private condOpMap: Map<string, CondOperator> | undefined;
 
 	constructor(
@@ -18,6 +21,13 @@ export class HoverProvider implements vscode.HoverProvider {
 		this.params = params;
 		if (options) {
 			this.optionMap = new Map(options.map((o) => [o.name as string, o]));
+			this.flagMap = new Map(
+				options.flatMap((opt) =>
+					opt.flags.map(
+						(alias) => [alias.char as string, { opt, alias }] as const,
+					),
+				),
+			);
 		}
 		if (condOps) {
 			this.condOpMap = new Map(condOps.map((o) => [o.op as string, o]));
@@ -29,18 +39,12 @@ export class HoverProvider implements vscode.HoverProvider {
 
 		// setopt context: option hover
 		if (ctx.kind === "setopt" && this.optionMap) {
-			const range = activeWordRangeAt(doc, pos);
+			const range = activeTokenRangeAt(doc, pos);
 			if (!range) return;
-			const w = doc.getText(range);
-			const name = mkOptName(w);
-			const opt = this.optionMap.get(name);
-			// Also check no-prefixed form
+			const token = doc.getText(range);
+			const opt = this.optionAt(token);
 			if (opt)
 				return new vscode.Hover(new vscode.MarkdownString(mdOpt(opt)), range);
-			const noName = mkOptName(w.replace(/^no_?/i, ""));
-			const noOpt = this.optionMap.get(noName);
-			if (noOpt)
-				return new vscode.Hover(new vscode.MarkdownString(mdOpt(noOpt)), range);
 		}
 
 		// cond context: operator hover
@@ -75,6 +79,22 @@ export class HoverProvider implements vscode.HoverProvider {
 				return new vscode.Hover(new vscode.MarkdownString(mdParam(w, ptype)));
 			}
 		}
+	}
+
+	private optionAt(token: string): ZshOption | undefined {
+		const direct = this.optionMap?.get(mkOptName(token));
+		if (direct) return direct;
+
+		const noPrefixed = this.optionMap?.get(
+			mkOptName(token.replace(/^no_?/i, "")),
+		);
+		if (noPrefixed) return noPrefixed;
+
+		const short = token.match(/^([+-])([A-Za-z0-9])$/);
+		if (!short?.[1] || !short[2] || !this.flagMap) return;
+		// The hovered doc is keyed by the underlying option; sign only affects whether it sets or unsets it.
+		const hit = this.flagMap.get(short[2]);
+		return hit?.opt;
 	}
 }
 

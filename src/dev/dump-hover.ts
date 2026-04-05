@@ -1,3 +1,4 @@
+import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { writeHoverDump } from "../hover-dump";
 import { hoverDocs } from "../hover-md";
@@ -33,11 +34,15 @@ async function main() {
 	const docs = hoverDocs({ options, condOps, params });
 
 	await writeHoverDump(outDir, docs);
+	const suspicious = (await readFile(resolve(outDir, "suspicious.md"), "utf8"))
+		.split("\n")
+		.filter(Boolean).length;
 
 	const counts = [
 		`${options.length} options`,
 		`${condOps.length} cond ops`,
 		`${params.size} params`,
+		`${suspicious} suspicious`,
 	].join(", ");
 	process.stdout.write(`wrote hover markdown to ${outDir} (${counts})\n`);
 }

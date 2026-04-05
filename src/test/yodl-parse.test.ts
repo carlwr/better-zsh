@@ -4,6 +4,7 @@ import {
 	extractItems,
 	extractSections,
 	findBalancedClose,
+	normalizeDoc,
 	stripYodl,
 } from "../yodl/parse";
 
@@ -41,6 +42,14 @@ describe("stripYodl", () => {
 		expect(stripYodl("COMMENT(hidden)\nvisible")).toBe("visible");
 	});
 
+	test("keeps the non-zman branch and noderef text", () => {
+		expect(
+			stripYodl(
+				"ifzman(the section FILES in zmanref(zshmisc))ifnzman(noderef(Files))",
+			),
+		).toBe("Files");
+	});
+
 	test("output length ≤ input length", () => {
 		fc.assert(
 			fc.property(fc.string(), (s: string) => {
@@ -55,6 +64,20 @@ describe("stripYodl", () => {
 				expect(stripYodl(stripYodl(s))).toBe(stripYodl(s));
 			}),
 		);
+	});
+});
+
+describe("normalizeDoc", () => {
+	test("renders yodl code quotes as markdown", () => {
+		expect(normalizeDoc("code followed by `&&' `||' does not trigger")).toBe(
+			"code followed by `&&` `||` does not trigger",
+		);
+	});
+
+	test("joins continued prose lines", () => {
+		expect(
+			normalizeDoc("Arithmetic Evaluation\\\n\nhas an explicit list."),
+		).toBe("Arithmetic Evaluation has an explicit list.");
 	});
 });
 

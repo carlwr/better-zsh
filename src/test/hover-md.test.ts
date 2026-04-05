@@ -4,13 +4,14 @@ import { join, resolve } from "node:path";
 import { describe, expect, test } from "vitest";
 import { dumpText, writeHoverDump } from "../hover-dump";
 import {
+	defaultStateIn,
 	hoverDocs,
 	hoverMdRegressions,
 	mdCond,
 	mdOpt,
 	mdParam,
 } from "../hover-md";
-import { mkCondOp, mkOptLetter, mkOptName } from "../types/brand";
+import { mkCondOp, mkOptFlagChar, mkOptName } from "../types/brand";
 import type { CondOperator, ZshOption } from "../types/zsh-data";
 import { getCondOps, getOptions, initZshData } from "../zsh-data";
 
@@ -19,8 +20,8 @@ const root = resolve(__dirname, "../..");
 const opt: ZshOption = {
 	name: mkOptName("AUTO_CD"),
 	display: "AUTO_CD",
-	letter: mkOptLetter("J"),
-	defaults: ["D"],
+	flags: [{ char: mkOptFlagChar("J"), on: "-" }],
+	defaultIn: ["csh", "ksh", "sh", "zsh"],
 	category: "Changing Directories",
 	desc: "Desc.",
 };
@@ -41,9 +42,14 @@ const binary: CondOperator = {
 
 describe("hover markdown", () => {
 	test("renders option markdown", () => {
-		expect(mdOpt(opt)).toBe(
-			"`AUTO_CD` (`-J`) <D>\n\nDesc.\n\n_Category:_ Changing Directories",
-		);
+		expect(mdOpt(opt)).toContain("`AUTO_CD`");
+		expect(mdOpt(opt)).toContain("```zsh");
+		expect(mdOpt(opt)).toContain("setopt auto_cd");
+		expect(mdOpt(opt)).toContain("unsetopt auto_cd");
+		expect(mdOpt(opt)).toContain("set -J");
+		expect(mdOpt(opt)).toContain("set +J");
+		expect(mdOpt(opt)).toContain("**Default in zsh: `on`**");
+		expect(mdOpt(opt)).toContain("_Option category:_ Changing Directories");
 	});
 
 	test("renders cond op markdown", () => {
@@ -55,6 +61,19 @@ describe("hover markdown", () => {
 		expect(mdParam("SECONDS", "integer-special-readonly-export")).toBe(
 			"`SECONDS`: integer (readonly, exported) — zsh special parameter",
 		);
+	});
+
+	test("derives default state by emulation", () => {
+		expect(defaultStateIn(opt, "zsh")).toBe("on");
+		expect(
+			defaultStateIn(
+				{
+					...opt,
+					defaultIn: ["ksh"],
+				},
+				"zsh",
+			),
+		).toBe("off");
 	});
 
 	test("collects docs and sorts params", () => {
@@ -90,6 +109,7 @@ describe("hover dump", () => {
 		expect(files.get("options.md")).toContain("## AUTO_CD");
 		expect(files.get("cond-ops.md")).toContain("## -nt");
 		expect(files.get("params.md")).toContain("## SECONDS");
+		expect(files.get("suspicious.md")).toBe("");
 		expect(files.get("all.md")).toContain("## AUTO_CD");
 		expect(files.get("all.md")).toContain("## -nt");
 		expect(files.get("all.md")).toContain("## SECONDS");
@@ -114,6 +134,7 @@ describe("hover dump", () => {
 			expect(readFileSync(join(dir, "params.md"), "utf8")).toContain(
 				"`SECONDS`",
 			);
+			expect(readFileSync(join(dir, "suspicious.md"), "utf8")).toBe("");
 		} finally {
 			rmSync(dir, { recursive: true, force: true });
 		}
@@ -150,6 +171,13 @@ describe("hover dump", () => {
 			expect(files.get("options.md")).not.toContain("var(");
 			expect(files.get("cond-ops.md")).not.toContain("tt(");
 			expect(files.get("cond-ops.md")).not.toContain("var(");
+		});
+
+		test("emitted markdown avoids known suspicious patterns", () => {
+			expect(files.get("options.md")).not.toContain("See .");
+			expect(files.get("options.md")).not.toContain("See \\ .");
+			expect(files.get("cond-ops.md")).not.toContain("See .");
+			expect(files.get("suspicious.md")).toBe("");
 		});
 	});
 });

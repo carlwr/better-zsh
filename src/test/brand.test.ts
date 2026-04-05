@@ -1,6 +1,6 @@
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
-import { mkCondOp, mkOptLetter, mkOptName } from "../types/brand";
+import { mkCondOp, mkOptFlagChar, mkOptName } from "../types/brand";
 
 describe("mkOptName", () => {
 	test("normalizes known equivalences", () => {
@@ -42,8 +42,8 @@ describe("mkCondOp", () => {
 	});
 });
 
-describe("mkOptLetter", () => {
+describe("mkOptFlagChar", () => {
 	test("trims whitespace", () => {
-		expect(mkOptLetter(" J ")).toBe(mkOptLetter("J"));
+		expect(mkOptFlagChar(" J ")).toBe(mkOptFlagChar("J"));
 	});
 });

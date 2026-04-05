@@ -85,6 +85,12 @@ The extension uses `zsh -f` to query what zsh knows about *itself*: builtins, op
 - Mental model: "if we could bundle a zsh binary and run it in an isolated container, we would." We use system zsh and tolerate inherited env as a necessary cost — not a feature to exploit.
 - Environment-dependent introspection may later be offered through agent-facing tools (Language Model Tools API) where agents explicitly opt in, with clear caveats about side effects and env-specificity
 
+### Hover docs
+
+- Prefer hover docs that explain actual zsh usage, not raw upstream doc notation
+- For option hovers: show executable `zsh` forms first; keep category at the bottom; prioritize the default in plain zsh over other emulation defaults
+- When adjusting Yodl parsing for hover docs, preserve visible prose/reference text unless there is a strong reason not to; use the hover dump script to inspect regressions in generated markdown
+
 Regarding syntax highlighting:
 - a complete, custom zsh textmateGrammar is beyond the scope of this extension
   - reasoning: shell script parsing/tokenization is hairy

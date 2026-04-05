@@ -6,8 +6,8 @@ export type OptName = Brand<string, "OptName">;
 /** Conditional expression operator: "-a", "-nt", "=~", etc. */
 export type CondOp = Brand<string, "CondOp">;
 
-/** Single-letter option flag: "J", "N", etc. */
-export type OptLetter = Brand<string, "OptLetter">;
+/** Single-letter option flag char: "J", "N", "0", etc. */
+export type OptFlagChar = Brand<string, "OptFlagChar">;
 
 export function mkOptName(raw: string): OptName {
 	return raw.replace(/_/g, "").toLowerCase() as OptName;
@@ -17,6 +17,6 @@ export function mkCondOp(raw: string): CondOp {
 	return raw.trim() as CondOp;
 }
 
-export function mkOptLetter(raw: string): OptLetter {
-	return raw.trim() as OptLetter;
+export function mkOptFlagChar(raw: string): OptFlagChar {
+	return raw.trim() as OptFlagChar;
 }

@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, test } from "vitest";
-import { mkOptName } from "../types/brand";
+import { mkOptFlagChar, mkOptName } from "../types/brand";
 import { parseOptions } from "../yodl/options";
 
 const OPTS_YO = readFileSync(
@@ -21,7 +21,7 @@ command to that directory.
 		expect(opts).toHaveLength(1);
 		expect(opts[0]?.name).toBe(mkOptName("AUTO_CD"));
 		expect(opts[0]?.display).toBe("AUTO_CD");
-		expect(opts[0]?.letter).toBe("J");
+		expect(opts[0]?.flags).toEqual([{ char: mkOptFlagChar("J"), on: "-" }]);
 		expect(opts[0]?.category).toBe("Changing Directories");
 		expect(opts[0]?.desc).toContain("command is the name of a directory");
 	});
@@ -33,7 +33,7 @@ Automatically list choices on an ambiguous completion.
 )`;
 		const opts = parseOptions(yo);
 		expect(opts).toHaveLength(1);
-		expect(opts[0]?.defaults).toEqual(["D"]);
+		expect(opts[0]?.defaultIn).toEqual(["csh", "ksh", "sh", "zsh"]);
 	});
 
 	test("parses option without letter", () => {
@@ -44,7 +44,7 @@ function is called for the second time in a row.
 )`;
 		const opts = parseOptions(yo);
 		expect(opts).toHaveLength(1);
-		expect(opts[0]?.letter).toBeUndefined();
+		expect(opts[0]?.flags).toEqual([]);
 	});
 
 	test("parses option with multiple default markers", () => {
@@ -54,7 +54,7 @@ Make cd and pushd behave POSIX-like.
 )`;
 		const opts = parseOptions(yo);
 		expect(opts).toHaveLength(1);
-		expect(opts[0]?.defaults).toEqual(["K", "S"]);
+		expect(opts[0]?.defaultIn).toEqual(["ksh", "sh"]);
 	});
 
 	describe("vendored options.yo", () => {
@@ -93,6 +93,19 @@ Make cd and pushd behave POSIX-like.
 			expect(byName.has(mkOptName("EXTENDED_GLOB"))).toBe(true);
 			expect(byName.has(mkOptName("AUTO_CD"))).toBe(true);
 			expect(byName.has(mkOptName("GLOB_DOTS"))).toBe(true);
+		});
+
+		test("captures short-flag polarity from vendored docs", () => {
+			const byName = new Map(opts.map((o) => [o.name, o]));
+			expect(byName.get(mkOptName("ERR_EXIT"))?.flags).toEqual([
+				{ char: mkOptFlagChar("e"), on: "-" },
+			]);
+			expect(byName.get(mkOptName("RCS"))?.flags).toEqual([
+				{ char: mkOptFlagChar("f"), on: "+" },
+			]);
+			expect(byName.get(mkOptName("GLOBAL_RCS"))?.flags).toEqual([
+				{ char: mkOptFlagChar("d"), on: "+" },
+			]);
 		});
 
 		test("descriptions strip raw yodl macros", () => {

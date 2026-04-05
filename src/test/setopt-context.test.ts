@@ -17,6 +17,7 @@ suite("isSetoptContext", () => {
 		["setopt \\\n  errreturn", 1, "continuation second line"],
 		["set -o extendedglob", 0, "set -o"],
 		["set +o extendedglob", 0, "set +o"],
+		["set -e -o pipefail", 0, "set short and long options"],
 	];
 
 	const no: [string, number, string?][] = [

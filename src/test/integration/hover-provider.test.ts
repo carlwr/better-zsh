@@ -26,11 +26,38 @@ suite("ZshHoverProvider", () => {
 		assert.match(text, /matches pattern/i);
 	});
 
-	test("option hover keeps category out of the title line", async () => {
+	test("option hover renders code preamble and category", async () => {
 		const doc = await openText("setopt warn_nested_var");
 		const text = await hoverText(doc, new vscode.Position(0, 10));
 		assert.strictEqual(text.split("\n")[0], "`WARN_NESTED_VAR`");
-		assert.match(text, /Expansion and Globbing/);
+		assert.match(text, /```zsh/);
+		assert.match(text, /setopt warn_nested_var/);
+		assert.match(text, /\*\*Default in zsh: `off`\*\*/);
+		assert.match(text, /_Option category:_ Expansion and Globbing/);
 		assert.ok(!text.includes("example("), "expected example() markup stripped");
+	});
+
+	test("short and long set forms resolve to the same option docs", async () => {
+		const doc = await openText("set -e -o pipefail");
+		const shortText = await hoverText(doc, new vscode.Position(0, 5));
+		const longText = await hoverText(doc, new vscode.Position(0, 12));
+		assert.match(shortText, /`ERR_EXIT`/);
+		assert.match(shortText, /set -e/);
+		assert.match(shortText, /set \+e/);
+		assert.match(longText, /`PIPE_FAIL`/);
+		assert.match(longText, /setopt pipe_fail|setopt pipefail/);
+	});
+
+	test("rendered option docs keep selected references and code quotes", async () => {
+		const cPrec = await openText("setopt c_precedences");
+		const cPrecText = await hoverText(cPrec, new vscode.Position(0, 9));
+		assert.match(cPrecText, /Arithmetic Evaluation has an explicit list\./);
+		assert.ok(!cPrecText.includes("See ."));
+		assert.ok(!cPrecText.includes("\\"));
+
+		const errReturn = await openText("setopt err_return");
+		const errReturnText = await hoverText(errReturn, new vscode.Position(0, 9));
+		assert.match(errReturnText, /`&&` `\|\|` does not trigger a return/);
+		assert.match(errReturnText, /```zsh\nsummit \|\| true\n```/);
 	});
 });

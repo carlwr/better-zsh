@@ -25,7 +25,7 @@ const SPECIAL_MACROS: Record<string, string> = {
 };
 
 /** Replace yodl special macros with their literal characters */
-function replaceSpecials(s: string): string {
+export function replaceSpecials(s: string): string {
 	let r = s;
 	for (const [macro, ch] of Object.entries(SPECIAL_MACROS)) {
 		while (r.includes(macro)) r = r.replace(macro, ch);
@@ -44,20 +44,26 @@ export function stripYodl(raw: string): string {
 		"example",
 		(body) => `\n\n\`\`\`zsh\n${stripYodl(body).trim()}\n\`\`\`\n\n`,
 	);
-	// Strip wrapping macros: tt(), var(), em(), bf(), sectref(), nmref()
-	for (const m of ["tt", "var", "em", "bf", "sectref", "nmref", "zmanref"]) {
+	// Hover docs should follow the prose branch, not the manpage branch.
+	s = replaceWrapperMacro(s, "ifnzman", (body) => body);
+	s = replaceWrapperMacro(s, "ifzman", () => "");
+	// Several of these wrappers carry the only visible reference text.
+	for (const m of [
+		"tt",
+		"var",
+		"em",
+		"bf",
+		"sectref",
+		"nmref",
+		"zmanref",
+		"noderef",
+	]) {
 		s = stripWrapperMacro(s, m);
 	}
 	// Strip index macros: cindex(), pindex(), findex()
 	for (const m of ["cindex", "pindex", "findex"]) {
 		s = stripMacro(s, m);
 	}
-	// Strip ifzman/ifnzman blocks
-	for (const m of ["ifzman", "ifnzman"]) {
-		s = stripMacro(s, m);
-	}
-	// Strip noderef
-	s = stripMacro(s, "noderef");
 	// Replace special macros
 	s = replaceSpecials(s);
 	s = s.replace(/\\'/g, "'");
@@ -71,36 +77,88 @@ export function normalizeDoc(raw: string): string {
 	const out: string[] = [];
 	const para: string[] = [];
 	let inCode = false;
+	let continued = false;
 
 	const flushPara = () => {
 		if (para.length === 0) return;
-		out.push(para.join(" ").replace(/\s+/g, " ").trim());
+		out.push(renderInlineMd(para.join(" ").replace(/\s+/g, " ").trim()));
 		para.length = 0;
 	};
 
 	for (const line of lines) {
-		const trimmed = line.trim();
+		let trimmed = line.trim();
+		let lineContinues = false;
 		if (trimmed.startsWith("```")) {
 			flushPara();
 			out.push(trimmed);
 			inCode = !inCode;
+			continued = false;
 			continue;
 		}
 		if (inCode) {
 			out.push(line);
 			continue;
 		}
+		if (trimmed.endsWith("\\")) {
+			trimmed = trimmed.slice(0, -1).trimEnd();
+			lineContinues = true;
+		}
 		if (!trimmed) {
+			if (continued) continue;
 			flushPara();
 			if (out[out.length - 1] !== "") out.push("");
 			continue;
 		}
 		para.push(trimmed);
+		continued = lineContinues;
 	}
 	flushPara();
 	while (out[0] === "") out.shift();
 	while (out[out.length - 1] === "") out.pop();
-	return out.join("\n");
+	return finishDoc(mergeReferenceParas(out).join("\n"));
+}
+
+function renderInlineMd(s: string): string {
+	let out = s;
+	// zsh docs often use this manpage quoting idiom for inline code.
+	out = out.replace(/`([^`\n]+?)'/g, (_m, code) => `\`${code}\``);
+	out = out.replace(/\s+([.,;:!?])/g, "$1");
+	return out;
+}
+
+function mergeReferenceParas(parts: readonly string[]): string[] {
+	const out: string[] = [];
+	for (const part of parts) {
+		if (part === "") {
+			if (out.at(-1) !== "") out.push(part);
+			continue;
+		}
+
+		const prev = out.at(-1);
+		const prevPrev = out.at(-2);
+		if (prev === "" && prevPrev && shouldJoinParas(prevPrev, part)) {
+			out.pop();
+			out[out.length - 1] = `${prevPrev} ${part}`;
+			continue;
+		}
+
+		out.push(part);
+	}
+	return out;
+}
+
+function shouldJoinParas(prev: string, next: string): boolean {
+	return (
+		!prev.startsWith("```") &&
+		!next.startsWith("```") &&
+		/\b(?:see|in|described in|noted in)$/i.test(prev)
+	);
+}
+
+function finishDoc(s: string): string {
+	return s
+		.replace(/(\b(?:see|in|described in|noted in))\n\n([A-Z][^\n]+)/gi, "$1 $2")
+		.replace(/\s+([.,;:!?])/g, "$1");
 }
 
 /** Remove macro(content) entirely (content discarded) */

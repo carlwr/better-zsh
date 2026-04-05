@@ -22,6 +22,13 @@ export function isSetoptContext(doc: DocLike, line: number): boolean {
 	const words = first.split(/\s+/);
 	const cmd = words[0];
 	if (cmd === "setopt" || cmd === "unsetopt") return true;
-	if (cmd === "set" && (words[1] === "-o" || words[1] === "+o")) return true;
+	if (
+		cmd === "set" &&
+		(start !== line ||
+			words
+				.slice(1)
+				.some((word) => word.startsWith("-") || word.startsWith("+")))
+	)
+		return true;
 	return false;
 }

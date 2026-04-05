@@ -1,4 +1,11 @@
-import type { CondOperator, ZshOption } from "./types/zsh-data";
+import type {
+	CondOperator,
+	Emulation,
+	OptFlagAlias,
+	OptFlagSign,
+	OptState,
+	ZshOption,
+} from "./types/zsh-data";
 
 export type HoverKind = "option" | "cond-op" | "param";
 
@@ -28,10 +35,28 @@ export function fmtParamType(raw: string): string {
 }
 
 export function mdOpt(opt: ZshOption): string {
-	const letter = opt.letter ? ` (\`-${opt.letter}\`)` : "";
-	const defaults =
-		opt.defaults.length > 0 ? ` <${opt.defaults.join(", ")}>` : "";
-	return `\`${opt.display}\`${letter}${defaults}\n\n${opt.desc}\n\n_Category:_ ${opt.category}`;
+	const title = `\`${opt.display}\``;
+	const long = opt.display.toLowerCase();
+	// Keep the preamble to executable zsh forms; status/context lines read better outside it.
+	const preamble = [
+		"```zsh",
+		label("setopt", long, "on"),
+		label("unsetopt", long, "off"),
+		...opt.flags.map(renderFlag),
+		"```",
+	].join("\n");
+	const defaultLine = `**Default in zsh: \`${defaultStateIn(opt, "zsh")}\`**`;
+	return [
+		title,
+		"",
+		preamble,
+		"",
+		defaultLine,
+		"",
+		opt.desc,
+		"",
+		`_Option category:_ ${opt.category}`,
+	].join("\n");
 }
 
 export function sigCond(cop: CondOperator): string {
@@ -46,6 +71,25 @@ export function mdCond(cop: CondOperator): string {
 
 export function mdParam(name: string, raw: string): string {
 	return `\`${name}\`: ${fmtParamType(raw)} — zsh special parameter`;
+}
+
+export function defaultStateIn(opt: ZshOption, emulation: Emulation): OptState {
+	return opt.defaultIn.includes(emulation) ? "on" : "off";
+}
+
+function renderFlag(flag: OptFlagAlias): string {
+	// Long and short forms should show the same on/off semantics, even when `+x` means "on".
+	const on = label("set", `${flag.on}${flag.char}`, "on");
+	const off = label("set", `${flip(flag.on)}${flag.char}`, "off");
+	return [on, off].join("\n");
+}
+
+function flip(sign: OptFlagSign): OptFlagSign {
+	return sign === "-" ? "+" : "-";
+}
+
+function label(cmd: string, arg: string, state: OptState): string {
+	return `${`${cmd} ${arg}`.padEnd(20)} # ${state}`;
 }
 
 export function hoverDocs({
