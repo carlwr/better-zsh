@@ -6,3 +6,6 @@ out/
 .non-vcs/
 language-configuration.json
 .aux/
+packages/**/.vscode-test/
+packages/**/*.vsix
+packages/**/out/

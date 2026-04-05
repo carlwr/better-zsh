@@ -1,12 +1,6 @@
 {
-  "name": "better-zsh",
-  "displayName": "Better Zsh",
-  "description": "improved word boundary handling for zsh files in VS Code",
-  "author": {
-    "name": "carlwr",
-    "url": "https://github.com/carlwr"
-  },
-  "publisher": "carlwr",
+  "name": "vscode-better-zsh-workspace",
+  "private": true,
   "version": "0.0.1",
   "license": "MIT",
   "packageManager": "pnpm@10.23.0",
@@ -14,113 +8,24 @@
     "type": "git",
     "url": "https://github.com/carlwr/vscode-better-zsh"
   },
-  "engines": {
-    "vscode": "^1.96.0"
-  },
-  "categories": [
-    "Programming Languages"
-  ],
-  "main": "./out/extension.js",
-  "activationEvents": [
-    "onLanguage:zsh"
-  ],
-  "contributes": {
-    "languages": [
-      {
-        "id": "zsh",
-        "aliases": [
-          "Zsh",
-          "zsh"
-        ],
-        "extensions": [
-          ".zsh",
-          ".zshrc",
-          ".zprofile",
-          ".zlogin",
-          ".zlogout",
-          ".zshenv",
-          ".zsh-theme"
-        ],
-        "filenames": [
-          "zshrc",
-          "zshenv",
-          "zlogin",
-          "zprofile",
-          "zlogout"
-        ],
-        "configuration": "./out/language-configuration.json"
-      }
-    ],
-    "grammars": [
-      {
-        "language": "zsh",
-        "scopeName": "source.shell.zsh",
-        "path": "./syntaxes/shell-unix-bash.tmLanguage.json"
-      }
-    ],
-    "snippets": [
-      {
-        "language": "zsh",
-        "path": "./out/snippets.json"
-      }
-    ],
-    "semanticTokenScopes": [
-      {
-        "language": "zsh",
-        "scopes": {
-          "function.defaultLibrary": [
-            "support.function.builtin.shell"
-          ]
-        }
-      }
-    ],
-    "configurationDefaults": {
-      "[zsh]": {
-        "editor.tabSize": 2,
-        "editor.insertSpaces": false
-      }
-    },
-    "configuration": {
-      "title": "Better Zsh",
-      "properties": {
-        "betterZsh.diagnostics.enabled": {
-          "type": "boolean",
-          "default": true,
-          "description": "Enable syntax checking via zsh -n"
-        },
-        "betterZsh.zshPath": {
-          "type": "string",
-          "default": "",
-          "markdownDescription": "Path to the zsh binary. Leave empty to use `zsh` from PATH. Set to `off` to never invoke any zsh binary."
-        }
-      }
-    },
-    "chatInstructions": [
-      {
-        "file": "out/zsh-chat-instructions.md",
-        "when": "resourceLangId == zsh"
-      }
-    ]
-  },
   "scripts": {
-    "build": "tsx build.ts",
-    "watch": "tsx build.ts --watch",
+    "build": "pnpm --filter better-zsh build",
+    "watch": "pnpm --filter better-zsh watch",
     "format": "biome check --write",
-    "typecheck": "tsc --noEmit",
-    "lint": "biome check",
-    "check": "pnpm typecheck && pnpm lint",
-    "test": "vitest run",
+    "typecheck": "pnpm -r --filter './packages/*' --if-present typecheck",
+    "lint": "pnpm -r --filter './packages/*' --if-present lint",
+    "check": "pnpm -r --filter './packages/*' --if-present check",
+    "test": "pnpm -r --filter './packages/*' --if-present test",
     "test:integration": "scripts/test-integration-act",
-    "dump:hover": "tsx src/dev/dump-hover.ts",
-    "testINTERACTIVE:electron": "tsc && scripts/testINTERACTIVE-electron",
-    "testINTERACTIVE:electron-bundled": "scripts/package-vsix ./better-zsh.vsix && tsc && scripts/testINTERACTIVE-bundled",
-    "vsix": "pnpm check && pnpm test && scripts/package-vsix ./better-zsh.vsix",
-    "test:smoke": "pnpm check && pnpm test && scripts/package-vsix /tmp/better-zsh-smoke.vsix && rm /tmp/better-zsh-smoke.vsix && echo 'smoke: OK'",
-    "vscode:publish:dry": "pnpm check && pnpm test && pnpm build && pnpm exec vsce ls --no-dependencies && echo '---\n(DRY-RUN; ran vsce ls above.)'",
-    "vscode:publish": "pnpm check && pnpm test && pnpm build && pnpm exec vsce publish --no-dependencies",
-    "ovsx:publish:dry": "pnpm check && pnpm test && pnpm build && pnpm exec vsce ls --no-dependencies && echo '---\n(DRY-RUN for open-vsx; ran vsce ls above.)'",
-    "ovsx:publish": "pnpm check && pnpm test && pnpm build && npx -y ovsx -p $OPEN_VSX_TOKEN publish --no-dependencies",
-    "LAST_dummy": ""
+    "dump:hover": "pnpm --filter better-zsh dump:hover",
+    "testINTERACTIVE:electron": "pnpm --filter better-zsh testINTERACTIVE:electron",
+    "testINTERACTIVE:electron-bundled": "pnpm --filter better-zsh testINTERACTIVE:electron-bundled",
+    "vsix": "pnpm --filter better-zsh vsix",
+    "test:smoke": "pnpm --filter better-zsh test:smoke",
+    "vscode:publish:dry": "pnpm --filter better-zsh vscode:publish:dry",
+    "vscode:publish": "pnpm --filter better-zsh vscode:publish",
+    "ovsx:publish:dry": "pnpm --filter better-zsh ovsx:publish:dry",
+    "ovsx:publish": "pnpm --filter better-zsh ovsx:publish"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.10",

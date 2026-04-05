@@ -63,6 +63,14 @@ importers:
         specifier: npm:empty-npm-package@1.0.0
         version: empty-npm-package@1.0.0
 
+  packages/vscode-better-zsh:
+    dependencies:
+      zsh-core:
+        specifier: workspace:*
+        version: link:../zsh-core
+
+  packages/zsh-core: {}
+
 packages:
 
   '@azu/format-text@1.0.2':

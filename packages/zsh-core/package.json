@@ -1,0 +1,15 @@
+{
+  "name": "zsh-core",
+  "version": "0.0.1",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/carlwr/vscode-better-zsh"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check src tsconfig.json vitest.config.ts package.json",
+    "check": "pnpm typecheck && pnpm lint",
+    "test": "vitest run"
+  }
+}
