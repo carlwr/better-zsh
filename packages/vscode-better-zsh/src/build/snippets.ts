@@ -1,10 +1,9 @@
 import { readFileSync } from "node:fs"
-import { join } from "node:path"
 import { type ParseError, parse, printParseErrorCode } from "jsonc-parser"
 import { z } from "zod"
 import { type ZshSnippet, zshSnippetSchema } from "../types/snippet"
+import { snippetsPath } from "./paths"
 
-const snippetsPath = join("src", "assets", "zsh", "snippets.jsonc")
 const zshSnippetsSchema = z.array(zshSnippetSchema)
 
 export function readSnippets(): ZshSnippet[] {

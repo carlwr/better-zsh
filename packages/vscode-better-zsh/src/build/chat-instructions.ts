@@ -1,8 +1,6 @@
 import { readFileSync } from "node:fs"
-import { join } from "node:path"
 import type { ZshSnippet } from "../types/snippet"
-
-const bashDiffsPath = join("src", "assets", "zsh", "bash-differences.md")
+import { bashDiffsPath } from "./paths"
 
 function readBashDiffsMd(): string {
   return readFileSync(bashDiffsPath, "utf8").trimEnd()

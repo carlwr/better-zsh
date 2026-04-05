@@ -1,10 +1,11 @@
 import { build } from "tsup"
 import { generateAssets } from "./src/build/generate-assets"
+import { outDir } from "./src/build/paths"
 
 ;(async () => {
   await build({
     entry: ["src/extension.ts"],
-    outDir: "out",
+    outDir,
     format: ["cjs"],
     sourcemap: true,
     clean: true,

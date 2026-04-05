@@ -1,15 +1,37 @@
 {
   "name": "zsh-core",
+  "description": "Reusable zsh parsing and query core for editor tooling",
   "version": "0.0.1",
   "license": "MIT",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "LICENSE"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./assets": {
+      "types": "./dist/assets.d.ts",
+      "default": "./dist/assets.js"
+    }
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/carlwr/vscode-better-zsh"
   },
   "scripts": {
+    "build": "tsx build.ts",
+    "watch": "tsx build.ts --watch",
     "typecheck": "tsc --noEmit",
-    "lint": "biome check index.ts src tsconfig.json vitest.config.ts package.json",
+    "lint": "biome check assets.ts build.ts index.ts src tsconfig.build.json tsconfig.json vitest.config.ts package.json",
     "check": "pnpm typecheck && pnpm lint",
     "test": "vitest run"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.2"
   }
 }

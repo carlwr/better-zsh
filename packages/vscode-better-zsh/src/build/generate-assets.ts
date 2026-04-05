@@ -1,24 +1,27 @@
-import { cpSync, mkdirSync, writeFileSync } from "node:fs"
+import { mkdirSync, writeFileSync } from "node:fs"
+import { copyRuntimeZshData } from "zsh-core/assets"
 import { buildChatInstructions } from "./chat-instructions"
 import { langConfig } from "./lang-config"
+import { outDir } from "./paths"
 import { buildSnippetJson, readSnippets } from "./snippets"
 
 export async function generateAssets() {
-  mkdirSync("out", { recursive: true })
+  mkdirSync(outDir, { recursive: true })
   const snippets = readSnippets()
 
   writeFileSync(
-    "out/language-configuration.json",
+    `${outDir}/language-configuration.json`,
     JSON.stringify(langConfig, null, "\t"),
   )
 
   writeFileSync(
-    "out/snippets.json",
+    `${outDir}/snippets.json`,
     JSON.stringify(buildSnippetJson(snippets), null, "\t"),
   )
 
-  writeFileSync("out/zsh-chat-instructions.md", buildChatInstructions(snippets))
-  cpSync("../zsh-core/src/data/zsh-docs", "out/zsh-core-data", {
-    recursive: true,
-  })
+  writeFileSync(
+    `${outDir}/zsh-chat-instructions.md`,
+    buildChatInstructions(snippets),
+  )
+  copyRuntimeZshData(outDir)
 }

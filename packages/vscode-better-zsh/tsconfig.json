@@ -10,7 +10,7 @@
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
     "noUncheckedIndexedAccess": true,
-    "types": ["mocha", "node", "vscode"]
+    "types": ["mocha", "node", "vscode", "vitest/globals"]
   },
   "include": ["src/**/*.ts", "build.ts"],
   "exclude": ["node_modules"]

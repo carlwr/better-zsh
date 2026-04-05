@@ -10,6 +10,6 @@
     "noUncheckedIndexedAccess": true,
     "types": ["node", "vitest/globals"]
   },
-  "include": ["index.ts", "src/**/*.ts"],
+  "include": ["assets.ts", "build.ts", "index.ts", "src/**/*.ts"],
   "exclude": ["node_modules"]
 }

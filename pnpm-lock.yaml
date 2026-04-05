@@ -68,8 +68,16 @@ importers:
       zsh-core:
         specifier: workspace:*
         version: link:../zsh-core
+    devDependencies:
+      vitest:
+        specifier: ^4.1.2
+        version: 4.1.2(@types/node@22.19.15)(vite@8.0.3(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(@types/node@22.19.15)(esbuild@0.27.5)(tsx@4.21.0))
 
-  packages/zsh-core: {}
+  packages/zsh-core:
+    devDependencies:
+      vitest:
+        specifier: ^4.1.2
+        version: 4.1.2(@types/node@22.19.15)(vite@8.0.3(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(@types/node@22.19.15)(esbuild@0.27.5)(tsx@4.21.0))
 
 packages:
 
