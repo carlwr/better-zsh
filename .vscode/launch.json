@@ -1,13 +1,13 @@
 {
-	"version": "0.2.0",
-	"configurations": [
-		{
-			"name": "ExtensionHost",
-			"type": "extensionHost",
-			"request": "launch",
-			"args": ["--extensionDevelopmentPath=${workspaceFolder}"],
-			"outFiles": ["${workspaceFolder}/out/**/*.js"],
-			"preLaunchTask": "watch"
-		}
-	]
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "ExtensionHost",
+      "type": "extensionHost",
+      "request": "launch",
+      "args": ["--extensionDevelopmentPath=${workspaceFolder}"],
+      "outFiles": ["${workspaceFolder}/out/**/*.js"],
+      "preLaunchTask": "watch"
+    }
+  ]
 }

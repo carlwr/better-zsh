@@ -1,11 +1,11 @@
-import { snippets } from "./snippets";
+import { snippets } from "./snippets"
 
 export function buildChatInstructions(): string {
-	const snippetList = snippets
-		.map((s) => `- \`${s.prefix}\` — ${s.desc}`)
-		.join("\n");
+  const snippetList = snippets
+    .map((s) => `- \`${s.prefix}\` — ${s.desc}`)
+    .join("\n")
 
-	return `# Zsh — Key Differences from Bash
+  return `# Zsh — Key Differences from Bash
 
 ## Word Splitting and Globbing
 
@@ -86,5 +86,5 @@ autoload -Uz my_func
 ## Available Snippets
 
 ${snippetList}
-`;
+`
 }

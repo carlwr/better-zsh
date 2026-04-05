@@ -1,21 +1,37 @@
 {
-	"$schema": "https://biomejs.dev/schemas/2.4.10/schema.json",
-	"files": {
-		"includes": [
-			"**",
-			"!.vscode-test",
-			"!node_modules",
-			"!out",
-			"!syntaxes",
-			"!test-fixtures"
-		]
-	},
-	"linter": {
-		"rules": {
-			"suspicious": {
-				// zsh code embedded in strings uses ${...} extensively
-				"noTemplateCurlyInString": "off"
-			}
-		}
-	}
+  "$schema": "https://biomejs.dev/schemas/2.4.10/schema.json",
+  "assist": {
+    "enabled": true,
+    "actions": {
+      "source": {
+        "organizeImports": "on"
+      }
+    }
+  },
+  "files": {
+    "includes": [
+      "**",
+      "!.vscode-test",
+      "!node_modules",
+      "!out",
+      "!syntaxes",
+      "!test-fixtures"
+    ]
+  },
+  "formatter": {
+    "useEditorconfig": true
+  },
+  "javascript": {
+    "formatter": {
+      "semicolons": "asNeeded"
+    }
+  },
+  "linter": {
+    "rules": {
+      "suspicious": {
+        // zsh code embedded in strings uses ${...} extensively
+        "noTemplateCurlyInString": "off"
+      }
+    }
+  }
 }
