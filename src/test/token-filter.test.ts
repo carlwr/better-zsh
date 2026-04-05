@@ -1,5 +1,5 @@
 import * as assert from "node:assert"
-import { filterTokens } from "../zsh"
+import { filterTokens } from "../core/ident"
 
 suite("filterTokens", () => {
   test("keeps identifier-like tokens and deduplicates", () => {

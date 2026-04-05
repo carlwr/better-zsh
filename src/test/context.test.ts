@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest"
-import { syntacticContext } from "../context"
+import { syntacticContext } from "../core/context"
 
 function mockDoc(lines: string[]) {
   return {

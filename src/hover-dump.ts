@@ -1,6 +1,6 @@
 import { mkdir, writeFile } from "node:fs/promises"
 import { join } from "node:path"
-import type { HoverDoc, HoverKind } from "./hover-md"
+import type { HoverDoc, HoverKind } from "./core/hover-md"
 
 export type HoverDumpFile =
   | "all.md"

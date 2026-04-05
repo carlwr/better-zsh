@@ -1,15 +1,19 @@
 import * as vscode from "vscode"
-import { syntacticContext } from "./context"
-import { activeWordRangeAt, commentStart, funcDocs } from "./funcs"
+import { syntacticContext } from "./core/context"
 import {
   type HoverMdCtx,
   mdCond,
   mdOpt,
   mdParam,
   mkHoverMdCtx,
-} from "./hover-md"
-import { mkCondOp, mkOptName } from "./types/brand"
-import type { CondOperator, OptFlagAlias, ZshOption } from "./types/zsh-data"
+} from "./core/hover-md"
+import { mkCondOp, mkOptName } from "./core/types/brand"
+import type {
+  CondOperator,
+  OptFlagAlias,
+  ZshOption,
+} from "./core/types/zsh-data"
+import { activeWordRangeAt, commentStart, funcDocs } from "./funcs"
 
 export class HoverProvider implements vscode.HoverProvider {
   private md: HoverMdCtx

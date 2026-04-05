@@ -1,8 +1,7 @@
 import { mkdtempSync, readFileSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
-import { join, resolve } from "node:path"
+import { join } from "node:path"
 import { describe, expect, test } from "vitest"
-import { dumpText, writeHoverDump } from "../hover-dump"
 import {
   defaultStateIn,
   fmtOptRefsInMd,
@@ -12,12 +11,11 @@ import {
   mdOpt,
   mdParam,
   mkHoverMdCtx,
-} from "../hover-md"
-import { mkCondOp, mkOptFlagChar, mkOptName } from "../types/brand"
-import type { CondOperator, ZshOption } from "../types/zsh-data"
-import { getCondOps, getOptions, initZshData } from "../zsh-data"
-
-const root = resolve(__dirname, "../..")
+} from "../core/hover-md"
+import { mkCondOp, mkOptFlagChar, mkOptName } from "../core/types/brand"
+import type { CondOperator, ZshOption } from "../core/types/zsh-data"
+import { getCondOps, getOptions } from "../core/zsh-data"
+import { dumpText, writeHoverDump } from "../hover-dump"
 
 const opt: ZshOption = {
   name: mkOptName("AUTO_CD"),
@@ -183,7 +181,6 @@ describe("hover dump", () => {
   })
 
   describe("vendored docs", () => {
-    initZshData(root)
     const options = getOptions()
     const condOps = getCondOps()
     const docs = hoverDocs({

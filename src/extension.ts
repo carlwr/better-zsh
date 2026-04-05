@@ -1,5 +1,6 @@
 import * as vscode from "vscode"
 import { CompletionProvider } from "./completions"
+import { getCondOps, getOptions } from "./core/zsh-data"
 import { DefinitionProvider } from "./definition"
 import { setupDiagnostics } from "./diagnostics"
 import { DocLinkProvider } from "./doc-link"
@@ -19,7 +20,6 @@ import {
   zshParameters,
   zshReswords,
 } from "./zsh"
-import { getCondOps, getOptions, initZshData } from "./zsh-data"
 
 function readZshPathSetting(): string {
   return vscode.workspace.getConfiguration("betterZsh").get("zshPath", "")
@@ -27,9 +27,6 @@ function readZshPathSetting(): string {
 
 export async function activate(ctx: vscode.ExtensionContext) {
   ctx.subscriptions.push(initLog())
-
-  // Initialize zsh data (vendored .yo files)
-  initZshData(ctx.extensionPath)
 
   // Read zsh path setting
   setZshPath(readZshPathSetting())

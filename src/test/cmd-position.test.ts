@@ -1,5 +1,5 @@
 import * as assert from "node:assert"
-import { cmdPositions } from "../cmd-position"
+import { cmdPositions } from "../core/cmd-position"
 
 function cmds(line: string, commentAt?: number): string[] {
   return cmdPositions(line, commentAt).map((p) => line.slice(p.start, p.end))

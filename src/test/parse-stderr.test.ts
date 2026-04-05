@@ -1,5 +1,5 @@
 import * as assert from "node:assert"
-import { parseZshError } from "../zsh"
+import { parseZshError } from "../core/zsh"
 
 suite("parseZshError", () => {
   test("standard error with line number", () => {

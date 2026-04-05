@@ -1,11 +1,12 @@
 import * as vscode from "vscode"
 import { asyncDocCache } from "./cache"
-import { syntacticContext } from "./context"
-import { sigCond } from "./hover-md"
-import { matchOptions } from "./option-match"
-import { mkOptName } from "./types/brand"
-import type { CondOperator, ZshOption } from "./types/zsh-data"
-import { filterTokens, WORD, WORD_EXACT, zshTokenize } from "./zsh"
+import { syntacticContext } from "./core/context"
+import { sigCond } from "./core/hover-md"
+import { filterTokens, WORD, WORD_EXACT } from "./core/ident"
+import { matchOptions } from "./core/option-match"
+import { mkOptName } from "./core/types/brand"
+import type { CondOperator, ZshOption } from "./core/types/zsh-data"
+import { zshTokenize } from "./zsh"
 
 const getIds = asyncDocCache(async (doc) =>
   filterTokens(await zshTokenize(doc.getText())),

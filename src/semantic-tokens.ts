@@ -1,6 +1,6 @@
 import * as vscode from "vscode"
-import { cmdPositions } from "./cmd-position"
-import { commentStart } from "./funcs"
+import { cmdPositions } from "./core/cmd-position"
+import { commentStart } from "./core/comment"
 
 const TOKEN_TYPES = ["function"] as const
 const TOKEN_MODIFIERS = ["defaultLibrary"] as const

@@ -6,7 +6,7 @@ import {
   findBalancedClose,
   normalizeDoc,
   stripYodl,
-} from "../yodl/parse"
+} from "../core/yodl/parse"
 
 describe("stripYodl", () => {
   test("strips tt() wrapper", () => {

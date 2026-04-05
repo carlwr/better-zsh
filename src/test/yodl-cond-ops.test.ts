@@ -1,8 +1,8 @@
 import { readFileSync } from "node:fs"
 import { resolve } from "node:path"
 import { describe, expect, test } from "vitest"
-import { mkCondOp } from "../types/brand"
-import { parseCondOps } from "../yodl/cond-ops"
+import { mkCondOp } from "../core/types/brand"
+import { parseCondOps } from "../core/yodl/cond-ops"
 
 const COND_YO = readFileSync(
   resolve(__dirname, "../data/zsh-docs/cond.yo"),

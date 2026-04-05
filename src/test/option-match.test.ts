@@ -1,5 +1,5 @@
 import * as assert from "node:assert"
-import { matchOptions } from "../option-match"
+import { matchOptions } from "../core/option-match"
 
 const opts = ["aliases", "errexit", "errreturn", "extendedglob", "notify"]
 

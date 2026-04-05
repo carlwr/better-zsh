@@ -1,17 +1,21 @@
 import { constants, existsSync } from "node:fs"
 import { access } from "node:fs/promises"
 import * as path from "node:path"
-import { log, warn } from "./log"
 import {
-  buildZshEnv,
-  execZsh,
-  runZshScript as runZshScriptRaw,
+  parseZshError,
+  runZshVersion,
   ZSH_BASE_ARGS,
   ZSH_VERSION_ARGS,
-} from "./zsh-exec"
-
-export const WORD = /[\w][\w-]*/g
-export const WORD_EXACT = /^[\w][\w-]*$/
+  type ZshRunReq,
+  type ZshRunResult,
+  zshBuiltins as zshBuiltinsCore,
+  zshOptions as zshOptionsCore,
+  zshParameters as zshParametersCore,
+  zshReswords as zshReswordsCore,
+  zshTokenize as zshTokenizeCore,
+} from "./core/zsh"
+import { log, warn } from "./log"
+import { buildZshEnv, execZsh } from "./zsh-exec"
 
 let zshBinary = "zsh"
 let zshDisabled = false
@@ -30,48 +34,16 @@ export function setZshPath(setting: string) {
 export function isZshDisabled() {
   return zshDisabled
 }
-let zshInfoLogged = false
 
-export function escRe(s: string) {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
-}
+let zshInfoLogged = false
 
 export { buildZshEnv } from "./zsh-exec"
 
-export function parseZshError(
-  stderr: string,
-): { line: number; msg: string } | undefined {
-  if (!stderr.trim()) return undefined
-  const m = stderr.match(/^(?:\/dev\/stdin|zsh):(\d+):\s*(.+)$/m)
-  if (m) return { line: Number(m[1]), msg: m[2] ?? "" }
-  return { line: 1, msg: stderr.trim() }
-}
-
-export function filterTokens(tokens: string[]): string[] {
-  const seen = new Set<string>()
-  const out: string[] = []
-  for (const t of tokens) {
-    if (WORD_EXACT.test(t) && !seen.has(t)) {
-      seen.add(t)
-      out.push(t)
-    }
-  }
-  return out
-}
-
-function execZshLogged({
-  args,
-  env,
-  stdin,
-}: {
-  args: string[]
-  env?: NodeJS.ProcessEnv
-  stdin?: string
-}) {
+function execZshLogged(req: ZshRunReq) {
   // Keep all zsh process spawning centralized so the environment contract is
   // easy to inspect in one place; that is safer and more transparent than
   // scattering ad-hoc exec calls across features.
-  return execZsh(zshBinary, { args, env, stdin })
+  return execZsh(zshBinary, req)
 }
 
 function resolveZshPath(env: NodeJS.ProcessEnv): string | undefined {
@@ -100,7 +72,7 @@ async function canExec(file: string) {
   }
 }
 
-function logZshVersion(r: { stdout: string; stderr: string; code: number }) {
+function logZshVersion(r: ZshRunResult) {
   if (r.code === 0) {
     const version = r.stdout.trim() || r.stderr.trim()
     if (version) log(`zsh version: ${version}`)
@@ -112,7 +84,7 @@ function logZshVersion(r: { stdout: string; stderr: string; code: number }) {
 function maybeLogZshInfo(
   env: NodeJS.ProcessEnv | undefined,
   args: string[],
-  result?: { stdout: string; stderr: string; code: number },
+  result?: ZshRunResult,
 ) {
   if (zshInfoLogged) return
   zshInfoLogged = true
@@ -129,27 +101,12 @@ function maybeLogZshInfo(
     logZshVersion(result)
     return
   }
-  void execZsh(zshBinary, { args: ZSH_VERSION_ARGS }).then(logZshVersion)
+  void execZsh(zshBinary, { args: [...ZSH_VERSION_ARGS] }).then(logZshVersion)
 }
 
-function runZshScript(script: string, env?: NodeJS.ProcessEnv) {
-  return runZshScriptRaw(zshBinary, script, env).then((r) => {
-    maybeLogZshInfo(env, ZSH_BASE_ARGS)
-    return r
-  })
-}
-
-function runZsh({
-  args,
-  env,
-  stdin,
-}: {
-  args: string[]
-  env?: NodeJS.ProcessEnv
-  stdin?: string
-}) {
-  return execZshLogged({ args, env, stdin }).then((r) => {
-    maybeLogZshInfo(env, args, r)
+function runZsh(req: ZshRunReq) {
+  return execZshLogged(req).then((r) => {
+    maybeLogZshInfo(req.env, req.args, r)
     return r
   })
 }
@@ -159,7 +116,7 @@ export async function zshAvailable(): Promise<boolean> {
     log("zsh invocation disabled by betterZsh.zshPath = off")
     return false
   }
-  const r = await runZsh({ args: ZSH_VERSION_ARGS })
+  const r = await runZshVersion(runZsh)
   const ok = r.code === 0
   if (!ok) warn("zsh not found on PATH; zsh-dependent features disabled")
   return ok
@@ -177,50 +134,41 @@ export async function zshCheck(
 }
 
 export async function zshTokenize(text: string): Promise<string[]> {
-  const r = await runZshScript('print -l -- "${(Z+Cn+)SRC}"', { SRC: text })
-  if (r.code !== 0) return []
-  return r.stdout.split("\n").filter(Boolean)
+  return (await zshTokenizeCore(runZsh, text)) ?? []
 }
 
 export async function zshBuiltins(): Promise<string[]> {
-  const r = await runZshScript("print -l -- ${(k)builtins}")
-  if (r.code !== 0) {
+  const out = await zshBuiltinsCore(runZsh)
+  if (!out) {
     warn("failed to query zsh builtins")
     return []
   }
-  return r.stdout.split("\n").filter(Boolean)
+  return out
 }
 
 export async function zshReswords(): Promise<string[]> {
-  const r = await runZshScript("print -l -- ${(k)reswords}")
-  if (r.code !== 0) {
+  const out = await zshReswordsCore(runZsh)
+  if (!out) {
     warn("failed to query zsh reswords")
     return []
   }
-  return r.stdout.split("\n").filter(Boolean)
+  return out
 }
 
 export async function zshOptions(): Promise<string[]> {
-  const r = await runZshScript("print -l -- ${(k)options}")
-  if (r.code !== 0) {
+  const out = await zshOptionsCore(runZsh)
+  if (!out) {
     warn("failed to query zsh options")
     return []
   }
-  return r.stdout.split("\n").filter(Boolean)
+  return out
 }
 
 export async function zshParameters(): Promise<Map<string, string>> {
-  const r = await runZshScript(
-    'zmodload zsh/parameter; for k v in ${(kv)parameters}; do [[ $v == *special* && $v != *hide* ]] && print "$k=$v"; done',
-  )
-  if (r.code !== 0) {
+  const out = await zshParametersCore(runZsh)
+  if (!out) {
     warn("failed to query zsh parameters")
     return new Map()
   }
-  const m = new Map<string, string>()
-  for (const line of r.stdout.split("\n")) {
-    const eq = line.indexOf("=")
-    if (eq > 0) m.set(line.slice(0, eq), line.slice(eq + 1))
-  }
-  return m
+  return out
 }

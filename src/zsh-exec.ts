@@ -1,7 +1,5 @@
 import { execFile } from "node:child_process"
-
-export const ZSH_VERSION_ARGS = ["--version"]
-export const ZSH_BASE_ARGS = ["-f"]
+import type { ZshRunner, ZshRunReq, ZshRunResult } from "./core/zsh"
 
 const ZSH_ENV_KEEP = [
   "HOME",
@@ -31,12 +29,6 @@ const ZSH_ENV_KEEP_WIN32 = [
 
 const ZSH_ENV_DROP = ["BASH_ENV", "ENV", "FPATH", "ZDOTDIR"] as const
 
-export interface ZshRunResult {
-  stdout: string
-  stderr: string
-  code: number
-}
-
 export function buildZshEnv(
   src: NodeJS.ProcessEnv,
   extra?: NodeJS.ProcessEnv,
@@ -59,21 +51,9 @@ export function buildZshEnv(
   return out
 }
 
-function helper(script: string) {
-  return `emulate -LR zsh\n${script}`
-}
-
 export function execZsh(
   zshBinary: string,
-  {
-    args,
-    env,
-    stdin,
-  }: {
-    args: string[]
-    env?: NodeJS.ProcessEnv
-    stdin?: string
-  },
+  { args, env, stdin }: ZshRunReq,
 ): Promise<ZshRunResult> {
   return new Promise((resolve) => {
     const proc = execFile(
@@ -93,28 +73,6 @@ export function execZsh(
   })
 }
 
-export function runZsh(
-  zshBinary: string,
-  {
-    args,
-    env,
-    stdin,
-  }: {
-    args: string[]
-    env?: NodeJS.ProcessEnv
-    stdin?: string
-  },
-) {
-  return execZsh(zshBinary, { args, env, stdin })
-}
-
-export function runZshScript(
-  zshBinary: string,
-  script: string,
-  env?: NodeJS.ProcessEnv,
-) {
-  return runZsh(zshBinary, {
-    args: [...ZSH_BASE_ARGS, "-c", helper(script)],
-    env,
-  })
+export function makeExecZshRunner(zshBinary: string): ZshRunner {
+  return (req) => execZsh(zshBinary, req)
 }

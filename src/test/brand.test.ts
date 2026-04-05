@@ -1,6 +1,6 @@
 import fc from "fast-check"
 import { describe, expect, test } from "vitest"
-import { mkCondOp, mkOptFlagChar, mkOptName } from "../types/brand"
+import { mkCondOp, mkOptFlagChar, mkOptName } from "../core/types/brand"
 
 describe("mkOptName", () => {
   test("normalizes known equivalences", () => {
