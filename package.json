@@ -110,6 +110,7 @@
 		"check": "pnpm typecheck && pnpm lint",
 		"test": "vitest run",
 		"test:integration": "scripts/test-integration-act",
+		"dump:hover": "tsx src/dev/dump-hover.ts",
 		"testINTERACTIVE:electron": "tsc && scripts/testINTERACTIVE-electron",
 		"testINTERACTIVE:electron-bundled": "scripts/package-vsix ./better-zsh.vsix && tsc && scripts/testINTERACTIVE-bundled",
 		"vsix": "pnpm check && pnpm test && scripts/package-vsix ./better-zsh.vsix",

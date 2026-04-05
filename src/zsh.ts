@@ -1,8 +1,14 @@
-import { execFile } from "node:child_process";
 import { constants, existsSync } from "node:fs";
 import { access } from "node:fs/promises";
 import * as path from "node:path";
 import { log, warn } from "./log";
+import {
+	buildZshEnv,
+	execZsh,
+	runZshScript as runZshScriptRaw,
+	ZSH_BASE_ARGS,
+	ZSH_VERSION_ARGS,
+} from "./zsh-exec";
 
 export const WORD = /[\w][\w-]*/g;
 export const WORD_EXACT = /^[\w][\w-]*$/;
@@ -24,60 +30,13 @@ export function setZshPath(setting: string) {
 export function isZshDisabled() {
 	return zshDisabled;
 }
-const ZSH_VERSION_ARGS = ["--version"];
-const ZSH_BASE_ARGS = ["-f"];
-const ZSH_ENV_KEEP = [
-	"HOME",
-	"LANG",
-	"LC_ALL",
-	"LC_CTYPE",
-	"LC_MESSAGES",
-	"LOGNAME",
-	"PATH",
-	"PWD",
-	"SHELL",
-	"TEMP",
-	"TMP",
-	"TMPDIR",
-	"USER",
-	"USERNAME",
-] as const;
-const ZSH_ENV_KEEP_WIN32 = [
-	"ComSpec",
-	"COMSPEC",
-	"PATHEXT",
-	"SystemRoot",
-	"SYSTEMROOT",
-	"USERPROFILE",
-] as const;
-const ZSH_ENV_DROP = ["BASH_ENV", "ENV", "FPATH", "ZDOTDIR"] as const;
 let zshInfoLogged = false;
 
 export function escRe(s: string) {
 	return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-export function buildZshEnv(
-	src: NodeJS.ProcessEnv,
-	extra?: NodeJS.ProcessEnv,
-): NodeJS.ProcessEnv {
-	const out: NodeJS.ProcessEnv = {};
-	const keys =
-		process.platform === "win32"
-			? [...ZSH_ENV_KEEP, ...ZSH_ENV_KEEP_WIN32]
-			: ZSH_ENV_KEEP;
-	for (const k of keys) {
-		const v = src[k];
-		if (v !== undefined) out[k] = v;
-	}
-	if (extra) {
-		for (const [k, v] of Object.entries(extra)) {
-			if (v !== undefined) out[k] = v;
-		}
-	}
-	for (const k of ZSH_ENV_DROP) delete out[k];
-	return out;
-}
+export { buildZshEnv } from "./zsh-exec";
 
 export function parseZshError(
 	stderr: string,
@@ -100,11 +59,7 @@ export function filterTokens(tokens: string[]): string[] {
 	return out;
 }
 
-function helper(script: string) {
-	return `emulate -LR zsh\n${script}`;
-}
-
-function execZsh({
+function execZshLogged({
 	args,
 	env,
 	stdin,
@@ -112,26 +67,11 @@ function execZsh({
 	args: string[];
 	env?: NodeJS.ProcessEnv;
 	stdin?: string;
-}): Promise<{ stdout: string; stderr: string; code: number }> {
-	return new Promise((resolve) => {
-		// Keep all zsh process spawning centralized so the environment contract is
-		// easy to inspect in one place; that is safer and more transparent than
-		// scattering ad-hoc exec calls across features.
-		const proc = execFile(
-			zshBinary,
-			args,
-			{
-				timeout: 5000,
-				maxBuffer: 1024 * 1024,
-				env: buildZshEnv(process.env, env),
-			},
-			(err, stdout, stderr) => {
-				const e = err as (NodeJS.ErrnoException & { status?: number }) | null;
-				resolve({ stdout, stderr, code: e ? (e.status ?? 1) : 0 });
-			},
-		);
-		if (stdin !== undefined) proc.stdin?.end(stdin);
-	});
+}) {
+	// Keep all zsh process spawning centralized so the environment contract is
+	// easy to inspect in one place; that is safer and more transparent than
+	// scattering ad-hoc exec calls across features.
+	return execZsh(zshBinary, { args, env, stdin });
 }
 
 function resolveZshPath(env: NodeJS.ProcessEnv): string | undefined {
@@ -189,11 +129,14 @@ function maybeLogZshInfo(
 		logZshVersion(result);
 		return;
 	}
-	void execZsh({ args: ZSH_VERSION_ARGS }).then(logZshVersion);
+	void execZsh(zshBinary, { args: ZSH_VERSION_ARGS }).then(logZshVersion);
 }
 
 function runZshScript(script: string, env?: NodeJS.ProcessEnv) {
-	return runZsh({ args: [...ZSH_BASE_ARGS, "-c", helper(script)], env });
+	return runZshScriptRaw(zshBinary, script, env).then((r) => {
+		maybeLogZshInfo(env, ZSH_BASE_ARGS);
+		return r;
+	});
 }
 
 function runZsh({
@@ -205,7 +148,7 @@ function runZsh({
 	env?: NodeJS.ProcessEnv;
 	stdin?: string;
 }) {
-	return execZsh({ args, env, stdin }).then((r) => {
+	return execZshLogged({ args, env, stdin }).then((r) => {
 		maybeLogZshInfo(env, args, r);
 		return r;
 	});

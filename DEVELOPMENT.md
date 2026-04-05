@@ -1,5 +1,10 @@
 # Development
 
+## Hover markdown dumps
+
+Use `pnpm dump:hover` to write the current static hover markdown under `.aux/hover/`.
+This is for visual QA of the exact markdown fed to VS Code for static hover docs.
+
 ## Containerized integration tests
 
 `pnpm test:integration` runs the `integration` workflow job through `act`.

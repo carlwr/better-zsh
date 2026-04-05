@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import { asyncDocCache } from "./cache";
 import { syntacticContext } from "./context";
+import { sigCond } from "./hover-md";
 import { matchOptions } from "./option-match";
 import { mkOptName } from "./types/brand";
 import type { CondOperator, ZshOption } from "./types/zsh-data";
@@ -109,11 +110,7 @@ export class CompletionProvider implements vscode.CompletionItemProvider {
 				vscode.CompletionItemKind.Operator,
 			);
 			item.detail = cop.desc;
-			item.documentation = new vscode.MarkdownString(
-				cop.kind === "unary"
-					? `\`${cop.op}\` *${cop.operands.join(" ")}*`
-					: `*${cop.operands[0] ?? ""}* \`${cop.op}\` *${cop.operands[1] ?? ""}*`,
-			);
+			item.documentation = new vscode.MarkdownString(sigCond(cop));
 			return item;
 		});
 		return new vscode.CompletionList(items, false);

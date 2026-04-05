@@ -1,35 +1,9 @@
 import * as vscode from "vscode";
 import { syntacticContext } from "./context";
 import { activeWordRangeAt, commentStart, funcDocs } from "./funcs";
+import { mdCond, mdOpt, mdParam } from "./hover-md";
 import { mkCondOp, mkOptName } from "./types/brand";
 import type { CondOperator, ZshOption } from "./types/zsh-data";
-
-function formatParamType(raw: string): string {
-	const parts = raw.split("-");
-	const base = parts[0] ?? raw;
-	const flags: string[] = [];
-	if (parts.includes("readonly")) flags.push("readonly");
-	if (parts.includes("tied")) flags.push("tied");
-	if (parts.includes("export")) flags.push("exported");
-	return flags.length ? `${base} (${flags.join(", ")})` : base;
-}
-
-function formatOptionHover(opt: ZshOption): vscode.MarkdownString {
-	const letter = opt.letter ? ` (\`-${opt.letter}\`)` : "";
-	const defaults =
-		opt.defaults.length > 0 ? ` <${opt.defaults.join(", ")}>` : "";
-	return new vscode.MarkdownString(
-		`\`${opt.display}\`${letter}${defaults}\n\n${opt.desc}\n\n_Category:_ ${opt.category}`,
-	);
-}
-
-function formatCondOpHover(cop: CondOperator): vscode.MarkdownString {
-	const sig =
-		cop.kind === "unary"
-			? `\`${cop.op}\` *${cop.operands.join(" ")}*`
-			: `*${cop.operands[0] ?? ""}* \`${cop.op}\` *${cop.operands[1] ?? ""}*`;
-	return new vscode.MarkdownString(`${sig}\n\n${cop.desc}`);
-}
 
 export class HoverProvider implements vscode.HoverProvider {
 	private params: Map<string, string> | undefined;
@@ -61,10 +35,12 @@ export class HoverProvider implements vscode.HoverProvider {
 			const name = mkOptName(w);
 			const opt = this.optionMap.get(name);
 			// Also check no-prefixed form
-			if (opt) return new vscode.Hover(formatOptionHover(opt), range);
+			if (opt)
+				return new vscode.Hover(new vscode.MarkdownString(mdOpt(opt)), range);
 			const noName = mkOptName(w.replace(/^no_?/i, ""));
 			const noOpt = this.optionMap.get(noName);
-			if (noOpt) return new vscode.Hover(formatOptionHover(noOpt), range);
+			if (noOpt)
+				return new vscode.Hover(new vscode.MarkdownString(mdOpt(noOpt)), range);
 		}
 
 		// cond context: operator hover
@@ -73,7 +49,11 @@ export class HoverProvider implements vscode.HoverProvider {
 			if (range) {
 				const op = mkCondOp(doc.getText(range));
 				const cop = this.condOpMap.get(op);
-				if (cop) return new vscode.Hover(formatCondOpHover(cop), range);
+				if (cop)
+					return new vscode.Hover(
+						new vscode.MarkdownString(mdCond(cop)),
+						range,
+					);
 			}
 		}
 
@@ -92,11 +72,7 @@ export class HoverProvider implements vscode.HoverProvider {
 		if (this.params) {
 			const ptype = this.params.get(w);
 			if (ptype) {
-				return new vscode.Hover(
-					new vscode.MarkdownString(
-						`\`${w}\`: ${formatParamType(ptype)} — zsh special parameter`,
-					),
-				);
+				return new vscode.Hover(new vscode.MarkdownString(mdParam(w, ptype)));
 			}
 		}
 	}
