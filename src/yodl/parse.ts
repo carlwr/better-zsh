@@ -38,8 +38,14 @@ export function stripYodl(raw: string): string {
 	let s = raw;
 	// Remove COMMENT(...) blocks
 	s = stripMacro(s, "COMMENT");
+	s = replaceTwoArgMacro(s, "manref", (name, section) => `${name}(${section})`);
+	s = replaceWrapperMacro(
+		s,
+		"example",
+		(body) => `\n\n\`\`\`zsh\n${stripYodl(body).trim()}\n\`\`\`\n\n`,
+	);
 	// Strip wrapping macros: tt(), var(), em(), bf(), sectref(), nmref()
-	for (const m of ["tt", "var", "em", "bf", "sectref", "nmref"]) {
+	for (const m of ["tt", "var", "em", "bf", "sectref", "nmref", "zmanref"]) {
 		s = stripWrapperMacro(s, m);
 	}
 	// Strip index macros: cindex(), pindex(), findex()
@@ -54,9 +60,47 @@ export function stripYodl(raw: string): string {
 	s = stripMacro(s, "noderef");
 	// Replace special macros
 	s = replaceSpecials(s);
+	s = s.replace(/\\'/g, "'");
 	// Clean up whitespace
 	s = s.replace(/\n{3,}/g, "\n\n").trim();
 	return s;
+}
+
+export function normalizeDoc(raw: string): string {
+	const lines = raw.split("\n").map((line) => line.trimEnd());
+	const out: string[] = [];
+	const para: string[] = [];
+	let inCode = false;
+
+	const flushPara = () => {
+		if (para.length === 0) return;
+		out.push(para.join(" ").replace(/\s+/g, " ").trim());
+		para.length = 0;
+	};
+
+	for (const line of lines) {
+		const trimmed = line.trim();
+		if (trimmed.startsWith("```")) {
+			flushPara();
+			out.push(trimmed);
+			inCode = !inCode;
+			continue;
+		}
+		if (inCode) {
+			out.push(line);
+			continue;
+		}
+		if (!trimmed) {
+			flushPara();
+			if (out[out.length - 1] !== "") out.push("");
+			continue;
+		}
+		para.push(trimmed);
+	}
+	flushPara();
+	while (out[0] === "") out.shift();
+	while (out[out.length - 1] === "") out.pop();
+	return out.join("\n");
 }
 
 /** Remove macro(content) entirely (content discarded) */
@@ -75,6 +119,14 @@ function stripMacro(s: string, name: string): string {
 
 /** Strip wrapper macro, keeping inner content: name(content) → content */
 function stripWrapperMacro(s: string, name: string): string {
+	return replaceWrapperMacro(s, name, (content) => content);
+}
+
+function replaceWrapperMacro(
+	s: string,
+	name: string,
+	render: (content: string) => string,
+): string {
 	let r = s;
 	const tag = `${name}(`;
 	for (;;) {
@@ -84,7 +136,28 @@ function stripWrapperMacro(s: string, name: string): string {
 		const end = findBalancedClose(r, idx + tag.length - 1);
 		if (end === -1) break;
 		const content = r.slice(contentStart, end);
-		r = r.slice(0, idx) + content + r.slice(end + 1);
+		r = r.slice(0, idx) + render(content) + r.slice(end + 1);
+	}
+	return r;
+}
+
+function replaceTwoArgMacro(
+	s: string,
+	name: string,
+	render: (a: string, b: string) => string,
+): string {
+	let r = s;
+	const tag = `${name}(`;
+	for (;;) {
+		const idx = r.indexOf(tag);
+		if (idx === -1) break;
+		const firstClose = findBalancedClose(r, idx + tag.length - 1);
+		if (firstClose === -1 || r[firstClose + 1] !== "(") break;
+		const secondClose = findBalancedClose(r, firstClose + 1);
+		if (secondClose === -1) break;
+		const a = r.slice(idx + tag.length, firstClose);
+		const b = r.slice(firstClose + 2, secondClose);
+		r = r.slice(0, idx) + render(a, b) + r.slice(secondClose + 1);
 	}
 	return r;
 }

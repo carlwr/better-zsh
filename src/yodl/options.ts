@@ -1,6 +1,6 @@
 import { mkOptLetter, mkOptName } from "../types/brand";
 import type { DefaultMarker, ZshOption } from "../types/zsh-data";
-import { extractItems, stripYodl } from "./parse";
+import { extractItems, normalizeDoc, stripYodl } from "./parse";
 
 const VALID_DEFAULTS = new Set<string>(["D", "K", "S", "C", "Z"]);
 
@@ -28,7 +28,7 @@ export function parseOptions(yo: string): ZshOption[] {
 				defaults.push(m[1] as DefaultMarker);
 		}
 
-		const desc = stripYodl(item.body).replace(/\n+/g, " ").trim();
+		const desc = normalizeDoc(stripYodl(item.body));
 		const category = item.section;
 
 		opts.push({ name, display, letter, defaults, category, desc });

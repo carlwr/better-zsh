@@ -97,6 +97,11 @@ export function cmdPositions(line: string, commentAt?: number): CmdPos[] {
 		const word = line.slice(wStart, i);
 
 		if (expectCmd) {
+			const fnEnd = matchFuncDef(line, i, len);
+			if (fnEnd !== undefined) {
+				i = fnEnd;
+				continue;
+			}
 			if (RESERVED.has(word)) {
 				// Reserved words are not real commands; transparent ones keep expectCmd true
 				expectCmd = TRANSPARENT.has(word);
@@ -169,6 +174,13 @@ function skipDoubleQuote(s: string, i: number, len: number): number {
 	}
 	if (i < len) i++; // closing "
 	return i;
+}
+
+function matchFuncDef(s: string, i: number, len: number): number | undefined {
+	let pos = i;
+	while (pos < len && (s[pos] === " " || s[pos] === "\t")) pos++;
+	if (pos + 1 >= len || s[pos] !== "(" || s[pos + 1] !== ")") return;
+	return pos + 2;
 }
 
 /**

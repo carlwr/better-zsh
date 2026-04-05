@@ -17,6 +17,20 @@ export function hasZsh(): boolean {
 
 export async function openFixture(name: string, delay = 500) {
 	const uri = vscode.Uri.file(path.join(fixtureDir, name));
+	return openDoc(uri, delay);
+}
+
+export async function openText(text: string, delay = 500) {
+	const doc = await vscode.workspace.openTextDocument({
+		language: "zsh",
+		content: text,
+	});
+	await vscode.window.showTextDocument(doc);
+	await new Promise((r) => setTimeout(r, delay));
+	return doc;
+}
+
+async function openDoc(uri: vscode.Uri, delay: number) {
 	const doc = await vscode.workspace.openTextDocument(uri);
 	await vscode.window.showTextDocument(doc);
 	await new Promise((r) => setTimeout(r, delay));

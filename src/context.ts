@@ -1,4 +1,6 @@
+import { cmdPositions } from "./cmd-position";
 import { commentStart } from "./comment";
+import { isSetoptContext } from "./setopt-context";
 
 export type SyntacticContext =
 	| { kind: "setopt" }
@@ -19,28 +21,11 @@ export function syntacticContext(
 	line: number,
 	char: number,
 ): SyntacticContext {
-	if (isSetoptCtx(doc, line)) return { kind: "setopt" };
+	if (isSetoptContext(doc, line)) return { kind: "setopt" };
 	if (isBracketCtx(doc, line, char, "[[", "]]")) return { kind: "cond" };
+	if (isSingleBracketCtx(doc, line, char)) return { kind: "cond" };
 	if (isBracketCtx(doc, line, char, "((", "))")) return { kind: "arith" };
 	return { kind: "general" };
-}
-
-function isSetoptCtx(doc: DocLike, line: number): boolean {
-	let start = line;
-	while (
-		start > 0 &&
-		doc
-			.lineAt(start - 1)
-			.text.trimEnd()
-			.endsWith("\\")
-	)
-		start--;
-	const first = doc.lineAt(start).text.trimStart();
-	const words = first.split(/\s+/);
-	const cmd = words[0];
-	if (cmd === "setopt" || cmd === "unsetopt") return true;
-	if (cmd === "set" && (words[1] === "-o" || words[1] === "+o")) return true;
-	return false;
 }
 
 /**
@@ -64,6 +49,23 @@ function isBracketCtx(
 		if (depth > 0) return true;
 	}
 	return false;
+}
+
+function isSingleBracketCtx(doc: DocLike, line: number, char: number): boolean {
+	const text = doc.lineAt(line).text;
+	const cut = commentStart(text) ?? text.length;
+	const active = text.slice(0, Math.min(char, cut));
+	if (!active.trim()) return false;
+	const pos = cmdPositions(active).at(-1);
+	if (!pos) return false;
+	const cmd = active.slice(pos.start, pos.end);
+	if (cmd === "test") return true;
+	if (cmd !== "[") return false;
+	return !hasClosingBracket(active.slice(pos.end));
+}
+
+function hasClosingBracket(s: string): boolean {
+	return /(^|\s)\](?=\s|$|[;|&)])/.test(s);
 }
 
 /** Count net open (+1) vs close (-1) bracket pairs, respecting quotes. */

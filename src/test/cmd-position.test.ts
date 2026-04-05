@@ -11,6 +11,7 @@ suite("cmdPositions", () => {
 		["  echo hey", ["echo"]],
 		["{ echo hi }", ["echo"]],
 		["(echo hi)", ["echo"]],
+		["r() uname -a", ["uname"], "function definition name is not a command"],
 		[">&2 echo hey", ["echo"], "redir before cmd"],
 		["2>&1 echo hey", ["echo"], "fd redir before cmd"],
 		[">file echo hey", ["echo"], "redir to file before cmd"],

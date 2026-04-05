@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 import { syntacticContext } from "./context";
-import { activeWordRangeAt, funcDocs } from "./funcs";
+import { activeWordRangeAt, commentStart, funcDocs } from "./funcs";
 import { mkCondOp, mkOptName } from "./types/brand";
 import type { CondOperator, ZshOption } from "./types/zsh-data";
 
@@ -19,7 +19,7 @@ function formatOptionHover(opt: ZshOption): vscode.MarkdownString {
 	const defaults =
 		opt.defaults.length > 0 ? ` <${opt.defaults.join(", ")}>` : "";
 	return new vscode.MarkdownString(
-		`\`${opt.display}\`${letter}${defaults} — *${opt.category}*\n\n${opt.desc}`,
+		`\`${opt.display}\`${letter}${defaults}\n\n${opt.desc}\n\n_Category:_ ${opt.category}`,
 	);
 }
 
@@ -51,14 +51,13 @@ export class HoverProvider implements vscode.HoverProvider {
 	}
 
 	provideHover(doc: vscode.TextDocument, pos: vscode.Position) {
-		const range = activeWordRangeAt(doc, pos);
-		if (!range) return;
-		const w = doc.getText(range);
-
 		const ctx = syntacticContext(doc, pos.line, pos.character);
 
 		// setopt context: option hover
 		if (ctx.kind === "setopt" && this.optionMap) {
+			const range = activeWordRangeAt(doc, pos);
+			if (!range) return;
+			const w = doc.getText(range);
 			const name = mkOptName(w);
 			const opt = this.optionMap.get(name);
 			// Also check no-prefixed form
@@ -70,10 +69,17 @@ export class HoverProvider implements vscode.HoverProvider {
 
 		// cond context: operator hover
 		if (ctx.kind === "cond" && this.condOpMap) {
-			const op = mkCondOp(w);
-			const cop = this.condOpMap.get(op);
-			if (cop) return new vscode.Hover(formatCondOpHover(cop), range);
+			const range = activeTokenRangeAt(doc, pos);
+			if (range) {
+				const op = mkCondOp(doc.getText(range));
+				const cop = this.condOpMap.get(op);
+				if (cop) return new vscode.Hover(formatCondOpHover(cop), range);
+			}
 		}
+
+		const range = activeWordRangeAt(doc, pos);
+		if (!range) return;
+		const w = doc.getText(range);
 
 		// Function docs
 		const d = funcDocs(doc).get(w);
@@ -94,4 +100,21 @@ export class HoverProvider implements vscode.HoverProvider {
 			}
 		}
 	}
+}
+
+function activeTokenRangeAt(
+	doc: vscode.TextDocument,
+	pos: vscode.Position,
+): vscode.Range | undefined {
+	const text = doc.lineAt(pos.line).text;
+	const cut = commentStart(text) ?? text.length;
+	if (pos.character >= cut) return;
+	if (/\s/.test(text[pos.character] ?? "")) return;
+	let start = pos.character;
+	while (start > 0 && !/\s/.test(text[start - 1] ?? "")) start--;
+	let end = pos.character;
+	while (end < cut && !/\s/.test(text[end] ?? "")) end++;
+	return start === end
+		? undefined
+		: new vscode.Range(pos.line, start, pos.line, end);
 }

@@ -1,6 +1,6 @@
 import * as assert from "node:assert";
 import * as vscode from "vscode";
-import { hasZsh, openFixture, withBadZdotdir } from "./helpers";
+import { hasZsh, openFixture, openText, withBadZdotdir } from "./helpers";
 
 suite("ZshCompletions", function () {
 	this.timeout(15000);
@@ -47,5 +47,20 @@ suite("ZshCompletions", function () {
 				"expected file token 'some-func' in completions",
 			);
 		});
+	});
+
+	test("offers conditional operators inside [ ]", async () => {
+		const doc = await openText("[ ");
+		const items = await vscode.commands.executeCommand<vscode.CompletionList>(
+			"vscode.executeCompletionItemProvider",
+			doc.uri,
+			new vscode.Position(0, 2),
+		);
+		assert.ok(items, "expected completion result");
+		const labels = items.items.map((i) =>
+			typeof i.label === "string" ? i.label : i.label.label,
+		);
+		assert.ok(labels.includes("-f"), "expected conditional operator '-f'");
+		assert.ok(labels.includes("=="), "expected conditional operator '=='");
 	});
 });

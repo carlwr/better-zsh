@@ -29,6 +29,11 @@ describe("syntacticContext", () => {
 		expect(syntacticContext(doc, 0, 10).kind).toBe("cond");
 	});
 
+	test('inside [ ] → kind "cond"', () => {
+		const doc = mockDoc(["if [ -f $file ]; then"]);
+		expect(syntacticContext(doc, 0, 9).kind).toBe("cond");
+	});
+
 	test('multiline [[ → kind "cond"', () => {
 		const doc = mockDoc(["[[ -f foo &&", "  -d bar ]]"]);
 		expect(syntacticContext(doc, 1, 5).kind).toBe("cond");

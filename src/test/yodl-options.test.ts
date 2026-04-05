@@ -94,5 +94,12 @@ Make cd and pushd behave POSIX-like.
 			expect(byName.has(mkOptName("AUTO_CD"))).toBe(true);
 			expect(byName.has(mkOptName("GLOB_DOTS"))).toBe(true);
 		});
+
+		test("descriptions strip raw yodl macros", () => {
+			for (const o of opts) {
+				expect(o.desc).not.toContain("example(");
+				expect(o.desc).not.toContain("manref(");
+			}
+		});
 	});
 });

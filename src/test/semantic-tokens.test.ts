@@ -66,4 +66,11 @@ suite("SemanticTokensProvider", () => {
 			["echo"],
 		);
 	});
+
+	test("skips function names in definitions even if they are builtins", () => {
+		assert.deepStrictEqual(
+			words("a() uname -a\nr() uname -a\ns() uname -a", ["r", "uname"]),
+			["uname", "uname", "uname"],
+		);
+	});
 });

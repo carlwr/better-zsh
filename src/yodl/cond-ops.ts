@@ -1,6 +1,6 @@
 import { mkCondOp } from "../types/brand";
 import type { CondKind, CondOperator } from "../types/zsh-data";
-import { extractItems, stripYodl } from "./parse";
+import { extractItems, normalizeDoc, stripYodl } from "./parse";
 
 /** Parse cond.yo → CondOperator[] */
 export function parseCondOps(yo: string): CondOperator[] {
@@ -22,7 +22,7 @@ export function parseCondOps(yo: string): CondOperator[] {
 			continue;
 		}
 
-		const desc = stripYodl(item.body).replace(/\n+/g, " ").trim();
+		const desc = normalizeDoc(stripYodl(item.body));
 		// push the main op
 		ops.push({
 			op: mkCondOp(parsed.op),
