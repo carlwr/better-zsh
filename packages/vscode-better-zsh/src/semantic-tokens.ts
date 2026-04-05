@@ -1,6 +1,5 @@
 import * as vscode from "vscode"
-import { cmdPositions } from "../../zsh-core/src/cmd-position"
-import { commentStart } from "../../zsh-core/src/comment"
+import { cmdPositions, commentStart } from "zsh-core"
 
 const TOKEN_TYPES = ["function"] as const
 const TOKEN_MODIFIERS = ["defaultLibrary"] as const

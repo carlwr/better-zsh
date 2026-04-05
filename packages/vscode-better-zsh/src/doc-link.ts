@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs"
 import { dirname, isAbsolute, join } from "node:path"
 import * as vscode from "vscode"
-import { commentStart } from "../../zsh-core/src/comment"
+import { commentStart } from "zsh-core"
 
 // Matches: source <path> or . <path> (at command position)
 const SOURCE_RE = /(?:^|\s)(?:source|\.)\s+(\S+)/g

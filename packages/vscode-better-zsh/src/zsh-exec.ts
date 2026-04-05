@@ -1,5 +1,5 @@
 import { execFile } from "node:child_process"
-import type { ZshRunner, ZshRunReq, ZshRunResult } from "../../zsh-core/src/zsh"
+import type { ZshRunner, ZshRunReq, ZshRunResult } from "zsh-core"
 
 const ZSH_ENV_KEEP = [
   "HOME",

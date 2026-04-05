@@ -1,18 +1,15 @@
 import * as vscode from "vscode"
-import { syntacticContext } from "../../zsh-core/src/context"
+import type { CondOperator, OptFlagAlias, ZshOption } from "zsh-core"
 import {
   type HoverMdCtx,
   mdCond,
   mdOpt,
   mdParam,
+  mkCondOp,
   mkHoverMdCtx,
-} from "../../zsh-core/src/hover-md"
-import { mkCondOp, mkOptName } from "../../zsh-core/src/types/brand"
-import type {
-  CondOperator,
-  OptFlagAlias,
-  ZshOption,
-} from "../../zsh-core/src/types/zsh-data"
+  mkOptName,
+  syntacticContext,
+} from "zsh-core"
 import { activeWordRangeAt, commentStart, funcDocs } from "./funcs"
 
 export class HoverProvider implements vscode.HoverProvider {

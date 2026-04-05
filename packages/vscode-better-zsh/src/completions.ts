@@ -1,10 +1,14 @@
 import * as vscode from "vscode"
-import { syntacticContext } from "../../zsh-core/src/context"
-import { sigCond } from "../../zsh-core/src/hover-md"
-import { filterTokens, WORD, WORD_EXACT } from "../../zsh-core/src/ident"
-import { matchOptions } from "../../zsh-core/src/option-match"
-import { mkOptName } from "../../zsh-core/src/types/brand"
-import type { CondOperator, ZshOption } from "../../zsh-core/src/types/zsh-data"
+import type { CondOperator, ZshOption } from "zsh-core"
+import {
+  filterTokens,
+  matchOptions,
+  mkOptName,
+  sigCond,
+  syntacticContext,
+  WORD,
+  WORD_EXACT,
+} from "zsh-core"
 import { asyncDocCache } from "./cache"
 import { zshTokenize } from "./zsh"
 

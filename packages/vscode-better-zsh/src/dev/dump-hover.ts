@@ -1,9 +1,12 @@
 import { readFile } from "node:fs/promises"
 import { resolve } from "node:path"
-import { writeHoverDump } from "../../../zsh-core/src/hover-dump"
-import { hoverDocs } from "../../../zsh-core/src/hover-md"
-import { zshParameters } from "../../../zsh-core/src/zsh"
-import { getCondOps, getOptions } from "../../../zsh-core/src/zsh-data"
+import {
+  getCondOps,
+  getOptions,
+  hoverDocs,
+  writeHoverDump,
+  zshParameters,
+} from "zsh-core"
 import { makeExecZshRunner } from "../zsh-exec"
 
 async function getParams() {

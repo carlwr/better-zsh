@@ -1,5 +1,5 @@
 import * as vscode from "vscode"
-import { WORD_EXACT } from "../../zsh-core/src/ident"
+import { WORD_EXACT } from "zsh-core"
 import { activeWordRangeAt, hasFunc, wordMatches } from "./funcs"
 
 export class RenameProvider implements vscode.RenameProvider {

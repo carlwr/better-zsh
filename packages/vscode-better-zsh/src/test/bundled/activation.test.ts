@@ -3,7 +3,7 @@ import * as path from "node:path"
 import * as vscode from "vscode"
 
 const EXT_ID = "carlwr.better-zsh"
-const fixtureDir = path.resolve(__dirname, "../../../../../test-fixtures")
+const fixtureDir = path.resolve(__dirname, "../../../../test-fixtures")
 
 suite("bundled extension", function () {
   this.timeout(30000)

@@ -8,7 +8,7 @@
 
 ## Validation before returning to user
 
-- Before presenting results, run: `pnpm check && pnpm test && pnpm test:smoke && pnpm vsix && test:integration &>/dev/null`
+- Before presenting results, run: `pnpm check && pnpm test && pnpm test:smoke && pnpm vsix && pnpm test:integration &>/dev/null`
 - If any step fails, attempt to fix and re-run — don't return with known failures
 - any build script whose name includes "INTERACTIVE" are **excluded** from this loop — only run when user explicitly requests it
 

@@ -1,5 +1,5 @@
 import * as vscode from "vscode"
-import { getCondOps, getOptions } from "../../zsh-core/src/zsh-data"
+import { getCondOps, getOptions } from "zsh-core"
 import { CompletionProvider } from "./completions"
 import { DefinitionProvider } from "./definition"
 import { setupDiagnostics } from "./diagnostics"

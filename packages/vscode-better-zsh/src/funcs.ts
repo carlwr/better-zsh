@@ -1,6 +1,5 @@
 import * as vscode from "vscode"
-import { commentStart } from "../../zsh-core/src/comment"
-import { escRe, WORD, WORD_EXACT } from "../../zsh-core/src/ident"
+import { commentStart, escRe, WORD, WORD_EXACT } from "zsh-core"
 import { docCache } from "./cache"
 
 const FUNC_DECL = /^(\s*)([\w][\w-]*)\s*\(\)/
@@ -65,7 +64,7 @@ export function hasFunc(doc: vscode.TextDocument, name: string) {
   return getData(doc).names.has(name)
 }
 
-export { commentStart } from "../../zsh-core/src/comment"
+export { commentStart } from "zsh-core"
 
 function buildData(doc: vscode.TextDocument): FuncData {
   const docs = new Map<string, string>()
