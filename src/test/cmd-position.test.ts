@@ -28,6 +28,21 @@ suite("cmdPositions", () => {
     ["for r in xs; do fg; done", ["fg"]],
     ["select r in xs; do fg; done", ["fg"]],
     ["case r in", []],
+    [
+      "print ${var[(a)1]} ${var[(r)1]} ${var[(s)1]}",
+      ["print"],
+      "parameter expansion flags do not create command positions",
+    ],
+    [
+      "print ${(j:_:)SECONDS}",
+      ["print"],
+      "parameter expansion flags stay inside the word",
+    ],
+    [
+      "print ${${:-x}[(r)1]}",
+      ["print"],
+      "nested parameter expansions stay inside the word",
+    ],
   ]
 
   for (const [input, expected, desc] of cases) {

@@ -26,7 +26,7 @@ export class SemanticTokensProvider
       const cmtAt = commentStart(text)
       for (const pos of cmdPositions(text, cmtAt)) {
         const word = text.slice(pos.start, pos.end)
-        if (this.builtins.has(word)) {
+        if (word !== "[" && this.builtins.has(word)) {
           b.push(i, pos.start, pos.end - pos.start, 0, 1 << 0)
         }
       }

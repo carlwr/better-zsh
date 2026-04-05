@@ -150,6 +150,10 @@ function skipWord(s: string, i: number, len: number): number {
       i = skipDoubleQuote(s, i, len)
       continue
     }
+    if (ch === "$" && i + 1 < len && s[i + 1] === "{") {
+      i = skipParamExpansion(s, i, len)
+      continue
+    }
     if (ch === "\\") {
       i += 2
       continue
@@ -169,10 +173,47 @@ function skipSingleQuote(s: string, i: number, len: number): number {
 function skipDoubleQuote(s: string, i: number, len: number): number {
   i++ // opening "
   while (i < len && s[i] !== '"') {
+    if (s[i] === "$" && i + 1 < len && s[i + 1] === "{") {
+      i = skipParamExpansion(s, i, len)
+      continue
+    }
     if (s[i] === "\\") i++
     i++
   }
   if (i < len) i++ // closing "
+  return i
+}
+
+function skipParamExpansion(s: string, i: number, len: number): number {
+  if (i + 1 >= len || s[i] !== "$" || s[i + 1] !== "{") return i
+  i += 2
+  let depth = 1
+  while (i < len && depth > 0) {
+    const ch = s.charAt(i)
+    if (ch === "'") {
+      i = skipSingleQuote(s, i, len)
+      continue
+    }
+    if (ch === '"') {
+      i = skipDoubleQuote(s, i, len)
+      continue
+    }
+    if (ch === "\\") {
+      i += 2
+      continue
+    }
+    if (ch === "$" && i + 1 < len && s[i + 1] === "{") {
+      depth++
+      i += 2
+      continue
+    }
+    if (ch === "}") {
+      depth--
+      i++
+      continue
+    }
+    i++
+  }
   return i
 }
 

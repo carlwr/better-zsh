@@ -73,4 +73,17 @@ suite("SemanticTokensProvider", () => {
       ["uname", "uname", "uname"],
     )
   })
+
+  test("skips builtin names inside parameter expansion flags", () => {
+    assert.deepStrictEqual(
+      words("print ${var[(a)1]} ${var[(r)1]} ${var[(s)1]}", ["print", "r"]),
+      ["print"],
+    )
+  })
+
+  test("does not mark [ as a builtin in test syntax", () => {
+    assert.deepStrictEqual(words("[ -d /tmp ] && echo OK", ["[", "echo"]), [
+      "echo",
+    ])
+  })
 })
