@@ -15,7 +15,7 @@ const launchArgs = ({ extDir, userData }) => [
 export default defineConfig([
   {
     label: "integration",
-    files: "out/**/src/test/integration/**/*.test.js",
+    files: ".vscode-test/**/test/integration/**/*.test.js",
     launchArgs: launchArgs({
       extDir: testExtDir,
       userData: testUserData,
@@ -25,7 +25,7 @@ export default defineConfig([
     ? [
         {
           label: "bundled",
-          files: "out/**/src/test/bundled/**/*.test.js",
+          files: ".vscode-test/**/test/bundled/**/*.test.js",
           extensionDevelopmentPath: stubDir,
           launchArgs: launchArgs({ extDir, userData }),
           mocha: { timeout: 30000 },

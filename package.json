@@ -21,7 +21,7 @@
     "testINTERACTIVE:electron": "pnpm --filter better-zsh testINTERACTIVE:electron",
     "testINTERACTIVE:electron-bundled": "pnpm --filter better-zsh testINTERACTIVE:electron-bundled",
     "vsix": "pnpm --filter better-zsh vsix",
-    "test:smoke": "pnpm --filter better-zsh test:smoke",
+    "test:smoke": "pnpm --filter zsh-core test:smoke && pnpm --filter better-zsh test:smoke",
     "vscode:publish:dry": "pnpm --filter better-zsh vscode:publish:dry",
     "vscode:publish": "pnpm --filter better-zsh vscode:publish",
     "ovsx:publish:dry": "pnpm --filter better-zsh ovsx:publish:dry",

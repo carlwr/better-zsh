@@ -1,4 +1,10 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { describe, expect, test } from "vitest"
@@ -36,18 +42,35 @@ describe("resolveZshDataDir", () => {
 })
 
 describe("copyRuntimeZshData", () => {
-  test("copies docs under the runtime dir name", () => {
+  test("copies the full vendored doc set under the runtime dir name", () => {
     withTmpDir((dir) => {
       const srcBase = join(dir, "dist")
       const srcData = join(srcBase, "data", "zsh-docs")
       const outDir = join(dir, "out")
 
       mkdirSync(srcData, { recursive: true })
-      writeFileSync(join(srcData, "options.yo"), "opts", "utf8")
+      for (const name of [
+        "SOURCE.md",
+        "builtins.yo",
+        "cond.yo",
+        "grammar.yo",
+        "options.yo",
+      ]) {
+        writeFileSync(join(srcData, name), name, "utf8")
+      }
 
       copyRuntimeZshData(outDir, srcBase)
 
       expect(resolveZshDataDir(outDir)).toBe(join(outDir, runtimeZshDataDir))
+      for (const name of [
+        "SOURCE.md",
+        "builtins.yo",
+        "cond.yo",
+        "grammar.yo",
+        "options.yo",
+      ]) {
+        expect(existsSync(join(outDir, runtimeZshDataDir, name))).toBe(true)
+      }
     })
   })
 })

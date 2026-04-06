@@ -4,7 +4,7 @@ import * as os from "node:os"
 import * as path from "node:path"
 import * as vscode from "vscode"
 
-const fixtureDir = path.resolve(__dirname, "../../../../test-fixtures")
+const fixtureDir = path.resolve(__dirname, "../../../test-fixtures")
 
 export function hasZsh(): boolean {
   try {

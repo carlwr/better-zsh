@@ -27,9 +27,10 @@
     "build": "tsx build.ts",
     "watch": "tsx build.ts --watch",
     "typecheck": "tsc --noEmit",
-    "lint": "biome check assets.ts build.ts index.ts src tsconfig.build.json tsconfig.json vitest.config.ts package.json",
+    "lint": "biome check assets.ts build.ts index.ts scripts src tsconfig.build.json tsconfig.json vitest.config.ts package.json",
     "check": "pnpm typecheck && pnpm lint",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:smoke": "pnpm build && node scripts/test-smoke.mjs"
   },
   "devDependencies": {
     "vitest": "^4.1.2"

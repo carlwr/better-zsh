@@ -10,4 +10,5 @@ if [ "${1:-}" = -- ]; then
 fi
 
 pnpm build
+node scripts/check-package.mjs
 pnpm exec vsce package --no-dependencies --out "$out"

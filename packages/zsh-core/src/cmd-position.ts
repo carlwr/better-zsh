@@ -42,6 +42,7 @@ const RESERVED = new Set([
   "]]",
   "time",
 ])
+
 /**
  * Returns character ranges of tokens in command position on a single line.
  * `commentAt` is the index where a `#` comment starts, or undefined.
