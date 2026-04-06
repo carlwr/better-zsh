@@ -11,14 +11,17 @@ const files = execFileSync(pnpm, ["exec", "vsce", "ls", "--no-dependencies"], {
 
 const required = [
   "LICENSE",
+  "THIRD_PARTY_NOTICES.md",
   "package.json",
   "syntaxes/shell-unix-bash.tmLanguage.json",
+  "syntaxes/THIRD_PARTY_NOTICES.md",
   "out/extension.js",
   "out/extension.js.map",
   "out/language-configuration.json",
   "out/snippets.json",
   "out/zsh-chat-instructions.md",
   "out/zsh-core-data/SOURCE.md",
+  "out/zsh-core-data/THIRD_PARTY_NOTICES.md",
   "out/zsh-core-data/builtins.yo",
   "out/zsh-core-data/cond.yo",
   "out/zsh-core-data/grammar.yo",

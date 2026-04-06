@@ -8,6 +8,7 @@
   "files": [
     "dist",
     "LICENSE",
+    "THIRD_PARTY_NOTICES.md",
     "deno.json"
   ],
   "exports": {

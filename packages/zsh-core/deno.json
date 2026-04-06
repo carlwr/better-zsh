@@ -13,6 +13,7 @@
   "publish": {
     "include": [
       "LICENSE",
+      "THIRD_PARTY_NOTICES.md",
       "assets.ts",
       "exec.ts",
       "index.ts",

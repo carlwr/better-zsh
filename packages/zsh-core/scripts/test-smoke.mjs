@@ -22,6 +22,7 @@ try {
 
   const required = [
     "LICENSE",
+    "THIRD_PARTY_NOTICES.md",
     "package.json",
     "deno.json",
     "dist/assets.d.ts",
@@ -57,6 +58,7 @@ try {
     "dist/types/index.d.ts",
     "dist/types/render.d.ts",
     "dist/data/zsh-docs/SOURCE.md",
+    "dist/data/zsh-docs/THIRD_PARTY_NOTICES.md",
     "dist/data/zsh-docs/builtins.yo",
     "dist/data/zsh-docs/cond.yo",
     "dist/data/zsh-docs/grammar.yo",

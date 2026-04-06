@@ -17,3 +17,7 @@ these files — so that re-vendoring from upstream is a clean overwrite.
 
 License: zsh is distributed under a MIT-like license. See the zsh source
 repository for the full license text.
+
+Re-vendoring reminder: keep `THIRD_PARTY_NOTICES.md` in sync with this file and
+re-check the upstream `LICENCE` note about GPL-licensed shell functions before
+expanding the vendored source set.
