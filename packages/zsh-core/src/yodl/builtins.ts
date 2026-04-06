@@ -1,6 +1,6 @@
 import { mkBuiltinName } from "../types/brand.ts"
 import type { BuiltinDoc } from "../types/zsh-data.ts"
-import { extractItems, normalizeDoc, stripYodl } from "./parse.ts"
+import { extractItems, normalizeBody, stripYodl } from "./parse.ts"
 
 interface SynopsisLine {
   raw: string
@@ -36,7 +36,7 @@ export function parseBuiltins(yo: string): BuiltinDoc[] {
       .map((line) => line.text)
     if (heads.length === 0) continue
 
-    const desc = normalizeDoc(stripYodl(item.body))
+    const desc = normalizeBody(item.body)
     const aliasOf = extractAlias(item.body)
     const module = extractModule(item.body)
 

@@ -8,7 +8,7 @@ import type {
 } from "../types/zsh-data.ts"
 import {
   extractItems,
-  normalizeDoc,
+  normalizeBody,
   replaceSpecials,
   stripYodl,
 } from "./parse.ts"
@@ -40,7 +40,7 @@ export function parseOptions(yo: string): ZshOption[] {
 
     const headerFlag = parseHeaderFlag(item.header)
     const flags = flagMap.get(name) ?? (headerFlag ? [headerFlag] : [])
-    const desc = normalizeDoc(stripYodl(item.body))
+    const desc = normalizeBody(item.body)
     const category = item.section
 
     opts.push({

@@ -18,13 +18,21 @@
       "exec.ts",
       "index.ts",
       "render.ts",
+      "zsh-types.ts",
       "src/**/*.ts",
       "src/data/zsh-docs/**/*"
     ],
     "exclude": ["src/test/**/*"]
   },
   "lint": {
-    "include": ["index.ts", "assets.ts", "render.ts", "exec.ts", "src/**/*.ts"],
+    "include": [
+      "index.ts",
+      "assets.ts",
+      "render.ts",
+      "exec.ts",
+      "zsh-types.ts",
+      "src/**/*.ts"
+    ],
     "exclude": ["src/test/**/*.ts"]
   }
 }

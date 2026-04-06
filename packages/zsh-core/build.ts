@@ -5,8 +5,16 @@ import { build } from "tsup"
 import {
   getBuiltins,
   getCondOps,
+  getGlobbingFlags,
+  getGlobOps,
+  getHistoryDocs,
   getOptions,
+  getParamFlags,
   getPrecmds,
+  getProcessSubsts,
+  getRedirections,
+  getReservedWords,
+  getSubscriptFlags,
 } from "./src/zsh-data.ts"
 
 const pkgDir =
@@ -36,20 +44,44 @@ function writeJsonArtifacts() {
   const condOps = getCondOps()
   const builtins = getBuiltins()
   const precmds = getPrecmds()
+  const redirections = getRedirections()
+  const reservedWords = getReservedWords()
+  const subscriptFlags = getSubscriptFlags()
+  const paramFlags = getParamFlags()
+  const history = getHistoryDocs()
+  const globOperators = getGlobOps()
+  const globFlags = getGlobbingFlags()
+  const processSubsts = getProcessSubsts()
   const docs = {
     version: 1,
     packageVersion: pkg.version,
     files: [
       "builtins.json",
       "cond-ops.json",
+      "glob-flags.json",
+      "glob-operators.json",
+      "history.json",
       "options.json",
+      "param-flags.json",
       "precmds.json",
+      "process-substs.json",
+      "redirections.json",
+      "reserved-words.json",
+      "subscript-flags.json",
     ] as const,
     counts: {
       builtins: builtins.length,
       condOps: condOps.length,
+      globFlags: globFlags.length,
+      globOperators: globOperators.length,
+      history: history.length,
       options: options.length,
+      paramFlags: paramFlags.length,
       precmds: precmds.length,
+      processSubsts: processSubsts.length,
+      redirections: redirections.length,
+      reservedWords: reservedWords.length,
+      subscriptFlags: subscriptFlags.length,
     },
   }
 
@@ -58,6 +90,14 @@ function writeJsonArtifacts() {
     ["cond-ops.json", condOps],
     ["builtins.json", builtins],
     ["precmds.json", precmds],
+    ["redirections.json", redirections],
+    ["reserved-words.json", reservedWords],
+    ["subscript-flags.json", subscriptFlags],
+    ["param-flags.json", paramFlags],
+    ["history.json", history],
+    ["glob-operators.json", globOperators],
+    ["glob-flags.json", globFlags],
+    ["process-substs.json", processSubsts],
     ["index.json", docs],
   ])
 
@@ -73,6 +113,7 @@ function writeJsonArtifacts() {
       resolve(pkgDir, "render.ts"),
       resolve(pkgDir, "exec.ts"),
       resolve(pkgDir, "assets.ts"),
+      resolve(pkgDir, "zsh-types.ts"),
     ],
     outDir: distDir,
     tsconfig: resolve(pkgDir, "tsconfig.build.json"),

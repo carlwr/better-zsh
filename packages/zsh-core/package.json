@@ -41,6 +41,14 @@
     "./data/cond-ops.json": "./dist/json/cond-ops.json",
     "./data/builtins.json": "./dist/json/builtins.json",
     "./data/precmds.json": "./dist/json/precmds.json",
+    "./data/redirections.json": "./dist/json/redirections.json",
+    "./data/reserved-words.json": "./dist/json/reserved-words.json",
+    "./data/subscript-flags.json": "./dist/json/subscript-flags.json",
+    "./data/param-flags.json": "./dist/json/param-flags.json",
+    "./data/history.json": "./dist/json/history.json",
+    "./data/glob-operators.json": "./dist/json/glob-operators.json",
+    "./data/glob-flags.json": "./dist/json/glob-flags.json",
+    "./data/process-substs.json": "./dist/json/process-substs.json",
     "./package.json": "./package.json"
   },
   "repository": {

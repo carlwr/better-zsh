@@ -53,8 +53,11 @@ describe("copyRuntimeZshData", () => {
         "SOURCE.md",
         "builtins.yo",
         "cond.yo",
+        "expn.yo",
         "grammar.yo",
         "options.yo",
+        "params.yo",
+        "redirect.yo",
       ]) {
         writeFileSync(join(srcData, name), name, "utf8")
       }
@@ -66,8 +69,11 @@ describe("copyRuntimeZshData", () => {
         "SOURCE.md",
         "builtins.yo",
         "cond.yo",
+        "expn.yo",
         "grammar.yo",
         "options.yo",
+        "params.yo",
+        "redirect.yo",
       ]) {
         expect(existsSync(join(outDir, runtimeZshDataDir, name))).toBe(true)
       }

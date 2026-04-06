@@ -1,47 +1,28 @@
 import { mkCondOp } from "../types/brand.ts"
 import type { CondKind, CondOperator } from "../types/zsh-data.ts"
-import { extractItems, normalizeDoc, stripYodl } from "./parse.ts"
+import { collectAliasedItems, extractItems, normalizeBody } from "./parse.ts"
 
 /** Parse cond.yo → CondOperator[] */
 export function parseCondOps(yo: string): CondOperator[] {
-  const items = extractItems(yo)
   const ops: CondOperator[] = []
-  // track pending xitems — they are aliases for the next item
-  let pending: string[] = []
-
-  for (const item of items) {
-    const parsed = parseHeader(item.header)
-    if (!parsed) {
-      pending = []
-      continue
-    }
-
-    if (!item.body) {
-      // xitem — accumulate as alias
-      pending.push(parsed.op)
-      continue
-    }
-
-    const desc = normalizeDoc(stripYodl(item.body))
-    // push the main op
-    ops.push({
-      op: mkCondOp(parsed.op),
-      operands: parsed.operands,
-      desc,
-      kind: parsed.kind,
-    })
-    // push pending aliases (xitems before this item)
-    for (const alias of pending) {
-      ops.push({
-        op: mkCondOp(alias),
-        operands: parsed.operands,
-        desc,
-        kind: parsed.kind,
-      })
-    }
-    pending = []
+  for (const entry of collectAliasedItems(extractItems(yo), parseHeader)) {
+    const desc = normalizeBody(entry.item.body ?? "")
+    ops.push(toDoc(entry.head, desc))
+    for (const alias of entry.aliases) ops.push(toDoc(alias, desc))
   }
   return ops
+}
+
+function toDoc(
+  parsed: { op: string; operands: string[]; kind: CondKind },
+  desc: string,
+): CondOperator {
+  return {
+    op: mkCondOp(parsed.op),
+    operands: parsed.operands,
+    desc,
+    kind: parsed.kind,
+  }
 }
 
 function parseHeader(

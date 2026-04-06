@@ -36,6 +36,14 @@ const llms = [
   "- ./data/cond-ops.json",
   "- ./data/builtins.json",
   "- ./data/precmds.json",
+  "- ./data/redirections.json",
+  "- ./data/reserved-words.json",
+  "- ./data/subscript-flags.json",
+  "- ./data/param-flags.json",
+  "- ./data/history.json",
+  "- ./data/glob-operators.json",
+  "- ./data/glob-flags.json",
+  "- ./data/process-substs.json",
   "",
 ].join("\n")
 

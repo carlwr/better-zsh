@@ -1,7 +1,10 @@
 import fc from "fast-check"
 import { describe, expect, test } from "vitest"
 import {
+  collectAliasedItems,
+  extractItemList,
   extractItems,
+  extractSectionBody,
   extractSections,
   findBalancedClose,
   normalizeDoc,
@@ -140,6 +143,22 @@ desc
     expect(items[1]?.body).toBeDefined()
   })
 
+  test("can filter by list depth", () => {
+    const yo = `startitem()
+item(tt(outer))(
+startitem()
+item(tt(inner))(
+desc
+)
+enditem()
+)
+enditem()`
+    expect(extractItems(yo).map((item) => item.header)).toEqual(["tt(outer)"])
+    expect(extractItemList(yo).map((item) => item.header)).toEqual([
+      "tt(outer)",
+    ])
+  })
+
   test("never throws on arbitrary input", () => {
     fc.assert(
       fc.property(fc.string(), (s: string) => {
@@ -156,5 +175,28 @@ desc
         expect(items.length).toBeLessThanOrEqual(itemCount)
       }),
     )
+  })
+})
+
+describe("extractSectionBody", () => {
+  test("returns the lines between matching section headers", () => {
+    const yo = "sect(One)\na\nsubsect(Two)\nb\nsect(Three)\nc"
+    expect(extractSectionBody(yo, "Two")).toBe("b")
+  })
+})
+
+describe("collectAliasedItems", () => {
+  test("groups xitems with the following item", () => {
+    const grouped = collectAliasedItems(
+      extractItems(`xitem(tt(alias))\nitem(tt(main))(desc)`),
+      (header) => stripYodl(header),
+    )
+    expect(grouped).toEqual([
+      {
+        head: "main",
+        aliases: ["alias"],
+        item: { header: "tt(main)", body: "desc", section: "" },
+      },
+    ])
   })
 })

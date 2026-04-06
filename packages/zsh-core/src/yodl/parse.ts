@@ -13,6 +13,17 @@ export interface YodlSection {
   line: number
 }
 
+export interface YodlTok {
+  kind: "tt" | "var"
+  text: string
+}
+
+export interface AliasedYodlItem<T> {
+  head: T
+  aliases: readonly T[]
+  item: YodlItem
+}
+
 const SPECIAL_MACROS: Record<string, string> = {
   "LPAR()": "(",
   "RPAR()": ")",
@@ -117,6 +128,47 @@ export function normalizeDoc(raw: string): string {
   while (out[0] === "") out.shift()
   while (out[out.length - 1] === "") out.pop()
   return finishDoc(mergeReferenceParas(out).join("\n"))
+}
+
+/** Extract plain yodl `tt(...)` / `var(...)` tokens in source order. */
+export function extractTokens(raw: string): YodlTok[] {
+  const out: YodlTok[] = []
+  let pos = 0
+
+  while (pos < raw.length) {
+    const kind = raw.startsWith("tt(", pos)
+      ? "tt"
+      : raw.startsWith("var(", pos)
+        ? "var"
+        : undefined
+    if (!kind) {
+      pos++
+      continue
+    }
+
+    const openPos = pos + kind.length
+    const close = findBalancedClose(raw, openPos)
+    if (close === -1) {
+      pos++
+      continue
+    }
+
+    out.push({
+      kind,
+      text: replaceSpecials(raw.slice(openPos + 1, close)),
+    })
+    pos = close + 1
+  }
+
+  return out
+}
+
+export function normalizeHeader(raw: string): string {
+  return stripYodl(raw).replace(/\s+/g, " ").trim()
+}
+
+export function normalizeBody(raw: string): string {
+  return normalizeDoc(stripYodl(raw))
 }
 
 function renderInlineMd(s: string): string {
@@ -238,10 +290,11 @@ export function findBalancedClose(s: string, openPos: number): number {
 }
 
 /** Extract item(header)(body) and xitem(header) entries */
-export function extractItems(yo: string): YodlItem[] {
+export function extractItems(yo: string, depth?: number): YodlItem[] {
   const sections = extractSections(yo)
   const items: YodlItem[] = []
   const lines = yo.split("\n")
+  const depths = lineDepths(lines)
 
   // Build section lookup: line number → section name
   function sectionAt(lineIdx: number): string {
@@ -265,6 +318,10 @@ export function extractItems(yo: string): YodlItem[] {
       }
       const header = yo.slice(pos + 6, headerClose)
       const lineIdx = lineOfPos(lines, pos)
+      if (depth !== undefined && depths[lineIdx] !== depth) {
+        pos = headerClose + 1
+        continue
+      }
       items.push({ header, section: sectionAt(lineIdx) })
       pos = headerClose + 1
     } else if (it) {
@@ -290,6 +347,10 @@ export function extractItems(yo: string): YodlItem[] {
         }
       }
       const lineIdx = lineOfPos(lines, pos)
+      if (depth !== undefined && depths[lineIdx] !== depth) {
+        pos = headerClose + 1
+        continue
+      }
       items.push({ header, section: sectionAt(lineIdx) })
       pos = headerClose + 1
     } else {
@@ -297,6 +358,81 @@ export function extractItems(yo: string): YodlItem[] {
     }
   }
   return items
+}
+
+/** Extract top-level `item(...)` / `xitem(...)` entries from one `startitem()` block. */
+export function extractItemList(yo: string): YodlItem[] {
+  return extractListEntries(yo, "item")
+}
+
+/** Extract top-level `sitem(...)` entries from one `startsitem()` block. */
+export function extractSitemList(yo: string): YodlItem[] {
+  return extractListEntries(yo, "sitem")
+}
+
+/** Slice one named `sect(...)` / `subsect(...)` including all text until the next section. */
+export function extractSection(yo: string, name: string): string {
+  const lines = yo.split("\n")
+  const secs = extractSections(yo)
+  const idx = secs.findIndex((sec) => sec.name === name)
+  if (idx === -1) return ""
+  const start = posOfLine(lines, secs[idx]?.line ?? 0)
+  const end = posOfLine(lines, secs[idx + 1]?.line ?? lines.length)
+  return yo.slice(start, end)
+}
+
+/** Extract the first balanced list block, including its markers. */
+export function extractFirstList(
+  yo: string,
+  kind: "item" | "sitem",
+): string | undefined {
+  const open = kind === "item" ? "startitem()" : "startsitem()"
+  const close = kind === "item" ? "enditem()" : "endsitem()"
+  const start = yo.indexOf(open)
+  if (start === -1) return undefined
+
+  let depth = 0
+  let pos = start
+  while (pos < yo.length) {
+    if (yo.startsWith(open, pos)) {
+      depth++
+      pos += open.length
+      continue
+    }
+    if (yo.startsWith(close, pos)) {
+      depth--
+      pos += close.length
+      if (depth === 0) return yo.slice(start, pos)
+      continue
+    }
+    pos++
+  }
+
+  return yo.slice(start)
+}
+
+export function collectAliasedItems<T>(
+  items: readonly YodlItem[],
+  parse: (header: string) => T | undefined,
+): AliasedYodlItem<T>[] {
+  const out: AliasedYodlItem<T>[] = []
+  let pending: T[] = []
+
+  for (const item of items) {
+    const head = parse(item.header)
+    if (!head) {
+      pending = []
+      continue
+    }
+    if (!item.body) {
+      pending.push(head)
+      continue
+    }
+    out.push({ head, aliases: pending, item })
+    pending = []
+  }
+
+  return out
 }
 
 /** Extract sect()/subsect() headers with line positions */
@@ -316,6 +452,16 @@ export function extractSections(yo: string): YodlSection[] {
     }
   }
   return out
+}
+
+export function extractSectionBody(yo: string, name: string): string {
+  const lines = yo.split("\n")
+  const sections = extractSections(yo)
+  const idx = sections.findIndex((section) => section.name === name)
+  if (idx === -1) return ""
+  const start = (sections[idx]?.line ?? 0) + 1
+  const end = sections[idx + 1]?.line ?? lines.length
+  return lines.slice(start, end).join("\n")
 }
 
 function matchAt(s: string, pos: number, tag: string): boolean {
@@ -341,4 +487,99 @@ function lineOfPos(lines: string[], pos: number): number {
     if (charCount > pos) return i
   }
   return lines.length - 1
+}
+
+function lineDepths(lines: readonly string[]): number[] {
+  const out: number[] = []
+  let depth = 0
+  for (const line of lines) {
+    out.push(depth)
+    const trimmed = line.trimStart()
+    if (trimmed.startsWith("startitem()") || trimmed.startsWith("startsitem()"))
+      depth++
+    if (trimmed.startsWith("enditem()") || trimmed.startsWith("endsitem()"))
+      depth = Math.max(0, depth - 1)
+  }
+  return out
+}
+
+function extractListEntries(yo: string, kind: "item" | "sitem"): YodlItem[] {
+  const sections = extractSections(yo)
+  const lines = yo.split("\n")
+  const items: YodlItem[] = []
+  const open = kind === "item" ? "startitem()" : "startsitem()"
+  const close = kind === "item" ? "enditem()" : "endsitem()"
+  const macro = kind === "item" ? "item(" : "sitem("
+  let listDepth = 0
+  let pos = 0
+
+  function sectionAt(lineIdx: number): string {
+    let sec = ""
+    for (const s of sections) {
+      if (s.line <= lineIdx) sec = s.name
+    }
+    return sec
+  }
+
+  while (pos < yo.length) {
+    if (yo.startsWith(open, pos)) {
+      listDepth++
+      pos += open.length
+      continue
+    }
+    if (yo.startsWith(close, pos)) {
+      listDepth = Math.max(0, listDepth - 1)
+      pos += close.length
+      continue
+    }
+
+    if (kind === "item" && listDepth === 1 && matchAt(yo, pos, "xitem(")) {
+      const closePos = findBalancedClose(yo, pos + 5)
+      if (closePos === -1) {
+        pos++
+        continue
+      }
+      items.push({
+        header: yo.slice(pos + 6, closePos),
+        section: sectionAt(lineOfPos(lines, pos)),
+      })
+      pos = closePos + 1
+      continue
+    }
+
+    if (listDepth === 1 && matchAt(yo, pos, macro)) {
+      const closePos = findBalancedClose(yo, pos + macro.length - 1)
+      if (closePos === -1) {
+        pos++
+        continue
+      }
+      const lineIdx = lineOfPos(lines, pos)
+      const header = yo.slice(pos + macro.length, closePos)
+      if (closePos + 1 < yo.length && yo[closePos + 1] === "(") {
+        const bodyClose = findBalancedClose(yo, closePos + 1)
+        if (bodyClose !== -1) {
+          items.push({
+            header,
+            body: yo.slice(closePos + 2, bodyClose).replace(/^\n/, ""),
+            section: sectionAt(lineIdx),
+          })
+          pos = bodyClose + 1
+          continue
+        }
+      }
+      items.push({ header, section: sectionAt(lineIdx) })
+      pos = closePos + 1
+      continue
+    }
+
+    pos++
+  }
+
+  return items
+}
+
+function posOfLine(lines: readonly string[], line: number): number {
+  let pos = 0
+  for (let i = 0; i < line; i++) pos += (lines[i]?.length ?? 0) + 1
+  return pos
 }

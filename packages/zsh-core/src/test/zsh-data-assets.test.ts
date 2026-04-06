@@ -3,7 +3,20 @@ import { join } from "node:path"
 import { describe, expect, test } from "vitest"
 import { resolveZshDataDir } from "../data-dir"
 import { mkBuiltinName, mkCondOp, mkOptName } from "../types/brand"
-import { getBuiltins, getCondOps, getOptions, getPrecmds } from "../zsh-data"
+import {
+  getBuiltins,
+  getCondOps,
+  getGlobbingFlags,
+  getGlobOps,
+  getHistoryDocs,
+  getOptions,
+  getParamFlags,
+  getPrecmds,
+  getProcessSubsts,
+  getRedirections,
+  getReservedWords,
+  getSubscriptFlags,
+} from "../zsh-data"
 
 const dataDir = resolveZshDataDir()
 
@@ -13,8 +26,11 @@ describe("vendored zsh data assets", () => {
       "SOURCE.md",
       "builtins.yo",
       "cond.yo",
+      "expn.yo",
       "grammar.yo",
       "options.yo",
+      "params.yo",
+      "redirect.yo",
     ]) {
       const path = join(dataDir, name)
       expect(existsSync(path)).toBe(true)
@@ -57,6 +73,21 @@ describe("vendored zsh data assets", () => {
       "exec",
       "nocorrect",
       "noglob",
+    ])
+  })
+
+  test("parses newly vendored structured syntax docs", () => {
+    expect(getRedirections().some((doc) => doc.op === "<")).toBe(true)
+    expect(getReservedWords().some((doc) => doc.name === "if")).toBe(true)
+    expect(getSubscriptFlags().some((doc) => doc.flag === "w")).toBe(true)
+    expect(getParamFlags().some((doc) => doc.flag === "@")).toBe(true)
+    expect(getHistoryDocs().some((doc) => doc.key === "!!")).toBe(true)
+    expect(getGlobOps().some((doc) => doc.op === "*")).toBe(true)
+    expect(getGlobbingFlags().some((doc) => doc.flag === "i")).toBe(true)
+    expect(getProcessSubsts().map((doc) => doc.op)).toEqual([
+      "<(...)",
+      ">(...)",
+      "=(...)",
     ])
   })
 })
