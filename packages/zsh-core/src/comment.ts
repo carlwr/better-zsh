@@ -1,9 +1,9 @@
 /** Find the start index of a `#` comment on a line, respecting quotes. */
 export function commentStart(line: string): number | undefined {
-  let sq = false
-  let dq = false
-  let bq = false
-  let esc = false
+  let sq = false // '
+  let dq = false // "
+  let bq = false // `
+  let esc = false // \
   for (let i = 0; i < line.length; i++) {
     const ch = line[i]
     if (esc) {

@@ -16,44 +16,51 @@ function mockDoc(lines: string[]) {
   }
 }
 
+function expectCmdHeadTexts(s: string, xs: string[]): void {
+  const facts = cmdHeadFactsOnLine(s)
+  expect(
+    facts.filter((f) => f.kind === "cmd-head").map((f) => f.text),
+  ).toEqual(xs)
+}
+
+function expectPrecmdNames(s: string, xs: string[]): void {
+  const facts = cmdHeadFactsOnLine(s)
+  expect(facts.filter(isPrecmdFact).map((f) => f.name)).toEqual(xs)
+}
+
+function expectPrecmdTexts(s: string, xs: string[]): void {
+  const facts = cmdHeadFactsOnLine(s)
+  expect(facts.filter(isPrecmdFact).map((f) => f.text)).toEqual(xs)
+}
+
 describe("command/precommand analysis", () => {
   test("finds command head on plain line", () => {
-    const facts = cmdHeadFactsOnLine("echo hi")
-    expect(
-      facts.filter((f) => f.kind === "cmd-head").map((f) => f.text),
-    ).toEqual(["echo"])
+    expectCmdHeadTexts("echo hi", ["echo"])
   })
 
   test("treats precommand modifiers separately from command head", () => {
-    const facts = cmdHeadFactsOnLine("noglob command echo hi")
-    expect(
-      facts.filter(isPrecmdFact).map((f) => `${f.name}:${f.text}`),
-    ).toEqual(["noglob:noglob", "command:command"])
-    expect(
-      facts.filter((f) => f.kind === "cmd-head").map((f) => f.text),
-    ).toEqual(["echo"])
+    const s = "noglob command echo hi"
+    expectPrecmdNames(s, ["noglob", "command"])
+    expectPrecmdTexts(s, ["noglob", "command"])
+    expectCmdHeadTexts(s, ["echo"])
   })
 
   test("keeps builtin head after builtin precommand modifier", () => {
-    const facts = cmdHeadFactsOnLine("builtin read var")
-    expect(facts.filter(isPrecmdFact).map((f) => f.name)).toEqual(["builtin"])
-    expect(
-      facts.filter((f) => f.kind === "cmd-head").map((f) => f.text),
-    ).toEqual(["read"])
+    const s = "builtin read var"
+    expectPrecmdNames(s, ["builtin"])
+    expectCmdHeadTexts(s, ["read"])
   })
 
   test("command with flags does not claim lookup target is executed command", () => {
-    const facts = cmdHeadFactsOnLine("command -v echo")
-    expect(facts.filter(isPrecmdFact).map((f) => f.name)).toEqual(["command"])
-    expect(facts.filter((f) => f.kind === "cmd-head")).toEqual([])
+    const s = "command -v echo"
+    expectPrecmdNames(s, ["command"])
+    expectCmdHeadTexts(s, [])
   })
 
   test("exec -a skips argv0 and finds command head", () => {
-    const facts = cmdHeadFactsOnLine("exec -a demo zsh -f")
-    expect(facts.filter(isPrecmdFact).map((f) => f.name)).toEqual(["exec"])
-    expect(
-      facts.filter((f) => f.kind === "cmd-head").map((f) => f.text),
-    ).toEqual(["zsh"])
+    const s = "exec -a demo zsh -f"
+    expectPrecmdNames(s, ["exec"])
+    expectCmdHeadTexts(s, ["zsh"])
   })
 })
 
