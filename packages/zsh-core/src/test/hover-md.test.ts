@@ -8,14 +8,26 @@ import {
   fmtOptRefsInMd,
   hoverDocs,
   hoverMdRegressions,
+  mdBuiltin,
   mdCond,
   mdOpt,
   mdParam,
+  mdPrecmd,
   mkHoverMdCtx,
 } from "../hover-md"
-import { mkCondOp, mkOptFlagChar, mkOptName } from "../types/brand"
-import type { CondOperator, ZshOption } from "../types/zsh-data"
-import { getCondOps, getOptions } from "../zsh-data"
+import {
+  mkBuiltinName,
+  mkCondOp,
+  mkOptFlagChar,
+  mkOptName,
+} from "../types/brand"
+import type {
+  BuiltinDoc,
+  CondOperator,
+  PrecmdDoc,
+  ZshOption,
+} from "../types/zsh-data"
+import { getBuiltins, getCondOps, getOptions, getPrecmds } from "../zsh-data"
 
 const opt: ZshOption = {
   name: mkOptName("AUTO_CD"),
@@ -38,6 +50,18 @@ const binary: CondOperator = {
   operands: ["left", "right"],
   desc: "Newer than.",
   kind: "binary",
+}
+
+const builtin: BuiltinDoc = {
+  name: mkBuiltinName("echo"),
+  synopsis: ["echo [ -n ] [ arg ... ]"],
+  desc: "Write text.",
+}
+
+const precmd: PrecmdDoc = {
+  name: "noglob",
+  synopsis: ["noglob command arg ..."],
+  desc: "Disable filename generation.",
 }
 
 describe("hover markdown", () => {
@@ -103,6 +127,18 @@ describe("hover markdown", () => {
     )
   })
 
+  test("renders builtin markdown", () => {
+    expect(mdBuiltin(builtin)).toContain("`echo`")
+    expect(mdBuiltin(builtin)).toContain("```zsh")
+    expect(mdBuiltin(builtin)).toContain("echo [ -n ] [ arg ... ]")
+    expect(mdBuiltin(builtin)).toContain("Write text.")
+  })
+
+  test("renders precommand modifier markdown", () => {
+    expect(mdPrecmd(precmd)).toContain("`noglob`")
+    expect(mdPrecmd(precmd)).toContain("_Role:_ precommand modifier")
+  })
+
   test("derives default state by emulation", () => {
     expect(defaultStateIn(opt, "zsh")).toBe("on")
     expect(
@@ -124,12 +160,16 @@ describe("hover markdown", () => {
         ["SECONDS", "integer-special-readonly"],
         ["argv", "array-special"],
       ]),
+      builtins: [builtin],
+      precmds: [precmd],
     })
     expect(docs.map((doc) => `${doc.kind}:${doc.key}`)).toEqual([
       "option:AUTO_CD",
       "cond-op:-a",
       "param:argv",
       "param:SECONDS",
+      "builtin:echo",
+      "precmd:noglob",
     ])
   })
 
@@ -144,15 +184,21 @@ describe("hover dump", () => {
       options: [opt],
       condOps: [binary],
       params: new Map([["SECONDS", "integer-special-readonly"]]),
+      builtins: [builtin],
+      precmds: [precmd],
     })
     const files = dumpText(docs)
     expect(files.get("options.md")).toContain("## AUTO_CD")
     expect(files.get("cond-ops.md")).toContain("## -nt")
     expect(files.get("params.md")).toContain("## SECONDS")
+    expect(files.get("builtins.md")).toContain("## echo")
+    expect(files.get("precmds.md")).toContain("## noglob")
     expect(files.get("suspicious.md")).toBe("")
     expect(files.get("all.md")).toContain("## AUTO_CD")
     expect(files.get("all.md")).toContain("## -nt")
     expect(files.get("all.md")).toContain("## SECONDS")
+    expect(files.get("all.md")).toContain("## echo")
+    expect(files.get("all.md")).toContain("## noglob")
   })
 
   test("writes dump files", async () => {
@@ -164,6 +210,8 @@ describe("hover dump", () => {
           options: [opt],
           condOps: [binary],
           params: new Map([["SECONDS", "integer-special-readonly"]]),
+          builtins: [builtin],
+          precmds: [precmd],
         }),
       )
       expect(readFileSync(join(dir, "all.md"), "utf8")).toContain("## AUTO_CD")
@@ -174,6 +222,12 @@ describe("hover dump", () => {
       expect(readFileSync(join(dir, "params.md"), "utf8")).toContain(
         "`SECONDS`",
       )
+      expect(readFileSync(join(dir, "builtins.md"), "utf8")).toContain(
+        "Write text.",
+      )
+      expect(readFileSync(join(dir, "precmds.md"), "utf8")).toContain(
+        "Disable filename generation.",
+      )
       expect(readFileSync(join(dir, "suspicious.md"), "utf8")).toBe("")
     } finally {
       rmSync(dir, { recursive: true, force: true })
@@ -182,11 +236,15 @@ describe("hover dump", () => {
 
   describe("vendored docs", () => {
     const options = getOptions()
+    const builtins = getBuiltins()
     const condOps = getCondOps()
+    const precmds = getPrecmds()
     const docs = hoverDocs({
       options,
       condOps,
       params: new Map([["SECONDS", "integer-special-readonly"]]),
+      builtins,
+      precmds,
     })
     const files = dumpText(docs)
 
@@ -197,11 +255,23 @@ describe("hover dump", () => {
       expect(docs.filter((doc) => doc.kind === "cond-op")).toHaveLength(
         condOps.length,
       )
+      expect(docs.filter((doc) => doc.kind === "builtin")).toHaveLength(
+        builtins.length,
+      )
+      expect(docs.filter((doc) => doc.kind === "precmd")).toHaveLength(
+        precmds.length,
+      )
       expect((files.get("options.md")?.match(/^## /gm) ?? []).length).toBe(
         options.length,
       )
       expect((files.get("cond-ops.md")?.match(/^## /gm) ?? []).length).toBe(
         condOps.length,
+      )
+      expect((files.get("builtins.md")?.match(/^## /gm) ?? []).length).toBe(
+        builtins.length,
+      )
+      expect((files.get("precmds.md")?.match(/^## /gm) ?? []).length).toBe(
+        precmds.length,
       )
     })
 
@@ -210,6 +280,10 @@ describe("hover dump", () => {
       expect(files.get("options.md")).not.toContain("var(")
       expect(files.get("cond-ops.md")).not.toContain("tt(")
       expect(files.get("cond-ops.md")).not.toContain("var(")
+      expect(files.get("builtins.md")).not.toContain("tt(")
+      expect(files.get("builtins.md")).not.toContain("var(")
+      expect(files.get("precmds.md")).not.toContain("tt(")
+      expect(files.get("precmds.md")).not.toContain("var(")
     })
 
     test("emitted markdown avoids known suspicious patterns", () => {

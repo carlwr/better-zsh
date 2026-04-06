@@ -17,6 +17,7 @@ const SPECIAL_MACROS: Record<string, string> = {
   "LPAR()": "(",
   "RPAR()": ")",
   "PLUS()": "+",
+  "SPACES()": " ",
   "LSQUARE()": "[",
   "RSQUARE()": "]",
   "PIPE()": "|",
@@ -60,8 +61,8 @@ export function stripYodl(raw: string): string {
   ]) {
     s = stripWrapperMacro(s, m)
   }
-  // Strip index macros: cindex(), pindex(), findex()
-  for (const m of ["cindex", "pindex", "findex"]) {
+  // Strip index macros.
+  for (const m of ["cindex", "pindex", "findex", "vindex"]) {
     s = stripMacro(s, m)
   }
   // Replace special macros

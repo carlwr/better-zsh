@@ -1,10 +1,22 @@
 import * as vscode from "vscode"
-import type { CondOperator, OptFlagAlias, ZshOption } from "zsh-core"
+import type {
+  BuiltinDoc,
+  CmdHeadFact,
+  CondOperator,
+  OptFlagAlias,
+  PrecmdDoc,
+  PrecmdFact,
+  ZshOption,
+} from "zsh-core"
 import {
+  factsAt,
+  factText,
   type HoverMdCtx,
+  mdBuiltin,
   mdCond,
   mdOpt,
   mdParam,
+  mdPrecmd,
   mkCondOp,
   mkHoverMdCtx,
   mkOptName,
@@ -14,19 +26,28 @@ import { activeWordRangeAt, commentStart, funcDocs } from "./funcs"
 
 export class HoverProvider implements vscode.HoverProvider {
   private md: HoverMdCtx
+  private builtinMap: Map<string, BuiltinDoc> | undefined
   private params: Map<string, string> | undefined
   private optionMap: Map<string, ZshOption> | undefined
   private flagMap:
     | Map<string, { opt: ZshOption; alias: OptFlagAlias }>
     | undefined
   private condOpMap: Map<string, CondOperator> | undefined
+  private precmdMap: Map<string, PrecmdDoc> | undefined
 
   constructor(
     params?: Map<string, string>,
     options?: ZshOption[],
     condOps?: CondOperator[],
+    builtins?: BuiltinDoc[],
+    precmds?: PrecmdDoc[],
   ) {
     this.md = mkHoverMdCtx(options)
+    if (builtins) {
+      this.builtinMap = new Map(
+        builtins.map((builtin) => [builtin.name as string, builtin]),
+      )
+    }
     this.params = params
     if (options) {
       this.optionMap = new Map(options.map((o) => [o.name as string, o]))
@@ -40,6 +61,9 @@ export class HoverProvider implements vscode.HoverProvider {
     }
     if (condOps) {
       this.condOpMap = new Map(condOps.map((o) => [o.op as string, o]))
+    }
+    if (precmds) {
+      this.precmdMap = new Map(precmds.map((doc) => [doc.name, doc]))
     }
   }
 
@@ -74,21 +98,52 @@ export class HoverProvider implements vscode.HoverProvider {
     }
 
     const range = activeWordRangeAt(doc, pos)
-    if (!range) return
-    const w = doc.getText(range)
+    if (range) {
+      const w = doc.getText(range)
 
-    // Function docs
-    const d = funcDocs(doc).get(w)
-    if (d)
-      return new vscode.Hover(
-        new vscode.MarkdownString().appendCodeblock(d, ""),
-      )
+      const d = funcDocs(doc).get(w)
+      if (d)
+        return new vscode.Hover(
+          new vscode.MarkdownString().appendCodeblock(d, ""),
+        )
 
-    // Parameter type hover
-    if (this.params) {
-      const ptype = this.params.get(w)
-      if (ptype) {
-        return new vscode.Hover(new vscode.MarkdownString(mdParam(w, ptype)))
+      if (this.params) {
+        const ptype = this.params.get(w)
+        if (ptype) {
+          return new vscode.Hover(new vscode.MarkdownString(mdParam(w, ptype)))
+        }
+      }
+    }
+
+    const tokenRange = activeTokenRangeAt(doc, pos)
+    if (!tokenRange) return
+    const token = doc.getText(tokenRange)
+    const af = factsAt(doc, pos.line, pos.character)
+    const precmd = af.find(
+      (fact): fact is PrecmdFact =>
+        fact.kind === "precmd" && factText(doc, fact.span) === token,
+    )
+    if (precmd) {
+      const doc = this.precmdMap?.get(precmd.name)
+      if (doc) {
+        return new vscode.Hover(
+          new vscode.MarkdownString(mdPrecmd(doc)),
+          tokenRange,
+        )
+      }
+    }
+
+    const head = af.find(
+      (fact): fact is CmdHeadFact =>
+        fact.kind === "cmd-head" && factText(doc, fact.span) === token,
+    )
+    if (head) {
+      const doc = this.builtinMap?.get(token)
+      if (doc) {
+        return new vscode.Hover(
+          new vscode.MarkdownString(mdBuiltin(doc)),
+          tokenRange,
+        )
       }
     }
   }

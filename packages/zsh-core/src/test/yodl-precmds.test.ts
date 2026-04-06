@@ -1,0 +1,31 @@
+import { readFileSync } from "node:fs"
+import { resolve } from "node:path"
+import { describe, expect, test } from "vitest"
+import { parsePrecmds } from "../yodl/precmds"
+
+const GRAMMAR_YO = readFileSync(
+  resolve(__dirname, "../data/zsh-docs/grammar.yo"),
+  "utf8",
+)
+
+describe("parsePrecmds", () => {
+  test("parses vendored precommand modifiers", () => {
+    const docs = parsePrecmds(GRAMMAR_YO)
+    expect(docs.map((d) => d.name)).toEqual([
+      "-",
+      "builtin",
+      "command",
+      "exec",
+      "nocorrect",
+      "noglob",
+    ])
+  })
+
+  test("command and exec keep synopsis and prose", () => {
+    const docs = new Map(parsePrecmds(GRAMMAR_YO).map((d) => [d.name, d]))
+    expect(docs.get("command")?.synopsis[0]).toContain("command [ -pvV ]")
+    expect(docs.get("command")?.desc).toMatch(/external command/i)
+    expect(docs.get("exec")?.synopsis[0]).toContain("exec [ -cl ]")
+    expect(docs.get("exec")?.desc).toMatch(/current process/i)
+  })
+})

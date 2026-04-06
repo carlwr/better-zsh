@@ -1,6 +1,6 @@
 import * as assert from "node:assert"
 import { existsSync } from "node:fs"
-import { resolve, join } from "node:path"
+import { join, resolve } from "node:path"
 import * as vscode from "vscode"
 
 const EXT_ID = "carlwr.better-zsh"
@@ -17,13 +17,11 @@ function assertDoesntExist(path: string) {
 }
 
 async function getDoc() {
-
   const uri = vscode.Uri.file(fixtureFile)
   return await vscode.workspace.openTextDocument(uri)
 }
 
 suite("bundled extension", function () {
-
   this.timeout(30000)
 
   let ext: vscode.Extension<unknown> | undefined

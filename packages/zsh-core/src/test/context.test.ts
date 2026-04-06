@@ -34,6 +34,11 @@ describe("syntacticContext", () => {
     expect(syntacticContext(doc, 0, 9).kind).toBe("cond")
   })
 
+  test('cursor after "[ " stays in cond context', () => {
+    const doc = mockDoc(["[ "])
+    expect(syntacticContext(doc, 0, 2).kind).toBe("cond")
+  })
+
   test('multiline [[ → kind "cond"', () => {
     const doc = mockDoc(["[[ -f foo &&", "  -d bar ]]"])
     expect(syntacticContext(doc, 1, 5).kind).toBe("cond")

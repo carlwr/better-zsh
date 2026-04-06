@@ -86,4 +86,15 @@ suite("SemanticTokensProvider", () => {
       "echo",
     ])
   })
+
+  test("marks builtin after builtin-style precommand modifiers", () => {
+    assert.deepStrictEqual(
+      words("noglob builtin echo hi", ["builtin", "echo"]),
+      ["echo"],
+    )
+  })
+
+  test("does not mark target after command precommand modifier", () => {
+    assert.deepStrictEqual(words("command echo hi", ["command", "echo"]), [])
+  })
 })

@@ -2,10 +2,16 @@ import { readFileSync } from "node:fs"
 import { join } from "node:path"
 import { cached } from "@carlwr/typescript-extra"
 import { resolveZshDataDir } from "./data-dir"
-import type { BuiltinDoc, CondOperator, ZshOption } from "./types/zsh-data"
+import type {
+  BuiltinDoc,
+  CondOperator,
+  PrecmdDoc,
+  ZshOption,
+} from "./types/zsh-data"
 import { parseBuiltins } from "./yodl/builtins"
 import { parseCondOps } from "./yodl/cond-ops"
 import { parseOptions } from "./yodl/options"
+import { parsePrecmds } from "./yodl/precmds"
 
 const dataDir = resolveZshDataDir()
 
@@ -23,4 +29,8 @@ export const getCondOps = cached<CondOperator[]>(() =>
 
 export const getBuiltins = cached<BuiltinDoc[]>(() =>
   parseBuiltins(readYo("builtins.yo")),
+)
+
+export const getPrecmds = cached<PrecmdDoc[]>(() =>
+  parsePrecmds(readYo("grammar.yo")),
 )

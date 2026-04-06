@@ -1,5 +1,5 @@
 import * as vscode from "vscode"
-import { cmdPositions, commentStart } from "zsh-core"
+import { cmdHeadFactsOnLine, commentStart } from "zsh-core"
 
 const TOKEN_TYPES = ["function"] as const
 const TOKEN_MODIFIERS = ["defaultLibrary"] as const
@@ -23,10 +23,12 @@ export class SemanticTokensProvider
     for (let i = 0; i < doc.lineCount; i++) {
       const text = doc.lineAt(i).text
       const cmtAt = commentStart(text)
-      for (const pos of cmdPositions(text, cmtAt)) {
-        const word = text.slice(pos.start, pos.end)
-        if (word !== "[" && this.builtins.has(word)) {
-          b.push(i, pos.start, pos.end - pos.start, 0, 1 << 0)
+      for (const fact of cmdHeadFactsOnLine(text, cmtAt)) {
+        if (fact.kind !== "cmd-head") continue
+        if (fact.text === "[") continue
+        if (fact.precmds.includes("command")) continue
+        if (this.builtins.has(fact.text)) {
+          b.push(i, fact.span.start, fact.span.end - fact.span.start, 0, 1 << 0)
         }
       }
     }

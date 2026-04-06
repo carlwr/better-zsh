@@ -20,6 +20,33 @@ async function hoverText(doc: vscode.TextDocument, pos: vscode.Position) {
 }
 
 suite("ZshHoverProvider", () => {
+  test("shows builtin docs for command head", async () => {
+    const doc = await openText("echo hi")
+    const text = await hoverText(doc, new vscode.Position(0, 1))
+    assert.match(text, /^`echo`/m)
+    assert.match(text, /Write each arg on the standard output/i)
+  })
+
+  test("shows builtin docs for punctuation builtins", async () => {
+    const dot = await openText(". ./script.zsh")
+    const dotText = await hoverText(dot, new vscode.Position(0, 0))
+    assert.match(dotText, /^`\.`/m)
+    assert.match(dotText, /Read commands from file/i)
+
+    const colon = await openText(": foo")
+    const colonText = await hoverText(colon, new vscode.Position(0, 0))
+    assert.match(colonText, /^`:`/m)
+    assert.match(colonText, /does nothing/i)
+  })
+
+  test("shows precommand modifier docs", async () => {
+    const doc = await openText("noglob echo *.txt")
+    const text = await hoverText(doc, new vscode.Position(0, 1))
+    assert.match(text, /^`noglob`/m)
+    assert.match(text, /precommand modifier/i)
+    assert.match(text, /Filename generation \(globbing\) is not performed/i)
+  })
+
   test("shows docs for == inside [[ ]]", async () => {
     const doc = await openText("[[ 1 == 2 ]]")
     const text = await hoverText(doc, new vscode.Position(0, 5))
@@ -68,5 +95,14 @@ suite("ZshHoverProvider", () => {
     assert.match(text, /\*\*`PUSHD_SILENT`\*\*/)
     assert.match(text, /\*\*`POSIX_CD`\*\*/)
     assert.doesNotMatch(text, /`CDPATH`/)
+  })
+
+  test("local function docs win over builtin docs", async () => {
+    const doc = await openText(
+      ["# local echo", "echo() {", "}", "echo hi"].join("\n"),
+    )
+    const text = await hoverText(doc, new vscode.Position(3, 1))
+    assert.match(text, /local echo/)
+    assert.doesNotMatch(text, /Write each arg on the standard output/i)
   })
 })

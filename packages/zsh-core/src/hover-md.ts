@@ -1,14 +1,16 @@
 import { mkOptName, type OptName } from "./types/brand"
 import type {
+  BuiltinDoc,
   CondOperator,
   Emulation,
   OptFlagAlias,
   OptFlagSign,
   OptState,
+  PrecmdDoc,
   ZshOption,
 } from "./types/zsh-data"
 
-export type HoverKind = "option" | "cond-op" | "param"
+export type HoverKind = "option" | "cond-op" | "param" | "builtin" | "precmd"
 
 export interface HoverDoc {
   kind: HoverKind
@@ -126,6 +128,36 @@ export function mdParam(name: string, raw: string): string {
   return `${hoverFmt.code(name)}: ${fmtParamType(raw)} — zsh special parameter`
 }
 
+export function mdBuiltin(doc: BuiltinDoc): string {
+  const out = [
+    hoverFmt.code(doc.name as string),
+    "",
+    "```zsh",
+    ...doc.synopsis,
+    "```",
+    "",
+    doc.desc,
+  ]
+  if (doc.aliasOf)
+    out.push("", `_Alias of:_ ${hoverFmt.code(doc.aliasOf as string)}`)
+  if (doc.module) out.push("", `_Module:_ ${hoverFmt.code(doc.module)}`)
+  return out.join("\n")
+}
+
+export function mdPrecmd(doc: PrecmdDoc): string {
+  return [
+    hoverFmt.code(doc.name),
+    "",
+    "```zsh",
+    ...doc.synopsis,
+    "```",
+    "",
+    doc.desc,
+    "",
+    "_Role:_ precommand modifier",
+  ].join("\n")
+}
+
 export function defaultStateIn(opt: ZshOption, emulation: Emulation): OptState {
   return opt.defaultIn.includes(emulation) ? "on" : "off"
 }
@@ -149,10 +181,14 @@ export function hoverDocs({
   options,
   condOps,
   params,
+  builtins = [],
+  precmds = [],
 }: {
   options: readonly ZshOption[]
   condOps: readonly CondOperator[]
   params: ReadonlyMap<string, string>
+  builtins?: readonly BuiltinDoc[]
+  precmds?: readonly PrecmdDoc[]
 }): HoverDoc[] {
   const ctx = mkHoverMdCtx(options)
   const paramDocs = [...params.entries()]
@@ -175,6 +211,16 @@ export function hoverDocs({
       md: mdCond(cop, ctx),
     })),
     ...paramDocs,
+    ...builtins.map((builtin) => ({
+      kind: "builtin" as const,
+      key: builtin.name as string,
+      md: mdBuiltin(builtin),
+    })),
+    ...precmds.map((precmd) => ({
+      kind: "precmd" as const,
+      key: precmd.name,
+      md: mdPrecmd(precmd),
+    })),
   ]
 }
 

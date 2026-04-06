@@ -1,4 +1,4 @@
-import type { CondOp, OptFlagChar, OptName } from "./brand"
+import type { BuiltinName, CondOp, OptFlagChar, OptName } from "./brand"
 
 /** Default-on marker from zshoptions: <D>=default, <K>=ksh, <S>=sh, <C>=csh, <Z>=zsh */
 export type DefaultMarker = "D" | "K" | "S" | "C" | "Z"
@@ -11,6 +11,14 @@ export type Emulation = "csh" | "ksh" | "sh" | "zsh"
 export type OptState = "on" | "off"
 
 export type OptFlagSign = "+" | "-"
+
+export type PrecmdName =
+  | "-"
+  | "builtin"
+  | "command"
+  | "exec"
+  | "nocorrect"
+  | "noglob"
 
 export interface OptFlagAlias {
   char: OptFlagChar
@@ -34,9 +42,15 @@ export interface CondOperator {
 }
 
 export interface BuiltinDoc {
-  name: string
-  synopsis: string[]
+  name: BuiltinName
+  synopsis: readonly string[]
   desc: string
   module?: string
-  aliasOf?: string
+  aliasOf?: BuiltinName
+}
+
+export interface PrecmdDoc {
+  name: PrecmdName
+  synopsis: readonly string[]
+  desc: string
 }

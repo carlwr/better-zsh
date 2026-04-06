@@ -1,3 +1,4 @@
+export * from "./src/analysis"
 export * from "./src/cmd-position"
 export * from "./src/comment"
 export * from "./src/context"

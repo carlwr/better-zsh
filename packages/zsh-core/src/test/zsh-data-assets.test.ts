@@ -2,8 +2,8 @@ import { existsSync, readFileSync } from "node:fs"
 import { join } from "node:path"
 import { describe, expect, test } from "vitest"
 import { resolveZshDataDir } from "../data-dir"
-import { mkCondOp, mkOptName } from "../types/brand"
-import { getBuiltins, getCondOps, getOptions } from "../zsh-data"
+import { mkBuiltinName, mkCondOp, mkOptName } from "../types/brand"
+import { getBuiltins, getCondOps, getOptions, getPrecmds } from "../zsh-data"
 
 const dataDir = resolveZshDataDir()
 
@@ -40,5 +40,23 @@ describe("vendored zsh data assets", () => {
     expect(autoload).toBeTruthy()
     expect(autoload?.synopsis.length).toBeGreaterThan(0)
     expect(autoload?.desc.length).toBeGreaterThan(0)
+    expect(
+      builtins.some((builtin) => builtin.name === mkBuiltinName("bindkey")),
+    ).toBe(true)
+    expect(
+      builtins.some((builtin) => builtin.name === mkBuiltinName("ARG1")),
+    ).toBe(false)
+  })
+
+  test("parses vendored precommand modifier docs", () => {
+    const docs = getPrecmds()
+    expect(docs.map((doc) => doc.name)).toEqual([
+      "-",
+      "builtin",
+      "command",
+      "exec",
+      "nocorrect",
+      "noglob",
+    ])
   })
 })

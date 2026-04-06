@@ -7,6 +7,8 @@ export type HoverDumpFile =
   | "options.md"
   | "cond-ops.md"
   | "params.md"
+  | "builtins.md"
+  | "precmds.md"
   | "suspicious.md"
 
 const dumpFiles: readonly [HoverKind | "all", HoverDumpFile][] = [
@@ -14,6 +16,8 @@ const dumpFiles: readonly [HoverKind | "all", HoverDumpFile][] = [
   ["option", "options.md"],
   ["cond-op", "cond-ops.md"],
   ["param", "params.md"],
+  ["builtin", "builtins.md"],
+  ["precmd", "precmds.md"],
 ]
 
 const suspiciousPatterns: readonly [string, RegExp][] = [
@@ -33,6 +37,8 @@ export function dumpText(
     ["option", []],
     ["cond-op", []],
     ["param", []],
+    ["builtin", []],
+    ["precmd", []],
   ])
   for (const doc of docs) byKind.get(doc.kind)?.push(doc)
 

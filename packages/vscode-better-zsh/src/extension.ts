@@ -1,5 +1,5 @@
 import * as vscode from "vscode"
-import { getCondOps, getOptions } from "zsh-core"
+import { getBuiltins, getCondOps, getOptions, getPrecmds } from "zsh-core"
 import { CompletionProvider } from "./completions"
 import { DefinitionProvider } from "./definition"
 import { setupDiagnostics } from "./diagnostics"
@@ -39,8 +39,10 @@ export async function activate(ctx: vscode.ExtensionContext) {
   )
 
   // Parsed data from vendored .yo files (always available, no zsh needed)
+  const parsedBuiltins = getBuiltins()
   const parsedOptions = getOptions()
   const parsedCondOps = getCondOps()
+  const parsedPrecmds = getPrecmds()
 
   ctx.subscriptions.push(
     vscode.languages.registerDocumentHighlightProvider(
@@ -74,7 +76,13 @@ export async function activate(ctx: vscode.ExtensionContext) {
     ctx.subscriptions.push(
       vscode.languages.registerHoverProvider(
         "zsh",
-        new HoverProvider(params, parsedOptions, parsedCondOps),
+        new HoverProvider(
+          params,
+          parsedOptions,
+          parsedCondOps,
+          parsedBuiltins,
+          parsedPrecmds,
+        ),
       ),
       vscode.languages.registerCompletionItemProvider(
         "zsh",
@@ -83,6 +91,7 @@ export async function activate(ctx: vscode.ExtensionContext) {
           reswords: rw,
           options: opts,
           params,
+          builtinDocs: parsedBuiltins,
           zshOptions: parsedOptions,
           condOps: parsedCondOps,
         }),
@@ -97,7 +106,13 @@ export async function activate(ctx: vscode.ExtensionContext) {
     ctx.subscriptions.push(
       vscode.languages.registerHoverProvider(
         "zsh",
-        new HoverProvider(undefined, parsedOptions, parsedCondOps),
+        new HoverProvider(
+          undefined,
+          parsedOptions,
+          parsedCondOps,
+          parsedBuiltins,
+          parsedPrecmds,
+        ),
       ),
     )
   }

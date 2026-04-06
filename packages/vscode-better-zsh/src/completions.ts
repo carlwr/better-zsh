@@ -1,8 +1,9 @@
 import * as vscode from "vscode"
-import type { CondOperator, ZshOption } from "zsh-core"
+import type { BuiltinDoc, CondOperator, ZshOption } from "zsh-core"
 import {
   filterTokens,
   matchOptions,
+  mdBuiltin,
   mkOptName,
   sigCond,
   syntacticContext,
@@ -21,6 +22,7 @@ export interface CompletionData {
   reswords: string[]
   options: string[]
   params: Map<string, string>
+  builtinDocs?: BuiltinDoc[]
   zshOptions?: ZshOption[]
   condOps?: CondOperator[]
 }
@@ -35,10 +37,18 @@ export class CompletionProvider implements vscode.CompletionItemProvider {
     this.general = [
       ...data.builtins
         .filter((n) => WORD_EXACT.test(n))
-        .map(
-          (n) =>
-            new vscode.CompletionItem(n, vscode.CompletionItemKind.Keyword),
-        ),
+        .map((n) => {
+          const item = new vscode.CompletionItem(
+            n,
+            vscode.CompletionItemKind.Keyword,
+          )
+          const doc = data.builtinDocs?.find((builtin) => builtin.name === n)
+          if (doc) {
+            item.detail = doc.desc
+            item.documentation = new vscode.MarkdownString(mdBuiltin(doc))
+          }
+          return item
+        }),
       ...data.reswords
         .filter((n) => WORD_EXACT.test(n))
         .map(
