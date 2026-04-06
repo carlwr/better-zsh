@@ -3,13 +3,12 @@ import type { BuiltinDoc, CondOperator, ZshOption } from "zsh-core"
 import {
   filterTokens,
   matchOptions,
-  mdBuiltin,
   mkOptName,
-  sigCond,
   syntacticContext,
   WORD,
   WORD_EXACT,
 } from "zsh-core"
+import { mdBuiltin, sigCond } from "zsh-core/render"
 import { asyncDocCache } from "./cache"
 import { zshTokenize } from "./zsh"
 

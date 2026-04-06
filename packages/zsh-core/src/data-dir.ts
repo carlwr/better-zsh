@@ -1,9 +1,16 @@
 import { cpSync, existsSync } from "node:fs"
-import { join } from "node:path"
+import { dirname, join } from "node:path"
+import { fileURLToPath } from "node:url"
+
+const here: string =
+  typeof __dirname !== "undefined"
+    ? __dirname
+    : dirname(fileURLToPath(import.meta.url))
 
 export const runtimeZshDataDir = "zsh-core-data"
 
-export function resolveZshDataDir(baseDir = __dirname): string {
+/** Resolve the packaged/raw zsh-doc data directory relative to a module base dir. */
+export function resolveZshDataDir(baseDir = here): string {
   const candidates = [
     join(baseDir, "data", "zsh-docs"),
     join(baseDir, "..", "src", "data", "zsh-docs"),
@@ -14,7 +21,8 @@ export function resolveZshDataDir(baseDir = __dirname): string {
   throw new Error(`zsh docs dir not found: ${candidates.join(", ")}`)
 }
 
-export function copyRuntimeZshData(outDir: string, baseDir = __dirname) {
+/** Copy the runtime zsh-doc payload into another output directory. */
+export function copyRuntimeZshData(outDir: string, baseDir = here) {
   cpSync(resolveZshDataDir(baseDir), join(outDir, runtimeZshDataDir), {
     recursive: true,
   })

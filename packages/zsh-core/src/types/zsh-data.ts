@@ -1,4 +1,4 @@
-import type { BuiltinName, CondOp, OptFlagChar, OptName } from "./brand"
+import type { BuiltinName, CondOp, OptFlagChar, OptName } from "./brand.ts"
 
 /** Default-on marker from zshoptions: <D>=default, <K>=ksh, <S>=sh, <C>=csh, <Z>=zsh */
 export type DefaultMarker = "D" | "K" | "S" | "C" | "Z"
@@ -12,6 +12,7 @@ export type OptState = "on" | "off"
 
 export type OptFlagSign = "+" | "-"
 
+/** Precommand modifiers accepted before a command head. */
 export type PrecmdName =
   | "-"
   | "builtin"
@@ -20,11 +21,13 @@ export type PrecmdName =
   | "nocorrect"
   | "noglob"
 
+/** Short-option alias for a long zsh option. */
 export interface OptFlagAlias {
   char: OptFlagChar
   on: OptFlagSign
 }
 
+/** Parsed zsh option metadata normalized from upstream docs. */
 export interface ZshOption {
   name: OptName
   display: string // "AUTO_CD" — UPPER_CASE from docs
@@ -34,6 +37,7 @@ export interface ZshOption {
   desc: string
 }
 
+/** Parsed `[[ ... ]]` conditional operator docs. */
 export interface CondOperator {
   op: CondOp // "-a", "-nt", "=~"
   operands: string[] // ["file"], ["file1", "file2"]
@@ -41,6 +45,7 @@ export interface CondOperator {
   kind: CondKind
 }
 
+/** Parsed builtin command doc block. */
 export interface BuiltinDoc {
   name: BuiltinName
   synopsis: readonly string[]
@@ -49,6 +54,7 @@ export interface BuiltinDoc {
   aliasOf?: BuiltinName
 }
 
+/** Parsed precommand modifier doc block. */
 export interface PrecmdDoc {
   name: PrecmdName
   synopsis: readonly string[]

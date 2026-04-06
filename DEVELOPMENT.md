@@ -5,6 +5,22 @@
 Use `pnpm dump:hover` to write the current static hover markdown under `.aux/hover/`.
 This is for visual QA of the exact markdown fed to VS Code for static hover docs.
 
+## zsh-core API docs
+
+Use `pnpm docs:zsh-core` to build the local `zsh-core` API site under
+`packages/zsh-core/.aux/docs/site/`.
+
+Notes:
+
+- The published docs site intentionally lives under `.aux/`, not `dist/`:
+  `dist/` is packed for npm, so putting the site there risks silently shipping HTML/docs artifacts in package tarballs.
+- `zsh-core` source uses explicit relative `.ts` import specifiers:
+  this keeps native Deno/JSR source checks and publish dry-runs working from the source tree, not only from tsup output.
+- Structured JSON artifacts are formatted directly by the build writer:
+  keep formatting policy in generation code; avoid a separate post-process formatter stage for these outputs.
+- Native JSR validation is available via `pnpm jsr:zsh-core:check`;
+  this complements the package-oriented `pnpm jsr:zsh-core:dry`.
+
 ## Containerized integration tests
 
 `pnpm test:integration` runs the `integration` workflow job through `act`.

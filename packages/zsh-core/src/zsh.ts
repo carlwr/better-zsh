@@ -8,20 +8,24 @@ const OPTIONS_SCRIPT = "print -l -- ${(k)options}"
 const PARAMS_SCRIPT =
   'zmodload zsh/parameter; for k v in ${(kv)parameters}; do [[ $v == *special* && $v != *hide* ]] && print "$k=$v"; done'
 
+/** Request shape for a zsh process invocation. */
 export interface ZshRunReq {
   args: string[]
   env?: NodeJS.ProcessEnv
   stdin?: string
 }
 
+/** Normalized zsh process result. */
 export interface ZshRunResult {
   stdout: string
   stderr: string
   code: number
 }
 
+/** Injected zsh executor used by the query helpers. */
 export type ZshRunner = (req: ZshRunReq) => Promise<ZshRunResult>
 
+/** Parse common zsh syntax-check stderr into a line/message pair. */
 export function parseZshError(
   stderr: string,
 ): { line: number; msg: string } | undefined {
@@ -31,21 +35,24 @@ export function parseZshError(
   return { line: 1, msg: stderr.trim() }
 }
 
+/** Run a zsh script under `emulate -LR zsh` with `-f`. */
 export function runZshScript(
   run: ZshRunner,
   script: string,
   env?: NodeJS.ProcessEnv,
-) {
+): Promise<ZshRunResult> {
   return run({
     args: [...ZSH_BASE_ARGS, "-c", `emulate -LR zsh\n${script}`],
     env,
   })
 }
 
-export function runZshVersion(run: ZshRunner) {
+/** Query the zsh version banner. */
+export function runZshVersion(run: ZshRunner): Promise<ZshRunResult> {
   return run({ args: [...ZSH_VERSION_ARGS] })
 }
 
+/** Ask zsh to tokenize source text. */
 export async function zshTokenize(
   run: ZshRunner,
   text: string,
@@ -54,6 +61,7 @@ export async function zshTokenize(
   return r.code === 0 ? splitLines(r.stdout) : undefined
 }
 
+/** Query builtin command names known to zsh. */
 export async function zshBuiltins(
   run: ZshRunner,
 ): Promise<string[] | undefined> {
@@ -61,6 +69,7 @@ export async function zshBuiltins(
   return r.code === 0 ? splitLines(r.stdout) : undefined
 }
 
+/** Query reserved words known to zsh. */
 export async function zshReswords(
   run: ZshRunner,
 ): Promise<string[] | undefined> {
@@ -68,6 +77,7 @@ export async function zshReswords(
   return r.code === 0 ? splitLines(r.stdout) : undefined
 }
 
+/** Query option names known to zsh. */
 export async function zshOptions(
   run: ZshRunner,
 ): Promise<string[] | undefined> {
@@ -75,6 +85,7 @@ export async function zshOptions(
   return r.code === 0 ? splitLines(r.stdout) : undefined
 }
 
+/** Query visible special parameters known to zsh. */
 export async function zshParameters(
   run: ZshRunner,
 ): Promise<Map<string, string> | undefined> {

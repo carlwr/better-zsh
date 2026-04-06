@@ -4,33 +4,65 @@
   "version": "0.0.1",
   "license": "MIT",
   "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "types": "./dist/types/index.d.ts",
   "files": [
     "dist",
-    "LICENSE"
+    "LICENSE",
+    "deno.json"
   ],
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "default": "./dist/index.mjs"
+    },
+    "./render": {
+      "types": "./dist/types/render.d.ts",
+      "import": "./dist/render.mjs",
+      "require": "./dist/render.js",
+      "default": "./dist/render.mjs"
+    },
+    "./exec": {
+      "types": "./dist/types/exec.d.ts",
+      "import": "./dist/exec.mjs",
+      "require": "./dist/exec.js",
+      "default": "./dist/exec.mjs"
     },
     "./assets": {
-      "types": "./dist/assets.d.ts",
-      "default": "./dist/assets.js"
-    }
+      "types": "./dist/types/assets.d.ts",
+      "import": "./dist/assets.mjs",
+      "require": "./dist/assets.js",
+      "default": "./dist/assets.mjs"
+    },
+    "./data/index.json": "./dist/json/index.json",
+    "./data/options.json": "./dist/json/options.json",
+    "./data/cond-ops.json": "./dist/json/cond-ops.json",
+    "./data/builtins.json": "./dist/json/builtins.json",
+    "./data/precmds.json": "./dist/json/precmds.json",
+    "./package.json": "./package.json"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/carlwr/vscode-better-zsh"
   },
   "scripts": {
-    "build": "tsx build.ts",
+    "build": "tsx build.ts && node scripts/build-api.mjs",
     "watch": "tsx build.ts --watch",
+    "docs:typedoc:html": "typedoc",
+    "docs:typedoc:json": "typedoc --emit none",
+    "docs:api": "node scripts/build-api.mjs",
+    "docs:build": "pnpm build && pnpm docs:typedoc:html && node scripts/build-docs.mjs",
+    "jsr:dry": "pnpm dlx jsr publish --dry-run --allow-dirty",
+    "jsr:check": "deno publish --dry-run --allow-dirty",
     "typecheck": "tsc --noEmit",
-    "lint": "biome check assets.ts build.ts index.ts scripts src tsconfig.build.json tsconfig.json vitest.config.ts package.json",
+    "lint": "biome check assets.ts build.ts deno.json exec.ts index.ts render.ts scripts src tsconfig.build.json tsconfig.json typedoc.json vitest.config.ts package.json",
     "check": "pnpm typecheck && pnpm lint",
     "test": "vitest run",
     "test:smoke": "pnpm build && node scripts/test-smoke.mjs"
+  },
+  "dependencies": {
+    "@carlwr/typescript-extra": "0.7.0"
   },
   "devDependencies": {
     "vitest": "^4.1.2"

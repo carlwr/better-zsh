@@ -1,6 +1,6 @@
 import { mkdir, writeFile } from "node:fs/promises"
 import { join } from "node:path"
-import type { HoverDoc, HoverKind } from "./hover-md"
+import type { HoverDoc, HoverKind } from "./hover-md.ts"
 
 export type HoverDumpFile =
   | "all.md"
@@ -30,6 +30,7 @@ function section(doc: HoverDoc): string {
   return `## ${doc.key}\n\n${doc.md}`
 }
 
+/** Split rendered hover docs into markdown dump files for QA/review. */
 export function dumpText(
   docs: readonly HoverDoc[],
 ): Map<HoverDumpFile, string> {
@@ -58,6 +59,7 @@ export function dumpText(
   return new Map(entries)
 }
 
+/** Write hover markdown dump files to a directory. */
 export async function writeHoverDump(
   dir: string,
   docs: readonly HoverDoc[],

@@ -1,12 +1,17 @@
-import { mkOptFlagChar, mkOptName } from "../types/brand"
+import { mkOptFlagChar, mkOptName } from "../types/brand.ts"
 import type {
   DefaultMarker,
   Emulation,
   OptFlagAlias,
   OptFlagSign,
   ZshOption,
-} from "../types/zsh-data"
-import { extractItems, normalizeDoc, replaceSpecials, stripYodl } from "./parse"
+} from "../types/zsh-data.ts"
+import {
+  extractItems,
+  normalizeDoc,
+  replaceSpecials,
+  stripYodl,
+} from "./parse.ts"
 
 const VALID_DEFAULTS = new Set<string>(["D", "K", "S", "C", "Z"])
 

@@ -108,15 +108,61 @@ Potential new features should be judged roughly along the axis of:
 
 ## Ref's/sources
 
+misc:
 - `zsh` available on the system (macOS-shipped; zsh 5.9)
-- `man zshall` is available on the system (complete zsh 5.9 manual)
-(`info zsh` is also available, with the same material, if an `info` interface is preferred)
-- zsh sources
-  - https://github.com/zsh-users/zsh (zsh repo mirror)
-    - https://github.com/zsh-users/zsh/blob/master/Doc documentation primary source (.yo/Yodl)
-- Yodl doc markup/tool:
-  - repo: https://gitlab.com/fbb-git/yodl
-  - homepage: https://fbb-git.gitlab.io/yodl/
-  - userguide (TOC, with links): https://fbb-git.gitlab.io/yodl/yodl-doc/yodl.html
-  - (note: the zsh repo defines a number of custom yodl macros)
-  - (note: the Yodl program/toolkit has converters for output as: html, latex, man, txt)
+
+
+zsh sources
+- https://github.com/zsh-users/zsh (zsh repo mirror)
+- https://github.com/zsh-users/zsh/blob/master/Doc documentation primary source (.yo/Yodl)
+
+Yodl doc markup/tool:
+- repo: https://gitlab.com/fbb-git/yodl
+- homepage: https://fbb-git.gitlab.io/yodl/
+- userguide (TOC, with links): https://fbb-git.gitlab.io/yodl/yodl-doc/yodl.html
+- (note: the zsh repo defines a number of custom yodl macros)
+- (note: the Yodl program/toolkit has converters for output as: html, latex, man, txt)
+
+### zsh man page
+
+- is available on the system (complete zsh 5.9 manual)
+- `man zshall`
+  - headings only: `man zshall | col -b | grep -E '^\S'` (172 lines)
+  - headings, incl 1st sublevel: `man zshall | col -b | grep -E '^ {0,3}\S'` (305 lines)
+  - `info zsh` is also available, with the same material, if an `info` interface is preferred)
+
+manuals:
+```bash
+# full manual:
+man zshall
+
+# subsections (everything is covered by zshall):
+man zshcompctl
+man zshcontrib
+man zshmodules
+man zshroadmap
+man zshzle
+man zshall
+man zshcompsys
+man zshexpn
+man zshoptions
+man zshtcpsys
+man zshbuiltins
+man zshcompwid
+man zshmisc
+man zshparam
+man zshzftpsys
+```
+
+getting "man page TOC":
+```bash
+man zshall|col -b|grep -E '^\S'         # headings (top-level); 172 lines
+man zshall|col -b|grep -E '^ {0,3}\S'`  # headings (top+1st level); 305 lines
+```
+
+size of full man page:
+```bash
+man zshall|col -b|wc -l       # 30378
+man zshall|col -b|wc -w       # 204773
+man zshall|col -b|tokenCount  # 314083
+```

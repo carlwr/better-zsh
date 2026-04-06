@@ -1,14 +1,8 @@
 import { readFile } from "node:fs/promises"
 import { resolve } from "node:path"
-import {
-  getBuiltins,
-  getCondOps,
-  getOptions,
-  getPrecmds,
-  hoverDocs,
-  writeHoverDump,
-  zshParameters,
-} from "zsh-core"
+import { getBuiltins, getCondOps, getOptions, getPrecmds } from "zsh-core"
+import { zshParameters } from "zsh-core/exec"
+import { hoverDocs, writeHoverDump } from "zsh-core/render"
 import { makeExecZshRunner } from "../zsh-exec"
 
 async function getParams() {

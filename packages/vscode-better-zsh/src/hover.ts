@@ -11,17 +11,19 @@ import type {
 import {
   factsAt,
   factText,
+  mkCondOp,
+  mkOptName,
+  syntacticContext,
+} from "zsh-core"
+import {
   type HoverMdCtx,
   mdBuiltin,
   mdCond,
   mdOpt,
   mdParam,
   mdPrecmd,
-  mkCondOp,
   mkHoverMdCtx,
-  mkOptName,
-  syntacticContext,
-} from "zsh-core"
+} from "zsh-core/render"
 import { activeWordRangeAt, commentStart, funcDocs } from "./funcs"
 
 export class HoverProvider implements vscode.HoverProvider {

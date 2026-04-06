@@ -13,7 +13,7 @@ import {
   zshParameters as zshParametersCore,
   zshReswords as zshReswordsCore,
   zshTokenize as zshTokenizeCore,
-} from "zsh-core"
+} from "zsh-core/exec"
 import { log, warn } from "./log"
 import { buildZshEnv, execZsh } from "./zsh-exec"
 

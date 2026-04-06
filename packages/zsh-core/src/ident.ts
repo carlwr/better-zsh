@@ -1,7 +1,7 @@
 export const WORD = /[\w][\w-]*/g
 export const WORD_EXACT = /^[\w][\w-]*$/
 
-export function escRe(s: string) {
+export function escRe(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
 }
 

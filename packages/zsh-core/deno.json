@@ -1,0 +1,29 @@
+{
+  "$schema": "https://jsr.io/schema/config-file.v1.json",
+  "name": "@carlwr/zsh-core",
+  "version": "0.0.1",
+  "license": "MIT",
+  "nodeModulesDir": "auto",
+  "exports": {
+    ".": "./index.ts",
+    "./render": "./render.ts",
+    "./exec": "./exec.ts",
+    "./assets": "./assets.ts"
+  },
+  "publish": {
+    "include": [
+      "LICENSE",
+      "assets.ts",
+      "exec.ts",
+      "index.ts",
+      "render.ts",
+      "src/**/*.ts",
+      "src/data/zsh-docs/**/*"
+    ],
+    "exclude": ["src/test/**/*"]
+  },
+  "lint": {
+    "include": ["index.ts", "assets.ts", "render.ts", "exec.ts", "src/**/*.ts"],
+    "exclude": ["src/test/**/*.ts"]
+  }
+}

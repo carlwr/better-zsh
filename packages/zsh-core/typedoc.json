@@ -1,0 +1,15 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["./index.ts", "./render.ts", "./exec.ts", "./assets.ts"],
+  "entryPointStrategy": "resolve",
+  "tsconfig": "./tsconfig.build.json",
+  "out": "./.aux/docs/site",
+  "json": "./.aux/docs/site/typedoc.json",
+  "readme": "none",
+  "sort": ["source-order"],
+  "categorizeByGroup": false,
+  "excludePrivate": true,
+  "excludeProtected": true,
+  "excludeInternal": true,
+  "githubPages": false
+}

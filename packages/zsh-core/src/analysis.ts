@@ -1,13 +1,14 @@
-import { commentStart } from "./comment"
-import type { BuiltinName } from "./types/brand"
-import { mkBuiltinName, mkTextOffset } from "./types/brand"
-import type { PrecmdName } from "./types/zsh-data"
+import { commentStart } from "./comment.ts"
+import type { BuiltinName } from "./types/brand.ts"
+import { mkBuiltinName, mkTextOffset } from "./types/brand.ts"
+import type { PrecmdName } from "./types/zsh-data.ts"
 
 export interface DocLike {
   lineAt(i: number): { text: string }
   lineCount: number
 }
 
+/** Half-open text span in absolute document offsets. */
 export interface TextSpan {
   start: number
   end: number
@@ -17,17 +18,20 @@ export type AnalysisStrength = "hard" | "heuristic"
 export type AnalysisCtx = "setopt" | "cond" | "arith"
 export type AnalysisKind = "ctx" | "cmd-head" | "precmd" | "func-decl"
 
-interface BaseFact {
+/** Shared fields for document-analysis facts. */
+export interface BaseFact {
   kind: AnalysisKind
   span: TextSpan
   strength: AnalysisStrength
 }
 
+/** Context fact covering a region that should be interpreted specially. */
 export interface CtxFact extends BaseFact {
   kind: "ctx"
   ctx: AnalysisCtx
 }
 
+/** Heuristic command-head fact for a command-like word. */
 export interface CmdHeadFact extends BaseFact {
   kind: "cmd-head"
   text: string
@@ -35,12 +39,14 @@ export interface CmdHeadFact extends BaseFact {
   precmds: readonly PrecmdName[]
 }
 
+/** Hard fact for a recognized precommand modifier. */
 export interface PrecmdFact extends BaseFact {
   kind: "precmd"
   text: string
   name: PrecmdName
 }
 
+/** Hard fact for a shell function declaration head. */
 export interface FuncDeclFact extends BaseFact {
   kind: "func-decl"
   name: string
@@ -100,6 +106,7 @@ const PRECMDS = new Set<PrecmdName>([
 const FUNC_DECL = /^(\s*)([\w][\w-]*)\s*\(\)/
 const FUNC_KW = /^(\s*)function\s+([\w][\w-]*)/
 
+/** Analyze a whole document and return coarse zsh syntax facts. */
 export function analyzeDoc(doc: DocLike): AnalysisFact[] {
   const lines = readLines(doc)
   const starts = lineStarts(lines)
@@ -133,6 +140,7 @@ export function analyzeDoc(doc: DocLike): AnalysisFact[] {
   return facts
 }
 
+/** Return analysis facts covering the given document position. */
 export function factsAt(
   doc: DocLike,
   line: number,
@@ -145,9 +153,10 @@ export function factsAt(
   )
 }
 
+/** Extract command/precommand facts from a single line. */
 export function cmdHeadFactsOnLine(
   line: string,
-  commentAt = commentStart(line),
+  commentAt: number | undefined = commentStart(line),
 ): CmdFact[] {
   const len = commentAt ?? line.length
   const out: CmdFact[] = []
@@ -247,14 +256,17 @@ export function factText(doc: DocLike, span: TextSpan): string {
   return readLines(doc).join("\n").slice(span.start, span.end)
 }
 
+/** Narrow an analysis fact to a context fact. */
 export function isCtxFact(fact: AnalysisFact): fact is CtxFact {
   return fact.kind === "ctx"
 }
 
+/** Narrow an analysis fact to a function-declaration fact. */
 export function isFuncDeclFact(fact: AnalysisFact): fact is FuncDeclFact {
   return fact.kind === "func-decl"
 }
 
+/** Narrow an analysis fact to a precommand fact. */
 export function isPrecmdFact(fact: AnalysisFact): fact is PrecmdFact {
   return fact.kind === "precmd"
 }

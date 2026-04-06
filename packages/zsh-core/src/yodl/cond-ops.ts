@@ -1,6 +1,6 @@
-import { mkCondOp } from "../types/brand"
-import type { CondKind, CondOperator } from "../types/zsh-data"
-import { extractItems, normalizeDoc, stripYodl } from "./parse"
+import { mkCondOp } from "../types/brand.ts"
+import type { CondKind, CondOperator } from "../types/zsh-data.ts"
+import { extractItems, normalizeDoc, stripYodl } from "./parse.ts"
 
 /** Parse cond.yo → CondOperator[] */
 export function parseCondOps(yo: string): CondOperator[] {

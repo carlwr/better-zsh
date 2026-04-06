@@ -1,13 +1,9 @@
+import type { DocLike } from "./analysis.ts"
+
 /**
  * Detect whether the cursor is in a setopt/unsetopt option-name position.
  * Handles line continuations (trailing backslash).
  */
-
-interface DocLike {
-  lineAt(i: number): { text: string }
-  lineCount: number
-}
-
 export function isSetoptContext(doc: DocLike, line: number): boolean {
   let start = line
   while (

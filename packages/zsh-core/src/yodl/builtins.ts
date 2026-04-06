@@ -1,6 +1,6 @@
-import { mkBuiltinName } from "../types/brand"
-import type { BuiltinDoc } from "../types/zsh-data"
-import { extractItems, normalizeDoc, stripYodl } from "./parse"
+import { mkBuiltinName } from "../types/brand.ts"
+import type { BuiltinDoc } from "../types/zsh-data.ts"
+import { extractItems, normalizeDoc, stripYodl } from "./parse.ts"
 
 interface SynopsisLine {
   raw: string

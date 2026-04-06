@@ -1,13 +1,14 @@
-export * from "./src/analysis"
-export * from "./src/cmd-position"
-export * from "./src/comment"
-export * from "./src/context"
-export * from "./src/hover-dump"
-export * from "./src/hover-md"
-export * from "./src/ident"
-export * from "./src/option-match"
-export * from "./src/setopt-context"
-export * from "./src/types/brand"
-export * from "./src/types/zsh-data"
-export * from "./src/zsh"
-export * from "./src/zsh-data"
+/**
+ * @packageDocumentation
+ * Reusable static zsh analysis and data APIs.
+ */
+export * from "./src/analysis.ts"
+export * from "./src/cmd-position.ts"
+export * from "./src/comment.ts"
+export * from "./src/context.ts"
+export * from "./src/ident.ts"
+export * from "./src/option-match.ts"
+export * from "./src/setopt-context.ts"
+export * from "./src/types/brand.ts"
+export * from "./src/types/zsh-data.ts"
+export * from "./src/zsh-data.ts"

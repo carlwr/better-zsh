@@ -1,4 +1,4 @@
-import { mkOptName, type OptName } from "./types/brand"
+import { mkOptName, type OptName } from "./types/brand.ts"
 import type {
   BuiltinDoc,
   CondOperator,
@@ -8,22 +8,25 @@ import type {
   OptState,
   PrecmdDoc,
   ZshOption,
-} from "./types/zsh-data"
+} from "./types/zsh-data.ts"
 
 export type HoverKind = "option" | "cond-op" | "param" | "builtin" | "precmd"
 
+/** Rendered hover/reference markdown for one logical zsh item. */
 export interface HoverDoc {
   kind: HoverKind
   key: string
   md: string
 }
 
+/** Known markdown/rendering regression marker for QA. */
 export interface HoverRegression {
   kind: HoverKind
   key: string
   note: string
 }
 
+/** Shared formatter context for markdown generation. */
 export interface HoverMdCtx {
   optNames: ReadonlySet<OptName>
 }
@@ -48,10 +51,12 @@ const hoverFmt = {
   optRef: (s: string) => strong(code(s)),
 }
 
+/** Build formatter context from the available option set. */
 export function mkHoverMdCtx(options: readonly ZshOption[] = []): HoverMdCtx {
   return { optNames: new Set(options.map((opt) => opt.name)) }
 }
 
+/** Format the raw zsh parameter-type string into hover prose. */
 export function fmtParamType(raw: string): string {
   const parts = raw.split("-")
   const base = parts[0] ?? raw
@@ -62,6 +67,7 @@ export function fmtParamType(raw: string): string {
   return flags.length ? `${base} (${flags.join(", ")})` : base
 }
 
+/** Emphasize option references inside markdown prose, skipping fenced code. */
 export function fmtOptRefsInMd(
   md: string,
   optNames: ReadonlySet<OptName>,
@@ -83,6 +89,7 @@ export function fmtOptRefsInMd(
   return out.join("\n")
 }
 
+/** Render one option doc block as markdown. */
 export function mdOpt(
   opt: ZshOption,
   ctx: HoverMdCtx = emptyHoverMdCtx,
@@ -111,12 +118,14 @@ export function mdOpt(
   ].join("\n")
 }
 
+/** Render a compact signature line for a conditional operator. */
 export function sigCond(cop: CondOperator): string {
   return cop.kind === "unary"
     ? `${hoverFmt.code(cop.op as string)} *${cop.operands.join(" ")}*`
     : `*${cop.operands[0] ?? ""}* ${hoverFmt.code(cop.op as string)} *${cop.operands[1] ?? ""}*`
 }
 
+/** Render one conditional-operator doc block as markdown. */
 export function mdCond(
   cop: CondOperator,
   ctx: HoverMdCtx = emptyHoverMdCtx,
@@ -124,10 +133,12 @@ export function mdCond(
   return `${sigCond(cop)}\n\n${fmtOptRefsInMd(cop.desc, ctx.optNames)}`
 }
 
+/** Render one special-parameter doc block as markdown. */
 export function mdParam(name: string, raw: string): string {
   return `${hoverFmt.code(name)}: ${fmtParamType(raw)} — zsh special parameter`
 }
 
+/** Render one builtin doc block as markdown. */
 export function mdBuiltin(doc: BuiltinDoc): string {
   const out = [
     hoverFmt.code(doc.name as string),
@@ -144,6 +155,7 @@ export function mdBuiltin(doc: BuiltinDoc): string {
   return out.join("\n")
 }
 
+/** Render one precommand doc block as markdown. */
 export function mdPrecmd(doc: PrecmdDoc): string {
   return [
     hoverFmt.code(doc.name),
@@ -158,6 +170,7 @@ export function mdPrecmd(doc: PrecmdDoc): string {
   ].join("\n")
 }
 
+/** Return whether an option defaults on/off for an emulation mode. */
 export function defaultStateIn(opt: ZshOption, emulation: Emulation): OptState {
   return opt.defaultIn.includes(emulation) ? "on" : "off"
 }
@@ -177,6 +190,7 @@ function label(cmd: string, arg: string, state: OptState): string {
   return `${`${cmd} ${arg}`.padEnd(20)} # ${state}`
 }
 
+/** Generate the full static hover corpus from normalized zsh data. */
 export function hoverDocs({
   options,
   condOps,

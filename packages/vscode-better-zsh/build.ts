@@ -12,6 +12,14 @@ import { outDir } from "./src/build/paths"
     external: ["vscode"],
     noExternal: ["zsh-core"],
     watch: process.argv.includes("--watch"),
+    esbuildOptions(options) {
+      options.conditions = ["require", "node"]
+      options.mainFields = ["main"]
+      options.logOverride = {
+        ...(options.logOverride ?? {}),
+        "empty-import-meta": "silent",
+      }
+    },
   })
   await generateAssets()
 })()

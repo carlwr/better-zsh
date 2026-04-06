@@ -3,6 +3,6 @@
   "compilerOptions": {
     "types": ["node"]
   },
-  "include": ["assets.ts", "index.ts", "src/**/*.ts"],
+  "include": ["assets.ts", "exec.ts", "index.ts", "render.ts", "src/**/*.ts"],
   "exclude": ["node_modules", "src/test/**/*.ts"]
 }
