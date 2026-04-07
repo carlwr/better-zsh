@@ -1,4 +1,5 @@
 import { commentStart } from "./comment.ts"
+import { advanceQuote, isQuoted, mkQuoteState } from "./quote-state.ts"
 import type { BuiltinName } from "./types/brand.ts"
 import { mkBuiltinName, mkTextOffset } from "./types/brand.ts"
 import type { PrecmdName } from "./types/zsh-data.ts"
@@ -291,44 +292,17 @@ function scanPairedCtx(
 ): CtxFact[] {
   const out: CtxFact[] = []
   let depth = 0
-  let sq = false
-  let dq = false
-  let esc = false
+  let qst = mkQuoteState()
   let start = 0
 
   for (let line = 0; line < lines.length; line++) {
     const text = activeText(lines[line] ?? "")
     const base = starts[line] ?? 0
     for (let i = 0; i < text.length; i++) {
-      const ch = text[i]
-      if (esc) {
-        esc = false
-        continue
-      }
-      if (sq) {
-        if (ch === "'") sq = false
-        continue
-      }
-      if (dq) {
-        if (ch === "\\") {
-          esc = true
-          continue
-        }
-        if (ch === '"') dq = false
-        continue
-      }
-      if (ch === "\\") {
-        esc = true
-        continue
-      }
-      if (ch === "'") {
-        sq = true
-        continue
-      }
-      if (ch === '"') {
-        dq = true
-        continue
-      }
+      const ch = text.charAt(i)
+      const prev = qst
+      qst = advanceQuote(qst, ch)
+      if (isQuoted(prev)) continue
       if (matchesAt(text, i, open)) {
         if (depth === 0) start = base + i
         depth++
@@ -419,7 +393,7 @@ function isSetoptHead(head: CmdHeadFact, line: string): boolean {
   return /\s+[+-][A-Za-z0-9]/.test(line.slice(head.span.end))
 }
 
-function funcDeclAtLine(
+export function funcDeclAtLine(
   line: string,
 ): { name: string; start: number } | undefined {
   const decl = line.match(FUNC_DECL)

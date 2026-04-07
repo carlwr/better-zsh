@@ -1,12 +1,6 @@
 import { describe, expect, test } from "vitest"
 import { syntacticContext } from "../context"
-
-function mockDoc(lines: string[]) {
-  return {
-    lineAt: (i: number) => ({ text: lines[i] ?? "" }),
-    lineCount: lines.length,
-  }
-}
+import { mockDoc } from "./test-util"
 
 describe("syntacticContext", () => {
   test('setopt line → kind "setopt"', () => {

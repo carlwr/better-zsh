@@ -4,9 +4,15 @@ import {
   extractItemList,
   extractSection,
   extractTokens,
+  normalizeDoc,
+  stripYodl,
+  type YodlItem,
 } from "./parse.ts"
-import { bodyDoc } from "./shared.ts"
 import { sigText } from "./syntax.ts"
+
+function bodyDoc(item: YodlItem): string | undefined {
+  return item.body ? normalizeDoc(stripYodl(item.body)) : undefined
+}
 
 export function parseGlobbingFlags(yo: string): GlobbingFlagDoc[] {
   const sec = extractSection(yo, "Globbing Flags")

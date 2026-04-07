@@ -1,9 +1,7 @@
 import * as vscode from "vscode"
-import { commentStart, escRe, WORD, WORD_EXACT } from "zsh-core"
+import { commentStart, escRe, funcDeclAtLine, WORD, WORD_EXACT } from "zsh-core"
 import { docCache } from "./cache"
 
-const FUNC_DECL = /^(\s*)([\w][\w-]*)\s*\(\)/
-const FUNC_KW = /^(\s*)function\s+([\w][\w-]*)/
 const COMMENT = /^\s*#(.*)$/
 
 export interface FuncDecl {
@@ -71,7 +69,7 @@ function buildData(doc: vscode.TextDocument): FuncData {
   const funcs: FuncDecl[] = []
   const names = new Set<string>()
   for (let line = 0; line < doc.lineCount; line++) {
-    const hit = funcAtLine(doc.lineAt(line).text)
+    const hit = funcDeclAtLine(doc.lineAt(line).text)
     if (!hit) continue
     names.add(hit.name)
     const range = new vscode.Range(line, 0, line, doc.lineAt(line).text.length)
@@ -87,14 +85,6 @@ function buildData(doc: vscode.TextDocument): FuncData {
     if (docText) docs.set(hit.name, docText)
   }
   return { docs, funcs, names }
-}
-
-function funcAtLine(line: string): { name: string; start: number } | undefined {
-  const decl = line.match(FUNC_DECL)
-  if (decl?.[2]) return { name: decl[2], start: (decl[1] ?? "").length }
-  const kw = line.match(FUNC_KW)
-  if (!kw?.[2]) return
-  return { name: kw[2], start: line.indexOf(kw[2], (kw[1] ?? "").length) }
 }
 
 function collectComments(

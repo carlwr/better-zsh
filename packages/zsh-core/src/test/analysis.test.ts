@@ -8,19 +8,13 @@ import {
   isFuncDeclFact,
   isPrecmdFact,
 } from "../analysis"
-
-function mockDoc(lines: string[]) {
-  return {
-    lineAt: (i: number) => ({ text: lines[i] ?? "" }),
-    lineCount: lines.length,
-  }
-}
+import { mockDoc } from "./test-util"
 
 function expectCmdHeadTexts(s: string, xs: string[]): void {
   const facts = cmdHeadFactsOnLine(s)
-  expect(
-    facts.filter((f) => f.kind === "cmd-head").map((f) => f.text),
-  ).toEqual(xs)
+  expect(facts.filter((f) => f.kind === "cmd-head").map((f) => f.text)).toEqual(
+    xs,
+  )
 }
 
 function expectPrecmdNames(s: string, xs: string[]): void {
