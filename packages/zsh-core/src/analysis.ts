@@ -17,7 +17,14 @@ export interface TextSpan {
 
 export type AnalysisStrength = "hard" | "heuristic"
 export type AnalysisCtx = "setopt" | "cond" | "arith"
-export type AnalysisKind = "ctx" | "cmd-head" | "precmd" | "func-decl"
+export type AnalysisKind =
+  | "ctx"
+  | "cmd-head"
+  | "precmd"
+  | "func-decl"
+  | "redir"
+  | "process-subst"
+  | "reserved-word"
 
 /** Shared fields for document-analysis facts. */
 export interface BaseFact {
@@ -54,8 +61,34 @@ export interface FuncDeclFact extends BaseFact {
   nameSpan: TextSpan
 }
 
-export type AnalysisFact = CtxFact | CmdHeadFact | PrecmdFact | FuncDeclFact
+/** Heuristic fact for a redirection operator. */
+export interface RedirFact extends BaseFact {
+  kind: "redir"
+  text: string
+}
+
+/** Heuristic fact for a process substitution. */
+export interface ProcessSubstFact extends BaseFact {
+  kind: "process-subst"
+  text: string
+}
+
+/** Hard fact for a reserved word. */
+export interface ReservedWordFact extends BaseFact {
+  kind: "reserved-word"
+  text: string
+}
+
+export type AnalysisFact =
+  | CtxFact
+  | CmdHeadFact
+  | PrecmdFact
+  | FuncDeclFact
+  | RedirFact
+  | ProcessSubstFact
+  | ReservedWordFact
 export type CmdFact = CmdHeadFact | PrecmdFact
+export type LineFact = CmdFact | RedirFact | ProcessSubstFact | ReservedWordFact
 
 const TRANSPARENT = new Set([
   "do",
@@ -158,9 +191,9 @@ export function factsAt(
 export function cmdHeadFactsOnLine(
   line: string,
   commentAt: number | undefined = commentStart(line),
-): CmdFact[] {
+): LineFact[] {
   const len = commentAt ?? line.length
-  const out: CmdFact[] = []
+  const out: LineFact[] = []
   let i = 0
   let expectCmd = true
   let mods: PrecmdName[] = []
@@ -190,8 +223,27 @@ export function cmdHeadFactsOnLine(
       continue
     }
 
+    // Process substitution: <(...), >(...), =(...)
+    const psLen = matchProcessSubst(line, i, len)
+    if (psLen > 0) {
+      out.push({
+        kind: "process-subst",
+        text: line.slice(i, i + psLen),
+        span: { start: i, end: i + psLen },
+        strength: "heuristic",
+      })
+      i += psLen
+      continue
+    }
+
     const redirLen = matchRedirection(line, i, len)
     if (redirLen > 0) {
+      out.push({
+        kind: "redir",
+        text: line.slice(i, i + redirLen),
+        span: { start: i, end: i + redirLen },
+        strength: "heuristic",
+      })
       i += redirLen
       i = skipWhitespace(line, i, len)
       i = skipWord(line, i, len)
@@ -215,6 +267,12 @@ export function cmdHeadFactsOnLine(
     }
 
     if (RESERVED.has(word)) {
+      out.push({
+        kind: "reserved-word",
+        text: word,
+        span: { start: wStart, end: i },
+        strength: "hard",
+      })
       expectCmd = TRANSPARENT.has(word)
       if (!expectCmd) mods = []
       continue
@@ -270,6 +328,25 @@ export function isFuncDeclFact(fact: AnalysisFact): fact is FuncDeclFact {
 /** Narrow an analysis fact to a precommand fact. */
 export function isPrecmdFact(fact: AnalysisFact): fact is PrecmdFact {
   return fact.kind === "precmd"
+}
+
+/** Narrow an analysis fact to a redirection fact. */
+export function isRedirFact(fact: AnalysisFact): fact is RedirFact {
+  return fact.kind === "redir"
+}
+
+/** Narrow an analysis fact to a process-substitution fact. */
+export function isProcessSubstFact(
+  fact: AnalysisFact,
+): fact is ProcessSubstFact {
+  return fact.kind === "process-subst"
+}
+
+/** Narrow an analysis fact to a reserved-word fact. */
+export function isReservedWordFact(
+  fact: AnalysisFact,
+): fact is ReservedWordFact {
+  return fact.kind === "reserved-word"
 }
 
 function ctxFacts(
@@ -606,6 +683,28 @@ function matchFuncDef(s: string, i: number, len: number): number | undefined {
   while (pos < len && (s[pos] === " " || s[pos] === "\t")) pos++
   if (pos + 1 >= len || s[pos] !== "(" || s[pos + 1] !== ")") return
   return pos + 2
+}
+
+function matchProcessSubst(s: string, i: number, len: number): number {
+  const ch = s.charAt(i)
+  if (i + 1 >= len || s[i + 1] !== "(") return 0
+  if (ch === "<" || ch === ">") {
+    // <( or >( — always process subst
+  } else if (ch === "=") {
+    // =( — only at token start (preceded by whitespace or line start)
+    if (i > 0 && s[i - 1] !== " " && s[i - 1] !== "\t") return 0
+  } else {
+    return 0
+  }
+  let depth = 1
+  let pos = i + 2
+  while (pos < len && depth > 0) {
+    const c = s.charAt(pos)
+    if (c === "(") depth++
+    else if (c === ")") depth--
+    pos++
+  }
+  return depth === 0 ? pos - i : 0
 }
 
 function matchRedirection(s: string, i: number, len: number): number {

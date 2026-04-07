@@ -7,10 +7,21 @@ import type {
   OptFlagSign,
   OptState,
   PrecmdDoc,
+  ProcessSubstDoc,
+  RedirDoc,
+  ReservedWordDoc,
   ZshOption,
 } from "./types/zsh-data.ts"
 
-export type HoverKind = "option" | "cond-op" | "param" | "builtin" | "precmd"
+export type HoverKind =
+  | "option"
+  | "cond-op"
+  | "param"
+  | "builtin"
+  | "precmd"
+  | "redir"
+  | "process-subst"
+  | "reserved-word"
 
 /** Rendered hover/reference markdown for one logical zsh item. */
 export interface HoverDoc {
@@ -170,6 +181,43 @@ export function mdPrecmd(doc: PrecmdDoc): string {
   ].join("\n")
 }
 
+/** Render one redirection doc block as markdown. */
+export function mdRedir(doc: RedirDoc): string {
+  return [
+    hoverFmt.code(doc.op),
+    "",
+    "```zsh",
+    doc.sig,
+    "```",
+    "",
+    doc.desc,
+    "",
+    "_Category:_ Redirection",
+  ].join("\n")
+}
+
+/** Render one process-substitution doc block as markdown. */
+export function mdProcessSubst(doc: ProcessSubstDoc): string {
+  return [
+    hoverFmt.code(doc.op),
+    "",
+    doc.desc,
+    "",
+    "_Category:_ Process Substitution",
+  ].join("\n")
+}
+
+/** Render one reserved-word doc block as markdown. */
+export function mdReservedWord(doc: ReservedWordDoc): string {
+  return [
+    hoverFmt.code(doc.name),
+    "",
+    doc.desc,
+    "",
+    `_Role:_ reserved word (${doc.pos === "command" ? "command position" : "any position"})`,
+  ].join("\n")
+}
+
 /** Return whether an option defaults on/off for an emulation mode. */
 export function defaultStateIn(opt: ZshOption, emulation: Emulation): OptState {
   return opt.defaultIn.includes(emulation) ? "on" : "off"
@@ -197,12 +245,18 @@ export function hoverDocs({
   params,
   builtins = [],
   precmds = [],
+  redirs = [],
+  processSubsts = [],
+  reservedWords = [],
 }: {
   options: readonly ZshOption[]
   condOps: readonly CondOperator[]
   params: ReadonlyMap<string, string>
   builtins?: readonly BuiltinDoc[]
   precmds?: readonly PrecmdDoc[]
+  redirs?: readonly RedirDoc[]
+  processSubsts?: readonly ProcessSubstDoc[]
+  reservedWords?: readonly ReservedWordDoc[]
 }): HoverDoc[] {
   const ctx = mkHoverMdCtx(options)
   const paramDocs = [...params.entries()]
@@ -234,6 +288,21 @@ export function hoverDocs({
       kind: "precmd" as const,
       key: precmd.name,
       md: mdPrecmd(precmd),
+    })),
+    ...redirs.map((redir) => ({
+      kind: "redir" as const,
+      key: redir.op,
+      md: mdRedir(redir),
+    })),
+    ...processSubsts.map((ps) => ({
+      kind: "process-subst" as const,
+      key: ps.op,
+      md: mdProcessSubst(ps),
+    })),
+    ...reservedWords.map((rw) => ({
+      kind: "reserved-word" as const,
+      key: rw.name,
+      md: mdReservedWord(rw),
     })),
   ]
 }

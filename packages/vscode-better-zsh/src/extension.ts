@@ -1,5 +1,13 @@
 import * as vscode from "vscode"
-import { getBuiltins, getCondOps, getOptions, getPrecmds } from "zsh-core"
+import {
+  getBuiltins,
+  getCondOps,
+  getOptions,
+  getPrecmds,
+  getProcessSubsts,
+  getRedirections,
+  getReservedWords,
+} from "zsh-core"
 import { CompletionProvider } from "./completions"
 import { DefinitionProvider } from "./definition"
 import { setupDiagnostics } from "./diagnostics"
@@ -43,6 +51,9 @@ export async function activate(ctx: vscode.ExtensionContext) {
   const parsedOptions = getOptions()
   const parsedCondOps = getCondOps()
   const parsedPrecmds = getPrecmds()
+  const parsedRedirs = getRedirections()
+  const parsedProcessSubsts = getProcessSubsts()
+  const parsedReservedWords = getReservedWords()
 
   ctx.subscriptions.push(
     vscode.languages.registerDocumentHighlightProvider(
@@ -82,6 +93,9 @@ export async function activate(ctx: vscode.ExtensionContext) {
           parsedCondOps,
           parsedBuiltins,
           parsedPrecmds,
+          parsedRedirs,
+          parsedProcessSubsts,
+          parsedReservedWords,
         ),
       ),
       vscode.languages.registerCompletionItemProvider(
@@ -112,6 +126,9 @@ export async function activate(ctx: vscode.ExtensionContext) {
           parsedCondOps,
           parsedBuiltins,
           parsedPrecmds,
+          parsedRedirs,
+          parsedProcessSubsts,
+          parsedReservedWords,
         ),
       ),
     )

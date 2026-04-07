@@ -13,6 +13,9 @@ import {
   mdOpt,
   mdParam,
   mdPrecmd,
+  mdProcessSubst,
+  mdRedir,
+  mdReservedWord,
   mkHoverMdCtx,
 } from "../hover-md"
 import {
@@ -25,6 +28,9 @@ import type {
   BuiltinDoc,
   CondOperator,
   PrecmdDoc,
+  ProcessSubstDoc,
+  RedirDoc,
+  ReservedWordDoc,
   ZshOption,
 } from "../types/zsh-data"
 import { getBuiltins, getCondOps, getOptions, getPrecmds } from "../zsh-data"
@@ -62,6 +68,28 @@ const precmd: PrecmdDoc = {
   name: "noglob",
   synopsis: ["noglob command arg ..."],
   desc: "Disable filename generation.",
+}
+
+const redir: RedirDoc = {
+  op: ">>",
+  sig: ">> word",
+  desc: "Append output to word.",
+  section: "Redirections",
+}
+
+const processSubst: ProcessSubstDoc = {
+  op: "<(...)",
+  sig: "<(list)",
+  desc: "Replace with a file descriptor for the output of list.",
+  section: "Process Substitution",
+}
+
+const reservedWord: ReservedWordDoc = {
+  name: "if",
+  sig: "if list then list fi",
+  desc: "Execute list conditionally.",
+  section: "Complex Commands",
+  pos: "command",
 }
 
 describe("hover markdown", () => {
@@ -137,6 +165,38 @@ describe("hover markdown", () => {
   test("renders precommand modifier markdown", () => {
     expect(mdPrecmd(precmd)).toContain("`noglob`")
     expect(mdPrecmd(precmd)).toContain("_Role:_ precommand modifier")
+  })
+
+  test("renders redirection markdown", () => {
+    const md = mdRedir(redir)
+    expect(md).toContain("`>>`")
+    expect(md).toContain("```zsh")
+    expect(md).toContain(">> word")
+    expect(md).toContain("Append output to word.")
+    expect(md).toContain("_Category:_ Redirection")
+  })
+
+  test("renders process-substitution markdown", () => {
+    const md = mdProcessSubst(processSubst)
+    expect(md).toContain("`<(...)`")
+    expect(md).toContain("Replace with a file descriptor")
+    expect(md).toContain("_Category:_ Process Substitution")
+  })
+
+  test("renders reserved-word markdown", () => {
+    const md = mdReservedWord(reservedWord)
+    expect(md).toContain("`if`")
+    expect(md).toContain("Execute list conditionally.")
+    expect(md).toContain("_Role:_ reserved word (command position)")
+  })
+
+  test("renders reserved-word with any position", () => {
+    const rw: ReservedWordDoc = {
+      ...reservedWord,
+      name: "fi",
+      pos: "any",
+    }
+    expect(mdReservedWord(rw)).toContain("_Role:_ reserved word (any position)")
   })
 
   test("derives default state by emulation", () => {

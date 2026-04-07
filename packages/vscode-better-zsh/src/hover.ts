@@ -6,6 +6,12 @@ import type {
   OptFlagAlias,
   PrecmdDoc,
   PrecmdFact,
+  ProcessSubstDoc,
+  ProcessSubstFact,
+  RedirDoc,
+  RedirFact,
+  ReservedWordDoc,
+  ReservedWordFact,
   ZshOption,
 } from "zsh-core"
 import {
@@ -22,6 +28,9 @@ import {
   mdOpt,
   mdParam,
   mdPrecmd,
+  mdProcessSubst,
+  mdRedir,
+  mdReservedWord,
   mkHoverMdCtx,
 } from "zsh-core/render"
 import { activeWordRangeAt, commentStart, funcDocs } from "./funcs"
@@ -36,6 +45,9 @@ export class HoverProvider implements vscode.HoverProvider {
     | undefined
   private condOpMap: Map<string, CondOperator> | undefined
   private precmdMap: Map<string, PrecmdDoc> | undefined
+  private redirMap: Map<string, RedirDoc> | undefined
+  private processSubstMap: Map<string, ProcessSubstDoc> | undefined
+  private reservedWordMap: Map<string, ReservedWordDoc> | undefined
 
   constructor(
     params?: Map<string, string>,
@@ -43,6 +55,9 @@ export class HoverProvider implements vscode.HoverProvider {
     condOps?: CondOperator[],
     builtins?: BuiltinDoc[],
     precmds?: PrecmdDoc[],
+    redirDocs?: RedirDoc[],
+    processSubstDocs?: ProcessSubstDoc[],
+    reservedWordDocs?: ReservedWordDoc[],
   ) {
     this.md = mkHoverMdCtx(options)
     if (builtins) {
@@ -67,72 +82,95 @@ export class HoverProvider implements vscode.HoverProvider {
     if (precmds) {
       this.precmdMap = new Map(precmds.map((doc) => [doc.name, doc]))
     }
+    if (redirDocs) {
+      this.redirMap = new Map(redirDocs.map((doc) => [doc.op, doc]))
+    }
+    if (processSubstDocs) {
+      this.processSubstMap = new Map(
+        processSubstDocs.map((doc) => [doc.op, doc]),
+      )
+    }
+    if (reservedWordDocs) {
+      this.reservedWordMap = new Map(
+        reservedWordDocs.map((doc) => [doc.name, doc]),
+      )
+    }
   }
 
   provideHover(doc: vscode.TextDocument, pos: vscode.Position) {
+    return (
+      this.setoptHover(doc, pos) ??
+      this.condHover(doc, pos) ??
+      this.funcHover(doc, pos) ??
+      this.paramHover(doc, pos) ??
+      this.factBasedHover(doc, pos)
+    )
+  }
+
+  private setoptHover(doc: vscode.TextDocument, pos: vscode.Position) {
     const ctx = syntacticContext(doc, pos.line, pos.character)
+    if (ctx.kind !== "setopt" || !this.optionMap) return
+    const range = activeTokenRangeAt(doc, pos)
+    if (!range) return
+    const opt = this.optionAt(doc.getText(range))
+    if (opt)
+      return new vscode.Hover(
+        new vscode.MarkdownString(mdOpt(opt, this.md)),
+        range,
+      )
+  }
 
-    // setopt context: option hover
-    if (ctx.kind === "setopt" && this.optionMap) {
-      const range = activeTokenRangeAt(doc, pos)
-      if (!range) return
-      const token = doc.getText(range)
-      const opt = this.optionAt(token)
-      if (opt)
-        return new vscode.Hover(
-          new vscode.MarkdownString(mdOpt(opt, this.md)),
-          range,
-        )
-    }
+  private condHover(doc: vscode.TextDocument, pos: vscode.Position) {
+    const ctx = syntacticContext(doc, pos.line, pos.character)
+    if (ctx.kind !== "cond" || !this.condOpMap) return
+    const range = activeTokenRangeAt(doc, pos)
+    if (!range) return
+    const op = mkCondOp(doc.getText(range))
+    const cop = this.condOpMap.get(op)
+    if (cop)
+      return new vscode.Hover(
+        new vscode.MarkdownString(mdCond(cop, this.md)),
+        range,
+      )
+  }
 
-    // cond context: operator hover
-    if (ctx.kind === "cond" && this.condOpMap) {
-      const range = activeTokenRangeAt(doc, pos)
-      if (range) {
-        const op = mkCondOp(doc.getText(range))
-        const cop = this.condOpMap.get(op)
-        if (cop)
-          return new vscode.Hover(
-            new vscode.MarkdownString(mdCond(cop, this.md)),
-            range,
-          )
-      }
-    }
-
+  private funcHover(doc: vscode.TextDocument, pos: vscode.Position) {
     const range = activeWordRangeAt(doc, pos)
-    if (range) {
-      const w = doc.getText(range)
+    if (!range) return
+    const d = funcDocs(doc).get(doc.getText(range))
+    if (d)
+      return new vscode.Hover(
+        new vscode.MarkdownString().appendCodeblock(d, ""),
+      )
+  }
 
-      const d = funcDocs(doc).get(w)
-      if (d)
-        return new vscode.Hover(
-          new vscode.MarkdownString().appendCodeblock(d, ""),
-        )
+  private paramHover(doc: vscode.TextDocument, pos: vscode.Position) {
+    if (!this.params) return
+    const range = activeWordRangeAt(doc, pos)
+    if (!range) return
+    const w = doc.getText(range)
+    const ptype = this.params.get(w)
+    if (ptype)
+      return new vscode.Hover(new vscode.MarkdownString(mdParam(w, ptype)))
+  }
 
-      if (this.params) {
-        const ptype = this.params.get(w)
-        if (ptype) {
-          return new vscode.Hover(new vscode.MarkdownString(mdParam(w, ptype)))
-        }
-      }
-    }
-
+  private factBasedHover(doc: vscode.TextDocument, pos: vscode.Position) {
     const tokenRange = activeTokenRangeAt(doc, pos)
     if (!tokenRange) return
     const token = doc.getText(tokenRange)
     const af = factsAt(doc, pos.line, pos.character)
+
     const precmd = af.find(
       (fact): fact is PrecmdFact =>
         fact.kind === "precmd" && factText(doc, fact.span) === token,
     )
     if (precmd) {
-      const doc = this.precmdMap?.get(precmd.name)
-      if (doc) {
+      const d = this.precmdMap?.get(precmd.name)
+      if (d)
         return new vscode.Hover(
-          new vscode.MarkdownString(mdPrecmd(doc)),
+          new vscode.MarkdownString(mdPrecmd(d)),
           tokenRange,
         )
-      }
     }
 
     const head = af.find(
@@ -140,13 +178,50 @@ export class HoverProvider implements vscode.HoverProvider {
         fact.kind === "cmd-head" && factText(doc, fact.span) === token,
     )
     if (head) {
-      const doc = this.builtinMap?.get(token)
-      if (doc) {
+      const d = this.builtinMap?.get(token)
+      if (d)
         return new vscode.Hover(
-          new vscode.MarkdownString(mdBuiltin(doc)),
+          new vscode.MarkdownString(mdBuiltin(d)),
           tokenRange,
         )
-      }
+    }
+
+    const redir = af.find((fact): fact is RedirFact => fact.kind === "redir")
+    if (redir) {
+      const op = redir.text.replace(/^[0-9]+/, "")
+      const d = this.redirMap?.get(op)
+      if (d)
+        return new vscode.Hover(
+          new vscode.MarkdownString(mdRedir(d)),
+          tokenRange,
+        )
+    }
+
+    const ps = af.find(
+      (fact): fact is ProcessSubstFact => fact.kind === "process-subst",
+    )
+    if (ps) {
+      const prefix = ps.text.slice(0, 2)
+      const opKey = `${prefix}...)`
+      const d = this.processSubstMap?.get(opKey)
+      if (d)
+        return new vscode.Hover(
+          new vscode.MarkdownString(mdProcessSubst(d)),
+          tokenRange,
+        )
+    }
+
+    const rw = af.find(
+      (fact): fact is ReservedWordFact =>
+        fact.kind === "reserved-word" && factText(doc, fact.span) === token,
+    )
+    if (rw) {
+      const d = this.reservedWordMap?.get(rw.text)
+      if (d)
+        return new vscode.Hover(
+          new vscode.MarkdownString(mdReservedWord(d)),
+          tokenRange,
+        )
     }
   }
 

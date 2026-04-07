@@ -7,6 +7,9 @@ import {
   isCtxFact,
   isFuncDeclFact,
   isPrecmdFact,
+  isProcessSubstFact,
+  isRedirFact,
+  isReservedWordFact,
 } from "../analysis"
 import { mockDoc } from "./test-util"
 
@@ -55,6 +58,67 @@ describe("command/precommand analysis", () => {
     const s = "exec -a demo zsh -f"
     expectPrecmdNames(s, ["exec"])
     expectCmdHeadTexts(s, ["zsh"])
+  })
+})
+
+describe("redirection facts", () => {
+  test("emits redir fact for >", () => {
+    const facts = cmdHeadFactsOnLine("echo hi > file")
+    const redirs = facts.filter(isRedirFact)
+    expect(redirs).toHaveLength(1)
+    expect(redirs[0]?.text).toBe(">")
+  })
+
+  test("emits redir fact for >>", () => {
+    const facts = cmdHeadFactsOnLine("cat >> log")
+    const redirs = facts.filter(isRedirFact)
+    expect(redirs).toHaveLength(1)
+    expect(redirs[0]?.text).toBe(">>")
+  })
+
+  test("does not emit redir for > inside quotes", () => {
+    const facts = cmdHeadFactsOnLine("echo '>'")
+    expect(facts.filter(isRedirFact)).toHaveLength(0)
+  })
+})
+
+describe("process substitution facts", () => {
+  test("emits two process-subst facts for diff <(cmd1) <(cmd2)", () => {
+    const facts = cmdHeadFactsOnLine("diff <(cmd1) <(cmd2)")
+    const ps = facts.filter(isProcessSubstFact)
+    expect(ps).toHaveLength(2)
+    expect(ps[0]?.text).toBe("<(cmd1)")
+    expect(ps[1]?.text).toBe("<(cmd2)")
+  })
+
+  test("emits process-subst fact for >(tee log)", () => {
+    const facts = cmdHeadFactsOnLine("cat >(tee log)")
+    const ps = facts.filter(isProcessSubstFact)
+    expect(ps).toHaveLength(1)
+    expect(ps[0]?.text).toBe(">(tee log)")
+  })
+
+  test("no process-subst fact inside quotes", () => {
+    const facts = cmdHeadFactsOnLine('echo ">(foo)"')
+    expect(facts.filter(isProcessSubstFact)).toHaveLength(0)
+  })
+})
+
+describe("reserved word facts", () => {
+  test("emits reserved-word facts for if/then/fi", () => {
+    const facts = cmdHeadFactsOnLine("if foo; then bar; fi")
+    const rws = facts.filter(isReservedWordFact).map((f) => f.text)
+    expect(rws).toContain("if")
+    expect(rws).toContain("then")
+    expect(rws).toContain("fi")
+  })
+
+  test("emits reserved-word facts for for/do/done", () => {
+    const facts = cmdHeadFactsOnLine("for x in a b; do echo; done")
+    const rws = facts.filter(isReservedWordFact).map((f) => f.text)
+    expect(rws).toContain("for")
+    expect(rws).toContain("do")
+    expect(rws).toContain("done")
   })
 })
 
