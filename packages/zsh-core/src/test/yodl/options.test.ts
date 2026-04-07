@@ -1,11 +1,11 @@
 import { readFileSync } from "node:fs"
 import { resolve } from "node:path"
 import { describe, expect, test } from "vitest"
-import { mkOptFlagChar, mkOptName } from "../types/brand"
-import { parseOptions } from "../yodl/options"
+import { mkOptFlagChar, mkOptName } from "../../types/brand"
+import { parseOptions } from "../../yodl/options"
 
 const OPTS_YO = readFileSync(
-  resolve(__dirname, "../data/zsh-docs/options.yo"),
+  resolve(__dirname, "../../data/zsh-docs/options.yo"),
   "utf8",
 )
 

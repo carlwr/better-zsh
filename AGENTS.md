@@ -11,11 +11,15 @@ a small monorepo with two packages:
 - vscode-better-zsh
   - a consumer of zsh-core
 
+## Tool-agnostic
+
+This repo is worked on from multiple agent tools (Cursor, Claude CLI, Codex CLI, etc.). All guidance in this file, in `SKILL.md`, and in any contributor docs must be tool-agnostic — avoid assuming any particular IDE, agent framework, or tool API.
+
 ## Meta: keeping docs fresh
 
 - Avoid duplicating information that lives in source (e.g. package.json scripts, file names, directory layout) — it becomes stale
 - Express constraints and intent rather than enumerating specifics
-- Prefer patterns ("unit tests live next to the code they test") over exact paths
+- Prefer patterns ("unit tests live in `src/test/`, grouped into subdirs mirroring source structure") over exact paths
 
 ## Validation before returning to user
 
@@ -94,7 +98,7 @@ The extension uses `zsh -f` to query what zsh knows about *itself*: builtins, op
 
 - **Static zsh knowledge** (builtins, options, parameter expansion flags, grammar) is safe to use — it is intrinsic to zsh, same across machines
 - **Environment-dependent data** (`$commands`, `$aliases`, `$functions_source`, `$fpath` beyond system defaults) is *not* used for core features — it varies by machine, launch method, editor, and target execution environment
-- `-f` (NO_RCS) skips user rc files, but the process still inherits `PATH` and other env vars from VS Code — which itself varies by launch method (Dock vs terminal, bash vs zsh, Cursor vs VS Code, etc.)
+- `-f` (NO_RCS) skips user rc files; spawned zsh processes receive only an explicit allowlist of env vars (`HOME`, `PATH`, locale vars, etc.) — see `ZSH_ENV_KEEP` in `packages/vscode-better-zsh/src/zsh-exec.ts`. Even this filtered set varies by VS Code launch method (Dock vs terminal, bash vs zsh, Cursor vs VS Code, etc.).
 - The file being edited may run on a completely different machine (CI, container, remote); exposing local environment data can actively mislead
 - Mental model: "if we could bundle a zsh binary and run it in an isolated container, we would." We use system zsh and tolerate inherited env as a necessary cost — not a feature to exploit.
 - Environment-dependent introspection may later be offered through agent-facing tools (Language Model Tools API) where agents explicitly opt in, with clear caveats about side effects and env-specificity
@@ -138,16 +142,24 @@ Regarding semantic token design choices (see `semantic-tokens.ts`):
 
 ### Keeping the orientation skill fresh
 
-A project skill lives at `skills/orient-zsh-extension/SKILL.md`. It provides:
-- reading paths by task type (which files to read first)
-- cheap API-snapshot commands (the `dist/types/*.d.ts` rollups)
-- `rg` patterns for symbol navigation
+A project skill lives at `skills/orient/`. It provides:
+- discovery scripts (`skills/orient/scripts/`) that produce always-current output
+- reading paths by task type (which **directories** to explore, not which files to read)
 - known gotchas
 
-**The skill deliberately avoids duplicating source facts.** When making structural changes:
+The skill has its own freshness rules section — read and follow those when editing it. The overriding principles, stated here too for emphasis:
+
+**HARD RULES for `skills/orient/SKILL.md`:**
+- **NEVER add filenames** (reference directories, not files; exception: `package.json`)
+- **NEVER add function/class/variable names** (exception: names in "Key gotchas" where the gotcha is about that specific name)
+- **NEVER add line counts, file counts, or other volatile metrics**
+- **DO add new directory paths** when a new directory becomes a common entry point
+- **DO add new gotchas** that span multiple files or aren't obvious from reading the code
+- **DO update discovery scripts** when directory structure changes break them
+
+When making structural changes:
 - New public API: no update needed — the d.ts rollup reflects it after a build
-- New source module that's a common entry point: add a reading-path entry to the skill
-- New gotcha discovered: add to the skill's "Key gotchas" section
+- New source directory that's a common entry point: add a reading-path entry to the skill
 - Anything that belongs in code (design rationale, invariants): put it in a source comment, not in the skill
 
 ## About: new features ideation

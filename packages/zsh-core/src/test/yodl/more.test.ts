@@ -1,13 +1,13 @@
 import { describe, expect, test } from "vitest"
-import { parseGlobOps } from "../yodl/glob-ops"
-import { parseGlobbingFlags } from "../yodl/globbing-flags"
-import { parseHistory } from "../yodl/history"
-import { parseParamFlags } from "../yodl/param-flags"
-import { parseProcessSubsts } from "../yodl/process-subst"
-import { parseRedirections } from "../yodl/redirections"
-import { parseReservedWords } from "../yodl/reserved-words"
-import { parseSubscriptFlags } from "../yodl/subscript-flags"
-import { expectDocCorpus, readVendoredYo } from "./yodl-test-util"
+import { parseGlobOps } from "../../yodl/glob-ops"
+import { parseGlobbingFlags } from "../../yodl/globbing-flags"
+import { parseHistory } from "../../yodl/history"
+import { parseParamFlags } from "../../yodl/param-flags"
+import { parseProcessSubsts } from "../../yodl/process-subst"
+import { parseRedirections } from "../../yodl/redirections"
+import { parseReservedWords } from "../../yodl/reserved-words"
+import { parseSubscriptFlags } from "../../yodl/subscript-flags"
+import { expectDocCorpus, readVendoredYo } from "./test-util"
 
 const EXPN_YO = readVendoredYo("expn.yo")
 const GRAMMAR_YO = readVendoredYo("grammar.yo")

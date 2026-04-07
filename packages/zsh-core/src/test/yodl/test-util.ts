@@ -3,7 +3,7 @@ import { resolve } from "node:path"
 import { expect } from "vitest"
 
 export function readVendoredYo(name: string): string {
-  return readFileSync(resolve(__dirname, `../data/zsh-docs/${name}`), "utf8")
+  return readFileSync(resolve(__dirname, `../../data/zsh-docs/${name}`), "utf8")
 }
 
 export function expectDocCorpus<T>({

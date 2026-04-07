@@ -1,5 +1,5 @@
 import * as assert from "node:assert"
-import { isSetoptContext } from "../setopt-context"
+import { isSetoptContext } from "../../setopt-context"
 
 function doc(text: string) {
   const lines = text.split("\n")
