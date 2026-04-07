@@ -1,5 +1,17 @@
 # Agent / Contributor Guidelines
 
+## repo, packages
+
+a small monorepo with two packages:
+- zsh-core
+  - does not (will not) exists only for the sake of vscode-better-zsh
+  - i.e. is expected to have exposed functionality that is not used by the extension
+  - its dist contains, and is intended to contain, structured knowledge on zsh, in the form of json files
+  - to be maximally usable with AI workflows, esp. for consumers of the package, it should try to export its API surface in suitable machine-readable forms (currently, e.g. API Extractor is used) (see further: the llms.txt file written into the dist)
+- vscode-better-zsh
+  - a consumer of zsh-core
+
+
 ## Meta: keeping docs fresh
 
 - Avoid duplicating information that lives in source (e.g. package.json scripts, file names, directory layout) — it becomes stale
