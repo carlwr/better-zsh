@@ -1,7 +1,7 @@
 {
   "name": "better-zsh",
   "displayName": "Better Zsh",
-  "description": "improved word boundary handling for zsh files in VS Code",
+  "description": "Improved zsh shellscript code editing experience",
   "author": {
     "name": "carlwr",
     "url": "https://github.com/carlwr"

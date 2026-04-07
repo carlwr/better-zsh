@@ -113,7 +113,7 @@ function runZsh(req: ZshRunReq) {
 
 export async function zshAvailable(): Promise<boolean> {
   if (zshDisabled) {
-    log("zsh invocation disabled by betterZsh.zshPath = off")
+    log("zsh invocation disabled")
     return false
   }
   const r = await runZshVersion(runZsh)

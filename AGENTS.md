@@ -11,7 +11,7 @@ a small monorepo with two packages:
 - vscode-better-zsh
   - a consumer of zsh-core
 
-## Tool-agnostic
+## Agent tool agnostic
 
 This repo is worked on from multiple agent tools (Cursor, Claude CLI, Codex CLI, etc.). All guidance in this file, in `SKILL.md`, and in any contributor docs must be tool-agnostic — avoid assuming any particular IDE, agent framework, or tool API.
 
@@ -66,6 +66,7 @@ This repo is worked on from multiple agent tools (Cursor, Claude CLI, Codex CLI,
 - Extract pure, testable functions — even single-use if they clarify intent or enable testing
 - Abstract repeated patterns into shared utilities
 - At call sites, a self-explanatory function name is cheaper cognitive load than inline code
+- Do not hard-code things that should be global constants, or that can be read from somewhere. Example: the languageId string, the name of the extension.
 - No unnecessary abstractions; three similar lines > a premature helper — but once a pattern appears twice with non-trivial logic, extract it
 - Keep files focused — one concern per module
 - Conciseness is key, everywhere
