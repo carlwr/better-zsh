@@ -11,7 +11,6 @@ a small monorepo with two packages:
 - vscode-better-zsh
   - a consumer of zsh-core
 
-
 ## Meta: keeping docs fresh
 
 - Avoid duplicating information that lives in source (e.g. package.json scripts, file names, directory layout) — it becomes stale
@@ -45,6 +44,15 @@ a small monorepo with two packages:
 - The VS Code Electron test harness intentionally runs ALL tests (unit + integration) — unit tests re-running there serve as meta-tests under a richer harness
 - Functions that are "obviously correct" (general/simple enough) do not need unit tests
 
+**Reproducibility is imoprtant: any randomness must use a fixed, checked-in seed.**
+
+### Testing tools
+
+- `@fast-check/vitest` and `@carlwr/fastcheck-utils` are available as dev dependencies
+- Property-based tests are encouraged for pure parsers and normalizers
+- `@carlwr/fastcheck-utils` provides a few convenience generators with better shrinking and types — check if it offers something useful if writing fast-check tests; do not remove as a dev dep even if at some point nothing from it is used
+- fast-check version note: `fc.char()` and `fc.stringOf()` are **possibly not** available in the version used — if not available, use `fc.mapToConstant(...)` + `fc.array(...)` for character-level arbitraries
+
 ## Code style
 
 - Short identifiers, minimal comments — prefer naming over comments
@@ -67,15 +75,9 @@ a small monorepo with two packages:
 - If a value has a reason to be passed around (even potentially), give it its own type — puts documentation in the signature, enables shorter variable names, improves readability
 - `enum` is not used — literal unions + type aliases are preferred in this codebase
 
-### Testing tools
-
-- `@fast-check/vitest` and `@carlwr/fastcheck-utils` are available as dev dependencies
-- Property-based tests are encouraged for pure parsers and normalizers
-- `@carlwr/fastcheck-utils` provides a few convenience generators with better shrinking and types — check if it offers something useful if writing fast-check tests
-
 ### Other tools
 
-- `@carlwr/typescript-extra` (a dev dep, small) has some convenience utilities, including NonEmpty types and more - it is available to use if anything from it brings value
+- `@carlwr/typescript-extra` (a dev dep, small) has some convenience utilities, including NonEmpty types and more - it is available to use if anything from it brings value. Do not remove as a dep/dev dep even if at some point nothing from it is used
 
 ## Packaging (vsce)
 
@@ -103,13 +105,50 @@ The extension uses `zsh -f` to query what zsh knows about *itself*: builtins, op
 - For option hovers: show executable `zsh` forms first; keep category at the bottom; prioritize the default in plain zsh over other emulation defaults
 - When adjusting Yodl parsing for hover docs, preserve visible prose/reference text unless there is a strong reason not to; use the hover dump script to inspect regressions in generated markdown
 
-Regarding syntax highlighting:
-- a complete, custom zsh textmateGrammar is beyond the scope of this extension
-  - reasoning: shell script parsing/tokenization is hairy
-  - textMate grammars is not likely the long-time future for syntax highlighting; tree-sitter is - this reduces the value of a potential zsh-specific grammar
-  - design choice:
-    - vendor in the current sh/bash-focused VS Code textMate grammar (from its upstream)
-    - offer some semantic tokens for limited parts of zsh syntax that happens to be easily parse-able by simple regex matching (the semantic token scopes will, from a syntax-highlighting perspective, layer on top of the textMate scopes and for those hide imperfections/errors in the underlying textMate scoping
+## Syntax highlighting and semantic tokens
+
+a complete, custom zsh textmateGrammar is beyond the scope of this extension
+- reasoning: shell script parsing/tokenization is hairy
+- textMate grammars is not likely the long-time future for syntax highlighting; tree-sitter is - this reduces the value of a potential zsh-specific grammar
+
+design choice:
+- vendor in the current sh/bash-focused VS Code textMate grammar (from its upstream)
+- **offer some semantic tokens for limited parts of zsh syntax** that happens to be parseable with a limited/reasonable effort (the semantic token scopes will, from a syntax-highlighting perspective, layer on top of the textMate scopes and for those hide imperfections/errors in the underlying textMate scoping
+
+choice of, and contributed mappings (`package.json`) of, semantic tokens:
+- baseline highlighting is the textmate grammar, so the semantic tokens should play well with that/result in selectors for highlighting that gives consistent highlighting with the textmate grammar (where it highlights correctly) and the semantic tokens
+- in general, use the opportunity to map to rather specifically-qualified scopes, since this only adds flexibility for user- and theme-level overrides
+  - example: if, for an operator that a semantic token will be provided for, the natural choice is `keyword.operator.logical.shell`, but the parser already has knowledge on whether the operator is unary or binary and the semantic token in question allows distinguishing these, there is no reason not to do so - i.e. when expressed as scopes (thorugh the mappings in package.json) the scopes would be `keyword.operator.logical.unary.shell` and `keyword.operator.logical.binary.shell`
+
+Regarding semantic token design choices (see `semantic-tokens.ts`):
+- (if you need to use the info below, you should verify it is not stale vs. the actual code first)
+- `{` and `}` are emitted as `reserved-word` facts by the analysis layer but are *skipped* in the token provider — the TM grammar already handles the common `f() { … }` form correctly, and distinguishing block-`{` from word-`{` at the heuristic level is non-trivial
+- `((` and `))` are emitted as `reserved-word` facts and *do* get `keyword` tokens — this reuses the existing provider logic without requiring a new token type or `semanticTokenScopes` entry
+- New token types should be weighed against the need to add matching `semanticTokenScopes` entries in `package.json`
+
+### When suitable, record design decisions, answer "why questions" etc.
+
+- rationale: let future work on the code know why choices were made, possibly what was tried etc.
+- keep short and concise
+- possible ways to record this:
+  - as in-source code comments
+  - in AGENTS.md
+  - (possibly: in DEVELOPMENT.md)
+  - (possibly: in some other dedicated file, if so, should likely be discussed with the user)
+
+### Keeping the orientation skill fresh
+
+A project skill lives at `skills/orient-zsh-extension/SKILL.md`. It provides:
+- reading paths by task type (which files to read first)
+- cheap API-snapshot commands (the `dist/types/*.d.ts` rollups)
+- `rg` patterns for symbol navigation
+- known gotchas
+
+**The skill deliberately avoids duplicating source facts.** When making structural changes:
+- New public API: no update needed — the d.ts rollup reflects it after a build
+- New source module that's a common entry point: add a reading-path entry to the skill
+- New gotcha discovered: add to the skill's "Key gotchas" section
+- Anything that belongs in code (design rationale, invariants): put it in a source comment, not in the skill
 
 ## About: new features ideation
 

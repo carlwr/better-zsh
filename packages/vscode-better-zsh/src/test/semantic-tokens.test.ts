@@ -137,4 +137,59 @@ suite("SemanticTokensProvider", () => {
     const result = tokens("f() { echo; }", ["echo"])
     assert.deepStrictEqual(result, [{ word: "echo", type: 0 }])
   })
+
+  test("marks builtins in function body without semicolon", () => {
+    assert.deepStrictEqual(builtinWords("f() { echo }", ["echo"]), ["echo"])
+  })
+
+  test("marks builtins after arithmetic condition", () => {
+    assert.deepStrictEqual(builtinWords("if ((1)) { fc; }", ["fc"]), ["fc"])
+    assert.deepStrictEqual(builtinWords("if ((1)) fc", ["fc"]), ["fc"])
+  })
+
+  test("marks builtins after pipeline", () => {
+    assert.deepStrictEqual(
+      builtinWords("echo hi | read var", ["echo", "read"]),
+      ["echo", "read"],
+    )
+  })
+
+  test("marks builtins after && and ||", () => {
+    assert.deepStrictEqual(builtinWords("echo hi && fc", ["echo", "fc"]), [
+      "echo",
+      "fc",
+    ])
+    assert.deepStrictEqual(builtinWords("echo hi || fc", ["echo", "fc"]), [
+      "echo",
+      "fc",
+    ])
+  })
+
+  test("marks while/until reserved words", () => {
+    const result = tokens("while true; do echo; done", ["echo"])
+    assert.deepStrictEqual(result, [
+      { word: "while", type: 1 },
+      { word: "do", type: 1 },
+      { word: "echo", type: 0 },
+      { word: "done", type: 1 },
+    ])
+  })
+
+  test("marks (( and )) as keyword tokens", () => {
+    const result = tokens("if ((1)) echo", ["echo"])
+    assert.deepStrictEqual(result, [
+      { word: "if", type: 1 },
+      { word: "((", type: 1 },
+      { word: "))", type: 1 },
+      { word: "echo", type: 0 },
+    ])
+  })
+
+  test("marks standalone (( )) arithmetic evaluation", () => {
+    const result = tokens("(( x++ ))", [])
+    assert.deepStrictEqual(result, [
+      { word: "((", type: 1 },
+      { word: "))", type: 1 },
+    ])
+  })
 })

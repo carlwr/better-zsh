@@ -53,10 +53,50 @@ describe("stripYodl", () => {
     ).toBe("Files")
   })
 
-  test("output length ≤ input length", () => {
+  test("strips startsitem()/endsitem() markers", () => {
+    expect(stripYodl("startsitem()\nendsitem()")).toBe("")
+  })
+
+  test("strips startitem()/enditem() markers", () => {
+    expect(stripYodl("startitem()\nenditem()")).toBe("")
+  })
+
+  test("converts sitem(head)(body) to list items", () => {
+    expect(stripYodl("sitem(tt(\\a))(bell character)")).toBe(
+      "- \\a: bell character",
+    )
+  })
+
+  test("handles sitem list block without artefacts", () => {
+    const input = [
+      "startsitem()",
+      "sitem(tt(\\a))(bell character)",
+      "sitem(tt(\\n))(newline)",
+      "endsitem()",
+    ].join("\n")
+    const result = stripYodl(input)
+    expect(result).not.toContain("startsitem")
+    expect(result).not.toContain("endsitem")
+    expect(result).not.toContain("sitem(")
+    expect(result).not.toContain("tt(")
+    expect(result).not.toContain("\u0007")
+    expect(result).toContain("- \\a: bell character")
+    expect(result).toContain("- \\n: newline")
+  })
+
+  test("em() inside sitem is not falsely matched", () => {
+    const result = stripYodl("sitem(tt(\\a))(bell character)")
+    expect(result).not.toContain("sit")
+    expect(result).toBe("- \\a: bell character")
+  })
+
+  test("output length ≤ input length + list markup allowance", () => {
     fc.assert(
       fc.property(fc.string(), (s: string) => {
-        expect(stripYodl(s).length).toBeLessThanOrEqual(s.length)
+        const sitemCount = (s.match(/sitem\(/g) ?? []).length
+        expect(stripYodl(s).length).toBeLessThanOrEqual(
+          s.length + sitemCount * 4,
+        )
       }),
     )
   })

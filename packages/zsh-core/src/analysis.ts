@@ -256,6 +256,23 @@ export function cmdHeadFactsOnLine(
 
     const arithCondLen = expectCmd ? matchArithCond(line, i, len) : 0
     if (arithCondLen > 0) {
+      // Emit (( and )) as reserved-word facts (reusing the existing kind) so
+      // the semantic-token provider gives them keyword tokens without any
+      // provider-side changes. The alternative — a new fact kind — would need
+      // a new token type wired through package.json semanticTokenScopes.
+      out.push({
+        kind: "reserved-word",
+        text: "((",
+        span: { start: i, end: i + 2 },
+        strength: "heuristic",
+      })
+      const closeStart = i + arithCondLen - 2
+      out.push({
+        kind: "reserved-word",
+        text: "))",
+        span: { start: closeStart, end: closeStart + 2 },
+        strength: "heuristic",
+      })
       i += arithCondLen
       continue
     }
@@ -626,7 +643,7 @@ function skipWord(s: string, i: number, len: number): number {
       continue
     }
     if (ch === "\\") {
-      i += 2
+      i = Math.min(i + 2, len)
       continue
     }
     i++
@@ -648,7 +665,10 @@ function skipDoubleQuote(s: string, i: number, len: number): number {
       i = skipParamExpansion(s, i, len)
       continue
     }
-    if (s[i] === "\\") i++
+    if (s[i] === "\\") {
+      i = Math.min(i + 2, len)
+      continue
+    }
     i++
   }
   if (i < len) i++
@@ -670,7 +690,7 @@ function skipParamExpansion(s: string, i: number, len: number): number {
       continue
     }
     if (ch === "\\") {
-      i += 2
+      i = Math.min(i + 2, len)
       continue
     }
     if (ch === "$" && i + 1 < len && s[i + 1] === "{") {

@@ -66,4 +66,31 @@ suite("cmdPositions", () => {
 // - Subshell command substitution: $(echo hi) — the echo inside $() is in cmd position
 // - Backtick substitution: `echo hi`
 // - Multi-line: while ...\n do — "do" on next line resets cmd position (line-local heuristic)
-// - Short-form loops: while ((1)) { echo hi } — depends on multi-line context
+
+suite("cmdPositions edge cases", () => {
+  const cases: [string, string[], string?][] = [
+    ["f() { echo; }", ["echo"], "function body with semicolon"],
+    ["f() { echo }", ["echo"], "function body without semicolon"],
+    ["f() {echo}", ["{echo"], "no-space brace is part of the word"],
+    ["echo a > file", ["echo"], "redir does not create a new cmd position"],
+    [">&2 echo thing", ["echo"], "redir before command"],
+    ["echo thing &> /dev/null", ["echo"], "&> redir after command"],
+    ["echo thing &>> /dev/null", ["echo"], "&>> redir after command"],
+    [
+      'echo "$var" thing',
+      ["echo"],
+      "double-quoted parameter expansion stays in one word",
+    ],
+    [
+      "echo ${var[(r)1]}",
+      ["echo"],
+      "subscript flag inside parameter expansion",
+    ],
+  ]
+
+  for (const [input, expected, desc] of cases) {
+    test(desc ?? input, () => {
+      assert.deepStrictEqual(cmds(input), expected)
+    })
+  }
+})

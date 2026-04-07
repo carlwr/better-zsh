@@ -1,3 +1,4 @@
+import fc from "fast-check"
 import { describe, expect, test } from "vitest"
 import {
   analyzeDoc,
@@ -10,141 +11,233 @@ import {
   isProcessSubstFact,
   isRedirFact,
   isReservedWordFact,
+  type LineFact,
 } from "../analysis"
 import { mockDoc } from "./test-util"
 
-function expectCmdHeadTexts(s: string, xs: string[]): void {
-  const facts = cmdHeadFactsOnLine(s)
-  expect(facts.filter((f) => f.kind === "cmd-head").map((f) => f.text)).toEqual(
-    xs,
-  )
+function cmdTexts(s: string): string[] {
+  return cmdHeadFactsOnLine(s)
+    .filter((f) => f.kind === "cmd-head")
+    .map((f) => f.text)
 }
 
-function expectPrecmdNames(s: string, xs: string[]): void {
-  const facts = cmdHeadFactsOnLine(s)
-  expect(facts.filter(isPrecmdFact).map((f) => f.name)).toEqual(xs)
+function redirTexts(s: string): string[] {
+  return cmdHeadFactsOnLine(s)
+    .filter(isRedirFact)
+    .map((f) => f.text)
 }
 
-function expectPrecmdTexts(s: string, xs: string[]): void {
-  const facts = cmdHeadFactsOnLine(s)
-  expect(facts.filter(isPrecmdFact).map((f) => f.text)).toEqual(xs)
+function rwTexts(s: string): string[] {
+  return cmdHeadFactsOnLine(s)
+    .filter(isReservedWordFact)
+    .map((f) => f.text)
 }
+
+// ---------------------------------------------------------------------------
+// Invariant helpers
+// ---------------------------------------------------------------------------
+
+function assertFactInvariants(line: string, facts: LineFact[]): void {
+  for (const f of facts) {
+    expect(f.span.start).toBeGreaterThanOrEqual(0)
+    expect(f.span.end).toBeLessThanOrEqual(line.length)
+    expect(f.span.start).toBeLessThan(f.span.end)
+    if ("text" in f) {
+      expect(line.slice(f.span.start, f.span.end)).toBe(f.text)
+    }
+  }
+  // Spans must not overlap (they may abut).
+  const sorted = [...facts].sort((a, b) => a.span.start - b.span.start)
+  for (let i = 1; i < sorted.length; i++) {
+    // biome-ignore lint/style/noNonNullAssertion: loop bounds guarantee presence
+    const prev = sorted[i - 1]!,
+      // biome-ignore lint/style/noNonNullAssertion: loop bounds guarantee presence
+      curr = sorted[i]!
+    expect(prev.span.end).toBeLessThanOrEqual(curr.span.start)
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Command / precommand analysis
+// ---------------------------------------------------------------------------
 
 describe("command/precommand analysis", () => {
-  test("finds command head on plain line", () => {
-    expectCmdHeadTexts("echo hi", ["echo"])
-  })
+  const cases: [string, string[], string?][] = [
+    ["echo hi", ["echo"]],
+    ["  echo hi", ["echo"]],
+    ["echo x; fg", ["echo", "fg"]],
+    ["echo x && fg", ["echo", "fg"]],
+    ["echo x || fg", ["echo", "fg"]],
+    ["echo x | fg", ["echo", "fg"]],
+    ["echo x | fg | bg", ["echo", "fg", "bg"]],
+    ["(echo hi)", ["echo"]],
+    ["{ echo hi }", ["echo"]],
+    ["f() uname", ["uname"], "func definition body"],
+    ["! echo hi", ["echo"], "negation"],
+    ["time echo hi", ["echo"], "time reserved word"],
+    ["if echo; then fg; fi", ["echo", "fg"]],
+    ["while echo; do fg; done", ["echo", "fg"]],
+    ["for x in a; do echo; done", ["echo"]],
+  ]
 
-  test("treats precommand modifiers separately from command head", () => {
+  for (const [input, expected, desc] of cases) {
+    test(desc ?? input, () => expect(cmdTexts(input)).toEqual(expected))
+  }
+
+  test("precommand modifiers before command head", () => {
     const s = "noglob command echo hi"
-    expectPrecmdNames(s, ["noglob", "command"])
-    expectPrecmdTexts(s, ["noglob", "command"])
-    expectCmdHeadTexts(s, ["echo"])
+    const facts = cmdHeadFactsOnLine(s)
+    expect(facts.filter(isPrecmdFact).map((f) => f.name)).toEqual([
+      "noglob",
+      "command",
+    ])
+    expect(cmdTexts(s)).toEqual(["echo"])
   })
 
-  test("keeps builtin head after builtin precommand modifier", () => {
-    const s = "builtin read var"
-    expectPrecmdNames(s, ["builtin"])
-    expectCmdHeadTexts(s, ["read"])
+  test("builtin precommand keeps builtin head", () => {
+    expect(cmdTexts("builtin read var")).toEqual(["read"])
   })
 
-  test("command with flags does not claim lookup target is executed command", () => {
-    const s = "command -v echo"
-    expectPrecmdNames(s, ["command"])
-    expectCmdHeadTexts(s, [])
+  test("command -v suppresses command head", () => {
+    expect(cmdTexts("command -v echo")).toEqual([])
   })
 
-  test("exec -a skips argv0 and finds command head", () => {
-    const s = "exec -a demo zsh -f"
-    expectPrecmdNames(s, ["exec"])
-    expectCmdHeadTexts(s, ["zsh"])
+  test("exec -a skips argv0", () => {
+    expect(cmdTexts("exec -a demo zsh -f")).toEqual(["zsh"])
   })
 })
+
+// ---------------------------------------------------------------------------
+// Arithmetic conditions: ((..))
+// ---------------------------------------------------------------------------
+
+describe("arithmetic condition handling", () => {
+  const cases: [string, string[]][] = [
+    ["if ((1)) echo", ["echo"]],
+    ["if ((1)) { echo; }", ["echo"]],
+    ["if ((1)) { echo }", ["echo"]],
+    ["while ((1)) { fc; }", ["fc"]],
+    ["until ((1)) fc", ["fc"]],
+    ["if ((x > 0)); then echo; fi", ["echo"]],
+    ["if ((a + b)) && ((c)) echo", ["echo"]],
+  ]
+  for (const [input, expected] of cases) {
+    test(input, () => expect(cmdTexts(input)).toEqual(expected))
+  }
+
+  test("emits (( and )) as reserved-word facts", () => {
+    const rws = rwTexts("if ((1)) echo")
+    expect(rws).toContain("((")
+    expect(rws).toContain("))")
+  })
+
+  test("standalone (( )) emits delimiter facts", () => {
+    const rws = rwTexts("(( x++ ))")
+    expect(rws).toEqual(["((", "))"])
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Redirections
+// ---------------------------------------------------------------------------
 
 describe("redirection facts", () => {
-  test("emits redir fact for >", () => {
-    const facts = cmdHeadFactsOnLine("echo hi > file")
-    const redirs = facts.filter(isRedirFact)
-    expect(redirs).toHaveLength(1)
-    expect(redirs[0]?.text).toBe(">")
+  const cases: [string, string[]][] = [
+    ["echo hi > file", [">"]],
+    ["cat >> log", [">>"]],
+    ["echo hi &> /dev/null", ["&>"]],
+    ["echo hi &>> log", ["&>>"]],
+    ["echo hi >&2", [">&"]],
+    ["echo hi 2>&1", ["2>&"]],
+    ["cat < in", ["<"]],
+    ["cat <<< word", ["<<<"]],
+    ["cat << EOF", ["<<"]],
+  ]
+  for (const [input, expected] of cases) {
+    test(input, () => expect(redirTexts(input)).toEqual(expected))
+  }
+
+  test("no redir inside single quotes", () => {
+    expect(redirTexts("echo '>'")).toEqual([])
   })
 
-  test("emits redir fact for >>", () => {
-    const facts = cmdHeadFactsOnLine("cat >> log")
-    const redirs = facts.filter(isRedirFact)
-    expect(redirs).toHaveLength(1)
-    expect(redirs[0]?.text).toBe(">>")
+  test("no redir inside double quotes", () => {
+    expect(redirTexts('echo ">"')).toEqual([])
   })
 
-  test("does not emit redir for > inside quotes", () => {
-    const facts = cmdHeadFactsOnLine("echo '>'")
-    expect(facts.filter(isRedirFact)).toHaveLength(0)
-  })
-
-  test("emits redir fact for &>", () => {
-    const facts = cmdHeadFactsOnLine("echo hi &> /dev/null")
-    const redirs = facts.filter(isRedirFact)
-    expect(redirs).toHaveLength(1)
-    expect(redirs[0]?.text).toBe("&>")
-  })
-
-  test("emits redir fact for &>>", () => {
-    const facts = cmdHeadFactsOnLine("echo hi &>> log")
-    const redirs = facts.filter(isRedirFact)
-    expect(redirs).toHaveLength(1)
-    expect(redirs[0]?.text).toBe("&>>")
+  test("multiple redirections on one line", () => {
+    expect(redirTexts("echo 2>&1 > file")).toEqual(["2>&", ">"])
   })
 })
 
+// ---------------------------------------------------------------------------
+// Process substitution
+// ---------------------------------------------------------------------------
+
 describe("process substitution facts", () => {
-  test("emits two process-subst facts for diff <(cmd1) <(cmd2)", () => {
-    const facts = cmdHeadFactsOnLine("diff <(cmd1) <(cmd2)")
-    const ps = facts.filter(isProcessSubstFact)
-    expect(ps).toHaveLength(2)
-    expect(ps[0]?.text).toBe("<(cmd1)")
-    expect(ps[1]?.text).toBe("<(cmd2)")
+  test("diff <(a) <(b)", () => {
+    const ps = cmdHeadFactsOnLine("diff <(a) <(b)").filter(isProcessSubstFact)
+    expect(ps.map((f) => f.text)).toEqual(["<(a)", "<(b)"])
   })
 
-  test("emits process-subst fact for >(tee log)", () => {
-    const facts = cmdHeadFactsOnLine("cat >(tee log)")
-    const ps = facts.filter(isProcessSubstFact)
+  test(">(tee log)", () => {
+    const ps = cmdHeadFactsOnLine("cat >(tee log)").filter(isProcessSubstFact)
     expect(ps).toHaveLength(1)
     expect(ps[0]?.text).toBe(">(tee log)")
   })
 
-  test("no process-subst fact inside quotes", () => {
-    const facts = cmdHeadFactsOnLine('echo ">(foo)"')
-    expect(facts.filter(isProcessSubstFact)).toHaveLength(0)
+  test("no process-subst inside quotes", () => {
+    expect(
+      cmdHeadFactsOnLine('echo ">(foo)"').filter(isProcessSubstFact),
+    ).toHaveLength(0)
   })
 })
 
+// ---------------------------------------------------------------------------
+// Reserved words
+// ---------------------------------------------------------------------------
+
 describe("reserved word facts", () => {
-  test("emits reserved-word facts for if/then/fi", () => {
-    const facts = cmdHeadFactsOnLine("if foo; then bar; fi")
-    const rws = facts.filter(isReservedWordFact).map((f) => f.text)
-    expect(rws).toContain("if")
-    expect(rws).toContain("then")
-    expect(rws).toContain("fi")
+  test("if/then/fi", () => {
+    const rws = rwTexts("if foo; then bar; fi")
+    expect(rws).toEqual(["if", "then", "fi"])
   })
 
-  test("emits reserved-word facts for for/do/done", () => {
-    const facts = cmdHeadFactsOnLine("for x in a b; do echo; done")
-    const rws = facts.filter(isReservedWordFact).map((f) => f.text)
+  test("for/do/done", () => {
+    const rws = rwTexts("for x in a b; do echo; done")
     expect(rws).toContain("for")
     expect(rws).toContain("do")
     expect(rws).toContain("done")
   })
+
+  test("{ and } are reserved words", () => {
+    const rws = rwTexts("{ echo; }")
+    expect(rws).toContain("{")
+  })
+
+  test("while/until", () => {
+    expect(rwTexts("while true; do echo; done")).toContain("while")
+    expect(rwTexts("until false; do echo; done")).toContain("until")
+  })
+
+  test("[[", () => {
+    expect(rwTexts("[[ -f x ]]")).toContain("[[")
+  })
 })
 
+// ---------------------------------------------------------------------------
+// Document-level facts
+// ---------------------------------------------------------------------------
+
 describe("document facts", () => {
-  test("reports cond context and precommand facts on the same line", () => {
+  test("cond context and precommand on same line", () => {
     const doc = mockDoc(["if noglob [ -f $file ]; then"])
     const got = analyzeDoc(doc)
     expect(got.filter(isCtxFact).map((f) => f.ctx)).toContain("cond")
     expect(got.filter(isPrecmdFact).map((f) => f.name)).toContain("noglob")
   })
 
-  test("reports function declaration facts", () => {
+  test("function declaration facts", () => {
     const doc = mockDoc(["alpha() {", "  echo hi", "}"])
     const fact = analyzeDoc(doc).find(isFuncDeclFact)
     expect(fact).toBeTruthy()
@@ -152,14 +245,57 @@ describe("document facts", () => {
     expect(fact && factText(doc, fact.nameSpan)).toBe("alpha")
   })
 
-  test("setopt context tracks command head after builtin modifier", () => {
+  test("setopt context after builtin modifier", () => {
     const doc = mockDoc(["builtin setopt extended_glob"])
     const got = factsAt(doc, 0, 18)
     expect(got.filter(isCtxFact).map((f) => f.ctx)).toContain("setopt")
   })
 
-  test("if arithmetic condition keeps next command in command position", () => {
-    expectCmdHeadTexts("if ((1)) echo", ["echo"])
-    expectCmdHeadTexts("if ((1)) { echo; }", ["echo"])
+  test("arith condition keeps next command position", () => {
+    expect(cmdTexts("if ((1)) echo")).toEqual(["echo"])
+    expect(cmdTexts("if ((1)) { echo; }")).toEqual(["echo"])
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Structural invariants (property-based)
+// ---------------------------------------------------------------------------
+
+describe("cmdHeadFactsOnLine invariants", () => {
+  const SHELL_CHARS =
+    " \t;|&(){}><'\"\\#abcdefghijklmnopqrstuvwxyz0123456789$!_-=+"
+  const shellCharArb = fc.mapToConstant(
+    ...SHELL_CHARS.split("").map((ch) => ({ num: 1, build: () => ch })),
+  )
+  const lineArb = fc
+    .array(shellCharArb, { maxLength: 120 })
+    .map((cs) => cs.join(""))
+
+  test("never throws", () => {
+    fc.assert(
+      fc.property(lineArb, (line) => {
+        expect(() => cmdHeadFactsOnLine(line)).not.toThrow()
+      }),
+    )
+  })
+
+  test("spans within bounds and non-overlapping", () => {
+    fc.assert(
+      fc.property(lineArb, (line) => {
+        assertFactInvariants(line, cmdHeadFactsOnLine(line))
+      }),
+    )
+  })
+
+  test("text fields match line slices", () => {
+    fc.assert(
+      fc.property(lineArb, (line) => {
+        for (const f of cmdHeadFactsOnLine(line)) {
+          if ("text" in f) {
+            expect(line.slice(f.span.start, f.span.end)).toBe(f.text)
+          }
+        }
+      }),
+    )
   })
 })

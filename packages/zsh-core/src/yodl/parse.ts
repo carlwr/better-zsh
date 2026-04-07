@@ -50,6 +50,11 @@ export function stripYodl(raw: string): string {
   let s = raw
   // Remove COMMENT(...) blocks
   s = stripMacro(s, "COMMENT")
+  // List markers and sitem must be processed BEFORE the em()/var()/tt() loop.
+  // "sitem(" contains the substring "em(" which would otherwise be consumed
+  // by the em() stripping pass, producing garbled output like "sit\a(bell…)".
+  s = stripListMarkers(s)
+  s = replaceTwoArgMacro(s, "sitem", (head, body) => `- ${head}: ${body}`)
   s = replaceTwoArgMacro(s, "manref", (name, section) => `${name}(${section})`)
   s = replaceWrapperMacro(
     s,
@@ -72,6 +77,10 @@ export function stripYodl(raw: string): string {
   ]) {
     s = stripWrapperMacro(s, m)
   }
+  // Strip remaining single-arg sitem/item that weren't two-arg.
+  s = stripWrapperMacro(s, "sitem")
+  s = stripWrapperMacro(s, "item")
+  s = stripWrapperMacro(s, "xitem")
   // Strip index macros.
   for (const m of ["cindex", "pindex", "findex", "vindex"]) {
     s = stripMacro(s, m)
@@ -82,6 +91,12 @@ export function stripYodl(raw: string): string {
   // Clean up whitespace
   s = s.replace(/\n{3,}/g, "\n\n").trim()
   return s
+}
+
+const LIST_MARKERS = /^(start(?:s?item)|end(?:s?item))\(\)\s*$/gm
+
+function stripListMarkers(s: string): string {
+  return s.replace(LIST_MARKERS, "")
 }
 
 export function normalizeDoc(raw: string): string {
