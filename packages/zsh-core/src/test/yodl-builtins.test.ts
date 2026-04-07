@@ -66,6 +66,9 @@ enditem()`
       expect(doc.desc).not.toContain("vindex(")
       expect(doc.desc).not.toContain("tt(")
       expect(doc.desc).not.toContain("var(")
+      expect(doc.desc).not.toContain("startsitem(")
+      expect(doc.desc).not.toContain("sitem(")
+      expect(doc.desc).not.toContain("\u0007")
     }
   })
 })

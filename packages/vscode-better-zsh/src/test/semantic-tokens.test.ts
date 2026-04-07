@@ -132,4 +132,9 @@ suite("SemanticTokensProvider", () => {
       { word: "done", type: 1 },
     ])
   })
+
+  test("does not mark function-body braces as keyword tokens", () => {
+    const result = tokens("f() { echo; }", ["echo"])
+    assert.deepStrictEqual(result, [{ word: "echo", type: 0 }])
+  })
 })

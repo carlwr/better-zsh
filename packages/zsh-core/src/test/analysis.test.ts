@@ -80,6 +80,20 @@ describe("redirection facts", () => {
     const facts = cmdHeadFactsOnLine("echo '>'")
     expect(facts.filter(isRedirFact)).toHaveLength(0)
   })
+
+  test("emits redir fact for &>", () => {
+    const facts = cmdHeadFactsOnLine("echo hi &> /dev/null")
+    const redirs = facts.filter(isRedirFact)
+    expect(redirs).toHaveLength(1)
+    expect(redirs[0]?.text).toBe("&>")
+  })
+
+  test("emits redir fact for &>>", () => {
+    const facts = cmdHeadFactsOnLine("echo hi &>> log")
+    const redirs = facts.filter(isRedirFact)
+    expect(redirs).toHaveLength(1)
+    expect(redirs[0]?.text).toBe("&>>")
+  })
 })
 
 describe("process substitution facts", () => {
@@ -142,5 +156,10 @@ describe("document facts", () => {
     const doc = mockDoc(["builtin setopt extended_glob"])
     const got = factsAt(doc, 0, 18)
     expect(got.filter(isCtxFact).map((f) => f.ctx)).toContain("setopt")
+  })
+
+  test("if arithmetic condition keeps next command in command position", () => {
+    expectCmdHeadTexts("if ((1)) echo", ["echo"])
+    expectCmdHeadTexts("if ((1)) { echo; }", ["echo"])
   })
 })

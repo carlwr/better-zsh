@@ -122,7 +122,7 @@ Potential new features should be judged roughly along the axis of:
 
 misc:
 - `zsh` available on the system (macOS-shipped; zsh 5.9)
-
+- to check or verify actual zsh behaviour, it is suitable for you to run test commands with zsh. For tricky cases, reading up on the functionality in the manual/man pages, then verifying with a few zsh commands, is a good strategy.<D-s>
 
 zsh sources
 - https://github.com/zsh-users/zsh (zsh repo mirror)

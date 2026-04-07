@@ -190,7 +190,7 @@ export class HoverProvider implements vscode.HoverProvider {
     if (redir) {
       const op = redir.text.replace(/^[0-9]+/, "")
       const d = this.redirMap?.get(op)
-      if (d)
+      if (d && (token === redir.text || token.startsWith(redir.text)))
         return new vscode.Hover(
           new vscode.MarkdownString(mdRedir(d)),
           tokenRange,
@@ -249,12 +249,16 @@ function activeTokenRangeAt(
   const text = doc.lineAt(pos.line).text
   const cut = commentStart(text) ?? text.length
   if (pos.character >= cut) return
-  if (/\s/.test(text[pos.character] ?? "")) return
+  if (isTokenDelimiter(text[pos.character] ?? "")) return
   let start = pos.character
-  while (start > 0 && !/\s/.test(text[start - 1] ?? "")) start--
+  while (start > 0 && !isTokenDelimiter(text[start - 1] ?? "")) start--
   let end = pos.character
-  while (end < cut && !/\s/.test(text[end] ?? "")) end++
+  while (end < cut && !isTokenDelimiter(text[end] ?? "")) end++
   return start === end
     ? undefined
     : new vscode.Range(pos.line, start, pos.line, end)
+}
+
+function isTokenDelimiter(ch: string): boolean {
+  return /[\s;|&(){}<>]/.test(ch)
 }

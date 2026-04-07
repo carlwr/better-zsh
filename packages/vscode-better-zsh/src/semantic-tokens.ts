@@ -25,6 +25,7 @@ export class SemanticTokensProvider
       const cmtAt = commentStart(text)
       for (const fact of cmdHeadFactsOnLine(text, cmtAt)) {
         if (fact.kind === "reserved-word") {
+          if (fact.text === "{" || fact.text === "}") continue
           b.push(i, fact.span.start, fact.span.end - fact.span.start, 1, 0)
           continue
         }

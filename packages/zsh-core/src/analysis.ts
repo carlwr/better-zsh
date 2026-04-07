@@ -203,7 +203,11 @@ export function cmdHeadFactsOnLine(
     if (i >= len) break
 
     const ch = line.charAt(i)
-    if (ch === ";" || ch === "(" || ch === "\n") {
+    if (
+      ch === ";" ||
+      (ch === "(" && !(i + 1 < len && line[i + 1] === "(")) ||
+      ch === "\n"
+    ) {
       expectCmd = true
       mods = []
       i++
@@ -247,6 +251,12 @@ export function cmdHeadFactsOnLine(
       i += redirLen
       i = skipWhitespace(line, i, len)
       i = skipWord(line, i, len)
+      continue
+    }
+
+    const arithCondLen = expectCmd ? matchArithCond(line, i, len) : 0
+    if (arithCondLen > 0) {
+      i += arithCondLen
       continue
     }
 
@@ -709,6 +719,12 @@ function matchProcessSubst(s: string, i: number, len: number): number {
 
 function matchRedirection(s: string, i: number, len: number): number {
   let pos = i
+  if (pos + 1 < len && s[pos] === "&" && s[pos + 1] === ">") {
+    pos += 2
+    if (pos < len && s[pos] === ">") pos++
+    if (pos < len && s[pos] === "|") pos++
+    return pos - i
+  }
   if (pos < len && s.charAt(pos) >= "0" && s.charAt(pos) <= "9") {
     const next = pos + 1
     if (next < len && (s[next] === ">" || s[next] === "<")) pos = next
@@ -731,6 +747,16 @@ function matchRedirection(s: string, i: number, len: number): number {
     }
     if (pos < len && (s[pos] === "&" || s[pos] === ">")) pos++
     return pos - i
+  }
+  return 0
+}
+
+function matchArithCond(s: string, i: number, len: number): number {
+  if (i + 1 >= len || s[i] !== "(" || s[i + 1] !== "(") return 0
+  let pos = i + 2
+  while (pos + 1 < len) {
+    if (s[pos] === ")" && s[pos + 1] === ")") return pos + 2 - i
+    pos++
   }
   return 0
 }
