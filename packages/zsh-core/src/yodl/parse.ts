@@ -411,6 +411,21 @@ export function extractFirstList(
   return yo.slice(start)
 }
 
+/** Collect aliased items, normalize bodies, and flatten into a single array. */
+export function flattenAliased<T, U>(
+  items: readonly YodlItem[],
+  parseHeader: (header: string) => T | undefined,
+  toDoc: (head: T, desc: string, item: YodlItem) => U,
+): U[] {
+  const out: U[] = []
+  for (const entry of collectAliasedItems(items, parseHeader)) {
+    const desc = normalizeBody(entry.item.body ?? "")
+    out.push(toDoc(entry.head, desc, entry.item))
+    for (const alias of entry.aliases) out.push(toDoc(alias, desc, entry.item))
+  }
+  return out
+}
+
 export function collectAliasedItems<T>(
   items: readonly YodlItem[],
   parse: (header: string) => T | undefined,

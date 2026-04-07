@@ -1,28 +1,15 @@
 import { mkCondOp } from "../types/brand.ts"
 import type { CondKind, CondOperator } from "../types/zsh-data.ts"
-import { collectAliasedItems, extractItems, normalizeBody } from "./parse.ts"
+import { extractItems, flattenAliased } from "./parse.ts"
 
 /** Parse cond.yo → CondOperator[] */
 export function parseCondOps(yo: string): CondOperator[] {
-  const ops: CondOperator[] = []
-  for (const entry of collectAliasedItems(extractItems(yo), parseHeader)) {
-    const desc = normalizeBody(entry.item.body ?? "")
-    ops.push(toDoc(entry.head, desc))
-    for (const alias of entry.aliases) ops.push(toDoc(alias, desc))
-  }
-  return ops
-}
-
-function toDoc(
-  parsed: { op: string; operands: string[]; kind: CondKind },
-  desc: string,
-): CondOperator {
-  return {
+  return flattenAliased(extractItems(yo), parseHeader, (parsed, desc) => ({
     op: mkCondOp(parsed.op),
     operands: parsed.operands,
     desc,
     kind: parsed.kind,
-  }
+  }))
 }
 
 function parseHeader(

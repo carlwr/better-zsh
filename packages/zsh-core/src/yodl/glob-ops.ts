@@ -1,9 +1,8 @@
 import type { GlobOpDoc } from "../types/zsh-data.ts"
 import {
-  collectAliasedItems,
   extractItems,
   extractSectionBody,
-  normalizeBody,
+  flattenAliased,
   normalizeHeader,
 } from "./parse.ts"
 
@@ -18,16 +17,9 @@ export function parseGlobOps(yo: string): GlobOpDoc[] {
 }
 
 function parseSection(section: string, name: string): GlobOpDoc[] {
-  const out: GlobOpDoc[] = []
-  for (const entry of collectAliasedItems(
+  return flattenAliased(
     extractItems(section, 1),
     normalizeHeader,
-  )) {
-    const desc = normalizeBody(entry.item.body ?? "")
-    out.push({ op: entry.head, sig: entry.head, desc, section: name })
-    for (const alias of entry.aliases) {
-      out.push({ op: alias, sig: alias, desc, section: name })
-    }
-  }
-  return out
+    (op, desc) => ({ op, sig: op, desc, section: name }),
+  )
 }

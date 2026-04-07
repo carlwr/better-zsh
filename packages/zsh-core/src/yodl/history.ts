@@ -1,10 +1,10 @@
 import type { HistoryDoc, HistoryKind } from "../types/zsh-data.ts"
 import {
-  collectAliasedItems,
   extractFirstList,
   extractItemList,
   extractSectionBody,
   extractSitemList,
+  flattenAliased,
   normalizeBody,
   normalizeHeader,
 } from "./parse.ts"
@@ -25,18 +25,11 @@ function parseSection(
   const body = extractSectionBody(yo, section)
   const list = extractFirstList(body, "item")
   if (!list) return []
-  const out: HistoryDoc[] = []
-  for (const entry of collectAliasedItems(
+  return flattenAliased(
     extractItemList(list),
     normalizeHeader,
-  )) {
-    const desc = normalizeBody(entry.item.body ?? "")
-    out.push({ kind, key: entry.head, sig: entry.head, desc, section })
-    for (const alias of entry.aliases) {
-      out.push({ kind, key: alias, sig: alias, desc, section })
-    }
-  }
-  return out
+    (key, desc) => ({ kind, key, sig: key, desc, section }),
+  )
 }
 
 function parseWordDesignators(yo: string): HistoryDoc[] {

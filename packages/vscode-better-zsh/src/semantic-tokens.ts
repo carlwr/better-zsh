@@ -1,7 +1,7 @@
 import * as vscode from "vscode"
 import { cmdHeadFactsOnLine, commentStart } from "zsh-core"
 
-const TOKEN_TYPES = ["function"] as const
+const TOKEN_TYPES = ["function", "keyword"] as const
 const TOKEN_MODIFIERS = ["defaultLibrary"] as const
 
 export const SEMANTIC_LEGEND = new vscode.SemanticTokensLegend(
@@ -24,6 +24,10 @@ export class SemanticTokensProvider
       const text = doc.lineAt(i).text
       const cmtAt = commentStart(text)
       for (const fact of cmdHeadFactsOnLine(text, cmtAt)) {
+        if (fact.kind === "reserved-word") {
+          b.push(i, fact.span.start, fact.span.end - fact.span.start, 1, 0)
+          continue
+        }
         if (fact.kind !== "cmd-head") continue
         if (fact.text === "[") continue
         if (fact.precmds.includes("command")) continue

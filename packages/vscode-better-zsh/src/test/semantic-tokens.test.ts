@@ -42,59 +42,94 @@ function doc(text: string) {
   } as import("vscode").TextDocument
 }
 
-function words(text: string, builtins: string[]) {
+function tokens(text: string, builtins: string[]) {
   const lines = text.split("\n")
-  const tokens = new SemanticTokensProvider(
-    builtins,
-  ).provideDocumentSemanticTokens(doc(text)) as unknown as Token[]
-  return tokens.map(
-    (t) => lines[t.line]?.slice(t.start, t.start + t.length) ?? "",
-  )
+  return (
+    new SemanticTokensProvider(builtins).provideDocumentSemanticTokens(
+      doc(text),
+    ) as unknown as Token[]
+  ).map((t) => ({
+    word: lines[t.line]?.slice(t.start, t.start + t.length) ?? "",
+    type: t.type,
+  }))
+}
+
+function builtinWords(text: string, builtins: string[]) {
+  return tokens(text, builtins)
+    .filter((t) => t.type === 0)
+    .map((t) => t.word)
 }
 
 suite("SemanticTokensProvider", () => {
   test("marks builtin commands", () => {
-    assert.deepStrictEqual(words("echo hi\nread var", ["echo", "read"]), [
-      "echo",
-      "read",
-    ])
+    assert.deepStrictEqual(
+      builtinWords("echo hi\nread var", ["echo", "read"]),
+      ["echo", "read"],
+    )
   })
 
   test("skips for-loop variables even if they are builtins", () => {
     assert.deepStrictEqual(
-      words("for r in one two; do echo $r; done", ["r", "echo"]),
+      builtinWords("for r in one two; do echo $r; done", ["r", "echo"]),
       ["echo"],
     )
   })
 
   test("skips function names in definitions even if they are builtins", () => {
     assert.deepStrictEqual(
-      words("a() uname -a\nr() uname -a\ns() uname -a", ["r", "uname"]),
+      builtinWords("a() uname -a\nr() uname -a\ns() uname -a", ["r", "uname"]),
       ["uname", "uname", "uname"],
     )
   })
 
   test("skips builtin names inside parameter expansion flags", () => {
     assert.deepStrictEqual(
-      words("print ${var[(a)1]} ${var[(r)1]} ${var[(s)1]}", ["print", "r"]),
+      builtinWords("print ${var[(a)1]} ${var[(r)1]} ${var[(s)1]}", [
+        "print",
+        "r",
+      ]),
       ["print"],
     )
   })
 
   test("does not mark [ as a builtin in test syntax", () => {
-    assert.deepStrictEqual(words("[ -d /tmp ] && echo OK", ["[", "echo"]), [
-      "echo",
-    ])
+    assert.deepStrictEqual(
+      builtinWords("[ -d /tmp ] && echo OK", ["[", "echo"]),
+      ["echo"],
+    )
   })
 
   test("marks builtin after builtin-style precommand modifiers", () => {
     assert.deepStrictEqual(
-      words("noglob builtin echo hi", ["builtin", "echo"]),
+      builtinWords("noglob builtin echo hi", ["builtin", "echo"]),
       ["echo"],
     )
   })
 
   test("does not mark target after command precommand modifier", () => {
-    assert.deepStrictEqual(words("command echo hi", ["command", "echo"]), [])
+    assert.deepStrictEqual(
+      builtinWords("command echo hi", ["command", "echo"]),
+      [],
+    )
+  })
+
+  test("marks reserved words as keyword tokens", () => {
+    const result = tokens("if true; then echo hi; fi", ["echo"])
+    assert.deepStrictEqual(result, [
+      { word: "if", type: 1 },
+      { word: "then", type: 1 },
+      { word: "echo", type: 0 },
+      { word: "fi", type: 1 },
+    ])
+  })
+
+  test("marks reserved words on separate lines", () => {
+    const result = tokens("for x in a b; do\n  echo $x\ndone", ["echo"])
+    assert.deepStrictEqual(result, [
+      { word: "for", type: 1 },
+      { word: "do", type: 1 },
+      { word: "echo", type: 0 },
+      { word: "done", type: 1 },
+    ])
   })
 })

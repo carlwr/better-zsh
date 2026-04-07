@@ -106,6 +106,7 @@ export async function activate(ctx: vscode.ExtensionContext) {
           options: opts,
           params,
           builtinDocs: parsedBuiltins,
+          reservedWordDocs: parsedReservedWords,
           zshOptions: parsedOptions,
           condOps: parsedCondOps,
         }),

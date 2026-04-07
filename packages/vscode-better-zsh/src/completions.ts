@@ -1,5 +1,10 @@
 import * as vscode from "vscode"
-import type { BuiltinDoc, CondOperator, ZshOption } from "zsh-core"
+import type {
+  BuiltinDoc,
+  CondOperator,
+  ReservedWordDoc,
+  ZshOption,
+} from "zsh-core"
 import {
   filterTokens,
   matchOptions,
@@ -8,7 +13,7 @@ import {
   WORD,
   WORD_EXACT,
 } from "zsh-core"
-import { mdBuiltin, sigCond } from "zsh-core/render"
+import { mdBuiltin, mdReservedWord, sigCond } from "zsh-core/render"
 import { asyncDocCache } from "./cache"
 import { zshTokenize } from "./zsh"
 
@@ -22,6 +27,7 @@ export interface CompletionData {
   options: string[]
   params: Map<string, string>
   builtinDocs?: BuiltinDoc[]
+  reservedWordDocs?: ReservedWordDoc[]
   zshOptions?: ZshOption[]
   condOps?: CondOperator[]
 }
@@ -50,10 +56,18 @@ export class CompletionProvider implements vscode.CompletionItemProvider {
         }),
       ...data.reswords
         .filter((n) => WORD_EXACT.test(n))
-        .map(
-          (n) =>
-            new vscode.CompletionItem(n, vscode.CompletionItemKind.Keyword),
-        ),
+        .map((n) => {
+          const item = new vscode.CompletionItem(
+            n,
+            vscode.CompletionItemKind.Keyword,
+          )
+          const doc = data.reservedWordDocs?.find((rw) => rw.name === n)
+          if (doc) {
+            item.detail = doc.desc
+            item.documentation = new vscode.MarkdownString(mdReservedWord(doc))
+          }
+          return item
+        }),
       ...[...data.params.keys()]
         .filter((n) => WORD_EXACT.test(n))
         .map(
