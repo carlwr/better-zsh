@@ -48,11 +48,11 @@ These describe **which directories** to look in, not specific files. Use the dis
 1. `packages/zsh-core/src/yodl/` — all Yodl parsers, including the shared macro parser
 2. `packages/zsh-core/src/` root — hover markdown rendering
 3. Tests: `packages/zsh-core/src/test/yodl/`
-4. Inspect parsed output: `ls packages/zsh-core/dist/json/` (generated at build time)
+4. Inspect parsed build artifacts: `ls packages/zsh-core/dist/json/` (generated at build time; useful for inspection, but the extension's live runtime path currently reads copied `.yo` data)
 
 ### extension: providers (hover, completions, semantic tokens, etc.)
 1. `packages/vscode-better-zsh/src/` — each provider is a separate file; run `bash skills/orient/scripts/providers.sh` to see them all
-2. Provider pattern: class implementing `vscode.*Provider`, thin shell calling pure functions
+2. Provider pattern: class implementing `vscode.*Provider`, wiring VS Code APIs to zsh-core plus some provider-local dispatch/lookup logic; prefer reusable pure helpers where the logic wants to escape the provider
 3. `packages/vscode-better-zsh/package.json` — `semanticTokenScopes` mappings; must be updated when adding a new semantic token type
 
 ### extension: test setup

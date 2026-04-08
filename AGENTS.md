@@ -26,15 +26,15 @@ Best-effort determination of which syntactic region the cursor is in (setopt, co
 
 zsh-core ships vendored Yodl (`.yo`) documentation files from the zsh upstream project. Three consumption routes:
 
-1. **Programmatic API** (`getBuiltins()`, `getOptions()`, etc.) — parse `.yo` at runtime, memoized. Requires the `.yo` files on disk. For consumers who bundle zsh-core (like the extension), `copyRuntimeZshData()` copies the `.yo` payload into their output directory.
-2. **Pre-parsed JSON** (`dist/json/*.json`) — build-time artifacts containing the same data, pre-serialized. Available via package exports (`"./data/*.json"`). No runtime parsing needed.
+1. **Programmatic API** (`getBuiltins()`, `getOptions()`, etc.) — parse `.yo` at runtime, cached per getter. Requires the `.yo` files on disk. For consumers who bundle zsh-core (like the extension), `copyRuntimeZshData()` copies the `.yo` payload into their output directory. The extension currently calls these getters during activation, so the parsed doc records are materialized eagerly in the extension host.
+2. **Pre-parsed JSON** (`dist/json/*.json`) — build-time artifacts containing the same data, pre-serialized. Available via package exports (`"./data/*.json"`). No runtime parsing needed. The extension does **not** currently use this route at runtime.
 3. **Raw Yodl source** (`dist/data/zsh-docs/`) — the upstream `.yo` files for advanced consumers.
 
-Routes 1 and 2 contain the same information in different forms. Route 3 is the raw source that feeds route 1.
+Routes 1 and 2 contain the same information in different forms. Route 3 is the raw source that feeds route 1. For live hover/completion docs, the extension uses parsed doc records plus the markdown render helpers (`mdOpt()`, `mdBuiltin()`, etc.); the bulk `hoverDocs()` corpus is for dump/dev tooling rather than the live hover path.
 
 ### Providers
 
-Thin VS Code provider classes that wire zsh-core analysis and doc records to language features (hover, completions, semantic tokens, etc.). Logic lives in pure functions; providers are shells.
+VS Code provider classes that wire zsh-core analysis and doc records to language features (hover, completions, semantic tokens, etc.). Reusable parsing/rendering logic should live in pure functions; some provider-local dispatch/lookup logic still lives in the provider modules.
 
 ## Design principles
 
