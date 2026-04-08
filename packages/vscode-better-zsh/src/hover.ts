@@ -2,7 +2,7 @@ import * as vscode from "vscode"
 import type {
   BuiltinDoc,
   CmdHeadFact,
-  CondOperator,
+  CondOpDoc,
   OptFlagAlias,
   PrecmdDoc,
   PrecmdFact,
@@ -43,7 +43,7 @@ export class HoverProvider implements vscode.HoverProvider {
   private flagMap:
     | Map<string, { opt: ZshOption; alias: OptFlagAlias }>
     | undefined
-  private condOpMap: Map<string, CondOperator> | undefined
+  private condOpMap: Map<string, CondOpDoc> | undefined
   private precmdMap: Map<string, PrecmdDoc> | undefined
   private redirMap: Map<string, RedirDoc> | undefined
   private processSubstMap: Map<string, ProcessSubstDoc> | undefined
@@ -52,7 +52,7 @@ export class HoverProvider implements vscode.HoverProvider {
   constructor(
     params?: Map<string, string>,
     options?: ZshOption[],
-    condOps?: CondOperator[],
+    condOps?: CondOpDoc[],
     builtins?: BuiltinDoc[],
     precmds?: PrecmdDoc[],
     redirDocs?: RedirDoc[],

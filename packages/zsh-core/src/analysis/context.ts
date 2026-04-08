@@ -1,4 +1,4 @@
-import { type DocLike, factsAt, isCtxFact } from "./analysis.ts"
+import { type DocLike, factsAt, isCtxFact } from "./facts.ts"
 
 /** Best-effort syntactic bucket for the cursor position. */
 export type SyntacticContext =
@@ -9,7 +9,6 @@ export type SyntacticContext =
 
 export type ContextKind = SyntacticContext["kind"]
 
-/** Detect the local syntactic context around a document position. */
 export function syntacticContext(
   doc: DocLike,
   line: number,

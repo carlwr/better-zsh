@@ -1,7 +1,5 @@
+/** Phantom-branded type for nominal-ish typing with zero runtime cost. */
 export type Brand<T, B extends string> = T & { readonly __brand: B }
-
-/** Zero-based source text offset */
-export type TextOffset = Brand<number, "TextOffset">
 
 /** Normalized zsh option name: lowercase, no underscores */
 export type OptName = Brand<string, "OptName">
@@ -15,10 +13,7 @@ export type OptFlagChar = Brand<string, "OptFlagChar">
 /** Exact builtin or command-like spelling */
 export type BuiltinName = Brand<string, "BuiltinName">
 
-export function mkTextOffset(raw: number): TextOffset {
-  return raw as TextOffset
-}
-
+/** Smart constructor: lowercases and strips underscores. */
 export function mkOptName(raw: string): OptName {
   return raw.replace(/_/g, "").toLowerCase() as OptName
 }

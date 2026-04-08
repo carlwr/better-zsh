@@ -1,4 +1,4 @@
-import type { DocLike } from "../../analysis"
+import type { DocLike } from "../../analysis/facts"
 
 export function mockDoc(lines: string[]): DocLike {
   return {

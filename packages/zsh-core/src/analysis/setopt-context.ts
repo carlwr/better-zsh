@@ -1,8 +1,11 @@
-import type { DocLike } from "./analysis.ts"
+import type { DocLike } from "./facts.ts"
 
 /**
- * Detect whether the cursor is in a setopt/unsetopt option-name position.
+ * Lightweight setopt/unsetopt position check (line-local, no full-doc analysis).
  * Handles line continuations (trailing backslash).
+ *
+ * For richer context detection, use {@link syntacticContext} from `context.ts`,
+ * which builds on the fact-based analysis pipeline.
  */
 export function isSetoptContext(doc: DocLike, line: number): boolean {
   let start = line

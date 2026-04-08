@@ -1,4 +1,6 @@
-export type Brand<T, B extends string> = T & { readonly __brand: B }
+import type { Brand } from "zsh-core"
+
+export type { Brand }
 
 type ZshLangId = Brand<string, "ZshLangId">
 type ExtId = Brand<string, "ExtId">

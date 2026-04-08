@@ -10,8 +10,10 @@ export type Emulation = "csh" | "ksh" | "sh" | "zsh"
 
 export type OptState = "on" | "off"
 
+/** Sign of an option flag: `-` turns the option on, `+` turns it off (zsh convention). */
 export type OptFlagSign = "+" | "-"
 
+/** Where zsh recognizes the word as reserved, not just as an ordinary word. */
 export type ReservedWordPos = "command" | "any"
 
 export type HistoryKind = "event-designator" | "word-designator" | "modifier"
@@ -42,7 +44,7 @@ export interface ZshOption {
 }
 
 /** Parsed `[[ ... ]]` conditional operator docs. */
-export interface CondOperator {
+export interface CondOpDoc {
   op: CondOp
   operands: string[]
   desc: string
@@ -65,9 +67,12 @@ export interface PrecmdDoc {
   desc: string
 }
 
+/** Base interface for syntax-element doc records parsed from upstream Yodl sources. */
 export interface SyntaxDocBase {
+  /** Usage signature from the upstream zsh manual. */
   sig: string
   desc: string
+  /** Manual section this element was parsed from. */
   section: string
   aliases?: readonly string[]
 }
@@ -81,17 +86,18 @@ export interface RedirDoc extends SyntaxDocBase {
   op: string
 }
 
-export type RedirectionDoc = RedirDoc
-
+/** Process substitution -- `<(...)` and `>(...)`. */
 export interface ProcessSubstDoc extends SyntaxDocBase {
   op: string
 }
 
+/** Subscript flags -- e.g. `(e)`, `(w)` inside `${arr[(...)...]}`. */
 export interface SubscriptFlagDoc extends SyntaxDocBase {
   flag: string
   args: readonly string[]
 }
 
+/** Parameter-expansion flags -- e.g. `(U)`, `(L)` inside `${(...)var}`. */
 export interface ParamFlagDoc extends SyntaxDocBase {
   flag: string
   args: readonly string[]
@@ -102,15 +108,13 @@ export interface HistoryDoc extends SyntaxDocBase {
   kind: HistoryKind
 }
 
+/** Globbing operators -- e.g. `*`, `?`, `[...]`. */
 export interface GlobOpDoc extends SyntaxDocBase {
   op: string
 }
 
-export type GlobOperatorDoc = GlobOpDoc
-
+/** Globbing flags -- e.g. `(#i)`, `(#b)` inside glob patterns. */
 export interface GlobbingFlagDoc extends SyntaxDocBase {
   flag: string
   args: readonly string[]
 }
-
-export type GlobFlagDoc = GlobbingFlagDoc

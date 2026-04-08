@@ -7,9 +7,10 @@ const here: string =
     ? __dirname
     : dirname(fileURLToPath(import.meta.url))
 
+/** Conventional directory name for Yodl data copied into a consumer's output. */
 export const runtimeZshDataDir = "zsh-core-data"
 
-/** Resolve the packaged/raw zsh-doc data directory relative to a module base dir. */
+/** Locate the vendored Yodl data directory, trying dev/built/runtime candidate paths. */
 export function resolveZshDataDir(baseDir = here): string {
   const candidates = [
     join(baseDir, "data", "zsh-docs"),
@@ -21,7 +22,7 @@ export function resolveZshDataDir(baseDir = here): string {
   throw new Error(`zsh docs dir not found: ${candidates.join(", ")}`)
 }
 
-/** Copy the runtime zsh-doc payload into another output directory. */
+/** Copy the vendored Yodl sources into a consumer's output directory, enabling the programmatic API at runtime. */
 export function copyRuntimeZshData(outDir: string, baseDir = here) {
   cpSync(resolveZshDataDir(baseDir), join(outDir, runtimeZshDataDir), {
     recursive: true,

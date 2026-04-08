@@ -12,7 +12,7 @@ import {
   isRedirFact,
   isReservedWordFact,
   type LineFact,
-} from "../../analysis"
+} from "../../analysis/facts"
 import { mockDoc } from "./test-util"
 
 function cmdTexts(s: string): string[] {

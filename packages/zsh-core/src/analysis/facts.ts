@@ -1,9 +1,10 @@
-import { commentStart } from "./comment.ts"
-import { advanceQuote, isQuoted, mkQuoteState } from "./quote-state.ts"
-import type { BuiltinName } from "./types/brand.ts"
-import { mkBuiltinName, mkTextOffset } from "./types/brand.ts"
-import type { PrecmdName } from "./types/zsh-data.ts"
+import { commentStart } from "../comment.ts"
+import { advanceQuote, isQuoted, mkQuoteState } from "../quote-state.ts"
+import type { BuiltinName } from "../types/brand.ts"
+import { mkBuiltinName } from "../types/brand.ts"
+import type { PrecmdName } from "../types/zsh-data.ts"
 
+/** Minimal document abstraction for line-based analysis (compatible with VS Code TextDocument). */
 export interface DocLike {
   lineAt(i: number): { text: string }
   lineCount: number
@@ -15,9 +16,10 @@ export interface TextSpan {
   end: number
 }
 
-export type AnalysisStrength = "hard" | "heuristic"
-export type AnalysisCtx = "setopt" | "cond" | "arith"
-export type AnalysisKind =
+/** Confidence level: "hard" for structural syntax, "heuristic" for best-effort detection. */
+export type FactStrength = "hard" | "heuristic"
+export type FactCtx = "setopt" | "cond" | "arith"
+export type FactKind =
   | "ctx"
   | "cmd-head"
   | "precmd"
@@ -26,20 +28,18 @@ export type AnalysisKind =
   | "process-subst"
   | "reserved-word"
 
-/** Shared fields for document-analysis facts. */
 export interface BaseFact {
-  kind: AnalysisKind
+  kind: FactKind
   span: TextSpan
-  strength: AnalysisStrength
+  strength: FactStrength
 }
 
-/** Context fact covering a region that should be interpreted specially. */
+/** Fact spanning a syntactic region (setopt, conditional, arithmetic). */
 export interface CtxFact extends BaseFact {
   kind: "ctx"
-  ctx: AnalysisCtx
+  ctx: FactCtx
 }
 
-/** Heuristic command-head fact for a command-like word. */
 export interface CmdHeadFact extends BaseFact {
   kind: "cmd-head"
   text: string
@@ -47,39 +47,34 @@ export interface CmdHeadFact extends BaseFact {
   precmds: readonly PrecmdName[]
 }
 
-/** Hard fact for a recognized precommand modifier. */
 export interface PrecmdFact extends BaseFact {
   kind: "precmd"
   text: string
   name: PrecmdName
 }
 
-/** Hard fact for a shell function declaration head. */
 export interface FuncDeclFact extends BaseFact {
   kind: "func-decl"
   name: string
   nameSpan: TextSpan
 }
 
-/** Heuristic fact for a redirection operator. */
 export interface RedirFact extends BaseFact {
   kind: "redir"
   text: string
 }
 
-/** Heuristic fact for a process substitution. */
 export interface ProcessSubstFact extends BaseFact {
   kind: "process-subst"
   text: string
 }
 
-/** Hard fact for a reserved word. */
 export interface ReservedWordFact extends BaseFact {
   kind: "reserved-word"
   text: string
 }
 
-export type AnalysisFact =
+export type Fact =
   | CtxFact
   | CmdHeadFact
   | PrecmdFact
@@ -87,7 +82,10 @@ export type AnalysisFact =
   | RedirFact
   | ProcessSubstFact
   | ReservedWordFact
+
+/** Facts in command position. */
 export type CmdFact = CmdHeadFact | PrecmdFact
+/** All fact types produced by single-line scanning. */
 export type LineFact = CmdFact | RedirFact | ProcessSubstFact | ReservedWordFact
 
 const TRANSPARENT = new Set([
@@ -141,10 +139,10 @@ const FUNC_DECL = /^(\s*)([\w][\w-]*)\s*\(\)/
 const FUNC_KW = /^(\s*)function\s+([\w][\w-]*)/
 
 /** Analyze a whole document and return coarse zsh syntax facts. */
-export function analyzeDoc(doc: DocLike): AnalysisFact[] {
+export function analyzeDoc(doc: DocLike): Fact[] {
   const lines = readLines(doc)
   const starts = lineStarts(lines)
-  const facts: AnalysisFact[] = []
+  const facts: Fact[] = []
 
   for (let i = 0; i < lines.length; i++) {
     const text = lines[i] ?? ""
@@ -174,12 +172,7 @@ export function analyzeDoc(doc: DocLike): AnalysisFact[] {
   return facts
 }
 
-/** Return analysis facts covering the given document position. */
-export function factsAt(
-  doc: DocLike,
-  line: number,
-  char: number,
-): AnalysisFact[] {
+export function factsAt(doc: DocLike, line: number, char: number): Fact[] {
   const starts = lineStarts(readLines(doc))
   const off = (starts[line] ?? 0) + char
   return analyzeDoc(doc).filter((fact) =>
@@ -187,7 +180,6 @@ export function factsAt(
   )
 }
 
-/** Extract command/precommand facts from a single line. */
 export function cmdHeadFactsOnLine(
   line: string,
   commentAt: number | undefined = commentStart(line),
@@ -342,37 +334,27 @@ export function factText(doc: DocLike, span: TextSpan): string {
   return readLines(doc).join("\n").slice(span.start, span.end)
 }
 
-/** Narrow an analysis fact to a context fact. */
-export function isCtxFact(fact: AnalysisFact): fact is CtxFact {
+export function isCtxFact(fact: Fact): fact is CtxFact {
   return fact.kind === "ctx"
 }
 
-/** Narrow an analysis fact to a function-declaration fact. */
-export function isFuncDeclFact(fact: AnalysisFact): fact is FuncDeclFact {
+export function isFuncDeclFact(fact: Fact): fact is FuncDeclFact {
   return fact.kind === "func-decl"
 }
 
-/** Narrow an analysis fact to a precommand fact. */
-export function isPrecmdFact(fact: AnalysisFact): fact is PrecmdFact {
+export function isPrecmdFact(fact: Fact): fact is PrecmdFact {
   return fact.kind === "precmd"
 }
 
-/** Narrow an analysis fact to a redirection fact. */
-export function isRedirFact(fact: AnalysisFact): fact is RedirFact {
+export function isRedirFact(fact: Fact): fact is RedirFact {
   return fact.kind === "redir"
 }
 
-/** Narrow an analysis fact to a process-substitution fact. */
-export function isProcessSubstFact(
-  fact: AnalysisFact,
-): fact is ProcessSubstFact {
+export function isProcessSubstFact(fact: Fact): fact is ProcessSubstFact {
   return fact.kind === "process-subst"
 }
 
-/** Narrow an analysis fact to a reserved-word fact. */
-export function isReservedWordFact(
-  fact: AnalysisFact,
-): fact is ReservedWordFact {
+export function isReservedWordFact(fact: Fact): fact is ReservedWordFact {
   return fact.kind === "reserved-word"
 }
 
@@ -392,7 +374,7 @@ function scanPairedCtx(
   starts: readonly number[],
   open: string,
   close: string,
-  ctx: AnalysisCtx,
+  ctx: FactCtx,
 ): CtxFact[] {
   const out: CtxFact[] = []
   let depth = 0
@@ -497,6 +479,7 @@ function isSetoptHead(head: CmdHeadFact, line: string): boolean {
   return /\s+[+-][A-Za-z0-9]/.test(line.slice(head.span.end))
 }
 
+/** Detect a function declaration at the start of a line (both `f() {}` and `function f` forms). */
 export function funcDeclAtLine(
   line: string,
 ): { name: string; start: number } | undefined {
@@ -583,10 +566,7 @@ function lineStarts(lines: readonly string[]): number[] {
 }
 
 function absSpan(base: number, span: TextSpan): TextSpan {
-  return {
-    start: mkTextOffset(base + span.start) as number,
-    end: mkTextOffset(base + span.end) as number,
-  }
+  return { start: base + span.start, end: base + span.end }
 }
 
 function hasOffset(span: TextSpan, off: number, inclusiveEnd = false): boolean {

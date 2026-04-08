@@ -1,10 +1,15 @@
+/**
+ * @module
+ * Memoized loaders for zsh doc records, parsing vendored Yodl sources on first access.
+ */
+
 import { readFileSync } from "node:fs"
 import { join } from "node:path"
 import { cached } from "@carlwr/typescript-extra"
 import { resolveZshDataDir } from "./data-dir.ts"
 import type {
   BuiltinDoc,
-  CondOperator,
+  CondOpDoc,
   GlobbingFlagDoc,
   GlobOpDoc,
   HistoryDoc,
@@ -35,58 +40,62 @@ function readYo(name: string): string {
   return readFileSync(join(dataDir, name), "utf8")
 }
 
-/** Load and memoize parsed zsh option metadata. */
+/** Zsh option metadata. */
 export const getOptions: () => ZshOption[] = cached<ZshOption[]>(() =>
   parseOptions(readYo("options.yo")),
 )
 
-/** Load and memoize parsed `[[ ... ]]` conditional operators. */
-export const getCondOps: () => CondOperator[] = cached<CondOperator[]>(() =>
+/** `[[ ... ]]` conditional operators. */
+export const getCondOps: () => CondOpDoc[] = cached<CondOpDoc[]>(() =>
   parseCondOps(readYo("cond.yo")),
 )
 
-/** Load and memoize parsed builtin command docs. */
+/** Builtin commands. */
 export const getBuiltins: () => BuiltinDoc[] = cached<BuiltinDoc[]>(() =>
   parseBuiltins(readYo("builtins.yo")),
 )
 
-/** Load and memoize parsed precommand modifier docs. */
+/** Precommand modifiers. */
 export const getPrecmds: () => PrecmdDoc[] = cached<PrecmdDoc[]>(() =>
   parsePrecmds(readYo("grammar.yo")),
 )
 
+/** Redirection operators. */
 export const getRedirections: () => RedirDoc[] = cached<RedirDoc[]>(() =>
   parseRedirections(readYo("redirect.yo")),
 )
 
+/** Reserved words. */
 export const getReservedWords: () => ReservedWordDoc[] = cached<
   ReservedWordDoc[]
 >(() => parseReservedWords(readYo("grammar.yo")))
 
+/** Subscript flags. */
 export const getSubscriptFlags: () => SubscriptFlagDoc[] = cached<
   SubscriptFlagDoc[]
 >(() => parseSubscriptFlags(readYo("params.yo")))
 
+/** Parameter-expansion flags. */
 export const getParamFlags: () => ParamFlagDoc[] = cached<ParamFlagDoc[]>(() =>
   parseParamFlags(readYo("expn.yo")),
 )
 
+/** History expansion. */
 export const getHistoryDocs: () => HistoryDoc[] = cached<HistoryDoc[]>(() =>
   parseHistory(readYo("expn.yo")),
 )
 
+/** Globbing operators. */
 export const getGlobOps: () => GlobOpDoc[] = cached<GlobOpDoc[]>(() =>
   parseGlobOps(readYo("expn.yo")),
 )
 
+/** Globbing flags. */
 export const getGlobbingFlags: () => GlobbingFlagDoc[] = cached<
   GlobbingFlagDoc[]
 >(() => parseGlobbingFlags(readYo("expn.yo")))
 
-export const getGlobOperators = getGlobOps
-
-export const getGlobFlags = getGlobbingFlags
-
+/** Process substitution. */
 export const getProcessSubsts: () => ProcessSubstDoc[] = cached<
   ProcessSubstDoc[]
 >(() => parseProcessSubsts(readYo("expn.yo")))

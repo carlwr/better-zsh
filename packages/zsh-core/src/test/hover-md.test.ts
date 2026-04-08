@@ -26,7 +26,7 @@ import {
 } from "../types/brand"
 import type {
   BuiltinDoc,
-  CondOperator,
+  CondOpDoc,
   PrecmdDoc,
   ProcessSubstDoc,
   RedirDoc,
@@ -44,14 +44,14 @@ const opt: ZshOption = {
   desc: "Desc.",
 }
 
-const unary: CondOperator = {
+const unary: CondOpDoc = {
   op: mkCondOp("-a"),
   operands: ["file"],
   desc: "Exists.",
   kind: "unary",
 }
 
-const binary: CondOperator = {
+const binary: CondOpDoc = {
   op: mkCondOp("-nt"),
   operands: ["left", "right"],
   desc: "Newer than.",

@@ -1,9 +1,9 @@
 import { mkCondOp } from "../types/brand.ts"
-import type { CondKind, CondOperator } from "../types/zsh-data.ts"
+import type { CondKind, CondOpDoc } from "../types/zsh-data.ts"
 import { extractItems, flattenAliased } from "./parse.ts"
 
-/** Parse cond.yo → CondOperator[] */
-export function parseCondOps(yo: string): CondOperator[] {
+/** Parse cond.yo → CondOpDoc[] */
+export function parseCondOps(yo: string): CondOpDoc[] {
   return flattenAliased(extractItems(yo), parseHeader, (parsed, desc) => ({
     op: mkCondOp(parsed.op),
     operands: parsed.operands,

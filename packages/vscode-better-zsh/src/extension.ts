@@ -85,12 +85,13 @@ export async function activate(ctx: vscode.ExtensionContext) {
 
   if (await zshAvailable()) {
     setupDiagnostics(ctx)
-    const [bl, rw, opts, params] = await Promise.all([
-      zshBuiltins(),
-      zshReswords(),
-      zshOptions(),
-      zshParameters(),
-    ])
+    const [builtinNames, reservedWords, optionNames, params] =
+      await Promise.all([
+        zshBuiltins(),
+        zshReswords(),
+        zshOptions(),
+        zshParameters(),
+      ])
     ctx.subscriptions.push(
       vscode.languages.registerHoverProvider(
         ZSH_LANG_ID,
@@ -108,9 +109,9 @@ export async function activate(ctx: vscode.ExtensionContext) {
       vscode.languages.registerCompletionItemProvider(
         ZSH_LANG_ID,
         new CompletionProvider({
-          builtins: bl,
-          reswords: rw,
-          options: opts,
+          builtins: builtinNames,
+          reservedWords,
+          options: optionNames,
           params,
           builtinDocs: parsedBuiltins,
           reservedWordDocs: parsedReservedWords,
@@ -120,7 +121,7 @@ export async function activate(ctx: vscode.ExtensionContext) {
       ),
       vscode.languages.registerDocumentSemanticTokensProvider(
         ZSH_LANG_ID,
-        new SemanticTokensProvider(bl),
+        new SemanticTokensProvider(builtinNames),
         SEMANTIC_LEGEND,
       ),
     )

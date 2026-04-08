@@ -2,6 +2,7 @@ import { mkdir, writeFile } from "node:fs/promises"
 import { join } from "node:path"
 import type { HoverDoc, HoverKind } from "./hover-md.ts"
 
+/** Filename variants emitted by the hover-dump writer. */
 export type HoverDumpFile =
   | "all.md"
   | "options.md"

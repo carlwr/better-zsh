@@ -1,7 +1,7 @@
 import { mkOptName, type OptName } from "./types/brand.ts"
 import type {
   BuiltinDoc,
-  CondOperator,
+  CondOpDoc,
   Emulation,
   OptFlagAlias,
   OptFlagSign,
@@ -42,7 +42,7 @@ export interface HoverMdCtx {
   optNames: ReadonlySet<OptName>
 }
 
-// Add known markdown/render regressions here as they are discovered.
+/** Known markdown/rendering regressions tracked for QA (add entries as they are discovered). */
 export const hoverMdRegressions: HoverRegression[] = []
 
 const emptyHoverMdCtx: HoverMdCtx = { optNames: new Set<OptName>() }
@@ -130,7 +130,7 @@ export function mdOpt(
 }
 
 /** Render a compact signature line for a conditional operator. */
-export function sigCond(cop: CondOperator): string {
+export function sigCond(cop: CondOpDoc): string {
   return cop.kind === "unary"
     ? `${hoverFmt.code(cop.op as string)} *${cop.operands.join(" ")}*`
     : `*${cop.operands[0] ?? ""}* ${hoverFmt.code(cop.op as string)} *${cop.operands[1] ?? ""}*`
@@ -138,7 +138,7 @@ export function sigCond(cop: CondOperator): string {
 
 /** Render one conditional-operator doc block as markdown. */
 export function mdCond(
-  cop: CondOperator,
+  cop: CondOpDoc,
   ctx: HoverMdCtx = emptyHoverMdCtx,
 ): string {
   return `${sigCond(cop)}\n\n${fmtOptRefsInMd(cop.desc, ctx.optNames)}`
@@ -250,7 +250,7 @@ export function hoverDocs({
   reservedWords = [],
 }: {
   options: readonly ZshOption[]
-  condOps: readonly CondOperator[]
+  condOps: readonly CondOpDoc[]
   params: ReadonlyMap<string, string>
   builtins?: readonly BuiltinDoc[]
   precmds?: readonly PrecmdDoc[]

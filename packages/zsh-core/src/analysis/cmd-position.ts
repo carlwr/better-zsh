@@ -1,5 +1,6 @@
-import { cmdHeadFactsOnLine } from "./analysis.ts"
+import { cmdHeadFactsOnLine } from "./facts.ts"
 
+/** Character span of a command-head token on a line (0-based offsets within the line). */
 export interface CmdPos {
   start: number
   end: number

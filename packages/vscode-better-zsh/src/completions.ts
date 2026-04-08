@@ -1,7 +1,7 @@
 import * as vscode from "vscode"
 import type {
   BuiltinDoc,
-  CondOperator,
+  CondOpDoc,
   ReservedWordDoc,
   ZshOption,
 } from "zsh-core"
@@ -23,20 +23,20 @@ const getIds = asyncDocCache(async (doc) =>
 
 export interface CompletionData {
   builtins: string[]
-  reswords: string[]
+  reservedWords: string[]
   options: string[]
   params: Map<string, string>
   builtinDocs?: BuiltinDoc[]
   reservedWordDocs?: ReservedWordDoc[]
   zshOptions?: ZshOption[]
-  condOps?: CondOperator[]
+  condOps?: CondOpDoc[]
 }
 
 export class CompletionProvider implements vscode.CompletionItemProvider {
   private general: vscode.CompletionItem[]
   private options: string[]
   private optionMap: Map<string, ZshOption> | undefined
-  private condOps: CondOperator[]
+  private condOps: CondOpDoc[]
 
   constructor(data: CompletionData) {
     this.general = [
@@ -54,7 +54,7 @@ export class CompletionProvider implements vscode.CompletionItemProvider {
           }
           return item
         }),
-      ...data.reswords
+      ...data.reservedWords
         .filter((n) => WORD_EXACT.test(n))
         .map((n) => {
           const item = new vscode.CompletionItem(

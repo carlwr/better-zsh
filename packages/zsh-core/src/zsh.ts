@@ -1,4 +1,5 @@
 export const ZSH_VERSION_ARGS = ["--version"] as const
+/** Base args for all zsh invocations: `-f` (NO_RCS) to skip user rc files. */
 export const ZSH_BASE_ARGS = ["-f"] as const
 
 const TOKENIZE_SCRIPT = 'print -l -- "${(Z+Cn+)SRC}"'

@@ -1,4 +1,5 @@
 /**
- * Asset-copy helpers for bundlers and extension packaging.
+ * @packageDocumentation
+ * Helpers for consumers that bundle zsh-core to ship the required Yodl data files alongside their output.
  */
 export { copyRuntimeZshData } from "./src/data-dir.ts"

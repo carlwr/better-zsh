@@ -1,5 +1,5 @@
 import * as assert from "node:assert"
-import { filterTokens } from "../ident"
+import { filterTokens } from "../word"
 
 suite("filterTokens", () => {
   test("keeps identifier-like tokens and deduplicates", () => {
