@@ -2,8 +2,9 @@ import * as assert from "node:assert"
 import { existsSync } from "node:fs"
 import { join, resolve } from "node:path"
 import * as vscode from "vscode"
+import { BETTER_ZSH_EXT_ID } from "../../ids"
 
-const EXT_ID = "carlwr.better-zsh"
+const EXT_ID = BETTER_ZSH_EXT_ID
 const fixtureFile = join(
   resolve(__dirname, "../../../test-fixtures"),
   "test.zsh",

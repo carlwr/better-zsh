@@ -14,20 +14,21 @@ import {
   zshReswords as zshReswordsCore,
   zshTokenize as zshTokenizeCore,
 } from "zsh-core/exec"
+import { ZSH_BINARY_DEFAULT, ZSH_PATH_OFF } from "./ids"
 import { log, warn } from "./log"
 import { buildZshEnv, execZsh } from "./zsh-exec"
 
-let zshBinary = "zsh"
+let zshBinary: string = ZSH_BINARY_DEFAULT
 let zshDisabled = false
 
 /** Update zsh binary path from settings. Call on activation and config change. */
 export function setZshPath(setting: string) {
-  if (setting === "off") {
+  if (setting === ZSH_PATH_OFF) {
     zshDisabled = true
-    zshBinary = "zsh" // unused when disabled
+    zshBinary = ZSH_BINARY_DEFAULT // unused when disabled
   } else {
     zshDisabled = false
-    zshBinary = setting || "zsh"
+    zshBinary = setting || ZSH_BINARY_DEFAULT
   }
 }
 

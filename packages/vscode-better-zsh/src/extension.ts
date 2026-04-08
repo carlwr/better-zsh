@@ -14,6 +14,7 @@ import { setupDiagnostics } from "./diagnostics"
 import { DocLinkProvider } from "./doc-link"
 import { HighlightProvider } from "./highlight"
 import { HoverProvider } from "./hover"
+import { BETTER_ZSH_CONFIG, BETTER_ZSH_ZSH_PATH, ZSH_LANG_ID } from "./ids"
 import { initLog } from "./log"
 import { ReferenceProvider } from "./references"
 import { RenameProvider } from "./rename"
@@ -30,7 +31,7 @@ import {
 } from "./zsh"
 
 function readZshPathSetting(): string {
-  return vscode.workspace.getConfiguration("betterZsh").get("zshPath", "")
+  return vscode.workspace.getConfiguration(BETTER_ZSH_CONFIG).get("zshPath", "")
 }
 
 export async function activate(ctx: vscode.ExtensionContext) {
@@ -40,7 +41,7 @@ export async function activate(ctx: vscode.ExtensionContext) {
   setZshPath(readZshPathSetting())
   ctx.subscriptions.push(
     vscode.workspace.onDidChangeConfiguration((e) => {
-      if (e.affectsConfiguration("betterZsh.zshPath")) {
+      if (e.affectsConfiguration(BETTER_ZSH_ZSH_PATH)) {
         setZshPath(readZshPathSetting())
       }
     }),
@@ -57,23 +58,29 @@ export async function activate(ctx: vscode.ExtensionContext) {
 
   ctx.subscriptions.push(
     vscode.languages.registerDocumentHighlightProvider(
-      "zsh",
+      ZSH_LANG_ID,
       new HighlightProvider(),
     ),
-    vscode.languages.registerRenameProvider("zsh", new RenameProvider()),
+    vscode.languages.registerRenameProvider(ZSH_LANG_ID, new RenameProvider()),
     vscode.languages.registerDocumentSymbolProvider(
-      "zsh",
+      ZSH_LANG_ID,
       new SymbolProvider(),
     ),
     vscode.languages.registerDefinitionProvider(
-      "zsh",
+      ZSH_LANG_ID,
       new DefinitionProvider(),
     ),
-    vscode.languages.registerReferenceProvider("zsh", new ReferenceProvider()),
+    vscode.languages.registerReferenceProvider(
+      ZSH_LANG_ID,
+      new ReferenceProvider(),
+    ),
     vscode.languages.registerWorkspaceSymbolProvider(
       new WorkspaceSymbolProvider(),
     ),
-    vscode.languages.registerDocumentLinkProvider("zsh", new DocLinkProvider()),
+    vscode.languages.registerDocumentLinkProvider(
+      ZSH_LANG_ID,
+      new DocLinkProvider(),
+    ),
   )
 
   if (await zshAvailable()) {
@@ -86,7 +93,7 @@ export async function activate(ctx: vscode.ExtensionContext) {
     ])
     ctx.subscriptions.push(
       vscode.languages.registerHoverProvider(
-        "zsh",
+        ZSH_LANG_ID,
         new HoverProvider(
           params,
           parsedOptions,
@@ -99,7 +106,7 @@ export async function activate(ctx: vscode.ExtensionContext) {
         ),
       ),
       vscode.languages.registerCompletionItemProvider(
-        "zsh",
+        ZSH_LANG_ID,
         new CompletionProvider({
           builtins: bl,
           reswords: rw,
@@ -112,7 +119,7 @@ export async function activate(ctx: vscode.ExtensionContext) {
         }),
       ),
       vscode.languages.registerDocumentSemanticTokensProvider(
-        "zsh",
+        ZSH_LANG_ID,
         new SemanticTokensProvider(bl),
         SEMANTIC_LEGEND,
       ),
@@ -120,7 +127,7 @@ export async function activate(ctx: vscode.ExtensionContext) {
   } else {
     ctx.subscriptions.push(
       vscode.languages.registerHoverProvider(
-        "zsh",
+        ZSH_LANG_ID,
         new HoverProvider(
           undefined,
           parsedOptions,

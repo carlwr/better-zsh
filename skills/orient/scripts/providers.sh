@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Show how extension providers are registered and which source files define them.
+# Requires: ripgrep (rg)
 set -euo pipefail
 cd "$(git -C "$(dirname "$0")" rev-parse --show-toplevel)"
 

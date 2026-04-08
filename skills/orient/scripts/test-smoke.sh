@@ -62,6 +62,18 @@ assert_output_contains "Provider" "mentions Provider" bash "$dir/providers.sh"
 assert_output_contains "semanticTokenScopes" "mentions semanticTokenScopes" bash "$dir/providers.sh"
 
 echo ""
+echo "skill symlinks:"
+root="$(git -C "$dir" rev-parse --show-toplevel)"
+assert_symlink_resolves() {
+  local desc="$1" path="$2"
+  if [ -L "$root/$path" ] && [ -f "$root/$path" ]; then pass "$desc"; else die "$desc ($root/$path)"; fi
+}
+assert_symlink_resolves "Claude Code  .claude/skills/orient/SKILL.md"   ".claude/skills/orient/SKILL.md"
+assert_symlink_resolves "Codex        .agents/skills/orient/SKILL.md"   ".agents/skills/orient/SKILL.md"
+assert_symlink_resolves "Open Code    .opencode/skills/orient/SKILL.md" ".opencode/skills/orient/SKILL.md"
+assert_symlink_resolves "Cursor       .cursor/rules/orient.mdc"         ".cursor/rules/orient.mdc"
+
+echo ""
 if [ "$fail" -eq 0 ]; then
   printf '\033[32mall passed\033[0m\n'
 else

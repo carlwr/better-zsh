@@ -1,12 +1,13 @@
 import * as vscode from "vscode"
 import { funcDecls } from "./funcs"
+import { ZSH_LANG_ID } from "./ids"
 
 export class WorkspaceSymbolProvider implements vscode.WorkspaceSymbolProvider {
   provideWorkspaceSymbols(query: string) {
     const lq = query.toLowerCase()
     const out: vscode.SymbolInformation[] = []
     for (const doc of vscode.workspace.textDocuments) {
-      if (doc.languageId !== "zsh") continue
+      if (doc.languageId !== ZSH_LANG_ID) continue
       for (const f of funcDecls(doc)) {
         if (f.name.toLowerCase().includes(lq)) {
           out.push(

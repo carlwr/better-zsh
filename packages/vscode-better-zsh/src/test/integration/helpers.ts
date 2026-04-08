@@ -3,6 +3,7 @@ import * as fs from "node:fs/promises"
 import * as os from "node:os"
 import * as path from "node:path"
 import * as vscode from "vscode"
+import { ZSH_LANG_ID } from "../../ids"
 
 const fixtureDir = path.resolve(__dirname, "../../../test-fixtures")
 
@@ -22,7 +23,7 @@ export async function openFixture(name: string, delay = 500) {
 
 export async function openText(text: string, delay = 500) {
   const doc = await vscode.workspace.openTextDocument({
-    language: "zsh",
+    language: ZSH_LANG_ID,
     content: text,
   })
   await vscode.window.showTextDocument(doc)

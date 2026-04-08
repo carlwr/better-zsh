@@ -1,5 +1,6 @@
 import * as assert from "node:assert"
 import * as vscode from "vscode"
+import { ZSH_DIAGNOSTIC_SOURCE } from "../../ids"
 import { hasZsh, openFixture, withBadZdotdir } from "./helpers"
 
 async function waitForDiagnostics(
@@ -16,7 +17,9 @@ async function waitForDiagnostics(
 }
 
 function zshDiagnostics(uri: vscode.Uri) {
-  return vscode.languages.getDiagnostics(uri).filter((d) => d.source === "zsh")
+  return vscode.languages
+    .getDiagnostics(uri)
+    .filter((d) => d.source === ZSH_DIAGNOSTIC_SOURCE)
 }
 
 async function waitForNoZshDiagnostics(
@@ -62,7 +65,7 @@ suite("ZshDiagnostics", function () {
     await editAndSave(doc)
     const diags = await waitForDiagnostics(doc.uri)
     assert.ok(diags.length > 0, "expected at least one diagnostic")
-    assert.strictEqual(diags[0]?.source, "zsh")
+    assert.strictEqual(diags[0]?.source, ZSH_DIAGNOSTIC_SOURCE)
     assert.strictEqual(diags[0]?.severity, vscode.DiagnosticSeverity.Error)
   })
 

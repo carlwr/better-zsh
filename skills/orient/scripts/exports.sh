@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # List all public exports from source modules.
 # Useful for finding functions, types, constants by name.
+# Requires: ripgrep (rg)
 set -euo pipefail
 cd "$(git -C "$(dirname "$0")" rev-parse --show-toplevel)"
 

@@ -20,6 +20,15 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm check
       - run: pnpm test
+      - name: Install ripgrep (required by test:smoke — orient skill scripts)
+        run: |
+          # test:smoke runs skills/orient/scripts/{exports,providers}.sh which use rg.
+          # Must be installed BEFORE test:smoke, not bundled with the later "Linux test
+          # deps" step (which comes after). Ripgrep ships as a static binary — no concern
+          # about grep dialect differences between BSD/GNU across environments.
+          s=; command -v sudo >/dev/null 2>&1 && s=sudo
+          $s apt-get -o Acquire::Retries=3 update
+          $s apt-get -o Acquire::Retries=3 install -y --no-install-recommends ripgrep
       - run: pnpm test:smoke
       - name: Install Linux test deps
         run: |
