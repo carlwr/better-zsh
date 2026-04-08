@@ -1,6 +1,6 @@
 import * as assert from "node:assert"
 import { vi } from "vitest"
-import type { BuiltinDoc, RedirDoc } from "zsh-core"
+import type { BuiltinDoc, RedirDoc, ShellParamDoc } from "zsh-core"
 
 vi.mock("vscode", () => ({
   Position: class {
@@ -84,10 +84,18 @@ const redirs = [
   { op: ">&", sig: "n>& word", desc: "redir docs", section: "x" },
   { op: "&>", sig: "&> word", desc: "redir &> docs", section: "x" },
 ] as unknown as RedirDoc[]
+const params = [
+  {
+    name: "SECONDS",
+    sig: "SECONDS",
+    desc: "seconds docs",
+    section: "Parameters Set By The Shell",
+  },
+] as unknown as ShellParamDoc[]
 
 function mkProvider() {
   return new HoverProvider(
-    undefined,
+    params,
     undefined,
     undefined,
     builtins,
@@ -139,5 +147,9 @@ suite("HoverProvider", () => {
 
   test("builtin hover after arith condition bare form", () => {
     assert.match(hoverAt("if ((1)) fc", 9)?.value ?? "", /fc docs/)
+  })
+
+  test("shell parameter hover works from static docs", () => {
+    assert.match(hoverAt("print $SECONDS", 8)?.value ?? "", /seconds docs/)
   })
 })

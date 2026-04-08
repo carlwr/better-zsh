@@ -77,6 +77,12 @@ export interface SyntaxDocBase {
   aliases?: readonly string[]
 }
 
+/** Shell-managed parameters documented in `zshparam`. */
+export interface ShellParamDoc extends SyntaxDocBase {
+  name: string
+  tied?: string
+}
+
 export interface ReservedWordDoc extends SyntaxDocBase {
   name: string
   pos: ReservedWordPos

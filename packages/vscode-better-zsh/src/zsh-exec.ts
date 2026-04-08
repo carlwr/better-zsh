@@ -66,7 +66,12 @@ export function execZsh(
       },
       (err, stdout, stderr) => {
         const e = err as (NodeJS.ErrnoException & { status?: number }) | null
-        resolve({ stdout, stderr, code: e ? (e.status ?? 1) : 0 })
+        resolve({
+          stdout,
+          stderr,
+          code: e ? (e.status ?? 1) : 0,
+          errCode: typeof e?.code === "string" ? e.code : undefined,
+        })
       },
     )
     if (stdin !== undefined) proc.stdin?.end(stdin)

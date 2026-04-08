@@ -40,6 +40,7 @@
     "./data/options.json": "./dist/json/options.json",
     "./data/cond-ops.json": "./dist/json/cond-ops.json",
     "./data/builtins.json": "./dist/json/builtins.json",
+    "./data/shell-params.json": "./dist/json/shell-params.json",
     "./data/precmds.json": "./dist/json/precmds.json",
     "./data/redirections.json": "./dist/json/redirections.json",
     "./data/reserved-words.json": "./dist/json/reserved-words.json",

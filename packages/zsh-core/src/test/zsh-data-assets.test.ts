@@ -15,6 +15,7 @@ import {
   getProcessSubsts,
   getRedirections,
   getReservedWords,
+  getShellParams,
   getSubscriptFlags,
 } from "../zsh-data"
 
@@ -79,6 +80,7 @@ describe("vendored zsh data assets", () => {
   test("parses newly vendored structured syntax docs", () => {
     expect(getRedirections().some((doc) => doc.op === "<")).toBe(true)
     expect(getReservedWords().some((doc) => doc.name === "if")).toBe(true)
+    expect(getShellParams().some((doc) => doc.name === "SECONDS")).toBe(true)
     expect(getSubscriptFlags().some((doc) => doc.flag === "w")).toBe(true)
     expect(getParamFlags().some((doc) => doc.flag === "@")).toBe(true)
     expect(getHistoryDocs().some((doc) => doc.key === "!!")).toBe(true)

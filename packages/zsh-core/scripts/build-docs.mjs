@@ -35,6 +35,7 @@ const llms = [
   "- ./data/options.json",
   "- ./data/cond-ops.json",
   "- ./data/builtins.json",
+  "- ./data/shell-params.json",
   "- ./data/precmds.json",
   "- ./data/redirections.json",
   "- ./data/reserved-words.json",

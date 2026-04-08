@@ -6,6 +6,7 @@ import { parseParamFlags } from "../../yodl/param-flags"
 import { parseProcessSubsts } from "../../yodl/process-subst"
 import { parseRedirections } from "../../yodl/redirections"
 import { parseReservedWords } from "../../yodl/reserved-words"
+import { parseShellParams } from "../../yodl/shell-params"
 import { parseSubscriptFlags } from "../../yodl/subscript-flags"
 import { expectDocCorpus, readVendoredYo } from "./test-util"
 
@@ -15,6 +16,27 @@ const PARAMS_YO = readVendoredYo("params.yo")
 const REDIRECT_YO = readVendoredYo("redirect.yo")
 
 describe("more yodl parsers", () => {
+  test("shell params keep tied pairs and xitem aliases with shared docs", () => {
+    const yo = [
+      "sect(Parameters Set By The Shell)",
+      "startitem()",
+      "vindex(path)",
+      "vindex(PATH)",
+      "item(tt(path) <S> <Z> (tt(PATH) <S>))(Pair docs.)",
+      "vindex(RPROMPT)",
+      "xitem(tt(RPROMPT) <S>)",
+      "vindex(RPS1)",
+      "item(tt(RPS1) <S>)(Prompt docs.)",
+      "enditem()",
+    ].join("\n")
+    const docs = new Map(parseShellParams(yo).map((doc) => [doc.name, doc]))
+    expect(docs.get("path")?.tied).toBe("PATH")
+    expect(docs.get("PATH")?.tied).toBe("path")
+    expect(docs.get("path")?.desc).toBe("Pair docs.")
+    expect(docs.get("RPS1")?.desc).toBe("Prompt docs.")
+    expect(docs.get("RPROMPT")?.desc).toBe("Prompt docs.")
+  })
+
   test("redirections keep xitem aliases with shared docs", () => {
     const yo = `startitem()
 xitem(tt(>|) var(word))
@@ -72,6 +94,16 @@ enditem()`
       keyOf: (doc) => doc.flag,
       descOf: (doc) => doc.desc,
       known: ["w", "s:string:", "n:expr:", "R"],
+    })
+  })
+
+  test("vendored shell-parameter corpus parses", () => {
+    expectDocCorpus({
+      docs: parseShellParams(PARAMS_YO),
+      minCount: 80,
+      keyOf: (doc) => doc.name,
+      descOf: (doc) => doc.desc,
+      known: ["SECONDS", "argv", "path", "PATH", "reply", "zsh_eval_context"],
     })
   })
 

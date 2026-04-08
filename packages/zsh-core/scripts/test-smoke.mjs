@@ -55,6 +55,7 @@ try {
     "dist/json/process-substs.json",
     "dist/json/redirections.json",
     "dist/json/reserved-words.json",
+    "dist/json/shell-params.json",
     "dist/json/subscript-flags.json",
     "dist/render.d.ts",
     "dist/render.js",

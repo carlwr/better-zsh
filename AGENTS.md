@@ -26,7 +26,7 @@ Best-effort determination of which syntactic region the cursor is in (setopt, co
 
 zsh-core ships vendored Yodl (`.yo`) documentation files from the zsh upstream project. Three consumption routes:
 
-1. **Programmatic API** (`getBuiltins()`, `getOptions()`, etc.) — parse `.yo` at runtime, cached per getter. Requires the `.yo` files on disk. For consumers who bundle zsh-core (like the extension), `copyRuntimeZshData()` copies the `.yo` payload into their output directory. The extension currently calls these getters during activation, so the parsed doc records are materialized eagerly in the extension host.
+1. **Programmatic API** (`getBuiltins()`, `getOptions()`, etc.) — parse `.yo` at runtime, cached per getter. Requires the `.yo` files on disk. For consumers who bundle zsh-core (like the extension), `copyRuntimeZshData()` copies the `.yo` payload into their output directory. The extension currently materializes this static knowledge eagerly during activation and uses it as the canonical source for semi-static language knowledge (builtins, options, reserved words, shell-managed parameters, etc.).
 2. **Pre-parsed JSON** (`dist/json/*.json`) — build-time artifacts containing the same data, pre-serialized. Available via package exports (`"./data/*.json"`). No runtime parsing needed. The extension does **not** currently use this route at runtime.
 3. **Raw Yodl source** (`dist/data/zsh-docs/`) — the upstream `.yo` files for advanced consumers.
 
@@ -45,13 +45,13 @@ VS Code provider classes that wire zsh-core analysis and doc records to language
 
 ### Zsh-aware, not environment-aware
 
-The extension uses `zsh -f` to query what zsh knows about *itself*: builtins, options, reserved words, syntax rules. It does **not** probe the user's environment.
+The extension uses `zsh -f` only where actual shell execution is worth the host-dependent cost: diagnostics (`zsh -n`) and tokenization used to enrich completions. Semi-static language knowledge comes from bundled `zsh-core` data, not from the host shell. It does **not** probe the user's environment.
 
-- **Static zsh knowledge** (builtins, options, parameter expansion flags, grammar) is safe to use — it is intrinsic to zsh, same across machines
+- **Static zsh knowledge** (builtins, options, shell-managed parameters, parameter expansion flags, grammar) is preferred for editor features — it is intrinsic to zsh, stable enough to bundle, and more consistent than asking the host shell at activation time
 - **Environment-dependent data** (`$commands`, `$aliases`, `$functions_source`, `$fpath` beyond system defaults) is *not* used for core features — it varies by machine, launch method, editor, and target execution environment
-- `-f` (NO_RCS) skips user rc files; spawned zsh processes receive only an explicit allowlist of env vars (`HOME`, `PATH`, locale vars, etc.) — see `ZSH_ENV_KEEP` in the extension source. Even this filtered set varies by VS Code launch method (Dock vs terminal, bash vs zsh, Cursor vs VS Code, etc.).
+- `-f` (NO_RCS) skips user rc files, but note that `/etc/zshenv` still runs. Spawned zsh processes receive only an explicit allowlist of env vars (`HOME`, `PATH`, locale vars, etc.) — see `ZSH_ENV_KEEP` in the extension source. Even this filtered set varies by VS Code launch method (Dock vs terminal, bash vs zsh, Cursor vs VS Code, etc.).
 - The file being edited may run on a completely different machine (CI, container, remote); exposing local environment data can actively mislead
-- Mental model: "if we could bundle a zsh binary and run it in an isolated container, we would." We use system zsh and tolerate inherited env as a necessary cost — not a feature to exploit.
+- Mental model: "if we could bundle a zsh binary and run it in an isolated container, we would." We use system zsh only where execution is intrinsic, and otherwise prefer bundled/static knowledge for consistency, startup latency, and smaller security surface.
 - Environment-dependent introspection may later be offered through agent-facing tools (Language Model Tools API) where agents explicitly opt in, with clear caveats about side effects and env-specificity
 
 ### Hover docs

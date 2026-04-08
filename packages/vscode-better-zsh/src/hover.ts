@@ -12,6 +12,7 @@ import type {
   RedirFact,
   ReservedWordDoc,
   ReservedWordFact,
+  ShellParamDoc,
   ZshOption,
 } from "zsh-core"
 import {
@@ -38,7 +39,7 @@ import { activeWordRangeAt, commentStart, funcDocs } from "./funcs"
 export class HoverProvider implements vscode.HoverProvider {
   private md: HoverMdCtx
   private builtinMap: Map<string, BuiltinDoc> | undefined
-  private params: Map<string, string> | undefined
+  private paramMap: Map<string, ShellParamDoc> | undefined
   private optionMap: Map<string, ZshOption> | undefined
   private flagMap:
     | Map<string, { opt: ZshOption; alias: OptFlagAlias }>
@@ -50,7 +51,7 @@ export class HoverProvider implements vscode.HoverProvider {
   private reservedWordMap: Map<string, ReservedWordDoc> | undefined
 
   constructor(
-    params?: Map<string, string>,
+    params?: ShellParamDoc[],
     options?: ZshOption[],
     condOps?: CondOpDoc[],
     builtins?: BuiltinDoc[],
@@ -65,7 +66,9 @@ export class HoverProvider implements vscode.HoverProvider {
         builtins.map((builtin) => [builtin.name as string, builtin]),
       )
     }
-    this.params = params
+    if (params) {
+      this.paramMap = new Map(params.map((param) => [param.name, param]))
+    }
     if (options) {
       this.optionMap = new Map(options.map((o) => [o.name as string, o]))
       this.flagMap = new Map(
@@ -145,13 +148,13 @@ export class HoverProvider implements vscode.HoverProvider {
   }
 
   private paramHover(doc: vscode.TextDocument, pos: vscode.Position) {
-    if (!this.params) return
+    if (!this.paramMap) return
     const range = activeWordRangeAt(doc, pos)
     if (!range) return
     const w = doc.getText(range)
-    const ptype = this.params.get(w)
-    if (ptype)
-      return new vscode.Hover(new vscode.MarkdownString(mdParam(w, ptype)))
+    const param = this.paramMap.get(w)
+    if (param)
+      return new vscode.Hover(new vscode.MarkdownString(mdParam(param)))
   }
 
   private factBasedHover(doc: vscode.TextDocument, pos: vscode.Position) {

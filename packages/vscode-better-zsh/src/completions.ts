@@ -2,7 +2,9 @@ import * as vscode from "vscode"
 import type {
   BuiltinDoc,
   CondOpDoc,
+  PrecmdDoc,
   ReservedWordDoc,
+  ShellParamDoc,
   ZshOption,
 } from "zsh-core"
 import {
@@ -13,7 +15,13 @@ import {
   WORD,
   WORD_EXACT,
 } from "zsh-core"
-import { mdBuiltin, mdReservedWord, sigCond } from "zsh-core/render"
+import {
+  mdBuiltin,
+  mdParam,
+  mdPrecmd,
+  mdReservedWord,
+  sigCond,
+} from "zsh-core/render"
 import { asyncDocCache } from "./cache"
 import { zshTokenize } from "./zsh"
 
@@ -22,66 +30,70 @@ const getIds = asyncDocCache(async (doc) =>
 )
 
 export interface CompletionData {
-  builtins: string[]
-  reservedWords: string[]
-  options: string[]
-  params: Map<string, string>
-  builtinDocs?: BuiltinDoc[]
-  reservedWordDocs?: ReservedWordDoc[]
-  zshOptions?: ZshOption[]
-  condOps?: CondOpDoc[]
+  builtins: BuiltinDoc[]
+  reservedWords: ReservedWordDoc[]
+  precmds: PrecmdDoc[]
+  params: ShellParamDoc[]
+  options: ZshOption[]
+  condOps: CondOpDoc[]
 }
 
 export class CompletionProvider implements vscode.CompletionItemProvider {
   private general: vscode.CompletionItem[]
   private options: string[]
-  private optionMap: Map<string, ZshOption> | undefined
+  private optionMap: Map<string, ZshOption>
   private condOps: CondOpDoc[]
 
   constructor(data: CompletionData) {
     this.general = [
       ...data.builtins
-        .filter((n) => WORD_EXACT.test(n))
-        .map((n) => {
+        .filter((doc) => WORD_EXACT.test(doc.name as string))
+        .map((doc) => {
           const item = new vscode.CompletionItem(
-            n,
+            doc.name as string,
             vscode.CompletionItemKind.Keyword,
           )
-          const doc = data.builtinDocs?.find((builtin) => builtin.name === n)
-          if (doc) {
-            item.detail = doc.desc
-            item.documentation = new vscode.MarkdownString(mdBuiltin(doc))
-          }
+          item.detail = doc.desc
+          item.documentation = new vscode.MarkdownString(mdBuiltin(doc))
           return item
         }),
       ...data.reservedWords
-        .filter((n) => WORD_EXACT.test(n))
-        .map((n) => {
+        .filter((doc) => WORD_EXACT.test(doc.name))
+        .map((doc) => {
           const item = new vscode.CompletionItem(
-            n,
+            doc.name,
             vscode.CompletionItemKind.Keyword,
           )
-          const doc = data.reservedWordDocs?.find((rw) => rw.name === n)
-          if (doc) {
-            item.detail = doc.desc
-            item.documentation = new vscode.MarkdownString(mdReservedWord(doc))
-          }
+          item.detail = doc.desc
+          item.documentation = new vscode.MarkdownString(mdReservedWord(doc))
           return item
         }),
-      ...[...data.params.keys()]
-        .filter((n) => WORD_EXACT.test(n))
-        .map(
-          (n) =>
-            new vscode.CompletionItem(n, vscode.CompletionItemKind.Variable),
-        ),
+      ...data.precmds
+        .filter((doc) => WORD_EXACT.test(doc.name))
+        .map((doc) => {
+          const item = new vscode.CompletionItem(
+            doc.name,
+            vscode.CompletionItemKind.Keyword,
+          )
+          item.detail = doc.desc
+          item.documentation = new vscode.MarkdownString(mdPrecmd(doc))
+          return item
+        }),
+      ...data.params
+        .filter((doc) => WORD_EXACT.test(doc.name))
+        .map((doc) => {
+          const item = new vscode.CompletionItem(
+            doc.name,
+            vscode.CompletionItemKind.Variable,
+          )
+          item.detail = doc.desc
+          item.documentation = new vscode.MarkdownString(mdParam(doc))
+          return item
+        }),
     ]
-    this.options = data.options
-    if (data.zshOptions) {
-      this.optionMap = new Map(
-        data.zshOptions.map((o) => [o.name as string, o]),
-      )
-    }
-    this.condOps = data.condOps ?? []
+    this.options = data.options.map((opt) => opt.name as string)
+    this.optionMap = new Map(data.options.map((o) => [o.name as string, o]))
+    this.condOps = data.condOps
   }
 
   async provideCompletionItems(doc: vscode.TextDocument, pos: vscode.Position) {
@@ -121,11 +133,8 @@ export class CompletionProvider implements vscode.CompletionItemProvider {
         vscode.CompletionItemKind.Property,
       )
       item.filterText = typed || m.label
-      // Enrich with description from parsed options data
-      if (this.optionMap) {
-        const opt = this.optionMap.get(mkOptName(m.canonical))
-        if (opt) item.detail = opt.desc
-      }
+      const opt = this.optionMap.get(mkOptName(m.canonical))
+      if (opt) item.detail = opt.desc
       return item
     })
     return new vscode.CompletionList(items, true)

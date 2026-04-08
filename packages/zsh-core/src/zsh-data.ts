@@ -18,6 +18,7 @@ import type {
   ProcessSubstDoc,
   RedirDoc,
   ReservedWordDoc,
+  ShellParamDoc,
   SubscriptFlagDoc,
   ZshOption,
 } from "./types/zsh-data.ts"
@@ -32,6 +33,7 @@ import { parsePrecmds } from "./yodl/precmds.ts"
 import { parseProcessSubsts } from "./yodl/process-subst.ts"
 import { parseRedirections } from "./yodl/redirections.ts"
 import { parseReservedWords } from "./yodl/reserved-words.ts"
+import { parseShellParams } from "./yodl/shell-params.ts"
 import { parseSubscriptFlags } from "./yodl/subscript-flags.ts"
 
 const dataDir = resolveZshDataDir()
@@ -69,6 +71,11 @@ export const getRedirections: () => RedirDoc[] = cached<RedirDoc[]>(() =>
 export const getReservedWords: () => ReservedWordDoc[] = cached<
   ReservedWordDoc[]
 >(() => parseReservedWords(readYo("grammar.yo")))
+
+/** Shell-managed parameters. */
+export const getShellParams: () => ShellParamDoc[] = cached<ShellParamDoc[]>(
+  () => parseShellParams(readYo("params.yo")),
+)
 
 /** Subscript flags. */
 export const getSubscriptFlags: () => SubscriptFlagDoc[] = cached<

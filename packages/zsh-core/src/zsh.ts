@@ -21,6 +21,7 @@ export interface ZshRunResult {
   stdout: string
   stderr: string
   code: number
+  errCode?: string
 }
 
 /** Injected zsh executor used by the query helpers. */

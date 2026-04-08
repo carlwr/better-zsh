@@ -7,6 +7,7 @@ import {
   getProcessSubsts,
   getRedirections,
   getReservedWords,
+  getShellParams,
 } from "zsh-core"
 import { CompletionProvider } from "./completions"
 import { DefinitionProvider } from "./definition"
@@ -21,14 +22,7 @@ import { RenameProvider } from "./rename"
 import { SEMANTIC_LEGEND, SemanticTokensProvider } from "./semantic-tokens"
 import { SymbolProvider } from "./symbols"
 import { WorkspaceSymbolProvider } from "./workspace-symbols"
-import {
-  setZshPath,
-  zshAvailable,
-  zshBuiltins,
-  zshOptions,
-  zshParameters,
-  zshReswords,
-} from "./zsh"
+import { setZshPath } from "./zsh"
 
 function readZshPathSetting(): string {
   return vscode.workspace.getConfiguration(BETTER_ZSH_CONFIG).get("zshPath", "")
@@ -48,6 +42,8 @@ export async function activate(ctx: vscode.ExtensionContext) {
   )
 
   // Parsed data from vendored .yo files (always available, no zsh needed)
+  // Keep semi-static language knowledge bundled and ready immediately; host
+  // zsh is reserved for diagnostics/tokenization paths where execution matters.
   const parsedBuiltins = getBuiltins()
   const parsedOptions = getOptions()
   const parsedCondOps = getCondOps()
@@ -55,6 +51,10 @@ export async function activate(ctx: vscode.ExtensionContext) {
   const parsedRedirs = getRedirections()
   const parsedProcessSubsts = getProcessSubsts()
   const parsedReservedWords = getReservedWords()
+  const parsedShellParams = getShellParams()
+  const builtinNames = parsedBuiltins.map((builtin) => builtin.name as string)
+
+  setupDiagnostics(ctx)
 
   ctx.subscriptions.push(
     vscode.languages.registerDocumentHighlightProvider(
@@ -81,65 +81,34 @@ export async function activate(ctx: vscode.ExtensionContext) {
       ZSH_LANG_ID,
       new DocLinkProvider(),
     ),
+    vscode.languages.registerHoverProvider(
+      ZSH_LANG_ID,
+      new HoverProvider(
+        parsedShellParams,
+        parsedOptions,
+        parsedCondOps,
+        parsedBuiltins,
+        parsedPrecmds,
+        parsedRedirs,
+        parsedProcessSubsts,
+        parsedReservedWords,
+      ),
+    ),
+    vscode.languages.registerCompletionItemProvider(
+      ZSH_LANG_ID,
+      new CompletionProvider({
+        builtins: parsedBuiltins,
+        reservedWords: parsedReservedWords,
+        precmds: parsedPrecmds,
+        options: parsedOptions,
+        params: parsedShellParams,
+        condOps: parsedCondOps,
+      }),
+    ),
+    vscode.languages.registerDocumentSemanticTokensProvider(
+      ZSH_LANG_ID,
+      new SemanticTokensProvider(builtinNames),
+      SEMANTIC_LEGEND,
+    ),
   )
-
-  if (await zshAvailable()) {
-    setupDiagnostics(ctx)
-    const [builtinNames, reservedWords, optionNames, params] =
-      await Promise.all([
-        zshBuiltins(),
-        zshReswords(),
-        zshOptions(),
-        zshParameters(),
-      ])
-    ctx.subscriptions.push(
-      vscode.languages.registerHoverProvider(
-        ZSH_LANG_ID,
-        new HoverProvider(
-          params,
-          parsedOptions,
-          parsedCondOps,
-          parsedBuiltins,
-          parsedPrecmds,
-          parsedRedirs,
-          parsedProcessSubsts,
-          parsedReservedWords,
-        ),
-      ),
-      vscode.languages.registerCompletionItemProvider(
-        ZSH_LANG_ID,
-        new CompletionProvider({
-          builtins: builtinNames,
-          reservedWords,
-          options: optionNames,
-          params,
-          builtinDocs: parsedBuiltins,
-          reservedWordDocs: parsedReservedWords,
-          zshOptions: parsedOptions,
-          condOps: parsedCondOps,
-        }),
-      ),
-      vscode.languages.registerDocumentSemanticTokensProvider(
-        ZSH_LANG_ID,
-        new SemanticTokensProvider(builtinNames),
-        SEMANTIC_LEGEND,
-      ),
-    )
-  } else {
-    ctx.subscriptions.push(
-      vscode.languages.registerHoverProvider(
-        ZSH_LANG_ID,
-        new HoverProvider(
-          undefined,
-          parsedOptions,
-          parsedCondOps,
-          parsedBuiltins,
-          parsedPrecmds,
-          parsedRedirs,
-          parsedProcessSubsts,
-          parsedReservedWords,
-        ),
-      ),
-    )
-  }
 }

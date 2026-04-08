@@ -10,6 +10,7 @@ import type {
   ProcessSubstDoc,
   RedirDoc,
   ReservedWordDoc,
+  ShellParamDoc,
   ZshOption,
 } from "./types/zsh-data.ts"
 
@@ -65,17 +66,6 @@ const hoverFmt = {
 /** Build formatter context from the available option set. */
 export function mkHoverMdCtx(options: readonly ZshOption[] = []): HoverMdCtx {
   return { optNames: new Set(options.map((opt) => opt.name)) }
-}
-
-/** Format the raw zsh parameter-type string into hover prose. */
-export function fmtParamType(raw: string): string {
-  const parts = raw.split("-")
-  const base = parts[0] ?? raw
-  const flags: string[] = []
-  if (parts.includes("readonly")) flags.push("readonly")
-  if (parts.includes("tied")) flags.push("tied")
-  if (parts.includes("export")) flags.push("exported")
-  return flags.length ? `${base} (${flags.join(", ")})` : base
 }
 
 /** Emphasize option references inside markdown prose, skipping fenced code. */
@@ -144,9 +134,16 @@ export function mdCond(
   return `${sigCond(cop)}\n\n${fmtOptRefsInMd(cop.desc, ctx.optNames)}`
 }
 
-/** Render one special-parameter doc block as markdown. */
-export function mdParam(name: string, raw: string): string {
-  return `${hoverFmt.code(name)}: ${fmtParamType(raw)} — zsh special parameter`
+/** Render one shell-parameter doc block as markdown. */
+export function mdParam(doc: ShellParamDoc): string {
+  return [
+    hoverFmt.code(doc.name),
+    "",
+    doc.desc,
+    ...(doc.tied ? ["", `_Tied with:_ ${hoverFmt.code(doc.tied)}`] : []),
+    "",
+    "_Category:_ Shell Parameter",
+  ].join("\n")
 }
 
 /** Render one builtin doc block as markdown. */
@@ -251,7 +248,7 @@ export function hoverDocs({
 }: {
   options: readonly ZshOption[]
   condOps: readonly CondOpDoc[]
-  params: ReadonlyMap<string, string>
+  params: readonly ShellParamDoc[]
   builtins?: readonly BuiltinDoc[]
   precmds?: readonly PrecmdDoc[]
   redirs?: readonly RedirDoc[]
@@ -259,12 +256,12 @@ export function hoverDocs({
   reservedWords?: readonly ReservedWordDoc[]
 }): HoverDoc[] {
   const ctx = mkHoverMdCtx(options)
-  const paramDocs = [...params.entries()]
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([key, raw]) => ({
+  const paramDocs = [...params]
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .map((doc) => ({
       kind: "param" as const,
-      key,
-      md: mdParam(key, raw),
+      key: doc.name,
+      md: mdParam(doc),
     }))
 
   return [

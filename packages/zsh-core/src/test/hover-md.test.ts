@@ -31,9 +31,16 @@ import type {
   ProcessSubstDoc,
   RedirDoc,
   ReservedWordDoc,
+  ShellParamDoc,
   ZshOption,
 } from "../types/zsh-data"
-import { getBuiltins, getCondOps, getOptions, getPrecmds } from "../zsh-data"
+import {
+  getBuiltins,
+  getCondOps,
+  getOptions,
+  getPrecmds,
+  getShellParams,
+} from "../zsh-data"
 
 const opt: ZshOption = {
   name: mkOptName("AUTO_CD"),
@@ -90,6 +97,13 @@ const reservedWord: ReservedWordDoc = {
   desc: "Execute list conditionally.",
   section: "Complex Commands",
   pos: "command",
+}
+
+const param: ShellParamDoc = {
+  name: "SECONDS",
+  sig: "SECONDS",
+  desc: "The number of seconds since shell invocation.",
+  section: "Parameters Set By The Shell",
 }
 
 describe("hover markdown", () => {
@@ -150,9 +164,11 @@ describe("hover markdown", () => {
   })
 
   test("renders param markdown", () => {
-    expect(mdParam("SECONDS", "integer-special-readonly-export")).toBe(
-      "`SECONDS`: integer (readonly, exported) — zsh special parameter",
+    expect(mdParam(param)).toContain("`SECONDS`")
+    expect(mdParam(param)).toContain(
+      "The number of seconds since shell invocation.",
     )
+    expect(mdParam(param)).toContain("_Category:_ Shell Parameter")
   })
 
   test("renders builtin markdown", () => {
@@ -216,10 +232,15 @@ describe("hover markdown", () => {
     const docs = hoverDocs({
       options: [opt],
       condOps: [unary],
-      params: new Map([
-        ["SECONDS", "integer-special-readonly"],
-        ["argv", "array-special"],
-      ]),
+      params: [
+        param,
+        {
+          name: "argv",
+          sig: "argv",
+          desc: "An array containing the positional parameters.",
+          section: "Parameters Set By The Shell",
+        },
+      ],
       builtins: [builtin],
       precmds: [precmd],
     })
@@ -243,7 +264,7 @@ describe("hover dump", () => {
     const docs = hoverDocs({
       options: [opt],
       condOps: [binary],
-      params: new Map([["SECONDS", "integer-special-readonly"]]),
+      params: [param],
       builtins: [builtin],
       precmds: [precmd],
     })
@@ -269,7 +290,7 @@ describe("hover dump", () => {
         hoverDocs({
           options: [opt],
           condOps: [binary],
-          params: new Map([["SECONDS", "integer-special-readonly"]]),
+          params: [param],
           builtins: [builtin],
           precmds: [precmd],
         }),
@@ -299,10 +320,11 @@ describe("hover dump", () => {
     const builtins = getBuiltins()
     const condOps = getCondOps()
     const precmds = getPrecmds()
+    const params = getShellParams()
     const docs = hoverDocs({
       options,
       condOps,
-      params: new Map([["SECONDS", "integer-special-readonly"]]),
+      params,
       builtins,
       precmds,
     })
@@ -315,6 +337,9 @@ describe("hover dump", () => {
       expect(docs.filter((doc) => doc.kind === "cond-op")).toHaveLength(
         condOps.length,
       )
+      expect(docs.filter((doc) => doc.kind === "param")).toHaveLength(
+        params.length,
+      )
       expect(docs.filter((doc) => doc.kind === "builtin")).toHaveLength(
         builtins.length,
       )
@@ -326,6 +351,9 @@ describe("hover dump", () => {
       )
       expect((files.get("cond-ops.md")?.match(/^## /gm) ?? []).length).toBe(
         condOps.length,
+      )
+      expect((files.get("params.md")?.match(/^## /gm) ?? []).length).toBe(
+        params.length,
       )
       expect((files.get("builtins.md")?.match(/^## /gm) ?? []).length).toBe(
         builtins.length,

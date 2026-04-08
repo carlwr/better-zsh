@@ -14,6 +14,7 @@ import {
   getProcessSubsts,
   getRedirections,
   getReservedWords,
+  getShellParams,
   getSubscriptFlags,
 } from "./src/zsh-data.ts"
 
@@ -52,6 +53,7 @@ function writeJsonArtifacts() {
   const globOperators = getGlobOps()
   const globFlags = getGlobbingFlags()
   const processSubsts = getProcessSubsts()
+  const shellParams = getShellParams()
   const docs = {
     version: 1,
     packageVersion: pkg.version,
@@ -63,6 +65,7 @@ function writeJsonArtifacts() {
       "history.json",
       "options.json",
       "param-flags.json",
+      "shell-params.json",
       "precmds.json",
       "process-substs.json",
       "redirections.json",
@@ -77,6 +80,7 @@ function writeJsonArtifacts() {
       history: history.length,
       options: options.length,
       paramFlags: paramFlags.length,
+      shellParams: shellParams.length,
       precmds: precmds.length,
       processSubsts: processSubsts.length,
       redirections: redirections.length,
@@ -89,6 +93,7 @@ function writeJsonArtifacts() {
     ["options.json", options],
     ["cond-ops.json", condOps],
     ["builtins.json", builtins],
+    ["shell-params.json", shellParams],
     ["precmds.json", precmds],
     ["redirections.json", redirections],
     ["reserved-words.json", reservedWords],

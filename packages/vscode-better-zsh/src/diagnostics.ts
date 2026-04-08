@@ -2,6 +2,7 @@ import * as vscode from "vscode"
 import {
   BETTER_ZSH_CONFIG,
   BETTER_ZSH_DIAGNOSTICS_ENABLED,
+  BETTER_ZSH_ZSH_PATH,
   ZSH_DIAGNOSTIC_SOURCE,
   ZSH_LANG_ID,
 } from "./ids"
@@ -26,6 +27,10 @@ export function setupDiagnostics(ctx: vscode.ExtensionContext) {
       return
     }
     const r = await zshCheck(doc.getText())
+    if (r.ok === "unavailable") {
+      dc.set(doc.uri, [])
+      return
+    }
     if (r.ok) {
       dc.set(doc.uri, [])
       return
@@ -69,7 +74,10 @@ export function setupDiagnostics(ctx: vscode.ExtensionContext) {
     }),
     vscode.workspace.onDidChangeTextDocument((e) => lintDebounced(e.document)),
     vscode.workspace.onDidChangeConfiguration((e) => {
-      if (e.affectsConfiguration(BETTER_ZSH_DIAGNOSTICS_ENABLED)) {
+      if (
+        e.affectsConfiguration(BETTER_ZSH_DIAGNOSTICS_ENABLED) ||
+        e.affectsConfiguration(BETTER_ZSH_ZSH_PATH)
+      ) {
         if (!isDiagnosticsEnabled()) dc.clear()
         else for (const doc of vscode.workspace.textDocuments) lint(doc)
       }
