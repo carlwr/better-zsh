@@ -59,6 +59,7 @@ Make cd and pushd behave POSIX-like.
 
   describe("vendored options.yo", () => {
     const opts = parseOptions(OPTS_YO)
+    const byName = new Map(opts.map((o) => [o.name, o]))
 
     test("parses a non-trivial number of options", () => {
       expect(opts.length).toBeGreaterThan(100)
@@ -89,14 +90,12 @@ Make cd and pushd behave POSIX-like.
     })
 
     test("known options exist", () => {
-      const byName = new Map(opts.map((o) => [o.name, o]))
       expect(byName.has(mkOptName("EXTENDED_GLOB"))).toBe(true)
       expect(byName.has(mkOptName("AUTO_CD"))).toBe(true)
       expect(byName.has(mkOptName("GLOB_DOTS"))).toBe(true)
     })
 
     test("captures short-flag polarity from vendored docs", () => {
-      const byName = new Map(opts.map((o) => [o.name, o]))
       expect(byName.get(mkOptName("ERR_EXIT"))?.flags).toEqual([
         { char: mkOptFlagChar("e"), on: "-" },
       ])

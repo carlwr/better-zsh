@@ -38,37 +38,39 @@ enditem()`
     expect(docs[1]?.module).toBe("zsh/zutil")
   })
 
-  test("parses xitem aliases for test and [", () => {
-    const doc = parseBuiltins(BUILTINS_YO)
-    const byName = new Map(doc.map((d) => [d.name, d]))
-    expect(byName.get(mkBuiltinName("test"))?.synopsis[0]).toBe(
-      "test [ arg ... ]",
-    )
-    expect(byName.get(mkBuiltinName("["))?.synopsis[0]).toBe("[ [ arg ... ] ]")
-  })
-
-  test("vendored file excludes macro template placeholders", () => {
+  describe("vendored builtins.yo", () => {
     const docs = parseBuiltins(BUILTINS_YO)
-    expect(docs.some((d) => d.name === mkBuiltinName("ARG1"))).toBe(false)
-  })
+    const byName = new Map(docs.map((d) => [d.name, d]))
 
-  test("vendored file includes macro-defined builtins", () => {
-    const docs = parseBuiltins(BUILTINS_YO)
-    const names = new Set(docs.map((d) => d.name))
-    expect(names.has(mkBuiltinName("bindkey"))).toBe(true)
-    expect(names.has(mkBuiltinName("compctl"))).toBe(true)
-    expect(names.has(mkBuiltinName("zstyle"))).toBe(true)
-  })
+    test("parses xitem aliases for test and [", () => {
+      expect(byName.get(mkBuiltinName("test"))?.synopsis[0]).toBe(
+        "test [ arg ... ]",
+      )
+      expect(byName.get(mkBuiltinName("["))?.synopsis[0]).toBe(
+        "[ [ arg ... ] ]",
+      )
+    })
 
-  test("vendored descriptions strip index macros and raw yodl", () => {
-    const docs = parseBuiltins(BUILTINS_YO)
-    for (const doc of docs) {
-      expect(doc.desc).not.toContain("vindex(")
-      expect(doc.desc).not.toContain("tt(")
-      expect(doc.desc).not.toContain("var(")
-      expect(doc.desc).not.toContain("startsitem(")
-      expect(doc.desc).not.toContain("sitem(")
-      expect(doc.desc).not.toContain("\u0007")
-    }
+    test("excludes macro template placeholders", () => {
+      expect(docs.some((d) => d.name === mkBuiltinName("ARG1"))).toBe(false)
+    })
+
+    test("includes macro-defined builtins", () => {
+      const names = new Set(docs.map((d) => d.name))
+      expect(names.has(mkBuiltinName("bindkey"))).toBe(true)
+      expect(names.has(mkBuiltinName("compctl"))).toBe(true)
+      expect(names.has(mkBuiltinName("zstyle"))).toBe(true)
+    })
+
+    test("descriptions strip index macros and raw yodl", () => {
+      for (const doc of docs) {
+        expect(doc.desc).not.toContain("vindex(")
+        expect(doc.desc).not.toContain("tt(")
+        expect(doc.desc).not.toContain("var(")
+        expect(doc.desc).not.toContain("startsitem(")
+        expect(doc.desc).not.toContain("sitem(")
+        expect(doc.desc).not.toContain("\u0007")
+      }
+    })
   })
 })

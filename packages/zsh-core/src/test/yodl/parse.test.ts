@@ -12,59 +12,26 @@ import {
 } from "../../yodl/parse"
 
 describe("stripYodl", () => {
-  test("strips tt() wrapper", () => {
-    expect(stripYodl("tt(foo)")).toBe("foo")
-  })
-
-  test("strips var() wrapper", () => {
-    expect(stripYodl("var(file)")).toBe("file")
-  })
-
-  test("strips nested wrappers", () => {
-    expect(stripYodl("tt(AUTO_CD) and var(name)")).toBe("AUTO_CD and name")
-  })
-
-  test("replaces LPAR/RPAR", () => {
-    expect(stripYodl("tt(LPAR())")).toBe("(")
-    expect(stripYodl("tt(RPAR())")).toBe(")")
-  })
-
-  test("replaces PLUS", () => {
-    expect(stripYodl("PLUS()")).toBe("+")
-  })
-
-  test("strips em() and bf()", () => {
-    expect(stripYodl("em(italic) and bf(bold)")).toBe("italic and bold")
-  })
-
-  test("strips cindex/pindex/findex entirely", () => {
-    expect(stripYodl("cindex(some concept)\ntext")).toBe("text")
-  })
-
-  test("strips COMMENT()", () => {
-    expect(stripYodl("COMMENT(hidden)\nvisible")).toBe("visible")
-  })
-
-  test("keeps the non-zman branch and noderef text", () => {
-    expect(
-      stripYodl(
-        "ifzman(the section FILES in zmanref(zshmisc))ifnzman(noderef(Files))",
-      ),
-    ).toBe("Files")
-  })
-
-  test("strips startsitem()/endsitem() markers", () => {
-    expect(stripYodl("startsitem()\nendsitem()")).toBe("")
-  })
-
-  test("strips startitem()/enditem() markers", () => {
-    expect(stripYodl("startitem()\nenditem()")).toBe("")
-  })
-
-  test("converts sitem(head)(body) to list items", () => {
-    expect(stripYodl("sitem(tt(\\a))(bell character)")).toBe(
-      "- \\a: bell character",
-    )
+  test.each([
+    ["tt()", "tt(foo)", "foo"],
+    ["var()", "var(file)", "file"],
+    ["nested tt+var", "tt(AUTO_CD) and var(name)", "AUTO_CD and name"],
+    ["LPAR", "tt(LPAR())", "("],
+    ["RPAR", "tt(RPAR())", ")"],
+    ["PLUS", "PLUS()", "+"],
+    ["em/bf", "em(italic) and bf(bold)", "italic and bold"],
+    ["cindex", "cindex(some concept)\ntext", "text"],
+    ["COMMENT", "COMMENT(hidden)\nvisible", "visible"],
+    [
+      "ifzman → noderef",
+      "ifzman(the section FILES in zmanref(zshmisc))ifnzman(noderef(Files))",
+      "Files",
+    ],
+    ["startsitem/endsitem", "startsitem()\nendsitem()", ""],
+    ["startitem/enditem", "startitem()\nenditem()", ""],
+    ["sitem", "sitem(tt(\\a))(bell character)", "- \\a: bell character"],
+  ])("%s", (_label, input, expected) => {
+    expect(stripYodl(input)).toBe(expected)
   })
 
   test("handles sitem list block without artefacts", () => {
@@ -111,30 +78,29 @@ describe("stripYodl", () => {
 })
 
 describe("normalizeDoc", () => {
-  test("renders yodl code quotes as markdown", () => {
-    expect(normalizeDoc("code followed by `&&' `||' does not trigger")).toBe(
+  test.each([
+    [
+      "code quotes → markdown",
+      "code followed by `&&' `||' does not trigger",
       "code followed by `&&` `||` does not trigger",
-    )
-  })
-
-  test("joins continued prose lines", () => {
-    expect(
-      normalizeDoc("Arithmetic Evaluation\\\n\nhas an explicit list."),
-    ).toBe("Arithmetic Evaluation has an explicit list.")
+    ],
+    [
+      "joins continued prose lines",
+      "Arithmetic Evaluation\\\n\nhas an explicit list.",
+      "Arithmetic Evaluation has an explicit list.",
+    ],
+  ])("%s", (_label, input, expected) => {
+    expect(normalizeDoc(input)).toBe(expected)
   })
 })
 
 describe("findBalancedClose", () => {
-  test("simple parens", () => {
-    expect(findBalancedClose("(abc)", 0)).toBe(4)
-  })
-
-  test("nested parens", () => {
-    expect(findBalancedClose("(a(b)c)", 0)).toBe(6)
-  })
-
-  test("unbalanced returns -1", () => {
-    expect(findBalancedClose("(abc", 0)).toBe(-1)
+  test.each([
+    ["(abc)", 0, 4],
+    ["(a(b)c)", 0, 6],
+    ["(abc", 0, -1],
+  ])("%s from %i → %i", (s, start, exp) => {
+    expect(findBalancedClose(s, start)).toBe(exp)
   })
 })
 

@@ -46,6 +46,7 @@ true if string matches pattern.
 
   describe("vendored cond.yo", () => {
     const ops = parseCondOps(COND_YO)
+    const byOp = new Map(ops.map((o) => [o.op as string, o]))
 
     test("parses a reasonable number of operators", () => {
       expect(ops.length).toBeGreaterThan(20)
@@ -58,25 +59,21 @@ true if string matches pattern.
     })
 
     test("contains known operators", () => {
-      const byOp = new Map(ops.map((o) => [o.op as string, o]))
       expect(byOp.has("-a")).toBe(true)
       expect(byOp.has("-f")).toBe(true)
       expect(byOp.has("-nt")).toBe(true)
       expect(byOp.has("=~")).toBe(true)
     })
 
-    test("unary operators have correct kind", () => {
-      const byOp = new Map(ops.map((o) => [o.op as string, o]))
-      expect(byOp.get("-a")?.kind).toBe("unary")
-      expect(byOp.get("-f")?.kind).toBe("unary")
-      expect(byOp.get("-z")?.kind).toBe("unary")
-    })
-
-    test("binary operators have correct kind", () => {
-      const byOp = new Map(ops.map((o) => [o.op as string, o]))
-      expect(byOp.get("-nt")?.kind).toBe("binary")
-      expect(byOp.get("-eq")?.kind).toBe("binary")
-      expect(byOp.get("=~")?.kind).toBe("binary")
+    test.each([
+      ["-a", "unary"],
+      ["-f", "unary"],
+      ["-z", "unary"],
+      ["-nt", "binary"],
+      ["-eq", "binary"],
+      ["=~", "binary"],
+    ])("vendored %s is %s", (op, kind) => {
+      expect(byOp.get(op)?.kind).toBe(kind)
     })
   })
 })
