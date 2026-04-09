@@ -54,6 +54,12 @@ The extension uses `zsh -f` only where actual shell execution is worth the host-
 - Mental model: "if we could bundle a zsh binary and run it in an isolated container, we would." We use system zsh only where execution is intrinsic, and otherwise prefer bundled/static knowledge for consistency, startup latency, and smaller security surface.
 - Environment-dependent introspection may later be offered through agent-facing tools (Language Model Tools API) where agents explicitly opt in, with clear caveats about side effects and env-specificity
 
+### External input boundaries
+
+- **Parse, don't validate** — at boundaries with external APIs (VS Code settings, filesystem, process env), parse raw values into domain types at the point of entry. Everything downstream operates on parsed domain types, never on raw values.
+- **Contain boundaries structurally** — the module that reads an external API is the sole reader. The module boundary *is* the policy. A `settings` module that is the only importer of `vscode.workspace.getConfiguration` is more durable than a comment saying "don't read settings elsewhere."
+- **Minimize the dangerous path** — the path from raw external input to the first strongly typed representation should be as short and contained as possible. Smart constructors at parse boundaries; no function should accept raw external values unless parsing is its explicit job.
+
 ### Hover docs
 
 - Prefer hover docs that explain actual zsh usage, not raw upstream doc notation
@@ -97,6 +103,7 @@ Semantic token design choices:
 - Prefer directory structure richness (subdirectories) — aids agentic discoverability and script-based navigation
 - When choosing between expressing intent through a concept/term vs generic description, prefer the term if it's well-chosen (cf. "facts")
 - When a concept or term is established (e.g. "facts"), use it consistently — prefer the established term over ad-hoc synonyms
+- Prefer expressing intent and constraints through code shape (module boundaries, types, function signatures) over comments or documentation — structural expression is self-enforcing; comments are advisory
 - Strengthen documentation through identifier names and JSDoc rather than separate documentation files
 - JSDocs on every exported identifier from `zsh-core` _is **not**_ a requirement - add JSDoc if it adds value beyond what function name + type signature already communicates
 
@@ -108,6 +115,8 @@ Semantic token design choices:
 - Short field names: `desc` not `description`, `op` not `operator`
 - If a value has a reason to be passed around (even potentially), give it its own type — puts documentation in the signature, enables shorter variable names, improves readability
 - `enum` is not used — literal unions + type aliases are preferred in this codebase
+- **Discriminated unions for state spaces** — prefer a single tagged union over scattered booleans/flags. Only represent states that consumers can observe; impossible states should be unrepresentable.
+- **Deferred computation over mutable tracking** — prefer `memoized`/`cached` (from `@carlwr/typescript-extra`) over boolean flags tracking "has this been done?". Memoization encapsulates the state; the thunk boundary replaces the flag.
 
 ### Other tools
 
@@ -139,6 +148,10 @@ Semantic token design choices:
 - Integration tests that depend on external tools (e.g., zsh on PATH) must skip gracefully when the tool is absent
 - The VS Code Electron test harness intentionally runs ALL tests (unit + integration) — unit tests re-running there serve as meta-tests under a richer harness
 - Functions that are "obviously correct" (general/simple enough) do not need unit tests
+
+### Container-only integration tests
+
+- `testINTERACTIVE:electron-zsh-path` (zsh-path-matrix) runs in CI/Docker only. On macOS, VS Code's shell environment resolution replaces test-injected PATH before the extension host activates, defeating environment isolation. With pure logic surfaced in unit-testable functions, container integration tests are a bonus layer over local coverage.
 
 **Reproducibility is important: any randomness must use a fixed, checked-in seed.**
 

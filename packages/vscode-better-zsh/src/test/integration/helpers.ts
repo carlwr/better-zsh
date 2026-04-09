@@ -1,9 +1,10 @@
+import * as assert from "node:assert"
 import { execFileSync } from "node:child_process"
 import * as fs from "node:fs/promises"
 import * as os from "node:os"
 import * as path from "node:path"
 import * as vscode from "vscode"
-import { ZSH_LANG_ID } from "../../ids"
+import { ZSH_DIAGNOSTIC_SOURCE, ZSH_LANG_ID } from "../../ids"
 
 const fixtureDir = path.resolve(__dirname, "../../../test-fixtures")
 
@@ -36,6 +37,66 @@ async function openDoc(uri: vscode.Uri, delay: number) {
   await vscode.window.showTextDocument(doc)
   await new Promise((r) => setTimeout(r, delay))
   return doc
+}
+
+export async function completionLabels(
+  doc: vscode.TextDocument,
+  pos: vscode.Position,
+) {
+  const items = await vscode.commands.executeCommand<vscode.CompletionList>(
+    "vscode.executeCompletionItemProvider",
+    doc.uri,
+    pos,
+  )
+  assert.ok(items, "expected completion result")
+  return items.items.map((i) =>
+    typeof i.label === "string" ? i.label : i.label.label,
+  )
+}
+
+export async function hoverText(
+  doc: vscode.TextDocument,
+  pos: vscode.Position,
+) {
+  const hovers =
+    (await vscode.commands.executeCommand<vscode.Hover[]>(
+      "vscode.executeHoverProvider",
+      doc.uri,
+      pos,
+    )) ?? []
+  assert.ok(hovers.length > 0, "expected hover")
+  return hovers
+    .flatMap((h) => h.contents)
+    .map((c) => (typeof c === "string" ? c : (c as { value: string }).value))
+    .join("\n\n")
+}
+
+export function zshDiagnostics(uri: vscode.Uri) {
+  return vscode.languages
+    .getDiagnostics(uri)
+    .filter((d) => d.source === ZSH_DIAGNOSTIC_SOURCE)
+}
+
+export async function waitForDiagnostics(
+  uri: vscode.Uri,
+  want: "some" | "none",
+  timeout = 6000,
+  stable = 500,
+) {
+  const start = Date.now()
+  let clearSince: number | undefined
+  while (Date.now() - start < timeout) {
+    const diags = zshDiagnostics(uri)
+    if (want === "some" && diags.length > 0) return diags
+    if (want === "none" && diags.length === 0) {
+      clearSince ??= Date.now()
+      if (Date.now() - clearSince >= stable) return diags
+    } else {
+      clearSince = undefined
+    }
+    await new Promise((r) => setTimeout(r, 100))
+  }
+  return zshDiagnostics(uri)
 }
 
 export async function withBadZdotdir<T>(f: () => Promise<T>): Promise<T> {

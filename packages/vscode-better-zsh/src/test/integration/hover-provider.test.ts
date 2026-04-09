@@ -1,23 +1,6 @@
 import * as assert from "node:assert"
 import * as vscode from "vscode"
-import { openText } from "./helpers"
-
-async function hoverText(doc: vscode.TextDocument, pos: vscode.Position) {
-  const hovers =
-    (await vscode.commands.executeCommand<vscode.Hover[]>(
-      "vscode.executeHoverProvider",
-      doc.uri,
-      pos,
-    )) ?? []
-  assert.ok(hovers.length > 0, "expected hover")
-  return hovers
-    .flatMap((h) => h.contents)
-    .map((c) => {
-      if (typeof c === "string") return c
-      return (c as { value: string }).value
-    })
-    .join("\n\n")
-}
+import { hoverText, openText } from "./helpers"
 
 suite("ZshHoverProvider", () => {
   test("shows builtin docs for command head", async () => {

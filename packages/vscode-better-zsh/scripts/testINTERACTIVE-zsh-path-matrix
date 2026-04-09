@@ -1,0 +1,68 @@
+#!/usr/bin/env zsh
+#
+# Container-only (CI/Docker). On macOS, VS Code's shell env resolution
+# ($SHELL -ilc env) replaces test-injected PATH before the extension host
+# activates, defeating environment isolation. Pure logic is unit-tested
+# locally; these integration tests are a bonus layer under genuine isolation.
+
+emulate -L zsh
+setopt errexit nounset pipefail
+
+if [[ ${1:-} == -- ]]; then
+  shift
+fi
+
+tmp=$(mktemp -d ${TMPDIR:-/tmp}/better-zsh-zsh-path.XXXXXX)
+trap 'rm -rf -- $tmp' EXIT
+
+missing=$tmp/missing-zsh
+pathless=$tmp/pathless
+mkdir -p $pathless
+
+real_zsh=${TEST_REAL_ZSH_PATH:-$(command -v zsh || true)}
+
+write_settings() {
+  local user_data=$1
+  local zsh_path=$2
+  node -e '
+    const fs = require("node:fs")
+    const path = require("node:path")
+    const userData = process.argv[1]
+    const zshPath = process.argv[2]
+    const settings = zshPath === "__unset__" ? {} : { "betterZsh.zshPath": zshPath }
+    const dir = path.join(userData, "User")
+    fs.mkdirSync(dir, { recursive: true })
+    fs.writeFileSync(path.join(dir, "settings.json"), `${JSON.stringify(settings, null, 2)}\n`)
+  ' "$user_data" "$zsh_path"
+}
+
+run_case() {
+  local name=$1
+  local zsh_path=$2
+  local path_override=$3
+  local expect_runtime=$4
+  local log_substr=$5
+  shift 5
+  local user_data=$tmp/$name/user-data
+
+  write_settings "$user_data" "$zsh_path"
+  print -r -- "zsh-path-matrix: $name"
+
+  BETTER_ZSH_MATRIX_CASE=$name                       \
+  BETTER_ZSH_MATRIX_EXPECT_RUNTIME=$expect_runtime  \
+  BETTER_ZSH_MATRIX_LOG_SUBSTR=$log_substr          \
+  BETTER_ZSH_MATRIX_PATH=$path_override             \
+  VSCODE_TEST_USER_DATA=$user_data                  \
+    vscode-test --label zsh-path-matrix "$@"
+}
+
+run_case off off "$PATH" false 'disabled via betterZsh.zshPath=off' "$@"
+run_case path-success __unset__ "$PATH" true "PATH lookup for zsh -> $real_zsh" "$@"
+run_case path-failure __unset__ "$pathless" false 'PATH lookup for zsh -> unresolved' "$@"
+run_case explicit-bad "$missing" "$PATH" false "configured path $missing (not found)" "$@"
+
+if [[ -n $real_zsh ]]; then
+  run_case explicit-good "$real_zsh" "$pathless" true "configured path $real_zsh" "$@"
+else
+  print -u2 -- 'zsh-path-matrix: skipping explicit-good (zsh not found on host)'
+fi

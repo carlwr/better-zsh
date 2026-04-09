@@ -15,29 +15,28 @@ import { setupDiagnostics } from "./diagnostics"
 import { DocLinkProvider } from "./doc-link"
 import { HighlightProvider } from "./highlight"
 import { HoverProvider } from "./hover"
-import { BETTER_ZSH_CONFIG, BETTER_ZSH_ZSH_PATH, ZSH_LANG_ID } from "./ids"
-import { initLog } from "./log"
+import {
+  BETTER_ZSH_TEST_GET_LOGS,
+  BETTER_ZSH_TEST_GET_SEMANTIC_TOKENS,
+  ZSH_LANG_ID,
+} from "./ids"
+import { initLog, recentLogs } from "./log"
 import { ReferenceProvider } from "./references"
 import { RenameProvider } from "./rename"
 import { SEMANTIC_LEGEND, SemanticTokensProvider } from "./semantic-tokens"
+import { readZshPathConfig, ZSH_PATH_KEY } from "./settings"
 import { SymbolProvider } from "./symbols"
 import { WorkspaceSymbolProvider } from "./workspace-symbols"
-import { setZshPath } from "./zsh"
-
-function readZshPathSetting(): string {
-  return vscode.workspace.getConfiguration(BETTER_ZSH_CONFIG).get("zshPath", "")
-}
+import { configureZsh } from "./zsh"
 
 export async function activate(ctx: vscode.ExtensionContext) {
   ctx.subscriptions.push(initLog())
 
-  // Read zsh path setting
-  setZshPath(readZshPathSetting())
+  configureZsh(readZshPathConfig())
   ctx.subscriptions.push(
     vscode.workspace.onDidChangeConfiguration((e) => {
-      if (e.affectsConfiguration(BETTER_ZSH_ZSH_PATH)) {
-        setZshPath(readZshPathSetting())
-      }
+      if (e.affectsConfiguration(ZSH_PATH_KEY))
+        configureZsh(readZshPathConfig())
     }),
   )
 
@@ -53,6 +52,7 @@ export async function activate(ctx: vscode.ExtensionContext) {
   const parsedReservedWords = getReservedWords()
   const parsedShellParams = getShellParams()
   const builtinNames = parsedBuiltins.map((builtin) => builtin.name as string)
+  const semanticTokensProvider = new SemanticTokensProvider(builtinNames)
 
   setupDiagnostics(ctx)
 
@@ -107,8 +107,26 @@ export async function activate(ctx: vscode.ExtensionContext) {
     ),
     vscode.languages.registerDocumentSemanticTokensProvider(
       ZSH_LANG_ID,
-      new SemanticTokensProvider(builtinNames),
+      semanticTokensProvider,
       SEMANTIC_LEGEND,
     ),
   )
+
+  if (process.env.VSCODE_TEST_OPTIONS) {
+    ctx.subscriptions.push(
+      vscode.commands.registerCommand(BETTER_ZSH_TEST_GET_LOGS, () =>
+        recentLogs(),
+      ),
+      vscode.commands.registerCommand(
+        BETTER_ZSH_TEST_GET_SEMANTIC_TOKENS,
+        async (uri: vscode.Uri) => {
+          const doc = await vscode.workspace.openTextDocument(uri)
+          const tokens = await Promise.resolve(
+            semanticTokensProvider.provideDocumentSemanticTokens(doc),
+          )
+          return [...(tokens?.data ?? [])]
+        },
+      ),
+    )
+  }
 }

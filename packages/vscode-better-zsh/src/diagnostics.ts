@@ -1,20 +1,13 @@
 import * as vscode from "vscode"
+import { ZSH_DIAGNOSTIC_SOURCE, ZSH_LANG_ID } from "./ids"
 import {
-  BETTER_ZSH_CONFIG,
-  BETTER_ZSH_DIAGNOSTICS_ENABLED,
-  BETTER_ZSH_ZSH_PATH,
-  ZSH_DIAGNOSTIC_SOURCE,
-  ZSH_LANG_ID,
-} from "./ids"
+  DIAGNOSTICS_ENABLED_KEY,
+  readDiagnosticsEnabled,
+  ZSH_PATH_KEY,
+} from "./settings"
 import { zshCheck } from "./zsh"
 
 const DEBOUNCE_MS = 500
-
-function isDiagnosticsEnabled(): boolean {
-  return vscode.workspace
-    .getConfiguration(BETTER_ZSH_CONFIG)
-    .get("diagnostics.enabled", true)
-}
 
 export function setupDiagnostics(ctx: vscode.ExtensionContext) {
   const dc = vscode.languages.createDiagnosticCollection(ZSH_DIAGNOSTIC_SOURCE)
@@ -22,7 +15,7 @@ export function setupDiagnostics(ctx: vscode.ExtensionContext) {
 
   async function lint(doc: vscode.TextDocument) {
     if (doc.languageId !== ZSH_LANG_ID) return
-    if (!isDiagnosticsEnabled()) {
+    if (!readDiagnosticsEnabled()) {
       dc.set(doc.uri, [])
       return
     }
@@ -75,10 +68,10 @@ export function setupDiagnostics(ctx: vscode.ExtensionContext) {
     vscode.workspace.onDidChangeTextDocument((e) => lintDebounced(e.document)),
     vscode.workspace.onDidChangeConfiguration((e) => {
       if (
-        e.affectsConfiguration(BETTER_ZSH_DIAGNOSTICS_ENABLED) ||
-        e.affectsConfiguration(BETTER_ZSH_ZSH_PATH)
+        e.affectsConfiguration(DIAGNOSTICS_ENABLED_KEY) ||
+        e.affectsConfiguration(ZSH_PATH_KEY)
       ) {
-        if (!isDiagnosticsEnabled()) dc.clear()
+        if (!readDiagnosticsEnabled()) dc.clear()
         else for (const doc of vscode.workspace.textDocuments) lint(doc)
       }
     }),

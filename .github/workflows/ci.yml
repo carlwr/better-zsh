@@ -53,4 +53,7 @@ jobs:
             xvfb \
             zsh
       - run: xvfb-run -a pnpm testINTERACTIVE:electron
+      # zsh-path-matrix: container-only (VS Code's shell env resolution
+      # defeats PATH isolation on macOS). No npm script — CI-exclusive.
+      - run: xvfb-run -a pnpm --filter better-zsh exec -- bash -c 'pnpm build && tsc -p tsconfig.vscode-test.json && scripts/testINTERACTIVE-zsh-path-matrix'
       - run: xvfb-run -a pnpm testINTERACTIVE:electron-bundled

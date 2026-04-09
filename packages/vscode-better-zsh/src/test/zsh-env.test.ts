@@ -1,8 +1,9 @@
 import * as assert from "node:assert"
+import { mkZshBinary } from "../ids"
+import { parseZshPath, type ZshPathConfig } from "../settings"
 import {
   buildZshEnv,
-  isZshDisabled,
-  setZshPath,
+  configureZsh,
   zshAvailable,
   zshCheck,
   zshTokenize,
@@ -43,21 +44,69 @@ suite("buildZshEnv", () => {
   })
 })
 
-suite("zsh disabled mode", () => {
-  test("short-circuits runtime zsh features when path is off", async () => {
-    setZshPath("off")
+suite("parseZshPath", () => {
+  test("off → disabled", () => {
+    assert.deepStrictEqual(parseZshPath("off"), { kind: "disabled" })
+  })
+
+  test("empty → default with 'zsh' binary", () => {
+    const r = parseZshPath("")
+    assert.strictEqual(r.kind, "default")
+    assert.strictEqual((r as { binary: string }).binary, "zsh")
+  })
+
+  test("explicit path → explicit", () => {
+    const r = parseZshPath("/usr/local/bin/zsh")
+    assert.strictEqual(r.kind, "explicit")
+    assert.strictEqual((r as { binary: string }).binary, "/usr/local/bin/zsh")
+  })
+})
+
+suite("zsh mode gating", () => {
+  const disabled: ZshPathConfig = { kind: "disabled" }
+  const explicitBad: ZshPathConfig = {
+    kind: "explicit",
+    binary: mkZshBinary("/nonexistent/zsh-binary"),
+  }
+
+  test("disabled config gates runtime features", async () => {
+    configureZsh(disabled)
     try {
-      assert.strictEqual(isZshDisabled(), true)
       assert.strictEqual(await zshAvailable(), false)
       assert.deepStrictEqual(await zshTokenize("echo hi"), [])
       assert.deepStrictEqual(await zshCheck("if"), { ok: "unavailable" })
     } finally {
-      setZshPath("")
+      configureZsh(parseZshPath(""))
+    }
+  })
+
+  test("explicit non-existent path gates runtime features", async () => {
+    configureZsh(explicitBad)
+    try {
+      assert.strictEqual(await zshAvailable(), false)
+      assert.deepStrictEqual(await zshTokenize("echo hi"), [])
+      assert.deepStrictEqual(await zshCheck("if"), { ok: "unavailable" })
+    } finally {
+      configureZsh(parseZshPath(""))
+    }
+  })
+
+  test("empty PATH gates runtime features", async () => {
+    const origPath = process.env.PATH
+    process.env.PATH = ""
+    configureZsh(parseZshPath(""))
+    try {
+      assert.strictEqual(await zshAvailable(), false)
+      assert.deepStrictEqual(await zshTokenize("echo hi"), [])
+      assert.deepStrictEqual(await zshCheck("if"), { ok: "unavailable" })
+    } finally {
+      process.env.PATH = origPath
+      configureZsh(parseZshPath(""))
     }
   })
 
   test("reports syntax errors when zsh is available", async () => {
-    setZshPath("")
+    configureZsh(parseZshPath(""))
     if (!(await zshAvailable())) return
     const r = await zshCheck("echo hello\nif then\necho world\n")
     assert.strictEqual(r.ok, false)

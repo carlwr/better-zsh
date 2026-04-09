@@ -12,6 +12,14 @@ const launchArgs = ({ extDir, userData }) => [
   ...(userData ? [`--user-data-dir=${userData}`] : []),
 ]
 
+const zshPathMatrixEnv = {
+  BETTER_ZSH_MATRIX_CASE: process.env.BETTER_ZSH_MATRIX_CASE,
+  BETTER_ZSH_MATRIX_EXPECT_RUNTIME:
+    process.env.BETTER_ZSH_MATRIX_EXPECT_RUNTIME,
+  BETTER_ZSH_MATRIX_LOG_SUBSTR: process.env.BETTER_ZSH_MATRIX_LOG_SUBSTR,
+  PATH: process.env.BETTER_ZSH_MATRIX_PATH || process.env.PATH,
+}
+
 export default defineConfig([
   {
     label: "integration",
@@ -20,6 +28,16 @@ export default defineConfig([
       extDir: testExtDir,
       userData: testUserData,
     }),
+  },
+  {
+    label: "zsh-path-matrix",
+    files: ".vscode-test/**/test/zsh-path-matrix/**/*.test.js",
+    launchArgs: launchArgs({
+      extDir: testExtDir,
+      userData: testUserData,
+    }),
+    env: zshPathMatrixEnv,
+    mocha: { timeout: 30000 },
   },
   ...(extDir && stubDir && userData
     ? [
