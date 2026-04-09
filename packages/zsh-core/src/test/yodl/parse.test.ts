@@ -1,15 +1,14 @@
 import fc from "fast-check"
 import { describe, expect, test } from "vitest"
 import {
-  collectAliasedItems,
+  collectAliasedEntries,
   extractItemList,
   extractItems,
   extractSectionBody,
   extractSections,
-  findBalancedClose,
-  normalizeDoc,
-  stripYodl,
-} from "../../yodl/parse"
+} from "../../yodl/core/doc"
+import { parseNodes } from "../../yodl/core/nodes"
+import { normalizeDoc, stripYodl } from "../../yodl/core/text"
 
 describe("stripYodl", () => {
   test.each([
@@ -94,23 +93,29 @@ describe("normalizeDoc", () => {
   })
 })
 
-describe("findBalancedClose", () => {
-  test.each([
-    ["(abc)", 0, 4],
-    ["(a(b)c)", 0, 6],
-    ["(abc", 0, -1],
-  ])("%s from %i → %i", (s, start, exp) => {
-    expect(findBalancedClose(s, start)).toBe(exp)
+describe("parseNodes", () => {
+  test("parses adjacent macros without rescanning glitches", () => {
+    expect(stripYodl(parseNodes("tt(${)var(n)PLUS()1tt(})"))).toBe("${n+1}")
+  })
+
+  test("keeps literal parens inside macro args balanced", () => {
+    const items = extractItems(`item(tt(AUTO_CD) (tt(-J)))(desc)`)
+    expect(stripYodl(items[0]?.header ?? [])).toBe("AUTO_CD (-J)")
   })
 })
 
 describe("extractSections", () => {
   test("extracts sect and subsect", () => {
     const yo = "sect(Main)\nsome text\nsubsect(Sub One)\nmore text"
-    const secs = extractSections(yo)
-    expect(secs).toEqual([
-      { level: "sect", name: "Main", line: 0 },
-      { level: "subsect", name: "Sub One", line: 2 },
+    expect(
+      extractSections(yo).map((sec) => ({
+        level: sec.level,
+        name: sec.name,
+        body: stripYodl(sec.body),
+      })),
+    ).toEqual([
+      { level: "sect", name: "Main", body: "some text" },
+      { level: "subsect", name: "Sub One", body: "more text" },
     ])
   })
 })
@@ -123,8 +128,8 @@ body text
 )`
     const items = extractItems(yo)
     expect(items).toHaveLength(1)
-    expect(items[0]?.header).toBe("tt(FOO)")
-    expect(items[0]?.body).toBe("body text\n")
+    expect(stripYodl(items[0]?.header ?? [])).toBe("FOO")
+    expect(stripYodl(items[0]?.body ?? [])).toBe("body text")
     expect(items[0]?.section).toBe("Cat")
   })
 
@@ -133,7 +138,7 @@ body text
 xitem(tt(BAR))`
     const items = extractItems(yo)
     expect(items).toHaveLength(1)
-    expect(items[0]?.header).toBe("tt(BAR)")
+    expect(stripYodl(items[0]?.header ?? [])).toBe("BAR")
     expect(items[0]?.body).toBeUndefined()
   })
 
@@ -159,9 +164,26 @@ desc
 enditem()
 )
 enditem()`
-    expect(extractItems(yo).map((item) => item.header)).toEqual(["tt(outer)"])
-    expect(extractItemList(yo).map((item) => item.header)).toEqual([
-      "tt(outer)",
+    expect(extractItems(yo).map((item) => stripYodl(item.header))).toEqual([
+      "outer",
+    ])
+    expect(extractItemList(yo).map((item) => stripYodl(item.header))).toEqual([
+      "outer",
+    ])
+  })
+
+  test("depth filter excludes nested bodyful items", () => {
+    const yo = `startitem()
+item(tt(outer))(
+startitem()
+item(tt(inner))(
+desc
+)
+enditem()
+)
+enditem()`
+    expect(extractItems(yo, 1).map((item) => stripYodl(item.header))).toEqual([
+      "outer",
     ])
   })
 
@@ -187,22 +209,21 @@ enditem()`
 describe("extractSectionBody", () => {
   test("returns the lines between matching section headers", () => {
     const yo = "sect(One)\na\nsubsect(Two)\nb\nsect(Three)\nc"
-    expect(extractSectionBody(yo, "Two")).toBe("b")
+    expect(stripYodl(extractSectionBody(yo, "Two"))).toBe("b")
   })
 })
 
-describe("collectAliasedItems", () => {
+describe("collectAliasedEntries", () => {
   test("groups xitems with the following item", () => {
-    const grouped = collectAliasedItems(
+    const grouped = collectAliasedEntries(
       extractItems(`xitem(tt(alias))\nitem(tt(main))(desc)`),
       (header) => stripYodl(header),
     )
-    expect(grouped).toEqual([
-      {
-        head: "main",
-        aliases: ["alias"],
-        item: { header: "tt(main)", body: "desc", section: "" },
-      },
-    ])
+    expect(grouped).toHaveLength(1)
+    expect(grouped[0]?.head).toBe("main")
+    expect(grouped[0]?.aliases).toEqual(["alias"])
+    expect(stripYodl(grouped[0]?.entry.header ?? [])).toBe("main")
+    expect(stripYodl(grouped[0]?.entry.body ?? [])).toBe("desc")
+    expect(grouped[0]?.entry.section).toBe("")
   })
 })

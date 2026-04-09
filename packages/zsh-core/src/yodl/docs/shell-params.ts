@@ -1,10 +1,10 @@
-import type { ShellParamDoc } from "../types/zsh-data.ts"
+import type { ShellParamDoc } from "../../types/zsh-data.ts"
 import {
   extractFirstList,
   extractItemList,
-  extractTokens,
-  normalizeBody,
-} from "./parse.ts"
+  extractSectionBody,
+} from "../core/doc.ts"
+import { extractTokens, normalizeBody, stripYodl } from "../core/text.ts"
 
 const PARAM_SECTIONS = [
   "Parameters Set By The Shell",
@@ -21,12 +21,10 @@ export function parseShellParams(yo: string): ShellParamDoc[] {
 }
 
 function parseParamSection(
-  yo: string,
+  yo: Parameters<typeof extractFirstList>[0],
   section: (typeof PARAM_SECTIONS)[number],
 ) {
-  const start = yo.indexOf(`sect(${section})`)
-  if (start === -1) return []
-  const list = extractFirstList(yo.slice(start), "item")
+  const list = extractFirstList(extractSectionBody(yo, section), "item")
   if (!list) return []
 
   const items = extractItemList(list)
@@ -60,7 +58,7 @@ function parseParamSection(
   return out
 }
 
-function parseHeads(header: string): ParamHead[] {
+function parseHeads(header: Parameters<typeof extractTokens>[0]): ParamHead[] {
   const names = extractTokens(header)
     .filter((tok) => tok.kind === "tt")
     .map((tok) => tok.text.trim())
@@ -68,10 +66,18 @@ function parseHeads(header: string): ParamHead[] {
 
   const [name, tied] = names
   if (!name) return []
-  if (!tied || !header.includes("(tt(")) return [{ name }]
+  if (
+    !tied ||
+    !new RegExp(`\\(${escapeRe(tied)}(?:\\s|\\))`).test(stripYodl(header))
+  )
+    return [{ name }]
 
   return [
     { name, tied },
     { name: tied, tied: name },
   ]
+}
+
+function escapeRe(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
 }

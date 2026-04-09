@@ -1,13 +1,12 @@
-import type { HistoryDoc, HistoryKind } from "../types/zsh-data.ts"
+import type { HistoryDoc, HistoryKind } from "../../types/zsh-data.ts"
 import {
   extractFirstList,
   extractItemList,
   extractSectionBody,
   extractSitemList,
-  flattenAliased,
-  normalizeBody,
-  normalizeHeader,
-} from "./parse.ts"
+  flattenAliasedEntries,
+} from "../core/doc.ts"
+import { normalizeBody, normalizeHeader } from "../core/text.ts"
 
 export function parseHistory(yo: string): HistoryDoc[] {
   return [
@@ -18,14 +17,14 @@ export function parseHistory(yo: string): HistoryDoc[] {
 }
 
 function parseSection(
-  yo: string,
+  yo: Parameters<typeof extractSectionBody>[0],
   section: string,
   kind: HistoryKind,
 ): HistoryDoc[] {
   const body = extractSectionBody(yo, section)
   const list = extractFirstList(body, "item")
   if (!list) return []
-  return flattenAliased(
+  return flattenAliasedEntries(
     extractItemList(list),
     normalizeHeader,
     (key, desc) => ({ kind, key, sig: key, desc, section }),

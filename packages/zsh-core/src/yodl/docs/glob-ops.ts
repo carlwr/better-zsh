@@ -1,10 +1,10 @@
-import type { GlobOpDoc } from "../types/zsh-data.ts"
+import type { GlobOpDoc } from "../../types/zsh-data.ts"
 import {
   extractItems,
   extractSectionBody,
-  flattenAliased,
-  normalizeHeader,
-} from "./parse.ts"
+  flattenAliasedEntries,
+} from "../core/doc.ts"
+import { normalizeHeader } from "../core/text.ts"
 
 export function parseGlobOps(yo: string): GlobOpDoc[] {
   return [
@@ -16,8 +16,11 @@ export function parseGlobOps(yo: string): GlobOpDoc[] {
   ]
 }
 
-function parseSection(section: string, name: string): GlobOpDoc[] {
-  return flattenAliased(
+function parseSection(
+  section: Parameters<typeof extractItems>[0],
+  name: string,
+): GlobOpDoc[] {
+  return flattenAliasedEntries(
     extractItems(section, 1),
     normalizeHeader,
     (op, desc) => ({ op, sig: op, desc, section: name }),

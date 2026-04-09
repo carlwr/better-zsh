@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs"
 import { resolve } from "node:path"
 import { describe, expect, test } from "vitest"
 import { mkBuiltinName } from "../../types/brand"
-import { parseBuiltins } from "../../yodl/builtins"
+import { parseBuiltins } from "../../yodl/docs/builtins"
 
 const BUILTINS_YO = readFileSync(
   resolve(__dirname, "../../data/zsh-docs/builtins.yo"),
@@ -36,6 +36,29 @@ enditem()`
     ])
     expect(docs[0]?.aliasOf).toBe(mkBuiltinName("exit"))
     expect(docs[1]?.module).toBe("zsh/zutil")
+  })
+
+  test("attaches continuation xitems to each synopsis head", () => {
+    const yo = `startitem()
+xitem(tt(foo) [ var(one) ])
+xitem(SPACES()[ var(two) ])
+item(tt(bar) [ var(three) ])(
+Shared description.
+)
+enditem()`
+    const docs = parseBuiltins(yo)
+    expect(docs).toEqual([
+      {
+        name: mkBuiltinName("foo"),
+        synopsis: ["foo [ one ]", "[ two ]"],
+        desc: "Shared description.",
+      },
+      {
+        name: mkBuiltinName("bar"),
+        synopsis: ["bar [ three ]", "[ two ]"],
+        desc: "Shared description.",
+      },
+    ])
   })
 
   describe("vendored builtins.yo", () => {

@@ -1,5 +1,6 @@
-import type { PrecmdDoc, PrecmdName } from "../types/zsh-data.ts"
-import { extractItems, normalizeBody, normalizeHeader } from "./parse.ts"
+import type { PrecmdDoc, PrecmdName } from "../../types/zsh-data.ts"
+import { extractItems } from "../core/doc.ts"
+import { normalizeBody, normalizeHeader } from "../core/text.ts"
 
 const PRECMDS = new Set<PrecmdName>([
   "-",

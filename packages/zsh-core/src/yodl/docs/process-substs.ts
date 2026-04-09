@@ -1,5 +1,5 @@
-import type { ProcessSubstDoc } from "../types/zsh-data.ts"
-import { extractSectionBody } from "./parse.ts"
+import type { ProcessSubstDoc } from "../../types/zsh-data.ts"
+import { extractSectionBody } from "../core/doc.ts"
 
 const DOCS = [
   {
@@ -20,7 +20,7 @@ const DOCS = [
 ] as const
 
 export function parseProcessSubsts(yo: string): ProcessSubstDoc[] {
-  return extractSectionBody(yo, "Process Substitution")
+  return extractSectionBody(yo, "Process Substitution").length > 0
     ? DOCS.map((doc) => ({ ...doc, section: "Process Substitution" }))
     : []
 }

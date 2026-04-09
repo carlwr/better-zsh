@@ -22,19 +22,19 @@ import type {
   SubscriptFlagDoc,
   ZshOption,
 } from "./types/zsh-data.ts"
-import { parseBuiltins } from "./yodl/builtins.ts"
-import { parseCondOps } from "./yodl/cond-ops.ts"
-import { parseGlobOps } from "./yodl/glob-ops.ts"
-import { parseGlobbingFlags } from "./yodl/globbing-flags.ts"
-import { parseHistory } from "./yodl/history.ts"
-import { parseOptions } from "./yodl/options.ts"
-import { parseParamFlags } from "./yodl/param-flags.ts"
-import { parsePrecmds } from "./yodl/precmds.ts"
-import { parseProcessSubsts } from "./yodl/process-subst.ts"
-import { parseRedirections } from "./yodl/redirections.ts"
-import { parseReservedWords } from "./yodl/reserved-words.ts"
-import { parseShellParams } from "./yodl/shell-params.ts"
-import { parseSubscriptFlags } from "./yodl/subscript-flags.ts"
+import { parseBuiltins } from "./yodl/docs/builtins.ts"
+import { parseCondOps } from "./yodl/docs/cond-ops.ts"
+import { parseGlobOps } from "./yodl/docs/glob-ops.ts"
+import { parseGlobbingFlags } from "./yodl/docs/globbing-flags.ts"
+import { parseHistory } from "./yodl/docs/history.ts"
+import { parseOptions } from "./yodl/docs/options.ts"
+import { parseParamFlags } from "./yodl/docs/param-flags.ts"
+import { parsePrecmds } from "./yodl/docs/precmds.ts"
+import { parseProcessSubsts } from "./yodl/docs/process-substs.ts"
+import { parseRedirections } from "./yodl/docs/redirections.ts"
+import { parseReservedWords } from "./yodl/docs/reserved-words.ts"
+import { parseShellParams } from "./yodl/docs/shell-params.ts"
+import { parseSubscriptFlags } from "./yodl/docs/subscript-flags.ts"
 
 const dataDir = resolveZshDataDir()
 

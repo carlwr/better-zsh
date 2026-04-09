@@ -32,6 +32,14 @@ zsh-core ships vendored Yodl (`.yo`) documentation files from the zsh upstream p
 
 Routes 1 and 2 contain the same information in different forms. Route 3 is the raw source that feeds route 1. For live hover/completion docs, the extension uses parsed doc records plus the markdown render helpers (`mdOpt()`, `mdBuiltin()`, etc.); the bulk `hoverDocs()` corpus is for dump/dev tooling rather than the live hover path.
 
+### Yodl parsing layout
+
+`zsh-core`'s Yodl parsing is intentionally split into layers:
+- `src/yodl/core/` — shared machinery only: macro-node parsing, section/list/entry structure, and text rendering/token extraction
+- `src/yodl/docs/` — vendored-corpus extractors that map the shared Yodl representation to zsh doc records
+
+Keep low-level parsing rules in the core layer. Keep corpus-specific interpretation in the docs layer. Doc extractors should not drift back toward ad hoc rescanning of raw Yodl strings.
+
 ### Providers
 
 VS Code provider classes that wire zsh-core analysis and doc records to language features (hover, completions, semantic tokens, etc.). Reusable parsing/rendering logic should live in pure functions; some provider-local dispatch/lookup logic still lives in the provider modules.

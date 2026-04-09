@@ -45,10 +45,11 @@ These describe **which directories** to look in, not specific files. Use the dis
 3. Tests: `packages/zsh-core/src/test/analysis/` — behavioral contract and known limitations (check the bottom of the cmd-position test for a "Known limitations" comment block)
 
 ### zsh-core: Yodl parsing / hover docs
-1. `packages/zsh-core/src/yodl/` — all Yodl parsers, including the shared macro parser
-2. `packages/zsh-core/src/` root — hover markdown rendering
-3. Tests: `packages/zsh-core/src/test/yodl/`
-4. Inspect parsed build artifacts: `ls packages/zsh-core/dist/json/` (generated at build time; useful for inspection, but the extension's live runtime path currently reads copied `.yo` data)
+1. `packages/zsh-core/src/yodl/core/` — shared Yodl machinery: macro-node parsing, structural extraction, and text/token rendering
+2. `packages/zsh-core/src/yodl/docs/` — corpus-specific extractors that map the shared Yodl representation to zsh doc records
+3. `packages/zsh-core/src/` root — hover markdown rendering and runtime loaders
+4. Tests: `packages/zsh-core/src/test/yodl/`
+5. Inspect parsed build artifacts: `ls packages/zsh-core/dist/json/` (generated at build time; useful for inspection, but the extension's live runtime path currently reads copied `.yo` data)
 
 ### extension: providers (hover, completions, semantic tokens, etc.)
 1. `packages/vscode-better-zsh/src/` — each provider is a separate file; run `bash skills/orient/scripts/providers.sh` to see them all
@@ -78,7 +79,9 @@ rg "^export" --type ts packages/zsh-core/src/yodl/
 
 ## Key gotchas
 
-**Yodl `stripYodl` ordering:** `sitem(` contains the substring `em(`, so `startsitem`/`sitem` must be stripped *before* the `em()` wrapper loop. Violating this produces garbled output. See the comment in the shared Yodl parser in `packages/zsh-core/src/yodl/`.
+**Yodl macro args can contain literal parentheses:** a `)` only closes the current macro arg when it closes the outermost level. This matters for corpus forms like `tt(AUTO_CD) (tt(-J))`.
+
+**Yodl macro detection allows digit-adjacent macros:** the vendored docs contain forms like `1tt(})`, so a preceding digit must not suppress macro parsing even though a preceding letter or underscore should.
 
 **`{`/`}` reserved-word facts are filtered out** in the semantic token provider (intentional). `((` / `))` are not filtered and get `keyword` tokens. Adding a new token type requires a matching `semanticTokenScopes` entry in `package.json`.
 

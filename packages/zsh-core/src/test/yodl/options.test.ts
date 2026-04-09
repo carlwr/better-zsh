@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs"
 import { resolve } from "node:path"
 import { describe, expect, test } from "vitest"
 import { mkOptFlagChar, mkOptName } from "../../types/brand"
-import { parseOptions } from "../../yodl/options"
+import { parseOptions } from "../../yodl/docs/options"
 
 const OPTS_YO = readFileSync(
   resolve(__dirname, "../../data/zsh-docs/options.yo"),
@@ -57,6 +57,23 @@ Make cd and pushd behave POSIX-like.
     expect(opts[0]?.defaultIn).toEqual(["ksh", "sh"])
   })
 
+  test("keeps distinct short flags from header and default-set aliases", () => {
+    const yo = `subsect(Job Control)
+item(tt(NOTIFY) (tt(-5), ksh: tt(-b)) <Z>)(
+Report status of background jobs immediately.
+)
+subsect(Default set)
+startsitem()
+sitem(tt(-5))(NOTIFY)
+endsitem()`
+    const opts = parseOptions(yo)
+    expect(opts).toHaveLength(1)
+    expect(opts[0]?.flags).toEqual([
+      { char: mkOptFlagChar("5"), on: "-" },
+      { char: mkOptFlagChar("b"), on: "-" },
+    ])
+  })
+
   describe("vendored options.yo", () => {
     const opts = parseOptions(OPTS_YO)
     const byName = new Map(opts.map((o) => [o.name, o]))
@@ -104,6 +121,14 @@ Make cd and pushd behave POSIX-like.
       ])
       expect(byName.get(mkOptName("GLOBAL_RCS"))?.flags).toEqual([
         { char: mkOptFlagChar("d"), on: "+" },
+      ])
+      expect(byName.get(mkOptName("MARK_DIRS"))?.flags).toEqual([
+        { char: mkOptFlagChar("8"), on: "-" },
+        { char: mkOptFlagChar("X"), on: "-" },
+      ])
+      expect(byName.get(mkOptName("NOTIFY"))?.flags).toEqual([
+        { char: mkOptFlagChar("5"), on: "-" },
+        { char: mkOptFlagChar("b"), on: "-" },
       ])
     })
 

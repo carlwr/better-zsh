@@ -1,22 +1,20 @@
-import type { GlobbingFlagDoc } from "../types/zsh-data.ts"
+import type { GlobbingFlagDoc } from "../../types/zsh-data.ts"
 import {
   extractFirstList,
   extractItemList,
-  extractSection,
-  extractTokens,
-  normalizeDoc,
-  stripYodl,
-  type YodlItem,
-} from "./parse.ts"
-import { sigText } from "./syntax.ts"
+  extractSectionBody,
+  type YodlEntry,
+} from "../core/doc.ts"
+import { extractTokens, normalizeBody } from "../core/text.ts"
+import { flagSigText } from "./flag-section.ts"
 
-function bodyDoc(item: YodlItem): string | undefined {
-  return item.body ? normalizeDoc(stripYodl(item.body)) : undefined
+function bodyDoc(item: YodlEntry): string | undefined {
+  return item.body ? normalizeBody(item.body) : undefined
 }
 
 export function parseGlobbingFlags(yo: string): GlobbingFlagDoc[] {
-  const sec = extractSection(yo, "Globbing Flags")
-  const list = sec && extractFirstList(sec, "item")
+  const sec = extractSectionBody(yo, "Globbing Flags")
+  const list = extractFirstList(sec, "item")
   if (!list) return []
 
   return extractItemList(list).flatMap((item) => {
@@ -26,7 +24,7 @@ export function parseGlobbingFlags(yo: string): GlobbingFlagDoc[] {
     const toks = extractTokens(item.header)
     const tt = toks.filter((tok) => tok.kind === "tt").map((tok) => tok.text)
     const vars = toks.filter((tok) => tok.kind === "var").map((tok) => tok.text)
-    const sig = sigText(item.header)
+    const sig = flagSigText(item.header)
 
     if (vars.length === 0 && tt.length > 1) {
       return tt.map(
