@@ -23,6 +23,7 @@ export function readLines(doc: DocLike): string[] {
   return out
 }
 
+// Each line separator counts as 1 char (\r\n not supported — intentional).
 export function lineStarts(lines: readonly string[]): number[] {
   const out: number[] = []
   let off = 0
@@ -49,6 +50,23 @@ export function hasOffset(
 
 export function factText(doc: DocLike, span: TextSpan): string {
   return readLines(doc).join("\n").slice(span.start, span.end)
+}
+
+/** Join continuation lines: strips trailing `\`, trims each piece, joins with space. */
+export function continuedText(
+  lines: readonly string[],
+  start: number,
+  end: number,
+): string {
+  return lines
+    .slice(start, end + 1)
+    .map((line) =>
+      activeText(line)
+        .replace(/\\\s*$/, "")
+        .trim(),
+    )
+    .join(" ")
+    .trim()
 }
 
 export function continuedLineBlock(

@@ -72,6 +72,13 @@ The extension uses `zsh -f` only where actual shell execution is worth the host-
 - **Contain boundaries structurally** — the module that reads an external API is the sole reader. The module boundary *is* the policy. A `settings` module that is the only importer of `vscode.workspace.getConfiguration` is more durable than a comment saying "don't read settings elsewhere."
 - **Minimize the dangerous path** — the path from raw external input to the first strongly typed representation should be as short and contained as possible. Smart constructors at parse boundaries; no function should accept raw external values unless parsing is its explicit job.
 
+### Surface invariants in code
+
+- State variables in scanning loops: document with a brief declaration comment (e.g. `// expectCmd: true when next token is in command position`)
+- "Obviously correct islands" — pure, strongly-typed, narrow-scope helpers that are correct by construction — are the preferred unit of non-trivial logic
+- Prefer structural enforcement of invariants over advisory comments (branded types, `ReadonlySet`, smart constructors) — structural constraints are self-enforcing; comments are advisory
+- Evaluate zsh-core's public API surface from a **general-consumer perspective**, not just from what the extension uses — exported types and fields that appear unused by the extension may still be part of the public contract
+
 ### Hover docs
 
 - Prefer hover docs that explain actual zsh usage, not raw upstream doc notation
@@ -129,6 +136,7 @@ Semantic token design choices:
 - `enum` is not used — literal unions + type aliases are preferred in this codebase
 - **Discriminated unions for state spaces** — prefer a single tagged union over scattered booleans/flags. Only represent states that consumers can observe; impossible states should be unrepresentable.
 - **Deferred computation over mutable tracking** — prefer `memoized`/`cached` (from `@carlwr/typescript-extra`) over boolean flags tracking "has this been done?". Memoization encapsulates the state; the thunk boundary replaces the flag.
+- Module-level constants that are `Set`/`Map` and must never be mutated should carry `ReadonlySet<T>`/`ReadonlyMap<K,V>` type annotations — structural enforcement over advisory comments.
 
 ### Other tools
 
@@ -156,6 +164,7 @@ Semantic token design choices:
 - Unit tests should not be skipped just because integration tests cover the same area
 - Integration tests may and should overlap with unit tests — they exercise a richer harness
 - Tests must be well-abstracted and concise — every test should carry its weight
+- When many cases share the same arrange/act/assert shape, prefer Vitest's `test.each` / `describe.each` (table-driven tests). Not a universal rule: one-off scenarios, tests with heavy per-case setup, or cases where a standalone `test("…")` reads more clearly are fine without `.each`
 - Pure logic (parsing, filtering, text analysis) should always have unit tests independent of external dependencies (zsh, VS Code APIs)
 - Integration tests that depend on external tools (e.g., zsh on PATH) must skip gracefully when the tool is absent
 - The VS Code Electron test harness intentionally runs ALL tests (unit + integration) — unit tests re-running there serve as meta-tests under a richer harness

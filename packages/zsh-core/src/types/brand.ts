@@ -17,6 +17,7 @@ function trim(raw: string): string {
   return raw.trim()
 }
 
+// idempotent; strips underscores, lowercases — `mkOptName` is safe to call on already-normalized input
 function normalizeOptName(raw: string): string {
   return raw.replace(/_/g, "").toLowerCase()
 }
@@ -26,6 +27,7 @@ export function mkOptName(raw: string): OptName {
   return normalizeOptName(raw) as OptName
 }
 
+// strips leading `no`/`no_` prefix so negated options resolve to their base canonical name
 /** Smart constructor for option tokens that may use zsh's `no_` negation prefix. */
 export function mkOptLookupName(raw: string): OptName {
   return mkOptName(raw.replace(/^no_?/i, ""))

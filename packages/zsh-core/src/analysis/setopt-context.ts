@@ -1,6 +1,7 @@
 import {
   activeText,
   continuedLineBlock,
+  continuedText,
   type DocLike,
   readLines,
 } from "./doc.ts"
@@ -19,14 +20,6 @@ export function isSetoptContext(doc: DocLike, line: number): boolean {
   const block = continuedLineBlock(lines, line)
   const head = firstCmdHeadOnLine(activeText(lines[block.start] ?? ""))
   if (!head || head.precmds.includes("command")) return false
-  const text = lines
-    .slice(block.start, block.end + 1)
-    .map((text) =>
-      activeText(text)
-        .replace(/\\\s*$/, "")
-        .trim(),
-    )
-    .join(" ")
-    .trim()
+  const text = continuedText(lines, block.start, block.end)
   return isSetoptCommandText(text.slice(head.span.start))
 }

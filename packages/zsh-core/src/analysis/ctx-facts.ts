@@ -3,6 +3,7 @@ import {
   absSpan,
   activeText,
   continuedLineBlock,
+  continuedText,
   type TextSpan,
 } from "./doc.ts"
 import type { CtxFact, FactCtx } from "./fact-types.ts"
@@ -16,7 +17,7 @@ export function ctxFacts(
   return [
     ...scanPairedCtx(lines, starts, "[[", "]]", "cond"),
     ...scanPairedCtx(lines, starts, "((", "))", "arith"),
-    ...scanSingleBracketCtx(lines, starts),
+    ...scanBracketTestCtx(lines, starts),
     ...scanSetoptCtx(lines, starts),
   ]
 }
@@ -49,7 +50,8 @@ function scanPairedCtx(
       }
       if (matchesAt(text, i, close) && depth > 0) {
         depth--
-        if (depth === 0) out.push(ctxFact(ctx, { start, end: base + i + 2 }))
+        if (depth === 0)
+          out.push(ctxFact(ctx, { start, end: base + i + close.length }))
         i++
       }
     }
@@ -58,7 +60,7 @@ function scanPairedCtx(
   return out
 }
 
-function scanSingleBracketCtx(
+function scanBracketTestCtx(
   lines: readonly string[],
   starts: readonly number[],
 ): CtxFact[] {
@@ -111,22 +113,6 @@ function scanSetoptCtx(
 
 function ctxFact(ctx: FactCtx, span: TextSpan): CtxFact {
   return { kind: "ctx", ctx, span, strength: "heuristic" }
-}
-
-function continuedText(
-  lines: readonly string[],
-  start: number,
-  end: number,
-): string {
-  return lines
-    .slice(start, end + 1)
-    .map((line) =>
-      activeText(line)
-        .replace(/\\\s*$/, "")
-        .trim(),
-    )
-    .join(" ")
-    .trim()
 }
 
 function matchesAt(s: string, pos: number, token: string): boolean {

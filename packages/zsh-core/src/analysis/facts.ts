@@ -5,6 +5,7 @@ import {
   hasOffset,
   lineStarts,
   readLines,
+  type TextSpan,
 } from "./doc.ts"
 import type { Fact } from "./fact-types.ts"
 import { cmdHeadFactsOnLine, funcDeclAtLine } from "./line-facts.ts"
@@ -37,6 +38,10 @@ export {
 } from "./fact-types.ts"
 export { cmdHeadFactsOnLine, funcDeclAtLine } from "./line-facts.ts"
 
+function shiftFact<T extends { span: TextSpan }>(base: number, fact: T): T {
+  return { ...fact, span: absSpan(base, fact.span) }
+}
+
 /** Analyze a whole document and return coarse zsh syntax facts. */
 export function analyzeDoc(doc: DocLike): Fact[] {
   const lines = readLines(doc)
@@ -61,7 +66,7 @@ export function analyzeDoc(doc: DocLike): Fact[] {
     }
 
     for (const fact of cmdHeadFactsOnLine(text)) {
-      facts.push({ ...fact, span: absSpan(base, fact.span) })
+      facts.push(shiftFact(base, fact))
     }
   }
 
@@ -74,6 +79,7 @@ export function factsAt(doc: DocLike, line: number, char: number): Fact[] {
   const starts = lineStarts(readLines(doc))
   const off = (starts[line] ?? 0) + char
   return analyzeDoc(doc).filter((fact) =>
+    // ctx spans include their closing delimiter, so offset matching is inclusive
     hasOffset(fact.span, off, fact.kind === "ctx"),
   )
 }

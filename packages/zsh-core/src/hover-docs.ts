@@ -85,7 +85,7 @@ export function hoverDocs({
     ...mkHoverDocs(
       "cond-op",
       condOps,
-      (cop) => cop.op as string,
+      (cop) => cop.op,
       (cop) => mdCond(cop, ctx),
     ),
     ...mkHoverDocs(
@@ -94,12 +94,7 @@ export function hoverDocs({
       (param) => param.name,
       mdParam,
     ),
-    ...mkHoverDocs(
-      "builtin",
-      builtins,
-      (builtin) => builtin.name as string,
-      mdBuiltin,
-    ),
+    ...mkHoverDocs("builtin", builtins, (builtin) => builtin.name, mdBuiltin),
     ...mkHoverDocs("precmd", precmds, (precmd) => precmd.name, mdPrecmd),
     ...mkHoverDocs("redir", redirs, (redir) => redir.op, mdRedir),
     ...mkHoverDocs(

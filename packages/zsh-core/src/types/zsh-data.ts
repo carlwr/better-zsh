@@ -41,6 +41,7 @@ export interface ZshOption {
 /** Parsed `[[ ... ]]` conditional operator docs. */
 export interface CondOpDoc {
   op: CondOp
+  /** 1 for unary operators, 2 for binary */
   operands: string[]
   desc: string
   kind: CondKind
@@ -51,7 +52,9 @@ export interface BuiltinDoc {
   name: BuiltinName
   synopsis: readonly string[]
   desc: string
+  /** present when builtin requires a loaded module */
   module?: string
+  /** present when this is an alias of another builtin */
   aliasOf?: BuiltinName
 }
 

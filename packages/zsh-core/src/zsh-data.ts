@@ -22,20 +22,9 @@ import { parseShellParams } from "./yodl/docs/shell-params.ts"
 import { parseSubscriptFlags } from "./yodl/docs/subscript-flags.ts"
 
 const dataDir = resolveZshDataDir()
-// `expn.yo`, `grammar.yo`, and `params.yo` feed multiple getters; memoize raw
-// file text so the public getters stay independently cached without rereading disk.
-const yoText = new Map<string, string>()
-
-function readYo(name: string): string {
-  const hit = yoText.get(name)
-  if (hit) return hit
-  const yo = readFileSync(join(dataDir, name), "utf8")
-  yoText.set(name, yo)
-  return yo
-}
 
 function loadYo<T>(file: string, parse: (yo: string) => T): () => T {
-  return cached<T>(() => parse(readYo(file)))
+  return cached<T>(() => parse(readFileSync(join(dataDir, file), "utf8")))
 }
 
 /** Zsh option metadata. */

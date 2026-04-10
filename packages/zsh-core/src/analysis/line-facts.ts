@@ -9,7 +9,7 @@ import {
   type PrecmdFact,
 } from "./fact-types.ts"
 
-const TRANSPARENT = new Set([
+const TRANSPARENT: ReadonlySet<string> = new Set([
   "do",
   "then",
   "else",
@@ -22,7 +22,7 @@ const TRANSPARENT = new Set([
   "time",
 ])
 
-const RESERVED = new Set([
+const RESERVED: ReadonlySet<string> = new Set([
   "if",
   "then",
   "else",
@@ -47,7 +47,7 @@ const RESERVED = new Set([
   "time",
 ])
 
-const PRECMDS = new Set<PrecmdName>(precmdNames)
+const PRECMDS: ReadonlySet<PrecmdName> = new Set<PrecmdName>(precmdNames)
 
 const FUNC_DECL = /^(\s*)([\w][\w-]*)\s*\(\)/
 const FUNC_KW = /^(\s*)function\s+([\w][\w-]*)/
@@ -62,6 +62,8 @@ export function cmdHeadFactsOnLine(
   let expectCmd = true
   let precmds: readonly PrecmdName[] = []
 
+  // expectCmd: true when the next word should be in command position
+  // precmds:   precommand modifiers accumulated before the current command head
   while (i < len) {
     i = skipWhitespace(line, i, len)
     if (i >= len) break

@@ -30,7 +30,9 @@ export interface HoverMdCtx {
 /** Known markdown/rendering regressions tracked for QA (add entries as they are discovered). */
 export const hoverMdRegressions: readonly HoverRegression[] = []
 
-const emptyHoverMdCtx: HoverMdCtx = { optNames: new Set<OptName>() }
+const emptyHoverMdCtx: Readonly<{ optNames: ReadonlySet<OptName> }> = {
+  optNames: Object.freeze(new Set<OptName>()),
+}
 const OPT_REF_RE = /\b(?:NO_?)?[A-Z][A-Z0-9_]*\b/g
 const inlineCodeRe = /(`[^`\n]+`)/
 
@@ -211,6 +213,9 @@ function fmtOptRefsInText(
   })
 }
 
+// Checks whether the match at `offset` in `whole` is preceded by `$` or `${`,
+// i.e. is a shell parameter reference ($VAR or ${VAR}) rather than a bare option name.
+// offset-1 is the char immediately before the match; offset-2 is one further back.
 function isShellParameterRef(whole: string, offset: number): boolean {
   const prev = whole[offset - 1]
   const prevPrev = whole[offset - 2]

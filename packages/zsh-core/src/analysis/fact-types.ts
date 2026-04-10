@@ -41,6 +41,7 @@ export interface PrecmdFact extends BaseFact {
 
 export interface FuncDeclFact extends BaseFact {
   kind: "func-decl"
+  /** unvalidated; regex-matched from source text */
   name: string
   nameSpan: TextSpan
 }

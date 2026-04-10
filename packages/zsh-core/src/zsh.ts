@@ -2,10 +2,17 @@ export const ZSH_VERSION_ARGS = ["--version"] as const
 /** Base args for all zsh invocations: `-f` (NO_RCS) to skip user rc files. */
 export const ZSH_BASE_ARGS = ["-f"] as const
 
+// (Z+Cn+): split into shell tokens (Z flag), treating newlines as tokens (C),
+// and keeping null tokens from adjacent delimiters (n) — yields one token per line.
 const TOKENIZE_SCRIPT = 'print -l -- "${(Z+Cn+)SRC}"'
+// (k): expand hash keys only — lists names of all builtins.
 const BUILTINS_SCRIPT = "print -l -- ${(k)builtins}"
+// (k): expand keys of the reswords special hash — lists reserved words.
 const RESWORDS_SCRIPT = "print -l -- ${(k)reswords}"
+// (k): expand keys of the options special hash — lists option names.
 const OPTIONS_SCRIPT = "print -l -- ${(k)options}"
+// Query visible special parameters: loads zsh/parameter, then prints key=value
+// for each entry whose flags include "special" but not "hide".
 const PARAMS_SCRIPT =
   'zmodload zsh/parameter; for k v in ${(kv)parameters}; do [[ $v == *special* && $v != *hide* ]] && print "$k=$v"; done'
 
@@ -21,6 +28,11 @@ export interface ZshRunResult {
   stdout: string
   stderr: string
   code: number
+  /**
+   * Optional symbolic error code (e.g. `"ENOENT"`).
+   * zsh-core's own runners leave this unset; it is a convention slot for custom
+   * `ZshRunner` implementors that want to surface shell-level or OS-level error codes.
+   */
   errCode?: string
 }
 

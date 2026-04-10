@@ -44,6 +44,10 @@ function pushMatches(
   for (const option of options) {
     const canonical = canonicalOf(option)
     if (canonical.startsWith(typed)) {
+      // `canonical` stores the base option name (no `no-`/`no_` prefix), not
+      // `canonicalOf(option)` — `canonicalOf` is used only for prefix-match comparison.
+      // The asymmetry is intentional: callers need the base name for lookup, not the
+      // possibly-prefixed form used during matching.
       out.push({ label: labelOf(option), canonical: option })
     }
   }
