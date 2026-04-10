@@ -1,1 +1,0 @@
-../../../skills/orient/SKILL.md

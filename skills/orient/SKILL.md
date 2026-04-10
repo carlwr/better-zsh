@@ -13,14 +13,14 @@ This repo is worked on from multiple agent tools (Cursor, Claude CLI, Codex CLI,
 
 ## Discovery scripts (always-fresh orientation)
 
-Rather than listing files that may become stale, the skill provides executable scripts that produce always-current output. Run these at the start of a session.
+Rather than listing files that may become stale, the skill provides executable scripts that produce always-current output. Run these at the start of a session. Script paths below are relative to the skill directory.
 
 | Script | What it shows |
 |--------|--------------|
-| `bash skills/orient/scripts/overview.sh` | All source and test files with line counts, plus API rollup status |
-| `bash skills/orient/scripts/exports.sh zsh-core` | All public exports from zsh-core source |
-| `bash skills/orient/scripts/exports.sh ext` | All public exports from extension source |
-| `bash skills/orient/scripts/providers.sh` | Extension provider registrations, classes, and semantic token scope config |
+| `bash ./scripts/overview.sh` | All source and test files with line counts, plus API rollup status |
+| `bash ./scripts/exports.sh zsh-core` | All public exports from zsh-core source |
+| `bash ./scripts/exports.sh ext` | All public exports from extension source |
+| `bash ./scripts/providers.sh` | Extension provider registrations, classes, and semantic token scope config |
 
 These are the **primary navigation entry point**. Start here, then read specific files as needed.
 
@@ -52,7 +52,7 @@ These describe **which directories** to look in, not specific files. Use the dis
 5. Inspect parsed build artifacts: `ls packages/zsh-core/dist/json/` (generated at build time; useful for inspection, but the extension's live runtime path currently reads copied `.yo` data)
 
 ### extension: providers (hover, completions, semantic tokens, etc.)
-1. `packages/vscode-better-zsh/src/` — each provider is a separate file; run `bash skills/orient/scripts/providers.sh` to see them all
+1. `packages/vscode-better-zsh/src/` — each provider is a separate file; run `bash ./scripts/providers.sh` to see them all
 2. Provider pattern: class implementing `vscode.*Provider`, wiring VS Code APIs to zsh-core plus some provider-local dispatch/lookup logic; prefer reusable pure helpers where the logic wants to escape the provider
 3. `packages/vscode-better-zsh/package.json` — `semanticTokenScopes` mappings; must be updated when adding a new semantic token type
 
