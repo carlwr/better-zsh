@@ -13,19 +13,32 @@ export type OptFlagChar = Brand<string, "OptFlagChar">
 /** Exact builtin or command-like spelling */
 export type BuiltinName = Brand<string, "BuiltinName">
 
+function trim(raw: string): string {
+  return raw.trim()
+}
+
+function normalizeOptName(raw: string): string {
+  return raw.replace(/_/g, "").toLowerCase()
+}
+
 /** Smart constructor: lowercases and strips underscores. */
 export function mkOptName(raw: string): OptName {
-  return raw.replace(/_/g, "").toLowerCase() as OptName
+  return normalizeOptName(raw) as OptName
+}
+
+/** Smart constructor for option tokens that may use zsh's `no_` negation prefix. */
+export function mkOptLookupName(raw: string): OptName {
+  return mkOptName(raw.replace(/^no_?/i, ""))
 }
 
 export function mkCondOp(raw: string): CondOp {
-  return raw.trim() as CondOp
+  return trim(raw) as CondOp
 }
 
 export function mkOptFlagChar(raw: string): OptFlagChar {
-  return raw.trim() as OptFlagChar
+  return trim(raw) as OptFlagChar
 }
 
 export function mkBuiltinName(raw: string): BuiltinName {
-  return raw.trim() as BuiltinName
+  return trim(raw) as BuiltinName
 }

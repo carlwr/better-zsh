@@ -1,4 +1,5 @@
-import { type DocLike, factsAt, isCtxFact } from "./facts.ts"
+import type { DocLike } from "./doc.ts"
+import { factsAt, isCtxFact } from "./facts.ts"
 
 /** Best-effort syntactic bucket for the cursor position. */
 export type SyntacticContext =

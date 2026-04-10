@@ -1,4 +1,11 @@
-import type { DocLike } from "./facts.ts"
+import {
+  activeText,
+  continuedLineBlock,
+  type DocLike,
+  readLines,
+} from "./doc.ts"
+import { firstCmdHeadOnLine } from "./line-facts.ts"
+import { isSetoptCommandText } from "./setopt-cmd.ts"
 
 /**
  * Lightweight setopt/unsetopt position check (line-local, no full-doc analysis).
@@ -8,26 +15,18 @@ import type { DocLike } from "./facts.ts"
  * which builds on the fact-based analysis pipeline.
  */
 export function isSetoptContext(doc: DocLike, line: number): boolean {
-  let start = line
-  while (
-    start > 0 &&
-    doc
-      .lineAt(start - 1)
-      .text.trimEnd()
-      .endsWith("\\")
-  )
-    start--
-  const first = doc.lineAt(start).text.trimStart()
-  const words = first.split(/\s+/)
-  const cmd = words[0]
-  if (cmd === "setopt" || cmd === "unsetopt") return true
-  if (
-    cmd === "set" &&
-    (start !== line ||
-      words
-        .slice(1)
-        .some((word) => word.startsWith("-") || word.startsWith("+")))
-  )
-    return true
-  return false
+  const lines = readLines(doc)
+  const block = continuedLineBlock(lines, line)
+  const head = firstCmdHeadOnLine(activeText(lines[block.start] ?? ""))
+  if (!head || head.precmds.includes("command")) return false
+  const text = lines
+    .slice(block.start, block.end + 1)
+    .map((text) =>
+      activeText(text)
+        .replace(/\\\s*$/, "")
+        .trim(),
+    )
+    .join(" ")
+    .trim()
+  return isSetoptCommandText(text.slice(head.span.start))
 }

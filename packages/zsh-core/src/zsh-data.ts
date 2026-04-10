@@ -7,21 +7,6 @@ import { readFileSync } from "node:fs"
 import { join } from "node:path"
 import { cached } from "@carlwr/typescript-extra"
 import { resolveZshDataDir } from "./data-dir.ts"
-import type {
-  BuiltinDoc,
-  CondOpDoc,
-  GlobbingFlagDoc,
-  GlobOpDoc,
-  HistoryDoc,
-  ParamFlagDoc,
-  PrecmdDoc,
-  ProcessSubstDoc,
-  RedirDoc,
-  ReservedWordDoc,
-  ShellParamDoc,
-  SubscriptFlagDoc,
-  ZshOption,
-} from "./types/zsh-data.ts"
 import { parseBuiltins } from "./yodl/docs/builtins.ts"
 import { parseCondOps } from "./yodl/docs/cond-ops.ts"
 import { parseGlobOps } from "./yodl/docs/glob-ops.ts"
@@ -37,72 +22,57 @@ import { parseShellParams } from "./yodl/docs/shell-params.ts"
 import { parseSubscriptFlags } from "./yodl/docs/subscript-flags.ts"
 
 const dataDir = resolveZshDataDir()
+// `expn.yo`, `grammar.yo`, and `params.yo` feed multiple getters; memoize raw
+// file text so the public getters stay independently cached without rereading disk.
+const yoText = new Map<string, string>()
 
 function readYo(name: string): string {
-  return readFileSync(join(dataDir, name), "utf8")
+  const hit = yoText.get(name)
+  if (hit) return hit
+  const yo = readFileSync(join(dataDir, name), "utf8")
+  yoText.set(name, yo)
+  return yo
+}
+
+function loadYo<T>(file: string, parse: (yo: string) => T): () => T {
+  return cached<T>(() => parse(readYo(file)))
 }
 
 /** Zsh option metadata. */
-export const getOptions: () => ZshOption[] = cached<ZshOption[]>(() =>
-  parseOptions(readYo("options.yo")),
-)
+export const getOptions = loadYo("options.yo", parseOptions)
 
 /** `[[ ... ]]` conditional operators. */
-export const getCondOps: () => CondOpDoc[] = cached<CondOpDoc[]>(() =>
-  parseCondOps(readYo("cond.yo")),
-)
+export const getCondOps = loadYo("cond.yo", parseCondOps)
 
 /** Builtin commands. */
-export const getBuiltins: () => BuiltinDoc[] = cached<BuiltinDoc[]>(() =>
-  parseBuiltins(readYo("builtins.yo")),
-)
+export const getBuiltins = loadYo("builtins.yo", parseBuiltins)
 
 /** Precommand modifiers. */
-export const getPrecmds: () => PrecmdDoc[] = cached<PrecmdDoc[]>(() =>
-  parsePrecmds(readYo("grammar.yo")),
-)
+export const getPrecmds = loadYo("grammar.yo", parsePrecmds)
 
 /** Redirection operators. */
-export const getRedirections: () => RedirDoc[] = cached<RedirDoc[]>(() =>
-  parseRedirections(readYo("redirect.yo")),
-)
+export const getRedirections = loadYo("redirect.yo", parseRedirections)
 
 /** Reserved words. */
-export const getReservedWords: () => ReservedWordDoc[] = cached<
-  ReservedWordDoc[]
->(() => parseReservedWords(readYo("grammar.yo")))
+export const getReservedWords = loadYo("grammar.yo", parseReservedWords)
 
 /** Shell-managed parameters. */
-export const getShellParams: () => ShellParamDoc[] = cached<ShellParamDoc[]>(
-  () => parseShellParams(readYo("params.yo")),
-)
+export const getShellParams = loadYo("params.yo", parseShellParams)
 
 /** Subscript flags. */
-export const getSubscriptFlags: () => SubscriptFlagDoc[] = cached<
-  SubscriptFlagDoc[]
->(() => parseSubscriptFlags(readYo("params.yo")))
+export const getSubscriptFlags = loadYo("params.yo", parseSubscriptFlags)
 
 /** Parameter-expansion flags. */
-export const getParamFlags: () => ParamFlagDoc[] = cached<ParamFlagDoc[]>(() =>
-  parseParamFlags(readYo("expn.yo")),
-)
+export const getParamFlags = loadYo("expn.yo", parseParamFlags)
 
 /** History expansion. */
-export const getHistoryDocs: () => HistoryDoc[] = cached<HistoryDoc[]>(() =>
-  parseHistory(readYo("expn.yo")),
-)
+export const getHistoryDocs = loadYo("expn.yo", parseHistory)
 
 /** Globbing operators. */
-export const getGlobOps: () => GlobOpDoc[] = cached<GlobOpDoc[]>(() =>
-  parseGlobOps(readYo("expn.yo")),
-)
+export const getGlobOps = loadYo("expn.yo", parseGlobOps)
 
 /** Globbing flags. */
-export const getGlobbingFlags: () => GlobbingFlagDoc[] = cached<
-  GlobbingFlagDoc[]
->(() => parseGlobbingFlags(readYo("expn.yo")))
+export const getGlobbingFlags = loadYo("expn.yo", parseGlobbingFlags)
 
 /** Process substitution. */
-export const getProcessSubsts: () => ProcessSubstDoc[] = cached<
-  ProcessSubstDoc[]
->(() => parseProcessSubsts(readYo("expn.yo")))
+export const getProcessSubsts = loadYo("expn.yo", parseProcessSubsts)

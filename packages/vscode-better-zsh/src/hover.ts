@@ -1,9 +1,13 @@
 import * as vscode from "vscode"
 import type {
   BuiltinDoc,
+  BuiltinName,
   CmdHeadFact,
+  CondOp,
   CondOpDoc,
   OptFlagAlias,
+  OptFlagChar,
+  OptName,
   PrecmdDoc,
   PrecmdFact,
   ProcessSubstDoc,
@@ -19,7 +23,8 @@ import {
   factsAt,
   factText,
   mkCondOp,
-  mkOptName,
+  mkOptFlagChar,
+  mkOptLookupName,
   syntacticContext,
 } from "zsh-core"
 import {
@@ -38,13 +43,13 @@ import { activeWordRangeAt, commentStart, funcDocs } from "./funcs"
 
 export class HoverProvider implements vscode.HoverProvider {
   private md: HoverMdCtx
-  private builtinMap: Map<string, BuiltinDoc> | undefined
+  private builtinMap: Map<BuiltinName, BuiltinDoc> | undefined
   private paramMap: Map<string, ShellParamDoc> | undefined
-  private optionMap: Map<string, ZshOption> | undefined
+  private optionMap: Map<OptName, ZshOption> | undefined
   private flagMap:
-    | Map<string, { opt: ZshOption; alias: OptFlagAlias }>
+    | Map<OptFlagChar, { opt: ZshOption; alias: OptFlagAlias }>
     | undefined
-  private condOpMap: Map<string, CondOpDoc> | undefined
+  private condOpMap: Map<CondOp, CondOpDoc> | undefined
   private precmdMap: Map<string, PrecmdDoc> | undefined
   private redirMap: Map<string, RedirDoc> | undefined
   private processSubstMap: Map<string, ProcessSubstDoc> | undefined
@@ -63,24 +68,22 @@ export class HoverProvider implements vscode.HoverProvider {
     this.md = mkHoverMdCtx(options)
     if (builtins) {
       this.builtinMap = new Map(
-        builtins.map((builtin) => [builtin.name as string, builtin]),
+        builtins.map((builtin) => [builtin.name, builtin]),
       )
     }
     if (params) {
       this.paramMap = new Map(params.map((param) => [param.name, param]))
     }
     if (options) {
-      this.optionMap = new Map(options.map((o) => [o.name as string, o]))
+      this.optionMap = new Map(options.map((opt) => [opt.name, opt]))
       this.flagMap = new Map(
         options.flatMap((opt) =>
-          opt.flags.map(
-            (alias) => [alias.char as string, { opt, alias }] as const,
-          ),
+          opt.flags.map((alias) => [alias.char, { opt, alias }] as const),
         ),
       )
     }
     if (condOps) {
-      this.condOpMap = new Map(condOps.map((o) => [o.op as string, o]))
+      this.condOpMap = new Map(condOps.map((cop) => [cop.op, cop]))
     }
     if (precmds) {
       this.precmdMap = new Map(precmds.map((doc) => [doc.name, doc]))
@@ -181,7 +184,7 @@ export class HoverProvider implements vscode.HoverProvider {
         fact.kind === "cmd-head" && factText(doc, fact.span) === token,
     )
     if (head) {
-      const d = this.builtinMap?.get(token)
+      const d = this.builtinMap?.get(head.name)
       if (d)
         return new vscode.Hover(
           new vscode.MarkdownString(mdBuiltin(d)),
@@ -229,18 +232,13 @@ export class HoverProvider implements vscode.HoverProvider {
   }
 
   private optionAt(token: string): ZshOption | undefined {
-    const direct = this.optionMap?.get(mkOptName(token))
+    const direct = this.optionMap?.get(mkOptLookupName(token))
     if (direct) return direct
-
-    const noPrefixed = this.optionMap?.get(
-      mkOptName(token.replace(/^no_?/i, "")),
-    )
-    if (noPrefixed) return noPrefixed
 
     const short = token.match(/^([+-])([A-Za-z0-9])$/)
     if (!short?.[1] || !short[2] || !this.flagMap) return
     // The hovered doc is keyed by the underlying option; sign only affects whether it sets or unsets it.
-    const hit = this.flagMap.get(short[2])
+    const hit = this.flagMap.get(mkOptFlagChar(short[2]))
     return hit?.opt
   }
 }

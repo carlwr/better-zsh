@@ -13,6 +13,7 @@ suite("isSetoptContext", () => {
   const yes: [string, number, string?][] = [
     ["setopt extendedglob", 0],
     ["unsetopt extendedglob", 0],
+    ["builtin setopt extendedglob", 0, "builtin modifier"],
     ["setopt \\\n  errreturn \\\n  extendedglob", 2, "line continuation"],
     ["setopt \\\n  errreturn", 1, "continuation second line"],
     ["set -o extendedglob", 0, "set -o"],
@@ -22,6 +23,7 @@ suite("isSetoptContext", () => {
 
   const no: [string, number, string?][] = [
     ["echo setopt", 0, "setopt as argument"],
+    ["command setopt extendedglob", 0, "command modifier suppresses setopt"],
     ["echo hello", 0],
     ["set extendedglob", 0, "set without -o/+o"],
     ["", 0, "empty line"],

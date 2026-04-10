@@ -1,7 +1,10 @@
 import * as assert from "node:assert"
 import { matchOptions } from "../option-match"
+import { mkOptName } from "../types/brand"
 
-const opts = ["aliases", "errexit", "errreturn", "extendedglob", "notify"]
+const opts = ["aliases", "errexit", "errreturn", "extendedglob", "notify"].map(
+  mkOptName,
+)
 
 function labels(typed: string) {
   return matchOptions(opts, typed).map((m) => m.label)

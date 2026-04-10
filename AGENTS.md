@@ -22,6 +22,10 @@ Structured documentation for zsh language elements (builtins, options, operators
 
 Best-effort determination of which syntactic region the cursor is in (setopt, conditional, arithmetic, general). Built on top of facts.
 
+### Analysis layout
+
+`src/analysis/facts.ts` is the public entry point and fact-model surface. Shared document/span helpers, line scanning, and context/setopt detection live in sibling analysis modules. Keep the public fact vocabulary centralized there, but keep scanner mechanics and context heuristics out of it — avoid growing it back into a mixed "types + orchestration + low-level scanning" file.
+
 ### Data flow — how zsh-core delivers its knowledge
 
 zsh-core ships vendored Yodl (`.yo`) documentation files from the zsh upstream project. Three consumption routes:

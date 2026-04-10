@@ -54,45 +54,50 @@ export function runZshVersion(run: ZshRunner): Promise<ZshRunResult> {
   return run({ args: [...ZSH_VERSION_ARGS] })
 }
 
+async function runZshQuery<T>(
+  run: ZshRunner,
+  script: string,
+  parse: (stdout: string) => T,
+  env?: NodeJS.ProcessEnv,
+): Promise<T | undefined> {
+  const r = await runZshScript(run, script, env)
+  return r.code === 0 ? parse(r.stdout) : undefined
+}
+
 /** Ask zsh to tokenize source text. */
 export async function zshTokenize(
   run: ZshRunner,
   text: string,
 ): Promise<string[] | undefined> {
-  const r = await runZshScript(run, TOKENIZE_SCRIPT, { SRC: text })
-  return r.code === 0 ? splitLines(r.stdout) : undefined
+  return runZshQuery(run, TOKENIZE_SCRIPT, splitLines, { SRC: text })
 }
 
 /** Query builtin command names known to zsh. */
 export async function zshBuiltins(
   run: ZshRunner,
 ): Promise<string[] | undefined> {
-  const r = await runZshScript(run, BUILTINS_SCRIPT)
-  return r.code === 0 ? splitLines(r.stdout) : undefined
+  return runZshQuery(run, BUILTINS_SCRIPT, splitLines)
 }
 
 /** Query reserved words known to zsh. */
 export async function zshReswords(
   run: ZshRunner,
 ): Promise<string[] | undefined> {
-  const r = await runZshScript(run, RESWORDS_SCRIPT)
-  return r.code === 0 ? splitLines(r.stdout) : undefined
+  return runZshQuery(run, RESWORDS_SCRIPT, splitLines)
 }
 
 /** Query option names known to zsh. */
 export async function zshOptions(
   run: ZshRunner,
 ): Promise<string[] | undefined> {
-  const r = await runZshScript(run, OPTIONS_SCRIPT)
-  return r.code === 0 ? splitLines(r.stdout) : undefined
+  return runZshQuery(run, OPTIONS_SCRIPT, splitLines)
 }
 
 /** Query visible special parameters known to zsh. */
 export async function zshParameters(
   run: ZshRunner,
 ): Promise<Map<string, string> | undefined> {
-  const r = await runZshScript(run, PARAMS_SCRIPT)
-  return r.code === 0 ? parseEqMap(r.stdout) : undefined
+  return runZshQuery(run, PARAMS_SCRIPT, parseEqMap)
 }
 
 function splitLines(stdout: string): string[] {

@@ -1,4 +1,10 @@
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs"
 import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 import { Extractor, ExtractorConfig } from "@microsoft/api-extractor"
@@ -11,10 +17,10 @@ const typesDir = join(distDir, "types")
 const pkg = JSON.parse(readFileSync(join(pkgDir, "package.json"), "utf8"))
 
 const entries = [
-  ["index", "."],
-  ["render", "./render"],
-  ["exec", "./exec"],
-  ["assets", "./assets"],
+  { entry: "index", subpath: "." },
+  { entry: "render", subpath: "./render" },
+  { entry: "exec", subpath: "./exec" },
+  { entry: "assets", subpath: "./assets" },
 ]
 
 rmSync(apiDir, { recursive: true, force: true })
@@ -23,8 +29,20 @@ mkdirSync(apiDir, { recursive: true })
 mkdirSync(typesDir, { recursive: true })
 
 let ok = true
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
-for (const [entry, subpath] of entries) {
+async function waitForFile(path, timeoutMs = 5000) {
+  const until = Date.now() + timeoutMs
+  while (Date.now() < until) {
+    if (existsSync(path)) return
+    await sleep(50)
+  }
+  throw new Error(`timed out waiting for ${path}`)
+}
+
+for (const spec of entries) {
+  const { entry, subpath } = spec
+  await waitForFile(join(distDir, `${entry}.d.ts`))
   const name = subpath === "." ? pkg.name : `${pkg.name}/${subpath.slice(2)}`
   const config = ExtractorConfig.prepare({
     configObject: {

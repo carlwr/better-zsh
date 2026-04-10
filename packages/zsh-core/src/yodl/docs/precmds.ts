@@ -1,15 +1,9 @@
-import type { PrecmdDoc, PrecmdName } from "../../types/zsh-data.ts"
+import { type PrecmdName, precmdNames } from "../../types/precmd.ts"
+import type { PrecmdDoc } from "../../types/zsh-data.ts"
 import { extractItems } from "../core/doc.ts"
 import { normalizeBody, normalizeHeader } from "../core/text.ts"
 
-const PRECMDS = new Set<PrecmdName>([
-  "-",
-  "builtin",
-  "command",
-  "exec",
-  "nocorrect",
-  "noglob",
-])
+const PRECMDS = new Set<PrecmdName>(precmdNames)
 
 export function parsePrecmds(yo: string): PrecmdDoc[] {
   return extractItems(yo)

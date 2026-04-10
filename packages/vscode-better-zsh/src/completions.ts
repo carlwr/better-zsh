@@ -2,6 +2,7 @@ import * as vscode from "vscode"
 import type {
   BuiltinDoc,
   CondOpDoc,
+  OptName,
   PrecmdDoc,
   ReservedWordDoc,
   ShellParamDoc,
@@ -10,7 +11,6 @@ import type {
 import {
   filterTokens,
   matchOptions,
-  mkOptName,
   syntacticContext,
   WORD,
   WORD_EXACT,
@@ -40,8 +40,8 @@ export interface CompletionData {
 
 export class CompletionProvider implements vscode.CompletionItemProvider {
   private general: vscode.CompletionItem[]
-  private options: string[]
-  private optionMap: Map<string, ZshOption>
+  private options: OptName[]
+  private optionMap: Map<OptName, ZshOption>
   private condOps: CondOpDoc[]
 
   constructor(data: CompletionData) {
@@ -91,8 +91,8 @@ export class CompletionProvider implements vscode.CompletionItemProvider {
           return item
         }),
     ]
-    this.options = data.options.map((opt) => opt.name as string)
-    this.optionMap = new Map(data.options.map((o) => [o.name as string, o]))
+    this.options = data.options.map((opt) => opt.name)
+    this.optionMap = new Map(data.options.map((o) => [o.name, o]))
     this.condOps = data.condOps
   }
 
@@ -133,7 +133,7 @@ export class CompletionProvider implements vscode.CompletionItemProvider {
         vscode.CompletionItemKind.Property,
       )
       item.filterText = typed || m.label
-      const opt = this.optionMap.get(mkOptName(m.canonical))
+      const opt = this.optionMap.get(m.canonical)
       if (opt) item.detail = opt.desc
       return item
     })

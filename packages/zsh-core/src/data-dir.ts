@@ -1,10 +1,10 @@
 import { cpSync, existsSync } from "node:fs"
-import { dirname, join } from "node:path"
+import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 
 const here: string =
   typeof __dirname !== "undefined"
-    ? __dirname
+    ? resolve(__dirname)
     : dirname(fileURLToPath(import.meta.url))
 
 /** Conventional directory name for Yodl data copied into a consumer's output. */
@@ -17,7 +17,7 @@ export function resolveZshDataDir(baseDir = here): string {
     join(baseDir, "..", "src", "data", "zsh-docs"),
     join(baseDir, runtimeZshDataDir),
   ]
-  const dir = candidates.find((cand) => existsSync(cand))
+  const dir = firstExisting(candidates)
   if (dir) return dir
   throw new Error(`zsh docs dir not found: ${candidates.join(", ")}`)
 }
@@ -27,4 +27,8 @@ export function copyRuntimeZshData(outDir: string, baseDir = here) {
   cpSync(resolveZshDataDir(baseDir), join(outDir, runtimeZshDataDir), {
     recursive: true,
   })
+}
+
+function firstExisting(candidates: readonly string[]): string | undefined {
+  return candidates.find((cand) => existsSync(cand))
 }

@@ -1,6 +1,6 @@
 import { mkdir, writeFile } from "node:fs/promises"
 import { join } from "node:path"
-import type { HoverDoc, HoverKind } from "./hover-md.ts"
+import type { HoverDoc, HoverKind } from "./hover-docs.ts"
 
 /** Filename variants emitted by the hover-dump writer. */
 export type HoverDumpFile =
@@ -41,28 +41,14 @@ function section(doc: HoverDoc): string {
 export function dumpText(
   docs: readonly HoverDoc[],
 ): Map<HoverDumpFile, string> {
-  const byKind = new Map<HoverKind, HoverDoc[]>([
-    ["option", []],
-    ["cond-op", []],
-    ["param", []],
-    ["builtin", []],
-    ["precmd", []],
-    ["redir", []],
-    ["process-subst", []],
-    ["reserved-word", []],
-  ])
-  for (const doc of docs) byKind.get(doc.kind)?.push(doc)
-
+  const byKind = groupByKind(docs)
   const entries: [HoverDumpFile, string][] = [
     ...dumpFiles.map(
       ([kind, file]) =>
-        [
-          file,
-          (kind === "all" ? docs : (byKind.get(kind) ?? []))
-            .map(section)
-            .join("\n\n---\n\n")
-            .concat("\n"),
-        ] satisfies [HoverDumpFile, string],
+        [file, renderDumpText(kind, docs, byKind)] satisfies [
+          HoverDumpFile,
+          string,
+        ],
     ),
     ["suspicious.md", suspiciousText(docs)],
   ]
@@ -81,10 +67,36 @@ export async function writeHoverDump(
 }
 
 function suspiciousText(docs: readonly HoverDoc[]): string {
-  const hits = docs.flatMap((doc) =>
-    suspiciousPatterns
-      .filter(([, re]) => re.test(doc.md))
-      .map(([name]) => `- ${doc.kind}:${doc.key} — ${name}`),
-  )
+  const hits = docs.flatMap((doc) => suspiciousHits(doc))
   return hits.length > 0 ? `${hits.join("\n")}\n` : ""
+}
+
+function groupByKind(docs: readonly HoverDoc[]): Map<HoverKind, HoverDoc[]> {
+  const byKind = new Map<HoverKind, HoverDoc[]>([
+    ["option", []],
+    ["cond-op", []],
+    ["param", []],
+    ["builtin", []],
+    ["precmd", []],
+    ["redir", []],
+    ["process-subst", []],
+    ["reserved-word", []],
+  ])
+  for (const doc of docs) byKind.get(doc.kind)?.push(doc)
+  return byKind
+}
+
+function renderDumpText(
+  kind: HoverKind | "all",
+  docs: readonly HoverDoc[],
+  byKind: Map<HoverKind, HoverDoc[]>,
+): string {
+  const selected = kind === "all" ? docs : (byKind.get(kind) ?? [])
+  return `${selected.map(section).join("\n\n---\n\n")}\n`
+}
+
+function suspiciousHits(doc: HoverDoc): string[] {
+  return suspiciousPatterns
+    .filter(([, re]) => re.test(doc.md))
+    .map(([name]) => `- ${doc.kind}:${doc.key} — ${name}`)
 }

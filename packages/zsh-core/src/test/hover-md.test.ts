@@ -2,11 +2,11 @@ import { mkdtempSync, readFileSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { describe, expect, test } from "vitest"
+import { hoverDocs } from "../hover-docs"
 import { dumpText, writeHoverDump } from "../hover-dump"
 import {
   defaultStateIn,
   fmtOptRefsInMd,
-  hoverDocs,
   hoverMdRegressions,
   mdBuiltin,
   mdCond,

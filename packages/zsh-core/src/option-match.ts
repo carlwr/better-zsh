@@ -1,26 +1,50 @@
+import { mkOptName, type OptName } from "./types/brand.ts"
+
 export interface OptionMatch {
   /** What to insert / display. */
   label: string
   /** Canonical form (lowercase, no underscores, no no-prefix for negated). */
-  canonical: string
+  canonical: OptName
 }
 
 /**
  * Match zsh option names against user input, ignoring underscores and case.
  * Returns both base and `no_`-prefixed forms.
  */
-export function matchOptions(options: string[], typed: string): OptionMatch[] {
-  const norm = typed.replace(/_/g, "").toLowerCase()
+export function matchOptions(
+  options: readonly OptName[],
+  typed: string,
+): OptionMatch[] {
+  const norm = mkOptName(typed)
   const out: OptionMatch[] = []
-  for (const o of options) {
-    if (o.startsWith(norm)) {
-      out.push({ label: o, canonical: o })
-    }
-  }
-  for (const o of options) {
-    if (`no${o}`.startsWith(norm)) {
-      out.push({ label: `no_${o}`, canonical: o })
-    }
-  }
+  pushMatches(
+    out,
+    options,
+    norm,
+    (opt) => opt,
+    (opt) => opt,
+  )
+  pushMatches(
+    out,
+    options,
+    norm,
+    (opt) => `no${opt}`,
+    (opt) => `no_${opt}`,
+  )
   return out
+}
+
+function pushMatches(
+  out: OptionMatch[],
+  options: readonly OptName[],
+  typed: OptName,
+  canonicalOf: (option: string) => string,
+  labelOf: (option: string) => string,
+): void {
+  for (const option of options) {
+    const canonical = canonicalOf(option)
+    if (canonical.startsWith(typed)) {
+      out.push({ label: labelOf(option), canonical: option })
+    }
+  }
 }

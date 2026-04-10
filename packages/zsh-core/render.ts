@@ -2,6 +2,8 @@
  * @packageDocumentation
  * Markdown rendering helpers and hover-doc dump utilities.
  */
+
+export * from "./src/hover-docs.ts"
 export * from "./src/hover-dump.ts"
 export * from "./src/hover-md.ts"
 export * from "./zsh-types.ts"

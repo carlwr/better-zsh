@@ -1,5 +1,9 @@
 import type { BuiltinName, CondOp, OptFlagChar, OptName } from "./brand.ts"
 
+export { type PrecmdName, precmdNames } from "./precmd.ts"
+
+import type { PrecmdName } from "./precmd.ts"
+
 /** Default-on marker from zshoptions: <D>=default, <K>=ksh, <S>=sh, <C>=csh, <Z>=zsh */
 export type DefaultMarker = "D" | "K" | "S" | "C" | "Z"
 
@@ -17,15 +21,6 @@ export type OptFlagSign = "+" | "-"
 export type ReservedWordPos = "command" | "any"
 
 export type HistoryKind = "event-designator" | "word-designator" | "modifier"
-
-/** Precommand modifiers accepted before a command head. */
-export type PrecmdName =
-  | "-"
-  | "builtin"
-  | "command"
-  | "exec"
-  | "nocorrect"
-  | "noglob"
 
 /** Short-option alias for a long zsh option. */
 export interface OptFlagAlias {
