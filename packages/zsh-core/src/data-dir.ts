@@ -11,6 +11,18 @@ const thisDir: string =
 /** Conventional directory name for Yodl data copied into a consumer's output. */
 export const runtimeZshDataDir = "zsh-core-data"
 
+/** Vendored zsh Yodl payload required by runtime loaders and packaging checks. */
+export const vendoredZshDocFiles = [
+  "SOURCE.md",
+  "builtins.yo",
+  "cond.yo",
+  "expn.yo",
+  "grammar.yo",
+  "options.yo",
+  "params.yo",
+  "redirect.yo",
+] as const
+
 // Three candidate layouts:
 //   dev:     <thisDir>/data/zsh-docs         (source tree, running from src/)
 //   built:   <thisDir>/../src/data/zsh-docs  (dist/, pointing back to src/)

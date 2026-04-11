@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "node:fs"
 import { join } from "node:path"
 import { describe, expect, test } from "vitest"
-import { resolveZshDataDir } from "../data-dir"
+import { resolveZshDataDir, vendoredZshDocFiles } from "../data-dir"
 import { mkBuiltinName, mkCondOp, mkOptName } from "../types/brand"
 import {
   getBuiltins,
@@ -23,16 +23,7 @@ const dataDir = resolveZshDataDir()
 
 describe("vendored zsh data assets", () => {
   test("ships the full doc set expected by runtime and packaging", () => {
-    for (const name of [
-      "SOURCE.md",
-      "builtins.yo",
-      "cond.yo",
-      "expn.yo",
-      "grammar.yo",
-      "options.yo",
-      "params.yo",
-      "redirect.yo",
-    ]) {
+    for (const name of vendoredZshDocFiles) {
       const path = join(dataDir, name)
       expect(existsSync(path)).toBe(true)
       expect(readFileSync(path, "utf8").trim().length).toBeGreaterThan(0)

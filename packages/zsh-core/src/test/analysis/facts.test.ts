@@ -15,38 +15,34 @@ import {
 } from "../../analysis/facts"
 import { mockDoc } from "./test-util"
 
-function cmdTexts(s: string): string[] {
-  return cmdHeadFactsOnLine(s)
-    .filter((f) => f.kind === "cmd-head")
-    .map((f) => f.text)
+function cmdTexts(line: string): string[] {
+  return cmdHeadFactsOnLine(line)
+    .filter((fact) => fact.kind === "cmd-head")
+    .map((fact) => fact.text)
 }
 
-function redirTexts(s: string): string[] {
-  return cmdHeadFactsOnLine(s)
+function redirTexts(line: string): string[] {
+  return cmdHeadFactsOnLine(line)
     .filter(isRedirFact)
-    .map((f) => f.text)
+    .map((fact) => fact.text)
 }
 
-function rwTexts(s: string): string[] {
-  return cmdHeadFactsOnLine(s)
+function rwTexts(line: string): string[] {
+  return cmdHeadFactsOnLine(line)
     .filter(isReservedWordFact)
-    .map((f) => f.text)
+    .map((fact) => fact.text)
 }
-
-// ---------------------------------------------------------------------------
-// Invariant helpers
-// ---------------------------------------------------------------------------
 
 function assertFactInvariants(line: string, facts: LineFact[]): void {
-  for (const f of facts) {
-    expect(f.span.start).toBeGreaterThanOrEqual(0)
-    expect(f.span.end).toBeLessThanOrEqual(line.length)
-    expect(f.span.start).toBeLessThan(f.span.end)
-    if ("text" in f) {
-      expect(line.slice(f.span.start, f.span.end)).toBe(f.text)
+  for (const fact of facts) {
+    expect(fact.span.start).toBeGreaterThanOrEqual(0)
+    expect(fact.span.end).toBeLessThanOrEqual(line.length)
+    expect(fact.span.start).toBeLessThan(fact.span.end)
+    if ("text" in fact) {
+      expect(line.slice(fact.span.start, fact.span.end)).toBe(fact.text)
     }
   }
-  // Spans must not overlap (they may abut).
+
   const sorted = [...facts].sort((a, b) => a.span.start - b.span.start)
   for (let i = 1; i < sorted.length; i++) {
     // biome-ignore lint/style/noNonNullAssertion: loop bounds guarantee presence
@@ -57,10 +53,6 @@ function assertFactInvariants(line: string, facts: LineFact[]): void {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Command / precommand analysis
-// ---------------------------------------------------------------------------
-
 describe("command/precommand analysis", () => {
   const cases: [string, string[], string?][] = [
     ["echo hi", ["echo"]],
@@ -68,7 +60,6 @@ describe("command/precommand analysis", () => {
     ["echo x; fg", ["echo", "fg"]],
     ["echo x && fg", ["echo", "fg"]],
     ["echo x || fg", ["echo", "fg"]],
-    ["echo x | fg", ["echo", "fg"]],
     ["echo x | fg | bg", ["echo", "fg", "bg"]],
     ["(echo hi)", ["echo"]],
     ["{ echo hi }", ["echo"]],
@@ -78,6 +69,21 @@ describe("command/precommand analysis", () => {
     ["if echo; then fg; fi", ["echo", "fg"]],
     ["while echo; do fg; done", ["echo", "fg"]],
     ["for x in a; do echo; done", ["echo"]],
+    ["echo hi # fg", ["echo"], "comment stops scan"],
+    [">&2 echo hi", ["echo"], "redir before command"],
+    ["2>&1 echo hi", ["echo"], "fd redir before command"],
+    ["echo a > file", ["echo"], "redir does not create a new command"],
+    [
+      "print ${var[(a)1]} ${var[(r)1]} ${var[(s)1]}",
+      ["print"],
+      "parameter expansion flags stay inside words",
+    ],
+    ["print ${(j:_:)SECONDS}", ["print"], "joined expansion stays in one word"],
+    [
+      "print ${${:-x}[(r)1]}",
+      ["print"],
+      "nested parameter expansions stay inside words",
+    ],
   ]
 
   for (const [input, expected, desc] of cases) {
@@ -85,13 +91,13 @@ describe("command/precommand analysis", () => {
   }
 
   test("precommand modifiers before command head", () => {
-    const s = "noglob command echo hi"
-    const facts = cmdHeadFactsOnLine(s)
-    expect(facts.filter(isPrecmdFact).map((f) => f.name)).toEqual([
+    const line = "noglob command echo hi"
+    const facts = cmdHeadFactsOnLine(line)
+    expect(facts.filter(isPrecmdFact).map((fact) => fact.name)).toEqual([
       "noglob",
       "command",
     ])
-    expect(cmdTexts(s)).toEqual(["echo"])
+    expect(cmdTexts(line)).toEqual(["echo"])
   })
 
   test("builtin precommand keeps builtin head", () => {
@@ -107,20 +113,24 @@ describe("command/precommand analysis", () => {
   })
 })
 
-// ---------------------------------------------------------------------------
-// Arithmetic conditions: ((..))
-// ---------------------------------------------------------------------------
+// Known limitations — not yet handled, recorded for future improvement.
+// Move to active test cases when the heuristic is extended.
+//
+// - Subshell command substitution: $(echo hi) — the echo inside $() is in cmd position
+// - Backtick substitution: `echo hi`
+// - Multi-line: while ...\n do — "do" on next line resets cmd position (line-local heuristic)
 
 describe("arithmetic condition handling", () => {
   const cases: [string, string[]][] = [
     ["if ((1)) echo", ["echo"]],
-    ["if ((1)) { echo; }", ["echo"]],
     ["if ((1)) { echo }", ["echo"]],
+    ["if ((1)) { echo; }", ["echo"]],
     ["while ((1)) { fc; }", ["fc"]],
     ["until ((1)) fc", ["fc"]],
     ["if ((x > 0)); then echo; fi", ["echo"]],
     ["if ((a + b)) && ((c)) echo", ["echo"]],
   ]
+
   for (const [input, expected] of cases) {
     test(input, () => expect(cmdTexts(input)).toEqual(expected))
   }
@@ -132,14 +142,9 @@ describe("arithmetic condition handling", () => {
   })
 
   test("standalone (( )) emits delimiter facts", () => {
-    const rws = rwTexts("(( x++ ))")
-    expect(rws).toEqual(["((", "))"])
+    expect(rwTexts("(( x++ ))")).toEqual(["((", "))"])
   })
 })
-
-// ---------------------------------------------------------------------------
-// Redirections
-// ---------------------------------------------------------------------------
 
 describe("redirection facts", () => {
   const cases: [string, string[]][] = [
@@ -152,7 +157,9 @@ describe("redirection facts", () => {
     ["cat < in", ["<"]],
     ["cat <<< word", ["<<<"]],
     ["cat << EOF", ["<<"]],
+    ["echo 2>&1 > file", ["2>&", ">"]],
   ]
+
   for (const [input, expected] of cases) {
     test(input, () => expect(redirTexts(input)).toEqual(expected))
   }
@@ -164,43 +171,34 @@ describe("redirection facts", () => {
   test("no redir inside double quotes", () => {
     expect(redirTexts('echo ">"')).toEqual([])
   })
-
-  test("multiple redirections on one line", () => {
-    expect(redirTexts("echo 2>&1 > file")).toEqual(["2>&", ">"])
-  })
 })
 
-// ---------------------------------------------------------------------------
-// Process substitution
-// ---------------------------------------------------------------------------
-
 describe("process substitution facts", () => {
-  test("diff <(a) <(b)", () => {
-    const ps = cmdHeadFactsOnLine("diff <(a) <(b)").filter(isProcessSubstFact)
-    expect(ps.map((f) => f.text)).toEqual(["<(a)", "<(b)"])
-  })
+  const cases: [string, string[]][] = [
+    ["diff <(a) <(b)", ["<(a)", "<(b)"]],
+    ["cat >(tee log)", [">(tee log)"]],
+  ]
 
-  test(">(tee log)", () => {
-    const ps = cmdHeadFactsOnLine("cat >(tee log)").filter(isProcessSubstFact)
-    expect(ps).toHaveLength(1)
-    expect(ps[0]?.text).toBe(">(tee log)")
-  })
+  for (const [input, expected] of cases) {
+    test(input, () => {
+      expect(
+        cmdHeadFactsOnLine(input)
+          .filter(isProcessSubstFact)
+          .map((fact) => fact.text),
+      ).toEqual(expected)
+    })
+  }
 
-  test("no process-subst inside quotes", () => {
+  test("no process substitution inside quotes", () => {
     expect(
       cmdHeadFactsOnLine('echo ">(foo)"').filter(isProcessSubstFact),
     ).toHaveLength(0)
   })
 })
 
-// ---------------------------------------------------------------------------
-// Reserved words
-// ---------------------------------------------------------------------------
-
 describe("reserved word facts", () => {
   test("if/then/fi", () => {
-    const rws = rwTexts("if foo; then bar; fi")
-    expect(rws).toEqual(["if", "then", "fi"])
+    expect(rwTexts("if foo; then bar; fi")).toEqual(["if", "then", "fi"])
   })
 
   test("for/do/done", () => {
@@ -211,8 +209,7 @@ describe("reserved word facts", () => {
   })
 
   test("{ and } are reserved words", () => {
-    const rws = rwTexts("{ echo; }")
-    expect(rws).toContain("{")
+    expect(rwTexts("{ echo; }")).toContain("{")
   })
 
   test("while/until", () => {
@@ -225,16 +222,14 @@ describe("reserved word facts", () => {
   })
 })
 
-// ---------------------------------------------------------------------------
-// Document-level facts
-// ---------------------------------------------------------------------------
-
 describe("document facts", () => {
   test("cond context and precommand on same line", () => {
     const doc = mockDoc(["if noglob [ -f $file ]; then"])
-    const got = analyzeDoc(doc)
-    expect(got.filter(isCtxFact).map((f) => f.ctx)).toContain("cond")
-    expect(got.filter(isPrecmdFact).map((f) => f.name)).toContain("noglob")
+    const facts = analyzeDoc(doc)
+    expect(facts.filter(isCtxFact).map((fact) => fact.ctx)).toContain("cond")
+    expect(facts.filter(isPrecmdFact).map((fact) => fact.name)).toContain(
+      "noglob",
+    )
   })
 
   test("function declaration facts", () => {
@@ -247,19 +242,10 @@ describe("document facts", () => {
 
   test("setopt context after builtin modifier", () => {
     const doc = mockDoc(["builtin setopt extended_glob"])
-    const got = factsAt(doc, 0, 18)
-    expect(got.filter(isCtxFact).map((f) => f.ctx)).toContain("setopt")
-  })
-
-  test("arith condition keeps next command position", () => {
-    expect(cmdTexts("if ((1)) echo")).toEqual(["echo"])
-    expect(cmdTexts("if ((1)) { echo; }")).toEqual(["echo"])
+    const facts = factsAt(doc, 0, 18)
+    expect(facts.filter(isCtxFact).map((fact) => fact.ctx)).toContain("setopt")
   })
 })
-
-// ---------------------------------------------------------------------------
-// Structural invariants (property-based)
-// ---------------------------------------------------------------------------
 
 describe("cmdHeadFactsOnLine invariants", () => {
   const SHELL_CHARS =
@@ -269,7 +255,7 @@ describe("cmdHeadFactsOnLine invariants", () => {
   )
   const lineArb = fc
     .array(shellCharArb, { maxLength: 120 })
-    .map((cs) => cs.join(""))
+    .map((chars) => chars.join(""))
 
   test("never throws", () => {
     fc.assert(
@@ -279,22 +265,10 @@ describe("cmdHeadFactsOnLine invariants", () => {
     )
   })
 
-  test("spans within bounds and non-overlapping", () => {
+  test("emits non-overlapping facts with valid spans", () => {
     fc.assert(
       fc.property(lineArb, (line) => {
         assertFactInvariants(line, cmdHeadFactsOnLine(line))
-      }),
-    )
-  })
-
-  test("text fields match line slices", () => {
-    fc.assert(
-      fc.property(lineArb, (line) => {
-        for (const f of cmdHeadFactsOnLine(line)) {
-          if ("text" in f) {
-            expect(line.slice(f.span.start, f.span.end)).toBe(f.text)
-          }
-        }
       }),
     )
   })
