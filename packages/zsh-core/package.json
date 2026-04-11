@@ -69,7 +69,7 @@
     "lint": "biome check assets.ts build.ts deno.json exec.ts index.ts render.ts scripts src tsconfig.build.json tsconfig.json typedoc.json vitest.config.ts package.json",
     "check": "pnpm typecheck && pnpm lint",
     "test": "vitest run",
-    "test:smoke": "pnpm build && node scripts/test-smoke.mjs"
+    "test:smoke": "pnpm build && node scripts/test-smoke.mjs && pnpm run jsr:check"
   },
   "dependencies": {
     "@carlwr/typescript-extra": "0.7.0"

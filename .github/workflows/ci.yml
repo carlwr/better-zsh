@@ -18,6 +18,9 @@ jobs:
       - run: corepack enable
       - run: pnpm config set store-dir /tmp/pnpm-store
       - run: pnpm install --frozen-lockfile
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
       - run: pnpm check
       - run: pnpm test
       - name: Install ripgrep (required by test:smoke — orient skill scripts)

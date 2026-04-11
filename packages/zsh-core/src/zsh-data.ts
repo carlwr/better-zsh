@@ -7,6 +7,21 @@ import { readFileSync } from "node:fs"
 import { join } from "node:path"
 import { cached } from "@carlwr/typescript-extra"
 import { resolveZshDataDir } from "./data-dir.ts"
+import type {
+  BuiltinDoc,
+  CondOpDoc,
+  GlobbingFlagDoc,
+  GlobOpDoc,
+  HistoryDoc,
+  ParamFlagDoc,
+  PrecmdDoc,
+  ProcessSubstDoc,
+  RedirDoc,
+  ReservedWordDoc,
+  ShellParamDoc,
+  SubscriptFlagDoc,
+  ZshOption,
+} from "./types/zsh-data.ts"
 import { parseBuiltins } from "./yodl/docs/builtins.ts"
 import { parseCondOps } from "./yodl/docs/cond-ops.ts"
 import { parseGlobOps } from "./yodl/docs/glob-ops.ts"
@@ -28,40 +43,67 @@ function loadYo<T>(file: string, parse: (yo: string) => T): () => T {
 }
 
 /** Zsh option metadata. */
-export const getOptions = loadYo("options.yo", parseOptions)
+export const getOptions: () => ZshOption[] = loadYo("options.yo", parseOptions)
 
 /** `[[ ... ]]` conditional operators. */
-export const getCondOps = loadYo("cond.yo", parseCondOps)
+export const getCondOps: () => CondOpDoc[] = loadYo("cond.yo", parseCondOps)
 
 /** Builtin commands. */
-export const getBuiltins = loadYo("builtins.yo", parseBuiltins)
+export const getBuiltins: () => BuiltinDoc[] = loadYo(
+  "builtins.yo",
+  parseBuiltins,
+)
 
 /** Precommand modifiers. */
-export const getPrecmds = loadYo("grammar.yo", parsePrecmds)
+export const getPrecmds: () => PrecmdDoc[] = loadYo("grammar.yo", parsePrecmds)
 
 /** Redirection operators. */
-export const getRedirections = loadYo("redirect.yo", parseRedirections)
+export const getRedirections: () => RedirDoc[] = loadYo(
+  "redirect.yo",
+  parseRedirections,
+)
 
 /** Reserved words. */
-export const getReservedWords = loadYo("grammar.yo", parseReservedWords)
+export const getReservedWords: () => ReservedWordDoc[] = loadYo(
+  "grammar.yo",
+  parseReservedWords,
+)
 
 /** Shell-managed parameters. */
-export const getShellParams = loadYo("params.yo", parseShellParams)
+export const getShellParams: () => ShellParamDoc[] = loadYo(
+  "params.yo",
+  parseShellParams,
+)
 
 /** Subscript flags. */
-export const getSubscriptFlags = loadYo("params.yo", parseSubscriptFlags)
+export const getSubscriptFlags: () => SubscriptFlagDoc[] = loadYo(
+  "params.yo",
+  parseSubscriptFlags,
+)
 
 /** Parameter-expansion flags. */
-export const getParamFlags = loadYo("expn.yo", parseParamFlags)
+export const getParamFlags: () => ParamFlagDoc[] = loadYo(
+  "expn.yo",
+  parseParamFlags,
+)
 
 /** History expansion. */
-export const getHistoryDocs = loadYo("expn.yo", parseHistory)
+export const getHistoryDocs: () => HistoryDoc[] = loadYo(
+  "expn.yo",
+  parseHistory,
+)
 
 /** Globbing operators. */
-export const getGlobOps = loadYo("expn.yo", parseGlobOps)
+export const getGlobOps: () => GlobOpDoc[] = loadYo("expn.yo", parseGlobOps)
 
 /** Globbing flags. */
-export const getGlobbingFlags = loadYo("expn.yo", parseGlobbingFlags)
+export const getGlobbingFlags: () => GlobbingFlagDoc[] = loadYo(
+  "expn.yo",
+  parseGlobbingFlags,
+)
 
 /** Process substitution. */
-export const getProcessSubsts = loadYo("expn.yo", parseProcessSubsts)
+export const getProcessSubsts: () => ProcessSubstDoc[] = loadYo(
+  "expn.yo",
+  parseProcessSubsts,
+)
