@@ -89,6 +89,7 @@
         },
         "betterZsh.zshPath": {
           "type": "string",
+          "scope": "machine",
           "default": "",
           "markdownDescription": "Path to the zsh binary. Leave empty to use `zsh` from PATH. Set to `off` to never invoke any zsh binary."
         }

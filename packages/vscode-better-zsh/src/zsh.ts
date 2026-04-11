@@ -20,6 +20,7 @@ import { buildZshEnv, execZsh } from "./zsh-exec"
 
 export type ZshMode =
   | { kind: "disabled" }
+  | { kind: "invalid-config"; raw: string; reason: "relative" }
   | { kind: "available"; binary: ZshBinary }
   | { kind: "unavailable"; binary: ZshBinary; errCode: "ENOENT" | "EACCES" }
 
@@ -120,6 +121,13 @@ function logResolution(
   }
 }
 
+function logInvalidConfig(config: ZshPathConfig & { kind: "invalid" }) {
+  log(`zsh: invalid configured path ${config.raw} (relative path)`)
+  warn(
+    `zsh unavailable (invalid betterZsh.zshPath: relative paths are not allowed: ${config.raw})`,
+  )
+}
+
 function logVersion(r: ZshRunResult) {
   if (r.code === 0) {
     const v = r.stdout.trim() || r.stderr.trim()
@@ -144,16 +152,22 @@ export function configureZsh(config: ZshPathConfig) {
       log("zsh: disabled via betterZsh.zshPath=off")
       return { kind: "disabled" } as ZshMode
     }
+    if (config.kind === "invalid") {
+      logInvalidConfig(config)
+      return {
+        kind: "invalid-config",
+        raw: config.raw,
+        reason: config.reason,
+      } as ZshMode
+    }
     const probe = await probeZsh(config, buildZshEnv(process.env))
     const mode = deriveMode(config.binary, probe)
     logResolution(config, mode)
     if (mode.kind === "available") {
       // Fire-and-forget version check
-      void execZsh(mode.binary as string, { args: [...ZSH_VERSION_ARGS] }).then(
-        (r) => {
-          if (!r.errCode) logVersion(r)
-        },
-      )
+      void runZshWithMode(mode, { args: [...ZSH_VERSION_ARGS] }).then((r) => {
+        if (!r.errCode) logVersion(r)
+      })
     }
     return mode
   })
@@ -167,12 +181,20 @@ function unavailableResult(errCode = "ENOENT"): ZshRunResult {
 
 // ── Core runner ──
 
+async function runZshWithMode(
+  mode: ZshMode & { kind: "available" },
+  req: ZshRunReq,
+): Promise<ZshRunResult> {
+  return execZsh(mode.binary as string, req)
+}
+
 async function runZsh(req: ZshRunReq): Promise<ZshRunResult> {
   const mode = await getMode()
   if (mode.kind === "disabled") return unavailableResult("DISABLED")
+  if (mode.kind === "invalid-config") return unavailableResult("EINVAL")
   if (mode.kind === "unavailable") return unavailableResult(mode.errCode)
 
-  const result = await execZsh(mode.binary as string, req)
+  const result = await runZshWithMode(mode, req)
   if (result.errCode === "ENOENT" || result.errCode === "EACCES") {
     // Binary disappeared after probe — invalidate
     const errCode = result.errCode as "ENOENT" | "EACCES"

@@ -89,6 +89,8 @@ rg "^export" --type ts packages/zsh-core/src/yodl/
 
 **Zsh process env isolation:** spawned zsh processes receive only an explicit allowlist of env vars. Check the zsh exec module in `packages/vscode-better-zsh/src/` if a subprocess is missing an expected variable (search for `ZSH_ENV_KEEP` or `ZSH_ENV_DROP`).
 
+**Zsh binary setting is hardened at the settings boundary:** the zsh binary setting is machine-scoped, `""` means PATH lookup, `"off"` disables runtime zsh execution, and non-empty relative paths are rejected as invalid config rather than resolved against workspace or cwd.
+
 **Extension unit tests mock `vscode`:** The vitest config aliases `vscode` to `/dev/null`. Tests that use VS Code types must provide their own mock — find examples with `rg 'vi.mock.*vscode' packages/vscode-better-zsh/src/test/`.
 
 ---

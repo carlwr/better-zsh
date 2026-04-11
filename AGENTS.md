@@ -62,6 +62,7 @@ The extension uses `zsh -f` only where actual shell execution is worth the host-
 - **Static zsh knowledge** (builtins, options, shell-managed parameters, parameter expansion flags, grammar) is preferred for editor features — it is intrinsic to zsh, stable enough to bundle, and more consistent than asking the host shell at activation time
 - **Environment-dependent data** (`$commands`, `$aliases`, `$functions_source`, `$fpath` beyond system defaults) is *not* used for core features — it varies by machine, launch method, editor, and target execution environment
 - `-f` (NO_RCS) skips user rc files, but note that `/etc/zshenv` still runs. Spawned zsh processes receive only an explicit allowlist of env vars (`HOME`, `PATH`, locale vars, etc.) — see `ZSH_ENV_KEEP` in the extension source. Even this filtered set varies by VS Code launch method (Dock vs terminal, bash vs zsh, Cursor vs VS Code, etc.).
+- The configured zsh binary path is intentionally **machine-scoped only** and explicit paths must be absolute. `""` means PATH lookup for `zsh`; `"off"` disables runtime zsh execution; relative paths are rejected at the settings parse boundary rather than normalized later.
 - The file being edited may run on a completely different machine (CI, container, remote); exposing local environment data can actively mislead
 - Mental model: "if we could bundle a zsh binary and run it in an isolated container, we would." We use system zsh only where execution is intrinsic, and otherwise prefer bundled/static knowledge for consistency, startup latency, and smaller security surface.
 - Environment-dependent introspection may later be offered through agent-facing tools (Language Model Tools API) where agents explicitly opt in, with clear caveats about side effects and env-specificity
@@ -198,6 +199,12 @@ This repo is worked on from multiple agent tools (Cursor, Claude CLI, Codex CLI,
 - Avoid duplicating information that lives in source (e.g. package.json scripts, file names, directory layout) — it becomes stale
 - Express constraints and intent rather than enumerating specifics
 - Prefer patterns ("unit tests live in `src/test/`, grouped into subdirs mirroring source structure") over exact paths
+- If `SECURITY.md` needs updates, **inform the user** and suggest what to change.
+  - **Agentic tools are not allowed to edit `SECURITY.md`**.
+  - `SECURITY.md` may need updates if any of the following areas are changed (if none of them are, SECURITY.md should not be read):
+    - the extension invoking `zsh` on the host machine
+    - the extension resolving `source`/`.` links on the host machine
+    - extension settings
 
 ### Recording design decisions
 

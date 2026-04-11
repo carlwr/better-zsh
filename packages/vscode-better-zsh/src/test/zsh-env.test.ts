@@ -60,10 +60,28 @@ suite("parseZshPath", () => {
     assert.strictEqual(r.kind, "explicit")
     assert.strictEqual((r as { binary: string }).binary, "/usr/local/bin/zsh")
   })
+
+  test("relative explicit path → invalid", () => {
+    assert.deepStrictEqual(parseZshPath("./zsh"), {
+      kind: "invalid",
+      raw: "./zsh",
+      reason: "relative",
+    })
+    assert.deepStrictEqual(parseZshPath("bin/zsh"), {
+      kind: "invalid",
+      raw: "bin/zsh",
+      reason: "relative",
+    })
+  })
 })
 
 suite("zsh mode gating", () => {
   const disabled: ZshPathConfig = { kind: "disabled" }
+  const invalidRelative: ZshPathConfig = {
+    kind: "invalid",
+    raw: "./zsh",
+    reason: "relative",
+  }
   const explicitBad: ZshPathConfig = {
     kind: "explicit",
     binary: mkZshBinary("/nonexistent/zsh-binary"),
@@ -82,6 +100,17 @@ suite("zsh mode gating", () => {
 
   test("explicit non-existent path gates runtime features", async () => {
     configureZsh(explicitBad)
+    try {
+      assert.strictEqual(await zshAvailable(), false)
+      assert.deepStrictEqual(await zshTokenize("echo hi"), [])
+      assert.deepStrictEqual(await zshCheck("if"), { ok: "unavailable" })
+    } finally {
+      configureZsh(parseZshPath(""))
+    }
+  })
+
+  test("invalid relative path gates runtime features", async () => {
+    configureZsh(invalidRelative)
     try {
       assert.strictEqual(await zshAvailable(), false)
       assert.deepStrictEqual(await zshTokenize("echo hi"), [])

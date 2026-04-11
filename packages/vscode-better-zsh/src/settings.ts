@@ -1,3 +1,4 @@
+import * as path from "node:path"
 import * as vscode from "vscode"
 import { BETTER_ZSH_CONFIG, mkZshBinary, type ZshBinary } from "./ids"
 
@@ -21,6 +22,7 @@ export type ZshPathConfig =
   | { kind: "disabled" }
   | { kind: "default"; binary: ZshBinary }
   | { kind: "explicit"; binary: ZshBinary }
+  | { kind: "invalid"; raw: string; reason: "relative" }
 
 // ── Smart constructor (exported for unit testing) ──
 
@@ -28,6 +30,7 @@ export function parseZshPath(raw: string): ZshPathConfig {
   if (raw === ZSH_PATH_OFF) return { kind: "disabled" }
   if (raw === "")
     return { kind: "default", binary: mkZshBinary(ZSH_BINARY_DEFAULT) }
+  if (!path.isAbsolute(raw)) return { kind: "invalid", raw, reason: "relative" }
   return { kind: "explicit", binary: mkZshBinary(raw) }
 }
 

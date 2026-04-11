@@ -1,6 +1,6 @@
 {
   "name": "zsh-core",
-  "description": "Structured zsh reference data and analysis APIs — options, builtins, conditionals, redirections, and more, parsed from official zsh documentation",
+  "description": "Structured zsh reference data parsed from official zsh documentation + analysis APIs",
   "version": "0.0.1",
   "license": "MIT",
   "main": "./dist/index.js",
