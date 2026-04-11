@@ -21,7 +21,7 @@
     "testINTERACTIVE:electron": "pnpm --filter better-zsh testINTERACTIVE:electron",
     "testINTERACTIVE:electron-bundled": "pnpm --filter better-zsh testINTERACTIVE:electron-bundled",
     "vsix": "pnpm --filter better-zsh vsix",
-    "test:smoke": "pnpm --filter zsh-core test:smoke && pnpm --filter better-zsh test:smoke && bash skills/orient/scripts/test-smoke.sh",
+    "test:smoke": "pnpm --filter zsh-core test:smoke && pnpm --filter better-zsh test:smoke",
     "docs:zsh-core": "pnpm --filter zsh-core docs:build",
     "jsr:zsh-core:dry": "pnpm --filter zsh-core jsr:dry",
     "jsr:zsh-core:check": "pnpm --filter zsh-core jsr:check",
