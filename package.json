@@ -1,12 +1,12 @@
 {
-  "name": "vscode-better-zsh-workspace",
+  "name": "better-zsh-workspace",
   "private": true,
   "version": "0.0.1",
   "license": "MIT",
   "packageManager": "pnpm@10.23.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/carlwr/vscode-better-zsh"
+    "url": "https://github.com/carlwr/better-zsh"
   },
   "scripts": {
     "build": "pnpm --filter better-zsh build",

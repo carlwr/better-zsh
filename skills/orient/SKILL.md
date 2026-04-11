@@ -1,9 +1,9 @@
 ---
 name: orient
-description: Orient quickly in the vscode-better-zsh monorepo. Use at the start of any work session, when adding features, debugging, or navigating unfamiliar code. Provides discovery scripts and reading-path strategies rather than hardcoded filenames.
+description: Orient quickly in the better-zsh monorepo. Use at the start of any work session, when adding features, debugging, or navigating unfamiliar code. Provides discovery scripts and reading-path strategies rather than hardcoded filenames.
 ---
 
-# Orientation: vscode-better-zsh monorepo
+# Orientation: better-zsh monorepo
 
 Read `AGENTS.md` first — it is the primary source for conventions, testing rules, and design decisions. This skill adds navigation strategies and discovery scripts.
 
