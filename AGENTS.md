@@ -80,6 +80,14 @@ The extension uses `zsh -f` only where actual shell execution is worth the host-
 - Prefer structural enforcement of invariants over advisory comments (branded types, `ReadonlySet`, smart constructors) — structural constraints are self-enforcing; comments are advisory
 - Evaluate zsh-core's public API surface from a **general-consumer perspective**, not just from what the extension uses — exported types and fields that appear unused by the extension may still be part of the public contract
 
+### Yodl files can be considered fixed and static
+
+- In general, we do not need to cover for the Yodl docs being re-vendored, e.g. for a zsh upgrade. This is estimated to be a practical concern every 10-20 years -> can be disregarded.
+- What can happen is extending the functionality by vendoring in more Yodl files. That is considered a static change to zsh-core, and is _expected_ to warrant changes to its static types, including those in its API.
+
+In other words:
+**Properties of the vendored .yo files can for practical matters be considered domain invariants.**
+
 ### Hover docs
 
 - Prefer hover docs that explain actual zsh usage, not raw upstream doc notation
