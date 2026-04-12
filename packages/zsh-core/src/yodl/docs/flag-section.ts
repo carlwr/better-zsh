@@ -9,7 +9,12 @@ export function flagSigText(
   return normalizeHeader(header)
 }
 
-export function splitFlagSig(sig: string): { flag: string; args: string[] } {
+export interface FlagSigParts {
+  readonly flag: string
+  readonly args: readonly string[]
+}
+
+export function splitFlagSig(sig: string): FlagSigParts {
   const parts = sig.split(":")
   return {
     flag: parts[0] ?? sig,

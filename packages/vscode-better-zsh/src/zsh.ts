@@ -227,6 +227,6 @@ export async function zshCheck(text: string): Promise<ZshCheckResult> {
   return { ok: false, line: 1, msg: "syntax error" }
 }
 
-export async function zshTokenize(text: string): Promise<string[]> {
+export async function zshTokenize(text: string): Promise<readonly string[]> {
   return (await zshTokenizeCore(runZsh, text)) ?? []
 }

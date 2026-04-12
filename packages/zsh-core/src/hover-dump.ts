@@ -40,7 +40,7 @@ function section(doc: HoverDoc): string {
 /** Split rendered hover docs into markdown dump files for QA/review. */
 export function dumpText(
   docs: readonly HoverDoc[],
-): Map<HoverDumpFile, string> {
+): ReadonlyMap<HoverDumpFile, string> {
   const byKind = groupByKind(docs)
   const entries: [HoverDumpFile, string][] = [
     ...dumpFiles.map(

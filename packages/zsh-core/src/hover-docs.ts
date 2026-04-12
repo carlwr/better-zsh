@@ -32,20 +32,20 @@ export type HoverKind =
 
 /** Rendered hover/reference markdown for one logical zsh item. */
 export interface HoverDoc {
-  kind: HoverKind
-  key: string
-  md: string
+  readonly kind: HoverKind
+  readonly key: string
+  readonly md: string
 }
 
 export interface HoverDocArgs {
-  options: readonly ZshOption[]
-  condOps: readonly CondOpDoc[]
-  params: readonly ShellParamDoc[]
-  builtins?: readonly BuiltinDoc[]
-  precmds?: readonly PrecmdDoc[]
-  redirs?: readonly RedirDoc[]
-  processSubsts?: readonly ProcessSubstDoc[]
-  reservedWords?: readonly ReservedWordDoc[]
+  readonly options: readonly ZshOption[]
+  readonly condOps: readonly CondOpDoc[]
+  readonly params: readonly ShellParamDoc[]
+  readonly builtins?: readonly BuiltinDoc[]
+  readonly precmds?: readonly PrecmdDoc[]
+  readonly redirs?: readonly RedirDoc[]
+  readonly processSubsts?: readonly ProcessSubstDoc[]
+  readonly reservedWords?: readonly ReservedWordDoc[]
 }
 
 // Keep corpus assembly separate from markdown rendering so live hover helpers
@@ -73,7 +73,7 @@ export function hoverDocs({
   redirs = [],
   processSubsts = [],
   reservedWords = [],
-}: HoverDocArgs): HoverDoc[] {
+}: HoverDocArgs): readonly HoverDoc[] {
   const ctx = mkHoverMdCtx(options)
   return [
     ...mkHoverDocs(
@@ -96,7 +96,7 @@ export function hoverDocs({
     ),
     ...mkHoverDocs("builtin", builtins, (builtin) => builtin.name, mdBuiltin),
     ...mkHoverDocs("precmd", precmds, (precmd) => precmd.name, mdPrecmd),
-    ...mkHoverDocs("redir", redirs, (redir) => redir.op, mdRedir),
+    ...mkHoverDocs("redir", redirs, (redir) => redir.sig, mdRedir),
     ...mkHoverDocs(
       "process-subst",
       processSubsts,

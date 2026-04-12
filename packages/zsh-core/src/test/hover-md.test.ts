@@ -296,6 +296,12 @@ describe("hover markdown", () => {
     ])
   })
 
+  test("uses redirection sig as the hover-doc heading key", () => {
+    expect(sampleCorpus().find((doc) => doc.kind === "redir")?.key).toBe(
+      ">> word",
+    )
+  })
+
   test("regression registry is easy to find", () => {
     expect(hoverMdRegressions).toEqual([])
   })
@@ -311,7 +317,7 @@ describe("hover dump", () => {
       ["params.md", "## SECONDS"],
       ["builtins.md", "## echo"],
       ["precmds.md", "## noglob"],
-      ["redirs.md", "## >>"],
+      ["redirs.md", "## >> word"],
       ["process-substs.md", "## <(...)"],
       ["reserved-words.md", "## if"],
     ] as const) {
@@ -325,7 +331,7 @@ describe("hover dump", () => {
       "## SECONDS",
       "## echo",
       "## noglob",
-      "## >>",
+      "## >> word",
       "## <(...)",
       "## if",
     ]) {

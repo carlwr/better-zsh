@@ -28,4 +28,9 @@ describe("parsePrecmds", () => {
     expect(docs.get("exec")?.synopsis[0]).toContain("exec [ -cl ]")
     expect(docs.get("exec")?.desc).toMatch(/current process/i)
   })
+
+  test("all precommand modifiers keep non-empty synopsis", () => {
+    for (const doc of parsePrecmds(GRAMMAR_YO))
+      expect(doc.synopsis.length).toBeGreaterThan(0)
+  })
 })

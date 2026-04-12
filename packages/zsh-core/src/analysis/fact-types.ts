@@ -15,50 +15,50 @@ export type FactKind =
   | "reserved-word"
 
 export interface BaseFact {
-  kind: FactKind
-  span: TextSpan
-  strength: FactStrength
+  readonly kind: FactKind
+  readonly span: TextSpan
+  readonly strength: FactStrength
 }
 
 /** Fact spanning a syntactic region (setopt, conditional, arithmetic). */
 export interface CtxFact extends BaseFact {
-  kind: "ctx"
-  ctx: FactCtx
+  readonly kind: "ctx"
+  readonly ctx: FactCtx
 }
 
 export interface CmdHeadFact extends BaseFact {
-  kind: "cmd-head"
-  text: string
-  name: BuiltinName
-  precmds: readonly PrecmdName[]
+  readonly kind: "cmd-head"
+  readonly text: string
+  readonly name: BuiltinName
+  readonly precmds: readonly PrecmdName[]
 }
 
 export interface PrecmdFact extends BaseFact {
-  kind: "precmd"
-  text: string
-  name: PrecmdName
+  readonly kind: "precmd"
+  readonly text: string
+  readonly name: PrecmdName
 }
 
 export interface FuncDeclFact extends BaseFact {
-  kind: "func-decl"
+  readonly kind: "func-decl"
   /** unvalidated; regex-matched from source text */
-  name: string
-  nameSpan: TextSpan
+  readonly name: string
+  readonly nameSpan: TextSpan
 }
 
 export interface RedirFact extends BaseFact {
-  kind: "redir"
-  text: string
+  readonly kind: "redir"
+  readonly text: string
 }
 
 export interface ProcessSubstFact extends BaseFact {
-  kind: "process-subst"
-  text: string
+  readonly kind: "process-subst"
+  readonly text: string
 }
 
 export interface ReservedWordFact extends BaseFact {
-  kind: "reserved-word"
-  text: string
+  readonly kind: "reserved-word"
+  readonly text: string
 }
 
 export type Fact =

@@ -10,7 +10,7 @@ import {
 import type { Fact } from "./fact-types.ts"
 import { cmdHeadFactsOnLine, funcDeclAtLine } from "./line-facts.ts"
 
-export type { DocLike, TextSpan } from "./doc.ts"
+export type { DocLike, DocLine, TextSpan } from "./doc.ts"
 export { factText } from "./doc.ts"
 export type {
   BaseFact,
@@ -43,7 +43,7 @@ function shiftFact<T extends { span: TextSpan }>(base: number, fact: T): T {
 }
 
 /** Analyze a whole document and return coarse zsh syntax facts. */
-export function analyzeDoc(doc: DocLike): Fact[] {
+export function analyzeDoc(doc: DocLike): readonly Fact[] {
   const lines = readLines(doc)
   const starts = lineStarts(lines)
   const facts: Fact[] = []
@@ -75,7 +75,11 @@ export function analyzeDoc(doc: DocLike): Fact[] {
   return facts
 }
 
-export function factsAt(doc: DocLike, line: number, char: number): Fact[] {
+export function factsAt(
+  doc: DocLike,
+  line: number,
+  char: number,
+): readonly Fact[] {
   const starts = lineStarts(readLines(doc))
   const off = (starts[line] ?? 0) + char
   return analyzeDoc(doc).filter((fact) =>

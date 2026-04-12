@@ -3,10 +3,10 @@ import { factsAt, isCtxFact } from "./facts.ts"
 
 /** Best-effort syntactic bucket for the cursor position. */
 export type SyntacticContext =
-  | { kind: "setopt" }
-  | { kind: "cond" }
-  | { kind: "arith" }
-  | { kind: "general" }
+  | { readonly kind: "setopt" }
+  | { readonly kind: "cond" }
+  | { readonly kind: "arith" }
+  | { readonly kind: "general" }
 
 export type ContextKind = SyntacticContext["kind"]
 

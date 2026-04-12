@@ -1,13 +1,13 @@
 /** Lightweight quote-tracking state for character-by-character scanning. */
 export interface QuoteState {
   /** Inside single quotes */
-  sq: boolean
+  readonly sq: boolean
   /** Inside double quotes */
-  dq: boolean
+  readonly dq: boolean
   /** Inside backtick quotes */
-  bq: boolean
+  readonly bq: boolean
   /** Next character is escaped */
-  esc: boolean
+  readonly esc: boolean
 }
 
 export function mkQuoteState(): QuoteState {

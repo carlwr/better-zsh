@@ -18,7 +18,7 @@ interface ParsedBinaryHeader {
 type ParsedCondHeader = ParsedUnaryHeader | ParsedBinaryHeader
 
 /** Parse cond.yo → CondOpDoc[] */
-export function parseCondOps(yo: string): CondOpDoc[] {
+export function parseCondOps(yo: string): readonly CondOpDoc[] {
   return flattenAliasedEntries(extractItems(yo), parseHeader, (parsed, desc) =>
     parsed.arity === "unary"
       ? {

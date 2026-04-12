@@ -133,6 +133,18 @@ endsitem()`
       ])
     })
 
+    test("keeps known one-to-many short flags explicit", () => {
+      const byFlag = new Map<string, string[]>()
+      for (const opt of opts) {
+        for (const flag of opt.flags) {
+          const key = `${flag.on}${flag.char}`
+          byFlag.set(key, [...(byFlag.get(key) ?? []), opt.name])
+        }
+      }
+      expect(byFlag.get("-X")).toEqual(["listtypes", "markdirs"])
+      expect(byFlag.get("+f")).toEqual(["glob", "rcs"])
+    })
+
     test("descriptions strip raw yodl macros", () => {
       for (const o of opts) {
         expect(o.desc).not.toContain("example(")

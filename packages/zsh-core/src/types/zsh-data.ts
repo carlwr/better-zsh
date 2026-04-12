@@ -1,4 +1,3 @@
-import type { NonEmpty } from "@carlwr/typescript-extra"
 import type {
   BuiltinName,
   CondOp,
@@ -12,6 +11,7 @@ import type {
   ShellParamName,
   SubscriptFlag,
 } from "./brand.ts"
+import type { ReadonlyNonEmpty } from "./readonly.ts"
 
 export { type PrecmdName, precmdNames } from "./precmd.ts"
 
@@ -22,6 +22,8 @@ export type DefaultMarker = "D" | "K" | "S" | "C" | "Z"
 
 /** Conditional expression: unary (-a file) vs binary (f1 -nt f2) */
 export type CondArity = "unary" | "binary"
+export type UnaryCondOperands = readonly [string]
+export type BinaryCondOperands = readonly [string, string]
 
 export type Emulation = "csh" | "ksh" | "sh" | "zsh"
 
@@ -73,7 +75,7 @@ export interface ZshOption {
 /** Parsed unary `[[ ... ]]` conditional operator docs. */
 export interface UnaryCondOpDoc {
   readonly op: CondOp
-  readonly operands: readonly [string]
+  readonly operands: UnaryCondOperands
   readonly desc: string
   readonly arity: "unary"
 }
@@ -81,7 +83,7 @@ export interface UnaryCondOpDoc {
 /** Parsed binary `[[ ... ]]` conditional operator docs. */
 export interface BinaryCondOpDoc {
   readonly op: CondOp
-  readonly operands: readonly [string, string]
+  readonly operands: BinaryCondOperands
   readonly desc: string
   readonly arity: "binary"
 }
@@ -92,7 +94,7 @@ export type CondOpDoc = UnaryCondOpDoc | BinaryCondOpDoc
 /** Parsed builtin command doc block. */
 export interface BuiltinDoc {
   readonly name: BuiltinName
-  readonly synopsis: NonEmpty<string>
+  readonly synopsis: ReadonlyNonEmpty<string>
   readonly desc: string
   /** present when builtin requires a loaded module */
   readonly module?: string
@@ -103,7 +105,7 @@ export interface BuiltinDoc {
 /** Parsed precommand modifier doc block. */
 export interface PrecmdDoc {
   readonly name: PrecmdName
-  readonly synopsis: NonEmpty<string>
+  readonly synopsis: ReadonlyNonEmpty<string>
   readonly desc: string
 }
 
@@ -128,6 +130,7 @@ export interface ReservedWordDoc extends SyntaxDocBase {
 }
 
 export interface RedirDoc extends SyntaxDocBase {
+  /** Grouping token only; multiple redirection docs share the same `op`. */
   readonly op: RedirOp
 }
 

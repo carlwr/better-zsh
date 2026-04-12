@@ -12,12 +12,14 @@ export function expectDocCorpus<T>({
   keyOf,
   descOf,
   known = [],
+  sectionOf,
 }: {
   docs: readonly T[]
   minCount: number
   keyOf: (doc: T) => string
   descOf: (doc: T) => string
   known?: readonly string[]
+  sectionOf?: (doc: T) => string
 }) {
   expect(docs.length).toBeGreaterThanOrEqual(minCount)
 
@@ -28,6 +30,7 @@ export function expectDocCorpus<T>({
     expect(keyOf(doc)).toBeTruthy()
     expect(descOf(doc)).toBeTruthy()
     expect(descOf(doc)).not.toMatch(/\b(?:tt|var|item|xitem|sitem)\(/)
+    if (sectionOf) expect(sectionOf(doc).trim()).toBeTruthy()
   }
 
   for (const key of known) expect(keys).toContain(key)

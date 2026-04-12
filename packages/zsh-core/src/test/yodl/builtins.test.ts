@@ -21,6 +21,7 @@ enditem()`
     expect(docs).toHaveLength(1)
     expect(docs[0]?.name).toBe(mkBuiltinName("echo"))
     expect(docs[0]?.synopsis).toEqual(["echo [ -n ]"])
+    expect(docs[0]?.synopsis).toHaveLength(1)
     expect(docs[0]?.desc).toBe("Write text.")
   })
 
@@ -72,6 +73,10 @@ enditem()`
       expect(byName.get(mkBuiltinName("["))?.synopsis[0]).toBe(
         "[ [ arg ... ] ]",
       )
+    })
+
+    test("all builtins keep non-empty synopsis", () => {
+      for (const doc of docs) expect(doc.synopsis.length).toBeGreaterThan(0)
     })
 
     test("excludes macro template placeholders", () => {

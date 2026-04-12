@@ -1,5 +1,13 @@
 import { describe, expect, test } from "vitest"
-import { mkShellParamName } from "../../types/brand"
+import {
+  mkGlobbingFlag,
+  mkGlobOp,
+  mkHistoryKey,
+  mkParamFlag,
+  mkRedirOp,
+  mkShellParamName,
+  mkSubscriptFlag,
+} from "../../types/brand"
 import { parseGlobOps } from "../../yodl/docs/glob-ops"
 import { parseGlobbingFlags } from "../../yodl/docs/globbing-flags"
 import { parseHistory } from "../../yodl/docs/history"
@@ -55,6 +63,16 @@ enditem()`
     expect(docs[1]?.desc).toBe("Force clobber.")
   })
 
+  test("redirection op is a grouping key, not a unique identity", () => {
+    const docs = parseRedirections(REDIRECT_YO)
+    expect(docs.filter((doc) => doc.op === ">&").map((doc) => doc.sig)).toEqual(
+      [">& number", ">& -", ">& p", ">& word"],
+    )
+    expect(docs.filter((doc) => doc.op === "<&").map((doc) => doc.sig)).toEqual(
+      ["<& number", "<& -", "<& p"],
+    )
+  })
+
   test("reserved words include command-position and any-position forms", () => {
     const docs = new Map(
       parseReservedWords(GRAMMAR_YO).map((doc) => [doc.name, doc]),
@@ -78,6 +96,7 @@ enditem()`
       minCount: 18,
       keyOf: (doc) => doc.sig,
       descOf: (doc) => doc.desc,
+      sectionOf: (doc) => doc.section,
       known: ["< word", "<> word", ">> word", "&> word", "&>>! word"],
     })
   })
@@ -88,6 +107,7 @@ enditem()`
       minCount: 25,
       keyOf: (doc) => doc.name,
       descOf: (doc) => doc.desc,
+      sectionOf: (doc) => doc.section,
       known: ["if", "nocorrect", "[[", "{", "}"],
     })
   })
@@ -98,6 +118,7 @@ enditem()`
       minCount: 10,
       keyOf: (doc) => doc.flag,
       descOf: (doc) => doc.desc,
+      sectionOf: (doc) => doc.section,
       known: ["w", "s:string:", "n:expr:", "R"],
     })
   })
@@ -108,6 +129,7 @@ enditem()`
       minCount: 80,
       keyOf: (doc) => doc.name,
       descOf: (doc) => doc.desc,
+      sectionOf: (doc) => doc.section,
       known: ["SECONDS", "argv", "path", "PATH", "reply", "zsh_eval_context"],
     })
   })
@@ -118,6 +140,7 @@ enditem()`
       minCount: 40,
       keyOf: (doc) => doc.sig,
       descOf: (doc) => doc.desc,
+      sectionOf: (doc) => doc.section,
       known: [
         "@",
         "g:opts:",
@@ -134,6 +157,7 @@ enditem()`
       minCount: 30,
       keyOf: (doc) => `${doc.kind}:${doc.key}`,
       descOf: (doc) => doc.desc,
+      sectionOf: (doc) => doc.section,
       known: [
         "event-designator:!!",
         "event-designator:!n",
@@ -151,6 +175,7 @@ enditem()`
       minCount: 12,
       keyOf: (doc) => doc.op,
       descOf: (doc) => doc.desc,
+      sectionOf: (doc) => doc.section,
       known: ["*", "[...]", "@(...)", "x|y", "x##"],
     })
   })
@@ -161,7 +186,25 @@ enditem()`
       minCount: 10,
       keyOf: (doc) => doc.sig,
       descOf: (doc) => doc.desc,
+      sectionOf: (doc) => doc.section,
       known: ["i", "I", "b", "m", "cN,M"],
     })
+  })
+
+  test("normalized syntax-doc identity fields are idempotent", () => {
+    for (const doc of parseRedirections(REDIRECT_YO))
+      expect(mkRedirOp(doc.op)).toBe(doc.op)
+    for (const doc of parseShellParams(PARAMS_YO))
+      expect(mkShellParamName(doc.name)).toBe(doc.name)
+    for (const doc of parseSubscriptFlags(PARAMS_YO))
+      expect(mkSubscriptFlag(doc.flag)).toBe(doc.flag)
+    for (const doc of parseParamFlags(EXPN_YO))
+      expect(mkParamFlag(doc.flag)).toBe(doc.flag)
+    for (const doc of parseHistory(EXPN_YO))
+      expect(mkHistoryKey(doc.key)).toBe(doc.key)
+    for (const doc of parseGlobOps(EXPN_YO))
+      expect(mkGlobOp(doc.op)).toBe(doc.op)
+    for (const doc of parseGlobbingFlags(EXPN_YO))
+      expect(mkGlobbingFlag(doc.flag)).toBe(doc.flag)
   })
 })

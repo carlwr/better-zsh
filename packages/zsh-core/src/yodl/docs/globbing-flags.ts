@@ -14,6 +14,7 @@ function bodyDoc(item: YodlEntry): string | undefined {
 }
 
 export function parseGlobbingFlags(yo: string): readonly GlobbingFlagDoc[] {
+  const section = "Globbing Flags"
   const sec = extractSectionBody(yo, "Globbing Flags")
   const list = extractFirstList(sec, "item")
   if (!list) return []
@@ -35,7 +36,7 @@ export function parseGlobbingFlags(yo: string): readonly GlobbingFlagDoc[] {
             args: [],
             sig: flag,
             desc,
-            section: item.section,
+            section,
           }) satisfies GlobbingFlagDoc,
       )
     }
@@ -47,7 +48,7 @@ export function parseGlobbingFlags(yo: string): readonly GlobbingFlagDoc[] {
         args: vars,
         sig,
         desc,
-        section: item.section,
+        section,
       } satisfies GlobbingFlagDoc,
     ]
   })

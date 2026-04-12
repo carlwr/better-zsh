@@ -17,14 +17,14 @@ import type {
 
 /** Known markdown/rendering regression marker for QA. */
 export interface HoverRegression {
-  kind: HoverKind
-  key: string
-  note: string
+  readonly kind: HoverKind
+  readonly key: string
+  readonly note: string
 }
 
 /** Shared formatter context for markdown generation. */
 export interface HoverMdCtx {
-  optNames: ReadonlySet<OptName>
+  readonly optNames: ReadonlySet<OptName>
 }
 
 /** Known markdown/rendering regressions tracked for QA (add entries as they are discovered). */

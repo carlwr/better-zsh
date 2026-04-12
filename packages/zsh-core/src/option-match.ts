@@ -2,9 +2,9 @@ import { mkOptName, type OptName } from "./types/brand.ts"
 
 export interface OptionMatch {
   /** What to insert / display. */
-  label: string
+  readonly label: string
   /** Canonical form (lowercase, no underscores, no no-prefix for negated). */
-  canonical: OptName
+  readonly canonical: OptName
 }
 
 /**
@@ -14,7 +14,7 @@ export interface OptionMatch {
 export function matchOptions(
   options: readonly OptName[],
   typed: string,
-): OptionMatch[] {
+): readonly OptionMatch[] {
   const norm = mkOptName(typed)
   const out: OptionMatch[] = []
   pushMatches(

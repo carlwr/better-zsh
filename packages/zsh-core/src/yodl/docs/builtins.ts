@@ -1,5 +1,5 @@
-import type { NonEmpty } from "@carlwr/typescript-extra"
 import { mkBuiltinName } from "../../types/brand.ts"
+import type { ReadonlyNonEmpty } from "../../types/readonly.ts"
 import type { BuiltinDoc } from "../../types/zsh-data.ts"
 import { collectAliasedEntries, extractItems } from "../core/doc.ts"
 import { isMacro, parseNodes, type YNodeSeq } from "../core/nodes.ts"
@@ -37,7 +37,7 @@ export function parseBuiltins(yo: string): readonly BuiltinDoc[] {
     for (const head of heads) {
       const name = extractCmdName(head.text)
       if (!name) continue
-      const synopsis: NonEmpty<string> = [head.text, ...synopsisTail]
+      const synopsis: ReadonlyNonEmpty<string> = [head.text, ...synopsisTail]
       byName.set(name, {
         name: mkBuiltinName(name),
         synopsis,

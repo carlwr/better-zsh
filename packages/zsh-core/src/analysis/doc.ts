@@ -1,15 +1,20 @@
 import { commentStart } from "../comment.ts"
 
+/** Minimal line abstraction for line-based analysis (compatible with VS Code TextDocument). */
+export interface DocLine {
+  readonly text: string
+}
+
 /** Minimal document abstraction for line-based analysis (compatible with VS Code TextDocument). */
 export interface DocLike {
-  lineAt(i: number): { text: string }
-  lineCount: number
+  lineAt(i: number): DocLine
+  readonly lineCount: number
 }
 
 /** Half-open text span in absolute document offsets. */
 export interface TextSpan {
-  start: number
-  end: number
+  readonly start: number
+  readonly end: number
 }
 
 export function activeText(line: string): string {
@@ -17,14 +22,14 @@ export function activeText(line: string): string {
   return line.slice(0, cut)
 }
 
-export function readLines(doc: DocLike): string[] {
+export function readLines(doc: DocLike): readonly string[] {
   const out: string[] = []
   for (let i = 0; i < doc.lineCount; i++) out.push(doc.lineAt(i).text)
   return out
 }
 
 // Each line separator counts as 1 char (\r\n not supported — intentional).
-export function lineStarts(lines: readonly string[]): number[] {
+export function lineStarts(lines: readonly string[]): readonly number[] {
   const out: number[] = []
   let off = 0
   for (const line of lines) {

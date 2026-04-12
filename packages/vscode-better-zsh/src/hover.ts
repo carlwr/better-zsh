@@ -12,6 +12,7 @@ import type {
   PrecmdFact,
   ProcessSubstDoc,
   ProcessSubstFact,
+  ProcessSubstOp,
   RedirDoc,
   RedirFact,
   RedirOp,
@@ -22,12 +23,10 @@ import type {
   ZshOption,
 } from "zsh-core"
 import {
-  factsAt,
-  factText,
+  cmdHeadFactsOnLine,
   mkCondOp,
   mkOptFlagChar,
   mkOptLookupName,
-  mkRedirOp,
   mkShellParamName,
   syntacticContext,
 } from "zsh-core"
@@ -45,18 +44,21 @@ import {
 } from "zsh-core/render"
 import { activeWordRangeAt, commentStart, funcDocs } from "./funcs"
 
+interface OptFlagHit {
+  readonly opt: ZshOption
+  readonly alias: OptFlagAlias
+}
+
 export class HoverProvider implements vscode.HoverProvider {
   private md: HoverMdCtx
   private builtinMap: Map<BuiltinName, BuiltinDoc> | undefined
   private paramMap: Map<ShellParamName, ShellParamDoc> | undefined
   private optionMap: Map<OptName, ZshOption> | undefined
-  private flagMap:
-    | Map<OptFlagChar, { opt: ZshOption; alias: OptFlagAlias }>
-    | undefined
+  private flagMap: ReadonlyMap<OptFlagChar, readonly OptFlagHit[]> | undefined
   private condOpMap: Map<CondOp, CondOpDoc> | undefined
   private precmdMap: Map<string, PrecmdDoc> | undefined
-  private redirMap: Map<RedirOp, RedirDoc> | undefined
-  private processSubstMap: Map<string, ProcessSubstDoc> | undefined
+  private redirMap: ReadonlyMap<RedirOp, readonly RedirDoc[]> | undefined
+  private processSubstMap: Map<ProcessSubstOp, ProcessSubstDoc> | undefined
   private reservedWordMap: Map<string, ReservedWordDoc> | undefined
 
   constructor(
@@ -80,9 +82,15 @@ export class HoverProvider implements vscode.HoverProvider {
     }
     if (options) {
       this.optionMap = new Map(options.map((opt) => [opt.name, opt]))
-      this.flagMap = new Map(
+      this.flagMap = indexMany(
         options.flatMap((opt) =>
-          opt.flags.map((alias) => [alias.char, { opt, alias }] as const),
+          opt.flags.map(
+            (alias) =>
+              [alias.char, { opt, alias }] as const satisfies readonly [
+                OptFlagChar,
+                OptFlagHit,
+              ],
+          ),
         ),
       )
     }
@@ -93,7 +101,7 @@ export class HoverProvider implements vscode.HoverProvider {
       this.precmdMap = new Map(precmds.map((doc) => [doc.name, doc]))
     }
     if (redirDocs) {
-      this.redirMap = new Map(redirDocs.map((doc) => [doc.op, doc]))
+      this.redirMap = indexMany(redirDocs.map((doc) => [doc.op, doc] as const))
     }
     if (processSubstDocs) {
       this.processSubstMap = new Map(
@@ -165,15 +173,18 @@ export class HoverProvider implements vscode.HoverProvider {
   }
 
   private factBasedHover(doc: vscode.TextDocument, pos: vscode.Position) {
+    const line = doc.lineAt(pos.line).text
+    const af = cmdHeadFactsOnLine(line)
     const tokenRange = activeTokenRangeAt(doc, pos)
-    if (!tokenRange) return
-    const token = doc.getText(tokenRange)
-    const af = factsAt(doc, pos.line, pos.character)
+    const token = tokenRange ? doc.getText(tokenRange) : undefined
 
-    const precmd = af.find(
-      (fact): fact is PrecmdFact =>
-        fact.kind === "precmd" && factText(doc, fact.span) === token,
-    )
+    const precmd = token
+      ? af.find(
+          (fact): fact is PrecmdFact =>
+            fact.kind === "precmd" &&
+            line.slice(fact.span.start, fact.span.end) === token,
+        )
+      : undefined
     if (precmd) {
       const d = this.precmdMap?.get(precmd.name)
       if (d)
@@ -183,10 +194,13 @@ export class HoverProvider implements vscode.HoverProvider {
         )
     }
 
-    const head = af.find(
-      (fact): fact is CmdHeadFact =>
-        fact.kind === "cmd-head" && factText(doc, fact.span) === token,
-    )
+    const head = token
+      ? af.find(
+          (fact): fact is CmdHeadFact =>
+            fact.kind === "cmd-head" &&
+            line.slice(fact.span.start, fact.span.end) === token,
+        )
+      : undefined
     if (head) {
       const d = this.builtinMap?.get(head.name)
       if (d)
@@ -198,12 +212,13 @@ export class HoverProvider implements vscode.HoverProvider {
 
     const redir = af.find((fact): fact is RedirFact => fact.kind === "redir")
     if (redir) {
-      const op = mkRedirOp(redir.text.replace(/^[0-9]+/, ""))
-      const d = this.redirMap?.get(op)
-      if (d && (token === redir.text || token.startsWith(redir.text)))
+      const redirRange = activeRedirRangeAt(doc, pos, redir)
+      const redirToken = redirRange ? doc.getText(redirRange) : undefined
+      const d = redirToken ? redirDoc(this.redirMap, redirToken) : undefined
+      if (d && redirRange)
         return new vscode.Hover(
           new vscode.MarkdownString(mdRedir(d)),
-          tokenRange,
+          redirRange,
         )
     }
 
@@ -212,7 +227,7 @@ export class HoverProvider implements vscode.HoverProvider {
     )
     if (ps) {
       const prefix = ps.text.slice(0, 2)
-      const opKey = `${prefix}...)`
+      const opKey = `${prefix}...)` as ProcessSubstOp
       const d = this.processSubstMap?.get(opKey)
       if (d)
         return new vscode.Hover(
@@ -221,10 +236,13 @@ export class HoverProvider implements vscode.HoverProvider {
         )
     }
 
-    const rw = af.find(
-      (fact): fact is ReservedWordFact =>
-        fact.kind === "reserved-word" && factText(doc, fact.span) === token,
-    )
+    const rw = token
+      ? af.find(
+          (fact): fact is ReservedWordFact =>
+            fact.kind === "reserved-word" &&
+            line.slice(fact.span.start, fact.span.end) === token,
+        )
+      : undefined
     if (rw) {
       const d = this.reservedWordMap?.get(rw.text)
       if (d)
@@ -241,10 +259,71 @@ export class HoverProvider implements vscode.HoverProvider {
 
     const short = token.match(/^([+-])([A-Za-z0-9])$/)
     if (!short?.[1] || !short[2] || !this.flagMap) return
-    // The hovered doc is keyed by the underlying option; sign only affects whether it sets or unsets it.
-    const hit = this.flagMap.get(mkOptFlagChar(short[2]))
-    return hit?.opt
+    const hits = this.flagMap
+      .get(mkOptFlagChar(short[2]))
+      ?.filter((hit) => hit.alias.on === short[1])
+    return unique(hits)?.opt
   }
+}
+
+function indexMany<K, V>(
+  entries: readonly (readonly [K, V])[],
+): ReadonlyMap<K, readonly V[]> {
+  const out = new Map<K, V[]>()
+  for (const [key, value] of entries) {
+    const vs = out.get(key)
+    if (vs) vs.push(value)
+    else out.set(key, [value])
+  }
+  return out
+}
+
+function unique<T>(hits: readonly T[] | undefined): T | undefined {
+  return hits?.length === 1 ? hits[0] : undefined
+}
+
+function redirDoc(
+  redirMap: ReadonlyMap<RedirOp, readonly RedirDoc[]> | undefined,
+  token: string,
+): RedirDoc | undefined {
+  const parsed = splitRedirToken(redirMap, token)
+  if (!parsed) return
+  const { op, tail } = parsed
+  const docs = redirMap?.get(op)
+  if (!docs) return
+  if (docs.length === 1) return docs[0]
+  return unique(
+    docs.filter((doc) => redirTailKind(doc) === redirTailKindOf(tail)),
+  )
+}
+
+function splitRedirToken(
+  redirMap: ReadonlyMap<RedirOp, readonly RedirDoc[]> | undefined,
+  token: string,
+): { op: RedirOp; tail: string } | undefined {
+  const text = token.replace(/^[0-9]+/, "")
+  let best: RedirOp | undefined
+
+  for (const op of redirMap?.keys() ?? []) {
+    const sig = op as string
+    if (!text.startsWith(sig)) continue
+    if (!best || sig.length > (best as string).length) best = op
+  }
+
+  if (!best) return
+  return { op: best, tail: text.slice((best as string).length) }
+}
+
+function redirTailKind(doc: RedirDoc): string {
+  return doc.sig.slice((doc.op as string).length).trimStart()
+}
+
+function redirTailKindOf(tail: string): string {
+  if (/^\d+$/.test(tail)) return "number"
+  if (tail === "-") return "-"
+  if (tail === "p") return "p"
+  if (tail.length > 0) return "word"
+  return ""
 }
 
 function activeTokenRangeAt(
@@ -312,4 +391,20 @@ function operatorRangeAt(
 
 function opBoundary(ch: string | undefined): boolean {
   return ch === undefined || /[\s[\]]/.test(ch)
+}
+
+function activeRedirRangeAt(
+  doc: vscode.TextDocument,
+  pos: vscode.Position,
+  redir: RedirFact,
+): vscode.Range | undefined {
+  const text = doc.lineAt(pos.line).text
+  const cut = commentStart(text) ?? text.length
+  if (pos.character < redir.span.start) return
+
+  let end = redir.span.end
+  while (end < cut && !isTokenDelimiter(text[end] ?? "")) end++
+  if (pos.character >= end) return
+
+  return new vscode.Range(pos.line, redir.span.start, pos.line, end)
 }

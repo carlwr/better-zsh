@@ -5,10 +5,13 @@ import {
   type CondOpDoc,
   mkBuiltinName,
   mkCondOp,
+  mkOptFlagChar,
+  mkOptName,
   mkRedirOp,
   mkShellParamName,
   type RedirDoc,
   type ShellParamDoc,
+  type ZshOption,
 } from "zsh-core"
 
 vi.mock("vscode", () => ({
@@ -89,8 +92,45 @@ const builtins = [
   { name: mkBuiltinName("echo"), synopsis: ["echo"], desc: "echo docs" },
   { name: mkBuiltinName("fc"), synopsis: ["fc"], desc: "fc docs" },
 ] as unknown as BuiltinDoc[]
+const options = [
+  {
+    name: mkOptName("GLOB"),
+    display: "GLOB",
+    flags: [{ char: mkOptFlagChar("f"), on: "+" }],
+    defaultIn: ["zsh"],
+    category: "Expansion and Globbing",
+    desc: "glob docs",
+  },
+  {
+    name: mkOptName("RCS"),
+    display: "RCS",
+    flags: [{ char: mkOptFlagChar("f"), on: "+" }],
+    defaultIn: ["zsh"],
+    category: "Initialisation",
+    desc: "rcs docs",
+  },
+] as unknown as ZshOption[]
 const redirs = [
-  { op: mkRedirOp(">&"), sig: "n>& word", desc: "redir docs", section: "x" },
+  {
+    op: mkRedirOp(">&"),
+    sig: ">& number",
+    desc: "redir number docs",
+    section: "x",
+  },
+  { op: mkRedirOp(">&"), sig: ">& -", desc: "redir close docs", section: "x" },
+  { op: mkRedirOp(">&"), sig: ">& p", desc: "redir coproc docs", section: "x" },
+  {
+    op: mkRedirOp(">&"),
+    sig: ">& word",
+    desc: "redir word docs",
+    section: "x",
+  },
+  {
+    op: mkRedirOp(">&!"),
+    sig: ">&! word",
+    desc: "redir force docs",
+    section: "x",
+  },
   { op: mkRedirOp("&>"), sig: "&> word", desc: "redir &> docs", section: "x" },
 ] as unknown as RedirDoc[]
 const params = [
@@ -137,7 +177,7 @@ const condOps = [
 function mkProvider() {
   return new HoverProvider(
     params,
-    undefined,
+    options,
     condOps,
     builtins,
     undefined,
@@ -171,7 +211,7 @@ suite("HoverProvider", () => {
   test("builtin hover wins over same-line redirection", () => {
     const h = hoverAt("echo thing >&2", 1)
     assert.match(h?.value ?? "", /echo docs/)
-    assert.doesNotMatch(h?.value ?? "", /redir docs/)
+    assert.doesNotMatch(h?.value ?? "", /redir word docs/)
   })
 
   test("no hover on whitespace", () => {
@@ -205,4 +245,21 @@ suite("HoverProvider", () => {
   test("shell parameter hover works from static docs", () => {
     assert.match(hoverAt("print $SECONDS", 8)?.value ?? "", /seconds docs/)
   })
+
+  test("ambiguous short option hover stays silent", () => {
+    assert.strictEqual(hoverAt("setopt +f", 8), undefined)
+  })
+
+  for (const [line, char, re] of [
+    ["echo >&2", 6, /redir number docs/],
+    ["echo >&-", 6, /redir close docs/],
+    ["echo >&p", 6, /redir coproc docs/],
+    ["echo >&file", 6, /redir word docs/],
+    ["echo >&file", 8, /redir word docs/],
+    ["echo >&!file", 8, /redir force docs/],
+  ] as const) {
+    test(`redirection hover disambiguates ${line}`, () => {
+      assert.match(hoverAt(line, char)?.value ?? "", re)
+    })
+  }
 })

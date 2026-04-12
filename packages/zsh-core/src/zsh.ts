@@ -18,31 +18,34 @@ const PARAMS_SCRIPT =
 
 /** Request shape for a zsh process invocation. */
 export interface ZshRunReq {
-  args: string[]
-  env?: NodeJS.ProcessEnv
-  stdin?: string
+  readonly args: readonly string[]
+  readonly env?: NodeJS.ProcessEnv
+  readonly stdin?: string
 }
 
 /** Normalized zsh process result. */
 export interface ZshRunResult {
-  stdout: string
-  stderr: string
-  code: number
+  readonly stdout: string
+  readonly stderr: string
+  readonly code: number
   /**
    * Optional symbolic error code (e.g. `"ENOENT"`).
    * zsh-core's own runners leave this unset; it is a convention slot for custom
    * `ZshRunner` implementors that want to surface shell-level or OS-level error codes.
    */
-  errCode?: string
+  readonly errCode?: string
+}
+
+export interface ZshError {
+  readonly line: number
+  readonly msg: string
 }
 
 /** Injected zsh executor used by the query helpers. */
 export type ZshRunner = (req: ZshRunReq) => Promise<ZshRunResult>
 
 /** Parse common zsh syntax-check stderr into a line/message pair. */
-export function parseZshError(
-  stderr: string,
-): { line: number; msg: string } | undefined {
+export function parseZshError(stderr: string): ZshError | undefined {
   if (!stderr.trim()) return undefined
   const m = stderr.match(/^(?:\/dev\/stdin|zsh):(\d+):\s*(.+)$/m)
   if (m) return { line: Number(m[1]), msg: m[2] ?? "" }
@@ -80,43 +83,43 @@ async function runZshQuery<T>(
 export async function zshTokenize(
   run: ZshRunner,
   text: string,
-): Promise<string[] | undefined> {
+): Promise<readonly string[] | undefined> {
   return runZshQuery(run, TOKENIZE_SCRIPT, splitLines, { SRC: text })
 }
 
 /** Query builtin command names known to zsh. */
 export async function zshBuiltins(
   run: ZshRunner,
-): Promise<string[] | undefined> {
+): Promise<readonly string[] | undefined> {
   return runZshQuery(run, BUILTINS_SCRIPT, splitLines)
 }
 
 /** Query reserved words known to zsh. */
 export async function zshReswords(
   run: ZshRunner,
-): Promise<string[] | undefined> {
+): Promise<readonly string[] | undefined> {
   return runZshQuery(run, RESWORDS_SCRIPT, splitLines)
 }
 
 /** Query option names known to zsh. */
 export async function zshOptions(
   run: ZshRunner,
-): Promise<string[] | undefined> {
+): Promise<readonly string[] | undefined> {
   return runZshQuery(run, OPTIONS_SCRIPT, splitLines)
 }
 
 /** Query visible special parameters known to zsh. */
 export async function zshParameters(
   run: ZshRunner,
-): Promise<Map<string, string> | undefined> {
+): Promise<ReadonlyMap<string, string> | undefined> {
   return runZshQuery(run, PARAMS_SCRIPT, parseEqMap)
 }
 
-function splitLines(stdout: string): string[] {
+function splitLines(stdout: string): readonly string[] {
   return stdout.split("\n").filter(Boolean)
 }
 
-function parseEqMap(stdout: string): Map<string, string> {
+function parseEqMap(stdout: string): ReadonlyMap<string, string> {
   const out = new Map<string, string>()
   for (const line of splitLines(stdout)) {
     const eq = line.indexOf("=")
