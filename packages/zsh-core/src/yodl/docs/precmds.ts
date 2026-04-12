@@ -1,5 +1,6 @@
+import type { NonEmpty } from "@carlwr/typescript-extra"
+
 import { type PrecmdName, precmdNames } from "../../types/precmd.ts"
-import type { ReadonlyNonEmpty } from "../../types/readonly.ts"
 import type { PrecmdDoc } from "../../types/zsh-data.ts"
 import { extractItems } from "../core/doc.ts"
 import { normalizeBody, normalizeHeader } from "../core/text.ts"
@@ -13,7 +14,7 @@ export function parsePrecmds(yo: string): readonly PrecmdDoc[] {
       const synopsis = normalizeHeader(item.header)
       const name = synopsis.match(/^(\S+)/)?.[1]
       if (!item.body || !name || !isPrecmdName(name)) return []
-      const synopses: ReadonlyNonEmpty<string> = [synopsis]
+      const synopses: NonEmpty<string> = [synopsis]
       return [
         {
           name,

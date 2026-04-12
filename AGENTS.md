@@ -145,6 +145,7 @@ Semantic token design choices:
 - `enum` is not used — literal unions + type aliases are preferred in this codebase
 - **Discriminated unions for state spaces** — prefer a single tagged union over scattered booleans/flags. Only represent states that consumers can observe; impossible states should be unrepresentable.
 - **Deferred computation over mutable tracking** — prefer `memoized`/`cached` (from `@carlwr/typescript-extra`) over boolean flags tracking "has this been done?". Memoization encapsulates the state; the thunk boundary replaces the flag.
+- **Do not add inner `readonly` by reflex** — add it when the container type itself must be non-mutable across call boundaries or aliases. If immutability is already enforced by the containing field/signature and the value is constructed once rather than mutated in place, extra inner `readonly` is usually redundant noise rather than a stronger invariant.
 - Module-level constants that are `Set`/`Map` and must never be mutated should carry `ReadonlySet<T>`/`ReadonlyMap<K,V>` type annotations — structural enforcement over advisory comments.
 
 ### Other tools

@@ -1,3 +1,5 @@
+import type { NonEmpty } from "@carlwr/typescript-extra"
+
 import type {
   BuiltinName,
   CondOp,
@@ -12,7 +14,6 @@ import type {
   ShellParamName,
   SubscriptFlag,
 } from "./brand.ts"
-import type { ReadonlyNonEmpty } from "./readonly.ts"
 
 export { type PrecmdName, precmdNames } from "./precmd.ts"
 
@@ -95,7 +96,7 @@ export type CondOpDoc = UnaryCondOpDoc | BinaryCondOpDoc
 /** Parsed builtin command doc block. */
 export interface BuiltinDoc {
   readonly name: BuiltinName
-  readonly synopsis: ReadonlyNonEmpty<string>
+  readonly synopsis: NonEmpty<string>
   readonly desc: string
   /** present when builtin requires a loaded module */
   readonly module?: string
@@ -106,7 +107,7 @@ export interface BuiltinDoc {
 /** Parsed precommand modifier doc block. */
 export interface PrecmdDoc {
   readonly name: PrecmdName
-  readonly synopsis: ReadonlyNonEmpty<string>
+  readonly synopsis: NonEmpty<string>
   readonly desc: string
 }
 
