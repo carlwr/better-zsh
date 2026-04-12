@@ -99,9 +99,9 @@ export function mdOpt(
 
 /** Render a compact signature line for a conditional operator. */
 export function sigCond(cop: CondOpDoc): string {
-  return cop.kind === "unary"
-    ? `${hoverFmt.code(cop.op as string)} *${cop.operands.join(" ")}*`
-    : `*${cop.operands[0] ?? ""}* ${hoverFmt.code(cop.op as string)} *${cop.operands[1] ?? ""}*`
+  return cop.arity === "unary"
+    ? `${hoverFmt.code(cop.op as string)} *${cop.operands[0]}*`
+    : `*${cop.operands[0]}* ${hoverFmt.code(cop.op as string)} *${cop.operands[1]}*`
 }
 
 /** Render one conditional-operator doc block as markdown. */

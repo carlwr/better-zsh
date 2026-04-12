@@ -8,7 +8,7 @@ import type { PrecmdName } from "./precmd.ts"
 export type DefaultMarker = "D" | "K" | "S" | "C" | "Z"
 
 /** Conditional expression: unary (-a file) vs binary (f1 -nt f2) */
-export type CondKind = "unary" | "binary"
+export type CondArity = "unary" | "binary"
 
 export type Emulation = "csh" | "ksh" | "sh" | "zsh"
 
@@ -39,14 +39,24 @@ export interface ZshOption {
   desc: string
 }
 
-/** Parsed `[[ ... ]]` conditional operator docs. */
-export interface CondOpDoc {
+/** Parsed unary `[[ ... ]]` conditional operator docs. */
+export interface UnaryCondOpDoc {
   op: CondOp
-  /** 1 for unary operators, 2 for binary */
-  operands: string[]
+  operands: readonly [string]
   desc: string
-  kind: CondKind
+  arity: "unary"
 }
+
+/** Parsed binary `[[ ... ]]` conditional operator docs. */
+export interface BinaryCondOpDoc {
+  op: CondOp
+  operands: readonly [string, string]
+  desc: string
+  arity: "binary"
+}
+
+/** Parsed `[[ ... ]]` conditional operator docs. */
+export type CondOpDoc = UnaryCondOpDoc | BinaryCondOpDoc
 
 /** Parsed builtin command doc block. */
 export interface BuiltinDoc {

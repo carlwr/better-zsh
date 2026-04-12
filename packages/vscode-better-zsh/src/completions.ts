@@ -30,19 +30,19 @@ const getIds = asyncDocCache(async (doc) =>
 )
 
 export interface CompletionData {
-  builtins: BuiltinDoc[]
-  reservedWords: ReservedWordDoc[]
-  precmds: PrecmdDoc[]
-  params: ShellParamDoc[]
-  options: ZshOption[]
-  condOps: CondOpDoc[]
+  builtins: readonly BuiltinDoc[]
+  reservedWords: readonly ReservedWordDoc[]
+  precmds: readonly PrecmdDoc[]
+  params: readonly ShellParamDoc[]
+  options: readonly ZshOption[]
+  condOps: readonly CondOpDoc[]
 }
 
 export class CompletionProvider implements vscode.CompletionItemProvider {
   private general: vscode.CompletionItem[]
-  private options: OptName[]
-  private optionMap: Map<OptName, ZshOption>
-  private condOps: CondOpDoc[]
+  private options: readonly OptName[]
+  private optionMap: ReadonlyMap<OptName, ZshOption>
+  private condOps: readonly CondOpDoc[]
 
   constructor(data: CompletionData) {
     this.general = [

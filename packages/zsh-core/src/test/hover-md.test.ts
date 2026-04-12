@@ -55,14 +55,14 @@ const unary: CondOpDoc = {
   op: mkCondOp("-a"),
   operands: ["file"],
   desc: "Exists.",
-  kind: "unary",
+  arity: "unary",
 }
 
 const binary: CondOpDoc = {
   op: mkCondOp("-nt"),
   operands: ["left", "right"],
   desc: "Newer than.",
-  kind: "binary",
+  arity: "binary",
 }
 
 const builtin: BuiltinDoc = {

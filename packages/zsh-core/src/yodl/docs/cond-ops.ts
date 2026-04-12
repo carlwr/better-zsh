@@ -1,25 +1,44 @@
 import { mkCondOp } from "../../types/brand.ts"
-import type { CondKind, CondOpDoc } from "../../types/zsh-data.ts"
+import type { CondOpDoc } from "../../types/zsh-data.ts"
 import { extractItems, flattenAliasedEntries } from "../core/doc.ts"
 import { extractTokens } from "../core/text.ts"
 
+interface ParsedUnaryHeader {
+  op: string
+  operands: readonly [string]
+  arity: "unary"
+}
+
+interface ParsedBinaryHeader {
+  op: string
+  operands: readonly [string, string]
+  arity: "binary"
+}
+
+type ParsedCondHeader = ParsedUnaryHeader | ParsedBinaryHeader
+
 /** Parse cond.yo → CondOpDoc[] */
 export function parseCondOps(yo: string): CondOpDoc[] {
-  return flattenAliasedEntries(
-    extractItems(yo),
-    parseHeader,
-    (parsed, desc) => ({
-      op: mkCondOp(parsed.op),
-      operands: parsed.operands,
-      desc,
-      kind: parsed.kind,
-    }),
+  return flattenAliasedEntries(extractItems(yo), parseHeader, (parsed, desc) =>
+    parsed.arity === "unary"
+      ? {
+          op: mkCondOp(parsed.op),
+          operands: parsed.operands,
+          desc,
+          arity: "unary",
+        }
+      : {
+          op: mkCondOp(parsed.op),
+          operands: parsed.operands,
+          desc,
+          arity: "binary",
+        },
   )
 }
 
 function parseHeader(
   header: Parameters<typeof extractTokens>[0],
-): { op: string; operands: string[]; kind: CondKind } | undefined {
+): ParsedCondHeader | undefined {
   const tokens = extractTokens(header)
   const opIdx = tokens.findIndex(
     (tok) => tok.kind === "tt" && /^(?:[-=!<>~|&]|\w)/.test(tok.text),
@@ -31,11 +50,25 @@ function parseHeader(
   const operands = tokens
     .filter((tok) => tok.kind === "var")
     .map((tok) => tok.text)
-  const kind: CondKind = tokens
-    .slice(0, opIdx)
-    .some((tok) => tok.kind === "var")
-    ? "binary"
-    : "unary"
+  return tokens.slice(0, opIdx).some((tok) => tok.kind === "var")
+    ? parseBinaryHeader(op, operands)
+    : parseUnaryHeader(op, operands)
+}
 
-  return { op, operands, kind }
+function parseUnaryHeader(
+  op: string,
+  operands: string[],
+): ParsedUnaryHeader | undefined {
+  const [arg] = operands
+  return arg ? { op, operands: [arg], arity: "unary" } : undefined
+}
+
+function parseBinaryHeader(
+  op: string,
+  operands: string[],
+): ParsedBinaryHeader | undefined {
+  const [left, right] = operands
+  return left && right
+    ? { op, operands: [left, right], arity: "binary" }
+    : undefined
 }

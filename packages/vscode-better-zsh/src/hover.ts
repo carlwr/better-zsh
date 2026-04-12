@@ -56,14 +56,14 @@ export class HoverProvider implements vscode.HoverProvider {
   private reservedWordMap: Map<string, ReservedWordDoc> | undefined
 
   constructor(
-    params?: ShellParamDoc[],
-    options?: ZshOption[],
-    condOps?: CondOpDoc[],
-    builtins?: BuiltinDoc[],
-    precmds?: PrecmdDoc[],
-    redirDocs?: RedirDoc[],
-    processSubstDocs?: ProcessSubstDoc[],
-    reservedWordDocs?: ReservedWordDoc[],
+    params?: readonly ShellParamDoc[],
+    options?: readonly ZshOption[],
+    condOps?: readonly CondOpDoc[],
+    builtins?: readonly BuiltinDoc[],
+    precmds?: readonly PrecmdDoc[],
+    redirDocs?: readonly RedirDoc[],
+    processSubstDocs?: readonly ProcessSubstDoc[],
+    reservedWordDocs?: readonly ReservedWordDoc[],
   ) {
     this.md = mkHoverMdCtx(options)
     if (builtins) {
