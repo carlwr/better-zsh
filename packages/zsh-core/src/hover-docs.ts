@@ -41,11 +41,11 @@ export interface HoverDocArgs {
   readonly options: readonly ZshOption[]
   readonly condOps: readonly CondOpDoc[]
   readonly params: readonly ShellParamDoc[]
-  readonly builtins?: readonly BuiltinDoc[]
-  readonly precmds?: readonly PrecmdDoc[]
-  readonly redirs?: readonly RedirDoc[]
-  readonly processSubsts?: readonly ProcessSubstDoc[]
-  readonly reservedWords?: readonly ReservedWordDoc[]
+  readonly builtins: readonly BuiltinDoc[]
+  readonly precmds: readonly PrecmdDoc[]
+  readonly redirs: readonly RedirDoc[]
+  readonly processSubsts: readonly ProcessSubstDoc[]
+  readonly reservedWords: readonly ReservedWordDoc[]
 }
 
 // Keep corpus assembly separate from markdown rendering so live hover helpers
@@ -68,11 +68,11 @@ export function hoverDocs({
   options,
   condOps,
   params,
-  builtins = [],
-  precmds = [],
-  redirs = [],
-  processSubsts = [],
-  reservedWords = [],
+  builtins,
+  precmds,
+  redirs,
+  processSubsts,
+  reservedWords,
 }: HoverDocArgs): readonly HoverDoc[] {
   const ctx = mkHoverMdCtx(options)
   return [

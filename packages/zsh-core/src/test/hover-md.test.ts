@@ -41,6 +41,9 @@ import {
   getCondOps,
   getOptions,
   getPrecmds,
+  getProcessSubsts,
+  getRedirections,
+  getReservedWords,
   getShellParams,
 } from "../zsh-data"
 import { withTmpDirAsync } from "./tmp-dir"
@@ -367,12 +370,18 @@ describe("hover dump", () => {
     const params = getShellParams()
     const builtins = getBuiltins()
     const precmds = getPrecmds()
+    const redirs = getRedirections()
+    const processSubsts = getProcessSubsts()
+    const reservedWords = getReservedWords()
     const corpus = hoverDocs({
       options,
       condOps,
       params,
       builtins,
       precmds,
+      redirs,
+      processSubsts,
+      reservedWords,
     })
     const files = dumpText(corpus)
     const vendoredKinds = [
@@ -381,6 +390,17 @@ describe("hover dump", () => {
       { kind: "param", file: "params.md", docs: params },
       { kind: "builtin", file: "builtins.md", docs: builtins },
       { kind: "precmd", file: "precmds.md", docs: precmds },
+      { kind: "redir", file: "redirs.md", docs: redirs },
+      {
+        kind: "process-subst",
+        file: "process-substs.md",
+        docs: processSubsts,
+      },
+      {
+        kind: "reserved-word",
+        file: "reserved-words.md",
+        docs: reservedWords,
+      },
     ] as const
 
     test("covers vendored corpus by kind and dump file", () => {
@@ -398,6 +418,9 @@ describe("hover dump", () => {
         "cond-ops.md",
         "builtins.md",
         "precmds.md",
+        "redirs.md",
+        "process-substs.md",
+        "reserved-words.md",
       ] as const) {
         const text = files.get(file) ?? ""
         expect(text).not.toContain("tt(")

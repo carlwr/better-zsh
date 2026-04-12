@@ -68,7 +68,7 @@ export interface OptFlagAlias {
 export interface ZshOption {
   readonly name: OptName
   readonly display: string
-  readonly flags: readonly Readonly<OptFlagAlias>[]
+  readonly flags: readonly OptFlagAlias[]
   readonly defaultIn: readonly Emulation[]
   readonly category: OptionCategory
   readonly desc: string
