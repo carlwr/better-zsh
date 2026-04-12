@@ -133,7 +133,7 @@ export class HoverProvider implements vscode.HoverProvider {
   private condHover(doc: vscode.TextDocument, pos: vscode.Position) {
     const ctx = syntacticContext(doc, pos.line, pos.character)
     if (ctx.kind !== "cond" || !this.condOpMap) return
-    const range = activeTokenRangeAt(doc, pos)
+    const range = activeCondTokenRangeAt(doc, pos, this.condOpMap)
     if (!range) return
     const op = mkCondOp(doc.getText(range))
     const cop = this.condOpMap.get(op)
@@ -266,4 +266,50 @@ function activeTokenRangeAt(
 
 function isTokenDelimiter(ch: string): boolean {
   return /[\s;|&(){}<>]/.test(ch)
+}
+
+function activeCondTokenRangeAt(
+  doc: vscode.TextDocument,
+  pos: vscode.Position,
+  condOps: ReadonlyMap<CondOp, CondOpDoc>,
+): vscode.Range | undefined {
+  const range = activeTokenRangeAt(doc, pos)
+  if (range) return range
+
+  const text = doc.lineAt(pos.line).text
+  const cut = commentStart(text) ?? text.length
+  if (pos.character >= cut) return
+
+  // Generic hover token splitting treats shell delimiters as separators, so
+  // conditional operators made entirely from those chars need a cond-only path.
+  const symbolic = [...condOps.keys()]
+    .map((op) => op as string)
+    .filter((op) => [...op].some(isTokenDelimiter))
+    .sort((a, b) => b.length - a.length)
+
+  for (const op of symbolic) {
+    const range = operatorRangeAt(text, pos.character, cut, op)
+    if (range)
+      return new vscode.Range(pos.line, range.start, pos.line, range.end)
+  }
+}
+
+function operatorRangeAt(
+  text: string,
+  pos: number,
+  cut: number,
+  op: string,
+): { start: number; end: number } | undefined {
+  const startMin = Math.max(0, pos - op.length + 1)
+  const startMax = Math.min(pos, cut - op.length)
+  for (let start = startMin; start <= startMax; start++) {
+    const end = start + op.length
+    if (text.slice(start, end) !== op) continue
+    if (opBoundary(text[start - 1]) && opBoundary(text[end]))
+      return { start, end }
+  }
+}
+
+function opBoundary(ch: string | undefined): boolean {
+  return ch === undefined || /[\s[\]]/.test(ch)
 }

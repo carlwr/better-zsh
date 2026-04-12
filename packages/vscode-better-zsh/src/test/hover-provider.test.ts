@@ -2,7 +2,9 @@ import * as assert from "node:assert"
 import { vi } from "vitest"
 import {
   type BuiltinDoc,
+  type CondOpDoc,
   mkBuiltinName,
+  mkCondOp,
   mkRedirOp,
   mkShellParamName,
   type RedirDoc,
@@ -99,12 +101,44 @@ const params = [
     section: "Parameters Set By The Shell",
   },
 ] as unknown as ShellParamDoc[]
+const condOps = [
+  {
+    op: mkCondOp("&&"),
+    operands: ["exp1", "exp2"],
+    desc: "and docs",
+    arity: "binary",
+  },
+  {
+    op: mkCondOp("||"),
+    operands: ["exp1", "exp2"],
+    desc: "or docs",
+    arity: "binary",
+  },
+  {
+    op: mkCondOp("<"),
+    operands: ["s1", "s2"],
+    desc: "lt docs",
+    arity: "binary",
+  },
+  {
+    op: mkCondOp(">"),
+    operands: ["s1", "s2"],
+    desc: "gt docs",
+    arity: "binary",
+  },
+  {
+    op: mkCondOp("!"),
+    operands: ["exp"],
+    desc: "not docs",
+    arity: "unary",
+  },
+] as unknown as CondOpDoc[]
 
 function mkProvider() {
   return new HoverProvider(
     params,
     undefined,
-    undefined,
+    condOps,
     builtins,
     undefined,
     redirs,
@@ -155,6 +189,18 @@ suite("HoverProvider", () => {
   test("builtin hover after arith condition bare form", () => {
     assert.match(hoverAt("if ((1)) fc", 9)?.value ?? "", /fc docs/)
   })
+
+  for (const [line, char, re] of [
+    ["[[ a && b ]]", 5, /and docs/],
+    ["[[ a || b ]]", 5, /or docs/],
+    ["[[ a < b ]]", 5, /lt docs/],
+    ["[[ a > b ]]", 5, /gt docs/],
+    ["[[ ! -f x ]]", 3, /not docs/],
+  ] as const) {
+    test(`conditional hover resolves ${line}`, () => {
+      assert.match(hoverAt(line, char)?.value ?? "", re)
+    })
+  }
 
   test("shell parameter hover works from static docs", () => {
     assert.match(hoverAt("print $SECONDS", 8)?.value ?? "", /seconds docs/)

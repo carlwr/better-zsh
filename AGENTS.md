@@ -237,6 +237,15 @@ When suitable, record design decisions, answer "why questions" etc.:
 - Keep short and concise
 - Possible ways to record: in-source code comments, in AGENTS.md, or in a dedicated file (discuss with user)
 
+### Work that changes the code / adds features should include a "refactoring opportunities pass"
+
+Meaning: from a broader view, see if the code changes done makes any refactoring, simplification, abstractions or favourable change to the types possible. (Both implementation code and test code.)
+
+- **DO** include such a pass when: given general tasks on refactoring or changing the code
+  - in these cases, always perform such a pass before returning to the user
+- **DO NOT** include such a pass when: the instruction was very precise about what to do
+  - by judgement, the potential for such refactors could still be analyzed and the user explicitly asked about whether to make the edits or not
+
 ### Keeping the orientation skill fresh
 
 A project skill lives at `skills/orient/`. It provides:

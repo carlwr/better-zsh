@@ -36,6 +36,31 @@ suite("ZshHoverProvider", () => {
     assert.match(text, /matches pattern/i)
   })
 
+  for (const [src, char, re] of [
+    ["[[ a && b ]]", 5, /both true/i],
+    ["[[ a || b ]]", 5, /either exp1 or exp2 is true/i],
+    ["[[ a < b ]]", 5, /comes before string2/i],
+    ["[[ a > b ]]", 5, /comes after string2/i],
+    ["[[ ! -f x ]]", 3, /exp is false/i],
+  ] as const) {
+    test(`shows docs for symbolic cond op in ${src}`, async () => {
+      const doc = await openText(src)
+      const text = await hoverText(doc, new vscode.Position(0, char))
+      assert.match(text, re)
+    })
+  }
+
+  test("does not treat command-list && as a conditional operator hover", async () => {
+    const doc = await openText("echo hi && echo bye")
+    const hovers =
+      (await vscode.commands.executeCommand<vscode.Hover[]>(
+        "vscode.executeHoverProvider",
+        doc.uri,
+        new vscode.Position(0, 8),
+      )) ?? []
+    assert.strictEqual(hovers.length, 0)
+  })
+
   test("option hover renders code preamble and category", async () => {
     const doc = await openText("setopt warn_nested_var")
     const text = await hoverText(doc, new vscode.Position(0, 10))
