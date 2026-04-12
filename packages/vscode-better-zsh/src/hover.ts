@@ -14,9 +14,11 @@ import type {
   ProcessSubstFact,
   RedirDoc,
   RedirFact,
+  RedirOp,
   ReservedWordDoc,
   ReservedWordFact,
   ShellParamDoc,
+  ShellParamName,
   ZshOption,
 } from "zsh-core"
 import {
@@ -25,6 +27,8 @@ import {
   mkCondOp,
   mkOptFlagChar,
   mkOptLookupName,
+  mkRedirOp,
+  mkShellParamName,
   syntacticContext,
 } from "zsh-core"
 import {
@@ -44,14 +48,14 @@ import { activeWordRangeAt, commentStart, funcDocs } from "./funcs"
 export class HoverProvider implements vscode.HoverProvider {
   private md: HoverMdCtx
   private builtinMap: Map<BuiltinName, BuiltinDoc> | undefined
-  private paramMap: Map<string, ShellParamDoc> | undefined
+  private paramMap: Map<ShellParamName, ShellParamDoc> | undefined
   private optionMap: Map<OptName, ZshOption> | undefined
   private flagMap:
     | Map<OptFlagChar, { opt: ZshOption; alias: OptFlagAlias }>
     | undefined
   private condOpMap: Map<CondOp, CondOpDoc> | undefined
   private precmdMap: Map<string, PrecmdDoc> | undefined
-  private redirMap: Map<string, RedirDoc> | undefined
+  private redirMap: Map<RedirOp, RedirDoc> | undefined
   private processSubstMap: Map<string, ProcessSubstDoc> | undefined
   private reservedWordMap: Map<string, ReservedWordDoc> | undefined
 
@@ -155,7 +159,7 @@ export class HoverProvider implements vscode.HoverProvider {
     const range = activeWordRangeAt(doc, pos)
     if (!range) return
     const w = doc.getText(range)
-    const param = this.paramMap.get(w)
+    const param = this.paramMap.get(mkShellParamName(w))
     if (param)
       return new vscode.Hover(new vscode.MarkdownString(mdParam(param)))
   }
@@ -194,7 +198,7 @@ export class HoverProvider implements vscode.HoverProvider {
 
     const redir = af.find((fact): fact is RedirFact => fact.kind === "redir")
     if (redir) {
-      const op = redir.text.replace(/^[0-9]+/, "")
+      const op = mkRedirOp(redir.text.replace(/^[0-9]+/, ""))
       const d = this.redirMap?.get(op)
       if (d && (token === redir.text || token.startsWith(redir.text)))
         return new vscode.Hover(

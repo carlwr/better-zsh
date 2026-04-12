@@ -40,7 +40,12 @@ vi.mock("../zsh", () => ({
   zshTokenize: vi.fn(async () => []),
 }))
 
-import { mkBuiltinName, mkOptName } from "zsh-core"
+import {
+  mkBuiltinName,
+  mkOptName,
+  mkShellParamName,
+  optionCategories,
+} from "zsh-core"
 import { CompletionProvider } from "../completions"
 
 let id = 0
@@ -103,7 +108,7 @@ suite("CompletionProvider", () => {
       ],
       params: [
         {
-          name: "SECONDS",
+          name: mkShellParamName("SECONDS"),
           sig: "SECONDS",
           desc: "SECONDS docs",
           section: "Parameters Set By The Shell",
@@ -115,7 +120,7 @@ suite("CompletionProvider", () => {
           display: "AUTO_CD",
           flags: [],
           defaultIn: ["zsh"],
-          category: "Changing Directories",
+          category: optionCategories[0],
           desc: "AUTO_CD docs",
         },
       ],

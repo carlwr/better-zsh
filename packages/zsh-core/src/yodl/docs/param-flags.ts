@@ -1,6 +1,6 @@
 import type { ParamFlagDoc } from "../../types/zsh-data.ts"
-import { parseFlagSection } from "./flag-section.ts"
+import { parseParamFlagSection } from "./flag-section.ts"
 
-export function parseParamFlags(yo: string): ParamFlagDoc[] {
-  return parseFlagSection(yo, "Parameter Expansion Flags")
+export function parseParamFlags(yo: string): readonly ParamFlagDoc[] {
+  return parseParamFlagSection(yo, "Parameter Expansion Flags")
 }

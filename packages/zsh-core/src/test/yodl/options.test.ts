@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs"
 import { resolve } from "node:path"
 import { describe, expect, test } from "vitest"
 import { mkOptFlagChar, mkOptName } from "../../types/brand"
+import { optionCategories } from "../../types/zsh-data"
 import { parseOptions } from "../../yodl/docs/options"
 
 const OPTS_YO = readFileSync(
@@ -101,9 +102,9 @@ endsitem()`
     })
 
     test("all categories are non-empty", () => {
-      for (const o of opts) {
-        expect(o.category).toBeTruthy()
-      }
+      expect([...new Set(opts.map((o) => o.category))]).toEqual(
+        optionCategories,
+      )
     })
 
     test("known options exist", () => {

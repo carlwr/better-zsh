@@ -38,72 +38,111 @@ import { parseSubscriptFlags } from "./yodl/docs/subscript-flags.ts"
 
 const dataDir = resolveZshDataDir()
 
-function loadYo<T>(file: string, parse: (yo: string) => T): () => T {
-  return cached<T>(() => parse(readFileSync(join(dataDir, file), "utf8")))
+function freezeValue(value: unknown): void {
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      if (item && typeof item === "object") Object.freeze(item)
+    }
+    Object.freeze(value)
+    return
+  }
+  if (value && typeof value === "object") Object.freeze(value)
+}
+
+function freezeDoc<T extends object>(doc: T): Readonly<T> {
+  for (const value of Object.values(doc)) freezeValue(value)
+  return Object.freeze(doc)
+}
+
+function freezeDocs<T extends object>(
+  docs: readonly T[],
+): readonly Readonly<T>[] {
+  return Object.freeze(docs.map(freezeDoc))
+}
+
+function loadYo<T extends object>(
+  file: string,
+  parse: (yo: string) => readonly T[],
+): () => readonly Readonly<T>[] {
+  return cached(() =>
+    freezeDocs(parse(readFileSync(join(dataDir, file), "utf8"))),
+  )
 }
 
 /** Zsh option metadata. */
-export const getOptions: () => ZshOption[] = loadYo("options.yo", parseOptions)
+export const getOptions: () => readonly ZshOption[] = loadYo(
+  "options.yo",
+  parseOptions,
+)
 
 /** `[[ ... ]]` conditional operators. */
-export const getCondOps: () => CondOpDoc[] = loadYo("cond.yo", parseCondOps)
+export const getCondOps: () => readonly CondOpDoc[] = loadYo(
+  "cond.yo",
+  parseCondOps,
+)
 
 /** Builtin commands. */
-export const getBuiltins: () => BuiltinDoc[] = loadYo(
+export const getBuiltins: () => readonly BuiltinDoc[] = loadYo(
   "builtins.yo",
   parseBuiltins,
 )
 
 /** Precommand modifiers. */
-export const getPrecmds: () => PrecmdDoc[] = loadYo("grammar.yo", parsePrecmds)
+export const getPrecmds: () => readonly PrecmdDoc[] = loadYo(
+  "grammar.yo",
+  parsePrecmds,
+)
 
 /** Redirection operators. */
-export const getRedirections: () => RedirDoc[] = loadYo(
+export const getRedirections: () => readonly RedirDoc[] = loadYo(
   "redirect.yo",
   parseRedirections,
 )
 
 /** Reserved words. */
-export const getReservedWords: () => ReservedWordDoc[] = loadYo(
+export const getReservedWords: () => readonly ReservedWordDoc[] = loadYo(
   "grammar.yo",
   parseReservedWords,
 )
 
 /** Shell-managed parameters. */
-export const getShellParams: () => ShellParamDoc[] = loadYo(
+export const getShellParams: () => readonly ShellParamDoc[] = loadYo(
   "params.yo",
   parseShellParams,
 )
 
 /** Subscript flags. */
-export const getSubscriptFlags: () => SubscriptFlagDoc[] = loadYo(
+export const getSubscriptFlags: () => readonly SubscriptFlagDoc[] = loadYo(
   "params.yo",
   parseSubscriptFlags,
 )
 
 /** Parameter-expansion flags. */
-export const getParamFlags: () => ParamFlagDoc[] = loadYo(
+export const getParamFlags: () => readonly ParamFlagDoc[] = loadYo(
   "expn.yo",
   parseParamFlags,
 )
 
 /** History expansion. */
-export const getHistoryDocs: () => HistoryDoc[] = loadYo(
+export const getHistoryDocs: () => readonly HistoryDoc[] = loadYo(
   "expn.yo",
   parseHistory,
 )
 
 /** Globbing operators. */
-export const getGlobOps: () => GlobOpDoc[] = loadYo("expn.yo", parseGlobOps)
+export const getGlobOps: () => readonly GlobOpDoc[] = loadYo(
+  "expn.yo",
+  parseGlobOps,
+)
 
 /** Globbing flags. */
-export const getGlobbingFlags: () => GlobbingFlagDoc[] = loadYo(
+export const getGlobbingFlags: () => readonly GlobbingFlagDoc[] = loadYo(
   "expn.yo",
   parseGlobbingFlags,
 )
 
 /** Process substitution. */
-export const getProcessSubsts: () => ProcessSubstDoc[] = loadYo(
+export const getProcessSubsts: () => readonly ProcessSubstDoc[] = loadYo(
   "expn.yo",
   parseProcessSubsts,
 )

@@ -1,6 +1,13 @@
 import * as assert from "node:assert"
 import { vi } from "vitest"
-import type { BuiltinDoc, RedirDoc, ShellParamDoc } from "zsh-core"
+import {
+  type BuiltinDoc,
+  mkBuiltinName,
+  mkRedirOp,
+  mkShellParamName,
+  type RedirDoc,
+  type ShellParamDoc,
+} from "zsh-core"
 
 vi.mock("vscode", () => ({
   Position: class {
@@ -77,16 +84,16 @@ function mockDoc(line: string) {
 }
 
 const builtins = [
-  { name: "echo", synopsis: ["echo"], desc: "echo docs" },
-  { name: "fc", synopsis: ["fc"], desc: "fc docs" },
+  { name: mkBuiltinName("echo"), synopsis: ["echo"], desc: "echo docs" },
+  { name: mkBuiltinName("fc"), synopsis: ["fc"], desc: "fc docs" },
 ] as unknown as BuiltinDoc[]
 const redirs = [
-  { op: ">&", sig: "n>& word", desc: "redir docs", section: "x" },
-  { op: "&>", sig: "&> word", desc: "redir &> docs", section: "x" },
+  { op: mkRedirOp(">&"), sig: "n>& word", desc: "redir docs", section: "x" },
+  { op: mkRedirOp("&>"), sig: "&> word", desc: "redir &> docs", section: "x" },
 ] as unknown as RedirDoc[]
 const params = [
   {
-    name: "SECONDS",
+    name: mkShellParamName("SECONDS"),
     sig: "SECONDS",
     desc: "seconds docs",
     section: "Parameters Set By The Shell",

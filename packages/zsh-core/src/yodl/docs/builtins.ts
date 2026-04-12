@@ -1,3 +1,4 @@
+import type { NonEmpty } from "@carlwr/typescript-extra"
 import { mkBuiltinName } from "../../types/brand.ts"
 import type { BuiltinDoc } from "../../types/zsh-data.ts"
 import { collectAliasedEntries, extractItems } from "../core/doc.ts"
@@ -9,7 +10,7 @@ interface SynopsisLine {
   continuation: boolean
 }
 
-export function parseBuiltins(yo: string): BuiltinDoc[] {
+export function parseBuiltins(yo: string): readonly BuiltinDoc[] {
   const nodes = parseNodes(yo)
   const byName = new Map<string, BuiltinDoc>()
 
@@ -36,9 +37,10 @@ export function parseBuiltins(yo: string): BuiltinDoc[] {
     for (const head of heads) {
       const name = extractCmdName(head.text)
       if (!name) continue
+      const synopsis: NonEmpty<string> = [head.text, ...synopsisTail]
       byName.set(name, {
         name: mkBuiltinName(name),
-        synopsis: [head.text, ...synopsisTail],
+        synopsis,
         desc,
         ...(aliasOf && { aliasOf }),
         ...(module && { module }),

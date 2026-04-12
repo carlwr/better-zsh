@@ -1,3 +1,4 @@
+import { mkHistoryKey } from "../../types/brand.ts"
 import type { HistoryDoc, HistoryKind } from "../../types/zsh-data.ts"
 import {
   extractFirstList,
@@ -8,7 +9,7 @@ import {
 } from "../core/doc.ts"
 import { normalizeBody, normalizeHeader } from "../core/text.ts"
 
-export function parseHistory(yo: string): HistoryDoc[] {
+export function parseHistory(yo: string): readonly HistoryDoc[] {
   return [
     ...parseSection(yo, "Event Designators", "event-designator"),
     ...parseWordDesignators(yo),
@@ -27,7 +28,13 @@ function parseSection(
   return flattenAliasedEntries(
     extractItemList(list),
     normalizeHeader,
-    (key, desc) => ({ kind, key, sig: key, desc, section }),
+    (key, desc) => ({
+      kind,
+      key: mkHistoryKey(key),
+      sig: key,
+      desc,
+      section,
+    }),
   )
 }
 
@@ -41,7 +48,7 @@ function parseWordDesignators(yo: string): HistoryDoc[] {
     return [
       {
         kind: "word-designator",
-        key: sig,
+        key: mkHistoryKey(sig),
         sig,
         desc: normalizeBody(item.body),
         section: "Word Designators",

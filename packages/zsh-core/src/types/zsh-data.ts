@@ -1,4 +1,17 @@
-import type { BuiltinName, CondOp, OptFlagChar, OptName } from "./brand.ts"
+import type { NonEmpty } from "@carlwr/typescript-extra"
+import type {
+  BuiltinName,
+  CondOp,
+  GlobbingFlag,
+  GlobOp,
+  HistoryKey,
+  OptFlagChar,
+  OptName,
+  ParamFlag,
+  RedirOp,
+  ShellParamName,
+  SubscriptFlag,
+} from "./brand.ts"
 
 export { type PrecmdName, precmdNames } from "./precmd.ts"
 
@@ -23,36 +36,54 @@ export type ReservedWordPos = "command" | "any"
 export type HistoryKind = "event-designator" | "word-designator" | "modifier"
 export type ProcessSubstOp = "<(...)" | ">(...)" | "=(...)"
 
+export const optionCategories = [
+  "Changing Directories",
+  "Completion",
+  "Expansion and Globbing",
+  "History",
+  "Initialisation",
+  "Input/Output",
+  "Job Control",
+  "Prompting",
+  "Scripts and Functions",
+  "Shell Emulation",
+  "Shell State",
+  "Zle",
+  "Option Aliases",
+] as const
+
+export type OptionCategory = (typeof optionCategories)[number]
+
 /** Short-option alias for a long zsh option. */
 export interface OptFlagAlias {
-  char: OptFlagChar
-  on: OptFlagSign
+  readonly char: OptFlagChar
+  readonly on: OptFlagSign
 }
 
 /** Parsed zsh option metadata normalized from upstream docs. */
 export interface ZshOption {
-  name: OptName
-  display: string
-  flags: readonly OptFlagAlias[]
-  defaultIn: readonly Emulation[]
-  category: string
-  desc: string
+  readonly name: OptName
+  readonly display: string
+  readonly flags: readonly Readonly<OptFlagAlias>[]
+  readonly defaultIn: readonly Emulation[]
+  readonly category: OptionCategory
+  readonly desc: string
 }
 
 /** Parsed unary `[[ ... ]]` conditional operator docs. */
 export interface UnaryCondOpDoc {
-  op: CondOp
-  operands: readonly [string]
-  desc: string
-  arity: "unary"
+  readonly op: CondOp
+  readonly operands: readonly [string]
+  readonly desc: string
+  readonly arity: "unary"
 }
 
 /** Parsed binary `[[ ... ]]` conditional operator docs. */
 export interface BinaryCondOpDoc {
-  op: CondOp
-  operands: readonly [string, string]
-  desc: string
-  arity: "binary"
+  readonly op: CondOp
+  readonly operands: readonly [string, string]
+  readonly desc: string
+  readonly arity: "binary"
 }
 
 /** Parsed `[[ ... ]]` conditional operator docs. */
@@ -60,75 +91,75 @@ export type CondOpDoc = UnaryCondOpDoc | BinaryCondOpDoc
 
 /** Parsed builtin command doc block. */
 export interface BuiltinDoc {
-  name: BuiltinName
-  synopsis: readonly string[]
-  desc: string
+  readonly name: BuiltinName
+  readonly synopsis: NonEmpty<string>
+  readonly desc: string
   /** present when builtin requires a loaded module */
-  module?: string
+  readonly module?: string
   /** present when this is an alias of another builtin */
-  aliasOf?: BuiltinName
+  readonly aliasOf?: BuiltinName
 }
 
 /** Parsed precommand modifier doc block. */
 export interface PrecmdDoc {
-  name: PrecmdName
-  synopsis: readonly string[]
-  desc: string
+  readonly name: PrecmdName
+  readonly synopsis: NonEmpty<string>
+  readonly desc: string
 }
 
 /** Base interface for syntax-element doc records parsed from upstream Yodl sources. */
 export interface SyntaxDocBase {
   /** Usage signature from the upstream zsh manual. */
-  sig: string
-  desc: string
+  readonly sig: string
+  readonly desc: string
   /** Manual section this element was parsed from. */
-  section: string
+  readonly section: string
 }
 
 /** Shell-managed parameters documented in `zshparam`. */
 export interface ShellParamDoc extends SyntaxDocBase {
-  name: string
-  tied?: string
+  readonly name: ShellParamName
+  readonly tied?: ShellParamName
 }
 
 export interface ReservedWordDoc extends SyntaxDocBase {
-  name: string
-  pos: ReservedWordPos
+  readonly name: string
+  readonly pos: ReservedWordPos
 }
 
 export interface RedirDoc extends SyntaxDocBase {
-  op: string
+  readonly op: RedirOp
 }
 
 /** Process substitution -- `<(...)` and `>(...)`. */
 export interface ProcessSubstDoc extends SyntaxDocBase {
-  op: ProcessSubstOp
+  readonly op: ProcessSubstOp
 }
 
 /** Subscript flags -- e.g. `(e)`, `(w)` inside `${arr[(...)...]}`. */
 export interface SubscriptFlagDoc extends SyntaxDocBase {
-  flag: string
-  args: readonly string[]
+  readonly flag: SubscriptFlag
+  readonly args: readonly string[]
 }
 
 /** Parameter-expansion flags -- e.g. `(U)`, `(L)` inside `${(...)var}`. */
 export interface ParamFlagDoc extends SyntaxDocBase {
-  flag: string
-  args: readonly string[]
+  readonly flag: ParamFlag
+  readonly args: readonly string[]
 }
 
 export interface HistoryDoc extends SyntaxDocBase {
-  key: string
-  kind: HistoryKind
+  readonly key: HistoryKey
+  readonly kind: HistoryKind
 }
 
 /** Globbing operators -- e.g. `*`, `?`, `[...]`. */
 export interface GlobOpDoc extends SyntaxDocBase {
-  op: string
+  readonly op: GlobOp
 }
 
 /** Globbing flags -- e.g. `(#i)`, `(#b)` inside glob patterns. */
 export interface GlobbingFlagDoc extends SyntaxDocBase {
-  flag: string
-  args: readonly string[]
+  readonly flag: GlobbingFlag
+  readonly args: readonly string[]
 }

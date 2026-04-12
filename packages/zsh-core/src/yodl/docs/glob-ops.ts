@@ -1,3 +1,4 @@
+import { mkGlobOp } from "../../types/brand.ts"
 import type { GlobOpDoc } from "../../types/zsh-data.ts"
 import {
   extractItems,
@@ -6,7 +7,7 @@ import {
 } from "../core/doc.ts"
 import { normalizeHeader } from "../core/text.ts"
 
-export function parseGlobOps(yo: string): GlobOpDoc[] {
+export function parseGlobOps(yo: string): readonly GlobOpDoc[] {
   return [
     ...parseSection(extractSectionBody(yo, "Glob Operators"), "Glob Operators"),
     ...parseSection(
@@ -23,6 +24,6 @@ function parseSection(
   return flattenAliasedEntries(
     extractItems(section, 1),
     normalizeHeader,
-    (op, desc) => ({ op, sig: op, desc, section: name }),
+    (op, desc) => ({ op: mkGlobOp(op), sig: op, desc, section: name }),
   )
 }

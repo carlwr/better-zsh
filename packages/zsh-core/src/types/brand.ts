@@ -13,6 +13,27 @@ export type OptFlagChar = Brand<string, "OptFlagChar">
 /** Exact builtin or command-like spelling */
 export type BuiltinName = Brand<string, "BuiltinName">
 
+/** Shell-managed parameter name. */
+export type ShellParamName = Brand<string, "ShellParamName">
+
+/** Redirection operator token such as `>>` or `>&`. */
+export type RedirOp = Brand<string, "RedirOp">
+
+/** Globbing operator token such as `*` or `@(...)`. */
+export type GlobOp = Brand<string, "GlobOp">
+
+/** History expansion key such as `!!` or `s/l/r[/]`. */
+export type HistoryKey = Brand<string, "HistoryKey">
+
+/** Subscript flag token such as `w` or `s:string:`. */
+export type SubscriptFlag = Brand<string, "SubscriptFlag">
+
+/** Parameter-expansion flag token such as `@` or `j:string:`. */
+export type ParamFlag = Brand<string, "ParamFlag">
+
+/** Globbing flag token such as `i` or `cN,M`. */
+export type GlobbingFlag = Brand<string, "GlobbingFlag">
+
 function trim(raw: string): string {
   return raw.trim()
 }
@@ -43,4 +64,32 @@ export function mkOptFlagChar(raw: string): OptFlagChar {
 
 export function mkBuiltinName(raw: string): BuiltinName {
   return trim(raw) as BuiltinName
+}
+
+export function mkShellParamName(raw: string): ShellParamName {
+  return trim(raw) as ShellParamName
+}
+
+export function mkRedirOp(raw: string): RedirOp {
+  return trim(raw) as RedirOp
+}
+
+export function mkGlobOp(raw: string): GlobOp {
+  return trim(raw) as GlobOp
+}
+
+export function mkHistoryKey(raw: string): HistoryKey {
+  return trim(raw) as HistoryKey
+}
+
+export function mkSubscriptFlag(raw: string): SubscriptFlag {
+  return trim(raw) as SubscriptFlag
+}
+
+export function mkParamFlag(raw: string): ParamFlag {
+  return trim(raw) as ParamFlag
+}
+
+export function mkGlobbingFlag(raw: string): GlobbingFlag {
+  return trim(raw) as GlobbingFlag
 }

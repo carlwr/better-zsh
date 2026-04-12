@@ -1,3 +1,4 @@
+import { mkGlobbingFlag } from "../../types/brand.ts"
 import type { GlobbingFlagDoc } from "../../types/zsh-data.ts"
 import {
   extractFirstList,
@@ -12,7 +13,7 @@ function bodyDoc(item: YodlEntry): string | undefined {
   return item.body ? normalizeBody(item.body) : undefined
 }
 
-export function parseGlobbingFlags(yo: string): GlobbingFlagDoc[] {
+export function parseGlobbingFlags(yo: string): readonly GlobbingFlagDoc[] {
   const sec = extractSectionBody(yo, "Globbing Flags")
   const list = extractFirstList(sec, "item")
   if (!list) return []
@@ -30,7 +31,7 @@ export function parseGlobbingFlags(yo: string): GlobbingFlagDoc[] {
       return tt.map(
         (flag) =>
           ({
-            flag,
+            flag: mkGlobbingFlag(flag),
             args: [],
             sig: flag,
             desc,
@@ -42,7 +43,7 @@ export function parseGlobbingFlags(yo: string): GlobbingFlagDoc[] {
     const [flag = sig] = tt
     return [
       {
-        flag,
+        flag: mkGlobbingFlag(flag),
         args: vars,
         sig,
         desc,

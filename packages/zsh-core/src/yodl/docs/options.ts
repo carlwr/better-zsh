@@ -5,8 +5,10 @@ import type {
   Emulation,
   OptFlagAlias,
   OptFlagSign,
+  OptionCategory,
   ZshOption,
 } from "../../types/zsh-data.ts"
+import { optionCategories } from "../../types/zsh-data.ts"
 import {
   extractFirstList,
   extractItems,
@@ -27,8 +29,10 @@ const DEFAULT_EMULATIONS: Record<DefaultMarker, readonly Emulation[]> = {
   Z: ["zsh"],
 }
 
+const OPTION_CATEGORY_SET: ReadonlySet<string> = new Set(optionCategories)
+
 /** Parse options.yo → ZshOption[] */
-export function parseOptions(yo: string): ZshOption[] {
+export function parseOptions(yo: string): readonly ZshOption[] {
   const nodes = parseNodes(yo)
   const items = extractItems(nodes)
   const flagMap = parseDefaultFlagAliases(nodes)
@@ -42,11 +46,16 @@ export function parseOptions(yo: string): ZshOption[] {
         display: parsed.display,
         flags: mergeFlags(flagMap.get(parsed.name), parsed.flags),
         defaultIn: emulationsFor(defaultMarkers(item.header)),
-        category: item.section,
+        category: parseOptionCategory(item.section),
         desc: normalizeBody(item.body),
       } satisfies ZshOption,
     ]
   })
+}
+
+function parseOptionCategory(raw: string): OptionCategory {
+  if (OPTION_CATEGORY_SET.has(raw)) return raw as OptionCategory
+  throw new Error(`Unknown zsh option category: ${raw}`)
 }
 
 function parseOptHeader(header: Parameters<typeof extractTokens>[0]):

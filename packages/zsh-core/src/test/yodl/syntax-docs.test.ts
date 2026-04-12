@@ -1,4 +1,5 @@
 import { describe, expect, test } from "vitest"
+import { mkShellParamName } from "../../types/brand"
 import { parseGlobOps } from "../../yodl/docs/glob-ops"
 import { parseGlobbingFlags } from "../../yodl/docs/globbing-flags"
 import { parseHistory } from "../../yodl/docs/history"
@@ -30,11 +31,15 @@ describe("more yodl parsers", () => {
       "enditem()",
     ].join("\n")
     const docs = new Map(parseShellParams(yo).map((doc) => [doc.name, doc]))
-    expect(docs.get("path")?.tied).toBe("PATH")
-    expect(docs.get("PATH")?.tied).toBe("path")
-    expect(docs.get("path")?.desc).toBe("Pair docs.")
-    expect(docs.get("RPS1")?.desc).toBe("Prompt docs.")
-    expect(docs.get("RPROMPT")?.desc).toBe("Prompt docs.")
+    expect(docs.get(mkShellParamName("path"))?.tied).toBe(
+      mkShellParamName("PATH"),
+    )
+    expect(docs.get(mkShellParamName("PATH"))?.tied).toBe(
+      mkShellParamName("path"),
+    )
+    expect(docs.get(mkShellParamName("path"))?.desc).toBe("Pair docs.")
+    expect(docs.get(mkShellParamName("RPS1"))?.desc).toBe("Prompt docs.")
+    expect(docs.get(mkShellParamName("RPROMPT"))?.desc).toBe("Prompt docs.")
   })
 
   test("redirections keep xitem aliases with shared docs", () => {

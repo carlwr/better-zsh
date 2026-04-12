@@ -22,6 +22,8 @@ import {
   mkCondOp,
   mkOptFlagChar,
   mkOptName,
+  mkRedirOp,
+  mkShellParamName,
 } from "../types/brand"
 import type {
   BuiltinDoc,
@@ -78,7 +80,7 @@ const precmd: PrecmdDoc = {
 }
 
 const redir: RedirDoc = {
-  op: ">>",
+  op: mkRedirOp(">>"),
   sig: ">> word",
   desc: "Append output to word.",
   section: "Redirections",
@@ -100,7 +102,7 @@ const reservedWord: ReservedWordDoc = {
 }
 
 const param: ShellParamDoc = {
-  name: "SECONDS",
+  name: mkShellParamName("SECONDS"),
   sig: "SECONDS",
   desc: "The number of seconds since shell invocation.",
   section: "Parameters Set By The Shell",
@@ -272,7 +274,7 @@ describe("hover markdown", () => {
       params: [
         param,
         {
-          name: "argv",
+          name: mkShellParamName("argv"),
           sig: "argv",
           desc: "An array containing the positional parameters.",
           section: "Parameters Set By The Shell",

@@ -1,3 +1,5 @@
+import { mkParamFlag, mkSubscriptFlag } from "../../types/brand.ts"
+import type { ParamFlagDoc, SubscriptFlagDoc } from "../../types/zsh-data.ts"
 import { extractItems, extractSectionBody } from "../core/doc.ts"
 import { normalizeBody, normalizeHeader } from "../core/text.ts"
 
@@ -15,19 +17,43 @@ export function splitFlagSig(sig: string): { flag: string; args: string[] } {
   }
 }
 
-interface FlagDocShape {
-  flag: string
-  args: readonly string[]
-  sig: string
-  desc: string
-  section: string
+export function parseSubscriptFlagSection(
+  yo: string,
+  section: string,
+): readonly SubscriptFlagDoc[] {
+  return parseFlagSection(yo, section, mkSubscriptFlag)
 }
 
-export function parseFlagSection(yo: string, section: string): FlagDocShape[] {
+export function parseParamFlagSection(
+  yo: string,
+  section: string,
+): readonly ParamFlagDoc[] {
+  return parseFlagSection(yo, section, mkParamFlag)
+}
+
+function parseFlagSection<T>(
+  yo: string,
+  section: string,
+  mkFlag: (raw: string) => T,
+): readonly {
+  readonly flag: T
+  readonly args: readonly string[]
+  readonly sig: string
+  readonly desc: string
+  readonly section: string
+}[] {
   return extractItems(extractSectionBody(yo, section), 1).flatMap((item) => {
     if (!item.body) return []
     const sig = normalizeHeader(item.header)
     const { args } = splitFlagSig(sig)
-    return [{ flag: sig, args, sig, desc: normalizeBody(item.body), section }]
+    return [
+      {
+        flag: mkFlag(sig),
+        args,
+        sig,
+        desc: normalizeBody(item.body),
+        section,
+      },
+    ]
   })
 }

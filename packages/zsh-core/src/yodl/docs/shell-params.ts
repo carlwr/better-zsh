@@ -1,3 +1,4 @@
+import { mkShellParamName } from "../../types/brand.ts"
 import type { ShellParamDoc } from "../../types/zsh-data.ts"
 import {
   extractFirstList,
@@ -16,7 +17,7 @@ interface ParamHead {
   tied?: string
 }
 
-export function parseShellParams(yo: string): ShellParamDoc[] {
+export function parseShellParams(yo: string): readonly ShellParamDoc[] {
   return PARAM_SECTIONS.flatMap((section) => parseParamSection(yo, section))
 }
 
@@ -45,11 +46,11 @@ function parseParamSection(
     const desc = normalizeBody(item.body)
     for (const head of [...heads, ...pending]) {
       out.push({
-        name: head.name,
+        name: mkShellParamName(head.name),
         sig: head.name,
         desc,
         section,
-        ...(head.tied && { tied: head.tied }),
+        ...(head.tied && { tied: mkShellParamName(head.tied) }),
       })
     }
     pending = []
