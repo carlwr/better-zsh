@@ -1,14 +1,10 @@
-import { readFileSync } from "node:fs"
-import { resolve } from "node:path"
 import { describe, expect, test } from "vitest"
 import { mkOptFlagChar, mkOptName } from "../../types/brand"
 import { optionCategories } from "../../types/zsh-data"
 import { parseOptions } from "../../yodl/docs/options"
+import { readVendoredYo } from "./test-util"
 
-const OPTS_YO = readFileSync(
-  resolve(__dirname, "../../data/zsh-docs/options.yo"),
-  "utf8",
-)
+const OPTS_YO = readVendoredYo("options.yo")
 
 describe("parseOptions", () => {
   test("parses AUTO_CD", () => {

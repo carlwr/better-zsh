@@ -51,7 +51,7 @@ export async function activate(ctx: vscode.ExtensionContext) {
   const parsedProcessSubsts = getProcessSubsts()
   const parsedReservedWords = getReservedWords()
   const parsedShellParams = getShellParams()
-  const builtinNames = parsedBuiltins.map((builtin) => builtin.name as string)
+  const builtinNames = parsedBuiltins.map((builtin) => builtin.name)
   const semanticTokensProvider = new SemanticTokensProvider(builtinNames)
 
   setupDiagnostics(ctx)

@@ -1,13 +1,9 @@
-import { readFileSync } from "node:fs"
-import { resolve } from "node:path"
 import { describe, expect, test } from "vitest"
 import { mkCondOp } from "../../types/brand"
 import { parseCondOps } from "../../yodl/docs/cond-ops"
+import { readVendoredYo } from "./test-util"
 
-const COND_YO = readFileSync(
-  resolve(__dirname, "../../data/zsh-docs/cond.yo"),
-  "utf8",
-)
+const COND_YO = readVendoredYo("cond.yo")
 
 describe("parseCondOps", () => {
   test("parses unary operator", () => {
@@ -46,7 +42,7 @@ true if string matches pattern.
 
   describe("vendored cond.yo", () => {
     const ops = parseCondOps(COND_YO)
-    const byOp = new Map(ops.map((o) => [o.op as string, o]))
+    const byOp = new Map(ops.map((o) => [o.op, o]))
 
     test("parses a reasonable number of operators", () => {
       expect(ops.length).toBeGreaterThan(20)
@@ -59,10 +55,10 @@ true if string matches pattern.
     })
 
     test("contains known operators", () => {
-      expect(byOp.has("-a")).toBe(true)
-      expect(byOp.has("-f")).toBe(true)
-      expect(byOp.has("-nt")).toBe(true)
-      expect(byOp.has("=~")).toBe(true)
+      expect(byOp.has(mkCondOp("-a"))).toBe(true)
+      expect(byOp.has(mkCondOp("-f"))).toBe(true)
+      expect(byOp.has(mkCondOp("-nt"))).toBe(true)
+      expect(byOp.has(mkCondOp("=~"))).toBe(true)
     })
 
     test.each([
@@ -73,7 +69,7 @@ true if string matches pattern.
       ["-eq", "binary"],
       ["=~", "binary"],
     ])("vendored %s is %s", (op, arity) => {
-      expect(byOp.get(op)?.arity).toBe(arity)
+      expect(byOp.get(mkCondOp(op))?.arity).toBe(arity)
     })
   })
 })

@@ -1,13 +1,9 @@
-import { readFileSync } from "node:fs"
-import { resolve } from "node:path"
 import { describe, expect, test } from "vitest"
 import { mkBuiltinName } from "../../types/brand"
 import { parseBuiltins } from "../../yodl/docs/builtins"
+import { readVendoredYo } from "./test-util"
 
-const BUILTINS_YO = readFileSync(
-  resolve(__dirname, "../../data/zsh-docs/builtins.yo"),
-  "utf8",
-)
+const BUILTINS_YO = readVendoredYo("builtins.yo")
 
 describe("parseBuiltins", () => {
   test("parses regular builtin item", () => {

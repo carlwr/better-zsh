@@ -10,12 +10,14 @@ import type {
   OptName,
   PrecmdDoc,
   PrecmdFact,
+  PrecmdName,
   ProcessSubstDoc,
   ProcessSubstFact,
   ProcessSubstOp,
   RedirDoc,
   RedirFact,
   RedirOp,
+  ReservedWord,
   ReservedWordDoc,
   ReservedWordFact,
   ShellParamDoc,
@@ -27,6 +29,7 @@ import {
   mkCondOp,
   mkOptFlagChar,
   mkOptLookupName,
+  mkReservedWord,
   mkShellParamName,
   syntacticContext,
 } from "zsh-core"
@@ -56,10 +59,10 @@ export class HoverProvider implements vscode.HoverProvider {
   private optionMap: Map<OptName, ZshOption> | undefined
   private flagMap: ReadonlyMap<OptFlagChar, readonly OptFlagHit[]> | undefined
   private condOpMap: Map<CondOp, CondOpDoc> | undefined
-  private precmdMap: Map<string, PrecmdDoc> | undefined
+  private precmdMap: Map<PrecmdName, PrecmdDoc> | undefined
   private redirMap: ReadonlyMap<RedirOp, readonly RedirDoc[]> | undefined
   private processSubstMap: Map<ProcessSubstOp, ProcessSubstDoc> | undefined
-  private reservedWordMap: Map<string, ReservedWordDoc> | undefined
+  private reservedWordMap: Map<ReservedWord, ReservedWordDoc> | undefined
 
   constructor(
     params?: readonly ShellParamDoc[],
@@ -244,7 +247,7 @@ export class HoverProvider implements vscode.HoverProvider {
         )
       : undefined
     if (rw) {
-      const d = this.reservedWordMap?.get(rw.text)
+      const d = this.reservedWordMap?.get(mkReservedWord(rw.text))
       if (d)
         return new vscode.Hover(
           new vscode.MarkdownString(mdReservedWord(d)),
@@ -305,17 +308,16 @@ function splitRedirToken(
   let best: RedirOp | undefined
 
   for (const op of redirMap?.keys() ?? []) {
-    const sig = op as string
-    if (!text.startsWith(sig)) continue
-    if (!best || sig.length > (best as string).length) best = op
+    if (!text.startsWith(op)) continue
+    if (!best || op.length > best.length) best = op
   }
 
   if (!best) return
-  return { op: best, tail: text.slice((best as string).length) }
+  return { op: best, tail: text.slice(best.length) }
 }
 
 function redirTailKind(doc: RedirDoc): string {
-  return doc.sig.slice((doc.op as string).length).trimStart()
+  return doc.sig.slice(doc.op.length).trimStart()
 }
 
 function redirTailKindOf(tail: string): string {
@@ -362,7 +364,6 @@ function activeCondTokenRangeAt(
   // Generic hover token splitting treats shell delimiters as separators, so
   // conditional operators made entirely from those chars need a cond-only path.
   const symbolic = [...condOps.keys()]
-    .map((op) => op as string)
     .filter((op) => [...op].some(isTokenDelimiter))
     .sort((a, b) => b.length - a.length)
 

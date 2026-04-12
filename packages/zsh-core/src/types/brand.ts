@@ -34,6 +34,9 @@ export type ParamFlag = Brand<string, "ParamFlag">
 /** Globbing flag token such as `i` or `cN,M`. */
 export type GlobbingFlag = Brand<string, "GlobbingFlag">
 
+/** Reserved word spelling such as `if`, `then`, `[[`. */
+export type ReservedWord = Brand<string, "ReservedWord">
+
 function trim(raw: string): string {
   return raw.trim()
 }
@@ -92,4 +95,8 @@ export function mkParamFlag(raw: string): ParamFlag {
 
 export function mkGlobbingFlag(raw: string): GlobbingFlag {
   return trim(raw) as GlobbingFlag
+}
+
+export function mkReservedWord(raw: string): ReservedWord {
+  return trim(raw) as ReservedWord
 }

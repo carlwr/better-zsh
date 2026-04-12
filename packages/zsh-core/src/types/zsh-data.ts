@@ -8,6 +8,7 @@ import type {
   OptName,
   ParamFlag,
   RedirOp,
+  ReservedWord,
   ShellParamName,
   SubscriptFlag,
 } from "./brand.ts"
@@ -125,7 +126,7 @@ export interface ShellParamDoc extends SyntaxDocBase {
 }
 
 export interface ReservedWordDoc extends SyntaxDocBase {
-  readonly name: string
+  readonly name: ReservedWord
   readonly pos: ReservedWordPos
 }
 

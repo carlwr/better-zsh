@@ -23,6 +23,7 @@ import {
   mkOptFlagChar,
   mkOptName,
   mkRedirOp,
+  mkReservedWord,
   mkShellParamName,
 } from "../types/brand"
 import type {
@@ -94,7 +95,7 @@ const processSubst: ProcessSubstDoc = {
 }
 
 const reservedWord: ReservedWordDoc = {
-  name: "if",
+  name: mkReservedWord("if"),
   sig: "if list then list fi",
   desc: "Execute list conditionally.",
   section: "Complex Commands",
@@ -249,7 +250,7 @@ describe("hover markdown", () => {
     expect(
       mdReservedWord({
         ...reservedWord,
-        name: "fi",
+        name: mkReservedWord("fi"),
         pos: "any",
       }),
     ).toContain("_Role:_ reserved word (any position)")

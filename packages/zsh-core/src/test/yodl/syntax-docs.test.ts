@@ -5,6 +5,7 @@ import {
   mkHistoryKey,
   mkParamFlag,
   mkRedirOp,
+  mkReservedWord,
   mkShellParamName,
   mkSubscriptFlag,
 } from "../../types/brand"
@@ -77,9 +78,9 @@ enditem()`
     const docs = new Map(
       parseReservedWords(GRAMMAR_YO).map((doc) => [doc.name, doc]),
     )
-    expect(docs.get("if")?.pos).toBe("command")
-    expect(docs.get("[[")?.pos).toBe("command")
-    expect(docs.get("}")?.pos).toBe("any")
+    expect(docs.get(mkReservedWord("if"))?.pos).toBe("command")
+    expect(docs.get(mkReservedWord("[["))?.pos).toBe("command")
+    expect(docs.get(mkReservedWord("}"))?.pos).toBe("any")
   })
 
   test("process substitution exports the three canonical forms", () => {
@@ -194,6 +195,8 @@ enditem()`
   test("normalized syntax-doc identity fields are idempotent", () => {
     for (const doc of parseRedirections(REDIRECT_YO))
       expect(mkRedirOp(doc.op)).toBe(doc.op)
+    for (const doc of parseReservedWords(GRAMMAR_YO))
+      expect(mkReservedWord(doc.name)).toBe(doc.name)
     for (const doc of parseShellParams(PARAMS_YO))
       expect(mkShellParamName(doc.name)).toBe(doc.name)
     for (const doc of parseSubscriptFlags(PARAMS_YO))

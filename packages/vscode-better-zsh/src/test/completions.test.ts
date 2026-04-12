@@ -43,6 +43,7 @@ vi.mock("../zsh", () => ({
 import {
   mkBuiltinName,
   mkOptName,
+  mkReservedWord,
   mkShellParamName,
   optionCategories,
 } from "zsh-core"
@@ -92,7 +93,7 @@ suite("CompletionProvider", () => {
       ],
       reservedWords: [
         {
-          name: "if",
+          name: mkReservedWord("if"),
           sig: "if list then list fi",
           desc: "if docs",
           section: "Complex Commands",

@@ -2,7 +2,12 @@ import { existsSync, readFileSync } from "node:fs"
 import { join } from "node:path"
 import { describe, expect, test } from "vitest"
 import { resolveZshDataDir, vendoredZshDocFiles } from "../data-dir"
-import { mkBuiltinName, mkCondOp, mkOptName } from "../types/brand"
+import {
+  mkBuiltinName,
+  mkCondOp,
+  mkOptName,
+  mkReservedWord,
+} from "../types/brand"
 import {
   getBuiltins,
   getCondOps,
@@ -70,7 +75,9 @@ describe("vendored zsh data assets", () => {
 
   test("parses newly vendored structured syntax docs", () => {
     expect(getRedirections().some((doc) => doc.op === "<")).toBe(true)
-    expect(getReservedWords().some((doc) => doc.name === "if")).toBe(true)
+    expect(
+      getReservedWords().some((doc) => doc.name === mkReservedWord("if")),
+    ).toBe(true)
     expect(getShellParams().some((doc) => doc.name === "SECONDS")).toBe(true)
     expect(getSubscriptFlags().some((doc) => doc.flag === "w")).toBe(true)
     expect(getParamFlags().some((doc) => doc.flag === "@")).toBe(true)

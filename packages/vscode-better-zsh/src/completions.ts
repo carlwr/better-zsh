@@ -47,10 +47,10 @@ export class CompletionProvider implements vscode.CompletionItemProvider {
   constructor(data: CompletionData) {
     this.general = [
       ...data.builtins
-        .filter((doc) => WORD_EXACT.test(doc.name as string))
+        .filter((doc) => WORD_EXACT.test(doc.name))
         .map((doc) => {
           const item = new vscode.CompletionItem(
-            doc.name as string,
+            doc.name,
             vscode.CompletionItemKind.Keyword,
           )
           item.detail = doc.desc
@@ -143,7 +143,7 @@ export class CompletionProvider implements vscode.CompletionItemProvider {
   private condCompletions(_doc: vscode.TextDocument, _pos: vscode.Position) {
     const items = this.condOps.map((cop) => {
       const item = new vscode.CompletionItem(
-        cop.op as string,
+        cop.op,
         vscode.CompletionItemKind.Operator,
       )
       item.detail = cop.desc
