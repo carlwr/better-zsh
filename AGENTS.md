@@ -141,9 +141,22 @@ Semantic token design choices:
 
 ### Other tools
 
-- `@carlwr/typescript-extra` (a dev dep, small) has some convenience utilities, including NonEmpty types and more — available to use if anything from it brings value. Do not remove as a dep/dev dep even if at some point nothing from it is used
+- `@carlwr/typescript-extra`
+  - a dev dep
+  - a small package with some convenience utilities, including a NonEmpty type and utilities for that type
+  - available to use if anything from it brings value
+  - do not remove as a dev dep even if at some point it becomes unused
+  - for overview, read the `.d.ts` file:
+
+    ```sh
+    cat $(gfind . -wholename '*/typescript-extra/dist/index.d.ts' | head -n1)
+    # approx. 150 lines
+    ```
 
 ## Testing
+
+- **Reproducibility is important: any randomness must use a fixed, checked-in seed.**
+- Property-based tests are encouraged where appropriate (e.g. pure parsers)
 
 ### Validation before returning to user
 
@@ -169,20 +182,31 @@ Semantic token design choices:
 - Pure logic (parsing, filtering, text analysis) should always have unit tests independent of external dependencies (zsh, VS Code APIs)
 - Integration tests that depend on external tools (e.g., zsh on PATH) must skip gracefully when the tool is absent
 - The VS Code Electron test harness intentionally runs ALL tests (unit + integration) — unit tests re-running there serve as meta-tests under a richer harness
-- Functions that are "obviously correct" (general/simple enough) do not need unit tests
+- Functions that are "obviously correct" (general/simple enough) do not need tests
 
 ### Container-only integration tests
 
 - `testINTERACTIVE:electron-zsh-path` (zsh-path-matrix) runs in CI/Docker only. On macOS, VS Code's shell environment resolution replaces test-injected PATH before the extension host activates, defeating environment isolation. With pure logic surfaced in unit-testable functions, container integration tests are a bonus layer over local coverage.
 
-**Reproducibility is important: any randomness must use a fixed, checked-in seed.**
-
 ### Testing tools
 
-- `@fast-check/vitest` and `@carlwr/fastcheck-utils` are available as dev dependencies
-- Property-based tests are encouraged for pure parsers and normalizers
-- `@carlwr/fastcheck-utils` provides a few convenience generators with better shrinking and types — check if it offers something useful if writing fast-check tests; do not remove as a dev dep even if at some point nothing from it is used
+Test runners:
+- Vitest
+- Mocha for Electron tests
+
+Property tests: `fast-check`
+- through `@fast-check/vitest`
 - fast-check version note: `fc.char()` and `fc.stringOf()` are **possibly not** available in the version used — if not available, use `fc.mapToConstant(...)` + `fc.array(...)` for character-level arbitraries
+- dep `@carlwr/fastcheck-utils`
+  - provides: a few convenience generators with better shrinking and types
+  - -> if writing fast-check tests, check if it offers something useful
+  - do not remove as a dev dep even if at some point it becomes unused
+  - for overview, read the `.d.ts` file:
+
+    ```sh
+    cat $(gfind . -wholename '*/fastcheck-utils/dist/index.d.ts' | head -n1)`
+    # approx. 100 lines
+    ```
 
 ## Packaging (vsce)
 
