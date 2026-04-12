@@ -1,4 +1,4 @@
-import type { ProcessSubstDoc } from "../../types/zsh-data.ts"
+import type { ProcessSubstDoc, ProcessSubstOp } from "../../types/zsh-data.ts"
 import { extractSectionBody } from "../core/doc.ts"
 
 const DOCS = [
@@ -17,7 +17,11 @@ const DOCS = [
     sig: "=(...)",
     desc: "Run `list`, write its output to a temporary file, and pass that filename. This is useful for programs that need `lseek(2)`.",
   },
-] as const
+] as const satisfies readonly {
+  op: ProcessSubstOp
+  sig: ProcessSubstOp
+  desc: string
+}[]
 
 export function parseProcessSubsts(yo: string): ProcessSubstDoc[] {
   return extractSectionBody(yo, "Process Substitution").length > 0

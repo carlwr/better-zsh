@@ -21,6 +21,7 @@ export type OptFlagSign = "+" | "-"
 export type ReservedWordPos = "command" | "any"
 
 export type HistoryKind = "event-designator" | "word-designator" | "modifier"
+export type ProcessSubstOp = "<(...)" | ">(...)" | "=(...)"
 
 /** Short-option alias for a long zsh option. */
 export interface OptFlagAlias {
@@ -72,7 +73,6 @@ export interface SyntaxDocBase {
   desc: string
   /** Manual section this element was parsed from. */
   section: string
-  aliases?: readonly string[]
 }
 
 /** Shell-managed parameters documented in `zshparam`. */
@@ -92,7 +92,7 @@ export interface RedirDoc extends SyntaxDocBase {
 
 /** Process substitution -- `<(...)` and `>(...)`. */
 export interface ProcessSubstDoc extends SyntaxDocBase {
-  op: string
+  op: ProcessSubstOp
 }
 
 /** Subscript flags -- e.g. `(e)`, `(w)` inside `${arr[(...)...]}`. */
