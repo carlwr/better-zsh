@@ -9,6 +9,7 @@ import {
   getReservedWords,
   getShellParams,
 } from "zsh-core"
+import { evictDocCaches } from "./cache"
 import { CompletionProvider } from "./completions"
 import { DefinitionProvider } from "./definition"
 import { setupDiagnostics } from "./diagnostics"
@@ -61,6 +62,7 @@ export async function activate(ctx: vscode.ExtensionContext) {
       ZSH_LANG_ID,
       new HighlightProvider(),
     ),
+    vscode.workspace.onDidCloseTextDocument(evictDocCaches),
     vscode.languages.registerRenameProvider(ZSH_LANG_ID, new RenameProvider()),
     vscode.languages.registerDocumentSymbolProvider(
       ZSH_LANG_ID,
