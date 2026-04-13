@@ -60,23 +60,19 @@ suite("buildZshEnv", () => {
 suite("parseZshPath", () => {
   for (const [name, raw, want] of [
     ["off → disabled", "off", { kind: "disabled" }],
+    ["empty → default", "", { kind: "default", binary: "zsh" }],
     [
-      "empty → default with 'zsh' binary",
-      "",
-      { kind: "default", binary: "zsh" },
-    ],
-    [
-      "explicit path → explicit",
+      "absolute → explicit",
       "/usr/local/bin/zsh",
       { kind: "explicit", binary: "/usr/local/bin/zsh" },
     ],
     [
-      "relative explicit path → invalid",
+      "./ → invalid",
       "./zsh",
       { kind: "invalid", raw: "./zsh", reason: "relative" },
     ],
     [
-      "relative explicit path → invalid (nested)",
+      "nested relative → invalid",
       "bin/zsh",
       { kind: "invalid", raw: "bin/zsh", reason: "relative" },
     ],
@@ -100,9 +96,9 @@ suite("zsh mode gating", () => {
   }
 
   for (const [name, cfg] of [
-    ["disabled config gates runtime features", disabled],
-    ["explicit non-existent path gates runtime features", explicitBad],
-    ["invalid relative path gates runtime features", invalidRelative],
+    ["disabled", disabled],
+    ["explicit nonexistent", explicitBad],
+    ["invalid relative", invalidRelative],
   ] as const) {
     test(name, async () => {
       await expectGated(cfg)

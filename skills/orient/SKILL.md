@@ -61,10 +61,10 @@ These describe **which directories** to look in, not specific files. Use the dis
 3. Tests: `packages/zsh-core/src/test/analysis/` — behavioral contract and known limitations (check the bottom of the cmd-position test for a "Known limitations" comment block)
 
 ### zsh-core: Yodl parsing / rendered docs
-1. `packages/zsh-core/src/yodl/core/` — shared Yodl machinery: macro-node parsing, structural extraction, and text/token rendering
-2. `packages/zsh-core/src/yodl/docs/` — corpus-specific extractors that map the shared Yodl representation to zsh doc records
+1. `packages/zsh-core/src/docs/yodl/core/` — shared Yodl machinery: macro-node parsing, structural extraction, and text/token rendering
+2. `packages/zsh-core/src/docs/yodl/extractors/` — corpus-specific extractors that map the shared Yodl representation to zsh doc records
 3. `packages/zsh-core/src/render/` — markdown rendering, rendered-reference corpus assembly, and dump helpers
-4. `packages/zsh-core/src/` root — runtime loaders
+4. `packages/zsh-core/src/docs/` — doc record types, branded types (corpus-identity and candidate), taxonomy (category enumeration, identity/record mappings), corpus type and loader
 5. Tests: `packages/zsh-core/src/test/yodl/` and `packages/zsh-core/src/test/render/`
 6. Inspect parsed build artifacts: `ls packages/zsh-core/dist/json/` (generated at build time; useful for inspection, but the extension's live runtime path currently reads copied `.yo` data)
 
@@ -91,7 +91,7 @@ rg "^export.*(function|const|type|interface|class) SymbolName" --type ts
 rg "\bsymbolName\b" --type ts
 
 # Find all exports of a given directory
-rg "^export" --type ts packages/zsh-core/src/yodl/
+rg "^export" --type ts packages/zsh-core/src/docs/yodl/
 ```
 
 ## Key gotchas
@@ -117,8 +117,8 @@ rg "^export" --type ts packages/zsh-core/src/yodl/
 These are **hard rules**, not suggestions. Agents modifying this file must follow them.
 
 1. **NEVER add filenames to this file.** Reference directories, not files. The discovery scripts and `ls`/`rg` commands produce current filenames at read-time.
-   - Allowed: `packages/zsh-core/src/yodl/`
-   - Forbidden: `packages/zsh-core/src/yodl/parse.ts`
+   - Allowed: `packages/zsh-core/src/docs/yodl/`
+   - Forbidden: `packages/zsh-core/src/docs/yodl/core/nodes.ts`
    - Exception: `package.json` is acceptable (stable, universal name)
 
 2. **NEVER add function/class/variable names to this file.** The exports script and `rg` produce current symbol names at read-time.

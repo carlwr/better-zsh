@@ -1,11 +1,9 @@
 import * as vscode from "vscode"
 import type {
-  BuiltinDoc,
   CondOpDoc,
-  OptName,
-  PrecmdDoc,
-  ReservedWordDoc,
-  ShellParamDoc,
+  DocCorpus,
+  DocPieceId,
+  Proven,
   ZshOption,
 } from "zsh-core"
 import {
@@ -15,13 +13,7 @@ import {
   WORD,
   WORD_EXACT,
 } from "zsh-core"
-import {
-  mdBuiltin,
-  mdPrecmd,
-  mdReservedWord,
-  mdShellParam,
-  sigCond,
-} from "zsh-core/render"
+import { renderDoc } from "zsh-core/render"
 import { asyncDocCache } from "./cache"
 import { zshTokenize } from "./zsh"
 
@@ -29,55 +21,42 @@ const getIds = asyncDocCache(async (doc) =>
   filterTokens(await zshTokenize(doc.getText())),
 )
 
-export interface CompletionData {
-  builtins: readonly BuiltinDoc[]
-  reservedWords: readonly ReservedWordDoc[]
-  precmds: readonly PrecmdDoc[]
-  params: readonly ShellParamDoc[]
-  options: readonly ZshOption[]
-  condOps: readonly CondOpDoc[]
-}
-
 export class CompletionProvider implements vscode.CompletionItemProvider {
   private general: vscode.CompletionItem[]
-  private options: readonly OptName[]
-  private optionMap: ReadonlyMap<OptName, ZshOption>
+  private options: readonly Proven<"option">[]
+  private optionMap: ReadonlyMap<Proven<"option">, ZshOption>
   private condOps: readonly CondOpDoc[]
 
-  constructor(data: CompletionData) {
-    this.general = [
-      ...data.builtins
-        .filter(isWordName)
-        .map((doc) =>
-          mkCompletionItem(doc, vscode.CompletionItemKind.Keyword, mdBuiltin),
-        ),
-      ...data.reservedWords
-        .filter(isWordName)
-        .map((doc) =>
-          mkCompletionItem(
-            doc,
-            vscode.CompletionItemKind.Keyword,
-            mdReservedWord,
-          ),
-        ),
-      ...data.precmds
-        .filter(isWordName)
-        .map((doc) =>
-          mkCompletionItem(doc, vscode.CompletionItemKind.Keyword, mdPrecmd),
-        ),
-      ...data.params
-        .filter(isWordName)
-        .map((doc) =>
-          mkCompletionItem(
-            doc,
-            vscode.CompletionItemKind.Variable,
-            mdShellParam,
-          ),
-        ),
+  constructor(corpus: DocCorpus) {
+    const options = [...corpus.option.values()]
+    const kw = vscode.CompletionItemKind.Keyword
+    const wordCategories: readonly [
+      keyof Pick<
+        DocCorpus,
+        "builtin" | "reserved_word" | "precmd" | "shell_param"
+      >,
+      vscode.CompletionItemKind,
+    ][] = [
+      ["builtin", kw],
+      ["reserved_word", kw],
+      ["precmd", kw],
+      ["shell_param", vscode.CompletionItemKind.Variable],
     ]
-    this.options = data.options.map((opt) => opt.name)
-    this.optionMap = new Map(data.options.map((o) => [o.name, o]))
-    this.condOps = data.condOps
+    this.general = wordCategories.flatMap(([cat, kind]) =>
+      [...corpus[cat].values()]
+        .filter(isWordName)
+        .map((doc) =>
+          mkCompletionItem(
+            doc,
+            kind,
+            { category: cat, id: doc.name } as DocPieceId,
+            corpus,
+          ),
+        ),
+    )
+    this.options = options.map((opt) => opt.name)
+    this.optionMap = new Map(options.map((o) => [o.name, o]))
+    this.condOps = [...corpus.cond_op.values()]
   }
 
   async provideCompletionItems(doc: vscode.TextDocument, pos: vscode.Position) {
@@ -131,11 +110,17 @@ export class CompletionProvider implements vscode.CompletionItemProvider {
         vscode.CompletionItemKind.Operator,
       )
       item.detail = cop.desc
-      item.documentation = new vscode.MarkdownString(sigCond(cop))
+      item.documentation = new vscode.MarkdownString(condSig(cop))
       return item
     })
     return new vscode.CompletionList(items, false)
   }
+}
+
+function condSig(cop: CondOpDoc): string {
+  return cop.arity === "unary"
+    ? `\`${cop.op}\` *${cop.operands[0]}*`
+    : `*${cop.operands[0]}* \`${cop.op}\` *${cop.operands[1]}*`
 }
 
 function isWordName<T extends { name: string }>(doc: T): boolean {
@@ -145,10 +130,11 @@ function isWordName<T extends { name: string }>(doc: T): boolean {
 function mkCompletionItem<T extends { name: string; desc: string }>(
   doc: T,
   kind: vscode.CompletionItemKind,
-  md: (doc: T) => string,
+  pieceId: DocPieceId,
+  corpus: DocCorpus,
 ): vscode.CompletionItem {
   const item = new vscode.CompletionItem(doc.name, kind)
   item.detail = doc.desc
-  item.documentation = new vscode.MarkdownString(md(doc))
+  item.documentation = new vscode.MarkdownString(renderDoc(corpus, pieceId))
   return item
 }

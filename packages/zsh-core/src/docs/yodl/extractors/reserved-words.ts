@@ -1,5 +1,5 @@
-import { mkReservedWord } from "../../types/brand.ts"
-import type { ReservedWordDoc } from "../../types/zsh-data.ts"
+import type { ReservedWordDoc } from "../../types.ts"
+import { mkProven } from "../../types.ts"
 import { extractSectionBody } from "../core/doc.ts"
 import { extractTokens } from "../core/text.ts"
 
@@ -23,7 +23,7 @@ export function parseReservedWords(yo: string): readonly ReservedWordDoc[] {
       .map(
         (name) =>
           ({
-            name: mkReservedWord(name),
+            name: mkProven("reserved_word", name),
             pos: "command",
             sig: name,
             desc: CMD_DESC,
@@ -31,7 +31,7 @@ export function parseReservedWords(yo: string): readonly ReservedWordDoc[] {
           }) satisfies ReservedWordDoc,
       ),
     {
-      name: mkReservedWord("}"),
+      name: mkProven("reserved_word", "}"),
       pos: "any",
       sig: "}",
       desc: ANY_DESC,

@@ -1,3 +1,4 @@
+import { mkCandidate } from "../docs/types.ts"
 import {
   activeText,
   continuedLineBlock,
@@ -19,7 +20,8 @@ export function isSetoptContext(doc: DocLike, line: number): boolean {
   const lines = readLines(doc)
   const block = continuedLineBlock(lines, line)
   const head = firstCmdHeadOnLine(activeText(lines[block.start] ?? ""))
-  if (!head || head.precmds.includes("command")) return false
+  if (!head || head.precmds.includes(mkCandidate("precmd", "command")))
+    return false
   const text = continuedText(lines, block.start, block.end)
   return isSetoptCommandText(text.slice(head.span.start))
 }

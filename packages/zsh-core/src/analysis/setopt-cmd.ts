@@ -1,5 +1,4 @@
-/** Shared `setopt`/`unsetopt`/`set +/-` recognition for both fact and lightweight checks. */
-/** Recognize the command text of a setopt-like invocation, including `set +/-o`. */
+/** Recognize the command text of a setopt-like invocation (`setopt`/`unsetopt`/`set +/-o`). */
 export function isSetoptCommandText(text: string, continued = false): boolean {
   const words = text.trimStart().split(/\s+/).filter(Boolean)
   const cmd = words[0]

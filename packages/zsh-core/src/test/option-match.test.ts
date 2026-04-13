@@ -1,9 +1,9 @@
 import * as assert from "node:assert"
+import { mkProven } from "../docs/types"
 import { matchOptions } from "../option-match"
-import { mkOptName } from "../types/brand"
 
 const opts = ["aliases", "errexit", "errreturn", "extendedglob", "notify"].map(
-  mkOptName,
+  (s) => mkProven("option", s),
 )
 
 function labels(typed: string) {

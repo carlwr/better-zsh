@@ -40,62 +40,61 @@ vi.mock("../zsh", () => ({
   zshTokenize: vi.fn(async () => []),
 }))
 
-import {
-  mkBuiltinName,
-  mkOptName,
-  mkReservedWord,
-  mkShellParamName,
-  optionCategories,
-} from "zsh-core"
+import type { DocCorpus } from "zsh-core"
+import { mkProven, optSections } from "zsh-core"
 import { CompletionProvider } from "../completions"
 import { wordDoc } from "./test-util"
 
 suite("CompletionProvider", () => {
   test("offers static builtins, precmds, reserved words, and params", async () => {
-    const provider = new CompletionProvider({
-      builtins: [
-        {
-          name: mkBuiltinName("echo"),
-          synopsis: ["echo"],
-          desc: "",
-        },
-      ],
-      reservedWords: [
-        {
-          name: mkReservedWord("if"),
-          sig: "if list then list fi",
-          desc: "",
-          section: "Complex Commands",
-          pos: "command",
-        },
-      ],
-      precmds: [
-        {
-          name: "noglob",
-          synopsis: ["noglob command arg ..."],
-          desc: "",
-        },
-      ],
-      params: [
-        {
-          name: mkShellParamName("SECONDS"),
-          sig: "SECONDS",
-          desc: "",
-          section: "Parameters Set By The Shell",
-        },
-      ],
-      options: [
-        {
-          name: mkOptName("AUTO_CD"),
-          display: "AUTO_CD",
-          flags: [],
-          defaultIn: ["zsh"],
-          category: optionCategories[0],
-          desc: "",
-        },
-      ],
-      condOps: [],
-    })
+    const emptyMap = new Map() as unknown as ReadonlyMap<never, never>
+    const builtin = {
+      name: mkProven("builtin", "echo"),
+      synopsis: ["echo"] as [string],
+      desc: "",
+    }
+    const reservedWord = {
+      name: mkProven("reserved_word", "if"),
+      sig: "if list then list fi",
+      desc: "",
+      section: "Complex Commands",
+      pos: "command" as const,
+    }
+    const precmd = {
+      name: "noglob" as const,
+      synopsis: ["noglob command arg ..."] as [string],
+      desc: "",
+    }
+    const param = {
+      name: mkProven("shell_param", "SECONDS"),
+      sig: "SECONDS",
+      desc: "",
+      section: "Parameters Set By The Shell" as const,
+    }
+    const option = {
+      name: mkProven("option", "AUTO_CD"),
+      display: "AUTO_CD",
+      flags: [],
+      defaultIn: ["zsh" as const],
+      category: optSections[0],
+      desc: "",
+    }
+    const corpus: DocCorpus = {
+      builtin: new Map([[builtin.name, builtin]]),
+      reserved_word: new Map([[reservedWord.name, reservedWord]]),
+      precmd: new Map([[precmd.name, precmd]]),
+      shell_param: new Map([[param.name, param]]),
+      option: new Map([[option.name, option]]),
+      cond_op: emptyMap as DocCorpus["cond_op"],
+      redir: emptyMap as DocCorpus["redir"],
+      process_subst: emptyMap as DocCorpus["process_subst"],
+      subscript_flag: emptyMap as DocCorpus["subscript_flag"],
+      param_flag: emptyMap as DocCorpus["param_flag"],
+      history: emptyMap as DocCorpus["history"],
+      glob_op: emptyMap as DocCorpus["glob_op"],
+      glob_flag: emptyMap as DocCorpus["glob_flag"],
+    }
+    const provider = new CompletionProvider(corpus)
 
     const items = (await provider.provideCompletionItems(wordDoc("ec"), {
       line: 0,

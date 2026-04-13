@@ -1,14 +1,5 @@
 import * as vscode from "vscode"
-import {
-  getBuiltins,
-  getCondOps,
-  getOptions,
-  getPrecmds,
-  getProcessSubsts,
-  getRedirections,
-  getReservedWords,
-  getShellParams,
-} from "zsh-core"
+import { loadCorpus } from "zsh-core"
 import { evictDocCaches } from "./cache"
 import { CompletionProvider } from "./completions"
 import { DefinitionProvider } from "./definition"
@@ -44,15 +35,10 @@ export async function activate(ctx: vscode.ExtensionContext) {
   // Parsed data from vendored .yo files (always available, no zsh needed)
   // Keep semi-static language knowledge bundled and ready immediately; host
   // zsh is reserved for diagnostics/tokenization paths where execution matters.
-  const parsedBuiltins = getBuiltins()
-  const parsedOptions = getOptions()
-  const parsedCondOps = getCondOps()
-  const parsedPrecmds = getPrecmds()
-  const parsedRedirs = getRedirections()
-  const parsedProcessSubsts = getProcessSubsts()
-  const parsedReservedWords = getReservedWords()
-  const parsedShellParams = getShellParams()
-  const builtinNames = parsedBuiltins.map((builtin) => builtin.name)
+  const corpus = loadCorpus()
+  const builtinNames = [...corpus.builtin.values()].map(
+    (builtin) => builtin.name,
+  )
   const semanticTokensProvider = new SemanticTokensProvider(builtinNames)
 
   setupDiagnostics(ctx)
@@ -85,27 +71,11 @@ export async function activate(ctx: vscode.ExtensionContext) {
     ),
     vscode.languages.registerHoverProvider(
       ZSH_LANG_ID,
-      new HoverProvider(
-        parsedShellParams,
-        parsedOptions,
-        parsedCondOps,
-        parsedBuiltins,
-        parsedPrecmds,
-        parsedRedirs,
-        parsedProcessSubsts,
-        parsedReservedWords,
-      ),
+      new HoverProvider(corpus),
     ),
     vscode.languages.registerCompletionItemProvider(
       ZSH_LANG_ID,
-      new CompletionProvider({
-        builtins: parsedBuiltins,
-        reservedWords: parsedReservedWords,
-        precmds: parsedPrecmds,
-        options: parsedOptions,
-        params: parsedShellParams,
-        condOps: parsedCondOps,
-      }),
+      new CompletionProvider(corpus),
     ),
     vscode.languages.registerDocumentSemanticTokensProvider(
       ZSH_LANG_ID,

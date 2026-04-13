@@ -12,7 +12,7 @@ Commit: 73d317384c9225e46d66444f93b46f0fbe7084ef
 Date: 2022-05-14
 
 Files are copied verbatim. Any corrections or adjustments to descriptions
-should be made in the build/parse pipeline (src/yodl/), not by editing
+should be made in the build/parse pipeline (src/docs/yodl/), not by editing
 these files — so that re-vendoring from upstream is a clean overwrite.
 
 License: zsh is distributed under a MIT-like license. See the zsh source

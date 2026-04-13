@@ -1,14 +1,13 @@
-import type { OptName } from "../../types/brand.ts"
-import { mkOptFlagChar, mkOptName } from "../../types/brand.ts"
 import type {
   DefaultMarker,
   Emulation,
   OptFlagAlias,
   OptFlagSign,
-  OptionCategory,
+  OptSection,
+  Proven,
   ZshOption,
-} from "../../types/zsh-data.ts"
-import { optionCategories } from "../../types/zsh-data.ts"
+} from "../../types.ts"
+import { mkOptFlagChar, mkProven, optSections } from "../../types.ts"
 import {
   extractFirstList,
   extractItems,
@@ -29,7 +28,7 @@ const DEFAULT_EMULATIONS: Record<DefaultMarker, readonly Emulation[]> = {
   Z: ["zsh"],
 }
 
-const OPTION_CATEGORY_SET: ReadonlySet<string> = new Set(optionCategories)
+const OPTION_SECTION_SET: ReadonlySet<string> = new Set(optSections)
 
 /** Parse options.yo → ZshOption[] */
 export function parseOptions(yo: string): readonly ZshOption[] {
@@ -53,14 +52,14 @@ export function parseOptions(yo: string): readonly ZshOption[] {
   })
 }
 
-function parseOptionCategory(raw: string): OptionCategory {
-  if (OPTION_CATEGORY_SET.has(raw)) return raw as OptionCategory
+function parseOptionCategory(raw: string): OptSection {
+  if (OPTION_SECTION_SET.has(raw)) return raw as OptSection
   throw new Error(`Unknown zsh option category: ${raw}`)
 }
 
 function parseOptHeader(header: Parameters<typeof extractTokens>[0]):
   | {
-      name: OptName
+      name: Proven<"option">
       display: string
       flags: OptFlagAlias[]
     }
@@ -68,7 +67,7 @@ function parseOptHeader(header: Parameters<typeof extractTokens>[0]):
   const [display, ...parts] = ttTexts(header)
   if (!display || !/^[A-Z_]+$/.test(display)) return undefined
   return {
-    name: mkOptName(display),
+    name: mkProven("option", display),
     display,
     flags: parts.flatMap(toFlagAlias),
   }
@@ -87,7 +86,7 @@ function parseDefaultFlagAliases(
     if (!flag || !target) continue
     const alias = aliasFrom(flag, target)
     if (!alias) continue
-    const key = mkOptName(alias.display)
+    const key = mkProven("option", alias.display)
     out.set(key, mergeFlags(out.get(key), [alias.flag]))
   }
   return out

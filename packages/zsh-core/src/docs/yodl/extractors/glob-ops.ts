@@ -1,5 +1,5 @@
-import { mkGlobOp } from "../../types/brand.ts"
-import type { GlobOpDoc } from "../../types/zsh-data.ts"
+import type { GlobOpDoc } from "../../types.ts"
+import { mkProven } from "../../types.ts"
 import {
   extractItems,
   extractSectionBody,
@@ -24,6 +24,11 @@ function parseSection(
   return flattenAliasedEntries(
     extractItems(section, 1),
     normalizeHeader,
-    (op, desc) => ({ op: mkGlobOp(op), sig: op, desc, section: name }),
+    (op, desc) => ({
+      op: mkProven("glob_op", op),
+      sig: op,
+      desc,
+      section: name,
+    }),
   )
 }

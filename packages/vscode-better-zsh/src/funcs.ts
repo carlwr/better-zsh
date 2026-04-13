@@ -69,10 +69,11 @@ function buildData(doc: vscode.TextDocument): FuncData {
   const funcs: FuncDecl[] = []
   const names = new Set<string>()
   for (let line = 0; line < doc.lineCount; line++) {
-    const hit = funcDeclAtLine(doc.lineAt(line).text)
+    const text = doc.lineAt(line).text
+    const hit = funcDeclAtLine(text)
     if (!hit) continue
     names.add(hit.name)
-    const range = new vscode.Range(line, 0, line, doc.lineAt(line).text.length)
+    const range = new vscode.Range(line, 0, line, text.length)
     const selectionRange = new vscode.Range(
       line,
       hit.start,

@@ -1,5 +1,5 @@
 import { commentStart } from "../comment.ts"
-import { type PrecmdName, precmdNames } from "../types/precmd.ts"
+import { type Candidate, mkCandidate, precmdNames } from "../docs/types.ts"
 import { activeText, type TextSpan } from "./doc.ts"
 import {
   type CmdHeadFact,
@@ -46,7 +46,7 @@ const RESERVED: ReadonlySet<string> = new Set([
   "time",
 ])
 
-const PRECMDS: ReadonlySet<PrecmdName> = new Set<PrecmdName>(precmdNames)
+const PRECMDS: ReadonlySet<string> = new Set<string>(precmdNames)
 
 const FUNC_DECL = /^(\s*)([\w][\w-]*)\s*\(\)/
 const FUNC_KW = /^(\s*)function\s+([\w][\w-]*)/
@@ -59,7 +59,7 @@ export function cmdHeadFactsOnLine(
   const out: LineFact[] = []
   let i = 0
   let expectCmd = true
-  let precmds: readonly PrecmdName[] = []
+  let precmds: readonly Candidate<"precmd">[] = []
 
   // expectCmd: true when the next word should be in command position
   // precmds:   precommand modifiers accumulated before the current command head
@@ -67,27 +67,12 @@ export function cmdHeadFactsOnLine(
     i = skipWhitespace(line, i, len)
     if (i >= len) break
 
-    const ch = line.charAt(i)
-    if (
-      ch === ";" ||
-      (ch === "(" && !(i + 1 < len && line[i + 1] === "(")) ||
-      ch === "\n"
-    ) {
+    // Separators that reset command position: ; ( \n | || &&
+    const sepAdv = separatorAdvance(line, i, len)
+    if (sepAdv !== undefined) {
       expectCmd = true
       precmds = []
-      i++
-      continue
-    }
-    if (ch === "|") {
-      expectCmd = true
-      precmds = []
-      i += i + 1 < len && line[i + 1] === "|" ? 2 : 1
-      continue
-    }
-    if (ch === "&" && i + 1 < len && line[i + 1] === "&") {
-      expectCmd = true
-      precmds = []
-      i += 2
+      i += sepAdv
       continue
     }
 
@@ -158,9 +143,10 @@ export function cmdHeadFactsOnLine(
       continue
     }
 
-    if (isPrecmdName(word)) {
-      out.push(precmdFact(word, wordSpan))
-      precmds = [...precmds, word]
+    if (PRECMDS.has(word)) {
+      const candidate = mkCandidate("precmd", word)
+      out.push(precmdFact(candidate, wordSpan))
+      precmds = [...precmds, candidate]
       const parsed = skipPrecmdArgs(line, i, len, word)
       i = parsed.end
       if (parsed.stopsHead) {
@@ -202,7 +188,7 @@ export function funcDeclAtLine(
 function cmdHeadFact(
   text: string,
   span: TextSpan,
-  precmds: readonly PrecmdName[],
+  precmds: readonly Candidate<"precmd">[],
 ): CmdHeadFact {
   return {
     kind: "cmd-head",
@@ -213,12 +199,11 @@ function cmdHeadFact(
   }
 }
 
-function precmdFact(text: PrecmdName, span: TextSpan): PrecmdFact {
+function precmdFact(name: Candidate<"precmd">, span: TextSpan): PrecmdFact {
   return {
     kind: "precmd",
     span,
-    text,
-    name: text,
+    name,
     strength: "hard",
   }
 }
@@ -235,7 +220,7 @@ function skipPrecmdArgs(
   line: string,
   pos: number,
   len: number,
-  name: PrecmdName,
+  name: string,
 ): { end: number; stopsHead: boolean } {
   let i = pos
 
@@ -283,10 +268,6 @@ function nextWordSpan(
   if (start >= len) return
   const end = skipWord(line, start, len)
   return end === start ? undefined : { start, end }
-}
-
-function isPrecmdName(word: string): word is PrecmdName {
-  return PRECMDS.has(word as PrecmdName)
 }
 
 function skipWhitespace(s: string, i: number, len: number): number {
@@ -385,6 +366,19 @@ function skipParamExpansion(s: string, i: number, len: number): number {
     i++
   }
   return i
+}
+
+/** Returns chars to advance if `i` is at a command-resetting separator, else undefined. */
+function separatorAdvance(
+  s: string,
+  i: number,
+  len: number,
+): number | undefined {
+  const ch = s[i]!
+  if (ch === ";" || ch === "\n") return 1
+  if (ch === "(" && !(i + 1 < len && s[i + 1] === "(")) return 1
+  if (ch === "|") return i + 1 < len && s[i + 1] === "|" ? 2 : 1
+  if (ch === "&" && i + 1 < len && s[i + 1] === "&") return 2
 }
 
 function matchFuncDef(s: string, i: number, len: number): number | undefined {

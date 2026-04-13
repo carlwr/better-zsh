@@ -1,30 +1,20 @@
 import { describe, expect, test } from "vitest"
-import {
-  mkGlobbingFlag,
-  mkGlobOp,
-  mkHistoryKey,
-  mkParamFlag,
-  mkRedirOp,
-  mkRedirSig,
-  mkReservedWord,
-  mkShellParamName,
-  mkSubscriptFlag,
-} from "../../types/brand"
-import { parseGlobOps } from "../../yodl/docs/glob-ops"
-import { parseGlobbingFlags } from "../../yodl/docs/globbing-flags"
-import { parseHistory } from "../../yodl/docs/history"
-import { parseParamFlags } from "../../yodl/docs/param-flags"
-import { parseProcessSubsts } from "../../yodl/docs/process-substs"
-import { parseRedirections } from "../../yodl/docs/redirections"
-import { parseReservedWords } from "../../yodl/docs/reserved-words"
-import { parseShellParams } from "../../yodl/docs/shell-params"
-import { parseSubscriptFlags } from "../../yodl/docs/subscript-flags"
+import { mkProven, mkProven_, mkRedirOp } from "../../docs/types"
+import { parseGlobFlags } from "../../docs/yodl/extractors/glob-flags"
+import { parseGlobOps } from "../../docs/yodl/extractors/glob-ops"
+import { parseHistory } from "../../docs/yodl/extractors/history"
+import { parseParamFlags } from "../../docs/yodl/extractors/param-flags"
+import { parseProcessSubsts } from "../../docs/yodl/extractors/process-substs"
+import { parseRedirections } from "../../docs/yodl/extractors/redirections"
+import { parseReservedWords } from "../../docs/yodl/extractors/reserved-words"
+import { parseShellParams } from "../../docs/yodl/extractors/shell-params"
+import { parseSubscriptFlags } from "../../docs/yodl/extractors/subscript-flags"
 import { by, expectDocCorpus, readVendoredYo } from "./test-util"
 
 const EXPN_YO = readVendoredYo("expn.yo")
 const GRAMMAR_YO = readVendoredYo("grammar.yo")
 const PARAMS_YO = readVendoredYo("params.yo")
-const REDIRECT_YO = readVendoredYo("redirect.yo")
+const REDIR_YO = readVendoredYo("redirect.yo")
 
 describe("more yodl parsers", () => {
   test("shell params keep tied pairs and xitem aliases with shared docs", () => {
@@ -41,15 +31,12 @@ describe("more yodl parsers", () => {
       "enditem()",
     ].join("\n")
     const docs = by(parseShellParams(yo), (doc) => doc.name)
-    expect(docs.get(mkShellParamName("path"))?.tied).toBe(
-      mkShellParamName("PATH"),
-    )
-    expect(docs.get(mkShellParamName("PATH"))?.tied).toBe(
-      mkShellParamName("path"),
-    )
-    expect(docs.get(mkShellParamName("path"))?.desc).toBe("Pair docs.")
-    expect(docs.get(mkShellParamName("RPS1"))?.desc).toBe("Prompt docs.")
-    expect(docs.get(mkShellParamName("RPROMPT"))?.desc).toBe("Prompt docs.")
+    const getShParam = (raw: string) => docs.get(mkProven("shell_param", raw))
+    expect(getShParam("path")?.tied).toBe(mkProven("shell_param", "PATH"))
+    expect(getShParam("PATH")?.tied).toBe(mkProven("shell_param", "path"))
+    expect(getShParam("path")?.desc).toBe("Pair docs.")
+    expect(getShParam("RPS1")?.desc).toBe("Prompt docs.")
+    expect(getShParam("RPROMPT")?.desc).toBe("Prompt docs.")
   })
 
   test("redirections keep xitem aliases with shared docs", () => {
@@ -66,7 +53,7 @@ enditem()`
   })
 
   test("redirection grouping operator is not a unique doc identity", () => {
-    const docs = parseRedirections(REDIRECT_YO)
+    const docs = parseRedirections(REDIR_YO)
     expect(
       docs.filter((doc) => doc.groupOp === ">&").map((doc) => doc.sig),
     ).toEqual([">& number", ">& -", ">& p", ">& word"])
@@ -77,9 +64,10 @@ enditem()`
 
   test("reserved words include command-position and any-position forms", () => {
     const docs = by(parseReservedWords(GRAMMAR_YO), (doc) => doc.name)
-    expect(docs.get(mkReservedWord("if"))?.pos).toBe("command")
-    expect(docs.get(mkReservedWord("[["))?.pos).toBe("command")
-    expect(docs.get(mkReservedWord("}"))?.pos).toBe("any")
+    const getResWord = (raw: string) => docs.get(mkProven("reserved_word", raw))
+    expect(getResWord("if")?.pos).toBe("command")
+    expect(getResWord("[[")?.pos).toBe("command")
+    expect(getResWord("}")?.pos).toBe("any")
   })
 
   test("process substitution exports the three canonical forms", () => {
@@ -95,7 +83,7 @@ enditem()`
       "vendored redirections corpus parses",
       () =>
         expectDocCorpus({
-          docs: parseRedirections(REDIRECT_YO),
+          docs: parseRedirections(REDIR_YO),
           minCount: 18,
           keyOf: (doc) => doc.sig,
           descOf: (doc) => doc.desc,
@@ -199,7 +187,7 @@ enditem()`
       "vendored glob flag corpus parses",
       () =>
         expectDocCorpus({
-          docs: parseGlobbingFlags(EXPN_YO),
+          docs: parseGlobFlags(EXPN_YO),
           minCount: 10,
           keyOf: (doc) => doc.sig,
           descOf: (doc) => doc.desc,
@@ -212,18 +200,31 @@ enditem()`
   }
 
   test("normalized syntax-doc identity fields are idempotent", () => {
-    for (const [docs, id] of [
-      [parseRedirections(REDIRECT_YO).map((doc) => doc.groupOp), mkRedirOp],
-      [parseRedirections(REDIRECT_YO).map((doc) => doc.sig), mkRedirSig],
-      [parseReservedWords(GRAMMAR_YO).map((doc) => doc.name), mkReservedWord],
-      [parseShellParams(PARAMS_YO).map((doc) => doc.name), mkShellParamName],
-      [parseSubscriptFlags(PARAMS_YO).map((doc) => doc.flag), mkSubscriptFlag],
-      [parseParamFlags(EXPN_YO).map((doc) => doc.flag), mkParamFlag],
-      [parseHistory(EXPN_YO).map((doc) => doc.key), mkHistoryKey],
-      [parseGlobOps(EXPN_YO).map((doc) => doc.op), mkGlobOp],
-      [parseGlobbingFlags(EXPN_YO).map((doc) => doc.flag), mkGlobbingFlag],
-    ] as const) {
-      for (const x of docs) expect(id(x)).toBe(x)
+    const t = [
+      [parseRedirections(REDIR_YO).map((doc) => doc.groupOp), mkRedirOp],
+      [parseRedirections(REDIR_YO).map((doc) => doc.sig), mkProven_("redir")],
+      [
+        parseReservedWords(GRAMMAR_YO).map((doc) => doc.name),
+        mkProven_("reserved_word"),
+      ],
+      [
+        parseShellParams(PARAMS_YO).map((doc) => doc.name),
+        mkProven_("shell_param"),
+      ],
+      [
+        parseSubscriptFlags(PARAMS_YO).map((d) => d.flag),
+        mkProven_("subscript_flag"),
+      ],
+      [
+        parseParamFlags(EXPN_YO).map((doc) => doc.flag),
+        mkProven_("param_flag"),
+      ],
+      [parseHistory(EXPN_YO).map((doc) => doc.key), mkProven_("history")],
+      [parseGlobOps(EXPN_YO).map((doc) => doc.op), mkProven_("glob_op")],
+      [parseGlobFlags(EXPN_YO).map((doc) => doc.flag), mkProven_("glob_flag")],
+    ] as const
+    for (const [docs, mk] of t) {
+      for (const x of docs) expect(mk(x)).toBe(x)
     }
   })
 })

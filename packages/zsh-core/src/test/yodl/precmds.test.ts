@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest"
-import { parsePrecmds } from "../../yodl/docs/precmds"
+import { parsePrecmds } from "../../docs/yodl/extractors/precmds"
 import { readVendoredYo } from "./test-util"
 
 const GRAMMAR_YO = readVendoredYo("grammar.yo")

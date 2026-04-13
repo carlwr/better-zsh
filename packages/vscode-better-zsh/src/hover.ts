@@ -1,51 +1,29 @@
 import * as vscode from "vscode"
 import type {
-  BuiltinDoc,
-  BuiltinName,
-  CmdHeadFact,
-  CondOp,
-  CondOpDoc,
+  Candidate,
+  CandidateDocPieceId,
+  DocCategory,
+  DocCorpus,
+  DocPieceId,
+  LineFact,
   OptFlagAlias,
   OptFlagChar,
-  OptName,
-  PrecmdDoc,
-  PrecmdFact,
-  PrecmdName,
-  ProcessSubstDoc,
   ProcessSubstFact,
-  ProcessSubstOp,
+  Proven,
   RedirDoc,
   RedirFact,
   RedirOp,
-  ReservedWord,
-  ReservedWordDoc,
-  ReservedWordFact,
-  ShellParamDoc,
-  ShellParamName,
   ZshOption,
 } from "zsh-core"
 import {
   cmdHeadFactsOnLine,
-  mkBuiltinName,
-  mkCondOp,
+  mkCandidate,
   mkOptFlagChar,
-  mkOptLookupName,
-  mkReservedWord,
-  mkShellParamName,
+  mkProven,
+  resolve,
   syntacticContext,
 } from "zsh-core"
-import {
-  type MdCtx,
-  mdBuiltin,
-  mdCondOp,
-  mdOpt,
-  mdPrecmd,
-  mdProcessSubst,
-  mdRedir,
-  mdReservedWord,
-  mdShellParam,
-  mkMdCtx,
-} from "zsh-core/render"
+import { renderDoc } from "zsh-core/render"
 import { activeWordRangeAt, commentStart, funcDocs } from "./funcs"
 
 interface OptFlagHit {
@@ -54,71 +32,31 @@ interface OptFlagHit {
 }
 
 export class HoverProvider implements vscode.HoverProvider {
-  private ctx: MdCtx
-  private builtinMap: Map<BuiltinName, BuiltinDoc> | undefined
-  private paramMap: Map<ShellParamName, ShellParamDoc> | undefined
-  private optionMap: Map<OptName, ZshOption> | undefined
-  private flagMap: ReadonlyMap<OptFlagChar, readonly OptFlagHit[]> | undefined
-  private condOpMap: Map<CondOp, CondOpDoc> | undefined
-  private precmdMap: Map<PrecmdName, PrecmdDoc> | undefined
-  private redirMap: ReadonlyMap<RedirOp, readonly RedirDoc[]> | undefined
-  private processSubstMap: Map<ProcessSubstOp, ProcessSubstDoc> | undefined
-  private reservedWordMap: Map<ReservedWord, ReservedWordDoc> | undefined
+  private corpus: DocCorpus
+  private flagMap: ReadonlyMap<OptFlagChar, readonly OptFlagHit[]>
+  private redirMap: ReadonlyMap<RedirOp, readonly RedirDoc[]>
 
-  constructor(
-    params?: readonly ShellParamDoc[],
-    options?: readonly ZshOption[],
-    condOps?: readonly CondOpDoc[],
-    builtins?: readonly BuiltinDoc[],
-    precmds?: readonly PrecmdDoc[],
-    redirDocs?: readonly RedirDoc[],
-    processSubstDocs?: readonly ProcessSubstDoc[],
-    reservedWordDocs?: readonly ReservedWordDoc[],
-  ) {
-    this.ctx = mkMdCtx(options)
-    if (builtins) {
-      this.builtinMap = new Map(
-        builtins.map((builtin) => [builtin.name, builtin]),
-      )
-    }
-    if (params) {
-      this.paramMap = new Map(params.map((param) => [param.name, param]))
-    }
-    if (options) {
-      this.optionMap = new Map(options.map((opt) => [opt.name, opt]))
-      this.flagMap = indexMany(
-        options.flatMap((opt) =>
-          opt.flags.map(
-            (alias) =>
-              [alias.char, { opt, alias }] as const satisfies readonly [
-                OptFlagChar,
-                OptFlagHit,
-              ],
-          ),
+  constructor(corpus: DocCorpus) {
+    this.corpus = corpus
+
+    // Secondary index for -J/+J style flag lookup
+    const options = [...corpus.option.values()]
+    this.flagMap = indexMany(
+      options.flatMap((opt) =>
+        opt.flags.map(
+          (alias) =>
+            [alias.char, { opt, alias }] as const satisfies readonly [
+              OptFlagChar,
+              OptFlagHit,
+            ],
         ),
-      )
-    }
-    if (condOps) {
-      this.condOpMap = new Map(condOps.map((cop) => [cop.op, cop]))
-    }
-    if (precmds) {
-      this.precmdMap = new Map(precmds.map((doc) => [doc.name, doc]))
-    }
-    if (redirDocs) {
-      this.redirMap = indexMany(
-        redirDocs.map((doc) => [doc.groupOp, doc] as const),
-      )
-    }
-    if (processSubstDocs) {
-      this.processSubstMap = new Map(
-        processSubstDocs.map((doc) => [doc.op, doc]),
-      )
-    }
-    if (reservedWordDocs) {
-      this.reservedWordMap = new Map(
-        reservedWordDocs.map((doc) => [doc.name, doc]),
-      )
-    }
+      ),
+    )
+
+    // Secondary index for redir groupOp bucketing
+    this.redirMap = indexMany(
+      [...corpus.redir.values()].map((doc) => [doc.groupOp, doc] as const),
+    )
   }
 
   provideHover(doc: vscode.TextDocument, pos: vscode.Position) {
@@ -133,21 +71,21 @@ export class HoverProvider implements vscode.HoverProvider {
 
   private setoptHover(doc: vscode.TextDocument, pos: vscode.Position) {
     const ctx = syntacticContext(doc, pos.line, pos.character)
-    if (ctx.kind !== "setopt" || !this.optionMap) return
+    if (ctx.kind !== "setopt") return
     const range = activeTokenRangeAt(doc, pos)
     if (!range) return
-    const opt = this.optionAt(doc.getText(range))
-    if (opt) return this.mkHover(mdOpt(opt, this.ctx), range)
+    const pieceId = this.optionAt(doc.getText(range))
+    if (pieceId) return this.renderHover(pieceId, range)
   }
 
   private condHover(doc: vscode.TextDocument, pos: vscode.Position) {
     const ctx = syntacticContext(doc, pos.line, pos.character)
-    if (ctx.kind !== "cond" || !this.condOpMap) return
-    const range = activeCondTokenRangeAt(doc, pos, this.condOpMap)
+    if (ctx.kind !== "cond") return
+    const condOpKeys = this.corpus.cond_op.keys() as Iterable<Proven<"cond_op">>
+    const range = activeCondTokenRangeAt(doc, pos, condOpKeys)
     if (!range) return
-    const op = mkCondOp(doc.getText(range))
-    const cop = this.condOpMap.get(op)
-    if (cop) return this.mkHover(mdCondOp(cop, this.ctx), range)
+    const op = mkProven("cond_op", doc.getText(range))
+    return this.hoverFor("cond_op", mkCandidate("cond_op", op), range)
   }
 
   private funcHover(doc: vscode.TextDocument, pos: vscode.Position) {
@@ -161,12 +99,13 @@ export class HoverProvider implements vscode.HoverProvider {
   }
 
   private paramHover(doc: vscode.TextDocument, pos: vscode.Position) {
-    if (!this.paramMap) return
     const range = activeWordRangeAt(doc, pos)
     if (!range) return
-    const w = doc.getText(range)
-    const param = this.paramMap.get(mkShellParamName(w))
-    if (param) return this.mkHover(mdShellParam(param))
+    return this.hoverFor(
+      "shell_param",
+      mkCandidate("shell_param", doc.getText(range)),
+      range,
+    )
   }
 
   private factBasedHover(doc: vscode.TextDocument, pos: vscode.Position) {
@@ -175,75 +114,85 @@ export class HoverProvider implements vscode.HoverProvider {
     const tokenRange = activeTokenRangeAt(doc, pos)
     const token = tokenRange ? doc.getText(tokenRange) : undefined
 
-    const precmd = token
-      ? af.find(
-          (fact): fact is PrecmdFact =>
-            fact.kind === "precmd" &&
-            line.slice(fact.span.start, fact.span.end) === token,
-        )
-      : undefined
-    if (precmd) {
-      const d = this.precmdMap?.get(precmd.name)
-      if (d) return this.mkHover(mdPrecmd(d), tokenRange)
-    }
+    const precmd = factAt(af, line, token, "precmd")
+    const onPrecmd =
+      precmd &&
+      this.hoverFor("precmd", mkCandidate("precmd", precmd.name), tokenRange)
+    if (onPrecmd) return onPrecmd
 
-    const head = token
-      ? af.find(
-          (fact): fact is CmdHeadFact =>
-            fact.kind === "cmd-head" &&
-            line.slice(fact.span.start, fact.span.end) === token,
-        )
-      : undefined
-    if (head) {
-      const d = this.builtinMap?.get(mkBuiltinName(head.text))
-      if (d) return this.mkHover(mdBuiltin(d), tokenRange)
-    }
+    const head = factAt(af, line, token, "cmd-head")
+    const onHead =
+      head &&
+      this.hoverFor("builtin", mkCandidate("builtin", head.text), tokenRange)
+    if (onHead) return onHead
 
     const redir = af.find((fact): fact is RedirFact => fact.kind === "redir")
     if (redir) {
       const redirRange = activeRedirRangeAt(doc, pos, redir)
       const redirToken = redirRange ? doc.getText(redirRange) : undefined
       const d = redirToken ? redirDoc(this.redirMap, redirToken) : undefined
-      if (d && redirRange) return this.mkHover(mdRedir(d), redirRange)
+      if (d && redirRange)
+        return this.renderHover({ category: "redir", id: d.sig }, redirRange)
     }
 
     const ps = af.find(
       (fact): fact is ProcessSubstFact => fact.kind === "process-subst",
     )
-    if (ps) {
-      const prefix = ps.text.slice(0, 2)
-      const opKey = `${prefix}...)` as ProcessSubstOp
-      const d = this.processSubstMap?.get(opKey)
-      if (d) return this.mkHover(mdProcessSubst(d), tokenRange)
-    }
+    const onPs =
+      ps &&
+      this.hoverFor(
+        "process_subst",
+        mkCandidate("process_subst", `${ps.text.slice(0, 2)}...)`),
+        tokenRange,
+      )
+    if (onPs) return onPs
 
-    const rw = token
-      ? af.find(
-          (fact): fact is ReservedWordFact =>
-            fact.kind === "reserved-word" &&
-            line.slice(fact.span.start, fact.span.end) === token,
-        )
-      : undefined
-    if (rw) {
-      const d = this.reservedWordMap?.get(mkReservedWord(rw.text))
-      if (d) return this.mkHover(mdReservedWord(d), tokenRange)
-    }
+    const rw = factAt(af, line, token, "reserved-word")
+    const onRw =
+      rw &&
+      this.hoverFor(
+        "reserved_word",
+        mkCandidate("reserved_word", rw.text),
+        tokenRange,
+      )
+    if (onRw) return onRw
   }
 
-  private optionAt(token: string): ZshOption | undefined {
-    const direct = this.optionMap?.get(mkOptLookupName(token))
+  private hoverFor<K extends DocCategory>(
+    category: K,
+    id: Candidate<K>,
+    range?: vscode.Range,
+  ): vscode.Hover | undefined {
+    // The {category, id} shape IS a CandidateDocPieceId for the given K, but TS
+    // cannot preserve the K-indexed correlation through a generic helper.
+    const query = { category, id } as CandidateDocPieceId
+    const pieceId = resolve(this.corpus, query)
+    if (pieceId) return this.renderHover(pieceId, range)
+  }
+
+  private renderHover(pieceId: DocPieceId, range?: vscode.Range) {
+    const md = new vscode.MarkdownString(renderDoc(this.corpus, pieceId))
+    return new vscode.Hover(md, range)
+  }
+
+  private optionAt(token: string): DocPieceId | undefined {
+    const direct = resolve(this.corpus, {
+      category: "option",
+      id: mkCandidate("option", token),
+    })
     if (direct) return direct
 
     const short = token.match(/^([+-])([A-Za-z0-9])$/)
-    if (!short?.[1] || !short[2] || !this.flagMap) return
+    if (!short?.[1] || !short[2]) return
     const hits = this.flagMap
       .get(mkOptFlagChar(short[2]))
       ?.filter((hit) => hit.alias.on === short[1])
-    return unique(hits)?.opt
-  }
-
-  private mkHover(md: string, range?: vscode.Range) {
-    return new vscode.Hover(new vscode.MarkdownString(md), range)
+    const opt = unique(hits)?.opt
+    if (!opt) return
+    return resolve(this.corpus, {
+      category: "option",
+      id: mkCandidate("option", opt.display),
+    })
   }
 }
 
@@ -269,14 +218,13 @@ function redirDoc(
 ): RedirDoc | undefined {
   const parsed = splitRedirToken(redirMap, token)
   if (!parsed) return
-  const { groupOp, tail } = parsed
-  const docs = redirMap?.get(groupOp)
+  const docs = redirMap?.get(parsed.groupOp)
   if (!docs) return
   if (docs.length === 1) return docs[0]
   // Redirection docs are grouped by the leading operator token and only become
   // unique once the remaining signature tail is considered.
   return unique(
-    docs.filter((doc) => redirTailKind(doc) === redirTailKindOf(tail)),
+    docs.filter((doc) => redirTailKind(doc) === redirTailKindOf(parsed.tail)),
   )
 }
 
@@ -303,10 +251,8 @@ function redirTailKind(doc: RedirDoc): string {
 
 function redirTailKindOf(tail: string): string {
   if (/^\d+$/.test(tail)) return "number"
-  if (tail === "-") return "-"
-  if (tail === "p") return "p"
-  if (tail.length > 0) return "word"
-  return ""
+  if (tail === "-" || tail === "p") return tail
+  return tail.length > 0 ? "word" : ""
 }
 
 function activeTokenRangeAt(
@@ -333,7 +279,7 @@ function isTokenDelimiter(ch: string): boolean {
 function activeCondTokenRangeAt(
   doc: vscode.TextDocument,
   pos: vscode.Position,
-  condOps: ReadonlyMap<CondOp, CondOpDoc>,
+  condOpKeys: Iterable<Proven<"cond_op">>,
 ): vscode.Range | undefined {
   const range = activeTokenRangeAt(doc, pos)
   if (range) return range
@@ -344,7 +290,7 @@ function activeCondTokenRangeAt(
 
   // Generic hover token splitting treats shell delimiters as separators, so
   // conditional operators made entirely from those chars need a cond-only path.
-  const symbolic = [...condOps.keys()]
+  const symbolic = [...condOpKeys]
     .filter((op) => [...op].some(isTokenDelimiter))
     .sort((a, b) => b.length - a.length)
 
@@ -373,6 +319,20 @@ function operatorRangeAt(
 
 function opBoundary(ch: string | undefined): boolean {
   return ch === undefined || /[\s[\]]/.test(ch)
+}
+
+/** Find a fact of the given kind whose span text equals `token`. Returns undefined if token is undefined. */
+function factAt<K extends LineFact["kind"]>(
+  facts: readonly LineFact[],
+  line: string,
+  token: string | undefined,
+  kind: K,
+): Extract<LineFact, { kind: K }> | undefined {
+  if (!token) return undefined
+  return facts.find(
+    (f): f is Extract<LineFact, { kind: K }> =>
+      f.kind === kind && line.slice(f.span.start, f.span.end) === token,
+  )
 }
 
 function activeRedirRangeAt(

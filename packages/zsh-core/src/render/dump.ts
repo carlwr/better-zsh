@@ -1,6 +1,7 @@
 import { mkdir, writeFile } from "node:fs/promises"
 import { join } from "node:path"
-import type { RefDoc, RefKind } from "./refs.ts"
+import { type DocCategory, docCategories } from "../docs/taxonomy.ts"
+import type { RefDoc } from "./refs.ts"
 
 /** Filename variants emitted by the reference-dump writer. */
 export type RefDumpFile =
@@ -20,26 +21,28 @@ export type RefDumpFile =
   | "glob-flags.md"
   | "suspicious.md"
 
-const dumpSpecs: readonly [RefKind | "all", RefDumpFile][] = [
-  ["all", "all.md"],
-  ["option", "options.md"],
-  ["cond-op", "cond-ops.md"],
-  ["shell-param", "shell-params.md"],
-  ["builtin", "builtins.md"],
-  ["precmd", "precmds.md"],
-  ["redir", "redirs.md"],
-  ["process-subst", "process-substs.md"],
-  ["reserved-word", "reserved-words.md"],
-  ["subscript-flag", "subscript-flags.md"],
-  ["param-flag", "param-flags.md"],
-  ["history", "history.md"],
-  ["glob-op", "glob-ops.md"],
-  ["glob-flag", "glob-flags.md"],
-]
+const dumpFile: { [K in DocCategory]: RefDumpFile } = {
+  option: "options.md",
+  cond_op: "cond-ops.md",
+  builtin: "builtins.md",
+  precmd: "precmds.md",
+  shell_param: "shell-params.md",
+  reserved_word: "reserved-words.md",
+  redir: "redirs.md",
+  process_subst: "process-substs.md",
+  subscript_flag: "subscript-flags.md",
+  param_flag: "param-flags.md",
+  history: "history.md",
+  glob_op: "glob-ops.md",
+  glob_flag: "glob-flags.md",
+}
 
-const dumpKinds: readonly RefKind[] = dumpSpecs.flatMap(([kind]) =>
-  kind === "all" ? [] : [kind],
-)
+const dumpSpecs = [
+  ["all", "all.md"] as const,
+  ...docCategories.map((kind) => [kind, dumpFile[kind]] as const),
+] satisfies readonly (readonly [DocCategory | "all", RefDumpFile])[]
+
+const dumpKinds: readonly DocCategory[] = docCategories
 
 const suspiciousPatterns: readonly [string, RegExp][] = [
   ["empty ref", /\b(?:See|see|described in|noted in) (?:\\ )?\./],
@@ -81,7 +84,7 @@ function suspiciousText(docs: readonly RefDoc[]): string {
   return hits.length > 0 ? `${hits.join("\n")}\n` : ""
 }
 
-function groupByKind(docs: readonly RefDoc[]): Map<RefKind, RefDoc[]> {
+function groupByKind(docs: readonly RefDoc[]): Map<DocCategory, RefDoc[]> {
   const byKind = new Map(
     dumpKinds.map((kind) => [kind, [] as RefDoc[]] as const),
   )
@@ -90,9 +93,9 @@ function groupByKind(docs: readonly RefDoc[]): Map<RefKind, RefDoc[]> {
 }
 
 function renderDumpText(
-  kind: RefKind | "all",
+  kind: DocCategory | "all",
   docs: readonly RefDoc[],
-  byKind: Map<RefKind, RefDoc[]>,
+  byKind: Map<DocCategory, RefDoc[]>,
 ): string {
   const selected = kind === "all" ? docs : (byKind.get(kind) ?? [])
   return `${selected.map(section).join("\n\n---\n\n")}\n`

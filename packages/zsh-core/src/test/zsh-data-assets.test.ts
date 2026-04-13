@@ -2,13 +2,8 @@ import { existsSync, readFileSync } from "node:fs"
 import { join } from "node:path"
 import { describe, expect, test } from "vitest"
 import { resolveZshDataDir, vendoredZshDocFiles } from "../data-dir"
-import {
-  mkBuiltinName,
-  mkCondOp,
-  mkOptName,
-  mkReservedWord,
-} from "../types/brand"
-import * as zd from "../zsh-data"
+import { loadCorpus } from "../docs/corpus"
+import { mkProven } from "../docs/types"
 
 const dataDir = resolveZshDataDir()
 
@@ -22,34 +17,28 @@ describe("vendored zsh data assets", () => {
   })
 
   test("parses vendored options and conditional operators", () => {
-    const options = zd.getOptions()
-    const condOps = zd.getCondOps()
-
-    expect(options.length).toBeGreaterThan(0)
-    expect(condOps.length).toBeGreaterThan(0)
-    expect(options.some((opt) => opt.name === mkOptName("AUTO_CD"))).toBe(true)
-    expect(condOps.some((op) => op.op === mkCondOp("=="))).toBe(true)
+    const corpus = loadCorpus()
+    expect(corpus.option.size).toBeGreaterThan(0)
+    expect(corpus.cond_op.size).toBeGreaterThan(0)
+    expect(corpus.option.has(mkProven("option", "AUTO_CD"))).toBe(true)
+    expect(corpus.cond_op.has(mkProven("cond_op", "=="))).toBe(true)
   })
 
   test("parses vendored builtins docs", () => {
-    const builtins = zd.getBuiltins()
-    expect(builtins.length).toBeGreaterThan(0)
+    const corpus = loadCorpus()
+    expect(corpus.builtin.size).toBeGreaterThan(0)
 
-    const autoload = builtins.find((builtin) => builtin.name === "autoload")
+    const autoload = corpus.builtin.get(mkProven("builtin", "autoload"))
     expect(autoload).toBeTruthy()
     expect(autoload?.synopsis.length).toBeGreaterThan(0)
     expect(autoload?.desc.length).toBeGreaterThan(0)
-    expect(
-      builtins.some((builtin) => builtin.name === mkBuiltinName("bindkey")),
-    ).toBe(true)
-    expect(
-      builtins.some((builtin) => builtin.name === mkBuiltinName("ARG1")),
-    ).toBe(false)
+    expect(corpus.builtin.has(mkProven("builtin", "bindkey"))).toBe(true)
+    expect(corpus.builtin.has(mkProven("builtin", "ARG1"))).toBe(false)
   })
 
   test("parses vendored precommand modifier docs", () => {
-    const docs = zd.getPrecmds()
-    expect(docs.map((doc) => doc.name)).toEqual([
+    const corpus = loadCorpus()
+    expect([...corpus.precmd.values()].map((doc) => doc.name)).toEqual([
       "-",
       "builtin",
       "command",
@@ -60,17 +49,30 @@ describe("vendored zsh data assets", () => {
   })
 
   test("parses newly vendored structured syntax docs", () => {
-    expect(zd.getRedirections().some((doc) => doc.groupOp === "<")).toBe(true)
+    const corpus = loadCorpus()
+    expect([...corpus.redir.values()].some((doc) => doc.groupOp === "<")).toBe(
+      true,
+    )
+    expect(corpus.reserved_word.has(mkProven("reserved_word", "if"))).toBe(true)
     expect(
-      zd.getReservedWords().some((doc) => doc.name === mkReservedWord("if")),
+      [...corpus.shell_param.values()].some((doc) => doc.name === "SECONDS"),
     ).toBe(true)
-    expect(zd.getShellParams().some((doc) => doc.name === "SECONDS")).toBe(true)
-    expect(zd.getSubscriptFlags().some((doc) => doc.flag === "w")).toBe(true)
-    expect(zd.getParamFlags().some((doc) => doc.flag === "@")).toBe(true)
-    expect(zd.getHistoryDocs().some((doc) => doc.key === "!!")).toBe(true)
-    expect(zd.getGlobOps().some((doc) => doc.op === "*")).toBe(true)
-    expect(zd.getGlobbingFlags().some((doc) => doc.flag === "i")).toBe(true)
-    expect(zd.getProcessSubsts().map((doc) => doc.op)).toEqual([
+    expect(
+      [...corpus.subscript_flag.values()].some((doc) => doc.flag === "w"),
+    ).toBe(true)
+    expect(
+      [...corpus.param_flag.values()].some((doc) => doc.flag === "@"),
+    ).toBe(true)
+    expect([...corpus.history.values()].some((doc) => doc.key === "!!")).toBe(
+      true,
+    )
+    expect([...corpus.glob_op.values()].some((doc) => doc.op === "*")).toBe(
+      true,
+    )
+    expect([...corpus.glob_flag.values()].some((doc) => doc.flag === "i")).toBe(
+      true,
+    )
+    expect([...corpus.process_subst.values()].map((doc) => doc.op)).toEqual([
       "<(...)",
       ">(...)",
       "=(...)",

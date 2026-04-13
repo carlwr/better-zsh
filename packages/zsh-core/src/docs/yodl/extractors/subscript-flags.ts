@@ -1,4 +1,4 @@
-import type { SubscriptFlagDoc } from "../../types/zsh-data.ts"
+import type { SubscriptFlagDoc } from "../../types.ts"
 import { parseSubscriptFlagSection } from "./flag-section.ts"
 
 export function parseSubscriptFlags(yo: string): readonly SubscriptFlagDoc[] {

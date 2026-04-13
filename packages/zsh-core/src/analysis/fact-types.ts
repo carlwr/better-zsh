@@ -1,4 +1,4 @@
-import type { PrecmdName } from "../types/precmd.ts"
+import type { Candidate } from "../docs/types.ts"
 import type { TextSpan } from "./doc.ts"
 
 /** Confidence level: "hard" for structural syntax, "heuristic" for best-effort detection. */
@@ -29,13 +29,12 @@ export interface CmdHeadFact extends BaseFact {
   readonly kind: "cmd-head"
   /** Raw command-head spelling; may name a builtin, function, alias, or external command. */
   readonly text: string
-  readonly precmds: readonly PrecmdName[]
+  readonly precmds: readonly Candidate<"precmd">[]
 }
 
 export interface PrecmdFact extends BaseFact {
   readonly kind: "precmd"
-  readonly text: string
-  readonly name: PrecmdName
+  readonly name: Candidate<"precmd">
 }
 
 export interface FuncDeclFact extends BaseFact {

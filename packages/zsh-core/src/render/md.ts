@@ -1,9 +1,10 @@
-import { mkOptLookupName, type OptName } from "../types/brand.ts"
+import type { DocCorpus } from "../docs/corpus.ts"
+import type { DocCategory, DocPieceId, DocRecordMap } from "../docs/taxonomy.ts"
 import type {
   BuiltinDoc,
   CondOpDoc,
   Emulation,
-  GlobbingFlagDoc,
+  GlobFlagDoc,
   GlobOpDoc,
   HistoryDoc,
   OptFlagAlias,
@@ -17,27 +18,15 @@ import type {
   ShellParamDoc,
   SubscriptFlagDoc,
   ZshOption,
-} from "../types/zsh-data.ts"
-import type { RefKind } from "./refs.ts"
-
-/** Known markdown/rendering regression marker for QA. */
-export interface MdRegression {
-  readonly kind: RefKind
-  readonly id: string
-  readonly note: string
-}
+} from "../docs/types.ts"
+import { mkCandidate, type Proven } from "../docs/types.ts"
 
 /** Shared formatter context for markdown generation. */
 export interface MdCtx {
-  readonly optNames: ReadonlySet<OptName>
+  readonly optNames: ReadonlySet<Proven<"option">>
 }
 
-/** Known markdown/rendering regressions tracked for QA (add entries as they are discovered). */
-export const mdRegressions: readonly MdRegression[] = []
-
-const emptyMdCtx: Readonly<{ optNames: ReadonlySet<OptName> }> = {
-  optNames: Object.freeze(new Set<OptName>()),
-}
+const emptyMdCtx: MdCtx = { optNames: new Set<Proven<"option">>() }
 const TBD = "TBD"
 const OPT_REF_RE = /\b(?:NO_?)?[A-Z][A-Z0-9_]*\b/g
 const inlineCodeRe = /(`[^`\n]+`)/
@@ -63,7 +52,7 @@ export function mkMdCtx(options: readonly ZshOption[] = []): MdCtx {
 /** Emphasize option references inside markdown prose, skipping fenced code. */
 export function fmtOptRefsInMd(
   md: string,
-  optNames: ReadonlySet<OptName>,
+  optNames: ReadonlySet<Proven<"option">>,
 ): string {
   if (optNames.size === 0) return md
 
@@ -100,8 +89,7 @@ export function mdOpt(opt: ZshOption, ctx: MdCtx = emptyMdCtx): string {
   )
 }
 
-/** Render a compact signature line for a conditional operator. */
-export function sigCond(cop: CondOpDoc): string {
+function sigCond(cop: CondOpDoc): string {
   return cop.arity === "unary"
     ? `${mdFmt.code(cop.op as string)} *${cop.operands[0]}*`
     : `*${cop.operands[0]}* ${mdFmt.code(cop.op as string)} *${cop.operands[1]}*`
@@ -122,30 +110,22 @@ export function mdShellParam(doc: ShellParamDoc): string {
   )
 }
 
+const stubRenderer = () => TBD
+
 /** Render one parameter-expansion flag doc block as markdown. */
-export function mdParamFlag(_doc: ParamFlagDoc): string {
-  return TBD
-}
+export const mdParamFlag: (_doc: ParamFlagDoc) => string = stubRenderer
 
 /** Render one subscript flag doc block as markdown. */
-export function mdSubscriptFlag(_doc: SubscriptFlagDoc): string {
-  return TBD
-}
+export const mdSubscriptFlag: (_doc: SubscriptFlagDoc) => string = stubRenderer
 
 /** Render one history-expansion doc block as markdown. */
-export function mdHistory(_doc: HistoryDoc): string {
-  return TBD
-}
+export const mdHistory: (_doc: HistoryDoc) => string = stubRenderer
 
 /** Render one globbing-operator doc block as markdown. */
-export function mdGlobOp(_doc: GlobOpDoc): string {
-  return TBD
-}
+export const mdGlobOp: (_doc: GlobOpDoc) => string = stubRenderer
 
-/** Render one globbing-flag doc block as markdown. */
-export function mdGlobFlag(_doc: GlobbingFlagDoc): string {
-  return TBD
-}
+/** Render one glob-flag doc block as markdown. */
+export const mdGlobFlag: (_doc: GlobFlagDoc) => string = stubRenderer
 
 /** Render one builtin doc block as markdown. */
 export function mdBuiltin(doc: BuiltinDoc): string {
@@ -219,7 +199,7 @@ function label(cmd: string, arg: string, state: OptState): string {
 
 function fmtOptRefsInLine(
   line: string,
-  optNames: ReadonlySet<OptName>,
+  optNames: ReadonlySet<Proven<"option">>,
 ): string {
   return line
     .split(inlineCodeRe)
@@ -229,11 +209,18 @@ function fmtOptRefsInLine(
 
 function fmtOptRefsInText(
   text: string,
-  optNames: ReadonlySet<OptName>,
+  optNames: ReadonlySet<Proven<"option">>,
 ): string {
   return text.replace(OPT_REF_RE, (raw, offset, whole) => {
     if (isShellParameterRef(whole, offset)) return raw
-    return optNames.has(mkOptLookupName(raw)) ? mdFmt.optRef(raw) : raw
+    // Internal brand-boundary helper: the Set values are proven `Proven<"option">`s
+    // derived from the corpus; normalize the raw token via the candidate
+    // constructor and test membership against the corpus-branded set.
+    return optNames.has(
+      mkCandidate("option", raw) as unknown as Proven<"option">,
+    )
+      ? mdFmt.optRef(raw)
+      : raw
   })
 }
 
@@ -252,4 +239,62 @@ function codeBlock(lang: string, ...lines: readonly string[]): string {
 
 function docBlock(...parts: readonly string[]): string {
   return parts.join("\n\n")
+}
+
+/** Per-category markdown renderers, dispatched by `DocCategory`. */
+export const mdRenderer: {
+  [K in DocCategory]: (doc: DocRecordMap[K], ctx: MdCtx) => string
+} = {
+  option: mdOpt,
+  cond_op: mdCondOp,
+  builtin: mdBuiltin,
+  precmd: mdPrecmd,
+  shell_param: mdShellParam,
+  reserved_word: mdReservedWord,
+  redir: mdRedir,
+  process_subst: mdProcessSubst,
+  subscript_flag: mdSubscriptFlag,
+  param_flag: mdParamFlag,
+  history: mdHistory,
+  glob_op: mdGlobOp,
+  glob_flag: mdGlobFlag,
+}
+
+const corpusCtx = new WeakMap<DocCorpus, MdCtx>()
+
+function ctxFor(corpus: DocCorpus): MdCtx {
+  let ctx = corpusCtx.get(corpus)
+  if (!ctx) {
+    ctx = { optNames: new Set(corpus.option.keys()) }
+    corpusCtx.set(corpus, ctx)
+  }
+  return ctx
+}
+
+/**
+ * Render the markdown doc block for a proven documented element.
+ * `id` must come from `resolve()` or from corpus iteration; the lookup is
+ * guaranteed by the static corpus, so the return type is `string`.
+ * Categories with TBD rendering return `"TBD"`.
+ *
+ * Upgrade path: if multiple categories gain meaningful compact/signature
+ * forms, add an options bag with a `level: "full" | "sig"` axis and a
+ * parallel `sigRenderer` table — preserving the parametric shape. Until
+ * then, short-form presentation is a consumer concern: doc record fields
+ * are already public and consumers can format inline.
+ */
+export function renderDoc(
+  corpus: DocCorpus,
+  id: DocPieceId,
+  ctx: MdCtx = ctxFor(corpus),
+): string {
+  const doc = corpus[id.category].get(id.id as never) as
+    | DocRecordMap[typeof id.category]
+    | undefined
+  if (!doc) return ""
+  const render = mdRenderer[id.category] as (
+    d: DocRecordMap[typeof id.category],
+    ctx: MdCtx,
+  ) => string
+  return render(doc, ctx)
 }

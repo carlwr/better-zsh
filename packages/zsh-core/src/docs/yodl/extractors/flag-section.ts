@@ -1,5 +1,5 @@
-import { mkParamFlag, mkSubscriptFlag } from "../../types/brand.ts"
-import type { ParamFlagDoc, SubscriptFlagDoc } from "../../types/zsh-data.ts"
+import type { ParamFlagDoc, SubscriptFlagDoc } from "../../types.ts"
+import { mkProven } from "../../types.ts"
 import { extractItems, extractSectionBody } from "../core/doc.ts"
 import { normalizeBody, normalizeHeader } from "../core/text.ts"
 
@@ -26,14 +26,14 @@ export function parseSubscriptFlagSection(
   yo: string,
   section: string,
 ): readonly SubscriptFlagDoc[] {
-  return parseFlagSection(yo, section, mkSubscriptFlag)
+  return parseFlagSection(yo, section, (s) => mkProven("subscript_flag", s))
 }
 
 export function parseParamFlagSection(
   yo: string,
   section: string,
 ): readonly ParamFlagDoc[] {
-  return parseFlagSection(yo, section, mkParamFlag)
+  return parseFlagSection(yo, section, (s) => mkProven("param_flag", s))
 }
 
 function parseFlagSection<T>(

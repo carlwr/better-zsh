@@ -1,4 +1,4 @@
-import type { ProcessSubstDoc, ProcessSubstOp } from "../../types/zsh-data.ts"
+import type { ProcessSubstDoc, ProcessSubstOp } from "../../types.ts"
 import { extractSectionBody } from "../core/doc.ts"
 
 const DOCS = [

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest"
-import { mkBuiltinName } from "../../types/brand"
-import { parseBuiltins } from "../../yodl/docs/builtins"
+import { mkProven } from "../../docs/types"
+import { parseBuiltins } from "../../docs/yodl/extractors/builtins"
 import { by, only, readVendoredYo } from "./test-util"
 
 const BUILTINS_YO = readVendoredYo("builtins.yo")
@@ -14,7 +14,7 @@ Write text.
 )
 enditem()`
     const doc = only(parseBuiltins(yo))
-    expect(doc.name).toBe(mkBuiltinName("echo"))
+    expect(doc.name).toBe(mkProven("builtin", "echo"))
     expect(doc.synopsis).toEqual(["echo [ -n ]"])
     expect(doc.synopsis).toHaveLength(1)
     expect(doc.desc).toBe("Write text.")
@@ -27,10 +27,10 @@ module(zstyle)(zsh/zutil)
 enditem()`
     const docs = parseBuiltins(yo)
     expect(docs.map((d) => d.name)).toEqual([
-      mkBuiltinName("bye"),
-      mkBuiltinName("zstyle"),
+      mkProven("builtin", "bye"),
+      mkProven("builtin", "zstyle"),
     ])
-    expect(docs[0]?.aliasOf).toBe(mkBuiltinName("exit"))
+    expect(docs[0]?.aliasOf).toBe(mkProven("builtin", "exit"))
     expect(docs[1]?.module).toBe("zsh/zutil")
   })
 
@@ -45,12 +45,12 @@ enditem()`
     const docs = parseBuiltins(yo)
     expect(docs).toEqual([
       {
-        name: mkBuiltinName("foo"),
+        name: mkProven("builtin", "foo"),
         synopsis: ["foo [ one ]", "[ two ]"],
         desc: "Shared description.",
       },
       {
-        name: mkBuiltinName("bar"),
+        name: mkProven("builtin", "bar"),
         synopsis: ["bar [ three ]", "[ two ]"],
         desc: "Shared description.",
       },
@@ -62,10 +62,10 @@ enditem()`
     const byName = by(docs, (d) => d.name)
 
     test("parses xitem aliases for test and [", () => {
-      expect(byName.get(mkBuiltinName("test"))?.synopsis[0]).toBe(
+      expect(byName.get(mkProven("builtin", "test"))?.synopsis[0]).toBe(
         "test [ arg ... ]",
       )
-      expect(byName.get(mkBuiltinName("["))?.synopsis[0]).toBe(
+      expect(byName.get(mkProven("builtin", "["))?.synopsis[0]).toBe(
         "[ [ arg ... ] ]",
       )
     })
@@ -75,14 +75,16 @@ enditem()`
     })
 
     test("excludes macro template placeholders", () => {
-      expect(docs.some((d) => d.name === mkBuiltinName("ARG1"))).toBe(false)
+      expect(docs.some((d) => d.name === mkProven("builtin", "ARG1"))).toBe(
+        false,
+      )
     })
 
     test("includes macro-defined builtins", () => {
       const names = new Set(docs.map((d) => d.name))
-      expect(names.has(mkBuiltinName("bindkey"))).toBe(true)
-      expect(names.has(mkBuiltinName("compctl"))).toBe(true)
-      expect(names.has(mkBuiltinName("zstyle"))).toBe(true)
+      expect(names.has(mkProven("builtin", "bindkey"))).toBe(true)
+      expect(names.has(mkProven("builtin", "compctl"))).toBe(true)
+      expect(names.has(mkProven("builtin", "zstyle"))).toBe(true)
     })
 
     test("descriptions strip index macros and raw yodl", () => {

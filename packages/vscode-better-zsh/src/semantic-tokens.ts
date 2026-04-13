@@ -1,5 +1,5 @@
 import * as vscode from "vscode"
-import { cmdHeadFactsOnLine, commentStart } from "zsh-core"
+import { cmdHeadFactsOnLine, commentStart, mkCandidate } from "zsh-core"
 
 const TOKEN_TYPES = ["function", "keyword"] as const
 const TOKEN_MODIFIERS = ["defaultLibrary"] as const
@@ -31,7 +31,7 @@ export class SemanticTokensProvider
         }
         if (fact.kind !== "cmd-head") continue
         if (fact.text === "[") continue
-        if (fact.precmds.includes("command")) continue
+        if (fact.precmds.includes(mkCandidate("precmd", "command"))) continue
         if (this.builtins.has(fact.text)) {
           b.push(i, fact.span.start, fact.span.end - fact.span.start, 0, 1 << 0)
         }

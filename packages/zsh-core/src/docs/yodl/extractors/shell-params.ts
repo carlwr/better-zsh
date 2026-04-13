@@ -1,5 +1,5 @@
-import { mkShellParamName } from "../../types/brand.ts"
-import type { ShellParamDoc } from "../../types/zsh-data.ts"
+import type { ShellParamDoc } from "../../types.ts"
+import { mkProven } from "../../types.ts"
 import {
   extractFirstList,
   extractItemList,
@@ -46,11 +46,11 @@ function parseParamSection(
     const desc = normalizeBody(item.body)
     for (const head of [...heads, ...pending]) {
       out.push({
-        name: mkShellParamName(head.name),
+        name: mkProven("shell_param", head.name),
         sig: head.name,
         desc,
         section,
-        ...(head.tied && { tied: mkShellParamName(head.tied) }),
+        ...(head.tied && { tied: mkProven("shell_param", head.tied) }),
       })
     }
     pending = []

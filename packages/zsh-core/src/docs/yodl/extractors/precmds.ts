@@ -1,7 +1,6 @@
 import type { NonEmpty } from "@carlwr/typescript-extra"
-
-import { type PrecmdName, precmdNames } from "../../types/precmd.ts"
-import type { PrecmdDoc } from "../../types/zsh-data.ts"
+import type { PrecmdDoc } from "../../types.ts"
+import { type PrecmdName, precmdNames } from "../../types.ts"
 import { extractItems } from "../core/doc.ts"
 import { normalizeBody, normalizeHeader } from "../core/text.ts"
 

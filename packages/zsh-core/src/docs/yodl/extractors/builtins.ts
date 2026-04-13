@@ -1,7 +1,6 @@
 import type { NonEmpty } from "@carlwr/typescript-extra"
-
-import { mkBuiltinName } from "../../types/brand.ts"
-import type { BuiltinDoc } from "../../types/zsh-data.ts"
+import type { BuiltinDoc } from "../../types.ts"
+import { mkProven } from "../../types.ts"
 import { collectAliasedEntries, extractItems } from "../core/doc.ts"
 import { isMacro, parseNodes, type YNodeSeq } from "../core/nodes.ts"
 import { normalizeBody, normalizeHeader, stripYodl } from "../core/text.ts"
@@ -40,7 +39,7 @@ export function parseBuiltins(yo: string): readonly BuiltinDoc[] {
       if (!name) continue
       const synopsis: NonEmpty<string> = [head.text, ...synopsisTail]
       byName.set(name, {
-        name: mkBuiltinName(name),
+        name: mkProven("builtin", name),
         synopsis,
         desc,
         ...(aliasOf && { aliasOf }),
@@ -61,10 +60,10 @@ function macroDocs(nodes: YNodeSeq): BuiltinDoc[] {
       const target = normalizeHeader(node.args[1] ?? [])
       if (!name || !target) continue
       docs.push({
-        name: mkBuiltinName(name),
+        name: mkProven("builtin", name),
         synopsis: [name],
         desc: `Same as \`${target}\`.`,
-        aliasOf: mkBuiltinName(target),
+        aliasOf: mkProven("builtin", target),
       })
       continue
     }
@@ -74,7 +73,7 @@ function macroDocs(nodes: YNodeSeq): BuiltinDoc[] {
       const module = normalizeHeader(node.args[1] ?? [])
       if (!name || !module) continue
       docs.push({
-        name: mkBuiltinName(name),
+        name: mkProven("builtin", name),
         synopsis: [name],
         desc: `Available via the \`${module}\` module.`,
         module,
@@ -86,7 +85,7 @@ function macroDocs(nodes: YNodeSeq): BuiltinDoc[] {
       const name = normalizeHeader(node.args[0] ?? [])
       if (!name) continue
       docs.push({
-        name: mkBuiltinName(name),
+        name: mkProven("builtin", name),
         synopsis: [name],
         desc: "See ZLE builtins.",
       })
@@ -123,7 +122,7 @@ function extractCmdName(synopsis: string): string | undefined {
 
 function extractAlias(body: YNodeSeq) {
   const m = stripYodl(body).match(/\bSame as ([^.\s]+)/)
-  return m?.[1] ? mkBuiltinName(m[1]) : undefined
+  return m?.[1] ? mkProven("builtin", m[1]) : undefined
 }
 
 function extractModule(body: YNodeSeq): string | undefined {

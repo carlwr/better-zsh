@@ -1,7 +1,6 @@
 import { describe, expect, test } from "vitest"
-import { mkOptFlagChar, mkOptName } from "../../types/brand"
-import { optionCategories } from "../../types/zsh-data"
-import { parseOptions } from "../../yodl/docs/options"
+import { mkOptFlagChar, mkProven, optSections } from "../../docs/types"
+import { parseOptions } from "../../docs/yodl/extractors/options"
 import { by, only, readVendoredYo } from "./test-util"
 
 const OPTS_YO = readVendoredYo("options.yo")
@@ -15,7 +14,7 @@ and the command is the name of a directory, perform the cd
 command to that directory.
 )`
     const opt = only(parseOptions(yo))
-    expect(opt.name).toBe(mkOptName("AUTO_CD"))
+    expect(opt.name).toBe(mkProven("option", "AUTO_CD"))
     expect(opt.display).toBe("AUTO_CD")
     expect(opt.flags).toEqual([{ char: mkOptFlagChar("J"), on: "-" }])
     expect(opt.category).toBe("Changing Directories")
@@ -82,9 +81,9 @@ endsitem()`
       }
     })
 
-    test("all names pass mkOptName idempotence", () => {
+    test("all names pass mkProven option idempotence", () => {
       for (const o of opts) {
-        expect(mkOptName(o.name)).toBe(o.name)
+        expect(mkProven("option", o.name)).toBe(o.name)
       }
     })
 
@@ -94,32 +93,30 @@ endsitem()`
     })
 
     test("all categories are non-empty", () => {
-      expect([...new Set(opts.map((o) => o.category))]).toEqual(
-        optionCategories,
-      )
+      expect([...new Set(opts.map((o) => o.category))]).toEqual(optSections)
     })
 
     test("known options exist", () => {
-      expect(byName.has(mkOptName("EXTENDED_GLOB"))).toBe(true)
-      expect(byName.has(mkOptName("AUTO_CD"))).toBe(true)
-      expect(byName.has(mkOptName("GLOB_DOTS"))).toBe(true)
+      expect(byName.has(mkProven("option", "EXTENDED_GLOB"))).toBe(true)
+      expect(byName.has(mkProven("option", "AUTO_CD"))).toBe(true)
+      expect(byName.has(mkProven("option", "GLOB_DOTS"))).toBe(true)
     })
 
     test("captures short-flag polarity from vendored docs", () => {
-      expect(byName.get(mkOptName("ERR_EXIT"))?.flags).toEqual([
+      expect(byName.get(mkProven("option", "ERR_EXIT"))?.flags).toEqual([
         { char: mkOptFlagChar("e"), on: "-" },
       ])
-      expect(byName.get(mkOptName("RCS"))?.flags).toEqual([
+      expect(byName.get(mkProven("option", "RCS"))?.flags).toEqual([
         { char: mkOptFlagChar("f"), on: "+" },
       ])
-      expect(byName.get(mkOptName("GLOBAL_RCS"))?.flags).toEqual([
+      expect(byName.get(mkProven("option", "GLOBAL_RCS"))?.flags).toEqual([
         { char: mkOptFlagChar("d"), on: "+" },
       ])
-      expect(byName.get(mkOptName("MARK_DIRS"))?.flags).toEqual([
+      expect(byName.get(mkProven("option", "MARK_DIRS"))?.flags).toEqual([
         { char: mkOptFlagChar("8"), on: "-" },
         { char: mkOptFlagChar("X"), on: "-" },
       ])
-      expect(byName.get(mkOptName("NOTIFY"))?.flags).toEqual([
+      expect(byName.get(mkProven("option", "NOTIFY"))?.flags).toEqual([
         { char: mkOptFlagChar("5"), on: "-" },
         { char: mkOptFlagChar("b"), on: "-" },
       ])

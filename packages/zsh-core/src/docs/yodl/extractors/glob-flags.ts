@@ -1,5 +1,5 @@
-import { mkGlobbingFlag } from "../../types/brand.ts"
-import type { GlobbingFlagDoc } from "../../types/zsh-data.ts"
+import type { GlobFlagDoc } from "../../types.ts"
+import { mkProven } from "../../types.ts"
 import {
   extractFirstList,
   extractItemList,
@@ -13,7 +13,7 @@ function bodyDoc(item: YodlEntry): string | undefined {
   return item.body ? normalizeBody(item.body) : undefined
 }
 
-export function parseGlobbingFlags(yo: string): readonly GlobbingFlagDoc[] {
+export function parseGlobFlags(yo: string): readonly GlobFlagDoc[] {
   const section = "Globbing Flags"
   const sec = extractSectionBody(yo, "Globbing Flags")
   const list = extractFirstList(sec, "item")
@@ -32,24 +32,24 @@ export function parseGlobbingFlags(yo: string): readonly GlobbingFlagDoc[] {
       return tt.map(
         (flag) =>
           ({
-            flag: mkGlobbingFlag(flag),
+            flag: mkProven("glob_flag", flag),
             args: [],
             sig: flag,
             desc,
             section,
-          }) satisfies GlobbingFlagDoc,
+          }) satisfies GlobFlagDoc,
       )
     }
 
     const [flag = sig] = tt
     return [
       {
-        flag: mkGlobbingFlag(flag),
+        flag: mkProven("glob_flag", flag),
         args: vars,
         sig,
         desc,
         section,
-      } satisfies GlobbingFlagDoc,
+      } satisfies GlobFlagDoc,
     ]
   })
 }

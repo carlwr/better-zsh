@@ -1,42 +1,31 @@
 import { readFile } from "node:fs/promises"
 import { resolve } from "node:path"
-import {
-  getBuiltins,
-  getCondOps,
-  getGlobbingFlags,
-  getGlobOps,
-  getHistoryDocs,
-  getOptions,
-  getParamFlags,
-  getPrecmds,
-  getProcessSubsts,
-  getRedirections,
-  getReservedWords,
-  getShellParams,
-  getSubscriptFlags,
-} from "zsh-core"
+import type { DocCategory } from "zsh-core"
+import { docCategories, loadCorpus } from "zsh-core"
 import { refDocs, writeRefDump } from "zsh-core/render"
+
+const categoryLabel: Record<DocCategory, string> = {
+  option: "options",
+  cond_op: "cond ops",
+  builtin: "builtins",
+  precmd: "precmds",
+  shell_param: "shell params",
+  reserved_word: "reserved words",
+  redir: "redirs",
+  process_subst: "process substs",
+  subscript_flag: "subscript flags",
+  param_flag: "param flags",
+  history: "history",
+  glob_op: "glob ops",
+  glob_flag: "glob flags",
+}
 
 async function main() {
   const root = process.cwd()
   const outDir = resolve(root, process.argv[2] ?? ".aux/refs")
 
-  const data = {
-    options: getOptions(),
-    condOps: getCondOps(),
-    shellParams: getShellParams(),
-    builtins: getBuiltins(),
-    precmds: getPrecmds(),
-    redirs: getRedirections(),
-    processSubsts: getProcessSubsts(),
-    reservedWords: getReservedWords(),
-    subscriptFlags: getSubscriptFlags(),
-    paramFlags: getParamFlags(),
-    history: getHistoryDocs(),
-    globOps: getGlobOps(),
-    globFlags: getGlobbingFlags(),
-  }
-  const docs = refDocs(data)
+  const corpus = loadCorpus()
+  const docs = refDocs(corpus)
 
   await writeRefDump(outDir, docs)
   const suspicious = (await readFile(resolve(outDir, "suspicious.md"), "utf8"))
@@ -44,19 +33,7 @@ async function main() {
     .filter(Boolean).length
 
   const counts = [
-    `${data.options.length} options`,
-    `${data.condOps.length} cond ops`,
-    `${data.shellParams.length} shell params`,
-    `${data.builtins.length} builtins`,
-    `${data.precmds.length} precmds`,
-    `${data.redirs.length} redirs`,
-    `${data.processSubsts.length} process substs`,
-    `${data.reservedWords.length} reserved words`,
-    `${data.subscriptFlags.length} subscript flags`,
-    `${data.paramFlags.length} param flags`,
-    `${data.history.length} history`,
-    `${data.globOps.length} glob ops`,
-    `${data.globFlags.length} glob flags`,
+    ...docCategories.map((cat) => `${corpus[cat].size} ${categoryLabel[cat]}`),
     `${suspicious} suspicious`,
   ].join(", ")
   process.stdout.write(`wrote reference markdown to ${outDir} (${counts})\n`)

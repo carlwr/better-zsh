@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest"
-import { mkCondOp } from "../../types/brand"
-import { parseCondOps } from "../../yodl/docs/cond-ops"
+import { mkProven } from "../../docs/types"
+import { parseCondOps } from "../../docs/yodl/extractors/cond-ops"
 import { by, only, readVendoredYo } from "./test-util"
 
 const COND_YO = readVendoredYo("cond.yo")
@@ -11,7 +11,7 @@ describe("parseCondOps", () => {
 true if file exists.
 )`
     const op = only(parseCondOps(yo))
-    expect(op.op).toBe(mkCondOp("-a"))
+    expect(op.op).toBe(mkProven("cond_op", "-a"))
     expect(op.arity).toBe("unary")
     expect(op.operands).toEqual(["file"])
     expect(op.desc).toContain("file exists")
@@ -22,7 +22,7 @@ true if file exists.
 true if file1 is newer than file2.
 )`
     const op = only(parseCondOps(yo))
-    expect(op.op).toBe(mkCondOp("-nt"))
+    expect(op.op).toBe(mkProven("cond_op", "-nt"))
     expect(op.arity).toBe("binary")
     expect(op.operands).toEqual(["file1", "file2"])
   })
@@ -34,8 +34,8 @@ true if string matches pattern.
 )`
     const ops = parseCondOps(yo)
     expect(ops).toHaveLength(2)
-    expect(ops[0]?.op).toBe(mkCondOp("=="))
-    expect(ops[1]?.op).toBe(mkCondOp("="))
+    expect(ops[0]?.op).toBe(mkProven("cond_op", "=="))
+    expect(ops[1]?.op).toBe(mkProven("cond_op", "="))
   })
 
   describe("vendored cond.yo", () => {
@@ -53,10 +53,10 @@ true if string matches pattern.
     })
 
     test("contains known operators", () => {
-      expect(byOp.has(mkCondOp("-a"))).toBe(true)
-      expect(byOp.has(mkCondOp("-f"))).toBe(true)
-      expect(byOp.has(mkCondOp("-nt"))).toBe(true)
-      expect(byOp.has(mkCondOp("=~"))).toBe(true)
+      expect(byOp.has(mkProven("cond_op", "-a"))).toBe(true)
+      expect(byOp.has(mkProven("cond_op", "-f"))).toBe(true)
+      expect(byOp.has(mkProven("cond_op", "-nt"))).toBe(true)
+      expect(byOp.has(mkProven("cond_op", "=~"))).toBe(true)
     })
 
     test.each([
@@ -66,8 +66,8 @@ true if string matches pattern.
       ["-nt", "binary"],
       ["-eq", "binary"],
       ["=~", "binary"],
-    ])("vendored %s is %s", (op, arity) => {
-      expect(byOp.get(mkCondOp(op))?.arity).toBe(arity)
+    ])("%s → %s", (op, arity) => {
+      expect(byOp.get(mkProven("cond_op", op))?.arity).toBe(arity)
     })
   })
 })

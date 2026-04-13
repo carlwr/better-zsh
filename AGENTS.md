@@ -30,23 +30,45 @@ Best-effort determination of which syntactic region the cursor is in (setopt, co
 
 zsh-core ships vendored Yodl (`.yo`) documentation files from the zsh upstream project. Three consumption routes:
 
-1. **Programmatic API** (`getBuiltins()`, `getOptions()`, etc.) — parse `.yo` at runtime, cached per getter. Requires the `.yo` files on disk. For consumers who bundle zsh-core (like the extension), `copyRuntimeZshData()` copies the `.yo` payload into their output directory. The extension currently materializes this static knowledge eagerly during activation and uses it as the canonical source for semi-static language knowledge (builtins, options, reserved words, shell-managed parameters, etc.).
+1. **Programmatic API** (`loadCorpus()`) — parse `.yo` at runtime into a `DocCorpus`; cached. Requires the `.yo` files on disk. For consumers who bundle zsh-core (like the extension), `copyRuntimeZshData()` copies the `.yo` payload into their output directory. The extension calls `loadCorpus()` once at activation and uses the corpus as the canonical source for semi-static language knowledge (builtins, options, reserved words, shell-managed parameters, etc.).
 2. **Pre-parsed JSON** (`dist/json/*.json`) — build-time artifacts containing the same data, pre-serialized. Available via package exports (`"./data/*.json"`). No runtime parsing needed. The extension does **not** currently use this route at runtime.
 3. **Raw Yodl source** (`dist/data/zsh-docs/`) — the upstream `.yo` files for advanced consumers.
 
-Routes 1 and 2 contain the same information in different forms. Route 3 is the raw source that feeds route 1. For live hover/completion docs, the extension uses parsed doc records plus the markdown render helpers (`mdOpt()`, `mdBuiltin()`, etc.); the bulk `hoverDocs()` corpus is for dump/dev tooling rather than the live hover path.
+Routes 1 and 2 contain the same information in different forms. Route 3 is the raw source that feeds route 1. For live hover/completion docs, the extension passes the `DocCorpus` to providers; lookups go via `resolve()` + `renderDoc()`. The per-category `md*()` renderers are not part of the `zsh-core/render` package surface — they are internal dispatch targets reachable only via direct module imports (e.g. from within the package's own tests).
 
 ### Yodl parsing layout
 
 `zsh-core`'s Yodl parsing is intentionally split into layers:
-- `src/yodl/core/` — shared machinery only: macro-node parsing, section/list/entry structure, and text rendering/token extraction
-- `src/yodl/docs/` — vendored-corpus extractors that map the shared Yodl representation to zsh doc records
+- `src/docs/yodl/core/` — shared machinery only: macro-node parsing, section/list/entry structure, and text rendering/token extraction
+- `src/docs/yodl/extractors/` — vendored-corpus extractors that map the shared Yodl representation to zsh doc records
 
 Keep low-level parsing rules in the core layer. Keep corpus-specific interpretation in the docs layer. Doc extractors should not drift back toward ad hoc rescanning of raw Yodl strings.
 
 ### Providers
 
 VS Code provider classes that wire zsh-core analysis and doc records to language features (hover, completions, semantic tokens, etc.). Reusable parsing/rendering logic should live in pure functions; some provider-local dispatch/lookup logic still lives in the provider modules.
+
+### Conceptual domains — A / B / C
+
+Three orthogonal domains. Preserve this decomposition; it should be visible in directory structure, types, and naming.
+
+- **A — Parsed Documentation** (`src/docs/`): static, vendored zsh knowledge. A closed taxonomy of 13 `DocCategory` values; each has a doc-record type (`ZshOption`, `CondOpDoc`, …), a corpus-identity branded type, and a collection of records parsed from `.yo` sources. Knows nothing about user code.
+- **B — Fact Extraction** (`src/analysis/`): coarse, potentially overlapping annotations about user zsh code. A `Fact` discriminated union with confidence levels. Knows nothing about doc records or markdown. User-code-derived identifiers carry *candidate* brands — never proven corpus-identity brands.
+- **C — Markdown Rendering** (`src/render/`): transforms doc records into human-readable markdown. Depends on A; orthogonal to B.
+
+The consumer (extension) plumbs A+B→C: facts identify what to look up, doc records supply content, rendering produces output. This plumbing is procedural dispatch in consumer code — zsh-core does not wire A+B→C internally.
+
+### Brand semantics
+
+Branded types serve two distinct roles — do not conflate them.
+
+**Corpus-identity brands** (`OptName`, `CondOp`, `BuiltinName`, …) — used in doc records and as `DocCorpus` map keys. Represent identifiers of known, documented zsh elements. Produced only by Yodl extractors via their smart constructors (`mkOptName`, …). Exceptions: `PrecmdName` and `ProcessSubstOp` are small closed sets, modelled as literal unions rather than phantom brands — no smart constructor needed.
+
+**Candidate brands** (`CandidateOpt`, `CandidateCondOp`, `CandidateBuiltin`, …) — used by consumers for lookup candidates derived from user code. Well-formed and normalized, but not proven to identify a corpus member. Normalization may differ from the corpus counterpart (e.g. `mkCandidateOpt` strips `no_`; `mkOptName` does not).
+
+The two families are structurally incompatible. The candidate→proven boundary is crossed **only through `resolve(corpus, candidateId)`** — the sole public brand-boundary crossing point. `renderDoc(corpus, provenId)` then produces markdown; the two steps are intentionally separate and no public API combines them.
+
+`DocPieceId` (proven) and `CandidateDocPieceId` are discriminated unions keyed on `category`, providing parametric access across all 13 doc categories.
 
 ## Design principles
 
@@ -269,6 +291,12 @@ Meaning: from a broader view, see if the code changes done makes any refactoring
   - in these cases, always perform such a pass before returning to the user
 - **DO NOT** include such a pass when: the instruction was very precise about what to do
   - by judgement, the potential for such refactors could still be analyzed and the user explicitly asked about whether to make the edits or not
+
+After introducing parametric types or shared infrastructure, revisit consumer call sites **once** — untapped leverage at call sites is the real ROI indicator. A parametric type only earns its keep when consumers exploit it; a per-consumer composition helper over the orthogonal API primitives is often the missing link (e.g. a `hoverFor<K>(category, id)` wrapping `resolve + renderDoc` on the consumer side — consumer-side composition helpers are fine; they belong in the consumer, not in zsh-core's public API, per the orthogonality principle in the grand plan's Appendix A).
+
+### Research-agent proposals are hypotheses, not decisions
+
+When an agent (Explore, survey subagent, etc.) returns a ranked list of proposed edits, treat each item as a hypothesis to verify, not a decision to execute. Confirm by reading the file before editing. Reject proposals whose only justification is LOC reduction, that drift from the established architecture, or that duplicate work the preceding refactor deliberately left in place (check the grand-plan / handoff notes). For conciseness passes specifically: expect to reject a meaningful fraction of what an agent proposes — that is the mode functioning correctly.
 
 ### Keeping the orientation skill fresh
 
