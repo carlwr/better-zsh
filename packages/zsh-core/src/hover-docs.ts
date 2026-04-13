@@ -10,10 +10,20 @@ import {
   mkHoverMdCtx,
 } from "./hover-md.ts"
 import type {
+  BuiltinName,
+  CondOp,
+  OptName,
+  RedirSig,
+  ReservedWord,
+  ShellParamName,
+} from "./types/brand.ts"
+import type {
   BuiltinDoc,
   CondOpDoc,
   PrecmdDoc,
+  PrecmdName,
   ProcessSubstDoc,
+  ProcessSubstOp,
   RedirDoc,
   ReservedWordDoc,
   ShellParamDoc,
@@ -30,12 +40,24 @@ export type HoverKind =
   | "process-subst"
   | "reserved-word"
 
-/** Rendered hover/reference markdown for one logical zsh item. */
-export interface HoverDoc {
-  readonly kind: HoverKind
-  readonly key: string
+export interface HoverDocBase<K extends HoverKind, I extends string> {
+  readonly kind: K
+  readonly id: I
+  /** Display heading used in hover dump output; may differ from the typed `id`. */
+  readonly heading: string
   readonly md: string
 }
+
+/** Rendered hover/reference markdown for one logical zsh item. */
+export type HoverDoc =
+  | HoverDocBase<"option", OptName>
+  | HoverDocBase<"cond-op", CondOp>
+  | HoverDocBase<"param", ShellParamName>
+  | HoverDocBase<"builtin", BuiltinName>
+  | HoverDocBase<"precmd", PrecmdName>
+  | HoverDocBase<"redir", RedirSig>
+  | HoverDocBase<"process-subst", ProcessSubstOp>
+  | HoverDocBase<"reserved-word", ReservedWord>
 
 export interface HoverDocArgs {
   readonly options: readonly ZshOption[]
@@ -50,15 +72,17 @@ export interface HoverDocArgs {
 
 // Keep corpus assembly separate from markdown rendering so live hover helpers
 // stay focused and dump/dev tooling can compose the corpus independently.
-function mkHoverDocs<T>(
-  kind: HoverKind,
+function mkHoverDocs<K extends HoverKind, T, I extends string>(
+  kind: K,
   docs: readonly T[],
-  keyOf: (doc: T) => string,
+  idOf: (doc: T) => I,
+  headingOf: (doc: T) => string,
   render: (doc: T) => string,
-): HoverDoc[] {
+): HoverDocBase<K, I>[] {
   return docs.map((doc) => ({
     kind,
-    key: keyOf(doc),
+    id: idOf(doc),
+    heading: headingOf(doc),
     md: render(doc),
   }))
 }
@@ -79,6 +103,7 @@ export function hoverDocs({
     ...mkHoverDocs(
       "option",
       options,
+      (opt) => opt.name,
       (opt) => opt.display,
       (opt) => mdOpt(opt, ctx),
     ),
@@ -86,26 +111,48 @@ export function hoverDocs({
       "cond-op",
       condOps,
       (cop) => cop.op,
+      (cop) => cop.op,
       (cop) => mdCond(cop, ctx),
     ),
     ...mkHoverDocs(
       "param",
       [...params].sort((a, b) => a.name.localeCompare(b.name)),
       (param) => param.name,
+      (param) => param.name,
       mdParam,
     ),
-    ...mkHoverDocs("builtin", builtins, (builtin) => builtin.name, mdBuiltin),
-    ...mkHoverDocs("precmd", precmds, (precmd) => precmd.name, mdPrecmd),
-    ...mkHoverDocs("redir", redirs, (redir) => redir.sig, mdRedir),
+    ...mkHoverDocs(
+      "builtin",
+      builtins,
+      (builtin) => builtin.name,
+      (builtin) => builtin.name,
+      mdBuiltin,
+    ),
+    ...mkHoverDocs(
+      "precmd",
+      precmds,
+      (precmd) => precmd.name,
+      (precmd) => precmd.name,
+      mdPrecmd,
+    ),
+    ...mkHoverDocs(
+      "redir",
+      redirs,
+      (redir) => redir.sig,
+      (redir) => redir.sig,
+      mdRedir,
+    ),
     ...mkHoverDocs(
       "process-subst",
       processSubsts,
+      (processSubst) => processSubst.op,
       (processSubst) => processSubst.op,
       mdProcessSubst,
     ),
     ...mkHoverDocs(
       "reserved-word",
       reservedWords,
+      (reservedWord) => reservedWord.name,
       (reservedWord) => reservedWord.name,
       mdReservedWord,
     ),

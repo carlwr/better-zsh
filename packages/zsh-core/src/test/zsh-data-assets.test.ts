@@ -74,7 +74,7 @@ describe("vendored zsh data assets", () => {
   })
 
   test("parses newly vendored structured syntax docs", () => {
-    expect(getRedirections().some((doc) => doc.op === "<")).toBe(true)
+    expect(getRedirections().some((doc) => doc.groupOp === "<")).toBe(true)
     expect(
       getReservedWords().some((doc) => doc.name === mkReservedWord("if")),
     ).toBe(true)

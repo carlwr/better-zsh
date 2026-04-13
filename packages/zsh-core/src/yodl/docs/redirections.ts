@@ -1,4 +1,4 @@
-import { mkRedirOp } from "../../types/brand.ts"
+import { mkRedirOp, mkRedirSig } from "../../types/brand.ts"
 import type { RedirDoc } from "../../types/zsh-data.ts"
 import {
   extractItems,
@@ -13,8 +13,8 @@ export function parseRedirections(yo: string): readonly RedirDoc[] {
     extractItems(section.length > 0 ? section : yo, 1),
     normalizeHeader,
     (sig, desc) => ({
-      op: mkRedirOp(sig.match(/^\S+/)?.[0] ?? sig),
-      sig,
+      groupOp: mkRedirOp(sig.match(/^\S+/)?.[0] ?? sig),
+      sig: mkRedirSig(sig),
       desc,
       section: "Redirection",
     }),

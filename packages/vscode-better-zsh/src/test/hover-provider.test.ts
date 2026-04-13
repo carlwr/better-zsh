@@ -8,6 +8,7 @@ import {
   mkOptFlagChar,
   mkOptName,
   mkRedirOp,
+  mkRedirSig,
   mkShellParamName,
   type RedirDoc,
   type ShellParamDoc,
@@ -112,26 +113,41 @@ const options = [
 ] as unknown as ZshOption[]
 const redirs = [
   {
-    op: mkRedirOp(">&"),
-    sig: ">& number",
+    groupOp: mkRedirOp(">&"),
+    sig: mkRedirSig(">& number"),
     desc: "redir number docs",
     section: "x",
   },
-  { op: mkRedirOp(">&"), sig: ">& -", desc: "redir close docs", section: "x" },
-  { op: mkRedirOp(">&"), sig: ">& p", desc: "redir coproc docs", section: "x" },
   {
-    op: mkRedirOp(">&"),
-    sig: ">& word",
+    groupOp: mkRedirOp(">&"),
+    sig: mkRedirSig(">& -"),
+    desc: "redir close docs",
+    section: "x",
+  },
+  {
+    groupOp: mkRedirOp(">&"),
+    sig: mkRedirSig(">& p"),
+    desc: "redir coproc docs",
+    section: "x",
+  },
+  {
+    groupOp: mkRedirOp(">&"),
+    sig: mkRedirSig(">& word"),
     desc: "redir word docs",
     section: "x",
   },
   {
-    op: mkRedirOp(">&!"),
-    sig: ">&! word",
+    groupOp: mkRedirOp(">&!"),
+    sig: mkRedirSig(">&! word"),
     desc: "redir force docs",
     section: "x",
   },
-  { op: mkRedirOp("&>"), sig: "&> word", desc: "redir &> docs", section: "x" },
+  {
+    groupOp: mkRedirOp("&>"),
+    sig: mkRedirSig("&> word"),
+    desc: "redir &> docs",
+    section: "x",
+  },
 ] as unknown as RedirDoc[]
 const params = [
   {

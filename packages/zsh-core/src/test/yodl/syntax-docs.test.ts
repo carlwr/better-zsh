@@ -5,6 +5,7 @@ import {
   mkHistoryKey,
   mkParamFlag,
   mkRedirOp,
+  mkRedirSig,
   mkReservedWord,
   mkShellParamName,
   mkSubscriptFlag,
@@ -59,19 +60,19 @@ Force clobber.
 )
 enditem()`
     const docs = parseRedirections(yo)
-    expect(docs.map((doc) => doc.op)).toEqual([">!", ">|"])
+    expect(docs.map((doc) => doc.groupOp)).toEqual([">!", ">|"])
     expect(docs[0]?.desc).toBe("Force clobber.")
     expect(docs[1]?.desc).toBe("Force clobber.")
   })
 
-  test("redirection op is a grouping key, not a unique identity", () => {
+  test("redirection grouping operator is not a unique doc identity", () => {
     const docs = parseRedirections(REDIRECT_YO)
-    expect(docs.filter((doc) => doc.op === ">&").map((doc) => doc.sig)).toEqual(
-      [">& number", ">& -", ">& p", ">& word"],
-    )
-    expect(docs.filter((doc) => doc.op === "<&").map((doc) => doc.sig)).toEqual(
-      ["<& number", "<& -", "<& p"],
-    )
+    expect(
+      docs.filter((doc) => doc.groupOp === ">&").map((doc) => doc.sig),
+    ).toEqual([">& number", ">& -", ">& p", ">& word"])
+    expect(
+      docs.filter((doc) => doc.groupOp === "<&").map((doc) => doc.sig),
+    ).toEqual(["<& number", "<& -", "<& p"])
   })
 
   test("reserved words include command-position and any-position forms", () => {
@@ -194,7 +195,9 @@ enditem()`
 
   test("normalized syntax-doc identity fields are idempotent", () => {
     for (const doc of parseRedirections(REDIRECT_YO))
-      expect(mkRedirOp(doc.op)).toBe(doc.op)
+      expect(mkRedirOp(doc.groupOp)).toBe(doc.groupOp)
+    for (const doc of parseRedirections(REDIRECT_YO))
+      expect(mkRedirSig(doc.sig)).toBe(doc.sig)
     for (const doc of parseReservedWords(GRAMMAR_YO))
       expect(mkReservedWord(doc.name)).toBe(doc.name)
     for (const doc of parseShellParams(PARAMS_YO))

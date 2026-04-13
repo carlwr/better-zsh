@@ -1,5 +1,4 @@
 import { commentStart } from "../comment.ts"
-import { mkBuiltinName } from "../types/brand.ts"
 import { type PrecmdName, precmdNames } from "../types/precmd.ts"
 import { activeText, type TextSpan } from "./doc.ts"
 import {
@@ -209,7 +208,6 @@ function cmdHeadFact(
     kind: "cmd-head",
     span,
     text,
-    name: mkBuiltinName(text),
     precmds,
     strength: "heuristic",
   }

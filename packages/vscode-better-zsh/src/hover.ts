@@ -26,6 +26,7 @@ import type {
 } from "zsh-core"
 import {
   cmdHeadFactsOnLine,
+  mkBuiltinName,
   mkCondOp,
   mkOptFlagChar,
   mkOptLookupName,
@@ -104,7 +105,9 @@ export class HoverProvider implements vscode.HoverProvider {
       this.precmdMap = new Map(precmds.map((doc) => [doc.name, doc]))
     }
     if (redirDocs) {
-      this.redirMap = indexMany(redirDocs.map((doc) => [doc.op, doc] as const))
+      this.redirMap = indexMany(
+        redirDocs.map((doc) => [doc.groupOp, doc] as const),
+      )
     }
     if (processSubstDocs) {
       this.processSubstMap = new Map(
@@ -205,7 +208,7 @@ export class HoverProvider implements vscode.HoverProvider {
         )
       : undefined
     if (head) {
-      const d = this.builtinMap?.get(head.name)
+      const d = this.builtinMap?.get(mkBuiltinName(head.text))
       if (d)
         return new vscode.Hover(
           new vscode.MarkdownString(mdBuiltin(d)),
@@ -291,10 +294,12 @@ function redirDoc(
 ): RedirDoc | undefined {
   const parsed = splitRedirToken(redirMap, token)
   if (!parsed) return
-  const { op, tail } = parsed
-  const docs = redirMap?.get(op)
+  const { groupOp, tail } = parsed
+  const docs = redirMap?.get(groupOp)
   if (!docs) return
   if (docs.length === 1) return docs[0]
+  // Redirection docs are grouped by the leading operator token and only become
+  // unique once the remaining signature tail is considered.
   return unique(
     docs.filter((doc) => redirTailKind(doc) === redirTailKindOf(tail)),
   )
@@ -303,21 +308,22 @@ function redirDoc(
 function splitRedirToken(
   redirMap: ReadonlyMap<RedirOp, readonly RedirDoc[]> | undefined,
   token: string,
-): { op: RedirOp; tail: string } | undefined {
+): { groupOp: RedirOp; tail: string } | undefined {
   const text = token.replace(/^[0-9]+/, "")
-  let best: RedirOp | undefined
+  let bestGroupOp: RedirOp | undefined
 
-  for (const op of redirMap?.keys() ?? []) {
-    if (!text.startsWith(op)) continue
-    if (!best || op.length > best.length) best = op
+  for (const groupOp of redirMap?.keys() ?? []) {
+    if (!text.startsWith(groupOp)) continue
+    if (!bestGroupOp || groupOp.length > bestGroupOp.length)
+      bestGroupOp = groupOp
   }
 
-  if (!best) return
-  return { op: best, tail: text.slice(best.length) }
+  if (!bestGroupOp) return
+  return { groupOp: bestGroupOp, tail: text.slice(bestGroupOp.length) }
 }
 
 function redirTailKind(doc: RedirDoc): string {
-  return doc.sig.slice(doc.op.length).trimStart()
+  return doc.sig.slice(doc.groupOp.length).trimStart()
 }
 
 function redirTailKindOf(tail: string): string {

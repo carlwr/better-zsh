@@ -10,7 +10,7 @@ export type CondOp = Brand<string, "CondOp">
 /** Single-letter option flag char: "J", "N", "0", etc. */
 export type OptFlagChar = Brand<string, "OptFlagChar">
 
-/** Exact builtin or command-like spelling */
+/** Builtin command spelling such as `echo` or `[` parsed from zsh docs. */
 export type BuiltinName = Brand<string, "BuiltinName">
 
 /** Shell-managed parameter name. */
@@ -18,6 +18,9 @@ export type ShellParamName = Brand<string, "ShellParamName">
 
 /** Redirection operator token such as `>>` or `>&`. */
 export type RedirOp = Brand<string, "RedirOp">
+
+/** Full redirection signature such as `>> word` or `>& number`. */
+export type RedirSig = Brand<string, "RedirSig">
 
 /** Globbing operator token such as `*` or `@(...)`. */
 export type GlobOp = Brand<string, "GlobOp">
@@ -75,6 +78,10 @@ export function mkShellParamName(raw: string): ShellParamName {
 
 export function mkRedirOp(raw: string): RedirOp {
   return trim(raw) as RedirOp
+}
+
+export function mkRedirSig(raw: string): RedirSig {
+  return trim(raw) as RedirSig
 }
 
 export function mkGlobOp(raw: string): GlobOp {

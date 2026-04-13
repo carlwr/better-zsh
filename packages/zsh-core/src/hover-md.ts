@@ -18,7 +18,7 @@ import type {
 /** Known markdown/rendering regression marker for QA. */
 export interface HoverRegression {
   readonly kind: HoverKind
-  readonly key: string
+  readonly id: string
   readonly note: string
 }
 
@@ -148,7 +148,7 @@ export function mdPrecmd(doc: PrecmdDoc): string {
 /** Render one redirection doc block as markdown. */
 export function mdRedir(doc: RedirDoc): string {
   return docBlock(
-    hoverFmt.code(doc.op),
+    hoverFmt.code(doc.groupOp),
     codeBlock("zsh", doc.sig),
     doc.desc,
     "_Category:_ Redirection",

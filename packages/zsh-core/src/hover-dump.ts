@@ -34,7 +34,7 @@ const suspiciousPatterns: readonly [string, RegExp][] = [
 ]
 
 function section(doc: HoverDoc): string {
-  return `## ${doc.key}\n\n${doc.md}`
+  return `## ${doc.heading}\n\n${doc.md}`
 }
 
 /** Split rendered hover docs into markdown dump files for QA/review. */
@@ -98,5 +98,5 @@ function renderDumpText(
 function suspiciousHits(doc: HoverDoc): string[] {
   return suspiciousPatterns
     .filter(([, re]) => re.test(doc.md))
-    .map(([name]) => `- ${doc.kind}:${doc.key} — ${name}`)
+    .map(([name]) => `- ${doc.kind}:${doc.id} — ${name}`)
 }

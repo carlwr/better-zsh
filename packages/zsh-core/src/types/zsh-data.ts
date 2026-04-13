@@ -10,6 +10,7 @@ import type {
   OptName,
   ParamFlag,
   RedirOp,
+  RedirSig,
   ReservedWord,
   ShellParamName,
   SubscriptFlag,
@@ -112,9 +113,9 @@ export interface PrecmdDoc {
 }
 
 /** Base interface for syntax-element doc records parsed from upstream Yodl sources. */
-export interface SyntaxDocBase {
+export interface SyntaxDocBase<Sig extends string = string> {
   /** Usage signature from the upstream zsh manual. */
-  readonly sig: string
+  readonly sig: Sig
   readonly desc: string
   /** Manual section this element was parsed from. */
   readonly section: string
@@ -131,9 +132,11 @@ export interface ReservedWordDoc extends SyntaxDocBase {
   readonly pos: ReservedWordPos
 }
 
-export interface RedirDoc extends SyntaxDocBase {
-  /** Grouping token only; multiple redirection docs share the same `op`. */
-  readonly op: RedirOp
+export interface RedirDoc extends SyntaxDocBase<RedirSig> {
+  /** Full signature is the doc identity; `groupOp` is only the shared lookup bucket. */
+  readonly sig: RedirSig
+  /** Grouping token only; multiple redirection docs share the same `groupOp`. */
+  readonly groupOp: RedirOp
 }
 
 /** Process substitution -- `<(...)` and `>(...)`. */

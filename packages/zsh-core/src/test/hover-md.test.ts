@@ -23,6 +23,7 @@ import {
   mkOptFlagChar,
   mkOptName,
   mkRedirOp,
+  mkRedirSig,
   mkReservedWord,
   mkShellParamName,
 } from "../types/brand"
@@ -84,8 +85,8 @@ const precmd: PrecmdDoc = {
 }
 
 const redir: RedirDoc = {
-  op: mkRedirOp(">>"),
-  sig: ">> word",
+  groupOp: mkRedirOp(">>"),
+  sig: mkRedirSig(">> word"),
   desc: "Append output to word.",
   section: "Redirections",
 }
@@ -290,8 +291,8 @@ describe("hover markdown", () => {
       reservedWords: [],
     })
 
-    expect(docs.map((doc) => `${doc.kind}:${doc.key}`)).toEqual([
-      "option:AUTO_CD",
+    expect(docs.map((doc) => `${doc.kind}:${doc.id}`)).toEqual([
+      `option:${mkOptName("AUTO_CD")}`,
       "cond-op:-a",
       "param:argv",
       "param:SECONDS",
@@ -300,8 +301,11 @@ describe("hover markdown", () => {
     ])
   })
 
-  test("uses redirection sig as the hover-doc heading key", () => {
-    expect(sampleCorpus().find((doc) => doc.kind === "redir")?.key).toBe(
+  test("keeps typed hover-doc ids separate from display headings", () => {
+    const optionDoc = sampleCorpus().find((doc) => doc.kind === "option")
+    expect(optionDoc?.id).toBe(mkOptName("AUTO_CD"))
+    expect(optionDoc?.heading).toBe("AUTO_CD")
+    expect(sampleCorpus().find((doc) => doc.kind === "redir")?.heading).toBe(
       ">> word",
     )
   })

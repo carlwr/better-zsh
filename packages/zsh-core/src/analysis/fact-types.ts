@@ -1,4 +1,3 @@
-import type { BuiltinName } from "../types/brand.ts"
 import type { PrecmdName } from "../types/precmd.ts"
 import type { TextSpan } from "./doc.ts"
 
@@ -28,8 +27,8 @@ export interface CtxFact extends BaseFact {
 
 export interface CmdHeadFact extends BaseFact {
   readonly kind: "cmd-head"
+  /** Raw command-head spelling; may name a builtin, function, alias, or external command. */
   readonly text: string
-  readonly name: BuiltinName
   readonly precmds: readonly PrecmdName[]
 }
 
