@@ -105,7 +105,7 @@
   "scripts": {
     "prebuild": "pnpm --filter zsh-core build",
     "prewatch": "pnpm --filter zsh-core build",
-    "predump:hover": "pnpm --filter zsh-core build",
+    "predump:refs": "pnpm --filter zsh-core build",
     "pretypecheck": "pnpm --filter zsh-core build",
     "pretest": "pnpm --filter zsh-core build",
     "build": "tsx build.ts",
@@ -115,7 +115,7 @@
     "lint": "biome check src build.ts tsconfig.json tsconfig.vscode-test.json vitest.config.ts package.json .vscodeignore .vscode-test.mjs scripts",
     "check": "pnpm typecheck && pnpm lint",
     "test": "vitest run",
-    "dump:hover": "tsx src/dev/dump-hover.ts",
+    "dump:refs": "tsx src/dev/dump-refs.ts",
     "testINTERACTIVE:electron": "pnpm build && tsc -p tsconfig.vscode-test.json && scripts/testINTERACTIVE-electron",
     "testINTERACTIVE:electron-bundled": "scripts/package-vsix ./better-zsh.vsix && tsc -p tsconfig.vscode-test.json && scripts/testINTERACTIVE-bundled",
     "vsix": "pnpm check && pnpm test && scripts/package-vsix ./better-zsh.vsix",

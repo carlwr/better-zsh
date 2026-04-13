@@ -17,7 +17,7 @@
     "check": "pnpm -r --filter './packages/*' --if-present check",
     "test": "pnpm -r --filter './packages/*' --if-present test",
     "test:integration": "scripts/test-integration-act",
-    "dump:hover": "pnpm --filter better-zsh dump:hover",
+    "dump:refs": "pnpm --filter better-zsh dump:refs",
     "testINTERACTIVE": "pnpm run testINTERACTIVE:electron && pnpm run testINTERACTIVE:electron-bundled",
     "testINTERACTIVE:electron": "pnpm --filter better-zsh testINTERACTIVE:electron",
     "testINTERACTIVE:electron-bundled": "pnpm --filter better-zsh testINTERACTIVE:electron-bundled",

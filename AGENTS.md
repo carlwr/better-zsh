@@ -92,7 +92,7 @@ In other words:
 
 - Prefer hover docs that explain actual zsh usage, not raw upstream doc notation
 - For option hovers: show executable `zsh` forms first; keep category at the bottom; prioritize the default in plain zsh over other emulation defaults
-- When adjusting Yodl parsing for hover docs, preserve visible prose/reference text unless there is a strong reason not to; use the hover dump script to inspect regressions in generated markdown
+- When adjusting Yodl parsing for rendered reference markdown, preserve visible prose/reference text unless there is a strong reason not to; use the reference dump script to inspect regressions in generated markdown
 
 ### Syntax highlighting and semantic tokens
 

@@ -1,44 +1,59 @@
 import { readFileSync } from "node:fs"
 import { join } from "node:path"
 import { describe, expect, test } from "vitest"
-import { type HoverDocArgs, hoverDocs } from "../hover-docs"
-import { dumpText, writeHoverDump } from "../hover-dump"
+import { dumpText, writeRefDump } from "../../render/dump"
 import {
   defaultStateIn,
   fmtOptRefsInMd,
-  hoverMdRegressions,
   mdBuiltin,
-  mdCond,
+  mdCondOp,
+  mdGlobFlag,
+  mdGlobOp,
+  mdHistory,
   mdOpt,
-  mdParam,
+  mdParamFlag,
   mdPrecmd,
   mdProcessSubst,
   mdRedir,
+  mdRegressions,
   mdReservedWord,
-  mkHoverMdCtx,
-} from "../hover-md"
+  mdShellParam,
+  mdSubscriptFlag,
+  mkMdCtx,
+} from "../../render/md"
+import { type RefDocArgs, refDocs } from "../../render/refs"
 import {
   mkBuiltinName,
   mkCondOp,
+  mkGlobbingFlag,
+  mkGlobOp,
+  mkHistoryKey,
   mkOptFlagChar,
   mkOptName,
+  mkParamFlag,
   mkRedirOp,
   mkRedirSig,
   mkReservedWord,
   mkShellParamName,
-} from "../types/brand"
+  mkSubscriptFlag,
+} from "../../types/brand"
 import type {
   BuiltinDoc,
   CondOpDoc,
+  GlobbingFlagDoc,
+  GlobOpDoc,
+  HistoryDoc,
+  ParamFlagDoc,
   PrecmdDoc,
   ProcessSubstDoc,
   RedirDoc,
   ReservedWordDoc,
   ShellParamDoc,
+  SubscriptFlagDoc,
   ZshOption,
-} from "../types/zsh-data"
-import * as zd from "../zsh-data"
-import { withTmpDirAsync } from "./tmp-dir"
+} from "../../types/zsh-data"
+import * as zd from "../../zsh-data"
+import { withTmpDirAsync } from "../tmp-dir"
 
 const opt = (name: string, desc: string): ZshOption => ({
   name: mkOptName(name),
@@ -131,34 +146,140 @@ const rd = redir(">>", ">> word", "d:r")
 const sub = ps("<(...)", "<(list)", "d:ps")
 const word = rw("if", "if list then list fi", "d:rw")
 const sec = param("SECONDS", "d:p")
+const pflag = (flag: string, desc: string): ParamFlagDoc => ({
+  flag: mkParamFlag(flag),
+  args: [flag],
+  sig: flag,
+  desc,
+  section: "Parameter Expansion",
+})
 
-function args(overrides: Partial<HoverDocArgs> = {}): HoverDocArgs {
+const sflag = (flag: string, desc: string): SubscriptFlagDoc => ({
+  flag: mkSubscriptFlag(flag),
+  args: [flag],
+  sig: flag,
+  desc,
+  section: "Subscript Flags",
+})
+
+const hist = (
+  key: string,
+  kind: HistoryDoc["kind"],
+  desc: string,
+): HistoryDoc => ({
+  key: mkHistoryKey(key),
+  kind,
+  sig: key,
+  desc,
+  section: "History Expansion",
+})
+
+const globOp = (op: string, desc: string): GlobOpDoc => ({
+  op: mkGlobOp(op),
+  sig: op,
+  desc,
+  section: "Filename Generation",
+})
+
+const globFlag = (flag: string, desc: string): GlobbingFlagDoc => ({
+  flag: mkGlobbingFlag(flag),
+  args: [flag],
+  sig: flag,
+  desc,
+  section: "Filename Generation",
+})
+
+function args(overrides: Partial<RefDocArgs> = {}): RefDocArgs {
   return {
     options: [cd],
     condOps: [cu],
-    params: [sec],
+    shellParams: [sec],
     builtins: [bi],
     precmds: [pc],
     redirs: [rd],
     processSubsts: [sub],
     reservedWords: [word],
+    subscriptFlags: [sflag("(w)", "d:sf")],
+    paramFlags: [pflag("(U)", "d:pf")],
+    history: [hist("!!", "event-designator", "d:h")],
+    globOps: [globOp("*", "d:g")],
+    globFlags: [globFlag("i", "d:gf")],
     ...overrides,
   }
 }
 
-const corpus = (overrides: Partial<HoverDocArgs> = {}) =>
-  hoverDocs(args(overrides))
+const corpus = (overrides: Partial<RefDocArgs> = {}) => refDocs(args(overrides))
 
-const has = (text: string | undefined, parts: readonly string[]) => {
+const expectContainsAll = (
+  text: string | undefined,
+  parts: readonly string[],
+) => {
   for (const part of parts) expect(text).toContain(part)
 }
 
 const headings = (text: string | undefined) =>
   (text?.match(/^## /gm) ?? []).length
 
-describe("hover markdown", () => {
+const renderedMarkdownCases = [
+  [
+    "shell-param",
+    mdShellParam(sec),
+    ["`SECONDS`", "d:p", "_Category:_ Shell Parameter"],
+  ],
+  [
+    "builtin",
+    mdBuiltin(bi),
+    ["`echo`", "```zsh", "echo [ -n ] [ arg ... ]", "d:bi"],
+  ],
+  ["precmd", mdPrecmd(pc), ["`noglob`", "_Role:_ precommand modifier"]],
+  [
+    "redir",
+    mdRedir(rd),
+    ["`>>`", "```zsh", ">> word", "d:r", "_Category:_ Redirection"],
+  ],
+  [
+    "process-subst",
+    mdProcessSubst(sub),
+    ["`<(...)`", "d:ps", "_Category:_ Process Substitution"],
+  ],
+  [
+    "reserved-word",
+    mdReservedWord(word),
+    ["`if`", "d:rw", "_Role:_ reserved word (command position)"],
+  ],
+] as const
+
+const stubMarkdownCases = [
+  ["subscript-flag", mdSubscriptFlag(sflag("(w)", "d:sf")), ["TBD"]],
+  ["param-flag", mdParamFlag(pflag("(U)", "d:pf")), ["TBD"]],
+  ["history", mdHistory(hist("!!", "event-designator", "d:h")), ["TBD"]],
+  ["glob-op", mdGlobOp(globOp("*", "d:g")), ["TBD"]],
+  ["glob-flag", mdGlobFlag(globFlag("i", "d:gf")), ["TBD"]],
+] as const
+
+const dumpCases = [
+  { file: "options.md", heading: "## AUTO_CD", snippet: "d:o" },
+  { file: "cond-ops.md", heading: "## -nt", snippet: "d:b" },
+  {
+    file: "shell-params.md",
+    heading: "## SECONDS",
+    snippet: "`SECONDS`",
+  },
+  { file: "builtins.md", heading: "## echo", snippet: "d:bi" },
+  { file: "precmds.md", heading: "## noglob", snippet: "d:pc" },
+  { file: "redirs.md", heading: "## >> word", snippet: "d:r" },
+  { file: "process-substs.md", heading: "## <(...)", snippet: "d:ps" },
+  { file: "reserved-words.md", heading: "## if", snippet: "d:rw" },
+  { file: "subscript-flags.md", heading: "## (w)", snippet: "TBD" },
+  { file: "param-flags.md", heading: "## (U)", snippet: "TBD" },
+  { file: "history.md", heading: "## !!", snippet: "TBD" },
+  { file: "glob-ops.md", heading: "## *", snippet: "TBD" },
+  { file: "glob-flags.md", heading: "## i", snippet: "TBD" },
+] as const
+
+describe("render markdown", () => {
   test("renders option markdown", () => {
-    has(mdOpt(cd), [
+    expectContainsAll(mdOpt(cd), [
       "`AUTO_CD`",
       "```zsh",
       "setopt auto_cd",
@@ -174,7 +295,7 @@ describe("hover markdown", () => {
     expect(
       fmtOptRefsInMd(
         "AUTO_CD AUTOCD NO_AUTO_CD NOAUTOCD",
-        mkHoverMdCtx([cd]).optNames,
+        mkMdCtx([cd]).optNames,
       ),
     ).toBe("**`AUTO_CD`** **`AUTOCD`** **`NO_AUTO_CD`** **`NOAUTOCD`**")
   })
@@ -190,7 +311,7 @@ describe("hover markdown", () => {
           "```",
           "AUTOCD",
         ].join("\n"),
-        mkHoverMdCtx([cd]).optNames,
+        mkMdCtx([cd]).optNames,
       ),
     ).toBe(
       [
@@ -205,46 +326,23 @@ describe("hover markdown", () => {
   })
 
   test("formats only known options", () => {
-    expect(
-      fmtOptRefsInMd("AUTO_CD CDPATH POSIX", mkHoverMdCtx([cd]).optNames),
-    ).toBe("**`AUTO_CD`** CDPATH POSIX")
+    expect(fmtOptRefsInMd("AUTO_CD CDPATH POSIX", mkMdCtx([cd]).optNames)).toBe(
+      "**`AUTO_CD`** CDPATH POSIX",
+    )
   })
 
   test("renders cond op markdown", () => {
-    expect(mdCond(cu)).toBe("`-a` *file*\n\nd:u")
-    expect(mdCond(cb)).toBe("*left* `-nt` *right*\n\nd:b")
+    expect(mdCondOp(cu)).toBe("`-a` *file*\n\nd:u")
+    expect(mdCondOp(cb)).toBe("*left* `-nt` *right*\n\nd:b")
   })
 
-  for (const [name, md, parts] of [
-    [
-      "param",
-      mdParam(sec),
-      ["`SECONDS`", "d:p", "_Category:_ Shell Parameter"],
-    ],
-    [
-      "builtin",
-      mdBuiltin(bi),
-      ["`echo`", "```zsh", "echo [ -n ] [ arg ... ]", "d:bi"],
-    ],
-    ["precmd", mdPrecmd(pc), ["`noglob`", "_Role:_ precommand modifier"]],
-    [
-      "redir",
-      mdRedir(rd),
-      ["`>>`", "```zsh", ">> word", "d:r", "_Category:_ Redirection"],
-    ],
-    [
-      "process-subst",
-      mdProcessSubst(sub),
-      ["`<(...)`", "d:ps", "_Category:_ Process Substitution"],
-    ],
-    [
-      "reserved-word",
-      mdReservedWord(word),
-      ["`if`", "d:rw", "_Role:_ reserved word (command position)"],
-    ],
-  ] as const) {
-    test(name, () => has(md, parts))
-  }
+  test.each(renderedMarkdownCases)("renders %s markdown", (_, md, parts) => {
+    expectContainsAll(md, parts)
+  })
+
+  test.each(stubMarkdownCases)("%s markdown is TBD", (_, md, parts) => {
+    expectContainsAll(md, parts)
+  })
 
   test("renders reserved-word with any position", () => {
     expect(
@@ -257,11 +355,11 @@ describe("hover markdown", () => {
     expect(defaultStateIn({ ...cd, defaultIn: ["ksh"] }, "zsh")).toBe("off")
   })
 
-  test("collects docs and sorts params", () => {
+  test("collects docs and sorts shell params", () => {
     expect(
-      hoverDocs({
+      refDocs({
         ...args(),
-        params: [sec, param("argv", "d:a")],
+        shellParams: [sec, param("argv", "d:a")],
         condOps: [cu],
         redirs: [],
         processSubsts: [],
@@ -270,14 +368,19 @@ describe("hover markdown", () => {
     ).toEqual([
       `option:${mkOptName("AUTO_CD")}`,
       "cond-op:-a",
-      "param:argv",
-      "param:SECONDS",
+      "shell-param:argv",
+      "shell-param:SECONDS",
       "builtin:echo",
       "precmd:noglob",
+      "subscript-flag:(w)",
+      "param-flag:(U)",
+      "history:!!",
+      "glob-op:*",
+      "glob-flag:i",
     ])
   })
 
-  test("keeps typed hover-doc ids separate from display headings", () => {
+  test("keeps typed ref-doc ids separate from display headings", () => {
     const docs = corpus()
     const option = docs.find((doc) => doc.kind === "option")
     expect(option?.id).toBe(mkOptName("AUTO_CD"))
@@ -286,24 +389,15 @@ describe("hover markdown", () => {
   })
 
   test("regression registry is easy to find", () => {
-    expect(hoverMdRegressions).toEqual([])
+    expect(mdRegressions).toEqual([])
   })
 })
 
-describe("hover dump", () => {
+describe("render dump", () => {
   test("renders per-kind dump files", () => {
     const files = dumpText(corpus({ condOps: [cb] }))
 
-    for (const [file, heading] of [
-      ["options.md", "## AUTO_CD"],
-      ["cond-ops.md", "## -nt"],
-      ["params.md", "## SECONDS"],
-      ["builtins.md", "## echo"],
-      ["precmds.md", "## noglob"],
-      ["redirs.md", "## >> word"],
-      ["process-substs.md", "## <(...)"],
-      ["reserved-words.md", "## if"],
-    ] as const) {
+    for (const { file, heading } of dumpCases) {
       expect(files.get(file)).toContain(heading)
       expect(files.get("all.md")).toContain(heading)
     }
@@ -312,20 +406,12 @@ describe("hover dump", () => {
   })
 
   test("writes dump files", async () => {
-    await withTmpDirAsync("better-zsh-hover-", async (dir) => {
-      await writeHoverDump(dir, corpus({ condOps: [cb] }))
+    await withTmpDirAsync("better-zsh-ref-", async (dir) => {
+      await writeRefDump(dir, corpus({ condOps: [cb] }))
 
-      for (const [file, snippet] of [
-        ["all.md", "## AUTO_CD"],
-        ["options.md", "d:o"],
-        ["cond-ops.md", "d:b"],
-        ["params.md", "`SECONDS`"],
-        ["builtins.md", "d:bi"],
-        ["precmds.md", "d:pc"],
-        ["redirs.md", "d:r"],
-        ["process-substs.md", "d:ps"],
-        ["reserved-words.md", "d:rw"],
-      ] as const) {
+      const all = readFileSync(join(dir, "all.md"), "utf8")
+      for (const { file, heading, snippet } of dumpCases) {
+        expect(all).toContain(heading)
         expect(readFileSync(join(dir, file), "utf8")).toContain(snippet)
       }
       expect(readFileSync(join(dir, "suspicious.md"), "utf8")).toBe("")
@@ -335,33 +421,52 @@ describe("hover dump", () => {
   describe("vendored docs", () => {
     const options = zd.getOptions()
     const condOps = zd.getCondOps()
-    const params = zd.getShellParams()
+    const shellParams = zd.getShellParams()
     const builtins = zd.getBuiltins()
     const precmds = zd.getPrecmds()
     const redirs = zd.getRedirections()
     const processSubsts = zd.getProcessSubsts()
     const reservedWords = zd.getReservedWords()
-    const docs = hoverDocs({
+    const subscriptFlags = zd.getSubscriptFlags()
+    const paramFlags = zd.getParamFlags()
+    const history = zd.getHistoryDocs()
+    const globOps = zd.getGlobOps()
+    const globFlags = zd.getGlobbingFlags()
+    const docs = refDocs({
       options,
       condOps,
-      params,
+      shellParams,
       builtins,
       precmds,
       redirs,
       processSubsts,
       reservedWords,
+      subscriptFlags,
+      paramFlags,
+      history,
+      globOps,
+      globFlags,
     })
     const files = dumpText(docs)
 
     for (const { kind, file, src } of [
       { kind: "option", file: "options.md", src: options },
       { kind: "cond-op", file: "cond-ops.md", src: condOps },
-      { kind: "param", file: "params.md", src: params },
+      { kind: "shell-param", file: "shell-params.md", src: shellParams },
       { kind: "builtin", file: "builtins.md", src: builtins },
       { kind: "precmd", file: "precmds.md", src: precmds },
       { kind: "redir", file: "redirs.md", src: redirs },
       { kind: "process-subst", file: "process-substs.md", src: processSubsts },
       { kind: "reserved-word", file: "reserved-words.md", src: reservedWords },
+      {
+        kind: "subscript-flag",
+        file: "subscript-flags.md",
+        src: subscriptFlags,
+      },
+      { kind: "param-flag", file: "param-flags.md", src: paramFlags },
+      { kind: "history", file: "history.md", src: history },
+      { kind: "glob-op", file: "glob-ops.md", src: globOps },
+      { kind: "glob-flag", file: "glob-flags.md", src: globFlags },
     ] as const) {
       test(`${file} covers ${kind}`, () => {
         expect(docs.filter((doc) => doc.kind === kind)).toHaveLength(src.length)
@@ -373,6 +478,7 @@ describe("hover dump", () => {
       for (const file of [
         "options.md",
         "cond-ops.md",
+        "shell-params.md",
         "builtins.md",
         "precmds.md",
         "redirs.md",
@@ -403,7 +509,7 @@ describe("hover dump", () => {
       const md = mdOpt(
         // biome-ignore lint/style/noNonNullAssertion: asserted above
         cdSilent!,
-        mkHoverMdCtx(options),
+        mkMdCtx(options),
       )
       expect(md).toContain("**`AUTO_CD`**")
       expect(md).toContain("**`PUSHD_SILENT`**")

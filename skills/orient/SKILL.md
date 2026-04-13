@@ -44,12 +44,13 @@ These describe **which directories** to look in, not specific files. Use the dis
 2. `packages/vscode-better-zsh/src/` — the semantic token provider (consumes facts from the analysis layer)
 3. Tests: `packages/zsh-core/src/test/analysis/` — behavioral contract and known limitations (check the bottom of the cmd-position test for a "Known limitations" comment block)
 
-### zsh-core: Yodl parsing / hover docs
+### zsh-core: Yodl parsing / rendered docs
 1. `packages/zsh-core/src/yodl/core/` — shared Yodl machinery: macro-node parsing, structural extraction, and text/token rendering
 2. `packages/zsh-core/src/yodl/docs/` — corpus-specific extractors that map the shared Yodl representation to zsh doc records
-3. `packages/zsh-core/src/` root — hover markdown rendering and runtime loaders
-4. Tests: `packages/zsh-core/src/test/yodl/`
-5. Inspect parsed build artifacts: `ls packages/zsh-core/dist/json/` (generated at build time; useful for inspection, but the extension's live runtime path currently reads copied `.yo` data)
+3. `packages/zsh-core/src/render/` — markdown rendering, rendered-reference corpus assembly, and dump helpers
+4. `packages/zsh-core/src/` root — runtime loaders
+5. Tests: `packages/zsh-core/src/test/yodl/` and `packages/zsh-core/src/test/render/`
+6. Inspect parsed build artifacts: `ls packages/zsh-core/dist/json/` (generated at build time; useful for inspection, but the extension's live runtime path currently reads copied `.yo` data)
 
 ### extension: providers (hover, completions, semantic tokens, etc.)
 1. `packages/vscode-better-zsh/src/` — each provider is a separate file; run `bash ./scripts/providers.sh` to see them all

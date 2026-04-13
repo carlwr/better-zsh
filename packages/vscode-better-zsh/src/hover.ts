@@ -35,16 +35,16 @@ import {
   syntacticContext,
 } from "zsh-core"
 import {
-  type HoverMdCtx,
+  type MdCtx,
   mdBuiltin,
-  mdCond,
+  mdCondOp,
   mdOpt,
-  mdParam,
   mdPrecmd,
   mdProcessSubst,
   mdRedir,
   mdReservedWord,
-  mkHoverMdCtx,
+  mdShellParam,
+  mkMdCtx,
 } from "zsh-core/render"
 import { activeWordRangeAt, commentStart, funcDocs } from "./funcs"
 
@@ -54,7 +54,7 @@ interface OptFlagHit {
 }
 
 export class HoverProvider implements vscode.HoverProvider {
-  private md: HoverMdCtx
+  private ctx: MdCtx
   private builtinMap: Map<BuiltinName, BuiltinDoc> | undefined
   private paramMap: Map<ShellParamName, ShellParamDoc> | undefined
   private optionMap: Map<OptName, ZshOption> | undefined
@@ -75,7 +75,7 @@ export class HoverProvider implements vscode.HoverProvider {
     processSubstDocs?: readonly ProcessSubstDoc[],
     reservedWordDocs?: readonly ReservedWordDoc[],
   ) {
-    this.md = mkHoverMdCtx(options)
+    this.ctx = mkMdCtx(options)
     if (builtins) {
       this.builtinMap = new Map(
         builtins.map((builtin) => [builtin.name, builtin]),
@@ -137,11 +137,7 @@ export class HoverProvider implements vscode.HoverProvider {
     const range = activeTokenRangeAt(doc, pos)
     if (!range) return
     const opt = this.optionAt(doc.getText(range))
-    if (opt)
-      return new vscode.Hover(
-        new vscode.MarkdownString(mdOpt(opt, this.md)),
-        range,
-      )
+    if (opt) return this.mkHover(mdOpt(opt, this.ctx), range)
   }
 
   private condHover(doc: vscode.TextDocument, pos: vscode.Position) {
@@ -151,11 +147,7 @@ export class HoverProvider implements vscode.HoverProvider {
     if (!range) return
     const op = mkCondOp(doc.getText(range))
     const cop = this.condOpMap.get(op)
-    if (cop)
-      return new vscode.Hover(
-        new vscode.MarkdownString(mdCond(cop, this.md)),
-        range,
-      )
+    if (cop) return this.mkHover(mdCondOp(cop, this.ctx), range)
   }
 
   private funcHover(doc: vscode.TextDocument, pos: vscode.Position) {
@@ -174,8 +166,7 @@ export class HoverProvider implements vscode.HoverProvider {
     if (!range) return
     const w = doc.getText(range)
     const param = this.paramMap.get(mkShellParamName(w))
-    if (param)
-      return new vscode.Hover(new vscode.MarkdownString(mdParam(param)))
+    if (param) return this.mkHover(mdShellParam(param))
   }
 
   private factBasedHover(doc: vscode.TextDocument, pos: vscode.Position) {
@@ -193,11 +184,7 @@ export class HoverProvider implements vscode.HoverProvider {
       : undefined
     if (precmd) {
       const d = this.precmdMap?.get(precmd.name)
-      if (d)
-        return new vscode.Hover(
-          new vscode.MarkdownString(mdPrecmd(d)),
-          tokenRange,
-        )
+      if (d) return this.mkHover(mdPrecmd(d), tokenRange)
     }
 
     const head = token
@@ -209,11 +196,7 @@ export class HoverProvider implements vscode.HoverProvider {
       : undefined
     if (head) {
       const d = this.builtinMap?.get(mkBuiltinName(head.text))
-      if (d)
-        return new vscode.Hover(
-          new vscode.MarkdownString(mdBuiltin(d)),
-          tokenRange,
-        )
+      if (d) return this.mkHover(mdBuiltin(d), tokenRange)
     }
 
     const redir = af.find((fact): fact is RedirFact => fact.kind === "redir")
@@ -221,11 +204,7 @@ export class HoverProvider implements vscode.HoverProvider {
       const redirRange = activeRedirRangeAt(doc, pos, redir)
       const redirToken = redirRange ? doc.getText(redirRange) : undefined
       const d = redirToken ? redirDoc(this.redirMap, redirToken) : undefined
-      if (d && redirRange)
-        return new vscode.Hover(
-          new vscode.MarkdownString(mdRedir(d)),
-          redirRange,
-        )
+      if (d && redirRange) return this.mkHover(mdRedir(d), redirRange)
     }
 
     const ps = af.find(
@@ -235,11 +214,7 @@ export class HoverProvider implements vscode.HoverProvider {
       const prefix = ps.text.slice(0, 2)
       const opKey = `${prefix}...)` as ProcessSubstOp
       const d = this.processSubstMap?.get(opKey)
-      if (d)
-        return new vscode.Hover(
-          new vscode.MarkdownString(mdProcessSubst(d)),
-          tokenRange,
-        )
+      if (d) return this.mkHover(mdProcessSubst(d), tokenRange)
     }
 
     const rw = token
@@ -251,11 +226,7 @@ export class HoverProvider implements vscode.HoverProvider {
       : undefined
     if (rw) {
       const d = this.reservedWordMap?.get(mkReservedWord(rw.text))
-      if (d)
-        return new vscode.Hover(
-          new vscode.MarkdownString(mdReservedWord(d)),
-          tokenRange,
-        )
+      if (d) return this.mkHover(mdReservedWord(d), tokenRange)
     }
   }
 
@@ -269,6 +240,10 @@ export class HoverProvider implements vscode.HoverProvider {
       .get(mkOptFlagChar(short[2]))
       ?.filter((hit) => hit.alias.on === short[1])
     return unique(hits)?.opt
+  }
+
+  private mkHover(md: string, range?: vscode.Range) {
+    return new vscode.Hover(new vscode.MarkdownString(md), range)
   }
 }
 

@@ -17,9 +17,9 @@ import {
 } from "zsh-core"
 import {
   mdBuiltin,
-  mdParam,
   mdPrecmd,
   mdReservedWord,
+  mdShellParam,
   sigCond,
 } from "zsh-core/render"
 import { asyncDocCache } from "./cache"
@@ -47,49 +47,33 @@ export class CompletionProvider implements vscode.CompletionItemProvider {
   constructor(data: CompletionData) {
     this.general = [
       ...data.builtins
-        .filter((doc) => WORD_EXACT.test(doc.name))
-        .map((doc) => {
-          const item = new vscode.CompletionItem(
-            doc.name,
-            vscode.CompletionItemKind.Keyword,
-          )
-          item.detail = doc.desc
-          item.documentation = new vscode.MarkdownString(mdBuiltin(doc))
-          return item
-        }),
+        .filter(isWordName)
+        .map((doc) =>
+          mkCompletionItem(doc, vscode.CompletionItemKind.Keyword, mdBuiltin),
+        ),
       ...data.reservedWords
-        .filter((doc) => WORD_EXACT.test(doc.name))
-        .map((doc) => {
-          const item = new vscode.CompletionItem(
-            doc.name,
+        .filter(isWordName)
+        .map((doc) =>
+          mkCompletionItem(
+            doc,
             vscode.CompletionItemKind.Keyword,
-          )
-          item.detail = doc.desc
-          item.documentation = new vscode.MarkdownString(mdReservedWord(doc))
-          return item
-        }),
+            mdReservedWord,
+          ),
+        ),
       ...data.precmds
-        .filter((doc) => WORD_EXACT.test(doc.name))
-        .map((doc) => {
-          const item = new vscode.CompletionItem(
-            doc.name,
-            vscode.CompletionItemKind.Keyword,
-          )
-          item.detail = doc.desc
-          item.documentation = new vscode.MarkdownString(mdPrecmd(doc))
-          return item
-        }),
+        .filter(isWordName)
+        .map((doc) =>
+          mkCompletionItem(doc, vscode.CompletionItemKind.Keyword, mdPrecmd),
+        ),
       ...data.params
-        .filter((doc) => WORD_EXACT.test(doc.name))
-        .map((doc) => {
-          const item = new vscode.CompletionItem(
-            doc.name,
+        .filter(isWordName)
+        .map((doc) =>
+          mkCompletionItem(
+            doc,
             vscode.CompletionItemKind.Variable,
-          )
-          item.detail = doc.desc
-          item.documentation = new vscode.MarkdownString(mdParam(doc))
-          return item
-        }),
+            mdShellParam,
+          ),
+        ),
     ]
     this.options = data.options.map((opt) => opt.name)
     this.optionMap = new Map(data.options.map((o) => [o.name, o]))
@@ -152,4 +136,19 @@ export class CompletionProvider implements vscode.CompletionItemProvider {
     })
     return new vscode.CompletionList(items, false)
   }
+}
+
+function isWordName<T extends { name: string }>(doc: T): boolean {
+  return WORD_EXACT.test(doc.name)
+}
+
+function mkCompletionItem<T extends { name: string; desc: string }>(
+  doc: T,
+  kind: vscode.CompletionItemKind,
+  md: (doc: T) => string,
+): vscode.CompletionItem {
+  const item = new vscode.CompletionItem(doc.name, kind)
+  item.detail = doc.desc
+  item.documentation = new vscode.MarkdownString(md(doc))
+  return item
 }

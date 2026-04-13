@@ -1,38 +1,44 @@
-import type { HoverKind } from "./hover-docs.ts"
-import { mkOptLookupName, type OptName } from "./types/brand.ts"
+import { mkOptLookupName, type OptName } from "../types/brand.ts"
 import type {
   BuiltinDoc,
   CondOpDoc,
   Emulation,
+  GlobbingFlagDoc,
+  GlobOpDoc,
+  HistoryDoc,
   OptFlagAlias,
   OptFlagSign,
   OptState,
+  ParamFlagDoc,
   PrecmdDoc,
   ProcessSubstDoc,
   RedirDoc,
   ReservedWordDoc,
   ShellParamDoc,
+  SubscriptFlagDoc,
   ZshOption,
-} from "./types/zsh-data.ts"
+} from "../types/zsh-data.ts"
+import type { RefKind } from "./refs.ts"
 
 /** Known markdown/rendering regression marker for QA. */
-export interface HoverRegression {
-  readonly kind: HoverKind
+export interface MdRegression {
+  readonly kind: RefKind
   readonly id: string
   readonly note: string
 }
 
 /** Shared formatter context for markdown generation. */
-export interface HoverMdCtx {
+export interface MdCtx {
   readonly optNames: ReadonlySet<OptName>
 }
 
 /** Known markdown/rendering regressions tracked for QA (add entries as they are discovered). */
-export const hoverMdRegressions: readonly HoverRegression[] = []
+export const mdRegressions: readonly MdRegression[] = []
 
-const emptyHoverMdCtx: Readonly<{ optNames: ReadonlySet<OptName> }> = {
+const emptyMdCtx: Readonly<{ optNames: ReadonlySet<OptName> }> = {
   optNames: Object.freeze(new Set<OptName>()),
 }
+const TBD = "TBD"
 const OPT_REF_RE = /\b(?:NO_?)?[A-Z][A-Z0-9_]*\b/g
 const inlineCodeRe = /(`[^`\n]+`)/
 
@@ -44,13 +50,13 @@ function strong(s: string): string {
   return `**${s}**`
 }
 
-const hoverFmt = {
+const mdFmt = {
   code,
   optRef: (s: string) => strong(code(s)),
 }
 
 /** Build formatter context from the available option set. */
-export function mkHoverMdCtx(options: readonly ZshOption[] = []): HoverMdCtx {
+export function mkMdCtx(options: readonly ZshOption[] = []): MdCtx {
   return { optNames: new Set(options.map((opt) => opt.name)) }
 }
 
@@ -75,11 +81,8 @@ export function fmtOptRefsInMd(
 }
 
 /** Render one option doc block as markdown. */
-export function mdOpt(
-  opt: ZshOption,
-  ctx: HoverMdCtx = emptyHoverMdCtx,
-): string {
-  const title = hoverFmt.code(opt.display)
+export function mdOpt(opt: ZshOption, ctx: MdCtx = emptyMdCtx): string {
+  const title = mdFmt.code(opt.display)
   const long = opt.display.toLowerCase()
   const defaultLine = `**Default in zsh: \`${defaultStateIn(opt, "zsh")}\`**`
   // Keep the preamble to executable zsh forms; status/context lines read better outside it.
@@ -100,45 +103,66 @@ export function mdOpt(
 /** Render a compact signature line for a conditional operator. */
 export function sigCond(cop: CondOpDoc): string {
   return cop.arity === "unary"
-    ? `${hoverFmt.code(cop.op as string)} *${cop.operands[0]}*`
-    : `*${cop.operands[0]}* ${hoverFmt.code(cop.op as string)} *${cop.operands[1]}*`
+    ? `${mdFmt.code(cop.op as string)} *${cop.operands[0]}*`
+    : `*${cop.operands[0]}* ${mdFmt.code(cop.op as string)} *${cop.operands[1]}*`
 }
 
 /** Render one conditional-operator doc block as markdown. */
-export function mdCond(
-  cop: CondOpDoc,
-  ctx: HoverMdCtx = emptyHoverMdCtx,
-): string {
+export function mdCondOp(cop: CondOpDoc, ctx: MdCtx = emptyMdCtx): string {
   return docBlock(sigCond(cop), fmtOptRefsInMd(cop.desc, ctx.optNames))
 }
 
 /** Render one shell-parameter doc block as markdown. */
-export function mdParam(doc: ShellParamDoc): string {
+export function mdShellParam(doc: ShellParamDoc): string {
   return docBlock(
-    hoverFmt.code(doc.name),
+    mdFmt.code(doc.name),
     doc.desc,
-    ...(doc.tied ? [`_Tied with:_ ${hoverFmt.code(doc.tied)}`] : []),
+    ...(doc.tied ? [`_Tied with:_ ${mdFmt.code(doc.tied)}`] : []),
     "_Category:_ Shell Parameter",
   )
+}
+
+/** Render one parameter-expansion flag doc block as markdown. */
+export function mdParamFlag(_doc: ParamFlagDoc): string {
+  return TBD
+}
+
+/** Render one subscript flag doc block as markdown. */
+export function mdSubscriptFlag(_doc: SubscriptFlagDoc): string {
+  return TBD
+}
+
+/** Render one history-expansion doc block as markdown. */
+export function mdHistory(_doc: HistoryDoc): string {
+  return TBD
+}
+
+/** Render one globbing-operator doc block as markdown. */
+export function mdGlobOp(_doc: GlobOpDoc): string {
+  return TBD
+}
+
+/** Render one globbing-flag doc block as markdown. */
+export function mdGlobFlag(_doc: GlobbingFlagDoc): string {
+  return TBD
 }
 
 /** Render one builtin doc block as markdown. */
 export function mdBuiltin(doc: BuiltinDoc): string {
   const out = [
-    hoverFmt.code(doc.name as string),
+    mdFmt.code(doc.name as string),
     codeBlock("zsh", ...doc.synopsis),
     doc.desc,
   ]
-  if (doc.aliasOf)
-    out.push(`_Alias of:_ ${hoverFmt.code(doc.aliasOf as string)}`)
-  if (doc.module) out.push(`_Module:_ ${hoverFmt.code(doc.module)}`)
+  if (doc.aliasOf) out.push(`_Alias of:_ ${mdFmt.code(doc.aliasOf as string)}`)
+  if (doc.module) out.push(`_Module:_ ${mdFmt.code(doc.module)}`)
   return docBlock(...out)
 }
 
 /** Render one precommand doc block as markdown. */
 export function mdPrecmd(doc: PrecmdDoc): string {
   return docBlock(
-    hoverFmt.code(doc.name),
+    mdFmt.code(doc.name),
     codeBlock("zsh", ...doc.synopsis),
     doc.desc,
     "_Role:_ precommand modifier",
@@ -148,7 +172,7 @@ export function mdPrecmd(doc: PrecmdDoc): string {
 /** Render one redirection doc block as markdown. */
 export function mdRedir(doc: RedirDoc): string {
   return docBlock(
-    hoverFmt.code(doc.groupOp),
+    mdFmt.code(doc.groupOp),
     codeBlock("zsh", doc.sig),
     doc.desc,
     "_Category:_ Redirection",
@@ -158,7 +182,7 @@ export function mdRedir(doc: RedirDoc): string {
 /** Render one process-substitution doc block as markdown. */
 export function mdProcessSubst(doc: ProcessSubstDoc): string {
   return docBlock(
-    hoverFmt.code(doc.op),
+    mdFmt.code(doc.op),
     doc.desc,
     "_Category:_ Process Substitution",
   )
@@ -167,7 +191,7 @@ export function mdProcessSubst(doc: ProcessSubstDoc): string {
 /** Render one reserved-word doc block as markdown. */
 export function mdReservedWord(doc: ReservedWordDoc): string {
   return docBlock(
-    hoverFmt.code(doc.name),
+    mdFmt.code(doc.name),
     doc.desc,
     `_Role:_ reserved word (${doc.pos === "command" ? "command position" : "any position"})`,
   )
@@ -209,7 +233,7 @@ function fmtOptRefsInText(
 ): string {
   return text.replace(OPT_REF_RE, (raw, offset, whole) => {
     if (isShellParameterRef(whole, offset)) return raw
-    return optNames.has(mkOptLookupName(raw)) ? hoverFmt.optRef(raw) : raw
+    return optNames.has(mkOptLookupName(raw)) ? mdFmt.optRef(raw) : raw
   })
 }
 
