@@ -3,6 +3,10 @@
   "description": "Structured zsh reference data parsed from official zsh documentation + analysis APIs",
   "version": "0.0.1",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/carlwr/better-zsh"
+  },
   "main": "./dist/index.js",
   "types": "./dist/types/index.d.ts",
   "files": [
@@ -51,10 +55,6 @@
     "./data/glob-flags.json": "./dist/json/glob-flags.json",
     "./data/process-substs.json": "./dist/json/process-substs.json",
     "./package.json": "./package.json"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/carlwr/vscode-better-zsh"
   },
   "scripts": {
     "build": "tsx build.ts && node scripts/build-api.mjs",

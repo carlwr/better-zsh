@@ -167,11 +167,13 @@ Semantic token design choices:
 - **Reproducibility is important: any randomness must use a fixed, checked-in seed.**
 - Property-based tests are encouraged where appropriate (e.g. pure parsers)
 
-### Validation before returning to user
+### ONLY if you edited code: _validation before returning to user_
 
 - Before presenting results, run: `pnpm check && pnpm test && pnpm test:smoke && pnpm vsix && pnpm test:integration &>/dev/null`
 - If any step fails, attempt to fix and re-run — don't return with known failures
 - Any build script whose name includes "INTERACTIVE" are **excluded** from this loop — only run when user explicitly requests it
+
+**If you have only answered questions, or written only documentation/non-code files, _do not run any tests_** (unless the user explicitly asks for it).
 
 ### Rules
 

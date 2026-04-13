@@ -2,17 +2,17 @@
   "name": "better-zsh",
   "displayName": "Better Zsh",
   "description": "Improved zsh shellscript code editing experience",
+  "version": "0.0.1",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/carlwr/better-zsh"
+  },
   "author": {
     "name": "carlwr",
     "url": "https://github.com/carlwr"
   },
   "publisher": "carlwr",
-  "version": "0.0.1",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/carlwr/vscode-better-zsh"
-  },
   "engines": {
     "vscode": "^1.96.0"
   },
