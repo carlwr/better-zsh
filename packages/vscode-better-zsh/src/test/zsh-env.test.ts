@@ -9,6 +9,19 @@ import {
   zshTokenize,
 } from "../zsh"
 
+const def = () => parseZshPath("")
+
+async function expectGated(cfg: ZshPathConfig) {
+  configureZsh(cfg)
+  try {
+    assert.strictEqual(await zshAvailable(), false)
+    assert.deepStrictEqual(await zshTokenize("echo hi"), [])
+    assert.deepStrictEqual(await zshCheck("if"), { ok: "unavailable" })
+  } finally {
+    configureZsh(def())
+  }
+}
+
 suite("buildZshEnv", () => {
   test("keeps execution basics and drops startup hooks", () => {
     const env = buildZshEnv(
@@ -45,34 +58,33 @@ suite("buildZshEnv", () => {
 })
 
 suite("parseZshPath", () => {
-  test("off → disabled", () => {
-    assert.deepStrictEqual(parseZshPath("off"), { kind: "disabled" })
-  })
-
-  test("empty → default with 'zsh' binary", () => {
-    const r = parseZshPath("")
-    assert.strictEqual(r.kind, "default")
-    assert.strictEqual((r as { binary: string }).binary, "zsh")
-  })
-
-  test("explicit path → explicit", () => {
-    const r = parseZshPath("/usr/local/bin/zsh")
-    assert.strictEqual(r.kind, "explicit")
-    assert.strictEqual((r as { binary: string }).binary, "/usr/local/bin/zsh")
-  })
-
-  test("relative explicit path → invalid", () => {
-    assert.deepStrictEqual(parseZshPath("./zsh"), {
-      kind: "invalid",
-      raw: "./zsh",
-      reason: "relative",
+  for (const [name, raw, want] of [
+    ["off → disabled", "off", { kind: "disabled" }],
+    [
+      "empty → default with 'zsh' binary",
+      "",
+      { kind: "default", binary: "zsh" },
+    ],
+    [
+      "explicit path → explicit",
+      "/usr/local/bin/zsh",
+      { kind: "explicit", binary: "/usr/local/bin/zsh" },
+    ],
+    [
+      "relative explicit path → invalid",
+      "./zsh",
+      { kind: "invalid", raw: "./zsh", reason: "relative" },
+    ],
+    [
+      "relative explicit path → invalid (nested)",
+      "bin/zsh",
+      { kind: "invalid", raw: "bin/zsh", reason: "relative" },
+    ],
+  ] as const) {
+    test(name, () => {
+      assert.deepStrictEqual(parseZshPath(raw), want)
     })
-    assert.deepStrictEqual(parseZshPath("bin/zsh"), {
-      kind: "invalid",
-      raw: "bin/zsh",
-      reason: "relative",
-    })
-  })
+  }
 })
 
 suite("zsh mode gating", () => {
@@ -87,55 +99,28 @@ suite("zsh mode gating", () => {
     binary: mkZshBinary("/nonexistent/zsh-binary"),
   }
 
-  test("disabled config gates runtime features", async () => {
-    configureZsh(disabled)
-    try {
-      assert.strictEqual(await zshAvailable(), false)
-      assert.deepStrictEqual(await zshTokenize("echo hi"), [])
-      assert.deepStrictEqual(await zshCheck("if"), { ok: "unavailable" })
-    } finally {
-      configureZsh(parseZshPath(""))
-    }
-  })
-
-  test("explicit non-existent path gates runtime features", async () => {
-    configureZsh(explicitBad)
-    try {
-      assert.strictEqual(await zshAvailable(), false)
-      assert.deepStrictEqual(await zshTokenize("echo hi"), [])
-      assert.deepStrictEqual(await zshCheck("if"), { ok: "unavailable" })
-    } finally {
-      configureZsh(parseZshPath(""))
-    }
-  })
-
-  test("invalid relative path gates runtime features", async () => {
-    configureZsh(invalidRelative)
-    try {
-      assert.strictEqual(await zshAvailable(), false)
-      assert.deepStrictEqual(await zshTokenize("echo hi"), [])
-      assert.deepStrictEqual(await zshCheck("if"), { ok: "unavailable" })
-    } finally {
-      configureZsh(parseZshPath(""))
-    }
-  })
+  for (const [name, cfg] of [
+    ["disabled config gates runtime features", disabled],
+    ["explicit non-existent path gates runtime features", explicitBad],
+    ["invalid relative path gates runtime features", invalidRelative],
+  ] as const) {
+    test(name, async () => {
+      await expectGated(cfg)
+    })
+  }
 
   test("empty PATH gates runtime features", async () => {
     const origPath = process.env.PATH
     process.env.PATH = ""
-    configureZsh(parseZshPath(""))
     try {
-      assert.strictEqual(await zshAvailable(), false)
-      assert.deepStrictEqual(await zshTokenize("echo hi"), [])
-      assert.deepStrictEqual(await zshCheck("if"), { ok: "unavailable" })
+      await expectGated(def())
     } finally {
       process.env.PATH = origPath
-      configureZsh(parseZshPath(""))
     }
   })
 
   test("reports syntax errors when zsh is available", async () => {
-    configureZsh(parseZshPath(""))
+    configureZsh(def())
     if (!(await zshAvailable())) return
     const r = await zshCheck("echo hello\nif then\necho world\n")
     assert.strictEqual(r.ok, false)

@@ -19,31 +19,22 @@ vi.mock("vscode", () => ({
 }))
 
 import { commentStart, funcDecls, funcDocs, wordMatches } from "../funcs"
-
-let id = 0
-
-function doc(text: string) {
-  const lines = text.split("\n")
-  return {
-    uri: { toString: () => `test://doc/${id++}` },
-    version: 1,
-    lineCount: lines.length,
-    lineAt(i: number) {
-      return { text: lines[i] ?? "" }
-    },
-  } as import("vscode").TextDocument
-}
+import { lineDoc } from "./test-util"
 
 suite("funcs", () => {
   test("commentStart skips quoted hashes", () => {
-    assert.strictEqual(commentStart(`echo "# nope" # yep`), 14)
-    assert.strictEqual(commentStart("echo '# nope'"), undefined)
-    assert.strictEqual(commentStart("echo \\# nope"), undefined)
+    for (const [src, want] of [
+      [`echo "# nope" # yep`, 14],
+      ["echo '# nope'", undefined],
+      ["echo \\# nope", undefined],
+    ] as const) {
+      assert.strictEqual(commentStart(src), want)
+    }
   })
 
   test("wordMatches skip comments keep strings", () => {
     const ranges = wordMatches(
-      doc(
+      lineDoc(
         ["foo() {", '  echo "foo"', "}", "foo", "# foo", "echo x # foo"].join(
           "\n",
         ),
@@ -61,7 +52,7 @@ suite("funcs", () => {
   })
 
   test("funcDecls and docs", () => {
-    const got = doc(
+    const got = lineDoc(
       ["# doc", "alpha() {", "}", "", "# beta", "function beta {", "}"].join(
         "\n",
       ),
@@ -70,7 +61,12 @@ suite("funcs", () => {
       funcDecls(got).map((f) => f.name),
       ["alpha", "beta"],
     )
-    assert.strictEqual(funcDocs(got).get("alpha"), "doc")
-    assert.strictEqual(funcDocs(got).get("beta"), "beta")
+    assert.deepStrictEqual(
+      [...funcDocs(got)],
+      [
+        ["alpha", "doc"],
+        ["beta", "beta"],
+      ],
+    )
   })
 })

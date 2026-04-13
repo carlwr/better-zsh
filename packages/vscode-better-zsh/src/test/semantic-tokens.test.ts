@@ -1,5 +1,6 @@
 import * as assert from "node:assert"
 import { vi } from "vitest"
+import { lineDoc } from "./test-util"
 
 type Token = {
   line: number
@@ -32,21 +33,11 @@ vi.mock("vscode", () => ({
 
 import { SemanticTokensProvider } from "../semantic-tokens"
 
-function doc(text: string) {
-  const lines = text.split("\n")
-  return {
-    lineCount: lines.length,
-    lineAt(i: number) {
-      return { text: lines[i] ?? "" }
-    },
-  } as import("vscode").TextDocument
-}
-
-function tokens(text: string, builtins: string[]) {
+function tokens(text: string, builtins: readonly string[]) {
   const lines = text.split("\n")
   return (
-    new SemanticTokensProvider(builtins).provideDocumentSemanticTokens(
-      doc(text),
+    new SemanticTokensProvider([...builtins]).provideDocumentSemanticTokens(
+      lineDoc(text),
     ) as unknown as Token[]
   ).map((t) => ({
     word: lines[t.line]?.slice(t.start, t.start + t.length) ?? "",
@@ -54,142 +45,62 @@ function tokens(text: string, builtins: string[]) {
   }))
 }
 
-function builtinWords(text: string, builtins: string[]) {
+function builtinWords(text: string, builtins: readonly string[]) {
   return tokens(text, builtins)
     .filter((t) => t.type === 0)
     .map((t) => t.word)
 }
 
+const kw = (word: string) => ({ word, type: 1 })
+const bi = (word: string) => ({ word, type: 0 })
+
 suite("SemanticTokensProvider", () => {
-  test("marks builtin commands", () => {
-    assert.deepStrictEqual(
-      builtinWords("echo hi\nread var", ["echo", "read"]),
-      ["echo", "read"],
-    )
-  })
-
-  test("skips for-loop variables even if they are builtins", () => {
-    assert.deepStrictEqual(
-      builtinWords("for r in one two; do echo $r; done", ["r", "echo"]),
-      ["echo"],
-    )
-  })
-
-  test("skips function names in definitions even if they are builtins", () => {
-    assert.deepStrictEqual(
-      builtinWords("a() uname -a\nr() uname -a\ns() uname -a", ["r", "uname"]),
+  for (const [text, builtins, want] of [
+    ["echo hi\nread var", ["echo", "read"], ["echo", "read"]],
+    ["for r in one two; do echo $r; done", ["r", "echo"], ["echo"]],
+    [
+      "a() uname -a\nr() uname -a\ns() uname -a",
+      ["r", "uname"],
       ["uname", "uname", "uname"],
-    )
-  })
+    ],
+    ["print ${var[(a)1]} ${var[(r)1]} ${var[(s)1]}", ["print", "r"], ["print"]],
+    ["[ -d /tmp ] && echo OK", ["[", "echo"], ["echo"]],
+    ["noglob builtin echo hi", ["builtin", "echo"], ["echo"]],
+    ["command echo hi", ["command", "echo"], []],
+    ["f() { echo }", ["echo"], ["echo"]],
+    ["echo hi | read var", ["echo", "read"], ["echo", "read"]],
+    ["echo hi && fc", ["echo", "fc"], ["echo", "fc"]],
+    ["echo hi || fc", ["echo", "fc"], ["echo", "fc"]],
+    ["if ((1)) { fc; }", ["fc"], ["fc"]],
+    ["if ((1)) fc", ["fc"], ["fc"]],
+  ] as const) {
+    test(text, () => {
+      assert.deepStrictEqual(builtinWords(text, builtins), want)
+    })
+  }
 
-  test("skips builtin names inside parameter expansion flags", () => {
-    assert.deepStrictEqual(
-      builtinWords("print ${var[(a)1]} ${var[(r)1]} ${var[(s)1]}", [
-        "print",
-        "r",
-      ]),
-      ["print"],
-    )
-  })
-
-  test("does not mark [ as a builtin in test syntax", () => {
-    assert.deepStrictEqual(
-      builtinWords("[ -d /tmp ] && echo OK", ["[", "echo"]),
+  for (const [text, builtins, want] of [
+    [
+      "if true; then echo hi; fi",
       ["echo"],
-    )
-  })
-
-  test("marks builtin after builtin-style precommand modifiers", () => {
-    assert.deepStrictEqual(
-      builtinWords("noglob builtin echo hi", ["builtin", "echo"]),
+      [kw("if"), kw("then"), bi("echo"), kw("fi")],
+    ],
+    [
+      "for x in a b; do\n  echo $x\ndone",
       ["echo"],
-    )
-  })
-
-  test("does not mark target after command precommand modifier", () => {
-    assert.deepStrictEqual(
-      builtinWords("command echo hi", ["command", "echo"]),
-      [],
-    )
-  })
-
-  test("marks reserved words as keyword tokens", () => {
-    const result = tokens("if true; then echo hi; fi", ["echo"])
-    assert.deepStrictEqual(result, [
-      { word: "if", type: 1 },
-      { word: "then", type: 1 },
-      { word: "echo", type: 0 },
-      { word: "fi", type: 1 },
-    ])
-  })
-
-  test("marks reserved words on separate lines", () => {
-    const result = tokens("for x in a b; do\n  echo $x\ndone", ["echo"])
-    assert.deepStrictEqual(result, [
-      { word: "for", type: 1 },
-      { word: "do", type: 1 },
-      { word: "echo", type: 0 },
-      { word: "done", type: 1 },
-    ])
-  })
-
-  test("does not mark function-body braces as keyword tokens", () => {
-    const result = tokens("f() { echo; }", ["echo"])
-    assert.deepStrictEqual(result, [{ word: "echo", type: 0 }])
-  })
-
-  test("marks builtins in function body without semicolon", () => {
-    assert.deepStrictEqual(builtinWords("f() { echo }", ["echo"]), ["echo"])
-  })
-
-  test("marks builtins after arithmetic condition", () => {
-    assert.deepStrictEqual(builtinWords("if ((1)) { fc; }", ["fc"]), ["fc"])
-    assert.deepStrictEqual(builtinWords("if ((1)) fc", ["fc"]), ["fc"])
-  })
-
-  test("marks builtins after pipeline", () => {
-    assert.deepStrictEqual(
-      builtinWords("echo hi | read var", ["echo", "read"]),
-      ["echo", "read"],
-    )
-  })
-
-  test("marks builtins after && and ||", () => {
-    assert.deepStrictEqual(builtinWords("echo hi && fc", ["echo", "fc"]), [
-      "echo",
-      "fc",
-    ])
-    assert.deepStrictEqual(builtinWords("echo hi || fc", ["echo", "fc"]), [
-      "echo",
-      "fc",
-    ])
-  })
-
-  test("marks while/until reserved words", () => {
-    const result = tokens("while true; do echo; done", ["echo"])
-    assert.deepStrictEqual(result, [
-      { word: "while", type: 1 },
-      { word: "do", type: 1 },
-      { word: "echo", type: 0 },
-      { word: "done", type: 1 },
-    ])
-  })
-
-  test("marks (( and )) as keyword tokens", () => {
-    const result = tokens("if ((1)) echo", ["echo"])
-    assert.deepStrictEqual(result, [
-      { word: "if", type: 1 },
-      { word: "((", type: 1 },
-      { word: "))", type: 1 },
-      { word: "echo", type: 0 },
-    ])
-  })
-
-  test("marks standalone (( )) arithmetic evaluation", () => {
-    const result = tokens("(( x++ ))", [])
-    assert.deepStrictEqual(result, [
-      { word: "((", type: 1 },
-      { word: "))", type: 1 },
-    ])
-  })
+      [kw("for"), kw("do"), bi("echo"), kw("done")],
+    ],
+    ["f() { echo; }", ["echo"], [bi("echo")]],
+    [
+      "while true; do echo; done",
+      ["echo"],
+      [kw("while"), kw("do"), bi("echo"), kw("done")],
+    ],
+    ["if ((1)) echo", ["echo"], [kw("if"), kw("(("), kw("))"), bi("echo")]],
+    ["(( x++ ))", [], [kw("(("), kw("))")]],
+  ] as const) {
+    test(text, () => {
+      assert.deepStrictEqual(tokens(text, builtins), want)
+    })
+  }
 })

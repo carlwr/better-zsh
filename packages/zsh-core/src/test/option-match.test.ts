@@ -11,26 +11,16 @@ function labels(typed: string) {
 }
 
 suite("matchOptions", () => {
-  const cases: [string, string[], string?][] = [
-    ["er", ["errexit", "errreturn"], "base prefix"],
-    ["err_ret", ["errreturn"], "underscore ignored in input"],
-    ["ERR_RET", ["errreturn"], "case ignored in input"],
-    [
-      "no_er",
-      ["no_errexit", "no_errreturn"],
-      "no-prefix preserves no_ separator",
-    ],
-    [
-      "noer",
-      ["no_errexit", "no_errreturn"],
-      "noer without underscore still gives no_ labels",
-    ],
-    ["noti", ["notify"], "option genuinely starting with 'no' stays bare"],
-  ]
-
-  for (const [typed, expected, desc] of cases) {
-    test(desc ?? typed, () => {
-      assert.deepStrictEqual(labels(typed), expected)
+  for (const [typed, want] of [
+    ["er", ["errexit", "errreturn"]],
+    ["err_ret", ["errreturn"]],
+    ["ERR_RET", ["errreturn"]],
+    ["no_er", ["no_errexit", "no_errreturn"]],
+    ["noer", ["no_errexit", "no_errreturn"]],
+    ["noti", ["notify"]],
+  ] as const) {
+    test(typed, () => {
+      assert.deepStrictEqual(labels(typed), want)
     })
   }
 

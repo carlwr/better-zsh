@@ -33,6 +33,21 @@ function rwTexts(line: string): string[] {
     .map((fact) => fact.text)
 }
 
+function psTexts(line: string): string[] {
+  return cmdHeadFactsOnLine(line)
+    .filter(isProcessSubstFact)
+    .map((fact) => fact.text)
+}
+
+function expectTexts(
+  get: (line: string) => string[],
+  cases: readonly (readonly [string, readonly string[]])[],
+) {
+  for (const [line, want] of cases) {
+    test(line, () => expect(get(line)).toEqual(want))
+  }
+}
+
 function assertFactInvariants(line: string, facts: LineFact[]): void {
   for (const fact of facts) {
     expect(fact.span.start).toBeGreaterThanOrEqual(0)
@@ -54,7 +69,7 @@ function assertFactInvariants(line: string, facts: LineFact[]): void {
 }
 
 describe("command/precommand analysis", () => {
-  const cases: [string, string[], string?][] = [
+  expectTexts(cmdTexts, [
     ["echo hi", ["echo"]],
     ["  echo hi", ["echo"]],
     ["echo x; fg", ["echo", "fg"]],
@@ -63,32 +78,20 @@ describe("command/precommand analysis", () => {
     ["echo x | fg | bg", ["echo", "fg", "bg"]],
     ["(echo hi)", ["echo"]],
     ["{ echo hi }", ["echo"]],
-    ["f() uname", ["uname"], "func definition body"],
-    ["! echo hi", ["echo"], "negation"],
-    ["time echo hi", ["echo"], "time reserved word"],
+    ["f() uname", ["uname"]],
+    ["! echo hi", ["echo"]],
+    ["time echo hi", ["echo"]],
     ["if echo; then fg; fi", ["echo", "fg"]],
     ["while echo; do fg; done", ["echo", "fg"]],
     ["for x in a; do echo; done", ["echo"]],
-    ["echo hi # fg", ["echo"], "comment stops scan"],
-    [">&2 echo hi", ["echo"], "redir before command"],
-    ["2>&1 echo hi", ["echo"], "fd redir before command"],
-    ["echo a > file", ["echo"], "redir does not create a new command"],
-    [
-      "print ${var[(a)1]} ${var[(r)1]} ${var[(s)1]}",
-      ["print"],
-      "parameter expansion flags stay inside words",
-    ],
-    ["print ${(j:_:)SECONDS}", ["print"], "joined expansion stays in one word"],
-    [
-      "print ${${:-x}[(r)1]}",
-      ["print"],
-      "nested parameter expansions stay inside words",
-    ],
-  ]
-
-  for (const [input, expected, desc] of cases) {
-    test(desc ?? input, () => expect(cmdTexts(input)).toEqual(expected))
-  }
+    ["echo hi # fg", ["echo"]],
+    [">&2 echo hi", ["echo"]],
+    ["2>&1 echo hi", ["echo"]],
+    ["echo a > file", ["echo"]],
+    ["print ${var[(a)1]} ${var[(r)1]} ${var[(s)1]}", ["print"]],
+    ["print ${(j:_:)SECONDS}", ["print"]],
+    ["print ${${:-x}[(r)1]}", ["print"]],
+  ])
 
   test("precommand modifiers before command head", () => {
     const line = "noglob command echo hi"
@@ -121,7 +124,7 @@ describe("command/precommand analysis", () => {
 // - Multi-line: while ...\n do — "do" on next line resets cmd position (line-local heuristic)
 
 describe("arithmetic condition handling", () => {
-  const cases: [string, string[]][] = [
+  expectTexts(cmdTexts, [
     ["if ((1)) echo", ["echo"]],
     ["if ((1)) { echo }", ["echo"]],
     ["if ((1)) { echo; }", ["echo"]],
@@ -129,11 +132,7 @@ describe("arithmetic condition handling", () => {
     ["until ((1)) fc", ["fc"]],
     ["if ((x > 0)); then echo; fi", ["echo"]],
     ["if ((a + b)) && ((c)) echo", ["echo"]],
-  ]
-
-  for (const [input, expected] of cases) {
-    test(input, () => expect(cmdTexts(input)).toEqual(expected))
-  }
+  ])
 
   test("emits (( and )) as reserved-word facts", () => {
     const rws = rwTexts("if ((1)) echo")
@@ -147,7 +146,7 @@ describe("arithmetic condition handling", () => {
 })
 
 describe("redirection facts", () => {
-  const cases: [string, string[]][] = [
+  expectTexts(redirTexts, [
     ["echo hi > file", [">"]],
     ["cat >> log", [">>"]],
     ["echo hi &> /dev/null", ["&>"]],
@@ -158,11 +157,7 @@ describe("redirection facts", () => {
     ["cat <<< word", ["<<<"]],
     ["cat << EOF", ["<<"]],
     ["echo 2>&1 > file", ["2>&", ">"]],
-  ]
-
-  for (const [input, expected] of cases) {
-    test(input, () => expect(redirTexts(input)).toEqual(expected))
-  }
+  ])
 
   test("no redir inside single quotes", () => {
     expect(redirTexts("echo '>'")).toEqual([])
@@ -174,20 +169,10 @@ describe("redirection facts", () => {
 })
 
 describe("process substitution facts", () => {
-  const cases: [string, string[]][] = [
+  expectTexts(psTexts, [
     ["diff <(a) <(b)", ["<(a)", "<(b)"]],
     ["cat >(tee log)", [">(tee log)"]],
-  ]
-
-  for (const [input, expected] of cases) {
-    test(input, () => {
-      expect(
-        cmdHeadFactsOnLine(input)
-          .filter(isProcessSubstFact)
-          .map((fact) => fact.text),
-      ).toEqual(expected)
-    })
-  }
+  ])
 
   test("no process substitution inside quotes", () => {
     expect(
@@ -197,28 +182,16 @@ describe("process substitution facts", () => {
 })
 
 describe("reserved word facts", () => {
-  test("if/then/fi", () => {
-    expect(rwTexts("if foo; then bar; fi")).toEqual(["if", "then", "fi"])
-  })
-
-  test("for/do/done", () => {
-    const rws = rwTexts("for x in a b; do echo; done")
-    expect(rws).toContain("for")
-    expect(rws).toContain("do")
-    expect(rws).toContain("done")
-  })
-
-  test("{ and } are reserved words", () => {
-    expect(rwTexts("{ echo; }")).toContain("{")
-  })
-
-  test("while/until", () => {
-    expect(rwTexts("while true; do echo; done")).toContain("while")
-    expect(rwTexts("until false; do echo; done")).toContain("until")
-  })
-
-  test("[[", () => {
-    expect(rwTexts("[[ -f x ]]")).toContain("[[")
+  test.each([
+    ["if foo; then bar; fi", ["if", "then", "fi"]],
+    ["for x in a b; do echo; done", ["for", "do", "done"]],
+    ["{ echo; }", ["{", "}"]],
+    ["while true; do echo; done", ["while"]],
+    ["until false; do echo; done", ["until"]],
+    ["[[ -f x ]]", ["[["]],
+  ])("%s", (line, want) => {
+    const rws = rwTexts(line)
+    for (const rw of want) expect(rws).toContain(rw)
   })
 })
 

@@ -37,126 +37,149 @@ import type {
   ShellParamDoc,
   ZshOption,
 } from "../types/zsh-data"
-import {
-  getBuiltins,
-  getCondOps,
-  getOptions,
-  getPrecmds,
-  getProcessSubsts,
-  getRedirections,
-  getReservedWords,
-  getShellParams,
-} from "../zsh-data"
+import * as zd from "../zsh-data"
 import { withTmpDirAsync } from "./tmp-dir"
 
-const opt: ZshOption = {
-  name: mkOptName("AUTO_CD"),
-  display: "AUTO_CD",
+const opt = (name: string, desc: string): ZshOption => ({
+  name: mkOptName(name),
+  display: name,
   flags: [{ char: mkOptFlagChar("J"), on: "-" }],
   defaultIn: ["csh", "ksh", "sh", "zsh"],
   category: "Changing Directories",
-  desc: "Desc.",
-}
+  desc,
+})
 
-const unary: CondOpDoc = {
-  op: mkCondOp("-a"),
-  operands: ["file"],
-  desc: "Exists.",
+const unary = (op: string, operand: string, desc: string): CondOpDoc => ({
+  op: mkCondOp(op),
+  operands: [operand],
+  desc,
   arity: "unary",
-}
+})
 
-const binary: CondOpDoc = {
-  op: mkCondOp("-nt"),
-  operands: ["left", "right"],
-  desc: "Newer than.",
+const binary = (
+  op: string,
+  left: string,
+  right: string,
+  desc: string,
+): CondOpDoc => ({
+  op: mkCondOp(op),
+  operands: [left, right],
+  desc,
   arity: "binary",
-}
+})
 
-const builtin: BuiltinDoc = {
-  name: mkBuiltinName("echo"),
-  synopsis: ["echo [ -n ] [ arg ... ]"],
-  desc: "Write text.",
-}
+const builtin = (name: string, synopsis: string, desc: string): BuiltinDoc => ({
+  name: mkBuiltinName(name),
+  synopsis: [synopsis],
+  desc,
+})
 
-const precmd: PrecmdDoc = {
-  name: "noglob",
-  synopsis: ["noglob command arg ..."],
-  desc: "Disable filename generation.",
-}
+const precmd = (
+  name: PrecmdDoc["name"],
+  synopsis: string,
+  desc: string,
+): PrecmdDoc => ({
+  name,
+  synopsis: [synopsis],
+  desc,
+})
 
-const redir: RedirDoc = {
-  groupOp: mkRedirOp(">>"),
-  sig: mkRedirSig(">> word"),
-  desc: "Append output to word.",
+const redir = (groupOp: string, sig: string, desc: string): RedirDoc => ({
+  groupOp: mkRedirOp(groupOp),
+  sig: mkRedirSig(sig),
+  desc,
   section: "Redirections",
-}
+})
 
-const processSubst: ProcessSubstDoc = {
-  op: "<(...)",
-  sig: "<(list)",
-  desc: "Replace with a file descriptor for the output of list.",
+const ps = (
+  op: ProcessSubstDoc["op"],
+  sig: ProcessSubstDoc["sig"],
+  desc: string,
+): ProcessSubstDoc => ({
+  op,
+  sig,
+  desc,
   section: "Process Substitution",
-}
+})
 
-const reservedWord: ReservedWordDoc = {
-  name: mkReservedWord("if"),
-  sig: "if list then list fi",
-  desc: "Execute list conditionally.",
+const rw = (
+  name: string,
+  sig: string,
+  desc: string,
+  pos: ReservedWordDoc["pos"] = "command",
+): ReservedWordDoc => ({
+  name: mkReservedWord(name),
+  sig,
+  desc,
   section: "Complex Commands",
-  pos: "command",
-}
+  pos,
+})
 
-const param: ShellParamDoc = {
-  name: mkShellParamName("SECONDS"),
-  sig: "SECONDS",
-  desc: "The number of seconds since shell invocation.",
+const param = (name: string, desc: string): ShellParamDoc => ({
+  name: mkShellParamName(name),
+  sig: name,
+  desc,
   section: "Parameters Set By The Shell",
-}
+})
 
-function sampleHoverArgs(overrides: Partial<HoverDocArgs> = {}): HoverDocArgs {
+const cd = opt("AUTO_CD", "d:o")
+const cu = unary("-a", "file", "d:u")
+const cb = binary("-nt", "left", "right", "d:b")
+const bi = builtin("echo", "echo [ -n ] [ arg ... ]", "d:bi")
+const pc = precmd("noglob", "noglob command arg ...", "d:pc")
+const rd = redir(">>", ">> word", "d:r")
+const sub = ps("<(...)", "<(list)", "d:ps")
+const word = rw("if", "if list then list fi", "d:rw")
+const sec = param("SECONDS", "d:p")
+
+function args(overrides: Partial<HoverDocArgs> = {}): HoverDocArgs {
   return {
-    options: [opt],
-    condOps: [unary],
-    params: [param],
-    builtins: [builtin],
-    precmds: [precmd],
-    redirs: [redir],
-    processSubsts: [processSubst],
-    reservedWords: [reservedWord],
+    options: [cd],
+    condOps: [cu],
+    params: [sec],
+    builtins: [bi],
+    precmds: [pc],
+    redirs: [rd],
+    processSubsts: [sub],
+    reservedWords: [word],
     ...overrides,
   }
 }
 
-function sampleCorpus(overrides: Partial<HoverDocArgs> = {}) {
-  return hoverDocs(sampleHoverArgs(overrides))
+const corpus = (overrides: Partial<HoverDocArgs> = {}) =>
+  hoverDocs(args(overrides))
+
+const has = (text: string | undefined, parts: readonly string[]) => {
+  for (const part of parts) expect(text).toContain(part)
 }
 
-function headingCount(text: string | undefined): number {
-  return (text?.match(/^## /gm) ?? []).length
-}
+const headings = (text: string | undefined) =>
+  (text?.match(/^## /gm) ?? []).length
 
 describe("hover markdown", () => {
   test("renders option markdown", () => {
-    const md = mdOpt(opt)
-    expect(md).toContain("`AUTO_CD`")
-    expect(md).toContain("```zsh")
-    expect(md).toContain("setopt auto_cd")
-    expect(md).toContain("unsetopt auto_cd")
-    expect(md).toContain("set -J")
-    expect(md).toContain("set +J")
-    expect(md).toContain("**Default in zsh: `on`**")
-    expect(md).toContain("_Option category:_ Changing Directories")
+    has(mdOpt(cd), [
+      "`AUTO_CD`",
+      "```zsh",
+      "setopt auto_cd",
+      "unsetopt auto_cd",
+      "set -J",
+      "set +J",
+      "**Default in zsh: `on`**",
+      "_Option category:_ Changing Directories",
+    ])
   })
 
   test("formats option refs in prose variants", () => {
-    const ctx = mkHoverMdCtx([opt])
     expect(
-      fmtOptRefsInMd("AUTO_CD AUTOCD NO_AUTO_CD NOAUTOCD", ctx.optNames),
+      fmtOptRefsInMd(
+        "AUTO_CD AUTOCD NO_AUTO_CD NOAUTOCD",
+        mkHoverMdCtx([cd]).optNames,
+      ),
     ).toBe("**`AUTO_CD`** **`AUTOCD`** **`NO_AUTO_CD`** **`NOAUTOCD`**")
   })
 
   test("skips vars and existing markdown code when formatting option refs", () => {
-    const ctx = mkHoverMdCtx([opt])
     expect(
       fmtOptRefsInMd(
         [
@@ -167,7 +190,7 @@ describe("hover markdown", () => {
           "```",
           "AUTOCD",
         ].join("\n"),
-        ctx.optNames,
+        mkHoverMdCtx([cd]).optNames,
       ),
     ).toBe(
       [
@@ -182,116 +205,69 @@ describe("hover markdown", () => {
   })
 
   test("formats only known options", () => {
-    const ctx = mkHoverMdCtx([opt])
-    expect(fmtOptRefsInMd("AUTO_CD CDPATH POSIX", ctx.optNames)).toBe(
-      "**`AUTO_CD`** CDPATH POSIX",
-    )
+    expect(
+      fmtOptRefsInMd("AUTO_CD CDPATH POSIX", mkHoverMdCtx([cd]).optNames),
+    ).toBe("**`AUTO_CD`** CDPATH POSIX")
   })
 
   test("renders cond op markdown", () => {
-    expect(mdCond(unary)).toBe("`-a` *file*\n\nExists.")
-    expect(mdCond(binary)).toBe("*left* `-nt` *right*\n\nNewer than.")
+    expect(mdCond(cu)).toBe("`-a` *file*\n\nd:u")
+    expect(mdCond(cb)).toBe("*left* `-nt` *right*\n\nd:b")
   })
 
-  const renderCases: [string, string, readonly string[]][] = [
+  for (const [name, md, parts] of [
     [
-      "renders param markdown",
-      mdParam(param),
-      [
-        "`SECONDS`",
-        "The number of seconds since shell invocation.",
-        "_Category:_ Shell Parameter",
-      ],
+      "param",
+      mdParam(sec),
+      ["`SECONDS`", "d:p", "_Category:_ Shell Parameter"],
     ],
     [
-      "renders builtin markdown",
-      mdBuiltin(builtin),
-      ["`echo`", "```zsh", "echo [ -n ] [ arg ... ]", "Write text."],
+      "builtin",
+      mdBuiltin(bi),
+      ["`echo`", "```zsh", "echo [ -n ] [ arg ... ]", "d:bi"],
+    ],
+    ["precmd", mdPrecmd(pc), ["`noglob`", "_Role:_ precommand modifier"]],
+    [
+      "redir",
+      mdRedir(rd),
+      ["`>>`", "```zsh", ">> word", "d:r", "_Category:_ Redirection"],
     ],
     [
-      "renders precommand modifier markdown",
-      mdPrecmd(precmd),
-      ["`noglob`", "_Role:_ precommand modifier"],
+      "process-subst",
+      mdProcessSubst(sub),
+      ["`<(...)`", "d:ps", "_Category:_ Process Substitution"],
     ],
     [
-      "renders redirection markdown",
-      mdRedir(redir),
-      [
-        "`>>`",
-        "```zsh",
-        ">> word",
-        "Append output to word.",
-        "_Category:_ Redirection",
-      ],
+      "reserved-word",
+      mdReservedWord(word),
+      ["`if`", "d:rw", "_Role:_ reserved word (command position)"],
     ],
-    [
-      "renders process-substitution markdown",
-      mdProcessSubst(processSubst),
-      [
-        "`<(...)`",
-        "Replace with a file descriptor",
-        "_Category:_ Process Substitution",
-      ],
-    ],
-    [
-      "renders reserved-word markdown",
-      mdReservedWord(reservedWord),
-      [
-        "`if`",
-        "Execute list conditionally.",
-        "_Role:_ reserved word (command position)",
-      ],
-    ],
-  ]
-
-  for (const [name, md, parts] of renderCases) {
-    test(name, () => {
-      for (const part of parts) expect(md).toContain(part)
-    })
+  ] as const) {
+    test(name, () => has(md, parts))
   }
 
   test("renders reserved-word with any position", () => {
     expect(
-      mdReservedWord({
-        ...reservedWord,
-        name: mkReservedWord("fi"),
-        pos: "any",
-      }),
+      mdReservedWord(rw("fi", "if list then list fi", "d:rw", "any")),
     ).toContain("_Role:_ reserved word (any position)")
   })
 
   test("derives default state by emulation", () => {
-    expect(defaultStateIn(opt, "zsh")).toBe("on")
-    expect(
-      defaultStateIn(
-        {
-          ...opt,
-          defaultIn: ["ksh"],
-        },
-        "zsh",
-      ),
-    ).toBe("off")
+    expect(defaultStateIn(cd, "zsh")).toBe("on")
+    expect(defaultStateIn({ ...cd, defaultIn: ["ksh"] }, "zsh")).toBe("off")
   })
 
   test("collects docs and sorts params", () => {
-    const docs = hoverDocs({
-      ...sampleHoverArgs(),
-      params: [
-        param,
-        {
-          name: mkShellParamName("argv"),
-          sig: "argv",
-          desc: "An array containing the positional parameters.",
-          section: "Parameters Set By The Shell",
-        },
-      ],
-      condOps: [unary],
-      redirs: [],
-      processSubsts: [],
-      reservedWords: [],
-    })
-
-    expect(docs.map((doc) => `${doc.kind}:${doc.id}`)).toEqual([
+    expect(
+      hoverDocs({
+        ...args(),
+        params: [sec, param("argv", "d:a")],
+        condOps: [cu],
+        redirs: [],
+        processSubsts: [],
+        reservedWords: [],
+      }).map((doc) => `${doc.kind}:${doc.id}`),
+    ).toEqual([
       `option:${mkOptName("AUTO_CD")}`,
       "cond-op:-a",
       "param:argv",
@@ -302,12 +278,11 @@ describe("hover markdown", () => {
   })
 
   test("keeps typed hover-doc ids separate from display headings", () => {
-    const optionDoc = sampleCorpus().find((doc) => doc.kind === "option")
-    expect(optionDoc?.id).toBe(mkOptName("AUTO_CD"))
-    expect(optionDoc?.heading).toBe("AUTO_CD")
-    expect(sampleCorpus().find((doc) => doc.kind === "redir")?.heading).toBe(
-      ">> word",
-    )
+    const docs = corpus()
+    const option = docs.find((doc) => doc.kind === "option")
+    expect(option?.id).toBe(mkOptName("AUTO_CD"))
+    expect(option?.heading).toBe("AUTO_CD")
+    expect(docs.find((doc) => doc.kind === "redir")?.heading).toBe(">> word")
   })
 
   test("regression registry is easy to find", () => {
@@ -317,7 +292,7 @@ describe("hover markdown", () => {
 
 describe("hover dump", () => {
   test("renders per-kind dump files", () => {
-    const files = dumpText(sampleCorpus({ condOps: [binary] }))
+    const files = dumpText(corpus({ condOps: [cb] }))
 
     for (const [file, heading] of [
       ["options.md", "## AUTO_CD"],
@@ -330,37 +305,26 @@ describe("hover dump", () => {
       ["reserved-words.md", "## if"],
     ] as const) {
       expect(files.get(file)).toContain(heading)
+      expect(files.get("all.md")).toContain(heading)
     }
 
     expect(files.get("suspicious.md")).toBe("")
-    for (const heading of [
-      "## AUTO_CD",
-      "## -nt",
-      "## SECONDS",
-      "## echo",
-      "## noglob",
-      "## >> word",
-      "## <(...)",
-      "## if",
-    ]) {
-      expect(files.get("all.md")).toContain(heading)
-    }
   })
 
   test("writes dump files", async () => {
     await withTmpDirAsync("better-zsh-hover-", async (dir) => {
-      await writeHoverDump(dir, sampleCorpus({ condOps: [binary] }))
+      await writeHoverDump(dir, corpus({ condOps: [cb] }))
 
       for (const [file, snippet] of [
         ["all.md", "## AUTO_CD"],
-        ["options.md", "Desc."],
-        ["cond-ops.md", "Newer than."],
+        ["options.md", "d:o"],
+        ["cond-ops.md", "d:b"],
         ["params.md", "`SECONDS`"],
-        ["builtins.md", "Write text."],
-        ["precmds.md", "Disable filename generation."],
-        ["redirs.md", "Append output to word."],
-        ["process-substs.md", "Replace with a file descriptor"],
-        ["reserved-words.md", "Execute list conditionally."],
+        ["builtins.md", "d:bi"],
+        ["precmds.md", "d:pc"],
+        ["redirs.md", "d:r"],
+        ["process-substs.md", "d:ps"],
+        ["reserved-words.md", "d:rw"],
       ] as const) {
         expect(readFileSync(join(dir, file), "utf8")).toContain(snippet)
       }
@@ -369,15 +333,15 @@ describe("hover dump", () => {
   })
 
   describe("vendored docs", () => {
-    const options = getOptions()
-    const condOps = getCondOps()
-    const params = getShellParams()
-    const builtins = getBuiltins()
-    const precmds = getPrecmds()
-    const redirs = getRedirections()
-    const processSubsts = getProcessSubsts()
-    const reservedWords = getReservedWords()
-    const corpus = hoverDocs({
+    const options = zd.getOptions()
+    const condOps = zd.getCondOps()
+    const params = zd.getShellParams()
+    const builtins = zd.getBuiltins()
+    const precmds = zd.getPrecmds()
+    const redirs = zd.getRedirections()
+    const processSubsts = zd.getProcessSubsts()
+    const reservedWords = zd.getReservedWords()
+    const docs = hoverDocs({
       options,
       condOps,
       params,
@@ -387,34 +351,23 @@ describe("hover dump", () => {
       processSubsts,
       reservedWords,
     })
-    const files = dumpText(corpus)
-    const vendoredKinds = [
-      { kind: "option", file: "options.md", docs: options },
-      { kind: "cond-op", file: "cond-ops.md", docs: condOps },
-      { kind: "param", file: "params.md", docs: params },
-      { kind: "builtin", file: "builtins.md", docs: builtins },
-      { kind: "precmd", file: "precmds.md", docs: precmds },
-      { kind: "redir", file: "redirs.md", docs: redirs },
-      {
-        kind: "process-subst",
-        file: "process-substs.md",
-        docs: processSubsts,
-      },
-      {
-        kind: "reserved-word",
-        file: "reserved-words.md",
-        docs: reservedWords,
-      },
-    ] as const
+    const files = dumpText(docs)
 
-    test("covers vendored corpus by kind and dump file", () => {
-      for (const { kind, file, docs } of vendoredKinds) {
-        expect(corpus.filter((doc) => doc.kind === kind)).toHaveLength(
-          docs.length,
-        )
-        expect(headingCount(files.get(file))).toBe(docs.length)
-      }
-    })
+    for (const { kind, file, src } of [
+      { kind: "option", file: "options.md", src: options },
+      { kind: "cond-op", file: "cond-ops.md", src: condOps },
+      { kind: "param", file: "params.md", src: params },
+      { kind: "builtin", file: "builtins.md", src: builtins },
+      { kind: "precmd", file: "precmds.md", src: precmds },
+      { kind: "redir", file: "redirs.md", src: redirs },
+      { kind: "process-subst", file: "process-substs.md", src: processSubsts },
+      { kind: "reserved-word", file: "reserved-words.md", src: reservedWords },
+    ] as const) {
+      test(`${file} covers ${kind}`, () => {
+        expect(docs.filter((doc) => doc.kind === kind)).toHaveLength(src.length)
+        expect(headings(files.get(file))).toBe(src.length)
+      })
+    }
 
     test("emitted markdown strips raw yodl markers", () => {
       for (const file of [
@@ -426,9 +379,8 @@ describe("hover dump", () => {
         "process-substs.md",
         "reserved-words.md",
       ] as const) {
-        const text = files.get(file) ?? ""
-        expect(text).not.toContain("tt(")
-        expect(text).not.toContain("var(")
+        expect(files.get(file)).not.toContain("tt(")
+        expect(files.get(file)).not.toContain("var(")
       }
     })
 

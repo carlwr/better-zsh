@@ -188,12 +188,25 @@ Semantic token design choices:
 - Unit test coverage is the baseline; integration tests are a bonus layer
 - Unit tests should not be skipped just because integration tests cover the same area
 - Integration tests may and should overlap with unit tests — they exercise a richer harness
-- Tests must be well-abstracted and concise — every test should carry its weight
-- When many cases share the same arrange/act/assert shape, prefer Vitest's `test.each` / `describe.each` (table-driven tests). Not a universal rule: one-off scenarios, tests with heavy per-case setup, or cases where a standalone `test("…")` reads more clearly are fine without `.each`
 - Pure logic (parsing, filtering, text analysis) should always have unit tests independent of external dependencies (zsh, VS Code APIs)
 - Integration tests that depend on external tools (e.g., zsh on PATH) must skip gracefully when the tool is absent
 - The VS Code Electron test harness intentionally runs ALL tests (unit + integration) — unit tests re-running there serve as meta-tests under a richer harness
 - Functions that are "obviously correct" (general/simple enough) do not need tests
+
+### Rules - test conciseness and abstractions
+
+**Test conciseness is a standing repo concern, not optional polish.**
+
+**Hard overarching rule:** _If you touch tests, actively try to make the touched tests smaller unless that would hide intent._
+
+Rules and guidelines:
+- Tests must be well-abstracted and concise — every test should carry its weight
+- Any edit that touches tests should include a conciseness/refactoring pass: remove non-paying repetition, collapse repeated arrange/act/assert shapes into tables/helpers when that reduces code, and shorten file-local identifiers where this stays readable
+- Prefer case data that encodes the assertion directly. Keep `desc`/label/title fields only when they carry non-obvious intent or "why"; if they only restate the code/sample/suite context, remove them
+- Prefer deriving test titles from the code sample or a tiny discriminator. Avoid verbose prose prefixes that repeat the suite name, implementation name, or obvious "works/handles/returns" wording
+- Test fixtures should be only as realistic as the assertion needs. If a string/object field is not semantically relevant to the behavior under test, use `""` or a minimal distinct value rather than descriptive filler
+- When multiple tests need the same test-only fixture shape, prefer a shared helper in test code over repeating near-identical local stubs
+- When many cases share the same arrange/act/assert shape, prefer Vitest's `test.each` / `describe.each` (table-driven tests). Not a universal rule: one-off scenarios, tests with heavy per-case setup, or cases where a standalone `test("…")` reads more clearly are fine without `.each`
 
 ### Container-only integration tests
 

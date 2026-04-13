@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest"
 import { mkCondOp } from "../../types/brand"
 import { parseCondOps } from "../../yodl/docs/cond-ops"
-import { readVendoredYo } from "./test-util"
+import { by, only, readVendoredYo } from "./test-util"
 
 const COND_YO = readVendoredYo("cond.yo")
 
@@ -10,23 +10,21 @@ describe("parseCondOps", () => {
     const yo = `item(tt(-a) var(file))(
 true if file exists.
 )`
-    const ops = parseCondOps(yo)
-    expect(ops).toHaveLength(1)
-    expect(ops[0]?.op).toBe(mkCondOp("-a"))
-    expect(ops[0]?.arity).toBe("unary")
-    expect(ops[0]?.operands).toEqual(["file"])
-    expect(ops[0]?.desc).toContain("file exists")
+    const op = only(parseCondOps(yo))
+    expect(op.op).toBe(mkCondOp("-a"))
+    expect(op.arity).toBe("unary")
+    expect(op.operands).toEqual(["file"])
+    expect(op.desc).toContain("file exists")
   })
 
   test("parses binary operator", () => {
     const yo = `item(var(file1) tt(-nt) var(file2))(
 true if file1 is newer than file2.
 )`
-    const ops = parseCondOps(yo)
-    expect(ops).toHaveLength(1)
-    expect(ops[0]?.op).toBe(mkCondOp("-nt"))
-    expect(ops[0]?.arity).toBe("binary")
-    expect(ops[0]?.operands).toEqual(["file1", "file2"])
+    const op = only(parseCondOps(yo))
+    expect(op.op).toBe(mkCondOp("-nt"))
+    expect(op.arity).toBe("binary")
+    expect(op.operands).toEqual(["file1", "file2"])
   })
 
   test("parses xitem + item pair (= / ==)", () => {
@@ -42,7 +40,7 @@ true if string matches pattern.
 
   describe("vendored cond.yo", () => {
     const ops = parseCondOps(COND_YO)
-    const byOp = new Map(ops.map((o) => [o.op, o]))
+    const byOp = by(ops, (o) => o.op)
 
     test("parses a reasonable number of operators", () => {
       expect(ops.length).toBeGreaterThan(20)

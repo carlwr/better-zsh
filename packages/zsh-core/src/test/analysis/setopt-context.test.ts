@@ -1,43 +1,25 @@
 import * as assert from "node:assert"
 import { isSetoptContext } from "../../analysis/setopt-context"
-
-function doc(text: string) {
-  const lines = text.split("\n")
-  return {
-    lineCount: lines.length,
-    lineAt: (i: number) => ({ text: lines[i] ?? "" }),
-  }
-}
+import { doc } from "./test-util"
 
 suite("isSetoptContext", () => {
-  const yes: [string, number, string?][] = [
-    ["setopt extendedglob", 0],
-    ["unsetopt extendedglob", 0],
-    ["builtin setopt extendedglob", 0, "builtin modifier"],
-    ["setopt \\\n  errreturn \\\n  extendedglob", 2, "line continuation"],
-    ["setopt \\\n  errreturn", 1, "continuation second line"],
-    ["set -o extendedglob", 0, "set -o"],
-    ["set +o extendedglob", 0, "set +o"],
-    ["set -e -o pipefail", 0, "set short and long options"],
-  ]
-
-  const no: [string, number, string?][] = [
-    ["echo setopt", 0, "setopt as argument"],
-    ["command setopt extendedglob", 0, "command modifier suppresses setopt"],
-    ["echo hello", 0],
-    ["set extendedglob", 0, "set without -o/+o"],
-    ["", 0, "empty line"],
-  ]
-
-  for (const [text, line, desc] of yes) {
-    test(`yes: ${desc ?? text}`, () => {
-      assert.strictEqual(isSetoptContext(doc(text), line), true)
-    })
-  }
-
-  for (const [text, line, desc] of no) {
-    test(`no: ${desc ?? text}`, () => {
-      assert.strictEqual(isSetoptContext(doc(text), line), false)
+  for (const [text, line, want] of [
+    ["setopt extendedglob", 0, true],
+    ["unsetopt extendedglob", 0, true],
+    ["builtin setopt extendedglob", 0, true],
+    ["setopt \\\n  errreturn \\\n  extendedglob", 2, true],
+    ["setopt \\\n  errreturn", 1, true],
+    ["set -o extendedglob", 0, true],
+    ["set +o extendedglob", 0, true],
+    ["set -e -o pipefail", 0, true],
+    ["echo setopt", 0, false],
+    ["command setopt extendedglob", 0, false],
+    ["echo hello", 0, false],
+    ["set extendedglob", 0, false],
+    ["", 0, false],
+  ] as const) {
+    test(`${want ? "yes" : "no"}: ${text}`, () => {
+      assert.strictEqual(isSetoptContext(doc(text), line), want)
     })
   }
 })

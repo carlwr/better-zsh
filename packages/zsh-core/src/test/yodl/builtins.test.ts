@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest"
 import { mkBuiltinName } from "../../types/brand"
 import { parseBuiltins } from "../../yodl/docs/builtins"
-import { readVendoredYo } from "./test-util"
+import { by, only, readVendoredYo } from "./test-util"
 
 const BUILTINS_YO = readVendoredYo("builtins.yo")
 
@@ -13,12 +13,11 @@ item(tt(echo) [ tt(-n) ])(
 Write text.
 )
 enditem()`
-    const docs = parseBuiltins(yo)
-    expect(docs).toHaveLength(1)
-    expect(docs[0]?.name).toBe(mkBuiltinName("echo"))
-    expect(docs[0]?.synopsis).toEqual(["echo [ -n ]"])
-    expect(docs[0]?.synopsis).toHaveLength(1)
-    expect(docs[0]?.desc).toBe("Write text.")
+    const doc = only(parseBuiltins(yo))
+    expect(doc.name).toBe(mkBuiltinName("echo"))
+    expect(doc.synopsis).toEqual(["echo [ -n ]"])
+    expect(doc.synopsis).toHaveLength(1)
+    expect(doc.desc).toBe("Write text.")
   })
 
   test("parses alias and module macro invocations", () => {
@@ -60,7 +59,7 @@ enditem()`
 
   describe("vendored builtins.yo", () => {
     const docs = parseBuiltins(BUILTINS_YO)
-    const byName = new Map(docs.map((d) => [d.name, d]))
+    const byName = by(docs, (d) => d.name)
 
     test("parses xitem aliases for test and [", () => {
       expect(byName.get(mkBuiltinName("test"))?.synopsis[0]).toBe(

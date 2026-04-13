@@ -2,7 +2,7 @@ import { describe, expect, test } from "vitest"
 import { mkOptFlagChar, mkOptName } from "../../types/brand"
 import { optionCategories } from "../../types/zsh-data"
 import { parseOptions } from "../../yodl/docs/options"
-import { readVendoredYo } from "./test-util"
+import { by, only, readVendoredYo } from "./test-util"
 
 const OPTS_YO = readVendoredYo("options.yo")
 
@@ -14,13 +14,12 @@ If a command is issued that can't be executed as a normal command,
 and the command is the name of a directory, perform the cd
 command to that directory.
 )`
-    const opts = parseOptions(yo)
-    expect(opts).toHaveLength(1)
-    expect(opts[0]?.name).toBe(mkOptName("AUTO_CD"))
-    expect(opts[0]?.display).toBe("AUTO_CD")
-    expect(opts[0]?.flags).toEqual([{ char: mkOptFlagChar("J"), on: "-" }])
-    expect(opts[0]?.category).toBe("Changing Directories")
-    expect(opts[0]?.desc).toContain("command is the name of a directory")
+    const opt = only(parseOptions(yo))
+    expect(opt.name).toBe(mkOptName("AUTO_CD"))
+    expect(opt.display).toBe("AUTO_CD")
+    expect(opt.flags).toEqual([{ char: mkOptFlagChar("J"), on: "-" }])
+    expect(opt.category).toBe("Changing Directories")
+    expect(opt.desc).toContain("command is the name of a directory")
   })
 
   test("parses option with default marker", () => {
@@ -28,9 +27,12 @@ command to that directory.
 item(tt(AUTO_LIST) (tt(-9)) <D>)(
 Automatically list choices on an ambiguous completion.
 )`
-    const opts = parseOptions(yo)
-    expect(opts).toHaveLength(1)
-    expect(opts[0]?.defaultIn).toEqual(["csh", "ksh", "sh", "zsh"])
+    expect(only(parseOptions(yo)).defaultIn).toEqual([
+      "csh",
+      "ksh",
+      "sh",
+      "zsh",
+    ])
   })
 
   test("parses option without letter", () => {
@@ -39,9 +41,7 @@ item(tt(BASH_AUTO_LIST))(
 On an ambiguous completion, list choices when the completion
 function is called for the second time in a row.
 )`
-    const opts = parseOptions(yo)
-    expect(opts).toHaveLength(1)
-    expect(opts[0]?.flags).toEqual([])
+    expect(only(parseOptions(yo)).flags).toEqual([])
   })
 
   test("parses option with multiple default markers", () => {
@@ -49,9 +49,7 @@ function is called for the second time in a row.
 item(tt(POSIX_CD) <K> <S>)(
 Make cd and pushd behave POSIX-like.
 )`
-    const opts = parseOptions(yo)
-    expect(opts).toHaveLength(1)
-    expect(opts[0]?.defaultIn).toEqual(["ksh", "sh"])
+    expect(only(parseOptions(yo)).defaultIn).toEqual(["ksh", "sh"])
   })
 
   test("keeps distinct short flags from header and default-set aliases", () => {
@@ -63,9 +61,7 @@ subsect(Default set)
 startsitem()
 sitem(tt(-5))(NOTIFY)
 endsitem()`
-    const opts = parseOptions(yo)
-    expect(opts).toHaveLength(1)
-    expect(opts[0]?.flags).toEqual([
+    expect(only(parseOptions(yo)).flags).toEqual([
       { char: mkOptFlagChar("5"), on: "-" },
       { char: mkOptFlagChar("b"), on: "-" },
     ])
@@ -73,7 +69,7 @@ endsitem()`
 
   describe("vendored options.yo", () => {
     const opts = parseOptions(OPTS_YO)
-    const byName = new Map(opts.map((o) => [o.name, o]))
+    const byName = by(opts, (o) => o.name)
 
     test("parses a non-trivial number of options", () => {
       expect(opts.length).toBeGreaterThan(100)

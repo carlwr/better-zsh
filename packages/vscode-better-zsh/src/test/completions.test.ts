@@ -48,38 +48,7 @@ import {
   optionCategories,
 } from "zsh-core"
 import { CompletionProvider } from "../completions"
-
-let id = 0
-
-function doc(text: string) {
-  return {
-    uri: { toString: () => `test://completion/${id++}` },
-    version: 1,
-    lineCount: 1,
-    lineAt() {
-      return { text }
-    },
-    getText(range?: {
-      start: { character: number }
-      end: { character: number }
-    }) {
-      if (!range) return text
-      return text.slice(range.start.character, range.end.character)
-    },
-    getWordRangeAtPosition(pos: { character: number }) {
-      const ch = text[pos.character] ?? ""
-      if (!/[\w-]/.test(ch)) return undefined
-      let start = pos.character
-      while (start > 0 && /[\w-]/.test(text[start - 1] ?? "")) start--
-      let end = pos.character + 1
-      while (end < text.length && /[\w-]/.test(text[end] ?? "")) end++
-      return {
-        start: { line: 0, character: start },
-        end: { line: 0, character: end },
-      }
-    },
-  } as unknown as import("vscode").TextDocument
-}
+import { wordDoc } from "./test-util"
 
 suite("CompletionProvider", () => {
   test("offers static builtins, precmds, reserved words, and params", async () => {
@@ -88,14 +57,14 @@ suite("CompletionProvider", () => {
         {
           name: mkBuiltinName("echo"),
           synopsis: ["echo"],
-          desc: "echo docs",
+          desc: "",
         },
       ],
       reservedWords: [
         {
           name: mkReservedWord("if"),
           sig: "if list then list fi",
-          desc: "if docs",
+          desc: "",
           section: "Complex Commands",
           pos: "command",
         },
@@ -104,14 +73,14 @@ suite("CompletionProvider", () => {
         {
           name: "noglob",
           synopsis: ["noglob command arg ..."],
-          desc: "noglob docs",
+          desc: "",
         },
       ],
       params: [
         {
           name: mkShellParamName("SECONDS"),
           sig: "SECONDS",
-          desc: "SECONDS docs",
+          desc: "",
           section: "Parameters Set By The Shell",
         },
       ],
@@ -122,13 +91,13 @@ suite("CompletionProvider", () => {
           flags: [],
           defaultIn: ["zsh"],
           category: optionCategories[0],
-          desc: "AUTO_CD docs",
+          desc: "",
         },
       ],
       condOps: [],
     })
 
-    const items = (await provider.provideCompletionItems(doc("ec"), {
+    const items = (await provider.provideCompletionItems(wordDoc("ec"), {
       line: 0,
       character: 0,
     } as import("vscode").Position)) as import("vscode").CompletionItem[]

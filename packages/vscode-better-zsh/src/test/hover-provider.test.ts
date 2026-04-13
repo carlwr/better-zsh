@@ -1,19 +1,14 @@
 import * as assert from "node:assert"
 import { vi } from "vitest"
-import {
-  type BuiltinDoc,
-  type CondOpDoc,
-  mkBuiltinName,
-  mkCondOp,
-  mkOptFlagChar,
-  mkOptName,
-  mkRedirOp,
-  mkRedirSig,
-  mkShellParamName,
-  type RedirDoc,
-  type ShellParamDoc,
-  type ZshOption,
+import type {
+  BuiltinDoc,
+  CondOpDoc,
+  RedirDoc,
+  ShellParamDoc,
+  ZshOption,
 } from "zsh-core"
+import * as core from "zsh-core"
+import { wordDoc } from "./test-util"
 
 vi.mock("vscode", () => ({
   Position: class {
@@ -59,138 +54,83 @@ vi.mock("vscode", () => ({
 
 import { HoverProvider } from "../hover"
 
-function mockDoc(line: string) {
-  return {
-    uri: { toString: () => `test://hover/${line}` },
-    version: 1,
-    lineCount: 1,
-    lineAt() {
-      return { text: line }
-    },
-    getText(range?: {
-      start: { character: number }
-      end: { character: number }
-    }) {
-      if (!range) return line
-      return line.slice(range.start.character, range.end.character)
-    },
-    getWordRangeAtPosition(pos: { character: number }) {
-      const ch = line[pos.character] ?? ""
-      if (!/[\w-]/.test(ch)) return undefined
-      let start = pos.character
-      while (start > 0 && /[\w-]/.test(line[start - 1] ?? "")) start--
-      let end = pos.character + 1
-      while (end < line.length && /[\w-]/.test(line[end] ?? "")) end++
-      return {
-        start: { line: 0, character: start },
-        end: { line: 0, character: end },
-      }
-    },
-  } as unknown as import("vscode").TextDocument
+const b = (name: string, desc: string): BuiltinDoc => ({
+  name: core.mkBuiltinName(name),
+  synopsis: [name],
+  desc,
+})
+const o = (name: string, category: ZshOption["category"]): ZshOption => ({
+  name: core.mkOptName(name),
+  display: name,
+  flags: [{ char: core.mkOptFlagChar("f"), on: "+" }],
+  defaultIn: ["zsh"],
+  category,
+  desc: "",
+})
+const r = (groupOp: string, sig: string, desc: string): RedirDoc => ({
+  groupOp: core.mkRedirOp(groupOp),
+  sig: core.mkRedirSig(sig),
+  desc,
+  section: "x",
+})
+const p = (name: string, desc: string): ShellParamDoc => ({
+  name: core.mkShellParamName(name),
+  sig: name,
+  desc,
+  section: "Parameters Set By The Shell",
+})
+function c(
+  arity: "unary",
+  op: string,
+  operands: Extract<CondOpDoc, { arity: "unary" }>["operands"],
+  desc: string,
+): Extract<CondOpDoc, { arity: "unary" }>
+function c(
+  arity: "binary",
+  op: string,
+  operands: Extract<CondOpDoc, { arity: "binary" }>["operands"],
+  desc: string,
+): Extract<CondOpDoc, { arity: "binary" }>
+function c(
+  arity: CondOpDoc["arity"],
+  op: string,
+  operands: CondOpDoc["operands"],
+  desc: string,
+): CondOpDoc {
+  return arity === "unary"
+    ? ({ op: core.mkCondOp(op), operands, desc, arity } as Extract<
+        CondOpDoc,
+        { arity: "unary" }
+      >)
+    : ({ op: core.mkCondOp(op), operands, desc, arity } as Extract<
+        CondOpDoc,
+        { arity: "binary" }
+      >)
 }
 
-const builtins = [
-  { name: mkBuiltinName("echo"), synopsis: ["echo"], desc: "echo docs" },
-  { name: mkBuiltinName("fc"), synopsis: ["fc"], desc: "fc docs" },
-] as unknown as BuiltinDoc[]
+const builtins = [b("echo", "d:e"), b("fc", "d:f")]
 const options = [
-  {
-    name: mkOptName("GLOB"),
-    display: "GLOB",
-    flags: [{ char: mkOptFlagChar("f"), on: "+" }],
-    defaultIn: ["zsh"],
-    category: "Expansion and Globbing",
-    desc: "glob docs",
-  },
-  {
-    name: mkOptName("RCS"),
-    display: "RCS",
-    flags: [{ char: mkOptFlagChar("f"), on: "+" }],
-    defaultIn: ["zsh"],
-    category: "Initialisation",
-    desc: "rcs docs",
-  },
-] as unknown as ZshOption[]
+  o("GLOB", "Expansion and Globbing"),
+  o("RCS", "Initialisation"),
+]
 const redirs = [
-  {
-    groupOp: mkRedirOp(">&"),
-    sig: mkRedirSig(">& number"),
-    desc: "redir number docs",
-    section: "x",
-  },
-  {
-    groupOp: mkRedirOp(">&"),
-    sig: mkRedirSig(">& -"),
-    desc: "redir close docs",
-    section: "x",
-  },
-  {
-    groupOp: mkRedirOp(">&"),
-    sig: mkRedirSig(">& p"),
-    desc: "redir coproc docs",
-    section: "x",
-  },
-  {
-    groupOp: mkRedirOp(">&"),
-    sig: mkRedirSig(">& word"),
-    desc: "redir word docs",
-    section: "x",
-  },
-  {
-    groupOp: mkRedirOp(">&!"),
-    sig: mkRedirSig(">&! word"),
-    desc: "redir force docs",
-    section: "x",
-  },
-  {
-    groupOp: mkRedirOp("&>"),
-    sig: mkRedirSig("&> word"),
-    desc: "redir &> docs",
-    section: "x",
-  },
-] as unknown as RedirDoc[]
-const params = [
-  {
-    name: mkShellParamName("SECONDS"),
-    sig: "SECONDS",
-    desc: "seconds docs",
-    section: "Parameters Set By The Shell",
-  },
-] as unknown as ShellParamDoc[]
+  r(">&", ">& number", "d:n"),
+  r(">&", ">& -", "d:-"),
+  r(">&", ">& p", "d:p"),
+  r(">&", ">& word", "d:w"),
+  r(">&!", ">&! word", "d:!"),
+  r("&>", "&> word", "d:&"),
+]
+const params = [p("SECONDS", "d:s")]
 const condOps = [
-  {
-    op: mkCondOp("&&"),
-    operands: ["exp1", "exp2"],
-    desc: "and docs",
-    arity: "binary",
-  },
-  {
-    op: mkCondOp("||"),
-    operands: ["exp1", "exp2"],
-    desc: "or docs",
-    arity: "binary",
-  },
-  {
-    op: mkCondOp("<"),
-    operands: ["s1", "s2"],
-    desc: "lt docs",
-    arity: "binary",
-  },
-  {
-    op: mkCondOp(">"),
-    operands: ["s1", "s2"],
-    desc: "gt docs",
-    arity: "binary",
-  },
-  {
-    op: mkCondOp("!"),
-    operands: ["exp"],
-    desc: "not docs",
-    arity: "unary",
-  },
-] as unknown as CondOpDoc[]
+  c("binary", "&&", ["exp1", "exp2"], "d:&"),
+  c("binary", "||", ["exp1", "exp2"], "d:|"),
+  c("binary", "<", ["s1", "s2"], "d:<"),
+  c("binary", ">", ["s1", "s2"], "d:>"),
+  c("unary", "!", ["exp"], "d:!"),
+]
 
-function mkProvider() {
+function mk() {
   return new HoverProvider(
     params,
     options,
@@ -201,8 +141,8 @@ function mkProvider() {
   )
 }
 
-function hoverAt(line: string, char: number): { value: string } | undefined {
-  const h = mkProvider().provideHover(mockDoc(line), {
+function at(line: string, char: number): { value: string } | undefined {
+  const h = mk().provideHover(wordDoc(line, "hover"), {
     line: 0,
     character: char,
   } as import("vscode").Position)
@@ -212,70 +152,60 @@ function hoverAt(line: string, char: number): { value: string } | undefined {
 }
 
 suite("HoverProvider", () => {
-  test("builtin hover works with semicolon delimiter", () => {
-    assert.match(hoverAt("f() { echo; }", 7)?.value ?? "", /echo docs/)
-  })
-
-  test("builtin hover works in function body without semicolon", () => {
-    assert.match(hoverAt("f() { echo }", 7)?.value ?? "", /echo docs/)
-  })
-
-  test("builtin hover works in bare function body", () => {
-    assert.match(hoverAt("f() echo", 4)?.value ?? "", /echo docs/)
-  })
-
-  test("builtin hover wins over same-line redirection", () => {
-    const h = hoverAt("echo thing >&2", 1)
-    assert.match(h?.value ?? "", /echo docs/)
-    assert.doesNotMatch(h?.value ?? "", /redir word docs/)
-  })
-
-  test("no hover on whitespace", () => {
-    assert.strictEqual(hoverAt("echo  hi", 4), undefined)
-  })
-
-  test("no hover on comment text", () => {
-    assert.strictEqual(hoverAt("echo # echo", 9), undefined)
-  })
-
-  test("builtin hover after arith condition", () => {
-    assert.match(hoverAt("if ((1)) { fc; }", 12)?.value ?? "", /fc docs/)
-  })
-
-  test("builtin hover after arith condition bare form", () => {
-    assert.match(hoverAt("if ((1)) fc", 9)?.value ?? "", /fc docs/)
-  })
-
   for (const [line, char, re] of [
-    ["[[ a && b ]]", 5, /and docs/],
-    ["[[ a || b ]]", 5, /or docs/],
-    ["[[ a < b ]]", 5, /lt docs/],
-    ["[[ a > b ]]", 5, /gt docs/],
-    ["[[ ! -f x ]]", 3, /not docs/],
+    ["f() { echo; }", 7, /d:e/],
+    ["f() { echo }", 7, /d:e/],
+    ["f() echo", 4, /d:e/],
+    ["if ((1)) { fc; }", 12, /d:f/],
+    ["if ((1)) fc", 9, /d:f/],
   ] as const) {
-    test(`conditional hover resolves ${line}`, () => {
-      assert.match(hoverAt(line, char)?.value ?? "", re)
+    test(line, () => {
+      assert.match(at(line, char)?.value ?? "", re)
     })
   }
 
-  test("shell parameter hover works from static docs", () => {
-    assert.match(hoverAt("print $SECONDS", 8)?.value ?? "", /seconds docs/)
-  })
-
-  test("ambiguous short option hover stays silent", () => {
-    assert.strictEqual(hoverAt("setopt +f", 8), undefined)
+  test("echo thing >&2 prefers builtin", () => {
+    const h = at("echo thing >&2", 1)
+    assert.match(h?.value ?? "", /d:e/)
+    assert.doesNotMatch(h?.value ?? "", /d:w/)
   })
 
   for (const [line, char, re] of [
-    ["echo >&2", 6, /redir number docs/],
-    ["echo >&-", 6, /redir close docs/],
-    ["echo >&p", 6, /redir coproc docs/],
-    ["echo >&file", 6, /redir word docs/],
-    ["echo >&file", 8, /redir word docs/],
-    ["echo >&!file", 8, /redir force docs/],
+    ["[[ a && b ]]", 5, /d:&/],
+    ["[[ a || b ]]", 5, /d:\|/],
+    ["[[ a < b ]]", 5, /d:</],
+    ["[[ a > b ]]", 5, /d:>/],
+    ["[[ ! -f x ]]", 3, /d:!/],
   ] as const) {
-    test(`redirection hover disambiguates ${line}`, () => {
-      assert.match(hoverAt(line, char)?.value ?? "", re)
+    test(line, () => {
+      assert.match(at(line, char)?.value ?? "", re)
+    })
+  }
+
+  test("print $SECONDS", () => {
+    assert.match(at("print $SECONDS", 8)?.value ?? "", /d:s/)
+  })
+
+  for (const [line, char] of [
+    ["echo  hi", 4],
+    ["echo # echo", 9],
+    ["setopt +f", 8],
+  ] as const) {
+    test(line, () => {
+      assert.strictEqual(at(line, char), undefined)
+    })
+  }
+
+  for (const [line, char, re] of [
+    ["echo >&2", 6, /d:n/],
+    ["echo >&-", 6, /d:-/],
+    ["echo >&p", 6, /d:p/],
+    ["echo >&file", 6, /d:w/],
+    ["echo >&file", 8, /d:w/],
+    ["echo >&!file", 8, /d:!/],
+  ] as const) {
+    test(`${line} @${char}`, () => {
+      assert.match(at(line, char)?.value ?? "", re)
     })
   }
 })

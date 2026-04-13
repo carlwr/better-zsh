@@ -6,3 +6,7 @@ export function mockDoc(lines: readonly string[]): DocLike {
     lineCount: lines.length,
   }
 }
+
+export function doc(text: string): DocLike {
+  return mockDoc(text.split("\n"))
+}

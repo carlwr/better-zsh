@@ -6,6 +6,20 @@ export function readVendoredYo(name: string): string {
   return readFileSync(resolve(__dirname, `../../data/zsh-docs/${name}`), "utf8")
 }
 
+export function only<T>(xs: readonly T[]): T {
+  expect(xs).toHaveLength(1)
+  const [x] = xs
+  if (x === undefined) throw new Error("expected one item")
+  return x
+}
+
+export function by<T, K extends PropertyKey>(
+  xs: readonly T[],
+  keyOf: (x: T) => K,
+) {
+  return new Map(xs.map((x) => [keyOf(x), x]))
+}
+
 export function expectDocCorpus<T>({
   docs,
   minCount,

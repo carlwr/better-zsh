@@ -8,21 +8,7 @@ import {
   mkOptName,
   mkReservedWord,
 } from "../types/brand"
-import {
-  getBuiltins,
-  getCondOps,
-  getGlobbingFlags,
-  getGlobOps,
-  getHistoryDocs,
-  getOptions,
-  getParamFlags,
-  getPrecmds,
-  getProcessSubsts,
-  getRedirections,
-  getReservedWords,
-  getShellParams,
-  getSubscriptFlags,
-} from "../zsh-data"
+import * as zd from "../zsh-data"
 
 const dataDir = resolveZshDataDir()
 
@@ -36,8 +22,8 @@ describe("vendored zsh data assets", () => {
   })
 
   test("parses vendored options and conditional operators", () => {
-    const options = getOptions()
-    const condOps = getCondOps()
+    const options = zd.getOptions()
+    const condOps = zd.getCondOps()
 
     expect(options.length).toBeGreaterThan(0)
     expect(condOps.length).toBeGreaterThan(0)
@@ -46,7 +32,7 @@ describe("vendored zsh data assets", () => {
   })
 
   test("parses vendored builtins docs", () => {
-    const builtins = getBuiltins()
+    const builtins = zd.getBuiltins()
     expect(builtins.length).toBeGreaterThan(0)
 
     const autoload = builtins.find((builtin) => builtin.name === "autoload")
@@ -62,7 +48,7 @@ describe("vendored zsh data assets", () => {
   })
 
   test("parses vendored precommand modifier docs", () => {
-    const docs = getPrecmds()
+    const docs = zd.getPrecmds()
     expect(docs.map((doc) => doc.name)).toEqual([
       "-",
       "builtin",
@@ -74,17 +60,17 @@ describe("vendored zsh data assets", () => {
   })
 
   test("parses newly vendored structured syntax docs", () => {
-    expect(getRedirections().some((doc) => doc.groupOp === "<")).toBe(true)
+    expect(zd.getRedirections().some((doc) => doc.groupOp === "<")).toBe(true)
     expect(
-      getReservedWords().some((doc) => doc.name === mkReservedWord("if")),
+      zd.getReservedWords().some((doc) => doc.name === mkReservedWord("if")),
     ).toBe(true)
-    expect(getShellParams().some((doc) => doc.name === "SECONDS")).toBe(true)
-    expect(getSubscriptFlags().some((doc) => doc.flag === "w")).toBe(true)
-    expect(getParamFlags().some((doc) => doc.flag === "@")).toBe(true)
-    expect(getHistoryDocs().some((doc) => doc.key === "!!")).toBe(true)
-    expect(getGlobOps().some((doc) => doc.op === "*")).toBe(true)
-    expect(getGlobbingFlags().some((doc) => doc.flag === "i")).toBe(true)
-    expect(getProcessSubsts().map((doc) => doc.op)).toEqual([
+    expect(zd.getShellParams().some((doc) => doc.name === "SECONDS")).toBe(true)
+    expect(zd.getSubscriptFlags().some((doc) => doc.flag === "w")).toBe(true)
+    expect(zd.getParamFlags().some((doc) => doc.flag === "@")).toBe(true)
+    expect(zd.getHistoryDocs().some((doc) => doc.key === "!!")).toBe(true)
+    expect(zd.getGlobOps().some((doc) => doc.op === "*")).toBe(true)
+    expect(zd.getGlobbingFlags().some((doc) => doc.flag === "i")).toBe(true)
+    expect(zd.getProcessSubsts().map((doc) => doc.op)).toEqual([
       "<(...)",
       ">(...)",
       "=(...)",
