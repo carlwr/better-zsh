@@ -3,6 +3,22 @@ name: orient
 description: Orient quickly in the better-zsh monorepo. Use at the start of any work session, when adding features, debugging, or navigating unfamiliar code. Provides discovery scripts and reading-path strategies rather than hardcoded filenames.
 ---
 
+# META: ABOUT THIS SKILL
+
+> This skill under `$REPO_ROOT/skills/orient/` is a tool-agnostic source-of-truth store for this skill.
+> For discoverability for various tools, symlinks to this dir, and/or files and dirs in/under it, are used. Such symlinks may exist at various depths and in various forms under the dirs:
+>
+> ```
+> $REPO_ROOT/agents/
+> $REPO_ROOT/.claude/
+> $REPO_ROOT/.cursor/
+> $REPO_ROOT/opencode/
+> ```
+>
+> To edit this skill itself, or any file belonging to it, the source-of-truth physical files must be edited.
+>
+> **NOTE: you may perceive the path to this skill or files/dirs in/under it to be the tool-specific ones. Before making changes to files or dirs for this skill, you must explicitly make these only to the physical source-of-truth files/dirs.**
+
 # Orientation: better-zsh monorepo
 
 Read `AGENTS.md` first — it is the primary source for conventions, testing rules, and design decisions. This skill adds navigation strategies and discovery scripts.

@@ -272,7 +272,9 @@ Meaning: from a broader view, see if the code changes done makes any refactoring
 
 ### Keeping the orientation skill fresh
 
-A project skill lives at `skills/orient/`. It provides:
+A project skill lives at `$REPO_ROOT/skills/orient/`. Physical, source-of-truth files and dirs lives only under this dir. For tool discovery, a system with symlinks is used. This is elaborated on further in $REPO_ROOT/skills/orient/SKILL.md. **Hence, be careful before managing or changing the skill.**
+
+The skill provides:
 - Discovery scripts that produce always-current output
 - Reading paths by task type (which **directories** to explore, not which files to read)
 - Known gotchas
