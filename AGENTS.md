@@ -141,23 +141,34 @@ Semantic token design choices:
 
 ## Code style
 
-- Short identifiers, minimal comments — prefer naming over comments
+- minimal comments (prefer naming over comments)
 - Functional style preferred; pure functions where possible
 - **No classes** — except where VS Code API demands (provider interfaces that implement `vscode.*Provider`). All logic in pure functions; providers are thin shells calling them.
 - Avoid mutable state; when needed, handle with care and isolate
 - Extract pure, testable functions — even single-use if they clarify intent or enable testing
-- Abstract repeated patterns into shared utilities
 - At call sites, a self-explanatory function name is cheaper cognitive load than inline code
 - Do not hard-code things that should be global constants, or that can be read from somewhere. Example: the languageId string, the name of the extension.
-- No unnecessary abstractions; three similar lines > a premature helper — but once a pattern appears twice with non-trivial logic, extract it
 - Keep files focused — one concern per module
-- Conciseness is key, everywhere
-- Prefer directory structure richness (subdirectories) — aids agentic discoverability and script-based navigation
+- Prefer directory structure richness (subdirectories) — aids agentic discoverability and script-based navigation (but trade this off vs. verbose import ceremony)
 - When choosing between expressing intent through a concept/term vs generic description, prefer the term if it's well-chosen (cf. "facts")
 - When a concept or term is established (e.g. "facts"), use it consistently — prefer the established term over ad-hoc synonyms
 - Prefer expressing intent and constraints through code shape (module boundaries, types, function signatures) over comments or documentation — structural expression is self-enforcing; comments are advisory
-- Strengthen documentation through identifier names and JSDoc rather than separate documentation files
+- Strengthen documentation primarily through identifier names, structure and abstraction; secondarily with JSDoc. In general, don't introduce separate documentation files.
 - JSDocs on every exported identifier from `zsh-core` _is **not**_ a requirement - add JSDoc if it adds value beyond what function name + type signature already communicates
+
+### Conciseness
+
+**Conciseness is key, everywhere.**
+
+guidelines:
+- prefer short identifier names
+- abstract repeated patterns into shared utilities
+- when making decisions, always consider how clarity changes (a conciseness win traded off for clarity can still be worth it - just consider this aspect)
+
+when comparing code for conciseness:
+- `wc -w` and `wc -c` are reasonable proxy measure
+- `wc -l` may hide or underestimate conciseness wins; however, a reduced `wc -l` is usually signal of an improvement
+- if changes are made only/mainly for conciseness reasons, always compare quantatively before and after; at minimum make sure conciseness wasn't worsened
 
 ### Types
 
@@ -171,6 +182,28 @@ Semantic token design choices:
 - **Deferred computation over mutable tracking** — prefer `memoized`/`cached` (from `@carlwr/typescript-extra`) over boolean flags tracking "has this been done?". Memoization encapsulates the state; the thunk boundary replaces the flag.
 - **Do not add inner `readonly` by reflex** — add it when the container type itself must be non-mutable across call boundaries or aliases. If immutability is already enforced by the containing field/signature and the value is constructed once rather than mutated in place, extra inner `readonly` is usually redundant noise rather than a stronger invariant.
 - Module-level constants that are `Set`/`Map` and must never be mutated should carry `ReadonlySet<T>`/`ReadonlyMap<K,V>` type annotations — structural enforcement over advisory comments.
+
+### Casts (`as`) — principled vs smell
+
+Every `as` is a trust assertion. Classify before writing one:
+
+**Principled** — keep, and co-locate with the invariant they express:
+- **Brand mint** — inside a smart constructor (`mkProven`, `mkCandidate`, `mkOptFlag`, …). One per brand family.
+- **Central dispatcher** — inside a parametric function whose job *is* to bridge a type-level correlation TS can't propagate (e.g. `renderDoc`, `resolve`, `buildCategoryMap`, `loadCategoryDocs`). The function's signature is the invariant; the cast is its implementation.
+- **Correlated-union constructor** — a tiny helper whose only job is to assemble `{ category: K, id: Brand<K> }` into the discriminated union. Concentrates the one unavoidable cast per union shape (`mkPieceId`, `mkCandPieceId`).
+- **Literal-union narrowing** — when TS fails to reduce a conditional type at a specific literal K (e.g. `d.name as Proven<"precmd">` inside the `docId` table entry for `precmd`). Limit to the single table entry that actually needs it.
+- **Brand → string peeling** for display or string-native ops (e.g. `doc.name as string` inside a code-fence builder). Trivial; not a crossing.
+
+**Smell — reject, and restructure** if any of these are true:
+- **Cross-brand cast outside the sanctioned crossing.** If you find yourself writing `as unknown as Proven<K>` or `Candidate<K> as …` anywhere other than `resolve()` (public) or a smart constructor (mint), the data model is wrong. Route the probe through `resolve(corpus, mkCandPieceId(K, candidate))` instead of holding a secondary set/map keyed by the wrong brand.
+- **Ad-hoc assembly of a discriminated-union member at a call site** (e.g. `{ category, id } as DocPieceId` outside `mkPieceId`/`mkCandPieceId`). Use the constructor; it exists precisely so the cast lives in one place.
+- **Scaffolding cast masking a design issue.** `as unknown as T` in business logic, a cast to satisfy a `Map`/`Set` whose key type is the "wrong" brand for what's actually being probed, or a cast introduced to avoid threading a `corpus`/context argument. These are signals, not fixes.
+
+Rules of thumb:
+- **A new cast is a claim that needs a comment.** Principled casts deserve a one-line reason (which invariant, why TS can't see it). If you can't articulate it, it's a smell.
+- **Centralize before tolerating.** If the "same" cast appears at two or more call sites, extract a tiny typed constructor whose body holds the cast once. The consumer-facing call site should never need `as`.
+- **The sanctioned brand crossing is `resolve()`.** Everything else is either mint (smart constructor) or a symptom.
+- **Prefer passing the corpus over caching a derived secondary index.** If the only reason a `Set<Proven<K>>` exists is to probe membership, delete the set and call `resolve()` against the existing `Map`. Same cost, no cross-brand cast, one fewer concept.
 
 ### Other tools
 
