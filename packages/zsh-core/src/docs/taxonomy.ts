@@ -88,18 +88,6 @@ export const mkCandPieceId = <K extends DocCategory>(
   id: Candidate<K>,
 ): CandidateDocPieceId => ({ category, id }) as CandidateDocPieceId
 
-/** Curried variant. */
-export const mkPieceId_ =
-  <K extends DocCategory>(category: K) =>
-  (id: Proven<K>): DocPieceId =>
-    mkPieceId(category, id)
-
-/** Curried variant. */
-export const mkCandPieceId_ =
-  <K extends DocCategory>(category: K) =>
-  (id: Candidate<K>): CandidateDocPieceId =>
-    mkCandPieceId(category, id)
-
 export const docId: {
   [K in DocCategory]: (doc: DocRecordMap[K]) => Proven<K>
 } = {

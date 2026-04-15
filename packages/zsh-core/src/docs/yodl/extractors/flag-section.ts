@@ -26,14 +26,14 @@ export function parseSubscriptFlagSection(
   yo: string,
   section: string,
 ): readonly SubscriptFlagDoc[] {
-  return parseFlagSection(yo, section, s => mkProven("subscript_flag", s))
+  return parseFlagSection(yo, section, sig => mkProven("subscript_flag", sig))
 }
 
 export function parseParamFlagSection(
   yo: string,
   section: string,
 ): readonly ParamFlagDoc[] {
-  return parseFlagSection(yo, section, s => mkProven("param_flag", s))
+  return parseFlagSection(yo, section, sig => mkProven("param_flag", sig))
 }
 
 function parseFlagSection<T>(

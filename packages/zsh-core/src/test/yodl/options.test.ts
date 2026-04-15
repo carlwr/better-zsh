@@ -1,9 +1,11 @@
 import { describe, expect, test } from "vitest"
-import { mkOptFlag, mkProven, optSections } from "../../docs/types"
+import { mkOptFlag, optSections } from "../../docs/types"
 import { parseOptions } from "../../docs/yodl/extractors/options"
+import { mkProven_ } from "../id-fns"
 import { by, only, readVendoredYo } from "./test-util"
 
 const OPTS_YO = readVendoredYo("options.yo")
+const opt = mkProven_("option")
 
 describe("parseOptions", () => {
   test("parses AUTO_CD", () => {
@@ -13,12 +15,12 @@ If a command is issued that can't be executed as a normal command,
 and the command is the name of a directory, perform the cd
 command to that directory.
 )`
-    const opt = only(parseOptions(yo))
-    expect(opt.name).toBe(mkProven("option", "AUTO_CD"))
-    expect(opt.display).toBe("AUTO_CD")
-    expect(opt.flags).toEqual([{ char: mkOptFlag("J"), on: "-" }])
-    expect(opt.category).toBe("Changing Directories")
-    expect(opt.desc).toContain("command is the name of a directory")
+    const o = only(parseOptions(yo))
+    expect(o.name).toBe(opt("AUTO_CD"))
+    expect(o.display).toBe("AUTO_CD")
+    expect(o.flags).toEqual([{ char: mkOptFlag("J"), on: "-" }])
+    expect(o.category).toBe("Changing Directories")
+    expect(o.desc).toContain("command is the name of a directory")
   })
 
   test("parses option with default marker", () => {
@@ -83,7 +85,7 @@ endsitem()`
 
     test("all names pass mkProven option idempotence", () => {
       for (const o of opts) {
-        expect(mkProven("option", o.name)).toBe(o.name)
+        expect(opt(o.name)).toBe(o.name)
       }
     })
 
@@ -97,26 +99,26 @@ endsitem()`
     })
 
     test("known options exist", () => {
-      expect(byName.has(mkProven("option", "EXTENDED_GLOB"))).toBe(true)
-      expect(byName.has(mkProven("option", "AUTO_CD"))).toBe(true)
-      expect(byName.has(mkProven("option", "GLOB_DOTS"))).toBe(true)
+      expect(byName.has(opt("EXTENDED_GLOB"))).toBe(true)
+      expect(byName.has(opt("AUTO_CD"))).toBe(true)
+      expect(byName.has(opt("GLOB_DOTS"))).toBe(true)
     })
 
     test("captures short-flag polarity from vendored docs", () => {
-      expect(byName.get(mkProven("option", "ERR_EXIT"))?.flags).toEqual([
+      expect(byName.get(opt("ERR_EXIT"))?.flags).toEqual([
         { char: mkOptFlag("e"), on: "-" },
       ])
-      expect(byName.get(mkProven("option", "RCS"))?.flags).toEqual([
+      expect(byName.get(opt("RCS"))?.flags).toEqual([
         { char: mkOptFlag("f"), on: "+" },
       ])
-      expect(byName.get(mkProven("option", "GLOBAL_RCS"))?.flags).toEqual([
+      expect(byName.get(opt("GLOBAL_RCS"))?.flags).toEqual([
         { char: mkOptFlag("d"), on: "+" },
       ])
-      expect(byName.get(mkProven("option", "MARK_DIRS"))?.flags).toEqual([
+      expect(byName.get(opt("MARK_DIRS"))?.flags).toEqual([
         { char: mkOptFlag("8"), on: "-" },
         { char: mkOptFlag("X"), on: "-" },
       ])
-      expect(byName.get(mkProven("option", "NOTIFY"))?.flags).toEqual([
+      expect(byName.get(opt("NOTIFY"))?.flags).toEqual([
         { char: mkOptFlag("5"), on: "-" },
         { char: mkOptFlag("b"), on: "-" },
       ])
@@ -124,10 +126,10 @@ endsitem()`
 
     test("keeps known one-to-many short flags explicit", () => {
       const byFlag = new Map<string, string[]>()
-      for (const opt of opts) {
-        for (const flag of opt.flags) {
+      for (const o of opts) {
+        for (const flag of o.flags) {
           const key = `${flag.on}${flag.char}`
-          byFlag.set(key, [...(byFlag.get(key) ?? []), opt.name])
+          byFlag.set(key, [...(byFlag.get(key) ?? []), o.name])
         }
       }
       expect(byFlag.get("-X")).toEqual(["listtypes", "markdirs"])

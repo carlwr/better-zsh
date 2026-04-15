@@ -118,18 +118,6 @@ export const mkCandidate = <K extends DocCategory>(
   raw: string,
 ): Candidate<K> => candidateNorm[cat](raw) as Candidate<K>
 
-/** Curried variant. */
-export const mkProven_ =
-  <K extends DocCategory>(cat: K) =>
-  (raw: string): Proven<K> =>
-    mkProven(cat, raw)
-
-/** Curried variant. */
-export const mkCandidate_ =
-  <K extends DocCategory>(cat: K) =>
-  (raw: string): Candidate<K> =>
-    mkCandidate(cat, raw)
-
 // --- Closed literal unions --------------------------------------------------
 
 export const precmdNames = [

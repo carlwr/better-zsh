@@ -1,24 +1,23 @@
 import fc from "fast-check"
 import { describe, expect, test } from "vitest"
-import { mkCandidate, mkOptFlag, mkProven } from "../docs/types"
+import { mkOptFlag } from "../docs/types"
+import { mkCandidate_, mkProven_ } from "./id-fns"
+
+const opt = mkProven_("option")
+const cond = mkProven_("cond_op")
+const optC = mkCandidate_("option")
 
 describe("mkProven option (normalizes like mkOptName)", () => {
   test("normalizes known equivalences", () => {
-    expect(mkProven("option", "EXTENDED_GLOB")).toBe(
-      mkProven("option", "extendedglob"),
-    )
-    expect(mkProven("option", "EXTENDED_GLOB")).toBe(
-      mkProven("option", "extended_glob"),
-    )
-    expect(mkProven("option", "AUTO_CD")).toBe(mkProven("option", "autocd"))
+    expect(opt("EXTENDED_GLOB")).toBe(opt("extendedglob"))
+    expect(opt("EXTENDED_GLOB")).toBe(opt("extended_glob"))
+    expect(opt("AUTO_CD")).toBe(opt("autocd"))
   })
 
   test("is idempotent", () => {
     fc.assert(
       fc.property(fc.string(), (s: string) => {
-        expect(mkProven("option", mkProven("option", s))).toBe(
-          mkProven("option", s),
-        )
+        expect(opt(opt(s))).toBe(opt(s))
       }),
     )
   })
@@ -26,7 +25,7 @@ describe("mkProven option (normalizes like mkOptName)", () => {
   test("result is lowercase, no underscores", () => {
     fc.assert(
       fc.property(fc.string(), (s: string) => {
-        const r = mkProven("option", s)
+        const r = opt(s)
         expect(r).toBe(r.toLowerCase())
         expect(r).not.toContain("_")
       }),
@@ -36,13 +35,13 @@ describe("mkProven option (normalizes like mkOptName)", () => {
 
 describe("mkProven cond_op (trims)", () => {
   test("trims whitespace", () => {
-    expect(mkProven("cond_op", "  -a  ")).toBe(mkProven("cond_op", "-a"))
+    expect(cond("  -a  ")).toBe(cond("-a"))
   })
 
   test("preserves non-whitespace", () => {
     fc.assert(
       fc.property(fc.string(), (s: string) => {
-        expect(mkProven("cond_op", s) as string).toBe(s.trim())
+        expect(cond(s) as string).toBe(s.trim())
       }),
     )
   })
@@ -56,26 +55,24 @@ describe("mkOptFlag", () => {
 
 describe("mkCandidate option", () => {
   test("strips no_ prefix", () => {
-    expect(mkCandidate("option", "no_autocd") as string).toBe("autocd")
-    expect(mkCandidate("option", "NO_AUTO_CD") as string).toBe("autocd")
+    expect(optC("no_autocd") as string).toBe("autocd")
+    expect(optC("NO_AUTO_CD") as string).toBe("autocd")
   })
 
   test("strips no prefix (no underscore)", () => {
-    expect(mkCandidate("option", "noautocd") as string).toBe("autocd")
+    expect(optC("noautocd") as string).toBe("autocd")
   })
 
   test("normalizes like mkProven option for non-negated forms", () => {
     fc.assert(
       fc.property(fc.string(), (s: string) => {
-        expect(mkCandidate("option", s) as string).toBe(
-          mkProven("option", s.replace(/^no_?/i, "")) as string,
-        )
+        expect(optC(s) as string).toBe(opt(s.replace(/^no_?/i, "")) as string)
       }),
     )
   })
 
   test("mkProven option does NOT strip no_", () => {
-    expect(mkProven("option", "no_autocd") as string).toBe("noautocd")
-    expect(mkCandidate("option", "no_autocd") as string).toBe("autocd")
+    expect(opt("no_autocd") as string).toBe("noautocd")
+    expect(optC("no_autocd") as string).toBe("autocd")
   })
 })

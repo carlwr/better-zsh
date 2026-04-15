@@ -3,9 +3,13 @@ import { join } from "node:path"
 import { describe, expect, test } from "vitest"
 import { resolveZshDataDir, vendoredZshDocFiles } from "../data-dir"
 import { loadCorpus } from "../docs/corpus"
-import { mkProven } from "../docs/types"
+import { mkProven_ } from "./id-fns"
 
 const dataDir = resolveZshDataDir()
+const opt = mkProven_("option")
+const cond = mkProven_("cond_op")
+const bi = mkProven_("builtin")
+const rw = mkProven_("reserved_word")
 
 describe("vendored zsh data assets", () => {
   test("ships the full doc set expected by runtime and packaging", () => {
@@ -20,20 +24,20 @@ describe("vendored zsh data assets", () => {
     const corpus = loadCorpus()
     expect(corpus.option.size).toBeGreaterThan(0)
     expect(corpus.cond_op.size).toBeGreaterThan(0)
-    expect(corpus.option.has(mkProven("option", "AUTO_CD"))).toBe(true)
-    expect(corpus.cond_op.has(mkProven("cond_op", "=="))).toBe(true)
+    expect(corpus.option.has(opt("AUTO_CD"))).toBe(true)
+    expect(corpus.cond_op.has(cond("=="))).toBe(true)
   })
 
   test("parses vendored builtins docs", () => {
     const corpus = loadCorpus()
     expect(corpus.builtin.size).toBeGreaterThan(0)
 
-    const autoload = corpus.builtin.get(mkProven("builtin", "autoload"))
+    const autoload = corpus.builtin.get(bi("autoload"))
     expect(autoload).toBeTruthy()
     expect(autoload?.synopsis.length).toBeGreaterThan(0)
     expect(autoload?.desc.length).toBeGreaterThan(0)
-    expect(corpus.builtin.has(mkProven("builtin", "bindkey"))).toBe(true)
-    expect(corpus.builtin.has(mkProven("builtin", "ARG1"))).toBe(false)
+    expect(corpus.builtin.has(bi("bindkey"))).toBe(true)
+    expect(corpus.builtin.has(bi("ARG1"))).toBe(false)
   })
 
   test("parses vendored precommand modifier docs", () => {
@@ -53,7 +57,7 @@ describe("vendored zsh data assets", () => {
     expect([...corpus.redir.values()].some(doc => doc.groupOp === "<")).toBe(
       true,
     )
-    expect(corpus.reserved_word.has(mkProven("reserved_word", "if"))).toBe(true)
+    expect(corpus.reserved_word.has(rw("if"))).toBe(true)
     expect(
       [...corpus.shell_param.values()].some(doc => doc.name === "SECONDS"),
     ).toBe(true)

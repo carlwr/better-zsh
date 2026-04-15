@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest"
-import { mkProven, mkProven_, mkRedirOp } from "../../docs/types"
+import { mkProven, mkRedirOp } from "../../docs/types"
 import { parseGlobFlags } from "../../docs/yodl/extractors/glob-flags"
 import { parseGlobOps } from "../../docs/yodl/extractors/glob-ops"
 import { parseHistory } from "../../docs/yodl/extractors/history"
@@ -9,6 +9,7 @@ import { parseRedirs } from "../../docs/yodl/extractors/redirections"
 import { parseReswords } from "../../docs/yodl/extractors/reserved-words"
 import { parseShellParams } from "../../docs/yodl/extractors/shell-params"
 import { parseSubscriptFlags } from "../../docs/yodl/extractors/subscript-flags"
+import { mkProven_ } from "../id-fns"
 import { by, expectDocCorpus, readVendoredYo } from "./test-util"
 
 const EXPN_YO = readVendoredYo("expn.yo")
