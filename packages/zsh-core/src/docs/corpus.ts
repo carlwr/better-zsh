@@ -31,6 +31,7 @@ import type {
   SubscriptFlagDoc,
   ZshOption,
 } from "./types.ts"
+import { type Candidate, normalizeOptName } from "./types.ts"
 import { parseBuiltins } from "./yodl/extractors/builtins.ts"
 import { parseCondOps } from "./yodl/extractors/cond-ops.ts"
 import { parseGlobFlags } from "./yodl/extractors/glob-flags.ts"
@@ -132,6 +133,29 @@ export function resolve(
   const id = query.id as unknown as string
   if (!map.has(id)) return undefined
   return { category: query.category, id: query.id } as unknown as DocPieceId
+}
+
+/**
+ * Resolve a raw option string against the corpus, preserving `no_` negation as
+ * a semantic signal. Tries the literal form first (handles `NOTIFY` correctly
+ * when `NO_NOTIFY` is also passed in); falls back to stripped form with
+ * `negated: true` when the literal is absent.
+ */
+export function resolveOption(
+  corpus: DocCorpus,
+  raw: string,
+): { readonly id: Proven<"option">; readonly negated: boolean } | undefined {
+  const trimmed = raw.trim()
+  const literal = normalizeOptName(trimmed) as unknown as Proven<"option">
+  if (corpus.option.has(literal)) return { id: literal, negated: false }
+  const m = trimmed.match(/^no_?/i)
+  if (!m) return undefined
+  // normalizeOptName only — mkCandidate would re-strip a second no_ prefix
+  const stripped = normalizeOptName(
+    trimmed.slice(m[0].length),
+  ) as Candidate<"option">
+  const id = stripped as unknown as Proven<"option">
+  return corpus.option.has(id) ? { id, negated: true } : undefined
 }
 
 /** Load the full parsed doc corpus. Eager, cached, immutable. */

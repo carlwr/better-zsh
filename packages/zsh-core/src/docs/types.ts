@@ -63,7 +63,7 @@ export type Candidate<K extends DocCategory> = string & {
 
 // Normalization tables for proven and candidate smart constructors.
 // idempotent; strips underscores, lowercases
-function normalizeOptName(raw: string): string {
+export function normalizeOptName(raw: string): string {
   return raw.replace(/_/g, "").toLowerCase()
 }
 
