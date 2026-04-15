@@ -6,7 +6,7 @@ import {
   docId,
 } from "../docs/taxonomy.ts"
 import type { Proven, ZshOption } from "../docs/types.ts"
-import { type MdCtx, mdRenderer, mkMdCtx } from "./md.ts"
+import { mdRenderer } from "./md.ts"
 
 export interface RefDocBase<K extends DocCategory, I extends string> {
   readonly kind: K
@@ -34,13 +34,13 @@ function docHeading<K extends DocCategory>(
 function mkRefDocs<K extends DocCategory>(
   kind: K,
   docs: readonly DocRecordMap[K][],
-  ctx: MdCtx,
+  corpus: DocCorpus,
 ): RefDocBase<K, Proven<K>>[] {
   return docs.map(doc => ({
     kind,
     id: docId[kind](doc),
     heading: docHeading(kind, doc),
-    md: mdRenderer[kind](doc, ctx),
+    md: mdRenderer[kind](doc, corpus),
   }))
 }
 
@@ -61,10 +61,9 @@ function corpusDocs<K extends DocCategory>(
 
 /** Generate the full static reference corpus from a `DocCorpus`. */
 export function refDocs(corpus: DocCorpus): readonly RefDoc[] {
-  const ctx = mkMdCtx([...corpus.option.values()])
   const out: RefDoc[] = []
   for (const kind of docCategories) {
-    out.push(...(mkRefDocs(kind, corpusDocs(corpus, kind), ctx) as RefDoc[]))
+    out.push(...(mkRefDocs(kind, corpusDocs(corpus, kind), corpus) as RefDoc[]))
   }
   return out
 }

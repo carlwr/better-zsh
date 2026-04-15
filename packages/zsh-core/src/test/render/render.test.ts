@@ -38,7 +38,6 @@ import {
   mdReservedWord,
   mdShellParam,
   mdSubscriptFlag,
-  mkMdCtx,
 } from "../../render/md"
 import { refDocs } from "../../render/refs"
 import { withTmpDirAsync } from "../tmp-dir"
@@ -279,8 +278,11 @@ const dumpCases = [
 ] as const
 
 describe("render markdown", () => {
+  const emptyCorpus = mkTestCorpus({ option: [] })
+  const cdCorpus = mkTestCorpus({ option: [cd] })
+
   test("renders option markdown", () => {
-    expectContainsAll(mdOpt(cd), [
+    expectContainsAll(mdOpt(cd, emptyCorpus), [
       "`AUTO_CD`",
       "```zsh",
       "setopt auto_cd",
@@ -293,12 +295,9 @@ describe("render markdown", () => {
   })
 
   test("formats option refs in prose variants", () => {
-    expect(
-      fmtOptRefsInMd(
-        "AUTO_CD AUTOCD NO_AUTO_CD NOAUTOCD",
-        mkMdCtx([cd]).optNames,
-      ),
-    ).toBe("**`AUTO_CD`** **`AUTOCD`** **`NO_AUTO_CD`** **`NOAUTOCD`**")
+    expect(fmtOptRefsInMd("AUTO_CD AUTOCD NO_AUTO_CD NOAUTOCD", cdCorpus)).toBe(
+      "**`AUTO_CD`** **`AUTOCD`** **`NO_AUTO_CD`** **`NOAUTOCD`**",
+    )
   })
 
   test("skips vars and existing markdown code when formatting option refs", () => {
@@ -312,7 +311,7 @@ describe("render markdown", () => {
           "```",
           "AUTOCD",
         ].join("\n"),
-        mkMdCtx([cd]).optNames,
+        cdCorpus,
       ),
     ).toBe(
       [
@@ -327,14 +326,14 @@ describe("render markdown", () => {
   })
 
   test("formats only known options", () => {
-    expect(fmtOptRefsInMd("AUTO_CD CDPATH POSIX", mkMdCtx([cd]).optNames)).toBe(
+    expect(fmtOptRefsInMd("AUTO_CD CDPATH POSIX", cdCorpus)).toBe(
       "**`AUTO_CD`** CDPATH POSIX",
     )
   })
 
   test("renders cond op markdown", () => {
-    expect(mdCondOp(cu)).toBe("`-a` *file*\n\nd:u")
-    expect(mdCondOp(cb)).toBe("*left* `-nt` *right*\n\nd:b")
+    expect(mdCondOp(cu, emptyCorpus)).toBe("`-a` *file*\n\nd:u")
+    expect(mdCondOp(cb, emptyCorpus)).toBe("*left* `-nt` *right*\n\nd:b")
   })
 
   test.each(renderedMarkdownCases)("renders %s markdown", (_, md, parts) => {
@@ -482,7 +481,7 @@ describe("render dump", () => {
       const md = mdOpt(
         // biome-ignore lint/style/noNonNullAssertion: asserted above
         cdSilent!,
-        mkMdCtx(options),
+        vendored,
       )
       expect(md).toContain("**`AUTO_CD`**")
       expect(md).toContain("**`PUSHD_SILENT`**")

@@ -1,7 +1,6 @@
 import * as vscode from "vscode"
 import type {
   Candidate,
-  CandidateDocPieceId,
   DocCategory,
   DocCorpus,
   DocPieceId,
@@ -18,6 +17,7 @@ import type {
 import {
   cmdHeadFactsOnLine,
   mkCandidate,
+  mkCandPieceId,
   mkOptFlag,
   mkProven,
   resolve,
@@ -30,6 +30,14 @@ interface OptFlagHit {
   readonly opt: ZshOption
   readonly alias: OptFlagAlias
 }
+
+/**
+ * NOTE: Refactoring fact-based hovers to a table-driven style has been tried, and rejected.
+ *
+ * (in practice, such a refactor did not improve conciseness/code amount, and clarity was somewhat weakened.)
+ *
+ * DON'T DELETE THIS COMMENT
+ */
 
 export class HoverProvider implements vscode.HoverProvider {
   private corpus: DocCorpus
@@ -81,7 +89,7 @@ export class HoverProvider implements vscode.HoverProvider {
   private condHover(doc: vscode.TextDocument, pos: vscode.Position) {
     const ctx = syntacticContext(doc, pos.line, pos.character)
     if (ctx.kind !== "cond") return
-    const condOpKeys = this.corpus.cond_op.keys() as Iterable<Proven<"cond_op">> // CAST?
+    const condOpKeys = this.corpus.cond_op.keys()
     const range = activeCondTokenRangeAt(doc, pos, condOpKeys)
     if (!range) return
     const op = mkProven("cond_op", doc.getText(range))
@@ -163,11 +171,7 @@ export class HoverProvider implements vscode.HoverProvider {
     id: Candidate<K>,
     range?: vscode.Range,
   ): vscode.Hover | undefined {
-    // CAST?
-    // The {category, id} shape IS a CandidateDocPieceId for the given K, but TS
-    // cannot preserve the K-indexed correlation through a generic helper.
-    const query = { category, id } as CandidateDocPieceId
-    const pieceId = resolve(this.corpus, query)
+    const pieceId = resolve(this.corpus, mkCandPieceId(category, id))
     if (pieceId) return this.renderHover(pieceId, range)
   }
 

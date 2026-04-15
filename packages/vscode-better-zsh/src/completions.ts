@@ -9,6 +9,7 @@ import type {
 import {
   filterTokens,
   matchOptions,
+  mkPieceId,
   syntacticContext,
   WORD,
   WORD_EXACT,
@@ -43,14 +44,11 @@ export class CompletionProvider implements vscode.CompletionItemProvider {
       ["shell_param", vscode.CompletionItemKind.Variable],
     ]
     this.general = wordCategories.flatMap(([cat, kind]) =>
-      [...corpus[cat].values()].filter(isWordName).map(doc =>
-        mkCompletionItem(
-          doc,
-          kind,
-          { category: cat, id: doc.name } as DocPieceId, // CAST?
-          corpus,
+      [...corpus[cat].values()]
+        .filter(isWordName)
+        .map(doc =>
+          mkCompletionItem(doc, kind, mkPieceId(cat, doc.name), corpus),
         ),
-      ),
     )
     this.options = options.map(opt => opt.name)
     this.optionMap = new Map(options.map(o => [o.name, o]))

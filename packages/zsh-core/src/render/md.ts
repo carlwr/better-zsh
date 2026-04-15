@@ -1,5 +1,11 @@
 import type { DocCorpus } from "../docs/corpus.ts"
-import type { DocCategory, DocPieceId, DocRecordMap } from "../docs/taxonomy.ts"
+import { resolve } from "../docs/corpus.ts"
+import {
+  type DocCategory,
+  type DocPieceId,
+  type DocRecordMap,
+  mkCandPieceId,
+} from "../docs/taxonomy.ts"
 import type {
   BuiltinDoc,
   CondOpDoc,
@@ -19,14 +25,8 @@ import type {
   SubscriptFlagDoc,
   ZshOption,
 } from "../docs/types.ts"
-import { mkCandidate, type Proven } from "../docs/types.ts"
+import { mkCandidate } from "../docs/types.ts"
 
-/** Shared formatter context for markdown generation. */
-export interface MdCtx {
-  readonly optNames: ReadonlySet<Proven<"option">>
-}
-
-const emptyMdCtx: MdCtx = { optNames: new Set<Proven<"option">>() }
 const TBD = "TBD"
 const OPT_REF_RE = /\b(?:NO_?)?[A-Z][A-Z0-9_]*\b/g
 const inlineCodeRe = /(`[^`\n]+`)/
@@ -44,17 +44,9 @@ const mdFmt = {
   optRef: (s: string) => strong(code(s)),
 }
 
-/** Build formatter context from the available option set. */
-export function mkMdCtx(options: readonly ZshOption[] = []): MdCtx {
-  return { optNames: new Set(options.map(opt => opt.name)) }
-}
-
 /** Emphasize option references inside markdown prose, skipping fenced code. */
-export function fmtOptRefsInMd(
-  md: string,
-  optNames: ReadonlySet<Proven<"option">>,
-): string {
-  if (optNames.size === 0) return md
+export function fmtOptRefsInMd(md: string, corpus: DocCorpus): string {
+  if (corpus.option.size === 0) return md
 
   let fenced = false
   return md
@@ -64,13 +56,13 @@ export function fmtOptRefsInMd(
         fenced = !fenced
         return line
       }
-      return fenced ? line : fmtOptRefsInLine(line, optNames)
+      return fenced ? line : fmtOptRefsInLine(line, corpus)
     })
     .join("\n")
 }
 
 /** Render one option doc block as markdown. */
-export function mdOpt(opt: ZshOption, ctx: MdCtx = emptyMdCtx): string {
+export function mdOpt(opt: ZshOption, corpus: DocCorpus): string {
   const title = mdFmt.code(opt.display)
   const long = opt.display.toLowerCase()
   const defaultLine = `**Default in zsh: \`${defaultStateIn(opt, "zsh")}\`**`
@@ -84,7 +76,7 @@ export function mdOpt(opt: ZshOption, ctx: MdCtx = emptyMdCtx): string {
       ...opt.flags.map(renderFlag),
     ),
     defaultLine,
-    fmtOptRefsInMd(opt.desc, ctx.optNames),
+    fmtOptRefsInMd(opt.desc, corpus),
     `_Option category:_ ${opt.category}`,
   )
 }
@@ -96,8 +88,8 @@ function sigCond(cop: CondOpDoc): string {
 }
 
 /** Render one conditional-operator doc block as markdown. */
-export function mdCondOp(cop: CondOpDoc, ctx: MdCtx = emptyMdCtx): string {
-  return docBlock(sigCond(cop), fmtOptRefsInMd(cop.desc, ctx.optNames))
+export function mdCondOp(cop: CondOpDoc, corpus: DocCorpus): string {
+  return docBlock(sigCond(cop), fmtOptRefsInMd(cop.desc, corpus))
 }
 
 /** Render one shell-parameter doc block as markdown. */
@@ -197,30 +189,21 @@ function label(cmd: string, arg: string, state: OptState): string {
   return `${`${cmd} ${arg}`.padEnd(20)} # ${state}`
 }
 
-function fmtOptRefsInLine(
-  line: string,
-  optNames: ReadonlySet<Proven<"option">>,
-): string {
+function fmtOptRefsInLine(line: string, corpus: DocCorpus): string {
   return line
     .split(inlineCodeRe)
-    .map((part, i) => (i % 2 === 1 ? part : fmtOptRefsInText(part, optNames)))
+    .map((part, i) => (i % 2 === 1 ? part : fmtOptRefsInText(part, corpus)))
     .join("")
 }
 
-function fmtOptRefsInText(
-  text: string,
-  optNames: ReadonlySet<Proven<"option">>,
-): string {
+function fmtOptRefsInText(text: string, corpus: DocCorpus): string {
   return text.replace(OPT_REF_RE, (raw, offset, whole) => {
     if (isShellParameterRef(whole, offset)) return raw
-    // Internal brand-boundary helper: the Set values are proven `Proven<"option">`s
-    // derived from the corpus; normalize the raw token via the candidate
-    // constructor and test membership against the corpus-branded set.
-    return optNames.has(
-      mkCandidate("option", raw) as unknown as Proven<"option">,
+    const pieceId = resolve(
+      corpus,
+      mkCandPieceId("option", mkCandidate("option", raw)),
     )
-      ? mdFmt.optRef(raw)
-      : raw
+    return pieceId ? mdFmt.optRef(raw) : raw
   })
 }
 
@@ -243,7 +226,7 @@ function docBlock(...parts: readonly string[]): string {
 
 /** Per-category markdown renderers, dispatched by `DocCategory`. */
 export const mdRenderer: {
-  [K in DocCategory]: (doc: DocRecordMap[K], ctx: MdCtx) => string
+  [K in DocCategory]: (doc: DocRecordMap[K], corpus: DocCorpus) => string
 } = {
   option: mdOpt,
   cond_op: mdCondOp,
@@ -260,17 +243,6 @@ export const mdRenderer: {
   glob_flag: mdGlobFlag,
 }
 
-const corpusCtx = new WeakMap<DocCorpus, MdCtx>()
-
-function ctxFor(corpus: DocCorpus): MdCtx {
-  let ctx = corpusCtx.get(corpus)
-  if (!ctx) {
-    ctx = { optNames: new Set(corpus.option.keys()) }
-    corpusCtx.set(corpus, ctx)
-  }
-  return ctx
-}
-
 /**
  * Render the markdown doc block for a proven documented element.
  * `id` must come from `resolve()` or from corpus iteration; the lookup is
@@ -283,18 +255,14 @@ function ctxFor(corpus: DocCorpus): MdCtx {
  * then, short-form presentation is a consumer concern: doc record fields
  * are already public and consumers can format inline.
  */
-export function renderDoc(
-  corpus: DocCorpus,
-  id: DocPieceId,
-  ctx: MdCtx = ctxFor(corpus),
-): string {
+export function renderDoc(corpus: DocCorpus, id: DocPieceId): string {
   const doc = corpus[id.category].get(id.id as never) as
     | DocRecordMap[typeof id.category]
     | undefined
   if (!doc) return ""
   const render = mdRenderer[id.category] as (
     d: DocRecordMap[typeof id.category],
-    ctx: MdCtx,
+    corpus: DocCorpus,
   ) => string
-  return render(doc, ctx)
+  return render(doc, corpus)
 }

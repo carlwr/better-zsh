@@ -70,6 +70,36 @@ export type CandidateDocPieceId = {
   [K in DocCategory]: { readonly category: K; readonly id: Candidate<K> }
 }[DocCategory]
 
+/**
+ * Construct a `DocPieceId` from a category and a proven id. Centralizes the
+ * correlated-union cast that TS cannot propagate through a generic helper.
+ */
+export const mkPieceId = <K extends DocCategory>(
+  category: K,
+  id: Proven<K>,
+): DocPieceId => ({ category, id }) as DocPieceId
+
+/**
+ * Construct a `CandidateDocPieceId` from a category and a candidate id.
+ * Centralizes the correlated-union cast.
+ */
+export const mkCandPieceId = <K extends DocCategory>(
+  category: K,
+  id: Candidate<K>,
+): CandidateDocPieceId => ({ category, id }) as CandidateDocPieceId
+
+/** Curried variant. */
+export const mkPieceId_ =
+  <K extends DocCategory>(category: K) =>
+  (id: Proven<K>): DocPieceId =>
+    mkPieceId(category, id)
+
+/** Curried variant. */
+export const mkCandPieceId_ =
+  <K extends DocCategory>(category: K) =>
+  (id: Candidate<K>): CandidateDocPieceId =>
+    mkCandPieceId(category, id)
+
 export const docId: {
   [K in DocCategory]: (doc: DocRecordMap[K]) => Proven<K>
 } = {
