@@ -29,7 +29,7 @@ mkdirSync(apiDir, { recursive: true })
 mkdirSync(typesDir, { recursive: true })
 
 let ok = true
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
 
 async function waitForFile(path, timeoutMs = 5000) {
   const until = Date.now() + timeoutMs

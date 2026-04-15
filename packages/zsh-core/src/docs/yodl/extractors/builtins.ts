@@ -25,9 +25,9 @@ export function parseBuiltins(yo: string): readonly BuiltinDoc[] {
     const body = entry.entry.body ?? []
     const lines = [...entry.aliases, entry.head]
     const synopsisTail = lines
-      .filter((line) => line.continuation)
-      .map((line) => line.text)
-    const heads = lines.filter((line) => !line.continuation)
+      .filter(line => line.continuation)
+      .map(line => line.text)
+    const heads = lines.filter(line => !line.continuation)
     if (heads.length === 0) continue
 
     const desc = normalizeBody(body)
@@ -101,7 +101,7 @@ function normalizeSynopsis(raw: YNodeSeq): string {
     .replace(/\\$/gm, "")
     .replace(/\n{2,}/g, "\n")
     .split("\n")
-    .map((line) => line.replace(/[ \t]+/g, " ").trim())
+    .map(line => line.replace(/[ \t]+/g, " ").trim())
     .join("\n")
     .trim()
 }

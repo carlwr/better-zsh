@@ -41,16 +41,14 @@ function parseHeader(
 ): ParsedCondHeader | undefined {
   const tokens = extractTokens(header)
   const opIdx = tokens.findIndex(
-    (tok) => tok.kind === "tt" && /^(?:[-=!<>~|&]|\w)/.test(tok.text),
+    tok => tok.kind === "tt" && /^(?:[-=!<>~|&]|\w)/.test(tok.text),
   )
   if (opIdx === -1) return undefined
   const op = tokens[opIdx]?.text
   if (!op) return undefined
 
-  const operands = tokens
-    .filter((tok) => tok.kind === "var")
-    .map((tok) => tok.text)
-  return tokens.slice(0, opIdx).some((tok) => tok.kind === "var")
+  const operands = tokens.filter(tok => tok.kind === "var").map(tok => tok.text)
+  return tokens.slice(0, opIdx).some(tok => tok.kind === "var")
     ? parseBinaryHeader(op, operands)
     : parseUnaryHeader(op, operands)
 }

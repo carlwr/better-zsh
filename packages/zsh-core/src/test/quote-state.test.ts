@@ -63,7 +63,7 @@ describe("advanceQuote", () => {
 
   test("scan never throws on arbitrary input", () => {
     fc.assert(
-      fc.property(fc.string(), (s) => {
+      fc.property(fc.string(), s => {
         scan(s)
       }),
     )
@@ -71,7 +71,7 @@ describe("advanceQuote", () => {
 
   test("matched single-quote pairs leave unquoted", () => {
     fc.assert(
-      fc.property(fc.string(), (s) => {
+      fc.property(fc.string(), s => {
         expect(isQuoted(scan(`'${s.replace(/'/g, "x")}'`))).toBe(false)
       }),
     )

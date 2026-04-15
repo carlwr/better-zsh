@@ -6,7 +6,7 @@ export class HighlightProvider implements vscode.DocumentHighlightProvider {
     const range = activeWordRangeAt(doc, pos)
     if (!range) return []
     return wordMatches(doc, doc.getText(range)).map(
-      (range) => new vscode.DocumentHighlight(range),
+      range => new vscode.DocumentHighlight(range),
     )
   }
 }

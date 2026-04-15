@@ -56,7 +56,7 @@ export function setupDiagnostics(ctx: vscode.ExtensionContext) {
   ctx.subscriptions.push(
     vscode.workspace.onDidOpenTextDocument(lint),
     vscode.workspace.onDidSaveTextDocument(lint),
-    vscode.workspace.onDidCloseTextDocument((doc) => {
+    vscode.workspace.onDidCloseTextDocument(doc => {
       const key = doc.uri.toString()
       const t = timers.get(key)
       if (t) {
@@ -65,8 +65,8 @@ export function setupDiagnostics(ctx: vscode.ExtensionContext) {
       }
       dc.delete(doc.uri)
     }),
-    vscode.workspace.onDidChangeTextDocument((e) => lintDebounced(e.document)),
-    vscode.workspace.onDidChangeConfiguration((e) => {
+    vscode.workspace.onDidChangeTextDocument(e => lintDebounced(e.document)),
+    vscode.workspace.onDidChangeConfiguration(e => {
       if (
         e.affectsConfiguration(DIAGNOSTICS_ENABLED_KEY) ||
         e.affectsConfiguration(ZSH_PATH_KEY)

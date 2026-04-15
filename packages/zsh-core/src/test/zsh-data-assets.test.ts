@@ -38,7 +38,7 @@ describe("vendored zsh data assets", () => {
 
   test("parses vendored precommand modifier docs", () => {
     const corpus = loadCorpus()
-    expect([...corpus.precmd.values()].map((doc) => doc.name)).toEqual([
+    expect([...corpus.precmd.values()].map(doc => doc.name)).toEqual([
       "-",
       "builtin",
       "command",
@@ -50,29 +50,27 @@ describe("vendored zsh data assets", () => {
 
   test("parses newly vendored structured syntax docs", () => {
     const corpus = loadCorpus()
-    expect([...corpus.redir.values()].some((doc) => doc.groupOp === "<")).toBe(
+    expect([...corpus.redir.values()].some(doc => doc.groupOp === "<")).toBe(
       true,
     )
     expect(corpus.reserved_word.has(mkProven("reserved_word", "if"))).toBe(true)
     expect(
-      [...corpus.shell_param.values()].some((doc) => doc.name === "SECONDS"),
+      [...corpus.shell_param.values()].some(doc => doc.name === "SECONDS"),
     ).toBe(true)
     expect(
-      [...corpus.subscript_flag.values()].some((doc) => doc.flag === "w"),
+      [...corpus.subscript_flag.values()].some(doc => doc.flag === "w"),
     ).toBe(true)
-    expect(
-      [...corpus.param_flag.values()].some((doc) => doc.flag === "@"),
-    ).toBe(true)
-    expect([...corpus.history.values()].some((doc) => doc.key === "!!")).toBe(
+    expect([...corpus.param_flag.values()].some(doc => doc.flag === "@")).toBe(
       true,
     )
-    expect([...corpus.glob_op.values()].some((doc) => doc.op === "*")).toBe(
+    expect([...corpus.history.values()].some(doc => doc.key === "!!")).toBe(
       true,
     )
-    expect([...corpus.glob_flag.values()].some((doc) => doc.flag === "i")).toBe(
+    expect([...corpus.glob_op.values()].some(doc => doc.op === "*")).toBe(true)
+    expect([...corpus.glob_flag.values()].some(doc => doc.flag === "i")).toBe(
       true,
     )
-    expect([...corpus.process_subst.values()].map((doc) => doc.op)).toEqual([
+    expect([...corpus.process_subst.values()].map(doc => doc.op)).toEqual([
       "<(...)",
       ">(...)",
       "=(...)",

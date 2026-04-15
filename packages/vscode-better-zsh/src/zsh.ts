@@ -165,7 +165,7 @@ export function configureZsh(config: ZshPathConfig) {
     logResolution(config, mode)
     if (mode.kind === "available") {
       // Fire-and-forget version check
-      void runZshWithMode(mode, { args: [...ZSH_VERSION_ARGS] }).then((r) => {
+      void runZshWithMode(mode, { args: [...ZSH_VERSION_ARGS] }).then(r => {
         if (!r.errCode) logVersion(r)
       })
     }

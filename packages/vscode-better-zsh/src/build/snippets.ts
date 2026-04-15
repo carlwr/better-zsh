@@ -15,7 +15,7 @@ export function readSnippets(): ZshSnippet[] {
   })
   if (errs.length > 0) {
     const msg = errs
-      .map((e) => `${printParseErrorCode(e.error)} @ ${e.offset}`)
+      .map(e => `${printParseErrorCode(e.error)} @ ${e.offset}`)
       .join(", ")
     throw new Error(`Invalid JSONC in ${snippetsPath}: ${msg}`)
   }

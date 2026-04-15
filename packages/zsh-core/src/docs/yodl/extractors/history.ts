@@ -42,7 +42,7 @@ function parseWordDesignators(yo: string): HistoryDoc[] {
   const body = extractSectionBody(yo, "Word Designators")
   const list = extractFirstList(body, "sitem")
   if (!list) return []
-  return extractSitemList(list).flatMap((item) => {
+  return extractSitemList(list).flatMap(item => {
     if (!item.body) return []
     const sig = normalizeHeader(item.header)
     return [

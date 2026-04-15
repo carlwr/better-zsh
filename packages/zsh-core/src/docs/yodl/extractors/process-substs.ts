@@ -25,6 +25,6 @@ const DOCS = [
 
 export function parseProcessSubsts(yo: string): readonly ProcessSubstDoc[] {
   return extractSectionBody(yo, "Process Substitution").length > 0
-    ? DOCS.map((doc) => ({ ...doc, section: "Process Substitution" }))
+    ? DOCS.map(doc => ({ ...doc, section: "Process Substitution" }))
     : []
 }

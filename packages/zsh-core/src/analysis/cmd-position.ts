@@ -12,6 +12,6 @@ export function cmdPositions(
   commentAt?: number,
 ): readonly CmdPos[] {
   return cmdHeadFactsOnLine(line, commentAt)
-    .filter((fact) => fact.kind === "cmd-head")
-    .map((fact) => ({ start: fact.span.start, end: fact.span.end }))
+    .filter(fact => fact.kind === "cmd-head")
+    .map(fact => ({ start: fact.span.start, end: fact.span.end }))
 }

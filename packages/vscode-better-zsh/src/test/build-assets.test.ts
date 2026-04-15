@@ -45,8 +45,8 @@ suite("build assets", () => {
     const snippets = readSnippets()
     assert.ok(snippets.length > 0, "expected vendored snippets")
 
-    const names = snippets.map((s) => s.name)
-    const prefixes = snippets.map((s) => s.prefix)
+    const names = snippets.map(s => s.name)
+    const prefixes = snippets.map(s => s.prefix)
     assert.strictEqual(new Set(names).size, names.length)
     assert.strictEqual(new Set(prefixes).size, prefixes.length)
 

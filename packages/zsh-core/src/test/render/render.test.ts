@@ -182,7 +182,7 @@ function mkCategoryMap<K extends DocCategory>(
   docs: readonly DocRecordMap[K][],
 ): ReadonlyMap<string, DocRecordMap[K]> {
   const getId = docId[kind] as (doc: DocRecordMap[K]) => string
-  return new Map(docs.map((doc) => [getId(doc), doc]))
+  return new Map(docs.map(doc => [getId(doc), doc]))
 }
 
 type DocArrays = { readonly [K in DocCategory]: readonly DocRecordMap[K][] }
@@ -205,7 +205,7 @@ function mkTestCorpus(overrides: Partial<DocArrays> = {}): DocCorpus {
     ...overrides,
   }
   return Object.fromEntries(
-    docCategories.map((k) => [
+    docCategories.map(k => [
       k,
       mkCategoryMap(k, base[k] as DocRecordMap[typeof k][]),
     ]),
@@ -366,7 +366,7 @@ describe("render markdown", () => {
           process_subst: [],
           reserved_word: [],
         }),
-      ).map((doc) => `${doc.kind}:${doc.id}`),
+      ).map(doc => `${doc.kind}:${doc.id}`),
     ).toEqual([
       `option:${mkProven("option", "AUTO_CD")}`,
       "cond_op:-a",
@@ -384,10 +384,10 @@ describe("render markdown", () => {
 
   test("keeps typed ref-doc ids separate from display headings", () => {
     const docs = corpus()
-    const option = docs.find((doc) => doc.kind === "option")
+    const option = docs.find(doc => doc.kind === "option")
     expect(option?.id).toBe(mkProven("option", "AUTO_CD"))
     expect(option?.heading).toBe("AUTO_CD")
-    expect(docs.find((doc) => doc.kind === "redir")?.heading).toBe(">> word")
+    expect(docs.find(doc => doc.kind === "redir")?.heading).toBe(">> word")
   })
 })
 
@@ -404,7 +404,7 @@ describe("render dump", () => {
   })
 
   test("writes dump files", async () => {
-    await withTmpDirAsync("better-zsh-ref-", async (dir) => {
+    await withTmpDirAsync("better-zsh-ref-", async dir => {
       await writeRefDump(dir, corpus({ cond_op: [cb] }))
 
       const all = readFileSync(join(dir, "all.md"), "utf8")
@@ -441,7 +441,7 @@ describe("render dump", () => {
       const file = categoryFiles[kind]
       const src = [...vendored[kind].values()]
       test(`${file} covers ${kind}`, () => {
-        expect(docs.filter((doc) => doc.kind === kind)).toHaveLength(src.length)
+        expect(docs.filter(doc => doc.kind === kind)).toHaveLength(src.length)
         expect(headings(files.get(file))).toBe(src.length)
       })
     }
@@ -475,7 +475,7 @@ describe("render dump", () => {
 
     test("formats real option cross-references but not env vars", () => {
       const options = [...vendored.option.values()]
-      const byName = new Map(options.map((option) => [option.name, option]))
+      const byName = new Map(options.map(option => [option.name, option]))
       const cdSilent = byName.get(mkProven("option", "CD_SILENT"))
       expect(cdSilent).toBeTruthy()
 

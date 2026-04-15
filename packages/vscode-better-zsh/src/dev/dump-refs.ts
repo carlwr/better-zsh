@@ -33,7 +33,7 @@ async function main() {
     .filter(Boolean).length
 
   const counts = [
-    ...docCategories.map((cat) => `${corpus[cat].size} ${categoryLabel[cat]}`),
+    ...docCategories.map(cat => `${corpus[cat].size} ${categoryLabel[cat]}`),
     `${suspicious} suspicious`,
   ].join(", ")
   process.stdout.write(`wrote reference markdown to ${outDir} (${counts})\n`)

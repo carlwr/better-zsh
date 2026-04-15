@@ -58,7 +58,7 @@ suite("ZshNavigation", () => {
     assert.ok(edit, "expected rename edit")
     const items = edit
       .entries()
-      .flatMap(([uri, edits]) => edits.map((edit) => [uri, edit] as const))
+      .flatMap(([uri, edits]) => edits.map(edit => [uri, edit] as const))
     assert.deepStrictEqual(
       items.map(([, edit]) => edit.newText),
       ["our-func", "our-func", "our-func"],
@@ -72,7 +72,7 @@ suite("ZshNavigation", () => {
   test("outline lists functions", async () => {
     const got = await symbols(doc)
     assert.deepStrictEqual(
-      got.map((s) => s.name),
+      got.map(s => s.name),
       ["my-func", "other-func"],
     )
   })

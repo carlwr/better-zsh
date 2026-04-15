@@ -8,7 +8,7 @@ export class ReferenceProvider implements vscode.ReferenceProvider {
     const range = activeWordRangeAt(doc, pos)
     if (!range) return
     return wordMatches(doc, doc.getText(range)).map(
-      (r) => new vscode.Location(doc.uri, r),
+      r => new vscode.Location(doc.uri, r),
     )
   }
 }

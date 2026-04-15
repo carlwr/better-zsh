@@ -3,11 +3,11 @@ import { mkProven } from "../docs/types"
 import { matchOptions } from "../option-match"
 
 const opts = ["aliases", "errexit", "errreturn", "extendedglob", "notify"].map(
-  (s) => mkProven("option", s),
+  s => mkProven("option", s),
 )
 
 function labels(typed: string) {
-  return matchOptions(opts, typed).map((m) => m.label)
+  return matchOptions(opts, typed).map(m => m.label)
 }
 
 suite("matchOptions", () => {
@@ -26,7 +26,7 @@ suite("matchOptions", () => {
 
   test("no bare options leak when typing negation prefix", () => {
     const result = matchOptions(opts, "no_er")
-    const bare = result.filter((m) => !m.label.startsWith("no_"))
+    const bare = result.filter(m => !m.label.startsWith("no_"))
     assert.deepStrictEqual(bare, [])
   })
 })

@@ -36,7 +36,7 @@ const seps = [
 ] as const
 
 // Build regex character class: each char escaped with \\
-const escaped = seps.map((c) => `\\${c}`).join("")
+const escaped = seps.map(c => `\\${c}`).join("")
 // (-?\d*\.\d\w*)|([^\`\~...\s]+)
 const wordPattern = String.raw`(-?\d*\.\d\w*)|([^${escaped}\s]+)`
 

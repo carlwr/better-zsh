@@ -14,7 +14,7 @@ function highlightTexts(
   doc: vscode.TextDocument,
   hl: vscode.DocumentHighlight[],
 ) {
-  return hl.map((h) => doc.getText(h.range)).sort()
+  return hl.map(h => doc.getText(h.range)).sort()
 }
 
 suite("ZshHighlightProvider", () => {

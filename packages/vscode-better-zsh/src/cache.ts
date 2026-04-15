@@ -22,7 +22,7 @@ export function evictDocCaches(doc: Pick<vscode.TextDocument, "uri">) {
 
 export function docCache<T>(compute: (doc: vscode.TextDocument) => T) {
   const cache = new Map<string, Entry<T>>()
-  stores.add({ evict: (key) => cache.delete(key) })
+  stores.add({ evict: key => cache.delete(key) })
   return (doc: vscode.TextDocument): T => {
     const key = keyOf(doc)
     const entry = cache.get(key)
@@ -39,7 +39,7 @@ export function asyncDocCache<T>(
   const cache = new Map<string, Entry<T>>()
   const seqs = new Map<string, number>()
   stores.add({
-    evict: (key) => {
+    evict: key => {
       cache.delete(key)
       seqs.set(key, (seqs.get(key) ?? 0) + 1)
     },

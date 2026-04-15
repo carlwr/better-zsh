@@ -17,7 +17,7 @@ export function by<T, K extends PropertyKey>(
   xs: readonly T[],
   keyOf: (x: T) => K,
 ) {
-  return new Map(xs.map((x) => [keyOf(x), x]))
+  return new Map(xs.map(x => [keyOf(x), x]))
 }
 
 export function expectDocCorpus<T>({

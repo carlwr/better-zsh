@@ -43,8 +43,8 @@ async function waitForLog(substr: string, timeout = 6000) {
   const start = Date.now()
   while (Date.now() - start < timeout) {
     const logs = (await getLogs()) ?? []
-    if (logs.some((l) => l.includes(substr))) return logs
-    await new Promise((r) => setTimeout(r, 100))
+    if (logs.some(l => l.includes(substr))) return logs
+    await new Promise(r => setTimeout(r, 100))
   }
   return (await getLogs()) ?? []
 }
@@ -72,7 +72,7 @@ suite(`ZshPathMatrix:${caseName}`, function () {
     const semDoc = await openText("echo hi")
     const tokens = await semanticTokenWords(semDoc)
     assert.ok(
-      tokens.some((t) => t.word === "echo" && t.type === 0),
+      tokens.some(t => t.word === "echo" && t.type === 0),
       "expected builtin semantic token",
     )
 
@@ -91,7 +91,7 @@ suite(`ZshPathMatrix:${caseName}`, function () {
     // Extension logged the expected resolution message
     const logs = await waitForLog(logSubstr)
     assert.ok(
-      logs.some((l) => l.includes(logSubstr)),
+      logs.some(l => l.includes(logSubstr)),
       `expected log containing: ${logSubstr}`,
     )
   })

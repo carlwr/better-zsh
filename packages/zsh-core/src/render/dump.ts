@@ -39,7 +39,7 @@ const dumpFile: { [K in DocCategory]: RefDumpFile } = {
 
 const dumpSpecs = [
   ["all", "all.md"] as const,
-  ...docCategories.map((kind) => [kind, dumpFile[kind]] as const),
+  ...docCategories.map(kind => [kind, dumpFile[kind]] as const),
 ] satisfies readonly (readonly [DocCategory | "all", RefDumpFile])[]
 
 const dumpKinds: readonly DocCategory[] = docCategories
@@ -80,14 +80,12 @@ export async function writeRefDump(
 }
 
 function suspiciousText(docs: readonly RefDoc[]): string {
-  const hits = docs.flatMap((doc) => suspiciousHits(doc))
+  const hits = docs.flatMap(doc => suspiciousHits(doc))
   return hits.length > 0 ? `${hits.join("\n")}\n` : ""
 }
 
 function groupByKind(docs: readonly RefDoc[]): Map<DocCategory, RefDoc[]> {
-  const byKind = new Map(
-    dumpKinds.map((kind) => [kind, [] as RefDoc[]] as const),
-  )
+  const byKind = new Map(dumpKinds.map(kind => [kind, [] as RefDoc[]] as const))
   for (const doc of docs) byKind.get(doc.kind)?.push(doc)
   return byKind
 }

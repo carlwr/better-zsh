@@ -31,7 +31,7 @@ export function normalizeBody(src: string | YNodeSeq): string {
 }
 
 export function normalizeDoc(raw: string): string {
-  const lines = raw.split("\n").map((line) => line.trimEnd())
+  const lines = raw.split("\n").map(line => line.trimEnd())
   const out: string[] = []
   const para: string[] = []
   let inCode = false
@@ -93,7 +93,7 @@ function renderSeq(nodes: YNodeSeq): string {
 function renderNode(node: YNode): string {
   if (node.kind === "text") return node.text
 
-  const inner = node.args.map((arg) => renderSeq(arg))
+  const inner = node.args.map(arg => renderSeq(arg))
   const [a = "", b = ""] = inner
 
   if (node.name in SPECIAL_MACROS) return SPECIAL_MACROS[node.name] ?? ""

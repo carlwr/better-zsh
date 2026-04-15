@@ -11,17 +11,17 @@ const ANY_DESC =
 
 export function parseReservedWords(yo: string): readonly ReservedWordDoc[] {
   const words = extractTokens(extractSectionBody(yo, "Reserved Words"))
-    .filter((tok) => tok.kind === "tt")
-    .map((tok) => tok.text)
-    .find((text) => /\bdo\b/.test(text) && /\btypeset\b/.test(text))
+    .filter(tok => tok.kind === "tt")
+    .map(tok => tok.text)
+    .find(text => /\bdo\b/.test(text) && /\btypeset\b/.test(text))
   if (!words) return []
 
   return [
     ...words
       .split(/\s+/)
-      .filter((name) => name && name !== "}")
+      .filter(name => name && name !== "}")
       .map(
-        (name) =>
+        name =>
           ({
             name: mkProven("reserved_word", name),
             pos: "command",

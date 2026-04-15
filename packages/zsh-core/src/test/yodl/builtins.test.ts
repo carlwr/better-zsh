@@ -26,7 +26,7 @@ alias(bye)(exit)
 module(zstyle)(zsh/zutil)
 enditem()`
     const docs = parseBuiltins(yo)
-    expect(docs.map((d) => d.name)).toEqual([
+    expect(docs.map(d => d.name)).toEqual([
       mkProven("builtin", "bye"),
       mkProven("builtin", "zstyle"),
     ])
@@ -59,7 +59,7 @@ enditem()`
 
   describe("vendored builtins.yo", () => {
     const docs = parseBuiltins(BUILTINS_YO)
-    const byName = by(docs, (d) => d.name)
+    const byName = by(docs, d => d.name)
 
     test("parses xitem aliases for test and [", () => {
       expect(byName.get(mkProven("builtin", "test"))?.synopsis[0]).toBe(
@@ -75,13 +75,11 @@ enditem()`
     })
 
     test("excludes macro template placeholders", () => {
-      expect(docs.some((d) => d.name === mkProven("builtin", "ARG1"))).toBe(
-        false,
-      )
+      expect(docs.some(d => d.name === mkProven("builtin", "ARG1"))).toBe(false)
     })
 
     test("includes macro-defined builtins", () => {
-      const names = new Set(docs.map((d) => d.name))
+      const names = new Set(docs.map(d => d.name))
       expect(names.has(mkProven("builtin", "bindkey"))).toBe(true)
       expect(names.has(mkProven("builtin", "compctl"))).toBe(true)
       expect(names.has(mkProven("builtin", "zstyle"))).toBe(true)

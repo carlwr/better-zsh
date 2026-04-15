@@ -108,7 +108,7 @@ describe("extractSections", () => {
   test("extracts sect and subsect", () => {
     const yo = "sect(Main)\nsome text\nsubsect(Sub One)\nmore text"
     expect(
-      doc.extractSections(yo).map((sec) => ({
+      doc.extractSections(yo).map(sec => ({
         level: sec.level,
         name: sec.name,
         body: stripYodl(sec.body),
@@ -164,10 +164,10 @@ desc
 enditem()
 )
 enditem()`
-    expect(extract(yo).map((item) => stripYodl(item.header))).toEqual(["outer"])
-    expect(
-      doc.extractItemList(yo).map((item) => stripYodl(item.header)),
-    ).toEqual(["outer"])
+    expect(extract(yo).map(item => stripYodl(item.header))).toEqual(["outer"])
+    expect(doc.extractItemList(yo).map(item => stripYodl(item.header))).toEqual(
+      ["outer"],
+    )
   })
 
   test("depth filter excludes nested bodyful items", () => {
@@ -180,9 +180,9 @@ desc
 enditem()
 )
 enditem()`
-    expect(
-      doc.extractItems(yo, 1).map((item) => stripYodl(item.header)),
-    ).toEqual(["outer"])
+    expect(doc.extractItems(yo, 1).map(item => stripYodl(item.header))).toEqual(
+      ["outer"],
+    )
   })
 
   test("never throws on arbitrary input", () => {
@@ -215,7 +215,7 @@ describe("collectAliasedEntries", () => {
   test("groups xitems with the following item", () => {
     const grouped = doc.collectAliasedEntries(
       extract(`xitem(tt(alias))\nitem(tt(main))(desc)`),
-      (header) => stripYodl(header),
+      header => stripYodl(header),
     )
     expect(grouped).toHaveLength(1)
     expect(grouped[0]?.head).toBe("main")

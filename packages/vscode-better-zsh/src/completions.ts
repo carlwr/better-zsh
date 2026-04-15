@@ -17,7 +17,7 @@ import { renderDoc } from "zsh-core/render"
 import { asyncDocCache } from "./cache"
 import { zshTokenize } from "./zsh"
 
-const getIds = asyncDocCache(async (doc) =>
+const getIds = asyncDocCache(async doc =>
   filterTokens(await zshTokenize(doc.getText())),
 )
 
@@ -45,7 +45,7 @@ export class CompletionProvider implements vscode.CompletionItemProvider {
     this.general = wordCategories.flatMap(([cat, kind]) =>
       [...corpus[cat].values()]
         .filter(isWordName)
-        .map((doc) =>
+        .map(doc =>
           mkCompletionItem(
             doc,
             kind,
@@ -54,8 +54,8 @@ export class CompletionProvider implements vscode.CompletionItemProvider {
           ),
         ),
     )
-    this.options = options.map((opt) => opt.name)
-    this.optionMap = new Map(options.map((o) => [o.name, o]))
+    this.options = options.map(opt => opt.name)
+    this.optionMap = new Map(options.map(o => [o.name, o]))
     this.condOps = [...corpus.cond_op.values()]
   }
 
@@ -79,18 +79,16 @@ export class CompletionProvider implements vscode.CompletionItemProvider {
     const curRange = doc.getWordRangeAtPosition(pos, WORD)
     const cur = curRange ? doc.getText(curRange) : ""
     const items = ids
-      .filter((id) => id !== cur)
-      .map(
-        (id) => new vscode.CompletionItem(id, vscode.CompletionItemKind.Text),
-      )
-    return [...items, ...this.general.filter((b) => b.label !== cur)]
+      .filter(id => id !== cur)
+      .map(id => new vscode.CompletionItem(id, vscode.CompletionItemKind.Text))
+    return [...items, ...this.general.filter(b => b.label !== cur)]
   }
 
   private optionCompletions(doc: vscode.TextDocument, pos: vscode.Position) {
     const curRange = doc.getWordRangeAtPosition(pos, WORD)
     const typed = curRange ? doc.getText(curRange) : ""
     const matches = matchOptions(this.options, typed)
-    const items = matches.map((m) => {
+    const items = matches.map(m => {
       const item = new vscode.CompletionItem(
         m.label,
         vscode.CompletionItemKind.Property,
@@ -104,7 +102,7 @@ export class CompletionProvider implements vscode.CompletionItemProvider {
   }
 
   private condCompletions(_doc: vscode.TextDocument, _pos: vscode.Position) {
-    const items = this.condOps.map((cop) => {
+    const items = this.condOps.map(cop => {
       const item = new vscode.CompletionItem(
         cop.op,
         vscode.CompletionItemKind.Operator,

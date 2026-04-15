@@ -6,7 +6,7 @@ import { cmdHeadFactsOnLine } from "../../analysis/facts"
 function factSpans(line: string, commentAt?: number) {
   return cmdHeadFactsOnLine(line, commentAt)
     .filter(isCmdHeadFact)
-    .map((fact) => fact.span)
+    .map(fact => fact.span)
 }
 
 describe("cmdPositions", () => {

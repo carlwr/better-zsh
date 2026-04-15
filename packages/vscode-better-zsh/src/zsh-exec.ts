@@ -55,7 +55,7 @@ export function execZsh(
   zshBinary: string,
   { args, env, stdin }: ZshRunReq,
 ): Promise<ZshRunResult> {
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     const proc = execFile(
       zshBinary,
       args,
@@ -79,5 +79,5 @@ export function execZsh(
 }
 
 export function makeExecZshRunner(zshBinary: string): ZshRunner {
-  return (req) => execZsh(zshBinary, req)
+  return req => execZsh(zshBinary, req)
 }

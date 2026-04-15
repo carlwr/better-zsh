@@ -18,7 +18,7 @@ interface ParamHead {
 }
 
 export function parseShellParams(yo: string): readonly ShellParamDoc[] {
-  return PARAM_SECTIONS.flatMap((section) => parseParamSection(yo, section))
+  return PARAM_SECTIONS.flatMap(section => parseParamSection(yo, section))
 }
 
 function parseParamSection(
@@ -61,8 +61,8 @@ function parseParamSection(
 
 function parseHeads(header: Parameters<typeof extractTokens>[0]): ParamHead[] {
   const names = extractTokens(header)
-    .filter((tok) => tok.kind === "tt")
-    .map((tok) => tok.text.trim())
+    .filter(tok => tok.kind === "tt")
+    .map(tok => tok.text.trim())
     .filter(Boolean)
 
   const [name, tied] = names

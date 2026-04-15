@@ -11,7 +11,7 @@ import { withTmpDir } from "./tmp-dir"
 
 describe("resolveZshDataDir", () => {
   test("prefers packaged data dir", () => {
-    withTmpDir("better-zsh-zsh-core-", (dir) => {
+    withTmpDir("better-zsh-zsh-core-", dir => {
       const dataDir = join(dir, "data", "zsh-docs")
       mkdirSync(dataDir, { recursive: true })
       expect(resolveZshDataDir(dir)).toBe(dataDir)
@@ -19,7 +19,7 @@ describe("resolveZshDataDir", () => {
   })
 
   test("falls back to bundled runtime data dir", () => {
-    withTmpDir("better-zsh-zsh-core-", (dir) => {
+    withTmpDir("better-zsh-zsh-core-", dir => {
       const dataDir = join(dir, runtimeZshDataDir)
       mkdirSync(dataDir, { recursive: true })
       expect(resolveZshDataDir(dir)).toBe(dataDir)
@@ -29,7 +29,7 @@ describe("resolveZshDataDir", () => {
 
 describe("copyRuntimeZshData", () => {
   test("copies the full vendored doc set under the runtime dir name", () => {
-    withTmpDir("better-zsh-zsh-core-", (dir) => {
+    withTmpDir("better-zsh-zsh-core-", dir => {
       const srcBase = join(dir, "dist")
       const srcData = join(srcBase, "data", "zsh-docs")
       const outDir = join(dir, "out")

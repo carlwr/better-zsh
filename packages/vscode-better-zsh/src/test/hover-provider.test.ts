@@ -119,13 +119,13 @@ const condOps = [
 function mkTestCorpus(): DocCorpus {
   const emptyMap = new Map() as unknown as ReadonlyMap<never, never>
   return {
-    option: new Map(options.map((o) => [o.name, o])),
-    cond_op: new Map(condOps.map((c) => [c.op, c])),
-    builtin: new Map(builtins.map((b) => [b.name, b])),
+    option: new Map(options.map(o => [o.name, o])),
+    cond_op: new Map(condOps.map(c => [c.op, c])),
+    builtin: new Map(builtins.map(b => [b.name, b])),
     precmd: emptyMap as DocCorpus["precmd"],
-    shell_param: new Map(params.map((p) => [p.name, p])),
+    shell_param: new Map(params.map(p => [p.name, p])),
     reserved_word: emptyMap as DocCorpus["reserved_word"],
-    redir: new Map(redirs.map((r) => [r.sig, r])),
+    redir: new Map(redirs.map(r => [r.sig, r])),
     process_subst: emptyMap as DocCorpus["process_subst"],
     subscript_flag: emptyMap as DocCorpus["subscript_flag"],
     param_flag: emptyMap as DocCorpus["param_flag"],

@@ -39,7 +39,7 @@ function tokens(text: string, builtins: readonly string[]) {
     new SemanticTokensProvider([...builtins]).provideDocumentSemanticTokens(
       lineDoc(text),
     ) as unknown as Token[]
-  ).map((t) => ({
+  ).map(t => ({
     word: lines[t.line]?.slice(t.start, t.start + t.length) ?? "",
     type: t.type,
   }))
@@ -47,8 +47,8 @@ function tokens(text: string, builtins: readonly string[]) {
 
 function builtinWords(text: string, builtins: readonly string[]) {
   return tokens(text, builtins)
-    .filter((t) => t.type === 0)
-    .map((t) => t.word)
+    .filter(t => t.type === 0)
+    .map(t => t.word)
 }
 
 const kw = (word: string) => ({ word, type: 1 })

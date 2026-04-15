@@ -33,7 +33,7 @@ suite("bundled extension", function () {
 
     const doc = await getDoc()
     await vscode.window.showTextDocument(doc)
-    await new Promise((r) => setTimeout(r, 2000))
+    await new Promise(r => setTimeout(r, 2000))
   })
 
   test("extension activates", () => {
@@ -49,7 +49,7 @@ suite("bundled extension", function () {
       new vscode.Position(1, 2),
     )
     assert.ok(hl, "expected highlights result")
-    const texts = hl.map((h) => doc.getText(h.range)).sort()
+    const texts = hl.map(h => doc.getText(h.range)).sort()
     assert.deepStrictEqual(texts, ["msg-warn", "msg-warn"])
   })
 

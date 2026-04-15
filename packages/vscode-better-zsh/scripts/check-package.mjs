@@ -6,7 +6,7 @@ const files = execFileSync(pnpm, ["exec", "vsce", "ls", "--no-dependencies"], {
   encoding: "utf8",
 })
   .split(/\r?\n/)
-  .map((line) => line.trim())
+  .map(line => line.trim())
   .filter(Boolean)
 
 const required = [
@@ -35,9 +35,9 @@ const forbidden = [
   [/^node_modules\//, "node_modules content"],
 ]
 
-const missing = required.filter((file) => !files.includes(file))
+const missing = required.filter(file => !files.includes(file))
 const hits = forbidden.flatMap(([pat, desc]) =>
-  files.filter((file) => pat.test(file)).map((file) => ({ desc, file })),
+  files.filter(file => pat.test(file)).map(file => ({ desc, file })),
 )
 
 if (missing.length > 0 || hits.length > 0) {

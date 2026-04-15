@@ -8,8 +8,8 @@ const PRECMDS = new Set<PrecmdName>(precmdNames)
 
 export function parsePrecmds(yo: string): readonly PrecmdDoc[] {
   return extractItems(yo)
-    .filter((item) => item.section === "Precommand Modifiers" && item.body)
-    .flatMap((item) => {
+    .filter(item => item.section === "Precommand Modifiers" && item.body)
+    .flatMap(item => {
       const synopsis = normalizeHeader(item.header)
       const name = synopsis.match(/^(\S+)/)?.[1]
       if (!item.body || !name || !isPrecmdName(name)) return []

@@ -42,9 +42,9 @@ export class HoverProvider implements vscode.HoverProvider {
     // Secondary index for -J/+J style flag lookup
     const options = [...corpus.option.values()]
     this.flagMap = indexMany(
-      options.flatMap((opt) =>
+      options.flatMap(opt =>
         opt.flags.map(
-          (alias) =>
+          alias =>
             [alias.char, { opt, alias }] as const satisfies readonly [
               OptFlagChar,
               OptFlagHit,
@@ -55,7 +55,7 @@ export class HoverProvider implements vscode.HoverProvider {
 
     // Secondary index for redir groupOp bucketing
     this.redirMap = indexMany(
-      [...corpus.redir.values()].map((doc) => [doc.groupOp, doc] as const),
+      [...corpus.redir.values()].map(doc => [doc.groupOp, doc] as const),
     )
   }
 
@@ -186,7 +186,7 @@ export class HoverProvider implements vscode.HoverProvider {
     if (!short?.[1] || !short[2]) return
     const hits = this.flagMap
       .get(mkOptFlagChar(short[2]))
-      ?.filter((hit) => hit.alias.on === short[1])
+      ?.filter(hit => hit.alias.on === short[1])
     const opt = unique(hits)?.opt
     if (!opt) return
     return resolve(this.corpus, {
@@ -224,7 +224,7 @@ function redirDoc(
   // Redirection docs are grouped by the leading operator token and only become
   // unique once the remaining signature tail is considered.
   return unique(
-    docs.filter((doc) => redirTailKind(doc) === redirTailKindOf(parsed.tail)),
+    docs.filter(doc => redirTailKind(doc) === redirTailKindOf(parsed.tail)),
   )
 }
 
@@ -291,7 +291,7 @@ function activeCondTokenRangeAt(
   // Generic hover token splitting treats shell delimiters as separators, so
   // conditional operators made entirely from those chars need a cond-only path.
   const symbolic = [...condOpKeys]
-    .filter((op) => [...op].some(isTokenDelimiter))
+    .filter(op => [...op].some(isTokenDelimiter))
     .sort((a, b) => b.length - a.length)
 
   for (const op of symbolic) {

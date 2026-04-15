@@ -26,7 +26,7 @@ export async function activate(ctx: vscode.ExtensionContext) {
 
   configureZsh(readZshPathConfig())
   ctx.subscriptions.push(
-    vscode.workspace.onDidChangeConfiguration((e) => {
+    vscode.workspace.onDidChangeConfiguration(e => {
       if (e.affectsConfiguration(ZSH_PATH_KEY))
         configureZsh(readZshPathConfig())
     }),
@@ -36,9 +36,7 @@ export async function activate(ctx: vscode.ExtensionContext) {
   // Keep semi-static language knowledge bundled and ready immediately; host
   // zsh is reserved for diagnostics/tokenization paths where execution matters.
   const corpus = loadCorpus()
-  const builtinNames = [...corpus.builtin.values()].map(
-    (builtin) => builtin.name,
-  )
+  const builtinNames = [...corpus.builtin.values()].map(builtin => builtin.name)
   const semanticTokensProvider = new SemanticTokensProvider(builtinNames)
 
   setupDiagnostics(ctx)

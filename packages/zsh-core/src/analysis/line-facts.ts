@@ -374,7 +374,7 @@ function separatorAdvance(
   i: number,
   len: number,
 ): number | undefined {
-  const ch = s[i]!
+  const ch = s.charAt(i)
   if (ch === ";" || ch === "\n") return 1
   if (ch === "(" && !(i + 1 < len && s[i + 1] === "(")) return 1
   if (ch === "|") return i + 1 < len && s[i + 1] === "|" ? 2 : 1

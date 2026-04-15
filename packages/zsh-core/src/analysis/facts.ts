@@ -82,7 +82,7 @@ export function factsAt(
 ): readonly Fact[] {
   const starts = lineStarts(readLines(doc))
   const off = (starts[line] ?? 0) + char
-  return analyzeDoc(doc).filter((fact) =>
+  return analyzeDoc(doc).filter(fact =>
     // ctx spans include their closing delimiter, so offset matching is inclusive
     hasOffset(fact.span, off, fact.kind === "ctx"),
   )

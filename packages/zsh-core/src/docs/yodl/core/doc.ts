@@ -63,9 +63,7 @@ export function extractSectionBody(
   src: string | YNodeSeq,
   name: string,
 ): YNodeSeq {
-  return (
-    extractSections(src).find((section) => section.name === name)?.body ?? []
-  )
+  return extractSections(src).find(section => section.name === name)?.body ?? []
 }
 
 export function extractFirstList(

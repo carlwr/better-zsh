@@ -65,7 +65,7 @@ export function continuedText(
 ): string {
   return lines
     .slice(start, end + 1)
-    .map((line) =>
+    .map(line =>
       activeText(line)
         .replace(/\\\s*$/, "")
         .trim(),

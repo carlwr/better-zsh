@@ -68,7 +68,7 @@ endsitem()`
 
   describe("vendored options.yo", () => {
     const opts = parseOptions(OPTS_YO)
-    const byName = by(opts, (o) => o.name)
+    const byName = by(opts, o => o.name)
 
     test("parses a non-trivial number of options", () => {
       expect(opts.length).toBeGreaterThan(100)
@@ -88,12 +88,12 @@ endsitem()`
     })
 
     test("no duplicate names", () => {
-      const names = opts.map((o) => o.name)
+      const names = opts.map(o => o.name)
       expect(new Set(names).size).toBe(names.length)
     })
 
     test("all categories are non-empty", () => {
-      expect([...new Set(opts.map((o) => o.category))]).toEqual(optSections)
+      expect([...new Set(opts.map(o => o.category))]).toEqual(optSections)
     })
 
     test("known options exist", () => {

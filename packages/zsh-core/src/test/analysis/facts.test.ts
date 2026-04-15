@@ -17,26 +17,26 @@ import { mockDoc } from "./test-util"
 
 function cmdTexts(line: string): string[] {
   return cmdHeadFactsOnLine(line)
-    .filter((fact) => fact.kind === "cmd-head")
-    .map((fact) => fact.text)
+    .filter(fact => fact.kind === "cmd-head")
+    .map(fact => fact.text)
 }
 
 function redirTexts(line: string): string[] {
   return cmdHeadFactsOnLine(line)
     .filter(isRedirFact)
-    .map((fact) => fact.text)
+    .map(fact => fact.text)
 }
 
 function rwTexts(line: string): string[] {
   return cmdHeadFactsOnLine(line)
     .filter(isReservedWordFact)
-    .map((fact) => fact.text)
+    .map(fact => fact.text)
 }
 
 function psTexts(line: string): string[] {
   return cmdHeadFactsOnLine(line)
     .filter(isProcessSubstFact)
-    .map((fact) => fact.text)
+    .map(fact => fact.text)
 }
 
 function expectTexts(
@@ -96,7 +96,7 @@ describe("command/precommand analysis", () => {
   test("precommand modifiers before command head", () => {
     const line = "noglob command echo hi"
     const facts = cmdHeadFactsOnLine(line)
-    expect(facts.filter(isPrecmdFact).map((fact) => fact.name)).toEqual([
+    expect(facts.filter(isPrecmdFact).map(fact => fact.name)).toEqual([
       "noglob",
       "command",
     ])
@@ -199,8 +199,8 @@ describe("document facts", () => {
   test("cond context and precommand on same line", () => {
     const doc = mockDoc(["if noglob [ -f $file ]; then"])
     const facts = analyzeDoc(doc)
-    expect(facts.filter(isCtxFact).map((fact) => fact.ctx)).toContain("cond")
-    expect(facts.filter(isPrecmdFact).map((fact) => fact.name)).toContain(
+    expect(facts.filter(isCtxFact).map(fact => fact.ctx)).toContain("cond")
+    expect(facts.filter(isPrecmdFact).map(fact => fact.name)).toContain(
       "noglob",
     )
   })
@@ -216,7 +216,7 @@ describe("document facts", () => {
   test("setopt context after builtin modifier", () => {
     const doc = mockDoc(["builtin setopt extended_glob"])
     const facts = factsAt(doc, 0, 18)
-    expect(facts.filter(isCtxFact).map((fact) => fact.ctx)).toContain("setopt")
+    expect(facts.filter(isCtxFact).map(fact => fact.ctx)).toContain("setopt")
   })
 })
 
@@ -224,15 +224,15 @@ describe("cmdHeadFactsOnLine invariants", () => {
   const SHELL_CHARS =
     " \t;|&(){}><'\"\\#abcdefghijklmnopqrstuvwxyz0123456789$!_-=+"
   const shellCharArb = fc.mapToConstant(
-    ...SHELL_CHARS.split("").map((ch) => ({ num: 1, build: () => ch })),
+    ...SHELL_CHARS.split("").map(ch => ({ num: 1, build: () => ch })),
   )
   const lineArb = fc
     .array(shellCharArb, { maxLength: 120 })
-    .map((chars) => chars.join(""))
+    .map(chars => chars.join(""))
 
   test("never throws", () => {
     fc.assert(
-      fc.property(lineArb, (line) => {
+      fc.property(lineArb, line => {
         expect(() => cmdHeadFactsOnLine(line)).not.toThrow()
       }),
     )
@@ -240,7 +240,7 @@ describe("cmdHeadFactsOnLine invariants", () => {
 
   test("emits non-overlapping facts with valid spans", () => {
     fc.assert(
-      fc.property(lineArb, (line) => {
+      fc.property(lineArb, line => {
         assertFactInvariants(line, cmdHeadFactsOnLine(line))
       }),
     )

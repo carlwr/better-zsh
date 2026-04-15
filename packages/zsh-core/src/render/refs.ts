@@ -36,7 +36,7 @@ function mkRefDocs<K extends DocCategory>(
   docs: readonly DocRecordMap[K][],
   ctx: MdCtx,
 ): RefDocBase<K, Proven<K>>[] {
-  return docs.map((doc) => ({
+  return docs.map(doc => ({
     kind,
     id: docId[kind](doc),
     heading: docHeading(kind, doc),

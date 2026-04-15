@@ -40,7 +40,7 @@ true if string matches pattern.
 
   describe("vendored cond.yo", () => {
     const ops = parseCondOps(COND_YO)
-    const byOp = by(ops, (o) => o.op)
+    const byOp = by(ops, o => o.op)
 
     test("parses a reasonable number of operators", () => {
       expect(ops.length).toBeGreaterThan(20)

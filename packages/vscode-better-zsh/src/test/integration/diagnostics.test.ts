@@ -10,8 +10,8 @@ import {
 
 async function editAndSave(doc: vscode.TextDocument) {
   const editor = await vscode.window.showTextDocument(doc)
-  await editor.edit((b) => b.insert(new vscode.Position(0, 0), " "))
-  await editor.edit((b) =>
+  await editor.edit(b => b.insert(new vscode.Position(0, 0), " "))
+  await editor.edit(b =>
     b.delete(
       new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)),
     ),

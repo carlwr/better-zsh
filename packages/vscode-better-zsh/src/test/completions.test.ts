@@ -101,7 +101,7 @@ suite("CompletionProvider", () => {
       character: 0,
     } as import("vscode").Position)) as import("vscode").CompletionItem[]
 
-    const labels = items.map((item) => item.label)
+    const labels = items.map(item => item.label)
     assert.ok(labels.includes("echo"))
     assert.ok(labels.includes("if"))
     assert.ok(labels.includes("noglob"))

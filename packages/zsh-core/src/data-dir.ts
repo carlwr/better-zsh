@@ -47,5 +47,5 @@ export function copyRuntimeZshData(outDir: string, baseDir = thisDir) {
 }
 
 function firstExisting(candidates: readonly string[]): string | undefined {
-  return candidates.find((cand) => existsSync(cand))
+  return candidates.find(cand => existsSync(cand))
 }

@@ -46,7 +46,7 @@ const mdFmt = {
 
 /** Build formatter context from the available option set. */
 export function mkMdCtx(options: readonly ZshOption[] = []): MdCtx {
-  return { optNames: new Set(options.map((opt) => opt.name)) }
+  return { optNames: new Set(options.map(opt => opt.name)) }
 }
 
 /** Emphasize option references inside markdown prose, skipping fenced code. */
@@ -59,7 +59,7 @@ export function fmtOptRefsInMd(
   let fenced = false
   return md
     .split("\n")
-    .map((line) => {
+    .map(line => {
       if (line.startsWith("```")) {
         fenced = !fenced
         return line

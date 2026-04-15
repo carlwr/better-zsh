@@ -21,15 +21,15 @@ export function matchOptions(
     out,
     options,
     norm,
-    (opt) => opt,
-    (opt) => opt,
+    opt => opt,
+    opt => opt,
   )
   pushMatches(
     out,
     options,
     norm,
-    (opt) => `no${opt}`,
-    (opt) => `no_${opt}`,
+    opt => `no${opt}`,
+    opt => `no_${opt}`,
   )
   return out
 }

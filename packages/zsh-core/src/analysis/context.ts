@@ -16,8 +16,8 @@ export function syntacticContext(
   char: number,
 ): SyntacticContext {
   const facts = factsAt(doc, line, char).filter(isCtxFact)
-  if (facts.some((fact) => fact.ctx === "setopt")) return { kind: "setopt" }
-  if (facts.some((fact) => fact.ctx === "cond")) return { kind: "cond" }
-  if (facts.some((fact) => fact.ctx === "arith")) return { kind: "arith" }
+  if (facts.some(fact => fact.ctx === "setopt")) return { kind: "setopt" }
+  if (facts.some(fact => fact.ctx === "cond")) return { kind: "cond" }
+  if (facts.some(fact => fact.ctx === "arith")) return { kind: "arith" }
   return { kind: "general" }
 }

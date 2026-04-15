@@ -19,18 +19,18 @@ export function parseGlobFlags(yo: string): readonly GlobFlagDoc[] {
   const list = extractFirstList(sec, "item")
   if (!list) return []
 
-  return extractItemList(list).flatMap((item) => {
+  return extractItemList(list).flatMap(item => {
     const desc = bodyDoc(item)
     if (!desc) return []
 
     const toks = extractTokens(item.header)
-    const tt = toks.filter((tok) => tok.kind === "tt").map((tok) => tok.text)
-    const vars = toks.filter((tok) => tok.kind === "var").map((tok) => tok.text)
+    const tt = toks.filter(tok => tok.kind === "tt").map(tok => tok.text)
+    const vars = toks.filter(tok => tok.kind === "var").map(tok => tok.text)
     const sig = flagSigText(item.header)
 
     if (vars.length === 0 && tt.length > 1) {
       return tt.map(
-        (flag) =>
+        flag =>
           ({
             flag: mkProven("glob_flag", flag),
             args: [],

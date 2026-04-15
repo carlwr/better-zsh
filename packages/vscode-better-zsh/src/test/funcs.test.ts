@@ -42,7 +42,7 @@ suite("funcs", () => {
       "foo",
     )
     assert.deepStrictEqual(
-      ranges.map((r) => [r.start.line, r.start.character]),
+      ranges.map(r => [r.start.line, r.start.character]),
       [
         [0, 0],
         [1, 8],
@@ -58,7 +58,7 @@ suite("funcs", () => {
       ),
     )
     assert.deepStrictEqual(
-      funcDecls(got).map((f) => f.name),
+      funcDecls(got).map(f => f.name),
       ["alpha", "beta"],
     )
     assert.deepStrictEqual(

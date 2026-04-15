@@ -35,7 +35,7 @@ export function parseOptions(yo: string): readonly ZshOption[] {
   const nodes = parseNodes(yo)
   const items = extractItems(nodes)
   const flagMap = parseDefaultFlagAliases(nodes)
-  return items.flatMap((item) => {
+  return items.flatMap(item => {
     if (!item.body) return []
     const parsed = parseOptHeader(item.header)
     if (!parsed) return []
@@ -94,8 +94,8 @@ function parseDefaultFlagAliases(
 
 function ttTexts(raw: Parameters<typeof extractTokens>[0]): string[] {
   return extractTokens(raw)
-    .filter((tok) => tok.kind === "tt")
-    .map((tok) => tok.text.trim())
+    .filter(tok => tok.kind === "tt")
+    .map(tok => tok.text.trim())
     .filter(Boolean)
 }
 
@@ -151,7 +151,7 @@ function defaultMarkers(
   header: string | Parameters<typeof extractTokens>[0],
 ): DefaultMarker[] {
   const text = typeof header === "string" ? header : stripYodl(header)
-  return [...text.matchAll(DEFAULT_RE)].flatMap((m) =>
+  return [...text.matchAll(DEFAULT_RE)].flatMap(m =>
     m[1] ? [m[1] as DefaultMarker] : [],
   )
 }

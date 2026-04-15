@@ -28,14 +28,14 @@ export async function openText(text: string, delay = 500) {
     content: text,
   })
   await vscode.window.showTextDocument(doc)
-  await new Promise((r) => setTimeout(r, delay))
+  await new Promise(r => setTimeout(r, delay))
   return doc
 }
 
 async function openDoc(uri: vscode.Uri, delay: number) {
   const doc = await vscode.workspace.openTextDocument(uri)
   await vscode.window.showTextDocument(doc)
-  await new Promise((r) => setTimeout(r, delay))
+  await new Promise(r => setTimeout(r, delay))
   return doc
 }
 
@@ -49,7 +49,7 @@ export async function completionLabels(
     pos,
   )
   assert.ok(items, "expected completion result")
-  return items.items.map((i) =>
+  return items.items.map(i =>
     typeof i.label === "string" ? i.label : i.label.label,
   )
 }
@@ -66,15 +66,15 @@ export async function hoverText(
     )) ?? []
   assert.ok(hovers.length > 0, "expected hover")
   return hovers
-    .flatMap((h) => h.contents)
-    .map((c) => (typeof c === "string" ? c : (c as { value: string }).value))
+    .flatMap(h => h.contents)
+    .map(c => (typeof c === "string" ? c : (c as { value: string }).value))
     .join("\n\n")
 }
 
 export function zshDiagnostics(uri: vscode.Uri) {
   return vscode.languages
     .getDiagnostics(uri)
-    .filter((d) => d.source === ZSH_DIAGNOSTIC_SOURCE)
+    .filter(d => d.source === ZSH_DIAGNOSTIC_SOURCE)
 }
 
 export async function waitForDiagnostics(
@@ -94,7 +94,7 @@ export async function waitForDiagnostics(
     } else {
       clearSince = undefined
     }
-    await new Promise((r) => setTimeout(r, 100))
+    await new Promise(r => setTimeout(r, 100))
   }
   return zshDiagnostics(uri)
 }

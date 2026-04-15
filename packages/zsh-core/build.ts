@@ -67,7 +67,7 @@ function writeJsonArtifacts() {
 
   // Deterministic file list: sorted by filename for stable index.json.
   const fileNames = docCategories
-    .map((cat) => jsonFileName[cat])
+    .map(cat => jsonFileName[cat])
     .sort() as string[]
 
   const counts: Record<string, number> = {}

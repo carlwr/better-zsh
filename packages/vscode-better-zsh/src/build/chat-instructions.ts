@@ -8,7 +8,7 @@ function readBashDiffsMd(): string {
 
 export function buildChatInstructions(snippets: readonly ZshSnippet[]): string {
   const snippetList = snippets
-    .map((s) => `- \`${s.prefix}\` — ${s.desc}`)
+    .map(s => `- \`${s.prefix}\` — ${s.desc}`)
     .join("\n")
 
   return `# Zsh — Key Differences from Bash

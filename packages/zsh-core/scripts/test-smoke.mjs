@@ -17,7 +17,7 @@ try {
     encoding: "utf8",
   })
     .split(/\r?\n/)
-    .map((file) => file.replace(/^package\//, ""))
+    .map(file => file.replace(/^package\//, ""))
     .filter(Boolean)
 
   const required = [
@@ -86,9 +86,9 @@ try {
     [/^node_modules\//, "node_modules content"],
   ]
 
-  const missing = required.filter((file) => !paths.includes(file))
+  const missing = required.filter(file => !paths.includes(file))
   const hits = forbidden.flatMap(([pat, desc]) =>
-    paths.filter((file) => pat.test(file)).map((file) => ({ desc, file })),
+    paths.filter(file => pat.test(file)).map(file => ({ desc, file })),
   )
 
   if (missing.length > 0 || hits.length > 0) {

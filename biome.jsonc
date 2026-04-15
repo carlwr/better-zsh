@@ -23,11 +23,15 @@
   },
   "javascript": {
     "formatter": {
-      "semicolons": "asNeeded"
+      "semicolons": "asNeeded",
+      "arrowParentheses": "asNeeded"
     }
   },
   "linter": {
     "rules": {
+      "complexity": {
+        "noCommaOperator": "off"
+      },
       "suspicious": {
         // zsh code embedded in strings uses ${...} extensively
         "noTemplateCurlyInString": "off"
