@@ -7,7 +7,7 @@ import {
 } from "../core/doc.ts"
 import { normalizeHeader } from "../core/text.ts"
 
-export function parseRedirections(yo: string): readonly RedirDoc[] {
+export function parseRedirs(yo: string): readonly RedirDoc[] {
   const section = extractSectionBody(yo, "Redirection")
   return flattenAliasedEntries(
     extractItems(section.length > 0 ? section : yo, 1),

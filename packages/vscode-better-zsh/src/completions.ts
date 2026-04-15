@@ -43,16 +43,14 @@ export class CompletionProvider implements vscode.CompletionItemProvider {
       ["shell_param", vscode.CompletionItemKind.Variable],
     ]
     this.general = wordCategories.flatMap(([cat, kind]) =>
-      [...corpus[cat].values()]
-        .filter(isWordName)
-        .map(doc =>
-          mkCompletionItem(
-            doc,
-            kind,
-            { category: cat, id: doc.name } as DocPieceId,
-            corpus,
-          ),
+      [...corpus[cat].values()].filter(isWordName).map(doc =>
+        mkCompletionItem(
+          doc,
+          kind,
+          { category: cat, id: doc.name } as DocPieceId, // CAST?
+          corpus,
         ),
+      ),
     )
     this.options = options.map(opt => opt.name)
     this.optionMap = new Map(options.map(o => [o.name, o]))

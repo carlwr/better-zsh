@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest"
-import { mkOptFlagChar, mkProven, optSections } from "../../docs/types"
+import { mkOptFlag, mkProven, optSections } from "../../docs/types"
 import { parseOptions } from "../../docs/yodl/extractors/options"
 import { by, only, readVendoredYo } from "./test-util"
 
@@ -16,7 +16,7 @@ command to that directory.
     const opt = only(parseOptions(yo))
     expect(opt.name).toBe(mkProven("option", "AUTO_CD"))
     expect(opt.display).toBe("AUTO_CD")
-    expect(opt.flags).toEqual([{ char: mkOptFlagChar("J"), on: "-" }])
+    expect(opt.flags).toEqual([{ char: mkOptFlag("J"), on: "-" }])
     expect(opt.category).toBe("Changing Directories")
     expect(opt.desc).toContain("command is the name of a directory")
   })
@@ -61,8 +61,8 @@ startsitem()
 sitem(tt(-5))(NOTIFY)
 endsitem()`
     expect(only(parseOptions(yo)).flags).toEqual([
-      { char: mkOptFlagChar("5"), on: "-" },
-      { char: mkOptFlagChar("b"), on: "-" },
+      { char: mkOptFlag("5"), on: "-" },
+      { char: mkOptFlag("b"), on: "-" },
     ])
   })
 
@@ -104,21 +104,21 @@ endsitem()`
 
     test("captures short-flag polarity from vendored docs", () => {
       expect(byName.get(mkProven("option", "ERR_EXIT"))?.flags).toEqual([
-        { char: mkOptFlagChar("e"), on: "-" },
+        { char: mkOptFlag("e"), on: "-" },
       ])
       expect(byName.get(mkProven("option", "RCS"))?.flags).toEqual([
-        { char: mkOptFlagChar("f"), on: "+" },
+        { char: mkOptFlag("f"), on: "+" },
       ])
       expect(byName.get(mkProven("option", "GLOBAL_RCS"))?.flags).toEqual([
-        { char: mkOptFlagChar("d"), on: "+" },
+        { char: mkOptFlag("d"), on: "+" },
       ])
       expect(byName.get(mkProven("option", "MARK_DIRS"))?.flags).toEqual([
-        { char: mkOptFlagChar("8"), on: "-" },
-        { char: mkOptFlagChar("X"), on: "-" },
+        { char: mkOptFlag("8"), on: "-" },
+        { char: mkOptFlag("X"), on: "-" },
       ])
       expect(byName.get(mkProven("option", "NOTIFY"))?.flags).toEqual([
-        { char: mkOptFlagChar("5"), on: "-" },
-        { char: mkOptFlagChar("b"), on: "-" },
+        { char: mkOptFlag("5"), on: "-" },
+        { char: mkOptFlag("b"), on: "-" },
       ])
     })
 

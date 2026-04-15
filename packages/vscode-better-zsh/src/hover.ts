@@ -6,8 +6,8 @@ import type {
   DocCorpus,
   DocPieceId,
   LineFact,
+  OptFlag,
   OptFlagAlias,
-  OptFlagChar,
   ProcessSubstFact,
   Proven,
   RedirDoc,
@@ -18,7 +18,7 @@ import type {
 import {
   cmdHeadFactsOnLine,
   mkCandidate,
-  mkOptFlagChar,
+  mkOptFlag,
   mkProven,
   resolve,
   syntacticContext,
@@ -33,7 +33,7 @@ interface OptFlagHit {
 
 export class HoverProvider implements vscode.HoverProvider {
   private corpus: DocCorpus
-  private flagMap: ReadonlyMap<OptFlagChar, readonly OptFlagHit[]>
+  private flagMap: ReadonlyMap<OptFlag, readonly OptFlagHit[]>
   private redirMap: ReadonlyMap<RedirOp, readonly RedirDoc[]>
 
   constructor(corpus: DocCorpus) {
@@ -46,7 +46,7 @@ export class HoverProvider implements vscode.HoverProvider {
         opt.flags.map(
           alias =>
             [alias.char, { opt, alias }] as const satisfies readonly [
-              OptFlagChar,
+              OptFlag,
               OptFlagHit,
             ],
         ),
@@ -81,7 +81,7 @@ export class HoverProvider implements vscode.HoverProvider {
   private condHover(doc: vscode.TextDocument, pos: vscode.Position) {
     const ctx = syntacticContext(doc, pos.line, pos.character)
     if (ctx.kind !== "cond") return
-    const condOpKeys = this.corpus.cond_op.keys() as Iterable<Proven<"cond_op">>
+    const condOpKeys = this.corpus.cond_op.keys() as Iterable<Proven<"cond_op">> // CAST?
     const range = activeCondTokenRangeAt(doc, pos, condOpKeys)
     if (!range) return
     const op = mkProven("cond_op", doc.getText(range))
@@ -163,6 +163,7 @@ export class HoverProvider implements vscode.HoverProvider {
     id: Candidate<K>,
     range?: vscode.Range,
   ): vscode.Hover | undefined {
+    // CAST?
     // The {category, id} shape IS a CandidateDocPieceId for the given K, but TS
     // cannot preserve the K-indexed correlation through a generic helper.
     const query = { category, id } as CandidateDocPieceId
@@ -185,7 +186,7 @@ export class HoverProvider implements vscode.HoverProvider {
     const short = token.match(/^([+-])([A-Za-z0-9])$/)
     if (!short?.[1] || !short[2]) return
     const hits = this.flagMap
-      .get(mkOptFlagChar(short[2]))
+      .get(mkOptFlag(short[2]))
       ?.filter(hit => hit.alias.on === short[1])
     const opt = unique(hits)?.opt
     if (!opt) return

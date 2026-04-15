@@ -9,7 +9,7 @@ const CMD_DESC =
 const ANY_DESC =
   "Recognized in any position if neither `IGNORE_BRACES` nor `IGNORE_CLOSE_BRACES` is set."
 
-export function parseReservedWords(yo: string): readonly ReservedWordDoc[] {
+export function parseReswords(yo: string): readonly ReservedWordDoc[] {
   const words = extractTokens(extractSectionBody(yo, "Reserved Words"))
     .filter(tok => tok.kind === "tt")
     .map(tok => tok.text)

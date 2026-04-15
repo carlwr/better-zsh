@@ -20,7 +20,7 @@ import type {
   SubscriptFlagDoc,
   ZshOption,
 } from "../../docs/types"
-import { mkOptFlagChar, mkProven, mkRedirOp } from "../../docs/types"
+import { mkOptFlag, mkProven, mkRedirOp } from "../../docs/types"
 import { dumpText, type RefDumpFile, writeRefDump } from "../../render/dump"
 import {
   defaultStateIn,
@@ -46,7 +46,7 @@ import { withTmpDirAsync } from "../tmp-dir"
 const opt = (name: string, desc: string): ZshOption => ({
   name: mkProven("option", name),
   display: name,
-  flags: [{ char: mkOptFlagChar("J"), on: "-" }],
+  flags: [{ char: mkOptFlag("J"), on: "-" }],
   defaultIn: ["csh", "ksh", "sh", "zsh"],
   category: "Changing Directories",
   desc,

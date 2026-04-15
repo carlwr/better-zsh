@@ -1,6 +1,6 @@
 import fc from "fast-check"
 import { describe, expect, test } from "vitest"
-import { mkCandidate, mkOptFlagChar, mkProven } from "../docs/types"
+import { mkCandidate, mkOptFlag, mkProven } from "../docs/types"
 
 describe("mkProven option (normalizes like mkOptName)", () => {
   test("normalizes known equivalences", () => {
@@ -48,9 +48,9 @@ describe("mkProven cond_op (trims)", () => {
   })
 })
 
-describe("mkOptFlagChar", () => {
+describe("mkOptFlag", () => {
   test("trims whitespace", () => {
-    expect(mkOptFlagChar(" J ")).toBe(mkOptFlagChar("J"))
+    expect(mkOptFlag(" J ")).toBe(mkOptFlag("J"))
   })
 })
 

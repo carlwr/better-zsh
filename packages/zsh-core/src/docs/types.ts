@@ -9,13 +9,12 @@ export type Brand<T, B extends string> = T & { readonly __brand: B }
 // Outside the candidate/proven split; used as secondary-index brands.
 
 /** Single-letter option flag char. Well-formed; secondary index brand, not a doc-piece identity. */
-export type OptFlagChar = Brand<string, "OptFlagChar">
+export type OptFlag = Brand<string, "OptFlag">
 
 /** Redirection operator token. Well-formed; secondary index brand, not a doc-piece identity. */
 export type RedirOp = Brand<string, "RedirOp">
 
-export const mkOptFlagChar = (raw: string): OptFlagChar =>
-  raw.trim() as OptFlagChar
+export const mkOptFlag = (raw: string): OptFlag => raw.trim() as OptFlag
 
 export const mkRedirOp = (raw: string): RedirOp => raw.trim() as RedirOp
 
@@ -151,7 +150,7 @@ export type ProcessSubstOp = "<(...)" | ">(...)" | "=(...)"
 
 /** Short-option alias for a long zsh option. */
 export interface OptFlagAlias {
-  readonly char: OptFlagChar
+  readonly char: OptFlag
   readonly on: OptFlagSign
 }
 

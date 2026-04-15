@@ -5,8 +5,8 @@ import { parseGlobOps } from "../../docs/yodl/extractors/glob-ops"
 import { parseHistory } from "../../docs/yodl/extractors/history"
 import { parseParamFlags } from "../../docs/yodl/extractors/param-flags"
 import { parseProcessSubsts } from "../../docs/yodl/extractors/process-substs"
-import { parseRedirections } from "../../docs/yodl/extractors/redirections"
-import { parseReservedWords } from "../../docs/yodl/extractors/reserved-words"
+import { parseRedirs } from "../../docs/yodl/extractors/redirections"
+import { parseReswords } from "../../docs/yodl/extractors/reserved-words"
 import { parseShellParams } from "../../docs/yodl/extractors/shell-params"
 import { parseSubscriptFlags } from "../../docs/yodl/extractors/subscript-flags"
 import { by, expectDocCorpus, readVendoredYo } from "./test-util"
@@ -46,14 +46,14 @@ item(tt(>!) var(word))(
 Force clobber.
 )
 enditem()`
-    const docs = parseRedirections(yo)
+    const docs = parseRedirs(yo)
     expect(docs.map(doc => doc.groupOp)).toEqual([">!", ">|"])
     expect(docs[0]?.desc).toBe("Force clobber.")
     expect(docs[1]?.desc).toBe("Force clobber.")
   })
 
   test("redirection grouping operator is not a unique doc identity", () => {
-    const docs = parseRedirections(REDIR_YO)
+    const docs = parseRedirs(REDIR_YO)
     expect(
       docs.filter(doc => doc.groupOp === ">&").map(doc => doc.sig),
     ).toEqual([">& number", ">& -", ">& p", ">& word"])
@@ -63,7 +63,7 @@ enditem()`
   })
 
   test("reserved words include command-position and any-position forms", () => {
-    const docs = by(parseReservedWords(GRAMMAR_YO), doc => doc.name)
+    const docs = by(parseReswords(GRAMMAR_YO), doc => doc.name)
     const getResWord = (raw: string) => docs.get(mkProven("reserved_word", raw))
     expect(getResWord("if")?.pos).toBe("command")
     expect(getResWord("[[")?.pos).toBe("command")
@@ -83,7 +83,7 @@ enditem()`
       "vendored redirections corpus parses",
       () =>
         expectDocCorpus({
-          docs: parseRedirections(REDIR_YO),
+          docs: parseRedirs(REDIR_YO),
           minCount: 18,
           keyOf: doc => doc.sig,
           descOf: doc => doc.desc,
@@ -95,7 +95,7 @@ enditem()`
       "vendored reserved words corpus parses",
       () =>
         expectDocCorpus({
-          docs: parseReservedWords(GRAMMAR_YO),
+          docs: parseReswords(GRAMMAR_YO),
           minCount: 25,
           keyOf: doc => doc.name,
           descOf: doc => doc.desc,
@@ -201,10 +201,10 @@ enditem()`
 
   test("normalized syntax-doc identity fields are idempotent", () => {
     const t = [
-      [parseRedirections(REDIR_YO).map(doc => doc.groupOp), mkRedirOp],
-      [parseRedirections(REDIR_YO).map(doc => doc.sig), mkProven_("redir")],
+      [parseRedirs(REDIR_YO).map(doc => doc.groupOp), mkRedirOp],
+      [parseRedirs(REDIR_YO).map(doc => doc.sig), mkProven_("redir")],
       [
-        parseReservedWords(GRAMMAR_YO).map(doc => doc.name),
+        parseReswords(GRAMMAR_YO).map(doc => doc.name),
         mkProven_("reserved_word"),
       ],
       [

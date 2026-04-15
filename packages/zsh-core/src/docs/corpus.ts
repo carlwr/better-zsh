@@ -40,8 +40,8 @@ import { parseOptions } from "./yodl/extractors/options.ts"
 import { parseParamFlags } from "./yodl/extractors/param-flags.ts"
 import { parsePrecmds } from "./yodl/extractors/precmds.ts"
 import { parseProcessSubsts } from "./yodl/extractors/process-substs.ts"
-import { parseRedirections } from "./yodl/extractors/redirections.ts"
-import { parseReservedWords } from "./yodl/extractors/reserved-words.ts"
+import { parseRedirs } from "./yodl/extractors/redirections.ts"
+import { parseReswords } from "./yodl/extractors/reserved-words.ts"
 import { parseShellParams } from "./yodl/extractors/shell-params.ts"
 import { parseSubscriptFlags } from "./yodl/extractors/subscript-flags.ts"
 
@@ -60,8 +60,8 @@ const categoryLoader: CategoryLoader = {
   builtin: { file: "builtins.yo", parse: parseBuiltins },
   precmd: { file: "grammar.yo", parse: parsePrecmds },
   shell_param: { file: "params.yo", parse: parseShellParams },
-  reserved_word: { file: "grammar.yo", parse: parseReservedWords },
-  redir: { file: "redirect.yo", parse: parseRedirections },
+  reserved_word: { file: "grammar.yo", parse: parseReswords },
+  redir: { file: "redirect.yo", parse: parseRedirs },
   process_subst: { file: "expn.yo", parse: parseProcessSubsts },
   subscript_flag: { file: "params.yo", parse: parseSubscriptFlags },
   param_flag: { file: "expn.yo", parse: parseParamFlags },

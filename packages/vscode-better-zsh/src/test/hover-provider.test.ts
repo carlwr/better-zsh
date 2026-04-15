@@ -63,7 +63,7 @@ const b = (name: string, desc: string): BuiltinDoc => ({
 const o = (name: string, category: ZshOption["category"]): ZshOption => ({
   name: core.mkProven("option", name),
   display: name,
-  flags: [{ char: core.mkOptFlagChar("f"), on: "+" }],
+  flags: [{ char: core.mkOptFlag("f"), on: "+" }],
   defaultIn: ["zsh"],
   category,
   desc: "",

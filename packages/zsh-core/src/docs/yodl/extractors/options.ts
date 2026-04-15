@@ -7,7 +7,7 @@ import type {
   Proven,
   ZshOption,
 } from "../../types.ts"
-import { mkOptFlagChar, mkProven, optSections } from "../../types.ts"
+import { mkOptFlag, mkProven, optSections } from "../../types.ts"
 import {
   extractFirstList,
   extractItems,
@@ -114,7 +114,7 @@ function aliasFrom(
   return {
     display,
     flag: {
-      char: mkOptFlagChar(char),
+      char: mkOptFlag(char),
       on: positive,
     },
   }
@@ -128,7 +128,7 @@ function toFlagAlias(raw: string): OptFlagAlias[] {
   if (!HEADER_FLAG_RE.test(raw)) return []
   const on = raw[0] as OptFlagSign
   const char = raw[1]
-  return char ? [{ char: mkOptFlagChar(char), on }] : []
+  return char ? [{ char: mkOptFlag(char), on }] : []
 }
 
 function mergeFlags(
