@@ -11,7 +11,7 @@
   "scripts": {
     "build": "pnpm --filter better-zsh build",
     "watch": "pnpm --filter better-zsh watch",
-    "format": "biome check --write",
+    "format": "pnpm -r --filter './packages/*' --if-present format",
     "typecheck": "pnpm -r --filter './packages/*' --if-present typecheck",
     "lint": "pnpm -r --filter './packages/*' --if-present lint",
     "check": "pnpm -r --filter './packages/*' --if-present check",

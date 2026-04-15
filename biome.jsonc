@@ -8,12 +8,14 @@
       }
     }
   },
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
   "files": {
     "includes": [
       "**",
-      "!.vscode-test",
-      "!node_modules",
-      "!out",
       "!syntaxes",
       "!test-fixtures"
     ]

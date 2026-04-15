@@ -191,7 +191,8 @@ Semantic token design choices:
 
 ### ONLY if you edited code: _validation before returning to user_
 
-- Before presenting results, run: `pnpm check && pnpm test && pnpm test:smoke && pnpm vsix && pnpm test:integration &>/dev/null`
+- Before presenting results, run: `pnpm format && pnpm check && pnpm test && pnpm test:smoke && pnpm vsix && pnpm test:integration &>/dev/null`
+- `pnpm format` applies safe auto-fixes (formatting, import ordering, safe lint fixes) — run it first to avoid a wasted check/fix/re-check cycle
 - If any step fails, attempt to fix and re-run — don't return with known failures
 - Any build script whose name includes "INTERACTIVE" are **excluded** from this loop — only run when user explicitly requests it
 
