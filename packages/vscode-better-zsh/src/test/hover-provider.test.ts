@@ -12,142 +12,129 @@ import * as core from "zsh-core"
 import { wordDoc } from "./test-util"
 
 vi.mock("vscode", () => ({
-  Position: class {
-    line: number
-    character: number
-    constructor(line: number, character: number) {
-      this.line = line
-      this.character = character
-    }
-  },
-  Range: class {
-    start: { line: number; character: number }
-    end: { line: number; character: number }
-    constructor(
-      startLine: number,
-      startChar: number,
-      endLine: number,
-      endChar: number,
-    ) {
-      this.start = { line: startLine, character: startChar }
-      this.end = { line: endLine, character: endChar }
-    }
-  },
-  Hover: class {
-    contents: unknown
-    range?: unknown
-    constructor(contents: unknown, range?: unknown) {
-      this.contents = contents
-      this.range = range
-    }
-  },
   MarkdownString: class {
     value: string
     constructor(v = "") {
       this.value = v
     }
-    appendCodeblock(v: string) {
-      this.value += v
+    appendCodeblock(s: string) {
+      this.value += s
       return this
+    }
+  },
+  Hover: class {
+    constructor(
+      public contents: unknown,
+      public range?: unknown,
+    ) {}
+  },
+  Range: class {
+    constructor(sl: number, sc: number, el: number, ec: number) {
+      Object.assign(this, {
+        start: { line: sl, character: sc },
+        end: { line: el, character: ec },
+      })
     }
   },
 }))
 
 import { HoverProvider } from "../hover"
 
+// --- fixtures ---------------------------------------------------------------
+
+const { mkProven, mkOptFlag, mkRedirOp } = core
+
 const b = (name: string, desc: string): BuiltinDoc => ({
-  name: core.mkProven("builtin", name),
+  name: mkProven("builtin", name),
   synopsis: [name],
   desc,
 })
+
 const o = (name: string, category: ZshOption["category"]): ZshOption => ({
-  name: core.mkProven("option", name),
+  name: mkProven("option", name),
   display: name,
-  flags: [{ char: core.mkOptFlag("f"), on: "+" }],
+  flags: [{ char: mkOptFlag("f"), on: "+" }],
   defaultIn: ["zsh"],
   category,
   desc: "",
 })
+
 const r = (groupOp: string, sig: string, desc: string): RedirDoc => ({
-  groupOp: core.mkRedirOp(groupOp),
-  sig: core.mkProven("redir", sig),
+  groupOp: mkRedirOp(groupOp),
+  sig: mkProven("redir", sig),
   desc,
-  section: "x",
+  section: "",
 })
+
 const p = (name: string, desc: string): ShellParamDoc => ({
-  name: core.mkProven("shell_param", name),
+  name: mkProven("shell_param", name),
   sig: name,
   desc,
-  section: "Parameters Set By The Shell",
+  section: "",
 })
-function c(
+
+const c = (
   arity: CondOpDoc["arity"],
   op: string,
   operands: CondOpDoc["operands"],
   desc: string,
-): CondOpDoc {
-  return {
-    op: core.mkProven("cond_op", op),
-    operands,
-    desc,
-    arity,
-  } as CondOpDoc
+): CondOpDoc =>
+  ({ op: mkProven("cond_op", op), operands, desc, arity }) as CondOpDoc
+
+// --- corpus -----------------------------------------------------------------
+
+const by = <K extends PropertyKey, T extends Record<K, unknown>>(
+  field: K,
+  xs: readonly T[],
+) => new Map(xs.map(x => [x[field], x]))
+
+const mt = new Map()
+
+const corpus: DocCorpus = {
+  option: by("name", [
+    o("GLOB", "Expansion and Globbing"),
+    o("RCS", "Initialisation"),
+  ]),
+  cond_op: by("op", [
+    c("binary", "&&", ["exp1", "exp2"], "d:&"),
+    c("binary", "||", ["exp1", "exp2"], "d:|"),
+    c("binary", "<", ["s1", "s2"], "d:<"),
+    c("binary", ">", ["s1", "s2"], "d:>"),
+    c("unary", "!", ["exp"], "d:!"),
+  ]),
+  builtin: by("name", [b("echo", "d:e"), b("fc", "d:f")]),
+  shell_param: by("name", [p("SECONDS", "d:s")]),
+  redir: by("sig", [
+    r(">&", ">& number", "d:n"),
+    r(">&", ">& -", "d:-"),
+    r(">&", ">& p", "d:p"),
+    r(">&", ">& word", "d:w"),
+    r(">&!", ">&! word", "d:!"),
+    r("&>", "&> word", "d:&"),
+  ]),
+  precmd: mt,
+  reserved_word: mt,
+  process_subst: mt,
+  subscript_flag: mt,
+  param_flag: mt,
+  history: mt,
+  glob_op: mt,
+  glob_flag: mt,
 }
 
-const builtins = [b("echo", "d:e"), b("fc", "d:f")]
-const options = [
-  o("GLOB", "Expansion and Globbing"),
-  o("RCS", "Initialisation"),
-]
-const redirs = [
-  r(">&", ">& number", "d:n"),
-  r(">&", ">& -", "d:-"),
-  r(">&", ">& p", "d:p"),
-  r(">&", ">& word", "d:w"),
-  r(">&!", ">&! word", "d:!"),
-  r("&>", "&> word", "d:&"),
-]
-const params = [p("SECONDS", "d:s")]
-const condOps = [
-  c("binary", "&&", ["exp1", "exp2"], "d:&"),
-  c("binary", "||", ["exp1", "exp2"], "d:|"),
-  c("binary", "<", ["s1", "s2"], "d:<"),
-  c("binary", ">", ["s1", "s2"], "d:>"),
-  c("unary", "!", ["exp"], "d:!"),
-]
+// --- helpers ----------------------------------------------------------------
 
-function mkTestCorpus(): DocCorpus {
-  const emptyMap = new Map() as unknown as ReadonlyMap<never, never>
-  return {
-    option: new Map(options.map(o => [o.name, o])),
-    cond_op: new Map(condOps.map(c => [c.op, c])),
-    builtin: new Map(builtins.map(b => [b.name, b])),
-    precmd: emptyMap as DocCorpus["precmd"],
-    shell_param: new Map(params.map(p => [p.name, p])),
-    reserved_word: emptyMap as DocCorpus["reserved_word"],
-    redir: new Map(redirs.map(r => [r.sig, r])),
-    process_subst: emptyMap as DocCorpus["process_subst"],
-    subscript_flag: emptyMap as DocCorpus["subscript_flag"],
-    param_flag: emptyMap as DocCorpus["param_flag"],
-    history: emptyMap as DocCorpus["history"],
-    glob_op: emptyMap as DocCorpus["glob_op"],
-    glob_flag: emptyMap as DocCorpus["glob_flag"],
-  }
-}
+const provider = new HoverProvider(corpus)
 
-function mk() {
-  return new HoverProvider(mkTestCorpus())
-}
-
-function at(line: string, char: number): { value: string } | undefined {
-  const h = mk().provideHover(wordDoc(line, "hover"), {
+function at(line: string, char: number) {
+  const h = provider.provideHover(wordDoc(line, "hover"), {
     line: 0,
     character: char,
   } as import("vscode").Position)
-  return h
-    ? ((h as { contents?: { value?: string } }).contents as { value: string })
-    : undefined
+  return (h as { contents?: { value?: string } } | undefined)?.contents?.value
 }
+
+// --- cases ------------------------------------------------------------------
 
 type Case = readonly [line: string, char: number, re: RegExp | null]
 
@@ -177,16 +164,16 @@ const cases: readonly Case[] = [
 suite("HoverProvider", () => {
   for (const [line, char, re] of cases) {
     test(`${line} @${char}`, () => {
-      const h = at(line, char)
-      if (re) assert.match(h?.value ?? "", re)
-      else assert.strictEqual(h, undefined)
+      const v = at(line, char)
+      if (re) assert.match(v ?? "", re)
+      else assert.strictEqual(v, undefined)
     })
   }
 
-  // `>&2` would match a redir doc; the builtin head takes precedence
+  // `>&2` would match a redir doc; the builtin head takes precedence.
   test("echo thing >&2 prefers builtin", () => {
-    const h = at("echo thing >&2", 1)
-    assert.match(h?.value ?? "", /d:e/)
-    assert.doesNotMatch(h?.value ?? "", /d:w/)
+    const v = at("echo thing >&2", 1) ?? ""
+    assert.match(v, /d:e/)
+    assert.doesNotMatch(v, /d:w/)
   })
 })

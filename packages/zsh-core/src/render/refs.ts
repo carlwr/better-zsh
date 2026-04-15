@@ -32,7 +32,7 @@ function mkRefDocs<K extends DocCategory>(
   return docs.map(doc => ({
     kind,
     id: docId[kind](doc),
-    heading: docDisplay[kind](doc),
+    heading: docDisplay(kind, doc),
     md: mdRenderer[kind](doc, corpus),
   }))
 }

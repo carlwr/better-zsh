@@ -19,7 +19,6 @@ import {
   mkCandidate,
   mkCandPieceId,
   mkOptFlag,
-  mkProven,
   resolve,
   syntacticContext,
 } from "zsh-core"
@@ -92,8 +91,11 @@ export class HoverProvider implements vscode.HoverProvider {
     const condOpKeys = this.corpus.cond_op.keys()
     const range = activeCondTokenRangeAt(doc, pos, condOpKeys)
     if (!range) return
-    const op = mkProven("cond_op", doc.getText(range))
-    return this.hoverFor("cond_op", mkCandidate("cond_op", op), range)
+    return this.hoverFor(
+      "cond_op",
+      mkCandidate("cond_op", doc.getText(range)),
+      range,
+    )
   }
 
   private funcHover(doc: vscode.TextDocument, pos: vscode.Position) {
@@ -181,10 +183,10 @@ export class HoverProvider implements vscode.HoverProvider {
   }
 
   private optionAt(token: string): DocPieceId | undefined {
-    const direct = resolve(this.corpus, {
-      category: "option",
-      id: mkCandidate("option", token),
-    })
+    const direct = resolve(
+      this.corpus,
+      mkCandPieceId("option", mkCandidate("option", token)),
+    )
     if (direct) return direct
 
     const short = token.match(/^([+-])([A-Za-z0-9])$/)
@@ -194,10 +196,10 @@ export class HoverProvider implements vscode.HoverProvider {
       ?.filter(hit => hit.alias.on === short[1])
     const opt = unique(hits)?.opt
     if (!opt) return
-    return resolve(this.corpus, {
-      category: "option",
-      id: mkCandidate("option", opt.display),
-    })
+    return resolve(
+      this.corpus,
+      mkCandPieceId("option", mkCandidate("option", opt.display)),
+    )
   }
 }
 

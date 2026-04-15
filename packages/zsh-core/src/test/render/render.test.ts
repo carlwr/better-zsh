@@ -8,16 +8,11 @@ import { docCategories, docId } from "../../docs/taxonomy"
 import type {
   BuiltinDoc,
   CondOpDoc,
-  GlobFlagDoc,
-  GlobOpDoc,
-  HistoryDoc,
-  ParamFlagDoc,
   PrecmdDoc,
   ProcessSubstDoc,
   RedirDoc,
   ReservedWordDoc,
   ShellParamDoc,
-  SubscriptFlagDoc,
   ZshOption,
 } from "../../docs/types"
 import { mkOptFlag, mkProven, mkRedirOp } from "../../docs/types"
@@ -42,205 +37,137 @@ import {
 import { refDocs } from "../../render/refs"
 import { withTmpDirAsync } from "../tmp-dir"
 
-const opt = (name: string, desc: string): ZshOption => ({
-  name: mkProven("option", name),
-  display: name,
+// --- fixtures ---------------------------------------------------------------
+// `section` and `args` are required by the types but unused by renderers.
+
+const cd: ZshOption = {
+  name: mkProven("option", "AUTO_CD"),
+  display: "AUTO_CD",
   flags: [{ char: mkOptFlag("J"), on: "-" }],
   defaultIn: ["csh", "ksh", "sh", "zsh"],
   category: "Changing Directories",
-  desc,
-})
-
-const unary = (op: string, operand: string, desc: string): CondOpDoc => ({
-  op: mkProven("cond_op", op),
-  operands: [operand],
-  desc,
-  arity: "unary",
-})
-
-const binary = (
-  op: string,
-  left: string,
-  right: string,
-  desc: string,
-): CondOpDoc => ({
-  op: mkProven("cond_op", op),
-  operands: [left, right],
-  desc,
-  arity: "binary",
-})
-
-const builtin = (name: string, synopsis: string, desc: string): BuiltinDoc => ({
-  name: mkProven("builtin", name),
-  synopsis: [synopsis],
-  desc,
-})
-
-const precmd = (
-  name: PrecmdDoc["name"],
-  synopsis: string,
-  desc: string,
-): PrecmdDoc => ({
-  name,
-  synopsis: [synopsis],
-  desc,
-})
-
-const redir = (groupOp: string, sig: string, desc: string): RedirDoc => ({
-  groupOp: mkRedirOp(groupOp),
-  sig: mkProven("redir", sig),
-  desc,
-  section: "Redirections",
-})
-
-const ps = (
-  op: ProcessSubstDoc["op"],
-  sig: ProcessSubstDoc["sig"],
-  desc: string,
-): ProcessSubstDoc => ({
-  op,
-  sig,
-  desc,
-  section: "Process Substitution",
-})
-
-const rw = (
-  name: string,
-  sig: string,
-  desc: string,
-  pos: ReservedWordDoc["pos"] = "command",
-): ReservedWordDoc => ({
-  name: mkProven("reserved_word", name),
-  sig,
-  desc,
-  section: "Complex Commands",
-  pos,
-})
-
-const param = (name: string, desc: string): ShellParamDoc => ({
-  name: mkProven("shell_param", name),
-  sig: name,
-  desc,
-  section: "Parameters Set By The Shell",
-})
-
-const cd = opt("AUTO_CD", "d:o")
-const cu = unary("-a", "file", "d:u")
-const cb = binary("-nt", "left", "right", "d:b")
-const bi = builtin("echo", "echo [ -n ] [ arg ... ]", "d:bi")
-const pc = precmd("noglob", "noglob command arg ...", "d:pc")
-const rd = redir(">>", ">> word", "d:r")
-const sub = ps("<(...)", "<(list)", "d:ps")
-const word = rw("if", "if list then list fi", "d:rw")
-const sec = param("SECONDS", "d:p")
-const pflag = (flag: string, desc: string): ParamFlagDoc => ({
-  flag: mkProven("param_flag", flag),
-  args: [flag],
-  sig: flag,
-  desc,
-  section: "Parameter Expansion",
-})
-
-const sflag = (flag: string, desc: string): SubscriptFlagDoc => ({
-  flag: mkProven("subscript_flag", flag),
-  args: [flag],
-  sig: flag,
-  desc,
-  section: "Subscript Flags",
-})
-
-const hist = (
-  key: string,
-  kind: HistoryDoc["kind"],
-  desc: string,
-): HistoryDoc => ({
-  key: mkProven("history", key),
-  kind,
-  sig: key,
-  desc,
-  section: "History Expansion",
-})
-
-const globOp = (op: string, desc: string): GlobOpDoc => ({
-  op: mkProven("glob_op", op),
-  sig: op,
-  desc,
-  section: "Filename Generation",
-})
-
-const globFlag = (flag: string, desc: string): GlobFlagDoc => ({
-  flag: mkProven("glob_flag", flag),
-  args: [flag],
-  sig: flag,
-  desc,
-  section: "Filename Generation",
-})
-
-function mkCategoryMap<K extends DocCategory>(
-  kind: K,
-  docs: readonly DocRecordMap[K][],
-): ReadonlyMap<string, DocRecordMap[K]> {
-  const getId = docId[kind] as (doc: DocRecordMap[K]) => string
-  return new Map(docs.map(doc => [getId(doc), doc]))
+  desc: "d:o",
 }
+
+const cond = <A extends CondOpDoc["arity"]>(
+  arity: A,
+  op: string,
+  operands: Extract<CondOpDoc, { arity: A }>["operands"],
+  desc: string,
+): CondOpDoc =>
+  ({ op: mkProven("cond_op", op), operands, desc, arity }) as CondOpDoc
+
+const cu = cond("unary", "-a", ["file"], "d:u")
+const cb = cond("binary", "-nt", ["left", "right"], "d:b")
+
+const bi: BuiltinDoc = {
+  name: mkProven("builtin", "echo"),
+  synopsis: ["echo [ -n ] [ arg ... ]"],
+  desc: "d:bi",
+}
+const pc: PrecmdDoc = {
+  name: "noglob",
+  synopsis: ["noglob command arg ..."],
+  desc: "d:pc",
+}
+const rd: RedirDoc = {
+  groupOp: mkRedirOp(">>"),
+  sig: mkProven("redir", ">> word"),
+  desc: "d:r",
+  section: "",
+}
+const sub: ProcessSubstDoc = {
+  op: "<(...)",
+  sig: "<(list)",
+  desc: "d:ps",
+  section: "",
+}
+const word: ReservedWordDoc = {
+  name: mkProven("reserved_word", "if"),
+  sig: "if list then list fi",
+  desc: "d:rw",
+  section: "",
+  pos: "command",
+}
+const sec: ShellParamDoc = {
+  name: mkProven("shell_param", "SECONDS"),
+  sig: "SECONDS",
+  desc: "d:p",
+  section: "",
+}
+// Stub-rendered categories: only the identifier is load-bearing — renderers
+// return "TBD" regardless. Central helper bridges the K↔idField correlation
+// TS can't propagate through a computed property key.
+const stub = <K extends DocCategory>(
+  cat: K,
+  idField: "flag" | "key" | "op",
+  value: string,
+  extra: object = {},
+): DocRecordMap[K] =>
+  ({
+    [idField]: mkProven(cat, value),
+    args: [],
+    sig: value,
+    desc: "",
+    section: "",
+    ...extra,
+  }) as unknown as DocRecordMap[K]
+
+const sf = stub("subscript_flag", "flag", "(w)")
+const pf = stub("param_flag", "flag", "(U)")
+const hi = stub("history", "key", "!!", { kind: "event-designator" })
+const go = stub("glob_op", "op", "*")
+const gf = stub("glob_flag", "flag", "i")
+
+// --- corpus builder ---------------------------------------------------------
 
 type DocArrays = { readonly [K in DocCategory]: readonly DocRecordMap[K][] }
 
+const baseArrays: DocArrays = {
+  option: [cd],
+  cond_op: [cu],
+  builtin: [bi],
+  precmd: [pc],
+  shell_param: [sec],
+  reserved_word: [word],
+  redir: [rd],
+  process_subst: [sub],
+  subscript_flag: [sf],
+  param_flag: [pf],
+  history: [hi],
+  glob_op: [go],
+  glob_flag: [gf],
+}
+
 function mkTestCorpus(overrides: Partial<DocArrays> = {}): DocCorpus {
-  const base: DocArrays = {
-    option: [cd],
-    cond_op: [cu],
-    builtin: [bi],
-    precmd: [pc],
-    shell_param: [sec],
-    reserved_word: [word],
-    redir: [rd],
-    process_subst: [sub],
-    subscript_flag: [sflag("(w)", "d:sf")],
-    param_flag: [pflag("(U)", "d:pf")],
-    history: [hist("!!", "event-designator", "d:h")],
-    glob_op: [globOp("*", "d:g")],
-    glob_flag: [globFlag("i", "d:gf")],
-    ...overrides,
+  const all = { ...baseArrays, ...overrides }
+  const out: Record<string, unknown> = {}
+  for (const k of docCategories) {
+    const getId = docId[k] as (d: unknown) => string
+    out[k] = new Map(all[k].map(d => [getId(d), d]))
   }
-  return Object.fromEntries(
-    docCategories.map(k => [
-      k,
-      mkCategoryMap(k, base[k] as DocRecordMap[typeof k][]),
-    ]),
-  ) as unknown as DocCorpus
+  return out as unknown as DocCorpus
 }
 
-const corpus = (overrides: Partial<DocArrays> = {}) =>
-  refDocs(mkTestCorpus(overrides))
+const corpus = (o: Partial<DocArrays> = {}) => refDocs(mkTestCorpus(o))
 
-const expectContainsAll = (
-  text: string | undefined,
-  parts: readonly string[],
-) => {
-  for (const part of parts) expect(text).toContain(part)
+const containsAll = (text: string | undefined, parts: readonly string[]) => {
+  for (const p of parts) expect(text).toContain(p)
 }
 
-const headings = (text: string | undefined) =>
-  (text?.match(/^## /gm) ?? []).length
+const headings = (t: string | undefined) => (t?.match(/^## /gm) ?? []).length
+
+// --- case tables ------------------------------------------------------------
 
 const renderedMarkdownCases = [
-  [
-    "shell_param",
-    mdShellParam(sec),
-    ["`SECONDS`", "d:p", "_Category:_ Shell Parameter"],
-  ],
+  ["shell_param", mdShellParam(sec), ["`SECONDS`", "d:p", "Shell Parameter"]],
   [
     "builtin",
     mdBuiltin(bi),
     ["`echo`", "```zsh", "echo [ -n ] [ arg ... ]", "d:bi"],
   ],
   ["precmd", mdPrecmd(pc), ["`noglob`", "_Role:_ precommand modifier"]],
-  [
-    "redir",
-    mdRedir(rd),
-    ["`>>`", "```zsh", ">> word", "d:r", "_Category:_ Redirection"],
-  ],
+  ["redir", mdRedir(rd), ["`>>`", "```zsh", ">> word", "d:r", "Redirection"]],
   [
     "process_subst",
     mdProcessSubst(sub),
@@ -254,35 +181,43 @@ const renderedMarkdownCases = [
 ] as const
 
 const stubMarkdownCases = [
-  ["subscript_flag", mdSubscriptFlag(sflag("(w)", "d:sf")), ["TBD"]],
-  ["param_flag", mdParamFlag(pflag("(U)", "d:pf")), ["TBD"]],
-  ["history", mdHistory(hist("!!", "event-designator", "d:h")), ["TBD"]],
-  ["glob_op", mdGlobOp(globOp("*", "d:g")), ["TBD"]],
-  ["glob_flag", mdGlobFlag(globFlag("i", "d:gf")), ["TBD"]],
+  ["subscript_flag", mdSubscriptFlag(sf)],
+  ["param_flag", mdParamFlag(pf)],
+  ["history", mdHistory(hi)],
+  ["glob_op", mdGlobOp(go)],
+  ["glob_flag", mdGlobFlag(gf)],
 ] as const
 
-const dumpCases = [
-  { file: "options.md", heading: "## AUTO_CD", snippet: "d:o" },
-  { file: "cond-ops.md", heading: "## -nt", snippet: "d:b" },
-  { file: "shell-params.md", heading: "## SECONDS", snippet: "`SECONDS`" },
-  { file: "builtins.md", heading: "## echo", snippet: "d:bi" },
-  { file: "precmds.md", heading: "## noglob", snippet: "d:pc" },
-  { file: "redirs.md", heading: "## >> word", snippet: "d:r" },
-  { file: "process-substs.md", heading: "## <(...)", snippet: "d:ps" },
-  { file: "reserved-words.md", heading: "## if", snippet: "d:rw" },
-  { file: "subscript-flags.md", heading: "## (w)", snippet: "TBD" },
-  { file: "param-flags.md", heading: "## (U)", snippet: "TBD" },
-  { file: "history.md", heading: "## !!", snippet: "TBD" },
-  { file: "glob-ops.md", heading: "## *", snippet: "TBD" },
-  { file: "glob-flags.md", heading: "## i", snippet: "TBD" },
-] as const
+// Dump metadata per category: file, heading, snippet. Used both for
+// full-dump assertions and the vendored-docs coverage loop.
+const dumpByCat: {
+  readonly [K in DocCategory]: readonly [RefDumpFile, string, string]
+} = {
+  option: ["options.md", "## AUTO_CD", "d:o"],
+  cond_op: ["cond-ops.md", "## -nt", "d:b"],
+  builtin: ["builtins.md", "## echo", "d:bi"],
+  precmd: ["precmds.md", "## noglob", "d:pc"],
+  shell_param: ["shell-params.md", "## SECONDS", "`SECONDS`"],
+  reserved_word: ["reserved-words.md", "## if", "d:rw"],
+  redir: ["redirs.md", "## >> word", "d:r"],
+  process_subst: ["process-substs.md", "## <(...)", "d:ps"],
+  subscript_flag: ["subscript-flags.md", "## (w)", "TBD"],
+  param_flag: ["param-flags.md", "## (U)", "TBD"],
+  history: ["history.md", "## !!", "TBD"],
+  glob_op: ["glob-ops.md", "## *", "TBD"],
+  glob_flag: ["glob-flags.md", "## i", "TBD"],
+}
+
+const dumpCases = docCategories.map(k => dumpByCat[k])
+
+// --- tests ------------------------------------------------------------------
 
 describe("render markdown", () => {
-  const emptyCorpus = mkTestCorpus({ option: [] })
+  const noOpts = mkTestCorpus({ option: [] })
   const cdCorpus = mkTestCorpus({ option: [cd] })
 
-  test("renders option markdown", () => {
-    expectContainsAll(mdOpt(cd, emptyCorpus), [
+  test("option markdown", () => {
+    containsAll(mdOpt(cd, noOpts), [
       "`AUTO_CD`",
       "```zsh",
       "setopt auto_cd",
@@ -294,79 +229,68 @@ describe("render markdown", () => {
     ])
   })
 
-  test("formats option refs in prose variants", () => {
+  test("option refs — prose variants", () => {
     expect(fmtOptRefsInMd("AUTO_CD AUTOCD NO_AUTO_CD NOAUTOCD", cdCorpus)).toBe(
       "**`AUTO_CD`** **`AUTOCD`** **`NO_AUTO_CD`** **`NOAUTOCD`**",
     )
   })
 
-  test("skips vars and existing markdown code when formatting option refs", () => {
-    expect(
-      fmtOptRefsInMd(
-        [
-          "$AUTO_CD ${AUTO_CD} $NO_AUTO_CD ${NOAUTOCD}",
-          "`AUTO_CD` AUTO_CD",
-          "```zsh",
-          "AUTO_CD",
-          "```",
-          "AUTOCD",
-        ].join("\n"),
-        cdCorpus,
-      ),
-    ).toBe(
-      [
-        "$AUTO_CD ${AUTO_CD} $NO_AUTO_CD ${NOAUTOCD}",
-        "`AUTO_CD` **`AUTO_CD`**",
-        "```zsh",
-        "AUTO_CD",
-        "```",
-        "**`AUTOCD`**",
-      ].join("\n"),
-    )
+  test("option refs — skip vars and code fences", () => {
+    // prettier-ignore
+    const input =
+      "$AUTO_CD ${AUTO_CD} $NO_AUTO_CD ${NOAUTOCD}\n" +
+      "`AUTO_CD` AUTO_CD\n```zsh\nAUTO_CD\n```\nAUTOCD"
+    const want =
+      "$AUTO_CD ${AUTO_CD} $NO_AUTO_CD ${NOAUTOCD}\n" +
+      "`AUTO_CD` **`AUTO_CD`**\n```zsh\nAUTO_CD\n```\n**`AUTOCD`**"
+    expect(fmtOptRefsInMd(input, cdCorpus)).toBe(want)
   })
 
-  test("formats only known options", () => {
+  test("option refs — only known", () => {
     expect(fmtOptRefsInMd("AUTO_CD CDPATH POSIX", cdCorpus)).toBe(
       "**`AUTO_CD`** CDPATH POSIX",
     )
   })
 
-  test("renders cond op markdown", () => {
-    expect(mdCondOp(cu, emptyCorpus)).toBe("`-a` *file*\n\nd:u")
-    expect(mdCondOp(cb, emptyCorpus)).toBe("*left* `-nt` *right*\n\nd:b")
+  test("cond op markdown", () => {
+    expect(mdCondOp(cu, noOpts)).toBe("`-a` *file*\n\nd:u")
+    expect(mdCondOp(cb, noOpts)).toBe("*left* `-nt` *right*\n\nd:b")
   })
 
-  test.each(renderedMarkdownCases)("renders %s markdown", (_, md, parts) => {
-    expectContainsAll(md, parts)
+  test.each(renderedMarkdownCases)("%s markdown", (_, md, parts) => {
+    containsAll(md, parts)
   })
 
-  test.each(stubMarkdownCases)("%s markdown is TBD", (_, md, parts) => {
-    expectContainsAll(md, parts)
+  test.each(stubMarkdownCases)("%s is TBD", (_, md) => {
+    expect(md).toBe("TBD")
   })
 
-  test("renders reserved-word with any position", () => {
-    expect(
-      mdReservedWord(rw("fi", "if list then list fi", "d:rw", "any")),
-    ).toContain("_Role:_ reserved word (any position)")
+  test("reserved-word — any position", () => {
+    expect(mdReservedWord({ ...word, pos: "any" })).toContain(
+      "reserved word (any position)",
+    )
   })
 
-  test("derives default state by emulation", () => {
+  test("default state by emulation", () => {
     expect(defaultStateIn(cd, "zsh")).toBe("on")
     expect(defaultStateIn({ ...cd, defaultIn: ["ksh"] }, "zsh")).toBe("off")
   })
 
-  test("collects docs and sorts shell params", () => {
-    expect(
-      refDocs(
-        mkTestCorpus({
-          shell_param: [sec, param("argv", "d:a")],
-          cond_op: [cu],
-          redir: [],
-          process_subst: [],
-          reserved_word: [],
-        }),
-      ).map(doc => `${doc.kind}:${doc.id}`),
-    ).toEqual([
+  test("refDocs — collects and sorts shell params", () => {
+    const argv: ShellParamDoc = {
+      ...sec,
+      name: mkProven("shell_param", "argv"),
+      sig: "argv",
+    }
+    const ids = refDocs(
+      mkTestCorpus({
+        shell_param: [sec, argv],
+        redir: [],
+        process_subst: [],
+        reserved_word: [],
+      }),
+    ).map(d => `${d.kind}:${d.id}`)
+    expect(ids).toEqual([
       `option:${mkProven("option", "AUTO_CD")}`,
       "cond_op:-a",
       "builtin:echo",
@@ -381,33 +305,30 @@ describe("render markdown", () => {
     ])
   })
 
-  test("keeps typed ref-doc ids separate from display headings", () => {
+  test("typed ref-doc ids distinct from display headings", () => {
     const docs = corpus()
-    const option = docs.find(doc => doc.kind === "option")
-    expect(option?.id).toBe(mkProven("option", "AUTO_CD"))
-    expect(option?.heading).toBe("AUTO_CD")
-    expect(docs.find(doc => doc.kind === "redir")?.heading).toBe(">> word")
+    const opt = docs.find(d => d.kind === "option")
+    expect(opt?.id).toBe(mkProven("option", "AUTO_CD"))
+    expect(opt?.heading).toBe("AUTO_CD")
+    expect(docs.find(d => d.kind === "redir")?.heading).toBe(">> word")
   })
 })
 
 describe("render dump", () => {
-  test("renders per-kind dump files", () => {
+  test("per-kind dump files", () => {
     const files = dumpText(corpus({ cond_op: [cb] }))
-
-    for (const { file, heading } of dumpCases) {
+    for (const [file, heading] of dumpCases) {
       expect(files.get(file)).toContain(heading)
       expect(files.get("all.md")).toContain(heading)
     }
-
     expect(files.get("suspicious.md")).toBe("")
   })
 
   test("writes dump files", async () => {
     await withTmpDirAsync("better-zsh-ref-", async dir => {
       await writeRefDump(dir, corpus({ cond_op: [cb] }))
-
       const all = readFileSync(join(dir, "all.md"), "utf8")
-      for (const { file, heading, snippet } of dumpCases) {
+      for (const [file, heading, snippet] of dumpCases) {
         expect(all).toContain(heading)
         expect(readFileSync(join(dir, file), "utf8")).toContain(snippet)
       }
@@ -420,48 +341,24 @@ describe("render dump", () => {
     const docs = refDocs(vendored)
     const files = dumpText(docs)
 
-    const categoryFiles: Record<DocCategory, RefDumpFile> = {
-      option: "options.md",
-      cond_op: "cond-ops.md",
-      builtin: "builtins.md",
-      precmd: "precmds.md",
-      shell_param: "shell-params.md",
-      reserved_word: "reserved-words.md",
-      redir: "redirs.md",
-      process_subst: "process-substs.md",
-      subscript_flag: "subscript-flags.md",
-      param_flag: "param-flags.md",
-      history: "history.md",
-      glob_op: "glob-ops.md",
-      glob_flag: "glob-flags.md",
-    }
-
     for (const kind of docCategories) {
-      const file = categoryFiles[kind]
+      const [file] = dumpByCat[kind]
       const src = [...vendored[kind].values()]
       test(`${file} covers ${kind}`, () => {
-        expect(docs.filter(doc => doc.kind === kind)).toHaveLength(src.length)
+        expect(docs.filter(d => d.kind === kind)).toHaveLength(src.length)
         expect(headings(files.get(file))).toBe(src.length)
       })
     }
 
-    test("emitted markdown strips raw yodl markers", () => {
-      for (const file of [
-        "options.md",
-        "cond-ops.md",
-        "shell-params.md",
-        "builtins.md",
-        "precmds.md",
-        "redirs.md",
-        "process-substs.md",
-        "reserved-words.md",
-      ] as const) {
+    test("strips raw yodl markers", () => {
+      // All dump files: rendered files must strip yodl macros; stubs are trivial.
+      for (const [file] of dumpCases) {
         expect(files.get(file)).not.toContain("tt(")
         expect(files.get(file)).not.toContain("var(")
       }
     })
 
-    test("emitted markdown avoids known suspicious patterns", () => {
+    test("avoids known suspicious patterns", () => {
       for (const [file, pattern] of [
         ["options.md", "See ."],
         ["options.md", "See \\ ."],
@@ -472,21 +369,15 @@ describe("render dump", () => {
       expect(files.get("suspicious.md")).toBe("")
     })
 
-    test("formats real option cross-references but not env vars", () => {
-      const options = [...vendored.option.values()]
-      const byName = new Map(options.map(option => [option.name, option]))
-      const cdSilent = byName.get(mkProven("option", "CD_SILENT"))
+    test("formats real option cross-refs but not env vars", () => {
+      const cdSilent = vendored.option.get(mkProven("option", "CD_SILENT"))
       expect(cdSilent).toBeTruthy()
-
-      const md = mdOpt(
-        // biome-ignore lint/style/noNonNullAssertion: asserted above
-        cdSilent!,
-        vendored,
-      )
-      expect(md).toContain("**`AUTO_CD`**")
-      expect(md).toContain("**`PUSHD_SILENT`**")
-      expect(md).toContain("**`POSIX_CD`**")
-      expect(md).not.toContain("`CDPATH`")
+      // biome-ignore lint/style/noNonNullAssertion: asserted above
+      const out = mdOpt(cdSilent!, vendored)
+      expect(out).toContain("**`AUTO_CD`**")
+      expect(out).toContain("**`PUSHD_SILENT`**")
+      expect(out).toContain("**`POSIX_CD`**")
+      expect(out).not.toContain("`CDPATH`")
     })
   })
 })
