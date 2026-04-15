@@ -20,11 +20,27 @@ export const mkRedirOp = (raw: string): RedirOp => raw.trim() as RedirOp
 
 // --- Parametric proven/candidate brands -------------------------------------
 
+// The Proven/Candidate split is primarily about PROVENANCE, not normalization:
+//   Candidate<K> = "from user code / untrusted source; membership unknown"
+//   Proven<K>    = "known to identify a documented corpus element"
+//
+// `resolve()` is the sole public crossing point and operationalizes the split
+// at the value level (Map.has → `| undefined`). Holding a `Proven<K>` is proof
+// of corpus membership; holding a `Candidate<K>` is only well-formedness.
+//
+// Secondary observation: most categories share the same normalization between
+// the two sides (trim). One category — `option` — has asymmetric normalization
+// (candidate strips a leading `no_` negation prefix; proven does not), because
+// `setopt no_autocd` references the same option doc as `setopt AUTO_CD`. The
+// asymmetry is what makes the split catch bugs materially (not only flag
+// provenance) for `option`; for other categories the brand is a type-only
+// provenance marker.
+
 /**
- * Proven corpus-identity brand for a given doc category. Guarantees
- * well-formedness/normalization; does NOT prove corpus membership by itself —
- * membership is proven by appearing as a doc-record identity field or a
- * `DocCorpus` Map key.
+ * Phantom-branded identifier of a KNOWN documented zsh element for category K.
+ * Provenance: produced by corpus construction (Yodl extractors) or by
+ * `resolve()` — never directly from user code. Holding a `Proven<K>` is a
+ * static proof of corpus membership.
  *
  * `precmd` and `process_subst` use closed literal unions (every valid string
  * is a corpus member); all other categories use phantom brands.
@@ -36,10 +52,10 @@ export type Proven<K extends DocCategory> = K extends "precmd"
     : string & { readonly __proven: K }
 
 /**
- * Candidate brand for a given doc category. Marks a well-formed, normalized
- * string derived from user code (or other untrusted sources) that MIGHT
- * identify a corpus element. Not a corpus-membership proof; must pass through
- * `resolve()` to become a `DocPieceId`.
+ * Phantom-branded well-formed lookup candidate for category K, derived from
+ * user code or other untrusted sources. Provenance: produced by consumers via
+ * `mkCandidate`. A candidate MIGHT identify a corpus element; it is not a
+ * membership proof. Crossing to `Proven<K>` happens only through `resolve()`.
  */
 export type Candidate<K extends DocCategory> = string & {
   readonly __candidate: K
