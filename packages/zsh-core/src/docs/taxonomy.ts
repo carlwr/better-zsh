@@ -117,3 +117,22 @@ export const docId: {
   glob_op: d => d.op,
   glob_flag: d => d.flag,
 }
+
+/** Display heading for a doc record; may differ from the id (e.g. options show `display`). */
+export const docDisplay: {
+  [K in DocCategory]: (doc: DocRecordMap[K]) => string
+} = {
+  option: d => d.display,
+  cond_op: d => docId.cond_op(d) as string,
+  builtin: d => docId.builtin(d) as string,
+  precmd: d => docId.precmd(d) as string,
+  shell_param: d => docId.shell_param(d) as string,
+  reserved_word: d => docId.reserved_word(d) as string,
+  redir: d => docId.redir(d) as string,
+  process_subst: d => docId.process_subst(d) as string,
+  subscript_flag: d => docId.subscript_flag(d) as string,
+  param_flag: d => docId.param_flag(d) as string,
+  history: d => docId.history(d) as string,
+  glob_op: d => docId.glob_op(d) as string,
+  glob_flag: d => docId.glob_flag(d) as string,
+}

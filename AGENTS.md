@@ -60,15 +60,17 @@ The consumer (extension) plumbs A+B→C: facts identify what to look up, doc rec
 
 ### Brand semantics
 
-Branded types serve two distinct roles — do not conflate them.
+Two parametric brand families indexed on `DocCategory`. The **primary** distinction is *provenance* — where the value came from and whether corpus membership is confirmed.
 
-**Corpus-identity brands** (`OptName`, `CondOp`, `BuiltinName`, …) — used in doc records and as `DocCorpus` map keys. Represent identifiers of known, documented zsh elements. Produced only by Yodl extractors via their smart constructors (`mkOptName`, …). Exceptions: `PrecmdName` and `ProcessSubstOp` are small closed sets, modelled as literal unions rather than phantom brands — no smart constructor needed.
+**`Proven<K>`** — phantom-branded identifiers of known, documented zsh elements for category `K`. Used in doc records and as `DocCorpus` map keys. Produced only by corpus construction (Yodl extractors via `mkProven(cat, raw)`) or by `resolve()`. Holding a `Proven<K>` is a static proof of corpus membership. Exceptions: `PrecmdName` and `ProcessSubstOp` are small closed literal unions — `Proven<"precmd">` / `Proven<"process_subst">` resolve to them via a conditional-type override, so enumerating the union *is* the proven-side invariant.
 
-**Candidate brands** (`CandidateOpt`, `CandidateCondOp`, `CandidateBuiltin`, …) — used by consumers for lookup candidates derived from user code. Well-formed and normalized, but not proven to identify a corpus member. Normalization may differ from the corpus counterpart (e.g. `mkCandidateOpt` strips `no_`; `mkOptName` does not).
+**`Candidate<K>`** — phantom-branded well-formed lookup candidates for category `K`, produced by consumers (via `mkCandidate(cat, raw)`) from user code or other untrusted sources. Well-formed and normalized, but corpus membership is **not** confirmed.
 
-The two families are structurally incompatible. The candidate→proven boundary is crossed **only through `resolve(corpus, candidateId)`** — the sole public brand-boundary crossing point. `renderDoc(corpus, provenId)` then produces markdown; the two steps are intentionally separate and no public API combines them.
+The two families are structurally incompatible. The candidate→proven boundary is crossed **only through `resolve(corpus, candidateId)`** — the sole public brand-boundary crossing point, which operationalizes the distinction at the value level via `Map.has` → `| undefined`. `renderDoc(corpus, provenId)` then produces markdown; the two steps are intentionally separate and no public API combines them.
 
-`DocPieceId` (proven) and `CandidateDocPieceId` are discriminated unions keyed on `category`, providing parametric access across all 13 doc categories.
+Normalization tables (`provenNorm`, `candidateNorm`) are per-category and mostly coincide (trim). One asymmetry: `mkCandidate("option", raw)` strips a leading `no_` negation prefix; `mkProven("option", raw)` does not — because `setopt no_autocd` references the same doc record as `setopt AUTO_CD`. For `option` the asymmetry makes the split materially catch bugs, not just mark provenance.
+
+`DocPieceId` (proven) and `CandidateDocPieceId` are discriminated unions keyed on `category`, providing parametric access across all 13 doc categories. Assemble them via `mkPieceId(category, id)` / `mkCandPieceId(category, id)` — these centralize the correlated-union cast TS cannot propagate through a generic helper.
 
 ## Design principles
 

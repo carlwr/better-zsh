@@ -3,9 +3,10 @@ import {
   type DocCategory,
   type DocRecordMap,
   docCategories,
+  docDisplay,
   docId,
 } from "../docs/taxonomy.ts"
-import type { Proven, ZshOption } from "../docs/types.ts"
+import type { Proven } from "../docs/types.ts"
 import { mdRenderer } from "./md.ts"
 
 export interface RefDocBase<K extends DocCategory, I extends string> {
@@ -21,14 +22,6 @@ export type RefDoc = {
   [K in DocCategory]: RefDocBase<K, Proven<K>>
 }[DocCategory]
 
-function docHeading<K extends DocCategory>(
-  kind: K,
-  doc: DocRecordMap[K],
-): string {
-  if (kind === "option") return (doc as ZshOption).display
-  return docId[kind](doc) as string
-}
-
 // Keep corpus assembly separate from markdown rendering so consumers can compose
 // the rendered reference corpus independently.
 function mkRefDocs<K extends DocCategory>(
@@ -39,7 +32,7 @@ function mkRefDocs<K extends DocCategory>(
   return docs.map(doc => ({
     kind,
     id: docId[kind](doc),
-    heading: docHeading(kind, doc),
+    heading: docDisplay[kind](doc),
     md: mdRenderer[kind](doc, corpus),
   }))
 }
