@@ -163,6 +163,7 @@
     "lint": "biome check --error-on-warnings src build.ts tsconfig.json tsconfig.vscode-test.json vitest.config.ts package.json .vscodeignore .vscode-test.mjs scripts",
     "check": "pnpm typecheck && pnpm lint",
     "test": "vitest run",
+    "test:integration": "../../scripts/test-integration-act",
     "dump:refs": "tsx src/dev/dump-refs.ts",
     "testINTERACTIVE:electron": "pnpm build && tsc -p tsconfig.vscode-test.json && scripts/testINTERACTIVE-electron",
     "testINTERACTIVE:electron-bundled": "scripts/package-vsix ./better-zsh.vsix && tsc -p tsconfig.vscode-test.json && scripts/testINTERACTIVE-bundled",

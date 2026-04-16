@@ -47,7 +47,9 @@
     "check": "pnpm typecheck && pnpm lint",
     "test": "vitest run",
     "test:smoke": "pnpm build && node scripts/test-smoke.mjs",
-    "test:install": "pnpm build && node scripts/test-install.mjs"
+    "test:install": "pnpm build && node scripts/test-install.mjs",
+    "test:integration": "pnpm run check && pnpm run test && pnpm run test:smoke && pnpm run test:install && pnpm run jsr:check",
+    "test:integration:act": "ACT_JOB=mcp ../../scripts/test-integration-act"
   },
   "engines": {
     "node": ">=22"

@@ -165,13 +165,28 @@ Every `as` is a trust assertion. Classify before writing one.
 
 - "All tests" does **not** include "INTERACTIVE" scripts.
 - **NEVER run "INTERACTIVE" scripts** unless the user explicitly asks — on macOS they bring a full VS Code app into focus momentarily and cannot be safely run while the user might be working.
-- `test:integration` is headless, ~700 lines of output, long-running — run with `&>/dev/null`, last, when other tests are iterated.
+- `test:integration` is long-running and noisy — run with `&>/dev/null`, last, when other tests are iterated. See "Script naming axes" below for what it actually does.
 - Non-INTERACTIVE scripts must not call INTERACTIVE ones.
 - Unit tests are the baseline; integration tests a bonus layer. Integration may overlap with unit.
 - Pure logic should always have unit tests independent of external deps (zsh, VS Code APIs).
 - Integration tests depending on external tools must skip gracefully when absent.
 - The Electron test harness runs ALL tests (unit + integration) — unit tests re-running there are meta-tests under a richer harness.
 - Functions that are "obviously correct" don't need tests.
+
+### Script naming axes: `:integration` and `INTERACTIVE`
+
+Two orthogonal signals in test-script names. A script can carry both, one, or neither.
+
+- **`*:integration`** — the script is long-running (tens of seconds to several minutes). Include in an extended-validation final step; run last; expect `&>/dev/null`-worthy output volume.
+- **`testINTERACTIVE:*`** — the script takes over the user's desktop (on macOS, launches VS Code and steals focus). Agents must **never** run it without explicit user consent. CI runs INTERACTIVE scripts under `xvfb` where focus-stealing is moot.
+
+The axes are independent: `:integration` is about time/noise, `INTERACTIVE` is about desktop side effects. The VS Code electron tests happen to carry both properties — they use the `testINTERACTIVE:*` prefix (the stronger constraint dominates the name) and are not additionally tagged `:integration`. A purely noisy, purely headless long-running check uses `*:integration` alone.
+
+**Per-package `test:integration`**: each package picks the implementation best suited to what it tests. The VS Code extension's `test:integration` runs `act` (electron under xvfb in a container). The MCP's `test:integration` runs a native-host aggregator of its CI checks (`check`, `test`, `test:smoke`, `test:install`, `jsr:check`) — no container needed. Same name, same *meaning* (long-running CI-parity check), different *mechanism*.
+
+The MCP additionally exposes `test:integration:act` (runs the `mcp` CI job through act, for when Docker is available and you want true CI-parity before a release). The extension does not need a `:act` suffix — its `test:integration` is already act-based, because there is no cheaper native variant worth defaulting to.
+
+**Workspace `test:integration`** delegates via `pnpm -r --if-present`, so developers run one command regardless of which packages have scripts. Packages without integration tests are skipped silently.
 
 ### Test conciseness
 

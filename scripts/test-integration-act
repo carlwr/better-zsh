@@ -3,6 +3,9 @@
 emulate -L zsh
 setopt errexit nounset pipefail
 
+# run from repo root regardless of caller cwd (pnpm runs package scripts in the package dir)
+cd ${0:A:h}/..
+
 wf=.github/workflows/ci.yml
 job=${ACT_JOB:-integration}
 img=${ACT_RUNNER_IMAGE:-catthehacker/ubuntu:act-latest}

@@ -34,7 +34,7 @@
 - `dependencies.zsh-core` — currently `workspace:*`. Replace with a
   pinned version from the npm/JSR registry (`"zsh-core": "^X.Y.Z"`).
   Requires `zsh-core` to have been published first.
-- `engines.node` — carry forward (`>=18`).
+- `engines.node` — carry forward (currently `>=22`; keep in sync with the new repo's CI).
 - `scripts.prebuild`, `scripts.pretypecheck`, `scripts.pretest` all
   currently do `pnpm --filter zsh-core build`. Post-extraction these
   lines go away — `zsh-core` is a published dep, nothing to pre-build.
@@ -67,6 +67,15 @@
 - New `scripts/test-integration-act` at the repo root. Template: the
   monorepo's script. This repo's version is much simpler — no
   Electron/xvfb/zsh/libasound2t64 step — so it's mostly delete work.
+- `scripts.test:integration` and `scripts.test:integration:act` in
+  `package.json`: today the `:act` variant exists only because the
+  monorepo co-hosts the extension (which needs act for its electron
+  matrix), and the MCP's cheap native aggregator is worth keeping as
+  the default. Post-extraction there is no second package to mirror,
+  so the split collapses: either keep the act wrapper as
+  `test:integration` (single CI job, one ACT invocation) or retain
+  both — the native aggregator stays faster to iterate on. Decide on
+  extraction day; either is coherent.
 - Release workflow: tag → build → `npm publish --provenance` + `jsr
   publish` (or equivalent). Not present in the monorepo today.
 
