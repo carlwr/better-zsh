@@ -1,5 +1,5 @@
-import type { CondOpDoc } from "../../types.ts"
 import { mkDocumented } from "../../brands.ts"
+import type { CondOpDoc } from "../../types.ts"
 import { extractItems, flattenAliasedEntries } from "../core/doc.ts"
 import { extractTokens } from "../core/text.ts"
 

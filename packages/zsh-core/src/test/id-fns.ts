@@ -1,5 +1,5 @@
-import type { DocCategory } from "../docs/taxonomy"
 import { mkDocumented, mkObserved } from "../docs/brands"
+import type { DocCategory } from "../docs/taxonomy"
 import type { Documented, Observed } from "../docs/types"
 
 export const mkDocumented_ =

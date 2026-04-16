@@ -1,7 +1,7 @@
 import fc from "fast-check"
 import { describe, expect, test } from "vitest"
-import { mkOptFlag } from "../docs/types"
 import { mkObserved } from "../docs/brands"
+import { mkOptFlag } from "../docs/types"
 import { mkDocumented_, mkObserved_ } from "./id-fns"
 
 const opt = mkDocumented_("option")

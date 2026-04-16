@@ -1,5 +1,5 @@
-import type { GlobOpDoc } from "../../types.ts"
 import { mkDocumented } from "../../brands.ts"
+import type { GlobOpDoc } from "../../types.ts"
 import {
   extractItems,
   extractSectionBody,

@@ -1,6 +1,7 @@
 export type { NonEmpty } from "@carlwr/typescript-extra"
 export {
   docCategories,
+  docDisplay,
   mkPieceId,
   type DocCategory,
   type DocPieceId,

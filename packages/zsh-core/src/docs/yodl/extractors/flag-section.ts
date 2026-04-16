@@ -1,5 +1,5 @@
-import type { ParamFlagDoc, SubscriptFlagDoc } from "../../types.ts"
 import { mkDocumented } from "../../brands.ts"
+import type { ParamFlagDoc, SubscriptFlagDoc } from "../../types.ts"
 import { extractItems, extractSectionBody } from "../core/doc.ts"
 import { normalizeBody, normalizeHeader } from "../core/text.ts"
 

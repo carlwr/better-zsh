@@ -1,5 +1,5 @@
-import type { GlobFlagDoc } from "../../types.ts"
 import { mkDocumented } from "../../brands.ts"
+import type { GlobFlagDoc } from "../../types.ts"
 import {
   extractFirstList,
   extractItemList,

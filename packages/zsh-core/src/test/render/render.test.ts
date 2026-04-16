@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs"
 import { join } from "node:path"
 import { describe, expect, test } from "vitest"
+import { mkDocumented } from "../../docs/brands"
 import type { DocCorpus } from "../../docs/corpus"
 import * as zd from "../../docs/corpus"
 import type { DocCategory, DocRecordMap } from "../../docs/taxonomy"
@@ -16,7 +17,6 @@ import type {
   ZshOption,
 } from "../../docs/types"
 import { mkOptFlag, mkRedirOp } from "../../docs/types"
-import { mkDocumented } from "../../docs/brands"
 import { dumpText, type RefDumpFile, writeRefDump } from "../../render/dump"
 import {
   defaultStateIn,

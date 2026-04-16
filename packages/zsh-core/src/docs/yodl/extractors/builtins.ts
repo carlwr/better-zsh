@@ -1,6 +1,6 @@
 import type { NonEmpty } from "@carlwr/typescript-extra"
-import type { BuiltinDoc } from "../../types.ts"
 import { mkDocumented } from "../../brands.ts"
+import type { BuiltinDoc } from "../../types.ts"
 import { collectAliasedEntries, extractItems } from "../core/doc.ts"
 import { isMacro, parseNodes, type YNodeSeq } from "../core/nodes.ts"
 import { normalizeBody, normalizeHeader, stripYodl } from "../core/text.ts"

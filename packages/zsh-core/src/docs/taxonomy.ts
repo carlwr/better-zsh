@@ -90,7 +90,15 @@ export const docId: {
   glob_flag: d => d.flag,
 }
 
-/** Display heading for a doc record; may differ from the id (e.g. options show `display`). */
+/**
+ * Display heading for a doc record; may differ from the typed id.
+ *
+ * For most categories the display is the id verbatim. `option` diverges: its
+ * `.display` preserves human-oriented case and underscores (`AUTO_CD`) while
+ * its `.name` is the normalized lookup key (`autocd`). Consumers that render
+ * doc records to users (hover UIs, MCP tool responses, dumps) should prefer
+ * this function over reading identity fields directly.
+ */
 export const docDisplay = <K extends DocCategory>(
   cat: K,
   doc: DocRecordMap[K],

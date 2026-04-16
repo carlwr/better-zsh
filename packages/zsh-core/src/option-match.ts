@@ -1,5 +1,5 @@
-import type { Documented } from "./docs/types.ts"
 import { mkDocumented } from "./docs/brands.ts"
+import type { Documented } from "./docs/types.ts"
 
 export interface OptionMatch {
   /** What to insert / display. */

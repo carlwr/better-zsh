@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest"
-import { mkRedirOp } from "../../docs/types"
 import { mkDocumented } from "../../docs/brands"
+import { mkRedirOp } from "../../docs/types"
 import { parseGlobFlags } from "../../docs/yodl/extractors/glob-flags"
 import { parseGlobOps } from "../../docs/yodl/extractors/glob-ops"
 import { parseHistory } from "../../docs/yodl/extractors/history"

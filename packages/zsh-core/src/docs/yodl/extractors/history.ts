@@ -1,5 +1,5 @@
-import type { HistoryDoc, HistoryKind } from "../../types.ts"
 import { mkDocumented } from "../../brands.ts"
+import type { HistoryDoc, HistoryKind } from "../../types.ts"
 import {
   extractFirstList,
   extractItemList,

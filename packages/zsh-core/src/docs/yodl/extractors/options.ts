@@ -1,3 +1,4 @@
+import { mkDocumented } from "../../brands.ts"
 import type {
   DefaultMarker,
   Documented,
@@ -8,7 +9,6 @@ import type {
   ZshOption,
 } from "../../types.ts"
 import { mkOptFlag, optSections } from "../../types.ts"
-import { mkDocumented } from "../../brands.ts"
 import {
   extractFirstList,
   extractItems,

@@ -1,5 +1,5 @@
-import type { ReservedWordDoc } from "../../types.ts"
 import { mkDocumented } from "../../brands.ts"
+import type { ReservedWordDoc } from "../../types.ts"
 import { extractSectionBody } from "../core/doc.ts"
 import { extractTokens } from "../core/text.ts"
 

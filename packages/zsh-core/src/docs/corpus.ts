@@ -11,6 +11,7 @@ import { readFileSync } from "node:fs"
 import { join } from "node:path"
 import { type Assert, cached, type Eq } from "@carlwr/typescript-extra"
 import { resolveZshDataDir } from "../data-dir.ts"
+import { mkDocumented, normalizeOptName } from "./brands.ts"
 import {
   type DocCategory,
   type DocPieceId,
@@ -35,7 +36,6 @@ import type {
   SubscriptFlagDoc,
   ZshOption,
 } from "./types.ts"
-import { mkDocumented, normalizeOptName } from "./brands.ts"
 import { parseBuiltins } from "./yodl/extractors/builtins.ts"
 import { parseCondOps } from "./yodl/extractors/cond-ops.ts"
 import { parseGlobFlags } from "./yodl/extractors/glob-flags.ts"
