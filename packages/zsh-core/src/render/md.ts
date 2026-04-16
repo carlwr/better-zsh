@@ -1,11 +1,6 @@
 import type { DocCorpus } from "../docs/corpus.ts"
 import { resolve } from "../docs/corpus.ts"
-import {
-  type DocCategory,
-  type DocPieceId,
-  type DocRecordMap,
-  mkCandPieceId,
-} from "../docs/taxonomy.ts"
+import type { DocCategory, DocPieceId, DocRecordMap } from "../docs/taxonomy.ts"
 import type {
   BuiltinDoc,
   CondOpDoc,
@@ -25,7 +20,6 @@ import type {
   SubscriptFlagDoc,
   ZshOption,
 } from "../docs/types.ts"
-import { mkCandidate } from "../docs/types.ts"
 
 const TBD = "TBD"
 const OPT_REF_RE = /\b(?:NO_?)?[A-Z][A-Z0-9_]*\b/g
@@ -199,11 +193,7 @@ function fmtOptRefsInLine(line: string, corpus: DocCorpus): string {
 function fmtOptRefsInText(text: string, corpus: DocCorpus): string {
   return text.replace(OPT_REF_RE, (raw, offset, whole) => {
     if (isShellParameterRef(whole, offset)) return raw
-    const pieceId = resolve(
-      corpus,
-      mkCandPieceId("option", mkCandidate("option", raw)),
-    )
-    return pieceId ? mdFmt.optRef(raw) : raw
+    return resolve(corpus, "option", raw) ? mdFmt.optRef(raw) : raw
   })
 }
 

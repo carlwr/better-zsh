@@ -41,7 +41,8 @@ vi.mock("../zsh", () => ({
 }))
 
 import type { DocCorpus } from "zsh-core"
-import { mkProven, optSections } from "zsh-core"
+import { optSections } from "zsh-core"
+import { mkDocumented } from "zsh-core/internal"
 import { CompletionProvider } from "../completions"
 import { wordDoc } from "./test-util"
 
@@ -49,12 +50,12 @@ suite("CompletionProvider", () => {
   test("offers static builtins, precmds, reserved words, and params", async () => {
     const emptyMap = new Map() as unknown as ReadonlyMap<never, never>
     const builtin = {
-      name: mkProven("builtin", "echo"),
+      name: mkDocumented("builtin", "echo"),
       synopsis: ["echo"] as [string],
       desc: "",
     }
     const reservedWord = {
-      name: mkProven("reserved_word", "if"),
+      name: mkDocumented("reserved_word", "if"),
       sig: "if list then list fi",
       desc: "",
       section: "Complex Commands",
@@ -66,13 +67,13 @@ suite("CompletionProvider", () => {
       desc: "",
     }
     const param = {
-      name: mkProven("shell_param", "SECONDS"),
+      name: mkDocumented("shell_param", "SECONDS"),
       sig: "SECONDS",
       desc: "",
       section: "Parameters Set By The Shell" as const,
     }
     const option = {
-      name: mkProven("option", "AUTO_CD"),
+      name: mkDocumented("option", "AUTO_CD"),
       display: "AUTO_CD",
       flags: [],
       defaultIn: ["zsh" as const],

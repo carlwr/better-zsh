@@ -6,7 +6,7 @@ import type { DocCategory } from "./taxonomy.ts"
 export type Brand<T, B extends string> = T & { readonly __brand: B }
 
 // --- Auxiliary lookup brands ------------------------------------------------
-// Outside the candidate/proven split; used as secondary-index brands.
+// Outside the observed/documented split; used as secondary-index brands.
 
 /** Single-letter option flag char. Well-formed; secondary index brand, not a doc-piece identity. */
 export type OptFlag = Brand<string, "OptFlag">
@@ -18,105 +18,71 @@ export const mkOptFlag = (raw: string): OptFlag => raw.trim() as OptFlag
 
 export const mkRedirOp = (raw: string): RedirOp => raw.trim() as RedirOp
 
-// --- Parametric proven/candidate brands -------------------------------------
-
-// The Proven/Candidate split is primarily about PROVENANCE, not normalization:
-//   Candidate<K> = "from user code / untrusted source; membership unknown"
-//   Proven<K>    = "known to identify a documented corpus element"
+// --- Parametric observed/documented brands ---------------------------------
 //
-// `resolve()` is the sole public crossing point and operationalizes the split
-// at the value level (Map.has → `| undefined`). Holding a `Proven<K>` is proof
-// of corpus membership; holding a `Candidate<K>` is only well-formedness.
+// Two phantom brands, both indexed on DocCategory. The distinction is PURELY
+// provenance at this layer — neither brand carries corpus-membership proof on
+// its own; that's what the resolver layer does.
 //
-// Secondary observation: most categories share the same normalization between
-// the two sides (trim). One category — `option` — has asymmetric normalization
-// (candidate strips a leading `no_` negation prefix; proven does not), because
-// `setopt no_autocd` references the same option doc as `setopt AUTO_CD`. The
-// asymmetry is what makes the split catch bugs materially (not only flag
-// provenance) for `option`; for other categories the brand is a type-only
-// provenance marker.
+//   Observed<K>    "a normalized, well-formed K-shaped token I observed in
+//                   user code or other untrusted source". Produced by
+//                   `mkObserved` or by fact extraction.
+//
+//   Documented<K>  "a normalized, well-formed K-shaped identifier that is a
+//                   key in `corpus[K]`". Produced by Yodl extractors via
+//                   `mkDocumented` and by the resolver layer.
+//
+// The normalization policy is identical for Observed<K> and Documented<K>
+// (one `norm[K]` table). The brand split exists so the type system refuses to
+// confuse user-code tokens with corpus identities.
+//
+// Corpus-aware parse concerns (e.g. `setopt NO_AUTO_CD` referring to the same
+// option as `setopt AUTO_CD`, or a redirection token like `1>&2` decomposing
+// into a group operator + tail) do NOT live in the smart constructors here —
+// they live in the per-category resolver table in `corpus.ts`. See DESIGN.md,
+// "Three phases: raw / observed / documented".
 
 /**
- * Phantom-branded identifier of a KNOWN documented zsh element for category K.
- * Provenance: produced by corpus construction (Yodl extractors) or by
- * `resolve()` — never directly from user code. Holding a `Proven<K>` is a
- * static proof of corpus membership.
+ * Phantom-branded identifier of a documented zsh element for category K.
+ * Holding a `Documented<K>` expresses the *claim* "this string is a key in
+ * `corpus[K]`." Two ways to obtain one honestly:
  *
- * `precmd` and `process_subst` use closed literal unions (every valid string
- * is a corpus member); all other categories use phantom brands.
+ * 1. The resolver layer (`resolve`, `resolveOption`) — **checked**: membership
+ *    is verified against the corpus. This is the path for untrusted input.
+ * 2. `mkDocumented(cat, raw)` — **trusted**: no corpus check. Intended for
+ *    corpus construction (Yodl extractors) and test-corpus builders, where the
+ *    caller vouches for membership. Misuse is detectable only indirectly
+ *    (subsequent `Map.get` returning `undefined`).
+ *
+ * `precmd` and `process_subst` collapse via conditional type to their closed
+ * literal unions (every valid string is a corpus member); all other categories
+ * use phantom brands.
  */
-export type Proven<K extends DocCategory> = K extends "precmd"
+export type Documented<K extends DocCategory> = K extends "precmd"
   ? PrecmdName
   : K extends "process_subst"
     ? ProcessSubstOp
-    : string & { readonly __proven: K }
+    : string & { readonly __documented: K }
 
 /**
- * Phantom-branded well-formed lookup candidate for category K, derived from
- * user code or other untrusted sources. Provenance: produced by consumers via
- * `mkCandidate`. A candidate MIGHT identify a corpus element; it is not a
- * membership proof. Crossing to `Proven<K>` happens only through `resolve()`.
+ * Phantom-branded well-formed, normalized K-shaped token observed in user
+ * code (or other untrusted source). An `Observed<K>` is NOT a membership
+ * proof — it only claims that the string has been normalized per category K's
+ * policy. The boundary crossing to `Documented<K>` is `resolve(corpus, K,
+ * raw)`, which applies category-specific corpus-aware parsing.
+ *
+ * `precmd` and `process_subst` resolve to their literal unions (symmetric with
+ * `Documented<K>`).
  */
-export type Candidate<K extends DocCategory> = string & {
-  readonly __candidate: K
-}
+export type Observed<K extends DocCategory> = K extends "precmd"
+  ? PrecmdName
+  : K extends "process_subst"
+    ? ProcessSubstOp
+    : string & { readonly __observed: K }
 
-// Normalization tables for proven and candidate smart constructors.
-// idempotent; strips underscores, lowercases
-export function normalizeOptName(raw: string): string {
-  return raw.replace(/_/g, "").toLowerCase()
-}
-
-const provenNorm: { [K in DocCategory]: (s: string) => string } = {
-  option: normalizeOptName,
-  cond_op: s => s.trim(),
-  builtin: s => s.trim(),
-  precmd: s => s.trim(),
-  shell_param: s => s.trim(),
-  reserved_word: s => s.trim(),
-  redir: s => s.trim(),
-  process_subst: s => s.trim(),
-  subscript_flag: s => s.trim(),
-  param_flag: s => s.trim(),
-  history: s => s.trim(),
-  glob_op: s => s.trim(),
-  glob_flag: s => s.trim(),
-}
-
-const candidateNorm: { [K in DocCategory]: (s: string) => string } = {
-  option: s => normalizeOptName(s.replace(/^no_?/i, "")),
-  cond_op: s => s.trim(),
-  builtin: s => s.trim(),
-  precmd: s => s.trim(),
-  shell_param: s => s.trim(),
-  reserved_word: s => s.trim(),
-  redir: s => s.trim(),
-  process_subst: s => s.trim(),
-  subscript_flag: s => s.trim(),
-  param_flag: s => s.trim(),
-  history: s => s.trim(),
-  glob_op: s => s.trim(),
-  glob_flag: s => s.trim(),
-}
-
-/**
- * Smart constructor for a proven corpus-identity brand. Normalizes `raw`
- * per-category and casts to `Proven<K>`. Used by Yodl extractors.
- */
-export const mkProven = <K extends DocCategory>(
-  cat: K,
-  raw: string,
-): Proven<K> => provenNorm[cat](raw) as Proven<K>
-
-/**
- * Smart constructor for a candidate lookup brand. Normalizes `raw` per-category
- * (option: additionally strips leading `no`/`no_` prefix; others: trim) and
- * casts to `Candidate<K>`.
- */
-export const mkCandidate = <K extends DocCategory>(
-  cat: K,
-  raw: string,
-): Candidate<K> => candidateNorm[cat](raw) as Candidate<K>
+// Brand-minting smart constructors (`mkObserved`, `mkDocumented`) and
+// `normalizeOptName` live in `brands.ts` — co-located with the shared
+// per-category normalization table they depend on.
 
 // --- Closed literal unions --------------------------------------------------
 
@@ -178,7 +144,7 @@ export type OptSection = (typeof optSections)[number]
 
 /** Parsed zsh option metadata normalized from upstream docs. */
 export interface ZshOption {
-  readonly name: Proven<"option">
+  readonly name: Documented<"option">
   readonly display: string
   readonly flags: readonly OptFlagAlias[]
   readonly defaultIn: readonly Emulation[]
@@ -188,7 +154,7 @@ export interface ZshOption {
 
 /** Parsed unary `[[ ... ]]` conditional operator docs. */
 export interface UnaryCondOpDoc {
-  readonly op: Proven<"cond_op">
+  readonly op: Documented<"cond_op">
   readonly operands: UnaryCondOperands
   readonly desc: string
   readonly arity: "unary"
@@ -196,7 +162,7 @@ export interface UnaryCondOpDoc {
 
 /** Parsed binary `[[ ... ]]` conditional operator docs. */
 export interface BinaryCondOpDoc {
-  readonly op: Proven<"cond_op">
+  readonly op: Documented<"cond_op">
   readonly operands: BinaryCondOperands
   readonly desc: string
   readonly arity: "binary"
@@ -207,13 +173,13 @@ export type CondOpDoc = UnaryCondOpDoc | BinaryCondOpDoc
 
 /** Parsed builtin command doc block. */
 export interface BuiltinDoc {
-  readonly name: Proven<"builtin">
+  readonly name: Documented<"builtin">
   readonly synopsis: NonEmpty<string>
   readonly desc: string
   /** present when builtin requires a loaded module */
   readonly module?: string
   /** present when this is an alias of another builtin */
-  readonly aliasOf?: Proven<"builtin">
+  readonly aliasOf?: Documented<"builtin">
 }
 
 /** Parsed precommand modifier doc block. */
@@ -234,18 +200,18 @@ export interface SyntaxDocBase<Sig extends string = string> {
 
 /** Shell-managed parameters documented in `zshparam`. */
 export interface ShellParamDoc extends SyntaxDocBase {
-  readonly name: Proven<"shell_param">
-  readonly tied?: Proven<"shell_param">
+  readonly name: Documented<"shell_param">
+  readonly tied?: Documented<"shell_param">
 }
 
 export interface ReservedWordDoc extends SyntaxDocBase {
-  readonly name: Proven<"reserved_word">
+  readonly name: Documented<"reserved_word">
   readonly pos: ReservedWordPos
 }
 
-export interface RedirDoc extends SyntaxDocBase<Proven<"redir">> {
+export interface RedirDoc extends SyntaxDocBase<Documented<"redir">> {
   /** Full signature is the doc identity; `groupOp` is only the shared lookup bucket. */
-  readonly sig: Proven<"redir">
+  readonly sig: Documented<"redir">
   /** Grouping token only; multiple redirection docs share the same `groupOp`. */
   readonly groupOp: RedirOp
 }
@@ -257,28 +223,28 @@ export interface ProcessSubstDoc extends SyntaxDocBase {
 
 /** Subscript flags -- e.g. `(e)`, `(w)` inside `${arr[(...)...]}`. */
 export interface SubscriptFlagDoc extends SyntaxDocBase {
-  readonly flag: Proven<"subscript_flag">
+  readonly flag: Documented<"subscript_flag">
   readonly args: readonly string[]
 }
 
 /** Parameter-expansion flags -- e.g. `(U)`, `(L)` inside `${(...)var}`. */
 export interface ParamFlagDoc extends SyntaxDocBase {
-  readonly flag: Proven<"param_flag">
+  readonly flag: Documented<"param_flag">
   readonly args: readonly string[]
 }
 
 export interface HistoryDoc extends SyntaxDocBase {
-  readonly key: Proven<"history">
+  readonly key: Documented<"history">
   readonly kind: HistoryKind
 }
 
 /** Globbing operators -- e.g. `*`, `?`, `[...]`. */
 export interface GlobOpDoc extends SyntaxDocBase {
-  readonly op: Proven<"glob_op">
+  readonly op: Documented<"glob_op">
 }
 
 /** Glob flags -- e.g. `(#i)`, `(#b)` inside glob patterns. */
 export interface GlobFlagDoc extends SyntaxDocBase {
-  readonly flag: Proven<"glob_flag">
+  readonly flag: Documented<"glob_flag">
   readonly args: readonly string[]
 }

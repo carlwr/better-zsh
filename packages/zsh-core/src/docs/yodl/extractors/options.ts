@@ -1,13 +1,14 @@
 import type {
   DefaultMarker,
+  Documented,
   Emulation,
   OptFlagAlias,
   OptFlagSign,
   OptSection,
-  Proven,
   ZshOption,
 } from "../../types.ts"
-import { mkOptFlag, mkProven, optSections } from "../../types.ts"
+import { mkOptFlag, optSections } from "../../types.ts"
+import { mkDocumented } from "../../brands.ts"
 import {
   extractFirstList,
   extractItems,
@@ -59,7 +60,7 @@ function parseOptionCategory(raw: string): OptSection {
 
 function parseOptHeader(header: Parameters<typeof extractTokens>[0]):
   | {
-      name: Proven<"option">
+      name: Documented<"option">
       display: string
       flags: OptFlagAlias[]
     }
@@ -67,7 +68,7 @@ function parseOptHeader(header: Parameters<typeof extractTokens>[0]):
   const [display, ...parts] = ttTexts(header)
   if (!display || !/^[A-Z_]+$/.test(display)) return undefined
   return {
-    name: mkProven("option", display),
+    name: mkDocumented("option", display),
     display,
     flags: parts.flatMap(toFlagAlias),
   }
@@ -86,7 +87,7 @@ function parseDefaultFlagAliases(
     if (!flag || !target) continue
     const alias = aliasFrom(flag, target)
     if (!alias) continue
-    const key = mkProven("option", alias.display)
+    const key = mkDocumented("option", alias.display)
     out.set(key, mergeFlags(out.get(key), [alias.flag]))
   }
   return out

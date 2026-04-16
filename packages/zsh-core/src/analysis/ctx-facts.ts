@@ -1,4 +1,4 @@
-import { mkCandidate } from "../docs/types.ts"
+import { mkObserved } from "../docs/brands.ts"
 import { advanceQuote, isQuoted, mkQuoteState } from "../quote-state.ts"
 import {
   absSpan,
@@ -94,7 +94,7 @@ function scanSetoptCtx(
 
     const headLine = activeText(lines[block.start] ?? "")
     const head = firstCmdHeadOnLine(headLine)
-    if (!head || head.precmds.includes(mkCandidate("precmd", "command")))
+    if (!head || head.precmds.includes(mkObserved("precmd", "command")))
       continue
     const text = continuedText(lines, block.start, block.end).slice(
       head.span.start,

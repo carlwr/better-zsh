@@ -15,7 +15,8 @@ import type {
   ShellParamDoc,
   ZshOption,
 } from "../../docs/types"
-import { mkOptFlag, mkProven, mkRedirOp } from "../../docs/types"
+import { mkOptFlag, mkRedirOp } from "../../docs/types"
+import { mkDocumented } from "../../docs/brands"
 import { dumpText, type RefDumpFile, writeRefDump } from "../../render/dump"
 import {
   defaultStateIn,
@@ -41,7 +42,7 @@ import { withTmpDirAsync } from "../tmp-dir"
 // `section` and `args` are required by the types but unused by renderers.
 
 const cd: ZshOption = {
-  name: mkProven("option", "AUTO_CD"),
+  name: mkDocumented("option", "AUTO_CD"),
   display: "AUTO_CD",
   flags: [{ char: mkOptFlag("J"), on: "-" }],
   defaultIn: ["csh", "ksh", "sh", "zsh"],
@@ -55,13 +56,13 @@ const cond = <A extends CondOpDoc["arity"]>(
   operands: Extract<CondOpDoc, { arity: A }>["operands"],
   desc: string,
 ): CondOpDoc =>
-  ({ op: mkProven("cond_op", op), operands, desc, arity }) as CondOpDoc
+  ({ op: mkDocumented("cond_op", op), operands, desc, arity }) as CondOpDoc
 
 const cu = cond("unary", "-a", ["file"], "d:u")
 const cb = cond("binary", "-nt", ["left", "right"], "d:b")
 
 const bi: BuiltinDoc = {
-  name: mkProven("builtin", "echo"),
+  name: mkDocumented("builtin", "echo"),
   synopsis: ["echo [ -n ] [ arg ... ]"],
   desc: "d:bi",
 }
@@ -72,7 +73,7 @@ const pc: PrecmdDoc = {
 }
 const rd: RedirDoc = {
   groupOp: mkRedirOp(">>"),
-  sig: mkProven("redir", ">> word"),
+  sig: mkDocumented("redir", ">> word"),
   desc: "d:r",
   section: "",
 }
@@ -83,14 +84,14 @@ const sub: ProcessSubstDoc = {
   section: "",
 }
 const word: ReservedWordDoc = {
-  name: mkProven("reserved_word", "if"),
+  name: mkDocumented("reserved_word", "if"),
   sig: "if list then list fi",
   desc: "d:rw",
   section: "",
   pos: "command",
 }
 const sec: ShellParamDoc = {
-  name: mkProven("shell_param", "SECONDS"),
+  name: mkDocumented("shell_param", "SECONDS"),
   sig: "SECONDS",
   desc: "d:p",
   section: "",
@@ -105,7 +106,7 @@ const stub = <K extends DocCategory>(
   extra: object = {},
 ): DocRecordMap[K] =>
   ({
-    [idField]: mkProven(cat, value),
+    [idField]: mkDocumented(cat, value),
     args: [],
     sig: value,
     desc: "",
@@ -279,7 +280,7 @@ describe("render markdown", () => {
   test("refDocs — collects and sorts shell params", () => {
     const argv: ShellParamDoc = {
       ...sec,
-      name: mkProven("shell_param", "argv"),
+      name: mkDocumented("shell_param", "argv"),
       sig: "argv",
     }
     const ids = refDocs(
@@ -291,7 +292,7 @@ describe("render markdown", () => {
       }),
     ).map(d => `${d.kind}:${d.id}`)
     expect(ids).toEqual([
-      `option:${mkProven("option", "AUTO_CD")}`,
+      `option:${mkDocumented("option", "AUTO_CD")}`,
       "cond_op:-a",
       "builtin:echo",
       "precmd:noglob",
@@ -308,7 +309,7 @@ describe("render markdown", () => {
   test("typed ref-doc ids distinct from display headings", () => {
     const docs = corpus()
     const opt = docs.find(d => d.kind === "option")
-    expect(opt?.id).toBe(mkProven("option", "AUTO_CD"))
+    expect(opt?.id).toBe(mkDocumented("option", "AUTO_CD"))
     expect(opt?.heading).toBe("AUTO_CD")
     expect(docs.find(d => d.kind === "redir")?.heading).toBe(">> word")
   })
@@ -370,7 +371,7 @@ describe("render dump", () => {
     })
 
     test("formats real option cross-refs but not env vars", () => {
-      const cdSilent = vendored.option.get(mkProven("option", "CD_SILENT"))
+      const cdSilent = vendored.option.get(mkDocumented("option", "CD_SILENT"))
       expect(cdSilent).toBeTruthy()
       // biome-ignore lint/style/noNonNullAssertion: asserted above
       const out = mdOpt(cdSilent!, vendored)

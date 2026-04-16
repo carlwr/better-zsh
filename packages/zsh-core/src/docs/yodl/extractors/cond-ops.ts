@@ -1,5 +1,5 @@
 import type { CondOpDoc } from "../../types.ts"
-import { mkProven } from "../../types.ts"
+import { mkDocumented } from "../../brands.ts"
 import { extractItems, flattenAliasedEntries } from "../core/doc.ts"
 import { extractTokens } from "../core/text.ts"
 
@@ -22,13 +22,13 @@ export function parseCondOps(yo: string): readonly CondOpDoc[] {
   return flattenAliasedEntries(extractItems(yo), parseHeader, (parsed, desc) =>
     parsed.arity === "unary"
       ? {
-          op: mkProven("cond_op", parsed.op),
+          op: mkDocumented("cond_op", parsed.op),
           operands: parsed.operands,
           desc,
           arity: "unary",
         }
       : {
-          op: mkProven("cond_op", parsed.op),
+          op: mkDocumented("cond_op", parsed.op),
           operands: parsed.operands,
           desc,
           arity: "binary",

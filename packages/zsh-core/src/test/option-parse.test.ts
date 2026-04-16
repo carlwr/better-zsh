@@ -1,9 +1,9 @@
 import { describe, expect, test } from "vitest"
 import type { DocCorpus } from "../docs/corpus"
 import { resolveOption } from "../docs/corpus"
-import { mkProven_ } from "./id-fns"
+import { mkDocumented_ } from "./id-fns"
 
-const opt = mkProven_("option")
+const opt = mkDocumented_("option")
 
 const empty = new Map() as unknown as ReadonlyMap<never, never>
 const corpus: DocCorpus = {

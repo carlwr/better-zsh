@@ -1,14 +1,13 @@
 import type {
   BuiltinDoc,
-  Candidate,
   CondOpDoc,
+  Documented,
   GlobFlagDoc,
   GlobOpDoc,
   HistoryDoc,
   ParamFlagDoc,
   PrecmdDoc,
   ProcessSubstDoc,
-  Proven,
   RedirDoc,
   ReservedWordDoc,
   ShellParamDoc,
@@ -51,54 +50,39 @@ export interface DocRecordMap {
 }
 
 /**
- * Discriminated-union identity for a known (proven) documented element.
- * `category` narrows `id` to the corresponding proven brand.
- * The only sanctioned way to obtain a `DocPieceId` is from `resolve()` or
- * from iterating `DocCorpus` internally.
+ * Discriminated-union identity for a documented corpus element.
+ * `category` narrows `id` to the corresponding Documented brand.
+ *
+ * The only sanctioned ways to obtain a `DocPieceId` are: the return of
+ * `resolve(corpus, cat, raw)`, assembling one from a corpus record's id field
+ * via `mkPieceId(cat, record-id)`, or iterating the corpus internally.
  */
 export type DocPieceId = {
-  [K in DocCategory]: { readonly category: K; readonly id: Proven<K> }
+  [K in DocCategory]: { readonly category: K; readonly id: Documented<K> }
 }[DocCategory]
 
 /**
- * Discriminated-union identity for a lookup candidate derived from user code.
- * `category` narrows `id` to the corresponding candidate brand. Not a proof
- * of corpus membership; must pass through `resolve()` to become a
- * `DocPieceId`.
- */
-export type CandidateDocPieceId = {
-  [K in DocCategory]: { readonly category: K; readonly id: Candidate<K> }
-}[DocCategory]
-
-/**
- * Construct a `DocPieceId` from a category and a proven id. Centralizes the
- * correlated-union cast that TS cannot propagate through a generic helper.
+ * Construct a `DocPieceId` from a category and a documented id. Centralizes
+ * the correlated-union cast that TS cannot propagate through a generic
+ * helper. Valid to call only when the id genuinely is a corpus key (typically
+ * because it was read off a corpus record).
  */
 export const mkPieceId = <K extends DocCategory>(
   category: K,
-  id: Proven<K>,
+  id: Documented<K>,
 ): DocPieceId => ({ category, id }) as DocPieceId
 
-/**
- * Construct a `CandidateDocPieceId` from a category and a candidate id.
- * Centralizes the correlated-union cast.
- */
-export const mkCandPieceId = <K extends DocCategory>(
-  category: K,
-  id: Candidate<K>,
-): CandidateDocPieceId => ({ category, id }) as CandidateDocPieceId
-
 export const docId: {
-  [K in DocCategory]: (doc: DocRecordMap[K]) => Proven<K>
+  [K in DocCategory]: (doc: DocRecordMap[K]) => Documented<K>
 } = {
   option: d => d.name,
   cond_op: d => d.op,
   builtin: d => d.name,
-  precmd: d => d.name as Proven<"precmd">,
+  precmd: d => d.name as Documented<"precmd">,
   shell_param: d => d.name,
   reserved_word: d => d.name,
   redir: d => d.sig,
-  process_subst: d => d.op as Proven<"process_subst">,
+  process_subst: d => d.op as Documented<"process_subst">,
   subscript_flag: d => d.flag,
   param_flag: d => d.flag,
   history: d => d.key,

@@ -54,6 +54,12 @@
     "./data/glob-operators.json": "./dist/json/glob-operators.json",
     "./data/glob-flags.json": "./dist/json/glob-flags.json",
     "./data/process-substs.json": "./dist/json/process-substs.json",
+    "./internal": {
+      "types": "./dist/internal.d.ts",
+      "import": "./dist/internal.mjs",
+      "require": "./dist/internal.js",
+      "default": "./dist/internal.mjs"
+    },
     "./package.json": "./package.json"
   },
   "scripts": {
@@ -66,8 +72,8 @@
     "jsr:dry": "pnpm dlx jsr publish --dry-run --allow-dirty",
     "jsr:check": "deno publish --dry-run --allow-dirty",
     "typecheck": "tsc --noEmit",
-    "format": "biome check --error-on-warnings --write assets.ts build.ts deno.json exec.ts index.ts render.ts scripts src tsconfig.build.json tsconfig.json typedoc.json vitest.config.ts package.json",
-    "lint": "biome check --error-on-warnings assets.ts build.ts deno.json exec.ts index.ts render.ts scripts src tsconfig.build.json tsconfig.json typedoc.json vitest.config.ts package.json",
+    "format": "biome check --error-on-warnings --write assets.ts build.ts deno.json exec.ts index.ts internal.ts render.ts scripts src tsconfig.build.json tsconfig.json typedoc.json vitest.config.ts package.json",
+    "lint": "biome check --error-on-warnings assets.ts build.ts deno.json exec.ts index.ts internal.ts render.ts scripts src tsconfig.build.json tsconfig.json typedoc.json vitest.config.ts package.json",
     "check": "pnpm typecheck && pnpm lint",
     "test": "vitest run",
     "test:smoke": "pnpm build && node scripts/test-smoke.mjs && pnpm run jsr:check"

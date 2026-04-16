@@ -1,11 +1,11 @@
 import { describe, expect, test } from "vitest"
 import { mkOptFlag, optSections } from "../../docs/types"
 import { parseOptions } from "../../docs/yodl/extractors/options"
-import { mkProven_ } from "../id-fns"
+import { mkDocumented_ } from "../id-fns"
 import { by, only, readVendoredYo } from "./test-util"
 
 const OPTS_YO = readVendoredYo("options.yo")
-const opt = mkProven_("option")
+const opt = mkDocumented_("option")
 
 describe("parseOptions", () => {
   test("parses AUTO_CD", () => {

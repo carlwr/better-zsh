@@ -1,5 +1,5 @@
 import type { ShellParamDoc } from "../../types.ts"
-import { mkProven } from "../../types.ts"
+import { mkDocumented } from "../../brands.ts"
 import {
   extractFirstList,
   extractItemList,
@@ -46,11 +46,11 @@ function parseParamSection(
     const desc = normalizeBody(item.body)
     for (const head of [...heads, ...pending]) {
       out.push({
-        name: mkProven("shell_param", head.name),
+        name: mkDocumented("shell_param", head.name),
         sig: head.name,
         desc,
         section,
-        ...(head.tied && { tied: mkProven("shell_param", head.tied) }),
+        ...(head.tied && { tied: mkDocumented("shell_param", head.tied) }),
       })
     }
     pending = []

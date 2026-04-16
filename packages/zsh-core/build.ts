@@ -96,6 +96,7 @@ function writeJsonArtifacts() {
       resolve(pkgDir, "exec.ts"),
       resolve(pkgDir, "assets.ts"),
       resolve(pkgDir, "zsh-types.ts"),
+      resolve(pkgDir, "internal.ts"),
     ],
     outDir: distDir,
     tsconfig: resolve(pkgDir, "tsconfig.build.json"),

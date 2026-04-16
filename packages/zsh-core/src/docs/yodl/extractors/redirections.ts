@@ -1,5 +1,6 @@
 import type { RedirDoc } from "../../types.ts"
-import { mkProven, mkRedirOp } from "../../types.ts"
+import { mkRedirOp } from "../../types.ts"
+import { mkDocumented } from "../../brands.ts"
 import {
   extractItems,
   extractSectionBody,
@@ -14,7 +15,7 @@ export function parseRedirs(yo: string): readonly RedirDoc[] {
     normalizeHeader,
     (sig, desc) => ({
       groupOp: mkRedirOp(sig.match(/^\S+/)?.[0] ?? sig),
-      sig: mkProven("redir", sig),
+      sig: mkDocumented("redir", sig),
       desc,
       section: "Redirection",
     }),

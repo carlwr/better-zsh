@@ -1,5 +1,5 @@
 import type { GlobFlagDoc } from "../../types.ts"
-import { mkProven } from "../../types.ts"
+import { mkDocumented } from "../../brands.ts"
 import {
   extractFirstList,
   extractItemList,
@@ -32,7 +32,7 @@ export function parseGlobFlags(yo: string): readonly GlobFlagDoc[] {
       return tt.map(
         flag =>
           ({
-            flag: mkProven("glob_flag", flag),
+            flag: mkDocumented("glob_flag", flag),
             args: [],
             sig: flag,
             desc,
@@ -44,7 +44,7 @@ export function parseGlobFlags(yo: string): readonly GlobFlagDoc[] {
     const [flag = sig] = tt
     return [
       {
-        flag: mkProven("glob_flag", flag),
+        flag: mkDocumented("glob_flag", flag),
         args: vars,
         sig,
         desc,

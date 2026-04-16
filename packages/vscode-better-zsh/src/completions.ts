@@ -3,7 +3,7 @@ import type {
   CondOpDoc,
   DocCorpus,
   DocPieceId,
-  Proven,
+  Documented,
   ZshOption,
 } from "zsh-core"
 import {
@@ -24,8 +24,8 @@ const getIds = asyncDocCache(async doc =>
 
 export class CompletionProvider implements vscode.CompletionItemProvider {
   private general: vscode.CompletionItem[]
-  private options: readonly Proven<"option">[]
-  private optionMap: ReadonlyMap<Proven<"option">, ZshOption>
+  private options: readonly Documented<"option">[]
+  private optionMap: ReadonlyMap<Documented<"option">, ZshOption>
   private condOps: readonly CondOpDoc[]
 
   constructor(corpus: DocCorpus) {

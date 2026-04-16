@@ -1,10 +1,10 @@
 import { describe, expect, test } from "vitest"
 import { parseBuiltins } from "../../docs/yodl/extractors/builtins"
-import { mkProven_ } from "../id-fns"
+import { mkDocumented_ } from "../id-fns"
 import { by, only, readVendoredYo } from "./test-util"
 
 const BUILTINS_YO = readVendoredYo("builtins.yo")
-const bi = mkProven_("builtin")
+const bi = mkDocumented_("builtin")
 
 describe("parseBuiltins", () => {
   test("parses regular builtin item", () => {

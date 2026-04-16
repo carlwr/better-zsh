@@ -8,212 +8,128 @@ A small monorepo with two packages:
 
 Nothing is released yet — APIs can move freely.
 
-## Architecture & key concepts
+## See also
 
-### Facts
+- **[`DESIGN.md`](./DESIGN.md)** — design intent, principles, rationale ("why").
+- **`packages/zsh-core/dist/types/*.d.ts`** — rolled-up public API with JSDoc ("what").
+- **Orientation skill** at `skills/orient/` — discovery scripts and reading paths.
 
-The analysis layer produces "facts" about user zsh code. Facts are coarse, potentially overlapping annotations with a confidence level ("hard" for structural syntax like reserved words, "heuristic" for command-head detection). The term "fact" is deliberate: the analysis is not exhaustive or conclusive — facts are what the analyzer asserts, not a complete description of the code.
+### DRY across documentation layers
 
-### Doc records
+Three layers carry documentation: **JSDoc** (API docs in d.ts), **DESIGN.md** (design rationale), **AGENTS.md** (contributor conventions). Keep them non-redundant:
 
-Structured documentation for zsh language elements (builtins, options, operators, redirections, etc.), parsed from upstream Yodl sources. Types follow the `*Doc` naming convention (e.g. `BuiltinDoc`, `RedirDoc`, `PrecmdDoc`). Exception: `ZshOption` — too central and natural to rename.
+- **JSDoc** — what a type/function is, its behavioral contract, trust model. Consumers' source of truth. Travels with the code.
+- **DESIGN.md** — why the design is shaped this way. Complements JSDoc; refers to types/functions by name but avoids repeating signatures or behavioral details. Minimally specific with things that may drift (file names, signatures). Key identifiers (`Observed`, `Documented`) are fine to mention; function signatures are not — if something needs a signature to explain, it belongs in JSDoc.
+- **AGENTS.md** — how to work on the code. Style, testing, tooling, refs. Does not duplicate design rationale from DESIGN.md or API semantics from JSDoc.
 
-### Syntactic context
+When editing one layer, check if the same information already lives in another. Add a cross-reference instead of duplicating.
 
-Best-effort determination of which syntactic region the cursor is in (setopt, conditional, arithmetic, general). Built on top of facts.
+## Short architecture summary
 
-### Analysis layout
+Three orthogonal domains (details in `DESIGN.md`):
 
-`src/analysis/facts.ts` is the public entry point and fact-model surface. Shared document/span helpers, line scanning, and context/setopt detection live in sibling analysis modules. Keep the public fact vocabulary centralized there, but keep scanner mechanics and context heuristics out of it — avoid growing it back into a mixed "types + orchestration + low-level scanning" file.
+- **A — Parsed Documentation** (`src/docs/`): static vendored zsh knowledge; closed taxonomy of 13 `DocCategory` values; each has a doc-record type and a `Documented<K>`-keyed `DocCorpus` map.
+- **B — Fact Extraction** (`src/analysis/`): coarse annotations about user code. Facts may carry `Observed<K>` values — never `Documented<K>`.
+- **C — Markdown Rendering** (`src/render/`): transforms doc records into markdown; depends on A; orthogonal to B.
 
-### Data flow — how zsh-core delivers its knowledge
+Consumers plumb A+B→C procedurally (extension-side), not via zsh-core internals.
 
-zsh-core ships vendored Yodl (`.yo`) documentation files from the zsh upstream project. Three consumption routes:
-
-1. **Programmatic API** (`loadCorpus()`) — parse `.yo` at runtime into a `DocCorpus`; cached. Requires the `.yo` files on disk. For consumers who bundle zsh-core (like the extension), `copyRuntimeZshData()` copies the `.yo` payload into their output directory. The extension calls `loadCorpus()` once at activation and uses the corpus as the canonical source for semi-static language knowledge (builtins, options, reserved words, shell-managed parameters, etc.).
-2. **Pre-parsed JSON** (`dist/json/*.json`) — build-time artifacts containing the same data, pre-serialized. Available via package exports (`"./data/*.json"`). No runtime parsing needed. The extension does **not** currently use this route at runtime.
-3. **Raw Yodl source** (`dist/data/zsh-docs/`) — the upstream `.yo` files for advanced consumers.
-
-Routes 1 and 2 contain the same information in different forms. Route 3 is the raw source that feeds route 1. For live hover/completion docs, the extension passes the `DocCorpus` to providers; lookups go via `resolve()` + `renderDoc()`. The per-category `md*()` renderers are not part of the `zsh-core/render` package surface — they are internal dispatch targets reachable only via direct module imports (e.g. from within the package's own tests).
+Brand boundary crossing is exactly one public API: `resolve(corpus, cat, raw)` dispatches through a per-category resolver table in `docs/corpus.ts`. `renderDoc(corpus, pieceId)` produces markdown; no combined convenience function. See `DESIGN.md` for the rationale.
 
 ### Yodl parsing layout
 
-`zsh-core`'s Yodl parsing is intentionally split into layers:
-- `src/docs/yodl/core/` — shared machinery only: macro-node parsing, section/list/entry structure, and text rendering/token extraction
+- `src/docs/yodl/core/` — shared machinery only: macro-node parsing, section/list/entry structure, text rendering/token extraction
 - `src/docs/yodl/extractors/` — vendored-corpus extractors that map the shared Yodl representation to zsh doc records
 
-Keep low-level parsing rules in the core layer. Keep corpus-specific interpretation in the docs layer. Doc extractors should not drift back toward ad hoc rescanning of raw Yodl strings.
+Keep low-level parsing rules in the core layer. Keep corpus-specific interpretation in the extractors layer.
+
+### Analysis layout
+
+`src/analysis/facts.ts` is the public fact-model surface. Shared document/span helpers, line scanning, and context/setopt detection live in sibling analysis modules. Keep the public fact vocabulary centralized there; keep scanner mechanics and context heuristics out of it.
 
 ### Providers
 
-VS Code provider classes that wire zsh-core analysis and doc records to language features (hover, completions, semantic tokens, etc.). Reusable parsing/rendering logic should live in pure functions; some provider-local dispatch/lookup logic still lives in the provider modules.
-
-### Conceptual domains — A / B / C
-
-Three orthogonal domains. Preserve this decomposition; it should be visible in directory structure, types, and naming.
-
-- **A — Parsed Documentation** (`src/docs/`): static, vendored zsh knowledge. A closed taxonomy of 13 `DocCategory` values; each has a doc-record type (`ZshOption`, `CondOpDoc`, …), a corpus-identity branded type, and a collection of records parsed from `.yo` sources. Knows nothing about user code.
-- **B — Fact Extraction** (`src/analysis/`): coarse, potentially overlapping annotations about user zsh code. A `Fact` discriminated union with confidence levels. Knows nothing about doc records or markdown. User-code-derived identifiers carry *candidate* brands — never proven corpus-identity brands.
-- **C — Markdown Rendering** (`src/render/`): transforms doc records into human-readable markdown. Depends on A; orthogonal to B.
-
-The consumer (extension) plumbs A+B→C: facts identify what to look up, doc records supply content, rendering produces output. This plumbing is procedural dispatch in consumer code — zsh-core does not wire A+B→C internally.
-
-### Brand semantics
-
-Two parametric brand families indexed on `DocCategory`. The **primary** distinction is *provenance* — where the value came from and whether corpus membership is confirmed.
-
-**`Proven<K>`** — phantom-branded identifiers of known, documented zsh elements for category `K`. Used in doc records and as `DocCorpus` map keys. Produced only by corpus construction (Yodl extractors via `mkProven(cat, raw)`) or by `resolve()`. Holding a `Proven<K>` is a static proof of corpus membership. Exceptions: `PrecmdName` and `ProcessSubstOp` are small closed literal unions — `Proven<"precmd">` / `Proven<"process_subst">` resolve to them via a conditional-type override, so enumerating the union *is* the proven-side invariant.
-
-**`Candidate<K>`** — phantom-branded well-formed lookup candidates for category `K`, produced by consumers (via `mkCandidate(cat, raw)`) from user code or other untrusted sources. Well-formed and normalized, but corpus membership is **not** confirmed.
-
-The two families are structurally incompatible. The candidate→proven boundary is crossed **only through `resolve(corpus, candidateId)`** — the sole public brand-boundary crossing point, which operationalizes the distinction at the value level via `Map.has` → `| undefined`. `renderDoc(corpus, provenId)` then produces markdown; the two steps are intentionally separate and no public API combines them.
-
-Normalization tables (`provenNorm`, `candidateNorm`) are per-category and mostly coincide (trim). One asymmetry: `mkCandidate("option", raw)` strips a leading `no_` negation prefix; `mkProven("option", raw)` does not — because `setopt no_autocd` references the same doc record as `setopt AUTO_CD`. For `option` the asymmetry makes the split materially catch bugs, not just mark provenance.
-
-`DocPieceId` (proven) and `CandidateDocPieceId` are discriminated unions keyed on `category`, providing parametric access across all 13 doc categories. Assemble them via `mkPieceId(category, id)` / `mkCandPieceId(category, id)` — these centralize the correlated-union cast TS cannot propagate through a generic helper.
-
-## Design principles
-
-### Scope philosophy
-
-- Thinking: "pick the low-hanging fruit"
-- We can't, in general, have zsh tokenize the zsh code in user files for us, since that would require zsh executing the user code
-
-### Zsh-aware, not environment-aware
-
-The extension uses `zsh -f` only where actual shell execution is worth the host-dependent cost: diagnostics (`zsh -n`) and tokenization used to enrich completions. Semi-static language knowledge comes from bundled `zsh-core` data, not from the host shell. It does **not** probe the user's environment.
-
-- **Static zsh knowledge** (builtins, options, shell-managed parameters, parameter expansion flags, grammar) is preferred for editor features — it is intrinsic to zsh, stable enough to bundle, and more consistent than asking the host shell at activation time
-- **Environment-dependent data** (`$commands`, `$aliases`, `$functions_source`, `$fpath` beyond system defaults) is *not* used for core features — it varies by machine, launch method, editor, and target execution environment
-- `-f` (NO_RCS) skips user rc files, but note that `/etc/zshenv` still runs. Spawned zsh processes receive only an explicit allowlist of env vars (`HOME`, `PATH`, locale vars, etc.) — see `ZSH_ENV_KEEP` in the extension source. Even this filtered set varies by VS Code launch method (Dock vs terminal, bash vs zsh, Cursor vs VS Code, etc.).
-- The configured zsh binary path is intentionally **machine-scoped only** and explicit paths must be absolute. `""` means PATH lookup for `zsh`; `"off"` disables runtime zsh execution; relative paths are rejected at the settings parse boundary rather than normalized later.
-- The file being edited may run on a completely different machine (CI, container, remote); exposing local environment data can actively mislead
-- Mental model: "if we could bundle a zsh binary and run it in an isolated container, we would." We use system zsh only where execution is intrinsic, and otherwise prefer bundled/static knowledge for consistency, startup latency, and smaller security surface.
-- Environment-dependent introspection may later be offered through agent-facing tools (Language Model Tools API) where agents explicitly opt in, with clear caveats about side effects and env-specificity
-
-### External input boundaries
-
-- **Parse, don't validate** — at boundaries with external APIs (VS Code settings, filesystem, process env), parse raw values into domain types at the point of entry. Everything downstream operates on parsed domain types, never on raw values.
-- **Contain boundaries structurally** — the module that reads an external API is the sole reader. The module boundary *is* the policy. A `settings` module that is the only importer of `vscode.workspace.getConfiguration` is more durable than a comment saying "don't read settings elsewhere."
-- **Minimize the dangerous path** — the path from raw external input to the first strongly typed representation should be as short and contained as possible. Smart constructors at parse boundaries; no function should accept raw external values unless parsing is its explicit job.
-
-### Surface invariants in code
-
-- State variables in scanning loops: document with a brief declaration comment (e.g. `// expectCmd: true when next token is in command position`)
-- "Obviously correct islands" — pure, strongly-typed, narrow-scope helpers that are correct by construction — are the preferred unit of non-trivial logic
-- Prefer structural enforcement of invariants over advisory comments (branded types, `ReadonlySet`, smart constructors) — structural constraints are self-enforcing; comments are advisory
-- Evaluate zsh-core's public API surface from a **general-consumer perspective**, not just from what the extension uses — exported types and fields that appear unused by the extension may still be part of the public contract
-
-### Yodl files can be considered fixed and static
-
-- In general, we do not need to cover for the Yodl docs being re-vendored, e.g. for a zsh upgrade. This is estimated to be a practical concern every 10-20 years -> can be disregarded.
-- What can happen is extending the functionality by vendoring in more Yodl files. That is considered a static change to zsh-core, and is _expected_ to warrant changes to its static types, including those in its API.
-
-In other words:
-**Properties of the vendored .yo files can for practical matters be considered domain invariants.**
-
-### Hover docs
-
-- Prefer hover docs that explain actual zsh usage, not raw upstream doc notation
-- For option hovers: show executable `zsh` forms first; keep category at the bottom; prioritize the default in plain zsh over other emulation defaults
-- When adjusting Yodl parsing for rendered reference markdown, preserve visible prose/reference text unless there is a strong reason not to; use the reference dump script to inspect regressions in generated markdown
-
-### Syntax highlighting and semantic tokens
-
-A complete, custom zsh textMate grammar is beyond the scope of this extension:
-- Shell script parsing/tokenization is hairy
-- textMate grammars are not likely the long-term future for syntax highlighting; tree-sitter is — this reduces the value of a potential zsh-specific grammar
-
-Design choice:
-- Vendor in the current sh/bash-focused VS Code textMate grammar (from its upstream)
-- **Offer some semantic tokens for limited parts of zsh syntax** that happen to be parseable with limited/reasonable effort (semantic token scopes layer on top of the textMate scopes and hide imperfections/errors in the underlying scoping)
-
-Semantic token scope mappings (`package.json`):
-- Baseline highlighting is the textMate grammar, so semantic tokens should result in consistent highlighting with the TM grammar (where it highlights correctly)
-- Map to specifically-qualified scopes — this adds flexibility for user- and theme-level overrides
-  - Example: if an operator semantic token can distinguish unary vs binary, use `keyword.operator.logical.unary.shell` and `keyword.operator.logical.binary.shell` rather than the generic `keyword.operator.logical.shell`
-
-Semantic token design choices:
-- (verify against actual code before relying on these)
-- `{` and `}` are emitted as `reserved-word` facts by the analysis layer but are *skipped* in the token provider — the TM grammar already handles `f() { … }` correctly, and distinguishing block-`{` from word-`{` at the heuristic level is non-trivial
-- `((` and `))` are emitted as `reserved-word` facts and *do* get `keyword` tokens — reuses existing provider logic without a new token type or `semanticTokenScopes` entry
-- New token types should be weighed against the need to add matching `semanticTokenScopes` entries in `package.json`
+VS Code provider classes wire zsh-core analysis and doc records to language features (hover, completions, semantic tokens). Reusable parsing/rendering logic should live in pure functions; some provider-local dispatch/lookup logic remains in provider modules.
 
 ## Code style
 
-- minimal comments (prefer naming over comments)
-- Functional style preferred; pure functions where possible
-- **No classes** — except where VS Code API demands (provider interfaces that implement `vscode.*Provider`). All logic in pure functions; providers are thin shells calling them.
-- Avoid mutable state; when needed, handle with care and isolate
-- Extract pure, testable functions — even single-use if they clarify intent or enable testing
-- At call sites, a self-explanatory function name is cheaper cognitive load than inline code
-- Do not hard-code things that should be global constants, or that can be read from somewhere. Example: the languageId string, the name of the extension.
-- Keep files focused — one concern per module
-- Prefer directory structure richness (subdirectories) — aids agentic discoverability and script-based navigation (but trade this off vs. verbose import ceremony)
-- When choosing between expressing intent through a concept/term vs generic description, prefer the term if it's well-chosen (cf. "facts")
-- When a concept or term is established (e.g. "facts"), use it consistently — prefer the established term over ad-hoc synonyms
-- Prefer expressing intent and constraints through code shape (module boundaries, types, function signatures) over comments or documentation — structural expression is self-enforcing; comments are advisory
-- Strengthen documentation primarily through identifier names, structure and abstraction; secondarily with JSDoc. In general, don't introduce separate documentation files.
-- JSDocs on every exported identifier from `zsh-core` _is **not**_ a requirement - add JSDoc if it adds value beyond what function name + type signature already communicates
+- Minimal comments — prefer naming over comments.
+- Functional style; pure functions where possible.
+- **No classes** except where VS Code API demands (provider interfaces implementing `vscode.*Provider`). Providers are thin shells calling pure functions.
+- Avoid mutable state; when unavoidable, handle with care and isolate.
+- Extract pure, testable functions — even single-use if they clarify intent or enable testing.
+- At call sites, a self-explanatory function name is cheaper cognitive load than inline code.
+- Do not hard-code things that should be global constants (e.g. the languageId string, extension name).
+- Keep files focused — one concern per module.
+- Prefer directory structure richness — aids agentic discoverability (trade off vs. import ceremony).
+- When a concept or term is established (e.g. "facts"), use it consistently.
+- Prefer expressing intent through code shape (module boundaries, types, signatures) over comments.
+- Strengthen documentation primarily through identifier names, structure, and abstraction; secondarily with JSDoc. Avoid separate documentation files.
+- JSDoc on exported zsh-core identifiers is **not** required — add it if it adds value beyond function name + type signature.
 
 ### Conciseness
 
-**Conciseness is key, everywhere.**
+Conciseness is a standing repo concern.
 
-guidelines:
-- prefer short identifier names
-- abstract repeated patterns into shared utilities
-- when making decisions, always consider how clarity changes (a conciseness win traded off for clarity can still be worth it - just consider this aspect)
-
-when comparing code for conciseness:
-- `wc -w` and `wc -c` are reasonable proxy measure
-- `wc -l` may hide or underestimate conciseness wins; however, a reduced `wc -l` is usually signal of an improvement
-- if changes are made only/mainly for conciseness reasons, always compare quantatively before and after; at minimum make sure conciseness wasn't worsened
+- Prefer short identifier names.
+- Abstract repeated patterns into shared utilities.
+- Consider how clarity changes when chasing conciseness — a conciseness win at clarity's expense may still be worth it; just consider it.
+- For conciseness-only changes, compare `wc -w` / `wc -c` before and after; at minimum verify it didn't worsen. `wc -l` can hide or underestimate wins, but a reduced line count is usually signal.
 
 ### Types
 
-- Use **branded types** for domain strings (option names, operators, etc.) — nominal-ish typing with zero runtime cost via phantom `__brand` field
-- Smart constructors (`mkOptName`, `mkCondOp`) are the only trusted cast points for branded types — they normalize and cast
-- Prefer **named type aliases** for literal unions: `type CondKind = "unary" | "binary"` — not inline in interfaces. Type name appears in signatures and error messages.
-- Short field names: `desc` not `description`, `op` not `operator`
-- If a value has a reason to be passed around (even potentially), give it its own type — puts documentation in the signature, enables shorter variable names, improves readability
-- `enum` is not used — literal unions + type aliases are preferred in this codebase
-- **Discriminated unions for state spaces** — prefer a single tagged union over scattered booleans/flags. Only represent states that consumers can observe; impossible states should be unrepresentable.
-- **Deferred computation over mutable tracking** — prefer `memoized`/`cached` (from `@carlwr/typescript-extra`) over boolean flags tracking "has this been done?". Memoization encapsulates the state; the thunk boundary replaces the flag.
-- **Do not add inner `readonly` by reflex** — add it when the container type itself must be non-mutable across call boundaries or aliases. If immutability is already enforced by the containing field/signature and the value is constructed once rather than mutated in place, extra inner `readonly` is usually redundant noise rather than a stronger invariant.
-- Module-level constants that are `Set`/`Map` and must never be mutated should carry `ReadonlySet<T>`/`ReadonlyMap<K,V>` type annotations — structural enforcement over advisory comments.
+- **Branded types** for domain strings (option names, operators, etc.) — nominal-ish typing with zero runtime cost via phantom `__brand` field.
+- **Smart constructors** (`mkObserved`, `mkDocumented`, `mkOptFlag`, …) are the only trusted cast points for brands.
+- Prefer **named type aliases** for literal unions: `type CondArity = "unary" | "binary"` — not inline.
+- Short field names: `desc` not `description`, `op` not `operator`.
+- If a value has a reason to be passed around, give it its own type.
+- `enum` is not used — literal unions + type aliases preferred.
+- **Discriminated unions for state spaces** — prefer a single tagged union over scattered booleans/flags.
+- **Deferred computation over mutable tracking** — prefer `memoized`/`cached` (from `@carlwr/typescript-extra`) over boolean flags.
+- **Do not add inner `readonly` by reflex** — add it when the type itself must be non-mutable across call boundaries. If immutability is already enforced by the containing signature and the value is constructed once, extra inner `readonly` is redundant noise.
+- Module-level `Set`/`Map` constants that must not be mutated carry `ReadonlySet<T>`/`ReadonlyMap<K,V>` annotations.
 
 ### Casts (`as`) — principled vs smell
 
-Every `as` is a trust assertion. Classify before writing one:
+Every `as` is a trust assertion. Classify before writing one.
 
-**Principled** — keep, and co-locate with the invariant they express:
-- **Brand mint** — inside a smart constructor (`mkProven`, `mkCandidate`, `mkOptFlag`, …). One per brand family.
-- **Central dispatcher** — inside a parametric function whose job *is* to bridge a type-level correlation TS can't propagate (e.g. `renderDoc`, `resolve`, `buildCategoryMap`, `loadCategoryDocs`). The function's signature is the invariant; the cast is its implementation.
-- **Correlated-union constructor** — a tiny helper whose only job is to assemble `{ category: K, id: Brand<K> }` into the discriminated union. Concentrates the one unavoidable cast per union shape (`mkPieceId`, `mkCandPieceId`).
-- **Literal-union narrowing** — when TS fails to reduce a conditional type at a specific literal K (e.g. `d.name as Proven<"precmd">` inside the `docId` table entry for `precmd`). Limit to the single table entry that actually needs it.
-- **Brand → string peeling** for display or string-native ops (e.g. `doc.name as string` inside a code-fence builder). Trivial; not a crossing.
+**Principled — keep, co-located with the invariant:**
+- **Brand mint** inside smart constructors. One per brand family.
+- **Central dispatcher** inside a parametric function whose job *is* to bridge a type-level correlation TS can't propagate (`renderDoc`, `resolve`, resolvers, `buildCategoryMap`, `loadCategoryDocs`). The function's signature is the invariant.
+- **Correlated-union constructor** (`mkPieceId`). Concentrates the one unavoidable cast per discriminated-union shape.
+- **Literal-union narrowing** — e.g. `d.name as Documented<"precmd">` inside the `docId` entry for `precmd`. Limit to the single table entry needing it.
+- **Brand → string peeling** for display or string-native ops. Trivial; not a crossing.
 
-**Smell — reject, and restructure** if any of these are true:
-- **Cross-brand cast outside the sanctioned crossing.** If you find yourself writing `as unknown as Proven<K>` or `Candidate<K> as …` anywhere other than `resolve()` (public) or a smart constructor (mint), the data model is wrong. Route the probe through `resolve(corpus, mkCandPieceId(K, candidate))` instead of holding a secondary set/map keyed by the wrong brand.
-- **Ad-hoc assembly of a discriminated-union member at a call site** (e.g. `{ category, id } as DocPieceId` outside `mkPieceId`/`mkCandPieceId`). Use the constructor; it exists precisely so the cast lives in one place.
-- **Scaffolding cast masking a design issue.** `as unknown as T` in business logic, a cast to satisfy a `Map`/`Set` whose key type is the "wrong" brand for what's actually being probed, or a cast introduced to avoid threading a `corpus`/context argument. These are signals, not fixes.
+**Smell — reject, restructure:**
+- Cross-brand cast outside the sanctioned crossing. Route the probe through `resolve(corpus, cat, raw)`.
+- Ad-hoc assembly of a discriminated-union member at a call site — use `mkPieceId`.
+- Scaffolding cast masking a design issue (`as unknown as T` in business logic; cast to satisfy a wrong-keyed Map; cast to avoid threading a corpus argument).
 
-Rules of thumb:
-- **A new cast is a claim that needs a comment.** Principled casts deserve a one-line reason (which invariant, why TS can't see it). If you can't articulate it, it's a smell.
-- **Centralize before tolerating.** If the "same" cast appears at two or more call sites, extract a tiny typed constructor whose body holds the cast once. The consumer-facing call site should never need `as`.
-- **The sanctioned brand crossing is `resolve()`.** Everything else is either mint (smart constructor) or a symptom.
-- **Prefer passing the corpus over caching a derived secondary index.** If the only reason a `Set<Proven<K>>` exists is to probe membership, delete the set and call `resolve()` against the existing `Map`. Same cost, no cross-brand cast, one fewer concept.
+**Rules of thumb:**
+- A new cast is a claim that needs a comment. If you can't articulate the invariant, it's a smell.
+- Centralize before tolerating — same cast at ≥2 call sites → extract a typed constructor.
+- The sanctioned brand crossing is `resolve()`. Everything else is either mint (smart constructor) or symptom.
+
+### Surface invariants in code
+
+- Scanning-loop state variables: a brief declaration comment (`// expectCmd: true when next token is in command position`).
+- "Obviously correct islands" — pure, strongly-typed, narrow-scope helpers that are correct by construction — are the preferred unit of non-trivial logic.
+- Prefer structural enforcement over advisory comments (branded types, `ReadonlySet`, smart constructors).
+- Evaluate zsh-core's public API surface from a **general-consumer perspective**, not just from what the extension uses.
+
+### Hover docs
+
+- Prefer hover docs that explain actual zsh usage, not raw upstream doc notation.
+- For option hovers: show executable `zsh` forms first; category at the bottom; prioritize default in plain zsh over other emulations.
+- When adjusting Yodl parsing for rendered markdown, preserve visible prose/reference text unless there's a strong reason not to; use the reference dump script to inspect regressions.
 
 ### Other tools
 
 - `@carlwr/typescript-extra`
-  - a dev dep
-  - a small package with some convenience utilities, including a NonEmpty type and utilities for that type
-  - available to use if anything from it brings value
-  - do not remove as a dev dep even if at some point it becomes unused
-  - for overview, read the `.d.ts` file:
-
+  - A dev dep. Small package of convenience utilities including a `NonEmpty` type.
+  - Available to use if anything brings value.
+  - Do not remove as a dev dep even if unused at some point.
+  - Overview:
     ```sh
     cat $(gfind . -wholename '*/typescript-extra/dist/index.d.ts' | head -n1)
     # approx. 150 lines
@@ -221,201 +137,164 @@ Rules of thumb:
 
 ## Testing
 
-- **Reproducibility is important: any randomness must use a fixed, checked-in seed.**
-- Property-based tests are encouraged where appropriate (e.g. pure parsers)
+- **Reproducibility matters: any randomness uses a fixed, checked-in seed.**
+- Property-based tests encouraged where appropriate (e.g. pure parsers).
 
 ### ONLY if you edited code: _validation before returning to user_
 
-- Before presenting results, run: `pnpm format && pnpm check && pnpm test && pnpm test:smoke && pnpm vsix && pnpm test:integration &>/dev/null`
-- `pnpm format` applies safe auto-fixes (formatting, import ordering, safe lint fixes) — run it first to avoid a wasted check/fix/re-check cycle
-- If any step fails, attempt to fix and re-run — don't return with known failures
-- Any build script whose name includes "INTERACTIVE" are **excluded** from this loop — only run when user explicitly requests it
+- Run: `pnpm format && pnpm check && pnpm test && pnpm test:smoke && pnpm vsix && pnpm test:integration &>/dev/null`
+- `pnpm format` applies safe auto-fixes — run first to avoid a wasted check/fix/re-check cycle.
+- If any step fails, fix and re-run — don't return with known failures.
+- Build scripts with "INTERACTIVE" in the name are **excluded** — only run when explicitly requested.
 
-**If you have only answered questions, or written only documentation/non-code files, _do not run any tests_** (unless the user explicitly asks for it).
+**If you only answered questions or wrote docs/non-code files, _do not run tests_** unless explicitly asked.
 
 ### Rules
 
-- If the user mentions running "all tests", that **does not include** build scripts whose name include "INTERACTIVE"
-- **NEVER run build scripts whose names include "INTERACTIVE"** unless the user explicitly instructs you to
-  - On macOS they launch a full VS Code app momentarily and bring it into focus — cannot be safely run while the user is possibly doing other work
-- `test:integration`
-  - is headless
-  - has lengthy output (approx 700 lines) — run with `&>/dev/null`, investigate output only if a reason to
-  - is long-running (minutes) — run this only as the very last check, when all other tests have been iterated on
-- Build scripts whose name does not include INTERACTIVE may not call build scripts whose name include INTERACTIVE
-- Unit test coverage is the baseline; integration tests are a bonus layer
-- Unit tests should not be skipped just because integration tests cover the same area
-- Integration tests may and should overlap with unit tests — they exercise a richer harness
-- Pure logic (parsing, filtering, text analysis) should always have unit tests independent of external dependencies (zsh, VS Code APIs)
-- Integration tests that depend on external tools (e.g., zsh on PATH) must skip gracefully when the tool is absent
-- The VS Code Electron test harness intentionally runs ALL tests (unit + integration) — unit tests re-running there serve as meta-tests under a richer harness
-- Functions that are "obviously correct" (general/simple enough) do not need tests
+- "All tests" does **not** include "INTERACTIVE" scripts.
+- **NEVER run "INTERACTIVE" scripts** unless the user explicitly asks — on macOS they bring a full VS Code app into focus momentarily and cannot be safely run while the user might be working.
+- `test:integration` is headless, ~700 lines of output, long-running — run with `&>/dev/null`, last, when other tests are iterated.
+- Non-INTERACTIVE scripts must not call INTERACTIVE ones.
+- Unit tests are the baseline; integration tests a bonus layer. Integration may overlap with unit.
+- Pure logic should always have unit tests independent of external deps (zsh, VS Code APIs).
+- Integration tests depending on external tools must skip gracefully when absent.
+- The Electron test harness runs ALL tests (unit + integration) — unit tests re-running there are meta-tests under a richer harness.
+- Functions that are "obviously correct" don't need tests.
 
-### Rules - test conciseness and abstractions
+### Test conciseness
 
-**Test conciseness is a standing repo concern, not optional polish.**
+**Test conciseness is a standing concern, not optional polish.**
 
-**Hard overarching rule:** _If you touch tests, actively try to make the touched tests smaller unless that would hide intent._
+**Hard rule:** if you touch tests, actively try to make them smaller unless that would hide intent.
 
-Rules and guidelines:
-- Tests must be well-abstracted and concise — every test should carry its weight
-- Any edit that touches tests should include a conciseness/refactoring pass: remove non-paying repetition, collapse repeated arrange/act/assert shapes into tables/helpers when that reduces code, and shorten file-local identifiers where this stays readable
-- Prefer case data that encodes the assertion directly. Keep `desc`/label/title fields only when they carry non-obvious intent or "why"; if they only restate the code/sample/suite context, remove them
-- Prefer deriving test titles from the code sample or a tiny discriminator. Avoid verbose prose prefixes that repeat the suite name, implementation name, or obvious "works/handles/returns" wording
-- Test fixtures should be only as realistic as the assertion needs. If a string/object field is not semantically relevant to the behavior under test, use `""` or a minimal distinct value rather than descriptive filler
-- When multiple tests need the same test-only fixture shape, prefer a shared helper in test code over repeating near-identical local stubs
-- When many cases share the same arrange/act/assert shape, prefer Vitest's `test.each` / `describe.each` (table-driven tests). Not a universal rule: one-off scenarios, tests with heavy per-case setup, or cases where a standalone `test("…")` reads more clearly are fine without `.each`
+- Every test should carry its weight.
+- Any test edit includes a conciseness pass: remove non-paying repetition; collapse repeated arrange/act/assert into tables/helpers; shorten file-local identifiers where still readable.
+- Prefer case data that encodes the assertion directly. Keep `desc`/label only when carrying non-obvious intent.
+- Derive test titles from the sample or a small discriminator. Avoid verbose prose prefixes.
+- Fixtures: only as realistic as the assertion needs — use `""` or a minimal distinct value over descriptive filler.
+- Shared fixture shapes → shared helper, not repeated local stubs.
+- Repeated arrange/act/assert → Vitest `test.each` / `describe.each`. Not universal — heavy per-case setup or standalone-reads-better scenarios stay without `.each`.
 
 ### Container-only integration tests
 
-- `testINTERACTIVE:electron-zsh-path` (zsh-path-matrix) runs in CI/Docker only. On macOS, VS Code's shell environment resolution replaces test-injected PATH before the extension host activates, defeating environment isolation. With pure logic surfaced in unit-testable functions, container integration tests are a bonus layer over local coverage.
+- `testINTERACTIVE:electron-zsh-path` (zsh-path-matrix) runs in CI/Docker only. On macOS, VS Code's shell env resolution replaces test-injected PATH before the extension host activates, defeating env isolation. With pure logic surfaced in unit-testable functions, container tests are a bonus layer.
 
 ### Testing tools
 
-Test runners:
-- Vitest
-- Mocha for Electron tests
-
-Property tests: `fast-check`
-- through `@fast-check/vitest`
-- fast-check version note: `fc.char()` and `fc.stringOf()` are **possibly not** available in the version used — if not available, use `fc.mapToConstant(...)` + `fc.array(...)` for character-level arbitraries
-- dep `@carlwr/fastcheck-utils`
-  - provides: a few convenience generators with better shrinking and types
-  - -> if writing fast-check tests, check if it offers something useful
-  - do not remove as a dev dep even if at some point it becomes unused
-  - for overview, read the `.d.ts` file:
-
+- Vitest for unit; Mocha for Electron.
+- Property tests: `fast-check` via `@fast-check/vitest`.
+  - fast-check note: `fc.char()` and `fc.stringOf()` may not be available in the version used — fall back to `fc.mapToConstant(...)` + `fc.array(...)` for character-level arbitraries.
+- `@carlwr/fastcheck-utils` — convenience generators with better shrinking.
+  - Do not remove as a dev dep even if unused at some point.
+  - Overview:
     ```sh
-    cat $(gfind . -wholename '*/fastcheck-utils/dist/index.d.ts' | head -n1)`
+    cat $(gfind . -wholename '*/fastcheck-utils/dist/index.d.ts' | head -n1)
     # approx. 100 lines
     ```
 
 ## Packaging (vsce)
 
-- All `vsce` commands must use `--no-dependencies` — the extension is bundled by tsup, so there are no runtime node_modules; and `vsce` internally runs `npm list` which is incompatible with pnpm's symlinked layout
+- All `vsce` commands must use `--no-dependencies` — the extension is bundled by tsup (no runtime `node_modules`), and `vsce` internally runs `npm list` which is incompatible with pnpm's symlinked layout.
 
 ## Contributor guidance
 
 ### Agent tool agnostic
 
-This repo is worked on from multiple agent tools (Cursor, Claude CLI, Codex CLI, etc.). All guidance in this file, in `SKILL.md`, and in any contributor docs must be tool-agnostic — avoid assuming any particular IDE, agent framework, or tool API.
+Worked on from multiple agent tools (Cursor, Claude CLI, Codex CLI, etc.). Guidance here, in the orientation skill, and in any contributor docs must be tool-agnostic.
 
 ### Keeping docs fresh
 
-- Avoid duplicating information that lives in source (e.g. package.json scripts, file names, directory layout) — it becomes stale
-- Express constraints and intent rather than enumerating specifics
-- Prefer patterns ("unit tests live in `src/test/`, grouped into subdirs mirroring source structure") over exact paths
-- If `SECURITY.md` needs updates, **inform the user** and suggest what to change.
-  - **Agentic tools are not allowed to edit `SECURITY.md`**.
-  - `SECURITY.md` may need updates if any of the following areas are changed (if none of them are, SECURITY.md should not be read):
-    - the extension invoking `zsh` on the host machine
-    - the extension resolving `source`/`.` links on the host machine
-    - extension settings
+- Avoid duplicating information that lives in source (scripts, file names, directory layout) — it becomes stale.
+- Express constraints and intent rather than enumerating specifics.
+- Prefer patterns ("unit tests live in `src/test/`, subdirs mirroring source") over exact paths.
+- If `SECURITY.md` needs updates, **inform the user** and suggest what. **Agents may not edit `SECURITY.md`.** It may need updates if any of these change:
+  - the extension invoking `zsh` on the host machine
+  - the extension resolving `source`/`.` links on the host machine
+  - extension settings
 
 ### Recording design decisions
 
-When suitable, record design decisions, answer "why questions" etc.:
-- Rationale: let future work on the code know why choices were made, possibly what was tried
-- Keep short and concise
-- Possible ways to record: in-source code comments, in AGENTS.md, or in a dedicated file (discuss with user)
+When suitable, record design decisions and "why" answers:
+- Let future work know why choices were made.
+- Keep short and concise.
+- Ways to record: in-source comments, `DESIGN.md`, `AGENTS.md`, or a new dedicated file (discuss with user).
+- `DESIGN.md` is the primary home for design intent and rationale spanning multiple files.
 
-### Work that changes the code / adds features should include a "refactoring opportunities pass"
+### Work that changes code / adds features → "refactoring opportunities pass"
 
-Meaning: from a broader view, see if the code changes done makes any refactoring, simplification, abstractions or favourable change to the types possible. (Both implementation code and test code.)
+From a broader view, see if the code changes make any refactoring, simplification, abstractions or favourable type changes possible. (Both implementation code and tests.)
 
-- **DO** include such a pass when: given general tasks on refactoring or changing the code
-  - in these cases, always perform such a pass before returning to the user
-- **DO NOT** include such a pass when: the instruction was very precise about what to do
-  - by judgement, the potential for such refactors could still be analyzed and the user explicitly asked about whether to make the edits or not
+- **DO** include this pass for general refactoring / change tasks — always before returning.
+- **DO NOT** include it for precisely-instructed tasks — but by judgement, you may still analyze and ask whether to edit.
 
-After introducing parametric types or shared infrastructure, revisit consumer call sites **once** — untapped leverage at call sites is the real ROI indicator. A parametric type only earns its keep when consumers exploit it; a per-consumer composition helper over the orthogonal API primitives is often the missing link (e.g. a `hoverFor<K>(category, id)` wrapping `resolve + renderDoc` on the consumer side — consumer-side composition helpers are fine; they belong in the consumer, not in zsh-core's public API, per the orthogonality principle in the grand plan's Appendix A).
+After introducing parametric types or shared infrastructure, revisit consumer call sites **once** — untapped leverage at call sites is the real ROI indicator. Consumer-side composition helpers over the orthogonal API primitives are often the missing link (e.g. a `hoverFor<K>(category, raw)` wrapping `resolve + renderDoc` on the consumer side). Such helpers belong in the consumer, not in zsh-core's public API.
 
 ### Research-agent proposals are hypotheses, not decisions
 
-When an agent (Explore, survey subagent, etc.) returns a ranked list of proposed edits, treat each item as a hypothesis to verify, not a decision to execute. Confirm by reading the file before editing. Reject proposals whose only justification is LOC reduction, that drift from the established architecture, or that duplicate work the preceding refactor deliberately left in place (check the grand-plan / handoff notes). For conciseness passes specifically: expect to reject a meaningful fraction of what an agent proposes — that is the mode functioning correctly.
+When an agent (Explore, survey subagent, etc.) returns proposed edits, treat each as a hypothesis to verify, not a decision to execute. Confirm by reading the file before editing. Reject proposals justified only by LOC reduction, that drift from the established architecture, or that duplicate work deliberately left in place. For conciseness passes: expect to reject a meaningful fraction — that's the mode working correctly.
 
 ### Keeping the orientation skill fresh
 
-A project skill lives at `$REPO_ROOT/skills/orient/`. Physical, source-of-truth files and dirs lives only under this dir. For tool discovery, a system with symlinks is used. This is elaborated on further in $REPO_ROOT/skills/orient/SKILL.md. **Hence, be careful before managing or changing the skill.**
+A project skill at `$REPO_ROOT/skills/orient/`. Physical source-of-truth files live only under this dir; symlinks are used for tool discovery. See `$REPO_ROOT/skills/orient/SKILL.md`. **Be careful before changing the skill.**
 
 The skill provides:
-- Discovery scripts that produce always-current output
-- Reading paths by task type (which **directories** to explore, not which files to read)
+- Discovery scripts producing always-current output
+- Reading paths by task type (which **directories**, not which files)
 - Known gotchas
 
-The skill has its own freshness rules section — read and follow those when editing it. The overriding principles:
-
 **HARD RULES for the orientation skill:**
-- **NEVER add filenames** (reference directories, not files; exception: `package.json`)
-- **NEVER add function/class/variable names** (exception: names in "Key gotchas" where the gotcha is about that specific name)
-- **NEVER add line counts, file counts, or other volatile metrics**
-- **DO add new directory paths** when a new directory becomes a common entry point
-- **DO add new gotchas** that span multiple files or aren't obvious from reading the code
-- **DO update discovery scripts** when directory structure changes break them
+- **NEVER add filenames** (directories only; exception: `package.json`).
+- **NEVER add function/class/variable names** (exception: gotchas about that specific name).
+- **NEVER add line/file counts or other volatile metrics.**
+- **DO add new directory paths** when a new dir becomes a common entry point.
+- **DO add new gotchas** that span multiple files or aren't obvious from reading code.
+- **DO update discovery scripts** when directory structure breaks them.
 
-When making structural changes:
-- New public API: no update needed — the d.ts rollup reflects it after a build
-- New source directory that's a common entry point: add a reading-path entry to the skill
-- Anything that belongs in code (design rationale, invariants): put it in a source comment, not in the skill
+Structural changes:
+- New public API → no skill update; the d.ts rollup reflects it after build.
+- New source directory that's a common entry point → add a reading-path entry.
+- Design rationale → `DESIGN.md` or an in-source comment, **not** the skill.
 
 ### New features ideation
 
-Potential new features should be judged roughly along the axes of:
+Judge along:
 - Implementation complexity ("how low is the fruit hanging")
 - Added value
-- Robustness, future-proofness, and testability of added functionality
+- Robustness, future-proofness, testability
 
 ## References & sources
 
 ### zsh
 
 - `zsh` available on the system (macOS-shipped; zsh 5.9)
-- To check or verify actual zsh behaviour, run test commands with zsh. For tricky cases, reading up on the functionality in the manual/man pages, then verifying with a few zsh commands, is a good strategy.
-- https://github.com/zsh-users/zsh (zsh repo mirror)
-- https://github.com/zsh-users/zsh/blob/master/Doc — documentation primary source (.yo/Yodl)
+- Verify actual zsh behaviour by running test commands. For tricky cases, read the manual/man pages then verify with zsh commands.
+- https://github.com/zsh-users/zsh (mirror)
+- https://github.com/zsh-users/zsh/blob/master/Doc — documentation source (`.yo` / Yodl)
 
-### Yodl doc markup/tool
+### Yodl markup
 
 - Repo: https://gitlab.com/fbb-git/yodl
 - Homepage: https://fbb-git.gitlab.io/yodl/
-- Userguide (TOC, with links): https://fbb-git.gitlab.io/yodl/yodl-doc/yodl.html
-- Note: the zsh repo defines a number of custom Yodl macros
-- Note: the Yodl program/toolkit has converters for output as: html, latex, man, txt
+- Userguide: https://fbb-git.gitlab.io/yodl/yodl-doc/yodl.html
+- The zsh repo defines custom Yodl macros.
+- Yodl converts to html, latex, man, txt.
 
 ### zsh man page
 
-- Complete zsh 5.9 manual available on the system
+- Complete zsh 5.9 manual on the system.
 - `man zshall`
-  - Headings only: `man zshall | col -b | grep -E '^\S'` (172 lines)
-  - Headings, incl 1st sublevel: `man zshall | col -b | grep -E '^ {0,3}\S'` (305 lines)
-  - `info zsh` is also available, with the same material
+  - Headings only: `man zshall | col -b | grep -E '^\S'` (~172 lines)
+  - Headings incl 1st sublevel: `man zshall | col -b | grep -E '^ {0,3}\S'` (~305 lines)
+  - `info zsh` also available, same material.
 
 Manuals:
 ```bash
 # full manual:
 man zshall
 
-# subsections (everything is covered by zshall):
-man zshcompctl
-man zshcontrib
-man zshmodules
-man zshroadmap
-man zshzle
-man zshcompsys
-man zshexpn
-man zshoptions
-man zshtcpsys
-man zshbuiltins
-man zshcompwid
-man zshmisc
-man zshparam
-man zshzftpsys
-```
-
-Getting "man page TOC":
-```bash
-man zshall|col -b|grep -E '^\S'         # headings (top-level); 172 lines
-man zshall|col -b|grep -E '^ {0,3}\S'   # headings (top+1st level); 305 lines
+# subsections (covered by zshall):
+man zshcompctl zshcontrib zshmodules zshroadmap zshzle zshcompsys zshexpn
+man zshoptions zshtcpsys zshbuiltins zshcompwid zshmisc zshparam zshzftpsys
 ```
 
 Size of full man page:

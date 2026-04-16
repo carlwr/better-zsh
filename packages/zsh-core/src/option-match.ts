@@ -1,10 +1,11 @@
-import { mkProven, type Proven } from "./docs/types.ts"
+import type { Documented } from "./docs/types.ts"
+import { mkDocumented } from "./docs/brands.ts"
 
 export interface OptionMatch {
   /** What to insert / display. */
   readonly label: string
   /** Canonical form (lowercase, no underscores, no no-prefix for negated). */
-  readonly canonical: Proven<"option">
+  readonly canonical: Documented<"option">
 }
 
 /**
@@ -12,10 +13,10 @@ export interface OptionMatch {
  * Returns both base and `no_`-prefixed forms.
  */
 export function matchOptions(
-  options: readonly Proven<"option">[],
+  options: readonly Documented<"option">[],
   typed: string,
 ): readonly OptionMatch[] {
-  const norm = mkProven("option", typed)
+  const norm = mkDocumented("option", typed)
   const out: OptionMatch[] = []
   pushMatches(
     out,
@@ -36,8 +37,8 @@ export function matchOptions(
 
 function pushMatches(
   out: OptionMatch[],
-  options: readonly Proven<"option">[],
-  typed: Proven<"option">,
+  options: readonly Documented<"option">[],
+  typed: Documented<"option">,
   canonicalOf: (option: string) => string,
   labelOf: (option: string) => string,
 ): void {

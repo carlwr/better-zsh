@@ -3,13 +3,13 @@ import { join } from "node:path"
 import { describe, expect, test } from "vitest"
 import { resolveZshDataDir, vendoredZshDocFiles } from "../data-dir"
 import { loadCorpus } from "../docs/corpus"
-import { mkProven_ } from "./id-fns"
+import { mkDocumented_ } from "./id-fns"
 
 const dataDir = resolveZshDataDir()
-const opt = mkProven_("option")
-const cond = mkProven_("cond_op")
-const bi = mkProven_("builtin")
-const rw = mkProven_("reserved_word")
+const opt = mkDocumented_("option")
+const cond = mkDocumented_("cond_op")
+const bi = mkDocumented_("builtin")
+const rw = mkDocumented_("reserved_word")
 
 describe("vendored zsh data assets", () => {
   test("ships the full doc set expected by runtime and packaging", () => {

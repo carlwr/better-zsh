@@ -1,5 +1,6 @@
 import { commentStart } from "../comment.ts"
-import { type Candidate, mkCandidate, precmdNames } from "../docs/types.ts"
+import { type Observed, precmdNames } from "../docs/types.ts"
+import { mkObserved } from "../docs/brands.ts"
 import { activeText, type TextSpan } from "./doc.ts"
 import {
   type CmdHeadFact,
@@ -59,7 +60,7 @@ export function cmdHeadFactsOnLine(
   const out: LineFact[] = []
   let i = 0
   let expectCmd = true
-  let precmds: readonly Candidate<"precmd">[] = []
+  let precmds: readonly Observed<"precmd">[] = []
 
   // expectCmd: true when the next word should be in command position
   // precmds:   precommand modifiers accumulated before the current command head
@@ -144,9 +145,9 @@ export function cmdHeadFactsOnLine(
     }
 
     if (PRECMDS.has(word)) {
-      const candidate = mkCandidate("precmd", word)
-      out.push(precmdFact(candidate, wordSpan))
-      precmds = [...precmds, candidate]
+      const observed = mkObserved("precmd", word)
+      out.push(precmdFact(observed, wordSpan))
+      precmds = [...precmds, observed]
       const parsed = skipPrecmdArgs(line, i, len, word)
       i = parsed.end
       if (parsed.stopsHead) {
@@ -188,7 +189,7 @@ export function funcDeclAtLine(
 function cmdHeadFact(
   text: string,
   span: TextSpan,
-  precmds: readonly Candidate<"precmd">[],
+  precmds: readonly Observed<"precmd">[],
 ): CmdHeadFact {
   return {
     kind: "cmd-head",
@@ -199,7 +200,7 @@ function cmdHeadFact(
   }
 }
 
-function precmdFact(name: Candidate<"precmd">, span: TextSpan): PrecmdFact {
+function precmdFact(name: Observed<"precmd">, span: TextSpan): PrecmdFact {
   return {
     kind: "precmd",
     span,

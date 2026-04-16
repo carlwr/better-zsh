@@ -9,6 +9,7 @@ import type {
   ZshOption,
 } from "zsh-core"
 import * as core from "zsh-core"
+import { mkDocumented } from "zsh-core/internal"
 import { wordDoc } from "./test-util"
 
 vi.mock("vscode", () => ({
@@ -42,16 +43,16 @@ import { HoverProvider } from "../hover"
 
 // --- fixtures ---------------------------------------------------------------
 
-const { mkProven, mkOptFlag, mkRedirOp } = core
+const { mkOptFlag, mkRedirOp } = core
 
 const b = (name: string, desc: string): BuiltinDoc => ({
-  name: mkProven("builtin", name),
+  name: mkDocumented("builtin", name),
   synopsis: [name],
   desc,
 })
 
 const o = (name: string, category: ZshOption["category"]): ZshOption => ({
-  name: mkProven("option", name),
+  name: mkDocumented("option", name),
   display: name,
   flags: [{ char: mkOptFlag("f"), on: "+" }],
   defaultIn: ["zsh"],
@@ -61,13 +62,13 @@ const o = (name: string, category: ZshOption["category"]): ZshOption => ({
 
 const r = (groupOp: string, sig: string, desc: string): RedirDoc => ({
   groupOp: mkRedirOp(groupOp),
-  sig: mkProven("redir", sig),
+  sig: mkDocumented("redir", sig),
   desc,
   section: "",
 })
 
 const p = (name: string, desc: string): ShellParamDoc => ({
-  name: mkProven("shell_param", name),
+  name: mkDocumented("shell_param", name),
   sig: name,
   desc,
   section: "",
@@ -79,7 +80,7 @@ const c = (
   operands: CondOpDoc["operands"],
   desc: string,
 ): CondOpDoc =>
-  ({ op: mkProven("cond_op", op), operands, desc, arity }) as CondOpDoc
+  ({ op: mkDocumented("cond_op", op), operands, desc, arity }) as CondOpDoc
 
 // --- corpus -----------------------------------------------------------------
 

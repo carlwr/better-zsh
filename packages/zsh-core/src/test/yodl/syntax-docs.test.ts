@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vitest"
-import { mkProven, mkRedirOp } from "../../docs/types"
+import { mkRedirOp } from "../../docs/types"
+import { mkDocumented } from "../../docs/brands"
 import { parseGlobFlags } from "../../docs/yodl/extractors/glob-flags"
 import { parseGlobOps } from "../../docs/yodl/extractors/glob-ops"
 import { parseHistory } from "../../docs/yodl/extractors/history"
@@ -9,7 +10,7 @@ import { parseRedirs } from "../../docs/yodl/extractors/redirections"
 import { parseReswords } from "../../docs/yodl/extractors/reserved-words"
 import { parseShellParams } from "../../docs/yodl/extractors/shell-params"
 import { parseSubscriptFlags } from "../../docs/yodl/extractors/subscript-flags"
-import { mkProven_ } from "../id-fns"
+import { mkDocumented_ } from "../id-fns"
 import { by, expectDocCorpus, readVendoredYo } from "./test-util"
 
 const EXPN_YO = readVendoredYo("expn.yo")
@@ -32,9 +33,10 @@ describe("more yodl parsers", () => {
       "enditem()",
     ].join("\n")
     const docs = by(parseShellParams(yo), doc => doc.name)
-    const getShParam = (raw: string) => docs.get(mkProven("shell_param", raw))
-    expect(getShParam("path")?.tied).toBe(mkProven("shell_param", "PATH"))
-    expect(getShParam("PATH")?.tied).toBe(mkProven("shell_param", "path"))
+    const getShParam = (raw: string) =>
+      docs.get(mkDocumented("shell_param", raw))
+    expect(getShParam("path")?.tied).toBe(mkDocumented("shell_param", "PATH"))
+    expect(getShParam("PATH")?.tied).toBe(mkDocumented("shell_param", "path"))
     expect(getShParam("path")?.desc).toBe("Pair docs.")
     expect(getShParam("RPS1")?.desc).toBe("Prompt docs.")
     expect(getShParam("RPROMPT")?.desc).toBe("Prompt docs.")
@@ -65,7 +67,8 @@ enditem()`
 
   test("reserved words include command-position and any-position forms", () => {
     const docs = by(parseReswords(GRAMMAR_YO), doc => doc.name)
-    const getResWord = (raw: string) => docs.get(mkProven("reserved_word", raw))
+    const getResWord = (raw: string) =>
+      docs.get(mkDocumented("reserved_word", raw))
     expect(getResWord("if")?.pos).toBe("command")
     expect(getResWord("[[")?.pos).toBe("command")
     expect(getResWord("}")?.pos).toBe("any")
@@ -203,23 +206,29 @@ enditem()`
   test("normalized syntax-doc identity fields are idempotent", () => {
     const t = [
       [parseRedirs(REDIR_YO).map(doc => doc.groupOp), mkRedirOp],
-      [parseRedirs(REDIR_YO).map(doc => doc.sig), mkProven_("redir")],
+      [parseRedirs(REDIR_YO).map(doc => doc.sig), mkDocumented_("redir")],
       [
         parseReswords(GRAMMAR_YO).map(doc => doc.name),
-        mkProven_("reserved_word"),
+        mkDocumented_("reserved_word"),
       ],
       [
         parseShellParams(PARAMS_YO).map(doc => doc.name),
-        mkProven_("shell_param"),
+        mkDocumented_("shell_param"),
       ],
       [
         parseSubscriptFlags(PARAMS_YO).map(d => d.flag),
-        mkProven_("subscript_flag"),
+        mkDocumented_("subscript_flag"),
       ],
-      [parseParamFlags(EXPN_YO).map(doc => doc.flag), mkProven_("param_flag")],
-      [parseHistory(EXPN_YO).map(doc => doc.key), mkProven_("history")],
-      [parseGlobOps(EXPN_YO).map(doc => doc.op), mkProven_("glob_op")],
-      [parseGlobFlags(EXPN_YO).map(doc => doc.flag), mkProven_("glob_flag")],
+      [
+        parseParamFlags(EXPN_YO).map(doc => doc.flag),
+        mkDocumented_("param_flag"),
+      ],
+      [parseHistory(EXPN_YO).map(doc => doc.key), mkDocumented_("history")],
+      [parseGlobOps(EXPN_YO).map(doc => doc.op), mkDocumented_("glob_op")],
+      [
+        parseGlobFlags(EXPN_YO).map(doc => doc.flag),
+        mkDocumented_("glob_flag"),
+      ],
     ] as const
     for (const [docs, mk] of t) {
       for (const x of docs) expect(mk(x)).toBe(x)

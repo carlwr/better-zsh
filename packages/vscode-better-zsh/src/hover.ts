@@ -1,29 +1,33 @@
 import * as vscode from "vscode"
 import type {
-  Candidate,
   DocCategory,
   DocCorpus,
   DocPieceId,
+  Documented,
   LineFact,
   OptFlag,
   OptFlagAlias,
   ProcessSubstFact,
-  Proven,
-  RedirDoc,
   RedirFact,
-  RedirOp,
   ZshOption,
 } from "zsh-core"
 import {
   cmdHeadFactsOnLine,
-  mkCandidate,
-  mkCandPieceId,
   mkOptFlag,
+  mkPieceId,
   resolve,
+  resolveOption,
   syntacticContext,
 } from "zsh-core"
 import { renderDoc } from "zsh-core/render"
 import { activeWordRangeAt, commentStart, funcDocs } from "./funcs"
+
+// NOTE: Hovering `setopt NO_AUTO_CD` currently shows the same markdown as
+// `setopt AUTO_CD` — the "negated" flag from `resolveOption` is discarded
+// here. Distinguishing the two at the UX level (e.g. "AUTO_CD is being
+// turned OFF") is a deliberate follow-up; see DESIGN.md "Hover UX for
+// negated options".
+// DON'T DELETE THIS COMMENT
 
 interface OptFlagHit {
   readonly opt: ZshOption
@@ -41,12 +45,13 @@ interface OptFlagHit {
 export class HoverProvider implements vscode.HoverProvider {
   private corpus: DocCorpus
   private flagMap: ReadonlyMap<OptFlag, readonly OptFlagHit[]>
-  private redirMap: ReadonlyMap<RedirOp, readonly RedirDoc[]>
 
   constructor(corpus: DocCorpus) {
     this.corpus = corpus
 
-    // Secondary index for -J/+J style flag lookup
+    // Secondary index for -J/+J style flag lookup. Extension-specific UX
+    // (the user typed a flag letter and we look up the corresponding option)
+    // — not a corpus-identity concern, so stays here rather than in zsh-core.
     const options = [...corpus.option.values()]
     this.flagMap = indexMany(
       options.flatMap(opt =>
@@ -58,11 +63,6 @@ export class HoverProvider implements vscode.HoverProvider {
             ],
         ),
       ),
-    )
-
-    // Secondary index for redir groupOp bucketing
-    this.redirMap = indexMany(
-      [...corpus.redir.values()].map(doc => [doc.groupOp, doc] as const),
     )
   }
 
@@ -91,11 +91,7 @@ export class HoverProvider implements vscode.HoverProvider {
     const condOpKeys = this.corpus.cond_op.keys()
     const range = activeCondTokenRangeAt(doc, pos, condOpKeys)
     if (!range) return
-    return this.hoverFor(
-      "cond_op",
-      mkCandidate("cond_op", doc.getText(range)),
-      range,
-    )
+    return this.hoverFor("cond_op", doc.getText(range), range)
   }
 
   private funcHover(doc: vscode.TextDocument, pos: vscode.Position) {
@@ -111,11 +107,7 @@ export class HoverProvider implements vscode.HoverProvider {
   private paramHover(doc: vscode.TextDocument, pos: vscode.Position) {
     const range = activeWordRangeAt(doc, pos)
     if (!range) return
-    return this.hoverFor(
-      "shell_param",
-      mkCandidate("shell_param", doc.getText(range)),
-      range,
-    )
+    return this.hoverFor("shell_param", doc.getText(range), range)
   }
 
   private factBasedHover(doc: vscode.TextDocument, pos: vscode.Position) {
@@ -125,24 +117,20 @@ export class HoverProvider implements vscode.HoverProvider {
     const token = tokenRange ? doc.getText(tokenRange) : undefined
 
     const precmd = factAt(af, line, token, "precmd")
-    const onPrecmd =
-      precmd &&
-      this.hoverFor("precmd", mkCandidate("precmd", precmd.name), tokenRange)
+    const onPrecmd = precmd && this.hoverFor("precmd", precmd.name, tokenRange)
     if (onPrecmd) return onPrecmd
 
     const head = factAt(af, line, token, "cmd-head")
-    const onHead =
-      head &&
-      this.hoverFor("builtin", mkCandidate("builtin", head.text), tokenRange)
+    const onHead = head && this.hoverFor("builtin", head.text, tokenRange)
     if (onHead) return onHead
 
     const redir = af.find((fact): fact is RedirFact => fact.kind === "redir")
     if (redir) {
       const redirRange = activeRedirRangeAt(doc, pos, redir)
       const redirToken = redirRange ? doc.getText(redirRange) : undefined
-      const d = redirToken ? redirDoc(this.redirMap, redirToken) : undefined
-      if (d && redirRange)
-        return this.renderHover({ category: "redir", id: d.sig }, redirRange)
+      const onRedir =
+        redirToken && this.hoverFor("redir", redirToken, redirRange)
+      if (onRedir) return onRedir
     }
 
     const ps = af.find(
@@ -150,30 +138,20 @@ export class HoverProvider implements vscode.HoverProvider {
     )
     const onPs =
       ps &&
-      this.hoverFor(
-        "process_subst",
-        mkCandidate("process_subst", `${ps.text.slice(0, 2)}...)`),
-        tokenRange,
-      )
+      this.hoverFor("process_subst", `${ps.text.slice(0, 2)}...)`, tokenRange)
     if (onPs) return onPs
 
     const rw = factAt(af, line, token, "reserved-word")
-    const onRw =
-      rw &&
-      this.hoverFor(
-        "reserved_word",
-        mkCandidate("reserved_word", rw.text),
-        tokenRange,
-      )
+    const onRw = rw && this.hoverFor("reserved_word", rw.text, tokenRange)
     if (onRw) return onRw
   }
 
   private hoverFor<K extends DocCategory>(
     category: K,
-    id: Candidate<K>,
+    raw: string,
     range?: vscode.Range,
   ): vscode.Hover | undefined {
-    const pieceId = resolve(this.corpus, mkCandPieceId(category, id))
+    const pieceId = resolve(this.corpus, category, raw)
     if (pieceId) return this.renderHover(pieceId, range)
   }
 
@@ -183,12 +161,14 @@ export class HoverProvider implements vscode.HoverProvider {
   }
 
   private optionAt(token: string): DocPieceId | undefined {
-    const direct = resolve(
-      this.corpus,
-      mkCandPieceId("option", mkCandidate("option", token)),
-    )
-    if (direct) return direct
+    // Direct form — `resolveOption` handles `no_` negation and the `NOTIFY` /
+    // `NO_NOTIFY` ambiguity corpus-aware. Negation is discarded here;
+    // see the top-of-file note on hover UX for negated options.
+    const direct = resolveOption(this.corpus, token)
+    if (direct) return mkPieceId("option", direct.id)
 
+    // Short-flag form: `-J` / `+J` look up the aliased option via the
+    // local flagMap secondary index (extension UX, not corpus identity).
     const short = token.match(/^([+-])([A-Za-z0-9])$/)
     if (!short?.[1] || !short[2]) return
     const hits = this.flagMap
@@ -196,10 +176,7 @@ export class HoverProvider implements vscode.HoverProvider {
       ?.filter(hit => hit.alias.on === short[1])
     const opt = unique(hits)?.opt
     if (!opt) return
-    return resolve(
-      this.corpus,
-      mkCandPieceId("option", mkCandidate("option", opt.display)),
-    )
+    return mkPieceId("option", opt.name)
   }
 }
 
@@ -217,49 +194,6 @@ function indexMany<K, V>(
 
 function unique<T>(hits: readonly T[] | undefined): T | undefined {
   return hits?.length === 1 ? hits[0] : undefined
-}
-
-function redirDoc(
-  redirMap: ReadonlyMap<RedirOp, readonly RedirDoc[]> | undefined,
-  token: string,
-): RedirDoc | undefined {
-  const parsed = splitRedirToken(redirMap, token)
-  if (!parsed) return
-  const docs = redirMap?.get(parsed.groupOp)
-  if (!docs) return
-  if (docs.length === 1) return docs[0]
-  // Redirection docs are grouped by the leading operator token and only become
-  // unique once the remaining signature tail is considered.
-  return unique(
-    docs.filter(doc => redirTailKind(doc) === redirTailKindOf(parsed.tail)),
-  )
-}
-
-function splitRedirToken(
-  redirMap: ReadonlyMap<RedirOp, readonly RedirDoc[]> | undefined,
-  token: string,
-): { groupOp: RedirOp; tail: string } | undefined {
-  const text = token.replace(/^[0-9]+/, "")
-  let bestGroupOp: RedirOp | undefined
-
-  for (const groupOp of redirMap?.keys() ?? []) {
-    if (!text.startsWith(groupOp)) continue
-    if (!bestGroupOp || groupOp.length > bestGroupOp.length)
-      bestGroupOp = groupOp
-  }
-
-  if (!bestGroupOp) return
-  return { groupOp: bestGroupOp, tail: text.slice(bestGroupOp.length) }
-}
-
-function redirTailKind(doc: RedirDoc): string {
-  return doc.sig.slice(doc.groupOp.length).trimStart()
-}
-
-function redirTailKindOf(tail: string): string {
-  if (/^\d+$/.test(tail)) return "number"
-  if (tail === "-" || tail === "p") return tail
-  return tail.length > 0 ? "word" : ""
 }
 
 function activeTokenRangeAt(
@@ -286,7 +220,7 @@ function isTokenDelimiter(ch: string): boolean {
 function activeCondTokenRangeAt(
   doc: vscode.TextDocument,
   pos: vscode.Position,
-  condOpKeys: Iterable<Proven<"cond_op">>,
+  condOpKeys: Iterable<Documented<"cond_op">>,
 ): vscode.Range | undefined {
   const range = activeTokenRangeAt(doc, pos)
   if (range) return range

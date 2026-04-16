@@ -1,5 +1,5 @@
 import type { ReservedWordDoc } from "../../types.ts"
-import { mkProven } from "../../types.ts"
+import { mkDocumented } from "../../brands.ts"
 import { extractSectionBody } from "../core/doc.ts"
 import { extractTokens } from "../core/text.ts"
 
@@ -23,7 +23,7 @@ export function parseReswords(yo: string): readonly ReservedWordDoc[] {
       .map(
         name =>
           ({
-            name: mkProven("reserved_word", name),
+            name: mkDocumented("reserved_word", name),
             pos: "command",
             sig: name,
             desc: CMD_DESC,
@@ -31,7 +31,7 @@ export function parseReswords(yo: string): readonly ReservedWordDoc[] {
           }) satisfies ReservedWordDoc,
       ),
     {
-      name: mkProven("reserved_word", "}"),
+      name: mkDocumented("reserved_word", "}"),
       pos: "any",
       sig: "}",
       desc: ANY_DESC,

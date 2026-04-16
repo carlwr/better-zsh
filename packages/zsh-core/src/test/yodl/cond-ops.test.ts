@@ -1,10 +1,10 @@
 import { describe, expect, test } from "vitest"
 import { parseCondOps } from "../../docs/yodl/extractors/cond-ops"
-import { mkProven_ } from "../id-fns"
+import { mkDocumented_ } from "../id-fns"
 import { by, only, readVendoredYo } from "./test-util"
 
 const COND_YO = readVendoredYo("cond.yo")
-const cond = mkProven_("cond_op")
+const cond = mkDocumented_("cond_op")
 
 describe("parseCondOps", () => {
   test("parses unary operator", () => {

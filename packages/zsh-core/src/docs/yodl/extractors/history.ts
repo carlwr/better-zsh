@@ -1,5 +1,5 @@
 import type { HistoryDoc, HistoryKind } from "../../types.ts"
-import { mkProven } from "../../types.ts"
+import { mkDocumented } from "../../brands.ts"
 import {
   extractFirstList,
   extractItemList,
@@ -30,7 +30,7 @@ function parseSection(
     normalizeHeader,
     (key, desc) => ({
       kind,
-      key: mkProven("history", key),
+      key: mkDocumented("history", key),
       sig: key,
       desc,
       section,
@@ -48,7 +48,7 @@ function parseWordDesignators(yo: string): HistoryDoc[] {
     return [
       {
         kind: "word-designator",
-        key: mkProven("history", sig),
+        key: mkDocumented("history", sig),
         sig,
         desc: normalizeBody(item.body),
         section: "Word Designators",

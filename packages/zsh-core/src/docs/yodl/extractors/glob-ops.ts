@@ -1,5 +1,5 @@
 import type { GlobOpDoc } from "../../types.ts"
-import { mkProven } from "../../types.ts"
+import { mkDocumented } from "../../brands.ts"
 import {
   extractItems,
   extractSectionBody,
@@ -25,7 +25,7 @@ function parseSection(
     extractItems(section, 1),
     normalizeHeader,
     (op, desc) => ({
-      op: mkProven("glob_op", op),
+      op: mkDocumented("glob_op", op),
       sig: op,
       desc,
       section: name,

@@ -6,7 +6,7 @@ import {
   docDisplay,
   docId,
 } from "../docs/taxonomy.ts"
-import type { Proven } from "../docs/types.ts"
+import type { Documented } from "../docs/types.ts"
 import { mdRenderer } from "./md.ts"
 
 export interface RefDocBase<K extends DocCategory, I extends string> {
@@ -19,7 +19,7 @@ export interface RefDocBase<K extends DocCategory, I extends string> {
 
 /** Rendered reference markdown for one logical zsh item. */
 export type RefDoc = {
-  [K in DocCategory]: RefDocBase<K, Proven<K>>
+  [K in DocCategory]: RefDocBase<K, Documented<K>>
 }[DocCategory]
 
 // Keep corpus assembly separate from markdown rendering so consumers can compose
@@ -28,7 +28,7 @@ function mkRefDocs<K extends DocCategory>(
   kind: K,
   docs: readonly DocRecordMap[K][],
   corpus: DocCorpus,
-): RefDocBase<K, Proven<K>>[] {
+): RefDocBase<K, Documented<K>>[] {
   return docs.map(doc => ({
     kind,
     id: docId[kind](doc),
