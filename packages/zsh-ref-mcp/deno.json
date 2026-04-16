@@ -1,0 +1,31 @@
+{
+  "$schema": "https://jsr.io/schema/config-file.v1.json",
+  "name": "@carlwr/zsh-ref-mcp",
+  "version": "0.0.1",
+  "license": "MIT",
+  "nodeModulesDir": "auto",
+  "exports": {
+    ".": "./index.ts",
+    "./server": "./server.ts"
+  },
+  "imports": {
+    "zsh-core": "../zsh-core/index.ts",
+    "zsh-core/render": "../zsh-core/render.ts",
+    "@carlwr/typescript-extra": "npm:@carlwr/typescript-extra@0.7.0"
+  },
+  "publish": {
+    "include": [
+      "LICENSE",
+      "README.md",
+      "THIRD_PARTY_NOTICES.md",
+      "index.ts",
+      "server.ts",
+      "src/**/*.ts"
+    ],
+    "exclude": ["src/test/**/*"]
+  },
+  "lint": {
+    "include": ["index.ts", "server.ts", "src/**/*.ts"],
+    "exclude": ["src/test/**/*.ts"]
+  }
+}

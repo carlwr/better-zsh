@@ -10,7 +10,11 @@ import { outDir } from "./src/build/paths"
     sourcemap: true,
     clean: true,
     external: ["vscode"],
-    noExternal: ["zsh-core"],
+    noExternal: [
+      "zsh-core",
+      "@carlwr/zsh-ref-mcp",
+      "@modelcontextprotocol/sdk",
+    ],
     watch: process.argv.includes("--watch"),
     esbuildOptions(options) {
       options.conditions = ["require", "node"]

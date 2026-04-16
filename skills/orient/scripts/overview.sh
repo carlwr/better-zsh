@@ -17,6 +17,23 @@ find packages/zsh-core/src/test -type f -name '*.ts' \
   | while read -r f; do printf '  %4d  %s\n' "$(wc -l < "$f")" "$f"; done
 
 echo ""
+echo "=== packages/zsh-ref-mcp ==="
+find packages/zsh-ref-mcp \
+  -maxdepth 1 -type f -name '*.ts' \
+  | sort \
+  | while read -r f; do printf '  %4d  %s\n' "$(wc -l < "$f")" "$f"; done
+find packages/zsh-ref-mcp/src -type f -name '*.ts' 2>/dev/null \
+  | grep -v '/test/' \
+  | sort \
+  | while read -r f; do printf '  %4d  %s\n' "$(wc -l < "$f")" "$f"; done
+
+echo ""
+echo "=== packages/zsh-ref-mcp/src/test ==="
+find packages/zsh-ref-mcp/src/test -type f -name '*.ts' 2>/dev/null \
+  | sort \
+  | while read -r f; do printf '  %4d  %s\n' "$(wc -l < "$f")" "$f"; done
+
+echo ""
 echo "=== packages/vscode-better-zsh/src ==="
 find packages/vscode-better-zsh/src -type f -name '*.ts' \
   | grep -v '/test/' \

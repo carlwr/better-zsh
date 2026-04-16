@@ -46,9 +46,9 @@ Transforms doc records into human-readable markdown. Depends on A; orthogonal to
 
 ### Inter-domain wiring
 
-The **consumer** (extension) plumbs A+B→C: facts identify what to look up; the doc corpus provides content; rendering produces output. This plumbing is procedural dispatch in consumer code, not static type mapping — because it is inherently partial and context-dependent (a `cmd-head` fact might match a builtin, a precmd, a user function, or nothing).
+The **consumer** (extension, MCP server, or any future wrapper) plumbs A+B→C: facts identify what to look up; the doc corpus provides content; rendering produces output. This plumbing is procedural dispatch in consumer code, not static type mapping — because it is inherently partial and context-dependent (a `cmd-head` fact might match a builtin, a precmd, a user function, or nothing).
 
-Key principle: **zsh-core does not wire A+B→C internally.** Consumer-facing "I have a candidate from user code, give me markdown" convenience APIs are deliberately absent; consumers compose `resolve()` + `renderDoc()`. See "API orthogonality" below.
+Key principle: **zsh-core does not wire A+B→C internally.** Consumer-facing "I have a candidate from user code, give me markdown" convenience APIs are deliberately absent; consumers compose `resolve()` + `renderDoc()`. See "API orthogonality" below and "MCP as a consumer" for how that consumer model works outside the editor process.
 
 ---
 
@@ -118,7 +118,7 @@ Each doc record keeps its domain-specific identity field name (`name`, `op`, `fl
 
 `docDisplay` is a small function (not a full table) because only `option` diverges — its `.display` preserves case and underscores for humans (`AUTO_CD`), while `.name` is the normalized lookup key (`autocd`). The other 12 categories' identity *is* their display. A full table would be 12 trivial entries delegating to `docId[cat]` plus one override.
 
-Both are **internal** (not re-exported from the public API); `refs.ts` consumes them via direct relative import.
+`docId` is **internal** (not re-exported); `docDisplay` is **public** since consumer-side UIs (hovers, MCP tool responses, dump output) routinely need a human heading without redoing the per-category branching. `refs.ts` consumes `docId` via direct relative import.
 
 ---
 
@@ -154,6 +154,51 @@ Per-category renderers are internal; the public API is `renderDoc`.
 - We can't, in general, have zsh tokenize user files for us — that would require running user code. We only invoke `zsh -f` where actual shell execution is worth the host-dependent cost: diagnostics (`zsh -n`) and tokenization to enrich completions.
 - **Zsh-aware, not environment-aware.** Static zsh knowledge (builtins, options, shell-managed parameters, parameter expansion flags, grammar) is preferred over probing the host shell — it's intrinsic to zsh, stable enough to bundle, and more consistent. Environment-dependent data (`$commands`, `$aliases`, `$fpath` beyond system defaults) is *not* used for core features: it varies by machine, launch method, editor, and target execution environment.
 - **Mental model:** "if we could bundle a zsh binary and run it in an isolated container, we would." We use system zsh only where execution is intrinsic; otherwise bundled/static knowledge for consistency, startup latency, and smaller security surface.
+
+---
+
+## MCP as a consumer
+
+`@carlwr/zsh-ref-mcp` is a second consumer of `zsh-core` — alongside the extension — exposing a subset of the static reference as Model Context Protocol tools (stdio transport; importable by any MCP client: Claude Desktop, VS Code's MCP support, Cursor, Codex CLI, etc.). The extension also imports the package and registers the same tools as VS Code Language Model tools via `vscode.lm.registerTool`.
+
+### Rephrasing the consumer model
+
+The original consumer-plumbing principle was written with the editor in mind: "consumers plumb A+B→C procedurally." The MCP package doesn't invalidate it — it instantiates it in a non-editor process. *Every* consumer composes `resolve()` + `renderDoc()` + corpus iteration; the MCP server's tool implementations are a short, type-safe ribbon over those primitives, serialized as JSON.
+
+Consequently, zsh-core did **not** need a new "query API" to support the MCP. The MCP reuses:
+- `resolve(corpus, cat, raw)` — the sanctioned brand crossing
+- `resolveOption(corpus, raw)` — richer sibling that preserves `negated`
+- `renderDoc(corpus, pieceId)` — markdown generation
+- `loadCorpus()` — corpus loading via vendored `.yo`
+- `docDisplay(cat, doc)` — human-friendly heading (made public for this reason)
+- `docCategories` — iteration target
+
+The only change to zsh-core's public API to support the MCP was promoting `docDisplay` from internal to public. No new endpoints, no new resolver patterns, no new brand crossings. This is evidence that the "static types + consumer plumbing" model generalizes beyond the editor.
+
+### Package boundaries and no-vscode rule
+
+`@carlwr/zsh-ref-mcp` **does not depend on `vscode`** (not even as a type-only import). The extension-side adapter that wires tool defs to `vscode.lm.registerTool` lives in `packages/vscode-better-zsh/src/zsh-ref-tools.ts`. Benefits:
+- the MCP package is usable anywhere Node runs; users without VS Code can install via `npx @carlwr/zsh-ref-mcp` (or a future homebrew/binary distribution) and wire it into any MCP-aware client
+- the extension cost of the abstraction is one thin file: each adapter is <30 lines
+- publish cadence decouples: zsh-ref-mcp versions independently of the extension
+
+A test in `packages/vscode-better-zsh/src/test/zsh-ref-tools.test.ts` asserts that `contributes.languageModelTools` in the extension manifest and the `toolDefs` array in the MCP package stay in one-to-one correspondence (names + `inputSchema`). Drift fails CI.
+
+### Scope fence: "no execution, no environment access" as a product feature
+
+The MCP's public pitch is "static zsh knowledge as MCP tools; no shell execution, no environment access." This is advertised in the package description and the tool `modelDescription` strings. It is also enforced structurally: a test in `packages/zsh-ref-mcp/src/test/scope.test.ts` fails if any file under `src/tools/` imports `child_process`, network APIs, or `node:fs`. Adding a tool that legitimately needs these (none do today; none are planned) would require loosening the fence deliberately, not by accident.
+
+Rationale:
+- existing shell-flavored MCP servers mostly involve execution; users searching for a "zsh MCP" will have execution expectations that we do not meet. Leaning into "static, read-only" distinguishes the package and sets correct expectations.
+- execution-free tools have no trust boundary to defend; users can install the server without security review.
+
+### Tool surface shape: not a mega-tool
+
+`classify(raw)` is the universal entry point — the agent asks "what is this token?" and gets the first matching category. Per-category richer tools (currently `lookup_option`; future candidates) surface extra fields that don't fit a uniform classify response (e.g. option negation). This avoids the "one mega-tool with a `kind` enum" anti-pattern that some LM agents handle poorly, while also staying well clear of a 13-separate-tools sprawl. New tools should justify themselves against both extremes.
+
+### Tie-break in classify
+
+`classify` walks categories in a bespoke `classifyOrder` that puts closed-identity categories (`reserved_word`, `precmd`, `builtin`, `cond_op`, …) **before** `option`. The `option` resolver applies `no_`-stripping, which would otherwise shadow legitimate precmd/reserved-word matches (`nocorrect` is all three; we resolve it as a reserved word, not as "NO_CORRECT" with negation). This is a classify-level policy, not a zsh-core decision.
 
 ---
 

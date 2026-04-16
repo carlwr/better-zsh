@@ -20,6 +20,7 @@ import { readZshPathConfig, ZSH_PATH_KEY } from "./settings"
 import { SymbolProvider } from "./symbols"
 import { WorkspaceSymbolProvider } from "./workspace-symbols"
 import { configureZsh } from "./zsh"
+import { registerZshRefTools } from "./zsh-ref-tools"
 
 export async function activate(ctx: vscode.ExtensionContext) {
   ctx.subscriptions.push(initLog())
@@ -40,6 +41,7 @@ export async function activate(ctx: vscode.ExtensionContext) {
   const semanticTokensProvider = new SemanticTokensProvider(builtinNames)
 
   setupDiagnostics(ctx)
+  registerZshRefTools(ctx, corpus)
 
   ctx.subscriptions.push(
     vscode.languages.registerDocumentHighlightProvider(

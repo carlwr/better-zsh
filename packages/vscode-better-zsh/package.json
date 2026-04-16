@@ -100,14 +100,62 @@
         "path": "./out/zsh-chat-instructions.md",
         "when": "resourceLangId == zsh"
       }
+    ],
+    "languageModelTools": [
+      {
+        "name": "zsh_classify",
+        "toolReferenceName": "zshClassify",
+        "displayName": "Classify zsh token",
+        "modelDescription": "Classify a raw zsh token against the bundled static reference. Returns the first matching zsh element (option, builtin, reserved word, redirection, conditional operator, parameter, glob/history/param/subscript flag, precommand modifier, process substitution) with its display form, category, and rendered markdown documentation. Returns { match: null } when the token does not name any documented element. Handles zsh option quirks: case-insensitive matching, underscore stripping, and the NO_* negation convention (without the NOTIFY vs TIFY ambiguity). No shell execution, no environment access.",
+        "canBeReferencedInPrompt": true,
+        "tags": [
+          "zsh"
+        ],
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "raw": {
+              "type": "string",
+              "description": "The raw token as it might appear in zsh source — e.g. \"AUTO_CD\", \"echo\", \"[[\", \"<<<\", \"!$\", \"<(...)\", \"NO_NOTIFY\". Case and underscores are normalized per category."
+            }
+          },
+          "required": [
+            "raw"
+          ],
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "zsh_lookup_option",
+        "toolReferenceName": "zshLookupOption",
+        "displayName": "Look up a zsh option",
+        "modelDescription": "Look up a zsh shell option (the names used with `setopt` / `unsetopt`) in the bundled static reference. Matching is case-insensitive and ignores underscores. Surfaces `negated: true` when the input was `NO_*` (e.g. `NO_AUTO_CD`) so agents can reason about the state being set, not just the option's identity. Handles the NOTIFY / NO_NOTIFY edge case correctly. Returns { match: null } when the token is not a documented option. No shell execution, no environment access.",
+        "canBeReferencedInPrompt": true,
+        "tags": [
+          "zsh"
+        ],
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "raw": {
+              "type": "string",
+              "description": "Raw option token as it might appear after `setopt` / `unsetopt`. Example inputs: \"AUTO_CD\", \"autocd\", \"NO_AUTO_CD\", \"NOTIFY\", \"NO_NOTIFY\"."
+            }
+          },
+          "required": [
+            "raw"
+          ],
+          "additionalProperties": false
+        }
+      }
     ]
   },
   "scripts": {
-    "prebuild": "pnpm --filter zsh-core build",
-    "prewatch": "pnpm --filter zsh-core build",
+    "prebuild": "pnpm --filter zsh-core build && pnpm --filter @carlwr/zsh-ref-mcp build",
+    "prewatch": "pnpm --filter zsh-core build && pnpm --filter @carlwr/zsh-ref-mcp build",
     "predump:refs": "pnpm --filter zsh-core build",
-    "pretypecheck": "pnpm --filter zsh-core build",
-    "pretest": "pnpm --filter zsh-core build",
+    "pretypecheck": "pnpm --filter zsh-core build && pnpm --filter @carlwr/zsh-ref-mcp build",
+    "pretest": "pnpm --filter zsh-core build && pnpm --filter @carlwr/zsh-ref-mcp build",
     "build": "tsx build.ts",
     "watch": "tsx build.ts --watch",
     "format": "biome check --error-on-warnings --write src build.ts tsconfig.json tsconfig.vscode-test.json vitest.config.ts package.json .vscodeignore .vscode-test.mjs scripts",
@@ -126,6 +174,7 @@
     "ovsx:publish": "pnpm check && pnpm test && pnpm build && npx -y ovsx -p $OPEN_VSX_TOKEN publish --no-dependencies"
   },
   "dependencies": {
+    "@carlwr/zsh-ref-mcp": "workspace:*",
     "zsh-core": "workspace:*"
   },
   "devDependencies": {

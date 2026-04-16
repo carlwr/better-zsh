@@ -2,9 +2,10 @@
 
 ## Overview
 
-A small monorepo with two packages:
+A small monorepo with three packages:
 - **zsh-core** — standalone package of structured zsh knowledge (not just a support lib for the extension). Expected to have exposed functionality not used by the extension. Exports its API surface in machine-readable forms (e.g. API Extractor, llms.txt) for AI-friendly consumption.
-- **vscode-better-zsh** — a VS Code extension; consumer of zsh-core.
+- **@carlwr/zsh-ref-mcp** — a Model Context Protocol server projecting the `zsh-core` reference as agent tools (`zsh_classify`, `zsh_lookup_option`). Pure Node, no `vscode` dep; shipped to npm/JSR and also consumed by the extension. See `DESIGN.md` "MCP as a consumer" for why it is a separate package.
+- **vscode-better-zsh** — a VS Code extension; consumer of both `zsh-core` and `@carlwr/zsh-ref-mcp`. Registers the MCP tool set as VS Code Language Model tools via `vscode.lm.registerTool`.
 
 Nothing is released yet — APIs can move freely.
 
@@ -32,7 +33,7 @@ Three orthogonal domains (details in `DESIGN.md`):
 - **B — Fact Extraction** (`src/analysis/`): coarse annotations about user code. Facts may carry `Observed<K>` values — never `Documented<K>`.
 - **C — Markdown Rendering** (`src/render/`): transforms doc records into markdown; depends on A; orthogonal to B.
 
-Consumers plumb A+B→C procedurally (extension-side), not via zsh-core internals.
+Consumers plumb A+B→C procedurally, not via zsh-core internals. "Consumer" here means anything that wraps zsh-core into a feature surface — today that's the VS Code extension and the `@carlwr/zsh-ref-mcp` MCP/LM tool package; any future consumer follows the same contract.
 
 Brand boundary crossing is exactly one public API: `resolve(corpus, cat, raw)` dispatches through a per-category resolver table in `docs/corpus.ts`. `renderDoc(corpus, pieceId)` produces markdown; no combined convenience function. See `DESIGN.md` for the rationale.
 
@@ -46,6 +47,17 @@ Keep low-level parsing rules in the core layer. Keep corpus-specific interpretat
 ### Analysis layout
 
 `src/analysis/facts.ts` is the public fact-model surface. Shared document/span helpers, line scanning, and context/setopt detection live in sibling analysis modules. Keep the public fact vocabulary centralized there; keep scanner mechanics and context heuristics out of it.
+
+### MCP package layout
+
+`packages/zsh-ref-mcp/`:
+- `index.ts` — public package surface: pure tool impls (`classify`, `lookupOption`), tool metadata (`toolDefs`, per-tool `*ToolDef`), and the server factory (`buildServer`).
+- `server.ts` — the stdio MCP server binary (package `bin` entry).
+- `src/tools/` — one file per tool. Pure functions of `(DocCorpus, input) → output`. No IO, no process env, no `vscode` import. Enforced by the scope-fence test (`src/test/scope.test.ts`).
+- `src/tool-defs.ts` — aggregate `toolDefs` list + per-tool metadata (name, description, JSON-Schema input). Adapters walk this list.
+- `src/server/build-server.ts` — constructs an MCP SDK `Server` with tools registered; transport-agnostic.
+
+Principle: "MCP is another consumer of zsh-core." No new query APIs in zsh-core to support the MCP. See `DESIGN.md` "MCP as a consumer".
 
 ### Providers
 
@@ -126,9 +138,9 @@ Every `as` is a trust assertion. Classify before writing one.
 ### Other tools
 
 - `@carlwr/typescript-extra`
-  - A dev dep. Small package of convenience utilities including a `NonEmpty` type.
-  - Available to use if anything brings value.
-  - Do not remove as a dev dep even if unused at some point.
+  - A dev dep at the **workspace root** (`/package.json`). Small package of convenience utilities including a `NonEmpty` type.
+  - Available to any package in the workspace if anything brings value.
+  - Do not remove the workspace-root devDependency even if unused at some point. This rule is workspace-scoped: individual packages may freely add or drop it based on actual use. (Currently used as a runtime dep by `zsh-core`.)
   - Overview:
     ```sh
     cat $(gfind . -wholename '*/typescript-extra/dist/index.d.ts' | head -n1)
