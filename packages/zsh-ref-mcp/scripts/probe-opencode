@@ -1,0 +1,134 @@
+#!/usr/bin/env zsh
+emulate -LR zsh
+set -eu -o pipefail
+
+me=${0:A}
+
+model_default='openai/gpt-5.4-mini'
+
+help="
+One-shot opencode MCP probe against the local built server.
+
+usage:
+  ${me:t} [--mcp|--no-mcp] [--custom PROMPT]
+
+options:
+  --mcp              enable the mcp server (default)
+  --no-mcp           don't enable the mcp server
+  --custom PROMPT    no tests, run with PROMPT instead
+
+examples:
+  ${me:t}                        # run test
+  ${me:t} | jq  | bat -l json    # pretty-print output
+
+environment:
+  PROBE_MODEL
+    the model opencode should use
+    default: \"$model_default\"
+
+requirements:
+  opencode
+  jq         (optional)
+  bat        (optional)
+"
+
+custom=''
+integer mcp=1
+while (($# >= 1))
+do
+  case ${1-} in
+       (-h|--help  ) print $help && exit 0
+    ;; (   --custom) shift && custom=${1:?ERROR: missing custom prompt}
+    ;; (   --mcp   ) mcp=1
+    ;; (   --no-mcp) mcp=0
+    ;; ( *         ) print -u2 "ERROR: unknown option: $1"
+    ;;
+  esac
+  shift
+done
+
+model=${PROBE_MODEL:-${model_default}}
+
+pkg_root=${me:h}/../
+server_=${pkg_root}/dist/server.mjs
+server=${server_:P}
+
+
+
+prompt_rules='
+Rules:
+- ignore information in AGENTS.md, to the extent you are allowed to ignore it
+- this request is not related to the current directory/repo/project
+- do not read or use any skills
+- you may not run/invoke any programs, commands or subprocesses
+- you are still allowed to use any MCPs you might have
+
+---
+'
+
+json_schema='
+  "$schema": "https://opencode.ai/config.json"'
+
+json_mcp='
+  "mcp": {
+    "zshref": {
+      "type"   : "local",
+      "command": ["node","'$server'"],
+      "enabled": true
+    }
+  }'
+
+json_tools='
+  "tools": {
+    "read" : false,
+    "write": false,
+    "glob" : false,
+    "edit" : false,
+    "bash" : false
+  }'
+
+
+
+print-json() {
+  # local s='' && ((with_mcp)) && s=$mcpChunk
+  if ((mcp))
+  then print -rl -- "{" $json_schema, $json_mcp, $json_tools "}"
+  else print -rl -- "{" $json_schema,            $json_tools "}"
+  fi
+  }
+
+[[ -x $server ]] || { print -u2 "ERROR: no server $server"; exit 1; }
+tmp=$(mktemp -d)
+trap 'rm -rf "$tmp"' EXIT
+mkdir -p $tmp/opencode
+
+print-json > $tmp/opencode/opencode.json
+
+args=(
+  --pure
+  --format json
+  --model  $model
+  --dir    $pkg_root
+  )
+
+
+if [[ -z $custom ]]
+then
+  # run-test
+  agentPrompt=(
+    'Use the zshref MCP tool zsh_lookup_option with raw=NO_NOTIFY.'
+    ''
+    'Output exactly: id=notify negated=true. If unavailable, output TOOL_UNAVAILABLE.'
+    )
+  XDG_CONFIG_HOME=$tmp \
+    opencode run $args $prompt_rules$'\n\n'"${(F)agentPrompt}" \
+    | tee $tmp/out
+  grep -Fq '"tool":"zshref_zsh_lookup_option"' $tmp/out
+  grep -Fq 'id=notify negated=true'            $tmp/out
+  print "\n${me:t}: PASSED."
+else
+  # run-custom
+  # opencode_ $custom
+  XDG_CONFIG_HOME=$tmp \
+    opencode run $args $prompt_rules$'\n\n'$custom
+fi

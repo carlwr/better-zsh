@@ -4,11 +4,11 @@ import {
   type DocRecordMap,
   type Documented,
   docCategories,
-  docDisplay,
   mkPieceId,
 } from "zsh-core"
 import { renderDoc } from "zsh-core/render"
 import type { ToolDef } from "../tool-defs.ts"
+import { display } from "./doc-display.ts"
 
 export interface DescribeInput {
   readonly category: DocCategory
@@ -50,7 +50,7 @@ export function describe(
     match: {
       category: cat,
       id: input.id,
-      display: docDisplay(cat, rec as never),
+      display: display(cat, rec),
       markdown: renderDoc(corpus, mkPieceId(cat, id)),
     },
   }

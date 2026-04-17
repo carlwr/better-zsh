@@ -106,6 +106,12 @@ describe("toolDefs description shape", () => {
     expect(d).toMatch(/zsh_describe|zsh_classify/)
   })
 
+  test("zsh_search describes matchesReturned/matchesTotal truncation signal", () => {
+    const d = searchToolDef.description
+    expect(d).toContain("matchesReturned")
+    expect(d).toContain("matchesTotal")
+  })
+
   test("zsh_describe mentions canonical id", () => {
     const d = describeToolDef.description
     expect(d).toMatch(/canonical|exact/i)

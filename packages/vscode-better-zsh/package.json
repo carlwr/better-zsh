@@ -152,7 +152,7 @@
         "name": "zsh_search",
         "toolReferenceName": "zshSearch",
         "displayName": "Search zsh reference",
-        "modelDescription": "Search the bundled static zsh reference. Fuzzy-matches the query against doc record ids and human display headings across every category (see `category` field for the full `DocCategory` list). Omit `query` to list records (optionally filtered by `category`). Ranking: exact id/display > prefix > fuzzy score. Results carry `{ category, id, display, score? }` but NOT the rendered markdown body — follow up with `zsh_describe` or `zsh_classify` for the full doc. `limit` caps response size (default 20, hard max 100). No shell execution, no environment access.",
+        "modelDescription": "Search the bundled static zsh reference. Fuzzy-matches the query against doc record ids and human display headings across every category (see `category` field for the full `DocCategory` list). Omit `query` to list records (optionally filtered by `category`). Ranking: exact id/display > prefix > fuzzy score. Results carry `{ category, id, display, score? }` but NOT the rendered markdown body — follow up with `zsh_describe` or `zsh_classify` for the full doc. `limit` caps response size (default 20, hard max 500); the response also returns `matchesReturned` (== `matches.length`) and `matchesTotal` (pre-truncation total), so `matchesReturned < matchesTotal` signals truncation — raise `limit` or narrow `category`/`query` to see the rest. No shell execution, no environment access.",
         "canBeReferencedInPrompt": true,
         "tags": [
           "zsh"
@@ -171,8 +171,8 @@
             "limit": {
               "type": "integer",
               "minimum": 1,
-              "maximum": 100,
-              "description": "Maximum matches to return. Default 20, hard max 100."
+              "maximum": 500,
+              "description": "Maximum matches to return. Default 20, hard max 500."
             }
           },
           "additionalProperties": false

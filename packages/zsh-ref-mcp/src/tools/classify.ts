@@ -5,11 +5,11 @@ import {
   type DocPieceId,
   type DocRecordMap,
   docCategoryLabels,
-  docDisplay,
   resolve,
 } from "zsh-core"
 import { renderDoc } from "zsh-core/render"
 import type { ToolDef } from "../tool-defs.ts"
+import { display } from "./doc-display.ts"
 
 export interface ClassifyInput {
   readonly raw: string
@@ -53,7 +53,7 @@ function formatMatch(corpus: DocCorpus, pid: DocPieceId): ClassifyMatch {
   return {
     category: pid.category,
     id: pid.id as string,
-    display: docDisplay(pid.category, rec as never),
+    display: display(pid.category, rec),
     markdown: renderDoc(corpus, pid),
   }
 }

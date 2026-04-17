@@ -4,9 +4,9 @@ import {
   type DocCorpus,
   type DocRecordMap,
   docCategories,
-  docDisplay,
 } from "zsh-core"
 import type { ToolDef } from "../tool-defs.ts"
+import { display } from "./doc-display.ts"
 
 export interface SearchInput {
   readonly query?: string
@@ -24,10 +24,14 @@ export interface SearchMatch {
 
 export interface SearchResult {
   readonly matches: readonly SearchMatch[]
+  /** Always equals `matches.length`; surfaced explicitly so JSON consumers don't have to count. */
+  readonly matchesReturned: number
+  /** Total matches before `limit` truncation. `matchesReturned < matchesTotal` iff the response was truncated. */
+  readonly matchesTotal: number
 }
 
-const DEFAULT_LIMIT = 20
-const MAX_LIMIT = 100
+export const DEFAULT_LIMIT = 20
+export const MAX_LIMIT = 500
 
 interface Entry {
   readonly category: DocCategory
@@ -45,7 +49,7 @@ function entries(corpus: DocCorpus, cat?: DocCategory): Entry[] {
   for (const c of cats) {
     const map = corpus[c] as ReadonlyMap<string, DocRecordMap[DocCategory]>
     for (const [id, rec] of map) {
-      out.push({ category: c, id, display: docDisplay(c, rec as never) })
+      out.push({ category: c, id, display: display(c, rec) })
     }
   }
   return out
@@ -66,7 +70,14 @@ export function search(corpus: DocCorpus, input: SearchInput): SearchResult {
   const limit = clampLimit(input.limit)
   const pool = entries(corpus, input.category)
   const q = (input.query ?? "").trim()
-  if (!q) return { matches: pool.slice(0, limit) }
+  if (!q) {
+    const matches = pool.slice(0, limit)
+    return {
+      matches,
+      matchesReturned: matches.length,
+      matchesTotal: pool.length,
+    }
+  }
 
   const qLow = q.toLowerCase()
   const exact: Entry[] = []
@@ -80,6 +91,14 @@ export function search(corpus: DocCorpus, input: SearchInput): SearchResult {
     else rest.push(e)
   }
 
+  // Run fuzzy unlimited so `matchesTotal` reflects the true pre-truncation
+  // count across all three branches; cost is negligible at corpus scale.
+  const fuzzyAll = fuzzysort.go(q, rest, {
+    keys: ["id", "display"],
+    threshold: 0.3,
+  })
+  const matchesTotal = exact.length + prefix.length + fuzzyAll.length
+
   const matches: SearchMatch[] = []
   for (const e of exact) {
     if (matches.length >= limit) break
@@ -91,14 +110,11 @@ export function search(corpus: DocCorpus, input: SearchInput): SearchResult {
   }
   if (matches.length < limit) {
     const remaining = limit - matches.length
-    const fuzzy = fuzzysort.go(q, rest, {
-      keys: ["id", "display"],
-      limit: remaining,
-      threshold: 0.3,
-    })
-    for (const r of fuzzy) matches.push(toMatch(r.obj, r.score))
+    for (const r of fuzzyAll.slice(0, remaining)) {
+      matches.push(toMatch(r.obj, r.score))
+    }
   }
-  return { matches }
+  return { matches, matchesReturned: matches.length, matchesTotal }
 }
 
 function toMatch(e: Entry, score?: number): SearchMatch {
@@ -111,7 +127,7 @@ const brandedCategoryList = docCategories.map(c => `'${c}'`).join(", ")
 
 export const searchToolDef: ToolDef = {
   name: "zsh_search",
-  description: `Search the bundled static zsh reference. Fuzzy-matches the query against doc record ids and human display headings across every category (see \`category\` field for the full \`DocCategory\` list). Omit \`query\` to list records (optionally filtered by \`category\`). Ranking: exact id/display > prefix > fuzzy score. Results carry \`{ category, id, display, score? }\` but NOT the rendered markdown body — follow up with \`zsh_describe\` or \`zsh_classify\` for the full doc. \`limit\` caps response size (default ${DEFAULT_LIMIT}, hard max ${MAX_LIMIT}). No shell execution, no environment access.`,
+  description: `Search the bundled static zsh reference. Fuzzy-matches the query against doc record ids and human display headings across every category (see \`category\` field for the full \`DocCategory\` list). Omit \`query\` to list records (optionally filtered by \`category\`). Ranking: exact id/display > prefix > fuzzy score. Results carry \`{ category, id, display, score? }\` but NOT the rendered markdown body — follow up with \`zsh_describe\` or \`zsh_classify\` for the full doc. \`limit\` caps response size (default ${DEFAULT_LIMIT}, hard max ${MAX_LIMIT}); the response also returns \`matchesReturned\` (== \`matches.length\`) and \`matchesTotal\` (pre-truncation total), so \`matchesReturned < matchesTotal\` signals truncation — raise \`limit\` or narrow \`category\`/\`query\` to see the rest. No shell execution, no environment access.`,
   inputSchema: {
     type: "object",
     properties: {
