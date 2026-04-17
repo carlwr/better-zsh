@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest"
-import { loadCorpus } from "zsh-core"
+import { docCategories, docCategoryLabels, loadCorpus } from "zsh-core"
 import {
   type ClassifyResult,
   classifyToolDef,
@@ -82,17 +82,15 @@ describe("toolDefs description shape", () => {
     expect(def.description).toMatch(/environment access/i)
   })
 
-  test("zsh_classify enumerates multiple categories", () => {
+  test("zsh_classify mentions every DocCategory (via human label)", () => {
     const d = classifyToolDef.description
-    for (const cat of [
-      "option",
-      "builtin",
-      "reserved word",
-      "redirection",
-      "parameter",
-    ]) {
-      expect(d).toMatch(new RegExp(cat, "i"))
-    }
+    for (const cat of docCategories) expect(d).toContain(docCategoryLabels[cat])
+  })
+
+  test("zsh_search lists every DocCategory (via branded string)", () => {
+    const d =
+      searchToolDef.description + JSON.stringify(searchToolDef.inputSchema)
+    for (const cat of docCategories) expect(d).toContain(`'${cat}'`)
   })
 
   test("zsh_lookup_option mentions negation semantics", () => {

@@ -17,7 +17,7 @@ Three rules keep the package honest:
 - **Shared `ToolDef` metadata.** `src/tool-defs.ts` is the single source of tool name, description, JSON-Schema input, and an `execute` wrapper. Any adapter (the stdio server here, or an embedder) walks the `toolDefs` array uniformly — no per-tool switch statements at adapter level.
 - **Transport-agnostic server.** `src/server/build-server.ts` returns an `@modelcontextprotocol/sdk` `Server` with no transport attached. The bin (`server.ts`) wires stdio; tests wire an in-process client via `StdioClientTransport` spawning the built bin.
 
-The classifier has one non-obvious rule worth calling out. `src/tools/classify.ts` walks categories in a fixed order (`classifyOrder`); closed-identity categories (`reserved_word`, `precmd`, `builtin`, …) come before `option`. The option resolver does `no_`-stripping, so without the ordering `nocorrect` would also match "NO_CORRECT" with negation and shadow its precmd identity. If you add a new category, think about whether its resolver is closed-identity (slot it near the top) or does transforms (slot it near `option`/`redir`).
+The classifier walks `classifyOrder` imported from zsh-core; rationale and completeness guard live there (`DESIGN.md` §"Tie-break in classify"). No MCP-side maintenance when categories are added.
 
 ## Tool naming: the `zsh_` prefix
 
@@ -35,15 +35,20 @@ Keep the prefix on every new tool. `snake_case` throughout; the short name after
 
 ## Adding a new tool
 
-1. New file under `src/tools/`, e.g. `src/tools/describe-builtin.ts`. Export input/output types and a pure function `(corpus, input) → result`. Must not import execution, network, or `node:fs` APIs.
-2. Re-export from `src/tools/index.ts`.
-3. Add a `ToolDef` in `src/tool-defs.ts`: stable `snake_case` name — **must** start with `zsh_` (see "Tool naming" above) — user-facing description, JSON-Schema for the input, `execute` wrapper that narrows the schema input to your typed shape. Push the def into the `toolDefs` array.
-4. Add unit tests to `src/test/tools/<tool>.test.ts` (one file per tool). Cover the happy path plus one negative case and any quirk the tool promises to handle.
-5. Add the tool's metadata assertions (name + per-tool description-shape check) to `src/test/tool-defs.test.ts` — the existing "shape guards" describe block uses per-tool assertions; keep that pattern.
-6. If the tool is user-visible over stdio, extend `src/test/mcp-stdio.test.ts` with a call-through assertion.
-7. Run `pnpm run check && pnpm run test` — the scope fence will trip if imports slipped in.
+Each tool file under `src/tools/` owns everything about its tool — pure impl, I/O types, and the `*ToolDef` metadata. `src/tool-defs.ts` is a barrel + aggregate array.
 
-No codegen step, no registry file to edit — `toolDefs` is the registry.
+1. New file under `src/tools/`: export I/O types, a pure `(corpus, input) → result` function, and a `*ToolDef` constant. No execution, network, or `node:fs` imports.
+2. Re-export from the tools barrel.
+3. In `src/tool-defs.ts`: re-export the `*ToolDef` and push it into `toolDefs`. No per-tool detail lives here.
+4. Name: stable `snake_case`, `zsh_`-prefixed (see "Tool naming"). Any category enumeration in the description must be interpolated from zsh-core exports (see `AGENTS.md`).
+5. Unit tests under `src/test/tools/`. Happy path + one negative + any quirk the tool promises.
+6. Metadata assertions in `src/test/tool-defs.test.ts`.
+7. Stdio-visible tools: extend the stdio end-to-end test.
+8. `pnpm run check && pnpm run test` — the scope fence trips on stray imports.
+
+`toolDefs` is the registry; no codegen.
+
+**Cross-package note.** The VS Code extension's `contributes.languageModelTools` manifest mirrors each tool's name + description + inputSchema. A test on the extension side asserts full equality; update the manifest when adding/editing a tool here.
 
 ## Test layout
 

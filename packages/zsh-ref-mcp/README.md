@@ -16,6 +16,8 @@ The exposed structured knowledge includes:
 - **conditional operators** (`-f`, `-eq`, `=~`, ...)
 - **process substitutions** (`<(..)`, `>(..)`, `=(..)`)
 - **parameter/glob/history/subscript flags**
+- **prompt escapes** (`%n`, `%~`, `%F{…}`, ...)
+- **ZLE widgets** (standard + special)
  
 All data is the result of parsing the official documentation.
 
@@ -126,9 +128,76 @@ The server communicates via standard MCP JSON-RPC on stdin/stdout; no protocol f
 
 ## Tools
 
+There are two main entry paths:
+- Generic reference lookup: `zsh_search` to discover candidates, then `zsh_describe` to fetch the exact `{ category, id }` you want.
+- Direct token lookup: `zsh_classify` for an arbitrary raw token, or `zsh_lookup_option` when you already know it is a shell option.
+
+### `zsh_search`
+
+Fuzzy discovery across the bundled reference. Matches the query against record ids and human display headings; optionally filtered to a single `category`. Ranking: exact id/display > prefix > fuzzy score. Results carry `{ category, id, display, score? }` but **not** the rendered markdown body — compose with `zsh_describe` (exact `{category, id}`) or `zsh_classify` (raw token) when you need the full doc. The response also carries `matchesReturned` (== `matches.length`) and `matchesTotal` (pre-truncation total); `matchesReturned < matchesTotal` signals the `limit` truncated the result — raise `limit` or narrow `category` / `query` to see the rest.
+
+**Input**
+
+```json
+{ "query": "echo", "category": "builtin", "limit": 5 }
+```
+
+**Output** (match)
+
+```json
+{
+  "matches": [
+    { "category": "builtin", "id": "echo", "display": "echo" },
+    { "category": "builtin", "id": "echotc", "display": "echotc" },
+    { "category": "builtin", "id": "echoti", "display": "echoti" }
+  ],
+  "matchesReturned": 3,
+  "matchesTotal": 3
+}
+```
+
+**Output** (no match)
+
+```json
+{ "matches": [], "matchesReturned": 0, "matchesTotal": 0 }
+```
+
+Other example inputs: `{"category": "option"}` (list all options, capped by `limit`), `{"query": "autocd"}`, `{"query": "redir", "limit": 50}`.
+
+### `zsh_describe`
+
+Exact fetch for a known `{ category, id }`. Unlike `zsh_classify` / `zsh_lookup_option`, this tool does **not** apply per-category normalization (no case folding, no underscore stripping, no `NO_*` handling) — `id` must be an exact corpus key. Canonical ids usually come from a prior `zsh_search` response.
+
+**Input**
+
+```json
+{ "category": "option", "id": "autocd" }
+```
+
+**Output** (match)
+
+```json
+{
+  "match": {
+    "category": "option",
+    "id": "autocd",
+    "display": "AUTO_CD",
+    "markdown": "### AUTO_CD ..."
+  }
+}
+```
+
+**Output** (no match)
+
+```json
+{ "match": null }
+```
+
+Other example inputs: `{"category": "builtin", "id": "echo"}`, `{"category": "reserved_word", "id": "[["}`.
+
 ### `zsh_classify`
 
-Classify a raw zsh token against the bundled reference. Returns the first match across all categories — option, builtin, reserved word, redirection, conditional operator, parameter, glob/history/param/subscript flag, precommand modifier, process substitution. Handles case-insensitive matching, underscore stripping, and the `NO_*` option-negation convention (including the `NOTIFY` / `NO_NOTIFY` edge case).
+Classify a raw zsh token against the bundled reference. Returns the first match across every documented category (e.g. option, builtin, reserved word — see the "exposed structured knowledge" list above for the full set). Handles case-insensitive matching, underscore stripping, and the `NO_*` option-negation convention (including the `NOTIFY` / `NO_NOTIFY` edge case).
 
 **Input**
 
@@ -189,6 +258,18 @@ Look up a zsh shell option (the names used with `setopt` / `unsetopt`). Matching
 ```
 
 Other example inputs: `"AUTO_CD"`, `"autocd"`, `"NOTIFY"`, `"NO_NOTIFY"`.
+
+## Privacy & side effects
+
+The server has no side effects beyond writing MCP JSON-RPC frames to stdout (and fatal errors to stderr):
+
+- No telemetry.
+- No files written, no logs to disk.
+- No network connections.
+- No environment variables read.
+- No shell execution, no subprocesses.
+
+This posture is structurally enforced, not just policy: a scope-fence test bans `child_process`, networking modules, `node:fs`, and `process.env` reads inside `src/tools/`.
 
 ## License
 

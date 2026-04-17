@@ -6,6 +6,7 @@ import {
   docCategories,
   docDisplay,
 } from "zsh-core"
+import type { ToolDef } from "../tool-defs.ts"
 
 export interface SearchInput {
   readonly query?: string
@@ -57,15 +58,9 @@ function clampLimit(limit: number | undefined): number {
 }
 
 /**
- * Search the static zsh reference.
- *
- * Ranking: exact id/display > prefix id/display > fuzzy score (via
- * `fuzzysort` against id and display strings). Empty/missing query returns
- * the first `limit` records matching the optional category filter (corpus
- * iteration order; `shell_param` is alpha-sorted in refDocs but we do not
- * replicate that here — caller can sort downstream).
- *
- * Pure function; no IO, no process env.
+ * Search the static zsh reference. Ranking: exact id/display > prefix >
+ * fuzzy. Empty query lists records (optionally filtered by category),
+ * capped by `limit`. Pure; no IO.
  */
 export function search(corpus: DocCorpus, input: SearchInput): SearchResult {
   const limit = clampLimit(input.limit)
@@ -110,4 +105,34 @@ function toMatch(e: Entry, score?: number): SearchMatch {
   return score === undefined
     ? { category: e.category, id: e.id, display: e.display }
     : { category: e.category, id: e.id, display: e.display, score }
+}
+
+const brandedCategoryList = docCategories.map(c => `'${c}'`).join(", ")
+
+export const searchToolDef: ToolDef = {
+  name: "zsh_search",
+  description: `Search the bundled static zsh reference. Fuzzy-matches the query against doc record ids and human display headings across every category (see \`category\` field for the full \`DocCategory\` list). Omit \`query\` to list records (optionally filtered by \`category\`). Ranking: exact id/display > prefix > fuzzy score. Results carry \`{ category, id, display, score? }\` but NOT the rendered markdown body — follow up with \`zsh_describe\` or \`zsh_classify\` for the full doc. \`limit\` caps response size (default ${DEFAULT_LIMIT}, hard max ${MAX_LIMIT}). No shell execution, no environment access.`,
+  inputSchema: {
+    type: "object",
+    properties: {
+      query: {
+        type: "string",
+        description:
+          "Optional fuzzy search string matched against ids and display headings. Empty/omitted returns records ordered by corpus iteration, capped by `limit`.",
+      },
+      category: {
+        type: "string",
+        description: `Optional filter to a single doc category. Valid values are the zsh-core \`DocCategory\` strings: ${brandedCategoryList}. An unknown category yields an empty match set.`,
+      },
+      limit: {
+        type: "integer",
+        minimum: 1,
+        maximum: MAX_LIMIT,
+        description: `Maximum matches to return. Default ${DEFAULT_LIMIT}, hard max ${MAX_LIMIT}.`,
+      },
+    },
+    additionalProperties: false,
+  },
+  execute: (corpus, input): SearchResult =>
+    search(corpus, input as unknown as SearchInput),
 }

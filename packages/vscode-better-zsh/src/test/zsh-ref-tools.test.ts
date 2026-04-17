@@ -29,15 +29,18 @@ import { registerZshRefTools } from "../zsh-ref-tools"
 // `process.cwd()` resolve to the package.
 const pkgRoot = process.cwd()
 
-function readManifestTools(): readonly {
-  name: string
-  inputSchema: unknown
-}[] {
+interface ManifestTool {
+  readonly name: string
+  readonly modelDescription: string
+  readonly inputSchema: unknown
+}
+
+function readManifestTools(): readonly ManifestTool[] {
   const pkg = JSON.parse(
     readFileSync(join(pkgRoot, "package.json"), "utf8"),
   ) as {
     contributes?: {
-      languageModelTools?: readonly { name: string; inputSchema: unknown }[]
+      languageModelTools?: readonly ManifestTool[]
     }
   }
   return pkg.contributes?.languageModelTools ?? []
@@ -52,11 +55,12 @@ describe("contributes.languageModelTools stays in sync with toolDefs", () => {
     expect(manifestNames).toEqual(defNames)
   })
 
-  test("every manifest tool has a matching inputSchema", () => {
+  test("each manifest tool mirrors toolDef description + inputSchema", () => {
     const manifest = new Map(readManifestTools().map(t => [t.name, t]))
     for (const def of toolDefs) {
       const entry = manifest.get(def.name)
       expect(entry).toBeDefined()
+      expect(entry?.modelDescription).toEqual(def.description)
       expect(entry?.inputSchema).toEqual(def.inputSchema)
     }
   })

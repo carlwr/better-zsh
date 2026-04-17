@@ -1,3 +1,4 @@
+import type { Assert, Eq } from "@carlwr/typescript-extra"
 import type {
   BuiltinDoc,
   CondOpDoc,
@@ -36,6 +37,57 @@ export const docCategories = [
 ] as const
 
 export type DocCategory = (typeof docCategories)[number]
+
+// Order rationale (resolver-shadowing facts) lives in DESIGN.md §"Tie-break in classify".
+const classifyOrderTuple = [
+  "reserved_word",
+  "precmd",
+  "builtin",
+  "cond_op",
+  "shell_param",
+  "process_subst",
+  "param_flag",
+  "subscript_flag",
+  "glob_flag",
+  "glob_op",
+  "history",
+  "prompt_escape",
+  "zle_widget",
+  "option",
+  "redir",
+] as const satisfies readonly DocCategory[]
+
+type _AssertClassifyOrderComplete = Assert<
+  Eq<Exclude<DocCategory, (typeof classifyOrderTuple)[number]>, never>
+>
+
+/**
+ * `DocCategory` list ordered for first-hit classification: walk, call
+ * `resolve(corpus, cat, raw)` per entry, stop on the first match.
+ */
+export const classifyOrder: readonly DocCategory[] = classifyOrderTuple
+
+/**
+ * Human-readable singular label per `DocCategory`. Prefer interpolating
+ * from this table over hand-typing category names.
+ */
+export const docCategoryLabels: Readonly<Record<DocCategory, string>> = {
+  option: "option",
+  cond_op: "conditional operator",
+  builtin: "builtin",
+  precmd: "precommand modifier",
+  shell_param: "shell parameter",
+  reserved_word: "reserved word",
+  redir: "redirection",
+  process_subst: "process substitution",
+  subscript_flag: "subscript flag",
+  param_flag: "parameter-expansion flag",
+  history: "history designator",
+  glob_op: "glob operator",
+  glob_flag: "glob flag",
+  prompt_escape: "prompt escape",
+  zle_widget: "ZLE widget",
+}
 
 export interface DocRecordMap {
   option: ZshOption

@@ -1,5 +1,6 @@
 import { type DocCorpus, mkPieceId, resolveOption } from "zsh-core"
 import { renderDoc } from "zsh-core/render"
+import type { ToolDef } from "../tool-defs.ts"
 
 export interface LookupOptionInput {
   readonly raw: string
@@ -18,14 +19,9 @@ export type LookupOptionResult =
   | { readonly match: null }
 
 /**
- * Look up a zsh option by raw user text.
- *
- * Thin wrapper over `resolveOption()` + `renderDoc()`. Surfaces the `negated`
- * signal so agents can distinguish `setopt AUTO_CD` from `setopt NO_AUTO_CD`
- * even though both resolve to the same doc record. Handles the NOTIFY
- * ambiguity via the corpus-aware resolver.
- *
- * Pure function; no IO, no process env.
+ * Look up a zsh option by raw user text. Surfaces `negated` so agents can
+ * distinguish `setopt AUTO_CD` from `setopt NO_AUTO_CD`. Handles the
+ * `NOTIFY` / `NO_NOTIFY` edge case. Pure; no IO.
  */
 export function lookupOption(
   corpus: DocCorpus,
@@ -47,4 +43,24 @@ export function lookupOption(
       markdown: renderDoc(corpus, mkPieceId("option", resolved.id)),
     },
   }
+}
+
+export const lookupOptionToolDef: ToolDef = {
+  name: "zsh_lookup_option",
+  description:
+    "Look up a zsh shell option (the names used with `setopt` / `unsetopt`) in the bundled static reference. Matching is case-insensitive and ignores underscores. Surfaces `negated: true` when the input was `NO_*` (e.g. `NO_AUTO_CD`) so agents can reason about the state being set, not just the option's identity. Handles the NOTIFY / NO_NOTIFY edge case correctly. Returns { match: null } when the token is not a documented option. No shell execution, no environment access.",
+  inputSchema: {
+    type: "object",
+    properties: {
+      raw: {
+        type: "string",
+        description:
+          'Raw option token as it might appear after `setopt` / `unsetopt`. Example inputs: "AUTO_CD", "autocd", "NO_AUTO_CD", "NOTIFY", "NO_NOTIFY".',
+      },
+    },
+    required: ["raw"],
+    additionalProperties: false,
+  },
+  execute: (corpus, input): LookupOptionResult =>
+    lookupOption(corpus, input as unknown as LookupOptionInput),
 }

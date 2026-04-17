@@ -1,12 +1,15 @@
 import {
+  classifyOrder,
   type DocCategory,
   type DocCorpus,
   type DocPieceId,
   type DocRecordMap,
+  docCategoryLabels,
   docDisplay,
   resolve,
 } from "zsh-core"
 import { renderDoc } from "zsh-core/render"
+import type { ToolDef } from "../tool-defs.ts"
 
 export interface ClassifyInput {
   readonly raw: string
@@ -24,38 +27,8 @@ export type ClassifyResult =
   | { readonly match: null }
 
 /**
- * Classify order. Closed-set / literal-identity categories come before
- * `option`, whose resolver applies a `no_`-stripping transform that would
- * otherwise shadow legitimate literal matches (`nocorrect` is a precmd and
- * also resolves as "NO_CORRECT" option with negation; we want precmd first).
- * `redir` is last — its resolver is group-op + tail matching that can
- * loosely accept short tokens.
- */
-const classifyOrder: readonly DocCategory[] = [
-  "reserved_word",
-  "precmd",
-  "builtin",
-  "cond_op",
-  "shell_param",
-  "process_subst",
-  "param_flag",
-  "subscript_flag",
-  "glob_flag",
-  "glob_op",
-  "history",
-  "option",
-  "redir",
-]
-
-/**
- * Classify a raw zsh token against the corpus.
- *
- * Walks categories in `classifyOrder` and dispatches to `resolve()` for
- * each; returns the first match. Literal-identity categories are tried
- * before `option` so that e.g. `nocorrect` resolves as the precmd modifier
- * rather than an option with negation.
- *
- * Pure function; no IO, no process env.
+ * Classify a raw zsh token against the corpus. Returns the first
+ * `classifyOrder` hit, or `{ match: null }`. Pure; no IO.
  */
 export function classify(
   corpus: DocCorpus,
@@ -83,4 +56,27 @@ function formatMatch(corpus: DocCorpus, pid: DocPieceId): ClassifyMatch {
     display: docDisplay(pid.category, rec as never),
     markdown: renderDoc(corpus, pid),
   }
+}
+
+const humanCategoryList = classifyOrder
+  .map(c => docCategoryLabels[c])
+  .join(", ")
+
+export const classifyToolDef: ToolDef = {
+  name: "zsh_classify",
+  description: `Classify a raw zsh token against the bundled static reference. Returns the first matching zsh element (categories, in classify order: ${humanCategoryList}) with its display form, category, and rendered markdown documentation. Returns { match: null } when the token does not name any documented element. Handles zsh option quirks: case-insensitive matching, underscore stripping, and the NO_* negation convention (without the NOTIFY vs TIFY ambiguity). No shell execution, no environment access.`,
+  inputSchema: {
+    type: "object",
+    properties: {
+      raw: {
+        type: "string",
+        description:
+          'The raw token as it might appear in zsh source — e.g. "AUTO_CD", "echo", "[[", "<<<", "!$", "<(...)", "NO_NOTIFY". Case and underscores are normalized per category.',
+      },
+    },
+    required: ["raw"],
+    additionalProperties: false,
+  },
+  execute: (corpus, input): ClassifyResult =>
+    classify(corpus, input as unknown as ClassifyInput),
 }

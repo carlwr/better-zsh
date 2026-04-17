@@ -19,6 +19,12 @@ describe("classify", () => {
     { raw: "echo", category: "builtin", id: "echo" },
     { raw: "if", category: "reserved_word", id: "if" },
     { raw: "errRET_urn", category: "option", id: "errreturn" },
+    { raw: "%n", category: "prompt_escape", id: "%n" },
+    {
+      raw: "backward-kill-word",
+      category: "zle_widget",
+      id: "backward-kill-word",
+    },
   ])("$raw → $category:$id", ({ raw, category, id }) => {
     const result = classify(corpus, { raw })
     expect(result.match).not.toBeNull()

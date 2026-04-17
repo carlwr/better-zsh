@@ -8,6 +8,7 @@ import {
   mkPieceId,
 } from "zsh-core"
 import { renderDoc } from "zsh-core/render"
+import type { ToolDef } from "../tool-defs.ts"
 
 export interface DescribeInput {
   readonly category: DocCategory
@@ -29,20 +30,12 @@ const validCategories = new Set<string>(docCategories)
 
 /**
  * Fetch the full record + rendered markdown for a known `{category, id}`.
- *
- * The input is untrusted JSON, so we verify that:
- *   1. `category` is a `DocCategory` value, and
- *   2. `id` is a membership key in `corpus[category]`
- *
- * before minting the `Documented<K>` brand via `mkPieceId`. This follows
- * the "iterating the corpus" sanctioned brand path in DESIGN.md — the cast
- * inside `mkPieceId` is justified by the `.get()` lookup succeeding.
- *
- * Unlike `resolve`, this does NOT apply per-category normalization (no
- * `no_`-stripping for options, no redir tail decomposition) — `describe`
- * expects exact canonical ids, typically surfaced by a prior `zsh_search`
- * response. Pure function; no IO, no process env.
+ * Expects exact canonical ids (typically from a prior `zsh_search`); does
+ * not apply per-category normalization. Pure; no IO.
  */
+// Input is untrusted JSON. We check `category` ∈ `DocCategory` and `id` ∈
+// corpus[category], then mint `Documented<K>` via the sanctioned
+// "iterating the corpus" path (DESIGN.md §Brand semantics).
 export function describe(
   corpus: DocCorpus,
   input: DescribeInput,
@@ -61,4 +54,29 @@ export function describe(
       markdown: renderDoc(corpus, mkPieceId(cat, id)),
     },
   }
+}
+
+export const describeToolDef: ToolDef = {
+  name: "zsh_describe",
+  description:
+    "Fetch the full record for a known `{ category, id }` from the bundled static zsh reference. Returns `{ match: { category, id, display, markdown } }` with the rendered markdown body, or `{ match: null }` when the id is not a member of the given category's corpus. Expects exact canonical ids (typically surfaced by a prior `zsh_search` response); unlike `zsh_classify` / `zsh_lookup_option` it does NOT apply per-category normalization such as NO_* stripping. No shell execution, no environment access.",
+  inputSchema: {
+    type: "object",
+    properties: {
+      category: {
+        type: "string",
+        description:
+          "Doc category (a zsh-core `DocCategory` value) — e.g. 'option', 'builtin', 'cond_op', 'reserved_word'. Unknown values yield { match: null }.",
+      },
+      id: {
+        type: "string",
+        description:
+          "Canonical id within `category` (e.g. 'autocd' for option, 'echo' for builtin). Must be an exact corpus key — usually obtained from `zsh_search`.",
+      },
+    },
+    required: ["category", "id"],
+    additionalProperties: false,
+  },
+  execute: (corpus, input): DescribeResult =>
+    describe(corpus, input as unknown as DescribeInput),
 }

@@ -110,6 +110,16 @@ The raw→documented relationship has genuinely different shapes per category (`
 
 `DocCorpus` is an explicit interface rather than a computed mapped type because hovering `DocCorpus` in an IDE should show concrete fields, not a formula. Compile-time key assertions (`Eq<...>`) enforce completeness.
 
+### Category-indexed artifacts belong in zsh-core
+
+Any table of shape "one entry per `DocCategory`" lives in zsh-core with a structural completeness guard; consumers import. Today this covers the iteration list, the classify-order, human-readable labels, the record-type map, the corpus shape, renderers, resolvers, and id accessors.
+
+**Motivation:** after two categories were added to the taxonomy, a hand-written ordering array and hand-typed category lists in tool descriptions silently fell behind — neither tests nor the type system flagged it. Moving both into zsh-core behind `DocCategory`-keyed tables makes the same class of drift a compile error.
+
+Principle: if a consumer is about to hand-write a list or table keyed by category, import instead.
+
+(Contributor rule — no hand-typed enumerations in any documentation or runtime string — is in `AGENTS.md`.)
+
 ---
 
 ## Identity per record, display separately
@@ -173,7 +183,7 @@ Consequently, zsh-core did **not** need a new "query API" to support the MCP. Th
 - `docDisplay(cat, doc)` — human-friendly heading (made public for this reason)
 - `docCategories` — iteration target
 
-The only change to zsh-core's public API to support the MCP was promoting `docDisplay` from internal to public. No new endpoints, no new resolver patterns, no new brand crossings. This is evidence that the "static types + consumer plumbing" model generalizes beyond the editor.
+The only zsh-core changes driven by the MCP have been additive exports of already-internal knowledge: `docDisplay`, `classifyOrder`, `docCategoryLabels`. No new endpoints, no new resolver patterns, no new brand crossings. This is evidence that the "static types + consumer plumbing" model generalizes beyond the editor.
 
 ### Package boundaries and no-vscode rule
 
@@ -198,7 +208,17 @@ Rationale:
 
 ### Tie-break in classify
 
-`classify` walks categories in a bespoke `classifyOrder` that puts closed-identity categories (`reserved_word`, `precmd`, `builtin`, `cond_op`, …) **before** `option`. The `option` resolver applies `no_`-stripping, which would otherwise shadow legitimate precmd/reserved-word matches (`nocorrect` is all three; we resolve it as a reserved word, not as "NO_CORRECT" with negation). This is a classify-level policy, not a zsh-core decision.
+`classify` walks `classifyOrder` (in zsh-core), which puts closed-identity resolvers before `option`'s `no_`-stripping and `redir`'s loose tail matching — otherwise `nocorrect` would shadow-resolve as "NO_CORRECT" with negation instead of the precmd/reserved-word it is. The ordering encodes resolver-shadowing facts, which are zsh-core knowledge; `classify` is a uniform walk.
+
+### Fuzzy search rationale
+
+`zsh_search` uses fuzzy matching with exact-and-prefix tiers, not exact-only. Reasons:
+
+- Corpus identities aren't a stable API: canonical option names drift in case and underscoring under benign doc edits. Fuzzy decouples agent intent from current corpus spelling.
+- Option names have no universal canonical form (`no_errreturn` vs `NOERRRETURN` — both plausible, neither "right"). The option resolver handles this per-option; fuzzy generalizes the same forgiveness across categories without corpus-aware resolvers.
+- Exact + prefix tiers stay precise: literal id/display hits win outright; fuzzy only fires when earlier tiers miss.
+
+Rendered markdown is withheld from search results to keep responses small and encourage composition with the describe/classify tools.
 
 ---
 

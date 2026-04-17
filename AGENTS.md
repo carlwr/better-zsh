@@ -1,5 +1,3 @@
-# Agent / Contributor Guidelines
-
 ## Overview
 
 A small monorepo with three packages:
@@ -15,15 +13,16 @@ Nothing is released yet — APIs can move freely.
 - **`packages/zsh-core/dist/types/*.d.ts`** — rolled-up public API with JSDoc ("what").
 - **Orientation skill** at `skills/orient/` — discovery scripts and reading paths.
 
-### DRY across documentation layers
+## DRY across documentation layers
 
-Three layers carry documentation: **JSDoc** (API docs in d.ts), **DESIGN.md** (design rationale), **AGENTS.md** (contributor conventions). Keep them non-redundant:
+Four layers carry documentation. Keep them non-redundant; audience dictates content.
 
-- **JSDoc** — what a type/function is, its behavioral contract, trust model. Consumers' source of truth. Travels with the code.
-- **DESIGN.md** — why the design is shaped this way. Complements JSDoc; refers to types/functions by name but avoids repeating signatures or behavioral details. Minimally specific with things that may drift (file names, signatures). Key identifiers (`Observed`, `Documented`) are fine to mention; function signatures are not — if something needs a signature to explain, it belongs in JSDoc.
-- **AGENTS.md** — how to work on the code. Style, testing, tooling, refs. Does not duplicate design rationale from DESIGN.md or API semantics from JSDoc.
+- **JSDoc** — end-user facing; what consumers see on hover. Terse. Covers *what* and *how to use*; not *why*. No rationale, no implementation-history, no cross-file narrative, no "this wraps X" internals. If you're writing more than a couple of sentences, ask whether the extra content belongs as a code comment or in DESIGN.md instead. JSDoc on exported zsh-core identifiers is optional — add it only if it adds value beyond the identifier name + type signature.
+- **Code comments (non-JSDoc)** — maintainer facing; read by someone editing the file. Good home for *local* rationale, invariants, workarounds, "why not the obvious alternative". Stays out of the API surface.
+- **DESIGN.md** — design rationale spanning files; *why* the overall shape. Refers to identifiers by name; avoids signatures, paths, counts, and other drift-prone specifics.
+- **AGENTS.md** — contributor conventions; style, testing, tooling. Does not duplicate design rationale from DESIGN.md or API semantics from JSDoc.
 
-When editing one layer, check if the same information already lives in another. Add a cross-reference instead of duplicating.
+When editing one layer, check whether the same point already lives in another. Prefer a cross-reference. If a passage is truly local (applies to one file/function), prefer a code comment over `.md`.
 
 ## Short architecture summary
 
@@ -85,7 +84,7 @@ VS Code provider classes wire zsh-core analysis and doc records to language feat
 - When a concept or term is established (e.g. "facts"), use it consistently.
 - Prefer expressing intent through code shape (module boundaries, types, signatures) over comments.
 - Strengthen documentation primarily through identifier names, structure, and abstraction; secondarily with JSDoc. Avoid separate documentation files.
-- JSDoc on exported zsh-core identifiers is **not** required — add it if it adds value beyond function name + type signature.
+- See "DRY across documentation layers" above for JSDoc vs. code comment vs. `.md` scope. Default to no comments; escalate only when a reader couldn't reconstruct the *why* from the code.
 
 ### Conciseness
 
@@ -136,6 +135,16 @@ Every `as` is a trust assertion. Classify before writing one.
 - "Obviously correct islands" — pure, strongly-typed, narrow-scope helpers that are correct by construction — are the preferred unit of non-trivial logic.
 - Prefer structural enforcement over advisory comments (branded types, `ReadonlySet`, smart constructors).
 - Evaluate zsh-core's public API surface from a **general-consumer perspective**, not just from what the extension uses.
+
+### Never enumerate `DocCategory` in prose or strings
+
+Drift in hand-written category enumerations has bitten us. Rules:
+
+- **JSDoc, code comments, `.md`**: 1–3 categories as examples are fine; never purport to list the full set.
+- **Runtime strings** (tool descriptions, log/UI copy): interpolate from the zsh-core category exports (branded strings, human labels, ordering). Never hand-type.
+- **Category-indexed tables**: use `Record<DocCategory, T>` or `satisfies { [K in DocCategory]: T }` so the compiler enforces completeness. Such tables belong in zsh-core; consumers import.
+
+Rationale in `DESIGN.md`.
 
 ### Hover docs
 
@@ -227,17 +236,19 @@ The MCP additionally exposes `test:integration:act` (runs the `mcp` CI job throu
     # approx. 100 lines
     ```
 
-## Packaging (vsce)
+## Packaging
 
-- All `vsce` commands must use `--no-dependencies` — the extension is bundled by tsup (no runtime `node_modules`), and `vsce` internally runs `npm list` which is incompatible with pnpm's symlinked layout.
-
-## Packaging (npm + JSR dual publish)
+### npm + JSR dual publish
 
 `zsh-core` and `@carlwr/zsh-ref-mcp` publish to both npm (build artifacts) and JSR (`.ts` sources). Consequences:
 
 - **No runtime `package.json` reads.** JSR consumers receive `.ts` sources only — `package.json` does not exist for them. Library code must never read it (`readFileSync("package.json")` or equivalent). Build scripts and tests may read it freely; they only run in dev/CI.
 - **Package identity in a `.ts` source of truth.** Names, versions, URLs, bin names live in a `.ts` module (see `packages/zsh-ref-mcp/src/pkg-info.ts`); runtime code imports from there. A sync test reads `package.json` + `deno.json` and asserts they agree with the `.ts`.
 - **`deno.json` and `package.json` share a logical surface but diverge in form.** `exports` appears in both but refers to `.ts` files (JSR) vs `.js`/`.d.ts` files (npm). Generated artifacts (e.g. `dist/json/*.json`, `dist/schema/*.schema.json`) are npm-only by nature — keep such subpaths out of `deno.json.exports`.
+
+### vsce
+
+- All `vsce` commands must use `--no-dependencies` — the extension is bundled by tsup (no runtime `node_modules`), and `vsce` internally runs `npm list` which is incompatible with pnpm's symlinked layout.
 
 ## Contributor guidance
 
@@ -304,6 +315,15 @@ Judge along:
 - Implementation complexity ("how low is the fruit hanging")
 - Added value
 - Robustness, future-proofness, testability
+
+### Git; commits
+
+If making commits/asked to make commits:
+- pre-release, commits do not have to be atomic or tidy
+- commit messages:
+  - subject line max 55 chars hard limit
+  - in general: subject line only; avoid adding a commit message body
+    - since: hard to keep fresh, easily rots, esp. if the commit is later squashed etc.
 
 ## References & sources
 
