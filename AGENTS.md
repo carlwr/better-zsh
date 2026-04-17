@@ -231,6 +231,14 @@ The MCP additionally exposes `test:integration:act` (runs the `mcp` CI job throu
 
 - All `vsce` commands must use `--no-dependencies` — the extension is bundled by tsup (no runtime `node_modules`), and `vsce` internally runs `npm list` which is incompatible with pnpm's symlinked layout.
 
+## Packaging (npm + JSR dual publish)
+
+`zsh-core` and `@carlwr/zsh-ref-mcp` publish to both npm (build artifacts) and JSR (`.ts` sources). Consequences:
+
+- **No runtime `package.json` reads.** JSR consumers receive `.ts` sources only — `package.json` does not exist for them. Library code must never read it (`readFileSync("package.json")` or equivalent). Build scripts and tests may read it freely; they only run in dev/CI.
+- **Package identity in a `.ts` source of truth.** Names, versions, URLs, bin names live in a `.ts` module (see `packages/zsh-ref-mcp/src/pkg-info.ts`); runtime code imports from there. A sync test reads `package.json` + `deno.json` and asserts they agree with the `.ts`.
+- **`deno.json` and `package.json` share a logical surface but diverge in form.** `exports` appears in both but refers to `.ts` files (JSR) vs `.js`/`.d.ts` files (npm). Generated artifacts (e.g. `dist/json/*.json`, `dist/schema/*.schema.json`) are npm-only by nature — keep such subpaths out of `deno.json.exports`.
+
 ## Contributor guidance
 
 ### Agent tool agnostic

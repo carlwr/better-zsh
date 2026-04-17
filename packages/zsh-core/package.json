@@ -56,6 +56,22 @@
     "./data/process-substs.json": "./dist/json/process-substs.json",
     "./data/prompt-escapes.json": "./dist/json/prompt-escapes.json",
     "./data/zle-widgets.json": "./dist/json/zle-widgets.json",
+    "./schema/index.schema.json": "./dist/schema/index.schema.json",
+    "./schema/options.schema.json": "./dist/schema/options.schema.json",
+    "./schema/cond-ops.schema.json": "./dist/schema/cond-ops.schema.json",
+    "./schema/builtins.schema.json": "./dist/schema/builtins.schema.json",
+    "./schema/shell-params.schema.json": "./dist/schema/shell-params.schema.json",
+    "./schema/precmds.schema.json": "./dist/schema/precmds.schema.json",
+    "./schema/redirections.schema.json": "./dist/schema/redirections.schema.json",
+    "./schema/reserved-words.schema.json": "./dist/schema/reserved-words.schema.json",
+    "./schema/subscript-flags.schema.json": "./dist/schema/subscript-flags.schema.json",
+    "./schema/param-flags.schema.json": "./dist/schema/param-flags.schema.json",
+    "./schema/history.schema.json": "./dist/schema/history.schema.json",
+    "./schema/glob-operators.schema.json": "./dist/schema/glob-operators.schema.json",
+    "./schema/glob-flags.schema.json": "./dist/schema/glob-flags.schema.json",
+    "./schema/process-substs.schema.json": "./dist/schema/process-substs.schema.json",
+    "./schema/prompt-escapes.schema.json": "./dist/schema/prompt-escapes.schema.json",
+    "./schema/zle-widgets.schema.json": "./dist/schema/zle-widgets.schema.json",
     "./internal": {
       "types": "./dist/internal.d.ts",
       "import": "./dist/internal.mjs",
@@ -65,7 +81,7 @@
     "./package.json": "./package.json"
   },
   "scripts": {
-    "build": "tsx build.ts && node scripts/build-api.mjs",
+    "build": "tsx build.ts && node scripts/build-api.mjs && tsx scripts/build-schema.ts",
     "watch": "tsx build.ts --watch",
     "docs:typedoc:html": "typedoc",
     "docs:typedoc:json": "typedoc --emit none",
@@ -78,12 +94,15 @@
     "lint": "biome check --error-on-warnings assets.ts build.ts deno.json exec.ts index.ts internal.ts render.ts scripts src tsconfig.build.json tsconfig.json typedoc.json vitest.config.ts package.json",
     "check": "pnpm typecheck && pnpm lint",
     "test": "vitest run",
-    "test:smoke": "pnpm build && node scripts/test-smoke.mjs && pnpm run jsr:check"
+    "test:smoke": "pnpm build && tsx scripts/test-smoke.ts && pnpm run jsr:check",
+    "test:integration": "pnpm run check && pnpm run test && pnpm run test:smoke && pnpm run jsr:check"
   },
   "dependencies": {
     "@carlwr/typescript-extra": "0.7.0"
   },
   "devDependencies": {
+    "ajv": "^8.17.1",
+    "ts-json-schema-generator": "^2.4.0",
     "vitest": "^4.1.2"
   }
 }

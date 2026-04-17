@@ -1,19 +1,44 @@
 import { execFileSync } from "node:child_process"
-import { mkdtempSync, rmSync } from "node:fs"
+import { mkdtempSync, readFileSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
-import { join } from "node:path"
+import { dirname, join, resolve } from "node:path"
+import { fileURLToPath } from "node:url"
+import Ajv, { type AnySchema } from "ajv"
+import { jsonFiles, schemaFile } from "../src/docs/json-artifacts.ts"
 
+const pkgDir = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const pnpm = process.platform === "win32" ? "pnpm.cmd" : "pnpm"
 const tmp = mkdtempSync(join(tmpdir(), "better-zsh-zsh-core-pack-"))
 
+function readJson<T>(path: string): T {
+  return JSON.parse(readFileSync(path, "utf8")) as T
+}
+
+function validateJson() {
+  const ajv = new Ajv({ allErrors: true, strict: true })
+  for (const file of jsonFiles) {
+    const schema = readJson<AnySchema>(
+      join(pkgDir, "dist", "schema", schemaFile(file)),
+    )
+    const data = readJson<unknown>(join(pkgDir, "dist", "json", file))
+    const validate = ajv.compile(schema)
+    if (validate(data)) continue
+    throw new Error(
+      `${file} failed schema validation: ${ajv.errorsText(validate.errors, { separator: "\n" })}`,
+    )
+  }
+}
+
 try {
+  validateJson()
+
   const out = execFileSync(
     pnpm,
     ["pack", "--json", "--pack-destination", tmp],
-    { encoding: "utf8" },
+    { cwd: pkgDir, encoding: "utf8" },
   )
   const { filename } = JSON.parse(out)
-  const paths = execFileSync("tar", ["-tzf", filename], {
+  const paths = execFileSync("tar", ["-tzf", resolve(tmp, filename)], {
     encoding: "utf8",
   })
     .split(/\r?\n/)
@@ -43,22 +68,8 @@ try {
     "dist/index.js.map",
     "dist/index.mjs",
     "dist/index.mjs.map",
-    "dist/json/builtins.json",
-    "dist/json/cond-ops.json",
-    "dist/json/glob-flags.json",
-    "dist/json/glob-operators.json",
-    "dist/json/history.json",
-    "dist/json/index.json",
-    "dist/json/options.json",
-    "dist/json/param-flags.json",
-    "dist/json/precmds.json",
-    "dist/json/process-substs.json",
-    "dist/json/prompt-escapes.json",
-    "dist/json/redirections.json",
-    "dist/json/reserved-words.json",
-    "dist/json/shell-params.json",
-    "dist/json/subscript-flags.json",
-    "dist/json/zle-widgets.json",
+    ...jsonFiles.map(file => `dist/json/${file}`),
+    ...jsonFiles.map(file => `dist/schema/${schemaFile(file)}`),
     "dist/render.d.ts",
     "dist/render.js",
     "dist/render.js.map",
@@ -88,7 +99,7 @@ try {
     [/\.test\./, "test artifact"],
     [/^dist\/docs\//, "docs-site artifact"],
     [/^node_modules\//, "node_modules content"],
-  ]
+  ] as const
 
   const missing = required.filter(file => !paths.includes(file))
   const hits = forbidden.flatMap(([pat, desc]) =>
