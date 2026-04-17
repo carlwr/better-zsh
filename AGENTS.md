@@ -59,6 +59,14 @@ Keep low-level parsing rules in the core layer. Keep corpus-specific interpretat
 
 Principle: "MCP is another consumer of zsh-core." No new query APIs in zsh-core to support the MCP. See `DESIGN.md` "MCP as a consumer".
 
+**Before proposing new MCP tools, reshaping the tool surface, or loosening the scope fence, read all three:**
+
+- `packages/zsh-ref-mcp/README.md` — user-facing pitch; the "Out of scope features" list is load-bearing.
+- `DESIGN.md` §"MCP as a consumer" — rationale for the static, read-only posture and the scope fence.
+- `packages/zsh-ref-mcp/DEVELOPMENT.md` — architectural invariants, adding-a-tool checklist, scope-fence details.
+
+The static, read-only, no-execution posture is a **product feature**, not incidental. Bringing host-dependent capabilities (listing live `setopt` state, `$commands`, process env, filesystem, shell invocation) into this package is antithetical to its pitch — `analyze/` and similar dynamic surfaces stay out. Extending the MCP with **more static knowledge** from the vendored reference is always on the table; extending it with runtime introspection is not.
+
 ### Providers
 
 VS Code provider classes wire zsh-core analysis and doc records to language features (hover, completions, semantic tokens). Reusable parsing/rendering logic should live in pure functions; some provider-local dispatch/lookup logic remains in provider modules.

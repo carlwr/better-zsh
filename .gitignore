@@ -6,6 +6,7 @@ out/
 .non-vcs/
 language-configuration.json
 .aux/
+.claude/worktrees/
 packages/**/.vscode-test/
 packages/**/dist/
 packages/**/*.vsix
