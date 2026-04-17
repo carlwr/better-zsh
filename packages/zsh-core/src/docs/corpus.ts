@@ -30,10 +30,12 @@ import type {
   ParamFlagDoc,
   PrecmdDoc,
   ProcessSubstDoc,
+  PromptEscapeDoc,
   RedirDoc,
   ReservedWordDoc,
   ShellParamDoc,
   SubscriptFlagDoc,
+  ZleWidgetDoc,
   ZshOption,
 } from "./types.ts"
 import { parseBuiltins } from "./yodl/extractors/builtins.ts"
@@ -45,10 +47,12 @@ import { parseOptions } from "./yodl/extractors/options.ts"
 import { parseParamFlags } from "./yodl/extractors/param-flags.ts"
 import { parsePrecmds } from "./yodl/extractors/precmds.ts"
 import { parseProcessSubsts } from "./yodl/extractors/process-substs.ts"
+import { parsePromptEscapes } from "./yodl/extractors/prompt-escapes.ts"
 import { parseRedirs } from "./yodl/extractors/redirections.ts"
 import { parseReswords } from "./yodl/extractors/reserved-words.ts"
 import { parseShellParams } from "./yodl/extractors/shell-params.ts"
 import { parseSubscriptFlags } from "./yodl/extractors/subscript-flags.ts"
+import { parseZleWidgets } from "./yodl/extractors/zle-widgets.ts"
 
 const dataDir = resolveZshDataDir()
 
@@ -73,6 +77,8 @@ const categoryLoader: CategoryLoader = {
   history: { file: "expn.yo", parse: parseHistory },
   glob_op: { file: "expn.yo", parse: parseGlobOps },
   glob_flag: { file: "expn.yo", parse: parseGlobFlags },
+  prompt_escape: { file: "prompt.yo", parse: parsePromptEscapes },
+  zle_widget: { file: "zle.yo", parse: parseZleWidgets },
 }
 
 /** In-memory corpus of parsed zsh documentation, keyed by category then identity. */
@@ -99,6 +105,11 @@ export interface DocCorpus {
   readonly history: ReadonlyMap<Documented<"history">, HistoryDoc>
   readonly glob_op: ReadonlyMap<Documented<"glob_op">, GlobOpDoc>
   readonly glob_flag: ReadonlyMap<Documented<"glob_flag">, GlobFlagDoc>
+  readonly prompt_escape: ReadonlyMap<
+    Documented<"prompt_escape">,
+    PromptEscapeDoc
+  >
+  readonly zle_widget: ReadonlyMap<Documented<"zle_widget">, ZleWidgetDoc>
 }
 
 type _AssertDocCorpusKeys1 = Assert<
@@ -209,6 +220,8 @@ const resolvers: { [K in DocCategory]: Resolver<K> } = {
   history: simpleResolver("history"),
   glob_op: simpleResolver("glob_op"),
   glob_flag: simpleResolver("glob_flag"),
+  prompt_escape: simpleResolver("prompt_escape"),
+  zle_widget: simpleResolver("zle_widget"),
 }
 
 /**

@@ -14,10 +14,12 @@ import type {
   ParamFlagDoc,
   PrecmdDoc,
   ProcessSubstDoc,
+  PromptEscapeDoc,
   RedirDoc,
   ReservedWordDoc,
   ShellParamDoc,
   SubscriptFlagDoc,
+  ZleWidgetDoc,
   ZshOption,
 } from "../docs/types.ts"
 
@@ -163,6 +165,27 @@ export function mdReservedWord(doc: ReservedWordDoc): string {
   )
 }
 
+/** Render one prompt-escape doc block as markdown. */
+export function mdPromptEscape(doc: PromptEscapeDoc): string {
+  return docBlock(
+    mdFmt.code(doc.sig),
+    doc.desc,
+    `_Category:_ Prompt Escape${doc.section ? ` (${doc.section})` : ""}`,
+  )
+}
+
+/** Render one ZLE widget doc block as markdown. */
+export function mdZleWidget(doc: ZleWidgetDoc): string {
+  const role =
+    doc.kind === "special" ? "ZLE special widget" : "ZLE standard widget"
+  return docBlock(
+    mdFmt.code(doc.name),
+    codeBlock("zsh", doc.sig),
+    doc.desc,
+    `_Role:_ ${role}${doc.section ? ` (${doc.section})` : ""}`,
+  )
+}
+
 /** Return whether an option defaults on/off for an emulation mode. */
 export function defaultStateIn(opt: ZshOption, emulation: Emulation): OptState {
   return opt.defaultIn.includes(emulation) ? "on" : "off"
@@ -231,6 +254,8 @@ export const mdRenderer: {
   history: mdHistory,
   glob_op: mdGlobOp,
   glob_flag: mdGlobFlag,
+  prompt_escape: mdPromptEscape,
+  zle_widget: mdZleWidget,
 }
 
 /**

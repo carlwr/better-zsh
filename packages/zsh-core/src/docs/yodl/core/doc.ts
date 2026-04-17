@@ -66,6 +66,29 @@ export function extractSectionBody(
   return extractSections(src).find(section => section.name === name)?.body ?? []
 }
 
+/**
+ * Nodes under a top-level `sect(name)` — spanning its prose and any nested
+ * `subsect(...)`-delimited bodies — up to (but excluding) the next top-level
+ * `sect(...)`. Unlike `extractSectionBody`, this does not stop at subsections.
+ */
+export function extractSectBody(
+  src: string | YNodeSeq,
+  name: string,
+): YNodeSeq {
+  const nodes = asNodes(src)
+  const start = nodes.findIndex(
+    n => isMacro(n, "sect") && macroName(n) === name,
+  )
+  if (start < 0) return []
+  const endRel = nodes.slice(start + 1).findIndex(n => isMacro(n, "sect"))
+  const end = endRel < 0 ? nodes.length : start + 1 + endRel
+  return nodes.slice(start + 1, end)
+}
+
+function macroName(node: YNode): string {
+  return node.kind === "macro" ? stripYodl(macroArg(node, 0)) : ""
+}
+
 export function extractFirstList(
   src: string | YNodeSeq,
   kind: YodlListKind,

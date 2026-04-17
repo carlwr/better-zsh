@@ -40,6 +40,8 @@ const jsonFileName: Record<DocCategory, string> = {
   history: "history.json",
   glob_op: "glob-operators.json",
   glob_flag: "glob-flags.json",
+  prompt_escape: "prompt-escapes.json",
+  zle_widget: "zle-widgets.json",
 }
 
 /** Maps each DocCategory to the camelCase key used in the index.json counts object. */
@@ -57,6 +59,8 @@ const countsKey: Record<DocCategory, string> = {
   history: "history",
   glob_op: "globOperators",
   glob_flag: "globFlags",
+  prompt_escape: "promptEscapes",
+  zle_widget: "zleWidgets",
 }
 
 function writeJsonArtifacts() {

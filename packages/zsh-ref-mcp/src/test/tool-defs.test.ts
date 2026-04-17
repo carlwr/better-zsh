@@ -3,8 +3,12 @@ import { loadCorpus } from "zsh-core"
 import {
   type ClassifyResult,
   classifyToolDef,
+  type DescribeResult,
+  describeToolDef,
   type LookupOptionResult,
   lookupOptionToolDef,
+  type SearchResult,
+  searchToolDef,
   toolDefs,
 } from "../../index.ts"
 
@@ -13,21 +17,34 @@ const corpus = loadCorpus()
 describe("toolDefs metadata", () => {
   test("names are stable, unique, snake_case, zsh_-prefixed", () => {
     const names = toolDefs.map(def => def.name)
-    expect(names).toEqual(["zsh_classify", "zsh_lookup_option"])
+    expect(names).toEqual([
+      "zsh_classify",
+      "zsh_lookup_option",
+      "zsh_search",
+      "zsh_describe",
+    ])
     expect(new Set(names).size).toBe(names.length)
     for (const name of names) expect(name).toMatch(/^zsh_[a-z][a-z0-9_]*$/)
   })
 
-  test("inputSchema is a JSON object schema with 'raw' required", () => {
+  test("inputSchema is always a JSON object schema", () => {
     for (const def of toolDefs) {
-      expect(def.inputSchema).toMatchObject({
-        type: "object",
-        required: ["raw"],
-      })
-      const props = (def.inputSchema as { properties: Record<string, unknown> })
-        .properties
-      expect(props.raw).toMatchObject({ type: "string" })
+      expect(def.inputSchema).toMatchObject({ type: "object" })
     }
+  })
+
+  test.each([
+    ["zsh_classify", classifyToolDef, ["raw"]],
+    ["zsh_lookup_option", lookupOptionToolDef, ["raw"]],
+    ["zsh_describe", describeToolDef, ["category", "id"]],
+  ] as const)("%s declares required=%j", (_n, def, required) => {
+    expect(def.inputSchema).toMatchObject({ required })
+  })
+
+  test("zsh_search has no required fields", () => {
+    expect(
+      (searchToolDef.inputSchema as { required?: readonly string[] }).required,
+    ).toBeUndefined()
   })
 
   test("execute wires corpus through", () => {
@@ -39,6 +56,18 @@ describe("toolDefs metadata", () => {
       raw: "AUTO_CD",
     }) as LookupOptionResult
     expect(l.match?.id).toBe("autocd")
+    const s = searchToolDef.execute(corpus, {
+      query: "echo",
+      category: "builtin",
+      limit: 3,
+    }) as SearchResult
+    expect(s.matches.length).toBeGreaterThan(0)
+    expect(s.matches[0]?.id).toBe("echo")
+    const d = describeToolDef.execute(corpus, {
+      category: "builtin",
+      id: "echo",
+    }) as DescribeResult
+    expect(d.match?.markdown).toMatch(/echo/i)
   })
 })
 
@@ -70,5 +99,18 @@ describe("toolDefs description shape", () => {
     const d = lookupOptionToolDef.description
     expect(d).toMatch(/negat/i)
     expect(d).toContain("NO_")
+  })
+
+  test("zsh_search mentions ranking/limit and points at follow-up", () => {
+    const d = searchToolDef.description
+    expect(d).toMatch(/fuzzy/i)
+    expect(d).toMatch(/limit/i)
+    expect(d).toMatch(/zsh_describe|zsh_classify/)
+  })
+
+  test("zsh_describe mentions canonical id", () => {
+    const d = describeToolDef.description
+    expect(d).toMatch(/canonical|exact/i)
+    expect(d).toMatch(/markdown/i)
   })
 })

@@ -53,10 +53,12 @@ try {
     "dist/json/param-flags.json",
     "dist/json/precmds.json",
     "dist/json/process-substs.json",
+    "dist/json/prompt-escapes.json",
     "dist/json/redirections.json",
     "dist/json/reserved-words.json",
     "dist/json/shell-params.json",
     "dist/json/subscript-flags.json",
+    "dist/json/zle-widgets.json",
     "dist/render.d.ts",
     "dist/render.js",
     "dist/render.js.map",
@@ -74,7 +76,9 @@ try {
     "dist/data/zsh-docs/grammar.yo",
     "dist/data/zsh-docs/options.yo",
     "dist/data/zsh-docs/params.yo",
+    "dist/data/zsh-docs/prompt.yo",
     "dist/data/zsh-docs/redirect.yo",
+    "dist/data/zsh-docs/zle.yo",
   ]
 
   const forbidden = [

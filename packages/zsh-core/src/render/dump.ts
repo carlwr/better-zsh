@@ -19,6 +19,8 @@ export type RefDumpFile =
   | "history.md"
   | "glob-ops.md"
   | "glob-flags.md"
+  | "prompt-escapes.md"
+  | "zle-widgets.md"
   | "suspicious.md"
 
 const dumpFile: { [K in DocCategory]: RefDumpFile } = {
@@ -35,6 +37,8 @@ const dumpFile: { [K in DocCategory]: RefDumpFile } = {
   history: "history.md",
   glob_op: "glob-ops.md",
   glob_flag: "glob-flags.md",
+  prompt_escape: "prompt-escapes.md",
+  zle_widget: "zle-widgets.md",
 }
 
 const dumpSpecs = [

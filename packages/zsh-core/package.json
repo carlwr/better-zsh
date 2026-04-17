@@ -54,6 +54,8 @@
     "./data/glob-operators.json": "./dist/json/glob-operators.json",
     "./data/glob-flags.json": "./dist/json/glob-flags.json",
     "./data/process-substs.json": "./dist/json/process-substs.json",
+    "./data/prompt-escapes.json": "./dist/json/prompt-escapes.json",
+    "./data/zle-widgets.json": "./dist/json/zle-widgets.json",
     "./internal": {
       "types": "./dist/internal.d.ts",
       "import": "./dist/internal.mjs",

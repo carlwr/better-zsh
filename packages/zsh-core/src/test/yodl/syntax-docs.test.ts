@@ -6,17 +6,21 @@ import { parseGlobOps } from "../../docs/yodl/extractors/glob-ops"
 import { parseHistory } from "../../docs/yodl/extractors/history"
 import { parseParamFlags } from "../../docs/yodl/extractors/param-flags"
 import { parseProcessSubsts } from "../../docs/yodl/extractors/process-substs"
+import { parsePromptEscapes } from "../../docs/yodl/extractors/prompt-escapes"
 import { parseRedirs } from "../../docs/yodl/extractors/redirections"
 import { parseReswords } from "../../docs/yodl/extractors/reserved-words"
 import { parseShellParams } from "../../docs/yodl/extractors/shell-params"
 import { parseSubscriptFlags } from "../../docs/yodl/extractors/subscript-flags"
+import { parseZleWidgets } from "../../docs/yodl/extractors/zle-widgets"
 import { mkDocumented_ } from "../id-fns"
 import { by, expectDocCorpus, readVendoredYo } from "./test-util"
 
 const EXPN_YO = readVendoredYo("expn.yo")
 const GRAMMAR_YO = readVendoredYo("grammar.yo")
 const PARAMS_YO = readVendoredYo("params.yo")
+const PROMPT_YO = readVendoredYo("prompt.yo")
 const REDIR_YO = readVendoredYo("redirect.yo")
+const ZLE_YO = readVendoredYo("zle.yo")
 
 describe("more yodl parsers", () => {
   test("shell params keep tied pairs and xitem aliases with shared docs", () => {
@@ -72,6 +76,43 @@ enditem()`
     expect(getResWord("if")?.pos).toBe("command")
     expect(getResWord("[[")?.pos).toBe("command")
     expect(getResWord("}")?.pos).toBe("any")
+  })
+
+  test("prompt escapes: xitem aliases inherit following-item docs", () => {
+    const yo = [
+      "sect(Shell state)",
+      "startitem()",
+      "xitem(tt(%h))",
+      "item(tt(%!))(",
+      "Current history event number.",
+      ")",
+      "enditem()",
+    ].join("\n")
+    const docs = parsePromptEscapes(yo)
+    expect(docs.map(d => d.key).sort()).toEqual(["%!", "%h"])
+    expect(docs.every(d => d.desc === "Current history event number.")).toBe(
+      true,
+    )
+    expect(docs.every(d => d.section === "Shell state")).toBe(true)
+  })
+
+  test("zle widgets: standard kind picked from parent sect, name from first tt", () => {
+    const yo = [
+      "sect(Standard Widgets)",
+      "subsect(Movement)",
+      "startitem()",
+      "tindex(backward-char)",
+      "item(tt(backward-char) (tt(^B)) (unbound) (unbound))(",
+      "Move backward one character.",
+      ")",
+      "enditem()",
+      "sect(Character Highlighting)",
+    ].join("\n")
+    const docs = parseZleWidgets(yo)
+    expect(docs).toHaveLength(1)
+    expect(docs[0]?.name).toBe(mkDocumented("zle_widget", "backward-char"))
+    expect(docs[0]?.kind).toBe("standard")
+    expect(docs[0]?.section).toBe("Movement")
   })
 
   test("process substitution exports the three canonical forms", () => {
@@ -199,6 +240,35 @@ enditem()`
           known: ["i", "I", "b", "m", "cN,M"],
         }),
     ],
+    [
+      "vendored prompt-escape corpus parses",
+      () =>
+        expectDocCorpus({
+          docs: parsePromptEscapes(PROMPT_YO),
+          minCount: 40,
+          keyOf: doc => doc.key,
+          descOf: doc => doc.desc,
+          sectionOf: doc => doc.section,
+          known: ["%n", "%~", "%D{string}", "%F", "%{...%}"],
+        }),
+    ],
+    [
+      "vendored zle-widget corpus parses",
+      () =>
+        expectDocCorpus({
+          docs: parseZleWidgets(ZLE_YO),
+          minCount: 180,
+          keyOf: doc => doc.name,
+          descOf: doc => doc.desc,
+          known: [
+            "backward-kill-word",
+            "yank",
+            "vi-cmd-mode",
+            "self-insert",
+            "zle-line-init",
+          ],
+        }),
+    ],
   ] as const) {
     test(name, run)
   }
@@ -228,6 +298,14 @@ enditem()`
       [
         parseGlobFlags(EXPN_YO).map(doc => doc.flag),
         mkDocumented_("glob_flag"),
+      ],
+      [
+        parsePromptEscapes(PROMPT_YO).map(doc => doc.key),
+        mkDocumented_("prompt_escape"),
+      ],
+      [
+        parseZleWidgets(ZLE_YO).map(doc => doc.name),
+        mkDocumented_("zle_widget"),
       ],
     ] as const
     for (const [docs, mk] of t) {

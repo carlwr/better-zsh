@@ -248,3 +248,17 @@ export interface GlobFlagDoc extends SyntaxDocBase {
   readonly flag: Documented<"glob_flag">
   readonly args: readonly string[]
 }
+
+/** Prompt-expansion escape sequences -- e.g. `%n`, `%~`, `%D{string}`, `%F{color}`. */
+export interface PromptEscapeDoc extends SyntaxDocBase {
+  readonly key: Documented<"prompt_escape">
+}
+
+/** Zsh Line Editor widget names -- standard and special widgets from `zle.yo`. */
+export interface ZleWidgetDoc extends SyntaxDocBase {
+  readonly name: Documented<"zle_widget">
+  /** `"standard"` for bindable editing widgets; `"special"` for shell-called hooks. */
+  readonly kind: ZleWidgetKind
+}
+
+export type ZleWidgetKind = "standard" | "special"

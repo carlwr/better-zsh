@@ -8,10 +8,12 @@ import type {
   ParamFlagDoc,
   PrecmdDoc,
   ProcessSubstDoc,
+  PromptEscapeDoc,
   RedirDoc,
   ReservedWordDoc,
   ShellParamDoc,
   SubscriptFlagDoc,
+  ZleWidgetDoc,
   ZshOption,
 } from "./types.ts"
 
@@ -29,6 +31,8 @@ export const docCategories = [
   "history",
   "glob_op",
   "glob_flag",
+  "prompt_escape",
+  "zle_widget",
 ] as const
 
 export type DocCategory = (typeof docCategories)[number]
@@ -47,6 +51,8 @@ export interface DocRecordMap {
   history: HistoryDoc
   glob_op: GlobOpDoc
   glob_flag: GlobFlagDoc
+  prompt_escape: PromptEscapeDoc
+  zle_widget: ZleWidgetDoc
 }
 
 /**
@@ -88,6 +94,8 @@ export const docId: {
   history: d => d.key,
   glob_op: d => d.op,
   glob_flag: d => d.flag,
+  prompt_escape: d => d.key,
+  zle_widget: d => d.name,
 }
 
 /**

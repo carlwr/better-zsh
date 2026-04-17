@@ -18,6 +18,8 @@ const categoryLabel: Record<DocCategory, string> = {
   history: "history",
   glob_op: "glob ops",
   glob_flag: "glob flags",
+  prompt_escape: "prompt escapes",
+  zle_widget: "zle widgets",
 }
 
 async function main() {

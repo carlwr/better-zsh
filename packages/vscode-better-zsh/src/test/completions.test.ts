@@ -94,6 +94,8 @@ suite("CompletionProvider", () => {
       history: emptyMap as DocCorpus["history"],
       glob_op: emptyMap as DocCorpus["glob_op"],
       glob_flag: emptyMap as DocCorpus["glob_flag"],
+      prompt_escape: emptyMap as DocCorpus["prompt_escape"],
+      zle_widget: emptyMap as DocCorpus["zle_widget"],
     }
     const provider = new CompletionProvider(corpus)
 

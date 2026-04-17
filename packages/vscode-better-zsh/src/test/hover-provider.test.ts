@@ -121,6 +121,8 @@ const corpus: DocCorpus = {
   history: mt,
   glob_op: mt,
   glob_flag: mt,
+  prompt_escape: mt,
+  zle_widget: mt,
 }
 
 // --- helpers ----------------------------------------------------------------

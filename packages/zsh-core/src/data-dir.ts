@@ -20,7 +20,9 @@ export const vendoredZshDocFiles = [
   "grammar.yo",
   "options.yo",
   "params.yo",
+  "prompt.yo",
   "redirect.yo",
+  "zle.yo",
 ] as const
 
 // Three candidate layouts:

@@ -11,9 +11,11 @@ import type {
   CondOpDoc,
   PrecmdDoc,
   ProcessSubstDoc,
+  PromptEscapeDoc,
   RedirDoc,
   ReservedWordDoc,
   ShellParamDoc,
+  ZleWidgetDoc,
   ZshOption,
 } from "../../docs/types"
 import { mkOptFlag, mkRedirOp } from "../../docs/types"
@@ -30,10 +32,12 @@ import {
   mdParamFlag,
   mdPrecmd,
   mdProcessSubst,
+  mdPromptEscape,
   mdRedir,
   mdReservedWord,
   mdShellParam,
   mdSubscriptFlag,
+  mdZleWidget,
 } from "../../render/md"
 import { refDocs } from "../../render/refs"
 import { withTmpDirAsync } from "../tmp-dir"
@@ -120,6 +124,20 @@ const hi = stub("history", "key", "!!", { kind: "event-designator" })
 const go = stub("glob_op", "op", "*")
 const gf = stub("glob_flag", "flag", "i")
 
+const pe: PromptEscapeDoc = {
+  key: mkDocumented("prompt_escape", "%n"),
+  sig: "%n",
+  desc: "d:pe",
+  section: "Login information",
+}
+const zw: ZleWidgetDoc = {
+  name: mkDocumented("zle_widget", "backward-kill-word"),
+  sig: "backward-kill-word (^W ESC-^H ESC-^?) (unbound) (unbound)",
+  desc: "d:zw",
+  section: "Modifying Text",
+  kind: "standard",
+}
+
 // --- corpus builder ---------------------------------------------------------
 
 type DocArrays = { readonly [K in DocCategory]: readonly DocRecordMap[K][] }
@@ -138,6 +156,8 @@ const baseArrays: DocArrays = {
   history: [hi],
   glob_op: [go],
   glob_flag: [gf],
+  prompt_escape: [pe],
+  zle_widget: [zw],
 }
 
 function mkTestCorpus(overrides: Partial<DocArrays> = {}): DocCorpus {
@@ -179,6 +199,22 @@ const renderedMarkdownCases = [
     mdReservedWord(word),
     ["`if`", "d:rw", "_Role:_ reserved word (command position)"],
   ],
+  [
+    "prompt_escape",
+    mdPromptEscape(pe),
+    ["`%n`", "d:pe", "_Category:_ Prompt Escape (Login information)"],
+  ],
+  [
+    "zle_widget",
+    mdZleWidget(zw),
+    [
+      "`backward-kill-word`",
+      "```zsh",
+      "backward-kill-word (^W ESC-^H ESC-^?) (unbound) (unbound)",
+      "d:zw",
+      "_Role:_ ZLE standard widget (Modifying Text)",
+    ],
+  ],
 ] as const
 
 const stubMarkdownCases = [
@@ -207,6 +243,8 @@ const dumpByCat: {
   history: ["history.md", "## !!", "TBD"],
   glob_op: ["glob-ops.md", "## *", "TBD"],
   glob_flag: ["glob-flags.md", "## i", "TBD"],
+  prompt_escape: ["prompt-escapes.md", "## %n", "d:pe"],
+  zle_widget: ["zle-widgets.md", "## backward-kill-word", "d:zw"],
 }
 
 const dumpCases = docCategories.map(k => dumpByCat[k])
@@ -303,6 +341,8 @@ describe("render markdown", () => {
       "history:!!",
       "glob_op:*",
       "glob_flag:i",
+      "prompt_escape:%n",
+      "zle_widget:backward-kill-word",
     ])
   })
 

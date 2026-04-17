@@ -147,6 +147,64 @@
           ],
           "additionalProperties": false
         }
+      },
+      {
+        "name": "zsh_search",
+        "toolReferenceName": "zshSearch",
+        "displayName": "Search zsh reference",
+        "modelDescription": "Search the bundled static zsh reference. Fuzzy-matches the query against doc record ids and human display headings across every category (option, builtin, reserved word, redirection, conditional operator, parameter, glob/history/param/subscript flag, precommand modifier, process substitution). Omit `query` to list records (optionally filtered by `category`). Ranking: exact id/display > prefix > fuzzy score. Results carry `{ category, id, display, score? }` but NOT the rendered markdown body — follow up with `zsh_describe` or `zsh_classify` for the full doc. `limit` caps response size (default 20, hard max 100). No shell execution, no environment access.",
+        "canBeReferencedInPrompt": true,
+        "tags": [
+          "zsh"
+        ],
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "query": {
+              "type": "string",
+              "description": "Optional fuzzy search string matched against ids and display headings. Empty/omitted returns records ordered by corpus iteration, capped by `limit`."
+            },
+            "category": {
+              "type": "string",
+              "description": "Optional filter to a single doc category. Valid values are the zsh-core `DocCategory` strings: 'option', 'cond_op', 'builtin', 'precmd', 'shell_param', 'reserved_word', 'redir', 'process_subst', 'subscript_flag', 'param_flag', 'history', 'glob_op', 'glob_flag'. An unknown category yields an empty match set."
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "description": "Maximum matches to return. Default 20, hard max 100."
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "zsh_describe",
+        "toolReferenceName": "zshDescribe",
+        "displayName": "Describe zsh reference record",
+        "modelDescription": "Fetch the full record for a known `{ category, id }` from the bundled static zsh reference. Returns `{ match: { category, id, display, markdown } }` with the rendered markdown body, or `{ match: null }` when the id is not a member of the given category's corpus. Expects exact canonical ids (typically surfaced by a prior `zsh_search` response); unlike `zsh_classify` / `zsh_lookup_option` it does NOT apply per-category normalization such as NO_* stripping. No shell execution, no environment access.",
+        "canBeReferencedInPrompt": true,
+        "tags": [
+          "zsh"
+        ],
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "category": {
+              "type": "string",
+              "description": "Doc category (a zsh-core `DocCategory` value) — e.g. 'option', 'builtin', 'cond_op', 'reserved_word'. Unknown values yield { match: null }."
+            },
+            "id": {
+              "type": "string",
+              "description": "Canonical id within `category` (e.g. 'autocd' for option, 'echo' for builtin). Must be an exact corpus key — usually obtained from `zsh_search`."
+            }
+          },
+          "required": [
+            "category",
+            "id"
+          ],
+          "additionalProperties": false
+        }
       }
     ]
   },

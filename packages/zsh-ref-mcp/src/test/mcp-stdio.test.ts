@@ -35,19 +35,21 @@ describeIfBuilt("MCP stdio integration", () => {
     await client.close()
   })
 
-  test("tools/list advertises zsh_classify and zsh_lookup_option", async () => {
+  test("tools/list advertises all four tools", async () => {
     const result = await client.request(
       { method: "tools/list" },
       ListToolsResultSchema,
     )
     const names = result.tools.map(t => t.name).sort()
-    expect(names).toEqual(["zsh_classify", "zsh_lookup_option"])
+    expect(names).toEqual([
+      "zsh_classify",
+      "zsh_describe",
+      "zsh_lookup_option",
+      "zsh_search",
+    ])
     for (const tool of result.tools) {
       expect((tool.description ?? "").length).toBeGreaterThan(40)
-      expect(tool.inputSchema).toMatchObject({
-        type: "object",
-        required: ["raw"],
-      })
+      expect(tool.inputSchema).toMatchObject({ type: "object" })
     }
   })
 
@@ -86,6 +88,68 @@ describeIfBuilt("MCP stdio integration", () => {
     }
     expect(parsed.match?.id).toBe("autocd")
     expect(parsed.match?.negated).toBe(true)
+  })
+
+  test("zsh_search returns matches without markdown bodies", async () => {
+    const result = await client.request(
+      {
+        method: "tools/call",
+        params: {
+          name: "zsh_search",
+          arguments: { query: "echo", category: "builtin", limit: 5 },
+        },
+      },
+      CallToolResultSchema,
+    )
+    expect(result.isError).toBeFalsy()
+    const text = (result.content[0] as { type: "text"; text: string }).text
+    const parsed = JSON.parse(text) as {
+      matches: Array<{
+        category: string
+        id: string
+        display: string
+        markdown?: string
+      }>
+    }
+    expect(parsed.matches.length).toBeGreaterThan(0)
+    expect(parsed.matches[0]?.id).toBe("echo")
+    for (const m of parsed.matches) expect(m.markdown).toBeUndefined()
+  })
+
+  test("zsh_describe returns full markdown for a known id", async () => {
+    const result = await client.request(
+      {
+        method: "tools/call",
+        params: {
+          name: "zsh_describe",
+          arguments: { category: "builtin", id: "echo" },
+        },
+      },
+      CallToolResultSchema,
+    )
+    expect(result.isError).toBeFalsy()
+    const text = (result.content[0] as { type: "text"; text: string }).text
+    const parsed = JSON.parse(text) as {
+      match: { id: string; markdown: string } | null
+    }
+    expect(parsed.match?.id).toBe("echo")
+    expect(parsed.match?.markdown).toMatch(/echo/i)
+  })
+
+  test("zsh_describe rejects unknown id without crashing", async () => {
+    const result = await client.request(
+      {
+        method: "tools/call",
+        params: {
+          name: "zsh_describe",
+          arguments: { category: "builtin", id: "not_a_thing_qq" },
+        },
+      },
+      CallToolResultSchema,
+    )
+    expect(result.isError).toBeFalsy()
+    const text = (result.content[0] as { type: "text"; text: string }).text
+    expect(JSON.parse(text)).toEqual({ match: null })
   })
 
   test("unknown tool returns isError", async () => {

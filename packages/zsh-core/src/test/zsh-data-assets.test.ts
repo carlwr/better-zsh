@@ -79,5 +79,13 @@ describe("vendored zsh data assets", () => {
       ">(...)",
       "=(...)",
     ])
+    expect(
+      [...corpus.prompt_escape.values()].some(doc => doc.key === "%n"),
+    ).toBe(true)
+    expect(
+      [...corpus.zle_widget.values()].some(
+        doc => doc.name === "backward-kill-word",
+      ),
+    ).toBe(true)
   })
 })

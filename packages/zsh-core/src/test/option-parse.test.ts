@@ -23,6 +23,8 @@ const corpus: DocCorpus = {
   history: empty,
   glob_op: empty,
   glob_flag: empty,
+  prompt_escape: empty,
+  zle_widget: empty,
 }
 
 describe("resolveOption", () => {
