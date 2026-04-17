@@ -1,5 +1,5 @@
-import { type DocCorpus, mkPieceId, resolveOption } from "zsh-core"
-import { renderDoc } from "zsh-core/render"
+import { type DocCorpus, mkPieceId, resolveOption } from "@carlwr/zsh-core"
+import { renderDoc } from "@carlwr/zsh-core/render"
 import type { ToolDef } from "../tool-defs.ts"
 
 export interface LookupOptionInput {

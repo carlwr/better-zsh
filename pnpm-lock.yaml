@@ -71,12 +71,12 @@ importers:
 
   packages/vscode-better-zsh:
     dependencies:
+      '@carlwr/zsh-core':
+        specifier: workspace:*
+        version: link:../zsh-core
       '@carlwr/zsh-ref-mcp':
         specifier: workspace:*
         version: link:../zsh-ref-mcp
-      zsh-core:
-        specifier: workspace:*
-        version: link:../zsh-core
     devDependencies:
       vitest:
         specifier: ^4.1.2
@@ -100,15 +100,15 @@ importers:
 
   packages/zsh-ref-mcp:
     dependencies:
+      '@carlwr/zsh-core':
+        specifier: workspace:*
+        version: link:../zsh-core
       '@modelcontextprotocol/sdk':
         specifier: ^1.0.0
         version: 1.29.0(zod@4.3.6)
       fuzzysort:
         specifier: ^3.1.0
         version: 3.1.0
-      zsh-core:
-        specifier: workspace:*
-        version: link:../zsh-core
     devDependencies:
       vitest:
         specifier: ^4.1.2

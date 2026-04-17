@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+
 /**
  * @packageDocumentation
  *
@@ -13,8 +14,8 @@
  * invoke the bin directly; see `./src/cli.ts`.
  */
 
+import { loadCorpus } from "@carlwr/zsh-core"
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
-import { loadCorpus } from "zsh-core"
 import { decide, helpText, type PkgIdentity, ttyHintText } from "./src/cli.ts"
 import {
   MCP_BIN_NAME,

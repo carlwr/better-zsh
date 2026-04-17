@@ -1,4 +1,4 @@
-import type { DocCorpus } from "zsh-core"
+import type { DocCorpus } from "@carlwr/zsh-core"
 import {
   classifyToolDef,
   describeToolDef,

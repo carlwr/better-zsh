@@ -47,7 +47,7 @@ try {
         name: "mcp-install-smoke",
         version: "0.0.0",
         private: true,
-        overrides: { "zsh-core": `file:${zcTgz}` },
+        overrides: { "@carlwr/zsh-core": `file:${zcTgz}` },
       },
       null,
       2,

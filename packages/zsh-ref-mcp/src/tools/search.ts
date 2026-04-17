@@ -1,10 +1,10 @@
-import fuzzysort from "fuzzysort"
 import {
   type DocCategory,
   type DocCorpus,
   type DocRecordMap,
   docCategories,
-} from "zsh-core"
+} from "@carlwr/zsh-core"
+import fuzzysort from "fuzzysort"
 import type { ToolDef } from "../tool-defs.ts"
 import { display } from "./doc-display.ts"
 

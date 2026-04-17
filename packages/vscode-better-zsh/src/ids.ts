@@ -1,4 +1,4 @@
-import type { Brand } from "zsh-core"
+import type { Brand } from "@carlwr/zsh-core"
 
 export type { Brand }
 

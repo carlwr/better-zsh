@@ -31,13 +31,13 @@
 
 - `repository.url` — currently points at `carlwr/better-zsh`. Update to
   the new repo URL.
-- `dependencies.zsh-core` — currently `workspace:*`. Replace with a
-  pinned version from the npm/JSR registry (`"zsh-core": "^X.Y.Z"`).
-  Requires `zsh-core` to have been published first.
+- `dependencies.@carlwr/zsh-core` — currently `workspace:*`. Replace with a
+  pinned version from the npm/JSR registry (`"@carlwr/zsh-core": "^X.Y.Z"`).
+  Requires `@carlwr/zsh-core` to have been published first.
 - `engines.node` — carry forward (currently `>=22`; keep in sync with the new repo's CI).
 - `scripts.prebuild`, `scripts.pretypecheck`, `scripts.pretest` all
-  currently do `pnpm --filter zsh-core build`. Post-extraction these
-  lines go away — `zsh-core` is a published dep, nothing to pre-build.
+  currently do `pnpm --filter @carlwr/zsh-core build`. Post-extraction these
+  lines go away — `@carlwr/zsh-core` is a published dep, nothing to pre-build.
 - `files` — double-check still accurate; currently `["dist", "LICENSE",
   "THIRD_PARTY_NOTICES.md", "deno.json"]`.
 
@@ -45,13 +45,13 @@
 
 - `imports` currently contains the workspace workaround:
   ```json
-  "zsh-core":        "../zsh-core/index.ts",
-  "zsh-core/render": "../zsh-core/render.ts"
+  "@carlwr/zsh-core":        "../zsh-core/index.ts",
+  "@carlwr/zsh-core/render": "../zsh-core/render.ts"
   ```
   Replace with:
   ```json
-  "zsh-core":        "jsr:@carlwr/zsh-core@X.Y.Z",
-  "zsh-core/render": "jsr:@carlwr/zsh-core@X.Y.Z/render"
+  "@carlwr/zsh-core":        "jsr:@carlwr/zsh-core@X.Y.Z",
+  "@carlwr/zsh-core/render": "jsr:@carlwr/zsh-core@X.Y.Z/render"
   ```
 - `imports["@carlwr/typescript-extra"]` — kept in the map today **only**
   because Deno resolves `zsh-core` from its `.ts` sources which import
@@ -82,13 +82,13 @@
 ### `test:install` script
 
 `scripts/test-install.mjs` currently packs both `@carlwr/zsh-ref-mcp`
-and `zsh-core` from the workspace and installs the MCP tarball with an
-npm `overrides: { "zsh-core": "file:<tgz>" }` block, because `zsh-core`
+and `@carlwr/zsh-core` from the workspace and installs the MCP tarball with an
+npm `overrides: { "@carlwr/zsh-core": "file:<tgz>" }` block, because `@carlwr/zsh-core`
 isn't published yet. Post-extraction:
 
-- Drop the zsh-core pack step.
+- Drop the `@carlwr/zsh-core` pack step.
 - Drop the `overrides` block from the synthetic install package.json —
-  npm will resolve `zsh-core` from the registry like any other dep.
+  npm will resolve `@carlwr/zsh-core` from the registry like any other dep.
 
 ### Docs
 

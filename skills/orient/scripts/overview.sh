@@ -53,5 +53,5 @@ if [ -d packages/zsh-core/dist/types ]; then
     printf '  %4d  %s\n' "$(wc -l < "$f")" "$f"
   done
 else
-  echo "  (not built — run: pnpm --filter zsh-core build)"
+  echo "  (not built — run: pnpm --filter @carlwr/zsh-core build)"
 fi

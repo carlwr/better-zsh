@@ -3,8 +3,9 @@ import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { describe, expect, test } from "vitest"
 import {
-  MCP_BIN_NAME,
+  PKG_LICENSE,
   PKG_NAME,
+  PKG_NAME_JSR,
   PKG_REPO_URL,
   PKG_VERSION,
 } from "../pkg-info.ts"
@@ -17,26 +18,26 @@ const pkg = readJson("package.json")
 const deno = readJson("deno.json")
 
 // Shared-surface subpaths: must appear in both manifests.
-// `./package.json` is npm-only.
-const SHARED_EXPORTS = [".", "./server"] as const
+// `./data/*`, `./schema/*`, `./internal`, `./package.json` are npm-only.
+const SHARED_EXPORTS = [".", "./render", "./exec", "./assets"] as const
 
 describe("pkg-info constants stay in sync with manifests", () => {
-  test("PKG_NAME matches package.json.name and deno.json.name", () => {
+  test("PKG_NAME matches package.json.name", () => {
     expect(PKG_NAME).toBe(pkg.name)
-    expect(PKG_NAME).toBe(deno.name)
   })
-
+  test("PKG_NAME_JSR matches deno.json.name", () => {
+    expect(PKG_NAME_JSR).toBe(deno.name)
+  })
   test("PKG_VERSION matches package.json.version and deno.json.version", () => {
     expect(PKG_VERSION).toBe(pkg.version)
     expect(PKG_VERSION).toBe(deno.version)
   })
-
   test("PKG_REPO_URL matches package.json.repository.url", () => {
     expect(PKG_REPO_URL).toBe(pkg.repository?.url)
   })
-
-  test("MCP_BIN_NAME is a key in package.json.bin", () => {
-    expect(Object.keys(pkg.bin ?? {})).toContain(MCP_BIN_NAME)
+  test("PKG_LICENSE matches package.json.license and deno.json.license", () => {
+    expect(PKG_LICENSE).toBe(pkg.license)
+    expect(PKG_LICENSE).toBe(deno.license)
   })
 })
 

@@ -1,5 +1,4 @@
 import * as assert from "node:assert"
-import { vi } from "vitest"
 import type {
   BuiltinDoc,
   CondOpDoc,
@@ -7,9 +6,10 @@ import type {
   RedirDoc,
   ShellParamDoc,
   ZshOption,
-} from "zsh-core"
-import * as core from "zsh-core"
-import { mkDocumented } from "zsh-core/internal"
+} from "@carlwr/zsh-core"
+import * as core from "@carlwr/zsh-core"
+import { mkDocumented } from "@carlwr/zsh-core/internal"
+import { vi } from "vitest"
 import { wordDoc } from "./test-util"
 
 vi.mock("vscode", () => ({

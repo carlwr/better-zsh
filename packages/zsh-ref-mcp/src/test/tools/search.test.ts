@@ -1,5 +1,5 @@
+import { docCategories, loadCorpus } from "@carlwr/zsh-core"
 import { describe, expect, test } from "vitest"
-import { docCategories, loadCorpus } from "zsh-core"
 import { DEFAULT_LIMIT, MAX_LIMIT, search } from "../../../index.ts"
 
 const corpus = loadCorpus()

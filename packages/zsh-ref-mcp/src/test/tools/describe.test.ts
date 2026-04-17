@@ -1,5 +1,5 @@
+import { loadCorpus } from "@carlwr/zsh-core"
 import { expect, test, describe as vdesc } from "vitest"
-import { loadCorpus } from "zsh-core"
 import { describe } from "../../../index.ts"
 
 const corpus = loadCorpus()

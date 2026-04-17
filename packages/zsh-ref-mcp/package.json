@@ -34,9 +34,9 @@
     "./package.json": "./package.json"
   },
   "scripts": {
-    "prebuild": "pnpm --filter zsh-core build",
-    "pretypecheck": "pnpm --filter zsh-core build",
-    "pretest": "pnpm --filter zsh-core build",
+    "prebuild": "pnpm --filter @carlwr/zsh-core build",
+    "pretypecheck": "pnpm --filter @carlwr/zsh-core build",
+    "pretest": "pnpm --filter @carlwr/zsh-core build",
     "build": "tsx build.ts && node scripts/build-api.mjs",
     "watch": "tsx build.ts --watch",
     "jsr:dry": "pnpm dlx jsr publish --dry-run --allow-dirty",
@@ -57,7 +57,7 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
     "fuzzysort": "^3.1.0",
-    "zsh-core": "workspace:*"
+    "@carlwr/zsh-core": "workspace:*"
   },
   "devDependencies": {
     "vitest": "^4.1.2"

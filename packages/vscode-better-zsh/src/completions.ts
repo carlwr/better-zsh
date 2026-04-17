@@ -1,11 +1,10 @@
-import * as vscode from "vscode"
 import type {
   CondOpDoc,
   DocCorpus,
   DocPieceId,
   Documented,
   ZshOption,
-} from "zsh-core"
+} from "@carlwr/zsh-core"
 import {
   filterTokens,
   matchOptions,
@@ -13,8 +12,9 @@ import {
   syntacticContext,
   WORD,
   WORD_EXACT,
-} from "zsh-core"
-import { renderDoc } from "zsh-core/render"
+} from "@carlwr/zsh-core"
+import { renderDoc } from "@carlwr/zsh-core/render"
+import * as vscode from "vscode"
 import { asyncDocCache } from "./cache"
 import { zshTokenize } from "./zsh"
 

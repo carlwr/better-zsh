@@ -6,8 +6,8 @@ import {
   type DocRecordMap,
   docCategoryLabels,
   resolve,
-} from "zsh-core"
-import { renderDoc } from "zsh-core/render"
+} from "@carlwr/zsh-core"
+import { renderDoc } from "@carlwr/zsh-core/render"
 import type { ToolDef } from "../tool-defs.ts"
 import { display } from "./doc-display.ts"
 

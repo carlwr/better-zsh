@@ -10,7 +10,7 @@ import {
   type ZshRunReq,
   type ZshRunResult,
   zshTokenize as zshTokenizeCore,
-} from "zsh-core/exec"
+} from "@carlwr/zsh-core/exec"
 import type { ZshBinary } from "./ids"
 import { log, warn } from "./log"
 import type { ZshPathConfig } from "./settings"

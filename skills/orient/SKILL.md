@@ -43,7 +43,7 @@ These are the **primary navigation entry point**. Start here, then read specific
 
 ## API snapshot (zsh-core)
 
-After ensuring the build is current (`pnpm --filter zsh-core build`), read the rolled-up declaration files:
+After ensuring the build is current (`pnpm --filter @carlwr/zsh-core build`), read the rolled-up declaration files:
 
 ```bash
 ls packages/zsh-core/dist/types/    # discover available entry-point rollups

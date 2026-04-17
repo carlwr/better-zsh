@@ -1,5 +1,5 @@
 import { mkdirSync, writeFileSync } from "node:fs"
-import { copyRuntimeZshData } from "zsh-core/assets"
+import { copyRuntimeZshData } from "@carlwr/zsh-core/assets"
 import { buildChatInstructions } from "./chat-instructions"
 import { langConfig } from "./lang-config"
 import { outDir } from "./paths"

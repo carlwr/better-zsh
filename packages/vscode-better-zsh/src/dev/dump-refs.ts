@@ -1,8 +1,8 @@
 import { readFile } from "node:fs/promises"
 import { resolve } from "node:path"
-import type { DocCategory } from "zsh-core"
-import { docCategories, loadCorpus } from "zsh-core"
-import { refDocs, writeRefDump } from "zsh-core/render"
+import type { DocCategory } from "@carlwr/zsh-core"
+import { docCategories, loadCorpus } from "@carlwr/zsh-core"
+import { refDocs, writeRefDump } from "@carlwr/zsh-core/render"
 
 const categoryLabel: Record<DocCategory, string> = {
   option: "options",

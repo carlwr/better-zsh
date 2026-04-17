@@ -11,7 +11,7 @@ import { outDir } from "./src/build/paths"
     clean: true,
     external: ["vscode"],
     noExternal: [
-      "zsh-core",
+      "@carlwr/zsh-core",
       "@carlwr/zsh-ref-mcp",
       "@modelcontextprotocol/sdk",
     ],

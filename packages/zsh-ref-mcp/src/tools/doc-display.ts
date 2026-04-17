@@ -1,4 +1,8 @@
-import { type DocCategory, type DocRecordMap, docDisplay } from "zsh-core"
+import {
+  type DocCategory,
+  type DocRecordMap,
+  docDisplay,
+} from "@carlwr/zsh-core"
 
 export const display = (
   cat: DocCategory,

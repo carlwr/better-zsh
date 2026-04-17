@@ -242,9 +242,9 @@ The MCP additionally exposes `test:integration:act` (runs the `mcp` CI job throu
 
 `zsh-core` and `@carlwr/zsh-ref-mcp` publish to both npm (build artifacts) and JSR (`.ts` sources). Consequences:
 
-- **No runtime `package.json` reads.** JSR consumers receive `.ts` sources only — `package.json` does not exist for them. Library code must never read it (`readFileSync("package.json")` or equivalent). Build scripts and tests may read it freely; they only run in dev/CI.
-- **Package identity in a `.ts` source of truth.** Names, versions, URLs, bin names live in a `.ts` module (see `packages/zsh-ref-mcp/src/pkg-info.ts`); runtime code imports from there. A sync test reads `package.json` + `deno.json` and asserts they agree with the `.ts`.
-- **`deno.json` and `package.json` share a logical surface but diverge in form.** `exports` appears in both but refers to `.ts` files (JSR) vs `.js`/`.d.ts` files (npm). Generated artifacts (e.g. `dist/json/*.json`, `dist/schema/*.schema.json`) are npm-only by nature — keep such subpaths out of `deno.json.exports`.
+- **No runtime `package.json` reads.** JSR consumers receive `.ts` sources only — `package.json` does not exist for them. Library code must never read it (`readFileSync("package.json")` or equivalent). Dev/CI-only code (build scripts, tests) may read it, but prefer importing from `pkg-info.ts` for values already captured there — single source of truth, no reparse-site drift.
+- **Package identity in a `.ts` source of truth.** Each dual-published package has a `src/pkg-info.ts` (names, version, URLs, license, bin). Runtime *and* build code imports from there. `src/test/pkg-info.test.ts` asserts the constants match `package.json` + `deno.json`; adding a new identity string means adding a constant, updating both manifests, and extending the test.
+- **Shared-surface `exports` must stay in sync.** Subpaths offered to both npm and JSR consumers (e.g. `.`, `./render` for zsh-core; `.`, `./server` for MCP) must appear in *both* manifests' `exports`. `pkg-info.test.ts` asserts a canonical shared list matches both. Generated artifacts and workspace-internal entry points (`./data/*`, `./schema/*`, `./internal`, …) are npm-only by nature — keep out of `deno.json.exports`.
 
 ### vsce
 

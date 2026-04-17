@@ -21,7 +21,11 @@ const distDir = join(pkgDir, "dist")
     target: "es2022",
     // Keep dependencies external so the MCP SDK and zsh-core are resolved
     // from node_modules at runtime (not inlined into our bundles).
-    external: ["@modelcontextprotocol/sdk", "zsh-core", "zsh-core/render"],
+    external: [
+      "@modelcontextprotocol/sdk",
+      "@carlwr/zsh-core",
+      "@carlwr/zsh-core/render",
+    ],
     shims: true,
     watch: process.argv.includes("--watch"),
     esbuildOptions(options) {

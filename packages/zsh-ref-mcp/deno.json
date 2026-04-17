@@ -9,8 +9,8 @@
     "./server": "./server.ts"
   },
   "imports": {
-    "zsh-core": "../zsh-core/index.ts",
-    "zsh-core/render": "../zsh-core/render.ts",
+    "@carlwr/zsh-core": "../zsh-core/index.ts",
+    "@carlwr/zsh-core/render": "../zsh-core/render.ts",
     "@carlwr/typescript-extra": "npm:@carlwr/typescript-extra@0.7.0"
   },
   "publish": {

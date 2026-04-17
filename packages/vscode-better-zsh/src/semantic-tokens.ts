@@ -1,5 +1,5 @@
+import { cmdHeadFactsOnLine, commentStart, mkObserved } from "@carlwr/zsh-core"
 import * as vscode from "vscode"
-import { cmdHeadFactsOnLine, commentStart, mkObserved } from "zsh-core"
 
 const TOKEN_TYPES = ["function", "keyword"] as const
 const TOKEN_MODIFIERS = ["defaultLibrary"] as const

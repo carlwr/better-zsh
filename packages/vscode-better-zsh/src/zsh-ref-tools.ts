@@ -1,6 +1,6 @@
+import type { DocCorpus } from "@carlwr/zsh-core"
 import { toolDefs } from "@carlwr/zsh-ref-mcp"
 import * as vscode from "vscode"
-import type { DocCorpus } from "zsh-core"
 
 /**
  * Register the `@carlwr/zsh-ref-mcp` tool set as VS Code Language Model tools.

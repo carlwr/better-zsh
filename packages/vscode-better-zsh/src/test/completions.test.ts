@@ -40,9 +40,9 @@ vi.mock("../zsh", () => ({
   zshTokenize: vi.fn(async () => []),
 }))
 
-import type { DocCorpus } from "zsh-core"
-import { optSections } from "zsh-core"
-import { mkDocumented } from "zsh-core/internal"
+import type { DocCorpus } from "@carlwr/zsh-core"
+import { optSections } from "@carlwr/zsh-core"
+import { mkDocumented } from "@carlwr/zsh-core/internal"
 import { CompletionProvider } from "../completions"
 import { wordDoc } from "./test-util"
 

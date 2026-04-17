@@ -1,10 +1,10 @@
+import type { DocCorpus } from "@carlwr/zsh-core"
 import { Server } from "@modelcontextprotocol/sdk/server/index.js"
 import {
   type CallToolRequest,
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js"
-import type { DocCorpus } from "zsh-core"
 import { MCP_BIN_NAME, PKG_VERSION } from "../pkg-info.ts"
 import { type ToolDef, type ToolInputSchema, toolDefs } from "../tool-defs.ts"
 

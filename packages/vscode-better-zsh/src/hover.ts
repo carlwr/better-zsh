@@ -1,4 +1,3 @@
-import * as vscode from "vscode"
 import type {
   DocCategory,
   DocCorpus,
@@ -10,7 +9,7 @@ import type {
   ProcessSubstFact,
   RedirFact,
   ZshOption,
-} from "zsh-core"
+} from "@carlwr/zsh-core"
 import {
   cmdHeadFactsOnLine,
   mkOptFlag,
@@ -18,8 +17,9 @@ import {
   resolve,
   resolveOption,
   syntacticContext,
-} from "zsh-core"
-import { renderDoc } from "zsh-core/render"
+} from "@carlwr/zsh-core"
+import { renderDoc } from "@carlwr/zsh-core/render"
+import * as vscode from "vscode"
 import { activeWordRangeAt, commentStart, funcDocs } from "./funcs"
 
 // NOTE: Hovering `setopt NO_AUTO_CD` currently shows the same markdown as

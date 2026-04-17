@@ -1,5 +1,5 @@
+import { docCategories, docCategoryLabels, loadCorpus } from "@carlwr/zsh-core"
 import { describe, expect, test } from "vitest"
-import { docCategories, docCategoryLabels, loadCorpus } from "zsh-core"
 import {
   type ClassifyResult,
   classifyToolDef,

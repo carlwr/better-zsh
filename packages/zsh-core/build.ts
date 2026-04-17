@@ -1,19 +1,17 @@
-import { cpSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
+import { cpSync, mkdirSync, writeFileSync } from "node:fs"
 import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 import { build } from "tsup"
 import { loadCorpus } from "./src/docs/corpus.ts"
 import { jsonArtifact, jsonDataFiles } from "./src/docs/json-artifacts.ts"
 import { docCategories } from "./src/docs/taxonomy.ts"
+import { PKG_VERSION } from "./src/pkg-info.ts"
 
 const pkgDir =
   typeof __dirname !== "undefined"
     ? __dirname
     : dirname(fileURLToPath(import.meta.url))
 const distDir = join(pkgDir, "dist")
-const pkg = JSON.parse(readFileSync(join(pkgDir, "package.json"), "utf8")) as {
-  version: string
-}
 
 function fmtJson(data: unknown): string {
   // Keep machine artifacts deterministic and human-readable without a second
@@ -38,7 +36,7 @@ function writeJsonArtifacts() {
 
   const index = {
     version: 1,
-    packageVersion: pkg.version,
+    packageVersion: PKG_VERSION,
     files: [...jsonDataFiles],
     counts,
   }

@@ -1,5 +1,5 @@
+import { loadCorpus } from "@carlwr/zsh-core"
 import * as vscode from "vscode"
-import { loadCorpus } from "zsh-core"
 import { evictDocCaches } from "./cache"
 import { CompletionProvider } from "./completions"
 import { DefinitionProvider } from "./definition"

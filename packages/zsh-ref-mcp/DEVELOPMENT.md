@@ -88,17 +88,17 @@ If you have a legitimate need to loosen the fence, treat it as an intentional ch
 
 ```json
 "imports": {
-  "zsh-core": "../zsh-core/index.ts",
-  "zsh-core/render": "../zsh-core/render.ts"
+  "@carlwr/zsh-core": "../zsh-core/index.ts",
+  "@carlwr/zsh-core/render": "../zsh-core/render.ts"
 }
 ```
 
-This is a workspace-development workaround so `deno publish --dry-run` can resolve TypeScript sources without needing `zsh-core` to be published yet. When `zsh-core` is published to JSR, replace these two entries with version-pinned specifiers:
+This is a workspace-development workaround so `deno publish --dry-run` can resolve TypeScript sources without needing `@carlwr/zsh-core` to be published yet. When `@carlwr/zsh-core` is published to JSR, replace these two entries with version-pinned specifiers:
 
 ```json
 "imports": {
-  "zsh-core": "jsr:@carlwr/zsh-core@X.Y.Z",
-  "zsh-core/render": "jsr:@carlwr/zsh-core@X.Y.Z/render"
+  "@carlwr/zsh-core": "jsr:@carlwr/zsh-core@X.Y.Z",
+  "@carlwr/zsh-core/render": "jsr:@carlwr/zsh-core@X.Y.Z/render"
 }
 ```
 

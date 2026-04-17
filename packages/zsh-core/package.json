@@ -1,5 +1,5 @@
 {
-  "name": "zsh-core",
+  "name": "@carlwr/zsh-core",
   "description": "Structured zsh reference data parsed from official zsh documentation + analysis APIs",
   "version": "0.0.1",
   "license": "MIT",
