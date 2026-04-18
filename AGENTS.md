@@ -5,7 +5,7 @@ A small monorepo with three packages:
 - **@carlwr/zshref-mcp** — a Model Context Protocol server projecting the `zsh-core` reference as agent tools (`zsh_classify`, `zsh_lookup_option`). Pure Node, no `vscode` dep; shipped to npm/JSR and also consumed by the extension. See `DESIGN.md` "MCP as a consumer" for why it is a separate package.
 - **vscode-better-zsh** — a VS Code extension; consumer of both `zsh-core` and `@carlwr/zshref-mcp`. Registers the MCP tool set as VS Code Language Model tools via `vscode.lm.registerTool`.
 
-Nothing is released yet — APIs can move freely.
+Only alpha pre-releases published so far (`zsh-core`, `@carlwr/zshref-mcp` at `0.1.0-alpha.*`) — APIs can still move freely until the first non-alpha.
 
 ## See also
 

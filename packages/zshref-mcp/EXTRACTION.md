@@ -34,16 +34,16 @@
 - `dependencies.@carlwr/zsh-core` — currently `workspace:*`. Replace with a
   pinned version from the npm/JSR registry (`"@carlwr/zsh-core": "^X.Y.Z"`).
   Requires `@carlwr/zsh-core` to have been published first.
-- `engines.node` — carry forward (currently `>=22`; keep in sync with the new repo's CI).
+- ~~`engines.node` — carry forward (currently `>=22`; keep in sync with the new repo's CI).~~ **Done** — `engines.node: ">=22"` present in `package.json`; carry-forward note still applies at extraction.
 - `scripts.prebuild`, `scripts.pretypecheck`, `scripts.pretest` all
   currently do `pnpm --filter @carlwr/zsh-core build`. Post-extraction these
   lines go away — `@carlwr/zsh-core` is a published dep, nothing to pre-build.
-- `files` — double-check still accurate; currently `["dist", "LICENSE",
-  "THIRD_PARTY_NOTICES.md", "deno.json"]`.
+- ~~`files` — double-check still accurate; currently `["dist", "LICENSE",
+  "THIRD_PARTY_NOTICES.md", "deno.json"]`.~~ **Verified** — matches `package.json` today; re-check on extraction day.
 
 ### `deno.json` edits
 
-- `imports` points at `jsr:@carlwr/zsh-core@…` (done once `@carlwr/zsh-core` was published). On version bumps of the dep, update the pinned JSR specifier here in the same commit.
+- ~~`imports` points at `jsr:@carlwr/zsh-core@…` (done once `@carlwr/zsh-core` was published).~~ **Done** — `deno.json` already pins `jsr:@carlwr/zsh-core@^0.1.0-alpha.0`. On version bumps of the dep, update the pinned JSR specifier here in the same commit.
 
 ### CI / act
 
@@ -64,7 +64,7 @@
   both — the native aggregator stays faster to iterate on. Decide on
   extraction day; either is coherent.
 - Release workflow: tag → build → `npm publish --provenance` + `jsr
-  publish` (or equivalent). Not present in the monorepo today.
+  publish` (or equivalent). Monorepo has `.github/workflows/release-zshref-mcp.yml` today; at extraction, port/adapt to the standalone repo's paths.
 
 ### Docs
 
