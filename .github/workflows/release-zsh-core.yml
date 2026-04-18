@@ -78,11 +78,9 @@ jobs:
           echo "tag=$tag"       >> "$GITHUB_OUTPUT"
           echo "resolved version=$version dist-tag=$tag"
 
-      - name: npm publish (with provenance)
+      - name: npm publish (Trusted Publishing + provenance)
         if: github.event_name == 'push' || inputs.dry_run == false
         working-directory: packages/zsh-core
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           pnpm build
           pnpm exec npm publish \
