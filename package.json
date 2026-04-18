@@ -28,6 +28,7 @@
     "jsr:zsh-core:check": "pnpm --filter @carlwr/zsh-core jsr:check",
     "jsr:mcp:dry": "pnpm --filter @carlwr/zsh-ref-mcp jsr:dry",
     "jsr:mcp:check": "pnpm --filter @carlwr/zsh-ref-mcp jsr:check",
+    "jsr:check": "pnpm --filter @carlwr/zsh-core jsr:check && pnpm --filter @carlwr/zsh-ref-mcp jsr:check",
     "vscode:publish:dry": "pnpm --filter better-zsh vscode:publish:dry",
     "vscode:publish": "pnpm --filter better-zsh vscode:publish",
     "ovsx:publish:dry": "pnpm --filter better-zsh ovsx:publish:dry",
