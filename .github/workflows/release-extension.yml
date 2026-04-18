@@ -1,0 +1,95 @@
+name: Release better-zsh (VS Code extension)
+
+# Triggered by:
+#   - Tag push matching `ext-v*` → full release (publish to Marketplace + OpenVSX).
+#   - workflow_dispatch → by default a dry-run (build + package, skip publish);
+#     set the `dry_run` input to `false` to publish from an ad-hoc manual run.
+#
+# Required to succeed on a real release:
+#   - secrets.VSCE_PAT — Azure DevOps PAT with Marketplace publish rights
+#     for publisher `carlwr`.
+#   - secrets.OPEN_VSX_TOKEN — Open VSX personal access token with
+#     publish rights for the same namespace.
+#
+# Pre-releases: any version containing `-` (e.g. 0.1.0-alpha.0) is
+# published with `--pre-release` to both registries; stable releases
+# publish without the flag. Per Marketplace convention, keep stable on
+# even minor versions and pre-release on odd minor versions (so users
+# opted into pre-release on `0.1.x` can roll forward to stable `0.2.0`
+# cleanly).
+#
+# Build: runs `pnpm vsix` which chains prebuild (builds @carlwr/zsh-core
+# and @carlwr/zshref-mcp), typecheck + lint, vitest, and finally
+# `scripts/package-vsix` → produces a single better-zsh.vsix that is
+# uploaded as a workflow artifact AND published byte-identically to
+# both registries.
+
+on:
+  push:
+    tags:
+      - "ext-v*"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry-run (build + package, skip publish)"
+        type: boolean
+        default: true
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - run: corepack enable
+      - run: pnpm config set store-dir /tmp/pnpm-store
+      - run: pnpm install --frozen-lockfile
+
+      # Guard: tag → package version must match.
+      - name: Verify tag matches package version
+        if: startsWith(github.ref, 'refs/tags/ext-v')
+        run: |
+          tag_version=${GITHUB_REF#refs/tags/ext-v}
+          pkg_version=$(node -p "require('./packages/vscode-better-zsh/package.json').version")
+          echo "tag=$tag_version pkg=$pkg_version"
+          [ "$tag_version" = "$pkg_version" ] || { echo "tag mismatch vs package.json"; exit 1; }
+
+      - name: Build + check + test + package VSIX
+        working-directory: packages/vscode-better-zsh
+        run: pnpm vsix
+
+      - name: Upload VSIX as workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: better-zsh-vsix
+          path: packages/vscode-better-zsh/better-zsh.vsix
+          if-no-files-found: error
+
+      - name: Determine pre-release flag
+        id: prerelease
+        run: |
+          version=$(node -p "require('./packages/vscode-better-zsh/package.json').version")
+          if [[ "$version" == *-* ]]; then flag=--pre-release; else flag=""; fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "flag=$flag"       >> "$GITHUB_OUTPUT"
+          echo "resolved version=$version pre-release-flag='$flag'"
+
+      - name: Publish to VS Code Marketplace (vsce)
+        if: github.event_name == 'push' || inputs.dry_run == false
+        working-directory: packages/vscode-better-zsh
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+        run: pnpm exec vsce publish --packagePath better-zsh.vsix --no-dependencies ${{ steps.prerelease.outputs.flag }}
+
+      - name: Publish to Open VSX (ovsx)
+        if: github.event_name == 'push' || inputs.dry_run == false
+        working-directory: packages/vscode-better-zsh
+        env:
+          OVSX_PAT: ${{ secrets.OPEN_VSX_TOKEN }}
+        run: npx -y ovsx publish better-zsh.vsix ${{ steps.prerelease.outputs.flag }}
