@@ -22,7 +22,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - uses: actions/configure-pages@v5
+      - uses: actions/configure-pages@v6
       - run: corepack enable
       - run: pnpm config set store-dir /tmp/pnpm-store
       - run: pnpm install --frozen-lockfile
