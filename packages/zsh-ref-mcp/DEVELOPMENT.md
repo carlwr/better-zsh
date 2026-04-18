@@ -82,31 +82,13 @@ This is the structural backing for the package's public promise ("no shell execu
 
 If you have a legitimate need to loosen the fence, treat it as an intentional change: update the forbidden-imports list in `scope.test.ts` with a comment explaining which tool needed what and why, and update the package's marketing copy accordingly. Don't paper over a violation by moving code out of `src/tools/` to dodge the walker.
 
-## JSR publishing: pre-publish workaround
+## JSR import map
 
-`deno.json` declares the JSR package surface (`.` → `index.ts`, `./server` → `server.ts`) and an import map. The map currently points the companion `zsh-core` package at a source file outside this package:
-
-```json
-"imports": {
-  "@carlwr/zsh-core": "../zsh-core/index.ts",
-  "@carlwr/zsh-core/render": "../zsh-core/render.ts"
-}
-```
-
-This is a workspace-development workaround so `deno publish --dry-run` can resolve TypeScript sources without needing `@carlwr/zsh-core` to be published yet. When `@carlwr/zsh-core` is published to JSR, replace these two entries with version-pinned specifiers:
-
-```json
-"imports": {
-  "@carlwr/zsh-core": "jsr:@carlwr/zsh-core@X.Y.Z",
-  "@carlwr/zsh-core/render": "jsr:@carlwr/zsh-core@X.Y.Z/render"
-}
-```
-
-Sibling entry `"@carlwr/typescript-extra": "npm:@carlwr/typescript-extra@0.7.0"` lives in `deno.json` **only** because the workaround above makes Deno resolve `zsh-core` from its `.ts` sources, which in turn import `@carlwr/typescript-extra`. The published npm form of `@carlwr/zsh-ref-mcp` does not use this package, so it is (intentionally) absent from `package.json`. Once the import map points at published `jsr:@carlwr/zsh-core`, this entry can be dropped too.
+`deno.json` declares the JSR package surface (`.` → `index.ts`, `./server` → `server.ts`) plus an import map pointing `@carlwr/zsh-core` at its published JSR specifier. Bump the pinned version in `deno.json` `imports` when moving to a newer `@carlwr/zsh-core`.
 
 ### `deno.lock`
 
-`deno.lock` is gitignored for now. Rationale while this package lives inside the pnpm workspace: pnpm's `pnpm-lock.yaml` is the authoritative lockfile for the Node/npm toolchain; a committed `deno.lock` would be a parallel, easily-drifting source of truth for the same deps without a corresponding lockfile-update workflow. When the MCP is extracted to its own repo, reconsider — at that point `deno.lock` should likely be committed for reproducible JSR/Deno dry-runs.
+`deno.lock` is gitignored while this package lives inside the pnpm workspace: pnpm's `pnpm-lock.yaml` is the authoritative lockfile for the Node/npm toolchain; a committed `deno.lock` would be a parallel, easily-drifting source of truth without a corresponding lockfile-update workflow. When the MCP is extracted to its own repo, reconsider — at that point `deno.lock` should likely be committed for reproducible JSR/Deno dry-runs.
 
 
 ## Release checklist

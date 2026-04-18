@@ -14,6 +14,7 @@
  * invoke the bin directly; see `./src/cli.ts`.
  */
 
+import process from "node:process"
 import { loadCorpus } from "@carlwr/zsh-core"
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { decide, helpText, type PkgIdentity, ttyHintText } from "./src/cli.ts"

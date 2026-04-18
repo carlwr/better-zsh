@@ -5,16 +5,13 @@ import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 
 /**
- * End-to-end install smoke: pack both zsh-core and @carlwr/zsh-ref-mcp,
- * npm-install the MCP tarball into a fresh temp dir with zsh-core
- * overridden to the local tarball (zsh-core is not published yet), then
- * invoke the installed `zsh-ref-mcp` bin with `--version` and assert it
- * matches the packed version.
+ * End-to-end install smoke: pack @carlwr/zsh-ref-mcp, npm-install the
+ * tarball into a fresh temp dir, and invoke the installed `zsh-ref-mcp`
+ * bin with `--version` — assert it matches the packed version.
  *
- * Temp dirs live under `os.tmpdir()` — outside the workspace — so npm's
- * upward node_modules walk cannot accidentally find the repo's install.
- * When the MCP moves to its own repo and consumes a published
- * zsh-core, the `overrides` block goes away (see EXTRACTION.md).
+ * `@carlwr/zsh-core` is resolved from the npm registry normally (it's
+ * published). Temp dirs live under `os.tmpdir()` — outside the workspace —
+ * so npm's upward node_modules walk can't find the repo's install.
  */
 
 const pnpm = process.platform === "win32" ? "pnpm.cmd" : "pnpm"
@@ -22,33 +19,22 @@ const npm = process.platform === "win32" ? "npm.cmd" : "npm"
 
 const here = dirname(fileURLToPath(import.meta.url))
 const mcpDir = join(here, "..")
-const zcDir = join(mcpDir, "..", "zsh-core")
 
 const packDir = mkdtempSync(join(tmpdir(), "better-zsh-ref-mcp-pack-"))
 const instDir = mkdtempSync(join(tmpdir(), "better-zsh-ref-mcp-inst-"))
 
-const pack = cwd => {
+try {
   const out = execFileSync(
     pnpm,
     ["pack", "--json", "--pack-destination", packDir],
-    { cwd, encoding: "utf8" },
+    { cwd: mcpDir, encoding: "utf8" },
   )
-  return JSON.parse(out).filename
-}
-
-try {
-  const zcTgz = pack(zcDir)
-  const mcpTgz = pack(mcpDir)
+  const mcpTgz = JSON.parse(out).filename
 
   writeFileSync(
     join(instDir, "package.json"),
     `${JSON.stringify(
-      {
-        name: "mcp-install-smoke",
-        version: "0.0.0",
-        private: true,
-        overrides: { "@carlwr/zsh-core": `file:${zcTgz}` },
-      },
+      { name: "mcp-install-smoke", version: "0.0.0", private: true },
       null,
       2,
     )}\n`,

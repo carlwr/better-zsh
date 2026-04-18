@@ -43,20 +43,7 @@
 
 ### `deno.json` edits
 
-- `imports` currently contains the workspace workaround:
-  ```json
-  "@carlwr/zsh-core":        "../zsh-core/index.ts",
-  "@carlwr/zsh-core/render": "../zsh-core/render.ts"
-  ```
-  Replace with:
-  ```json
-  "@carlwr/zsh-core":        "jsr:@carlwr/zsh-core@X.Y.Z",
-  "@carlwr/zsh-core/render": "jsr:@carlwr/zsh-core@X.Y.Z/render"
-  ```
-- `imports["@carlwr/typescript-extra"]` — kept in the map today **only**
-  because Deno resolves `zsh-core` from its `.ts` sources which import
-  it. Once `zsh-core` comes from JSR, Deno resolves that dep
-  transitively via JSR metadata; this entry can be removed.
+- `imports` points at `jsr:@carlwr/zsh-core@…` (done once `@carlwr/zsh-core` was published). On version bumps of the dep, update the pinned JSR specifier here in the same commit.
 
 ### CI / act
 
@@ -79,24 +66,10 @@
 - Release workflow: tag → build → `npm publish --provenance` + `jsr
   publish` (or equivalent). Not present in the monorepo today.
 
-### `test:install` script
-
-`scripts/test-install.mjs` currently packs both `@carlwr/zsh-ref-mcp`
-and `@carlwr/zsh-core` from the workspace and installs the MCP tarball with an
-npm `overrides: { "@carlwr/zsh-core": "file:<tgz>" }` block, because `@carlwr/zsh-core`
-isn't published yet. Post-extraction:
-
-- Drop the `@carlwr/zsh-core` pack step.
-- Drop the `overrides` block from the synthetic install package.json —
-  npm will resolve `@carlwr/zsh-core` from the registry like any other dep.
-
 ### Docs
 
 - `README.md` — internal monorepo links (if any) → stable URLs (GitHub
   releases, JSR page, etc.).
-- `DEVELOPMENT.md` — drop the `## JSR publishing: pre-publish
-  workaround` section and the `@carlwr/typescript-extra` nuance
-  paragraph (both become obsolete).
 - `DEVELOPMENT.md §deno.lock` — replace with "committed; standard JSR
   lockfile policy."
 - This file (`EXTRACTION.md`) — delete on the extraction commit.
