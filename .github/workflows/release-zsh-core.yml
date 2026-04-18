@@ -1,0 +1,96 @@
+name: Release zsh-core
+
+# Triggered by:
+#   - Tag push matching `zsh-core-v*` → full release (publish to npm + JSR).
+#   - workflow_dispatch → by default a dry-run (no publish); set the
+#     `dry_run` input to `false` to publish from an ad-hoc manual run.
+#
+# Required to succeed on a real release:
+#   - secrets.NPM_TOKEN — npm automation token with publish rights on
+#     @carlwr scope. 2FA-exempt for CI publishes.
+#   - JSR package @carlwr/zsh-core has the repo linked under
+#     https://jsr.io → package Settings → "GitHub actions". Enables
+#     tokenless OIDC publish.
+#
+# Pre-releases: any version containing `-` (e.g. 0.1.0-alpha.0) is
+# published to npm with dist-tag `next` rather than `latest`; stable
+# releases use `latest`.
+
+on:
+  push:
+    tags:
+      - "zsh-core-v*"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry-run (skip publish steps)"
+        type: boolean
+        default: true
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # OIDC: required for npm provenance + JSR tokenless publish.
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+
+      - run: corepack enable
+      - run: pnpm config set store-dir /tmp/pnpm-store
+      - run: pnpm install --frozen-lockfile
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      # Guard: tag → package version must match.
+      - name: Verify tag matches package version
+        if: startsWith(github.ref, 'refs/tags/zsh-core-v')
+        run: |
+          tag_version=${GITHUB_REF#refs/tags/zsh-core-v}
+          pkg_version=$(node -p "require('./packages/zsh-core/package.json').version")
+          deno_version=$(node -p "require('./packages/zsh-core/deno.json').version")
+          pkginfo_version=$(grep -E 'PKG_VERSION\s*=' packages/zsh-core/src/pkg-info.ts | sed -E 's/.*"([^"]+)".*/\1/')
+          echo "tag=$tag_version pkg=$pkg_version deno=$deno_version pkg-info=$pkginfo_version"
+          [ "$tag_version" = "$pkg_version" ] || { echo "tag mismatch vs package.json"; exit 1; }
+          [ "$tag_version" = "$deno_version" ] || { echo "tag mismatch vs deno.json"; exit 1; }
+          [ "$tag_version" = "$pkginfo_version" ] || { echo "tag mismatch vs src/pkg-info.ts PKG_VERSION"; exit 1; }
+
+      - run: pnpm --filter @carlwr/zsh-core run check
+      - run: pnpm --filter @carlwr/zsh-core run test
+      - run: pnpm --filter @carlwr/zsh-core run test:smoke
+      - run: pnpm --filter @carlwr/zsh-core run test:install
+      - run: pnpm --filter @carlwr/zsh-core run jsr:check
+
+      - name: Determine npm dist-tag
+        id: disttag
+        run: |
+          version=$(node -p "require('./packages/zsh-core/package.json').version")
+          if [[ "$version" == *-* ]]; then tag=next; else tag=latest; fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=$tag"       >> "$GITHUB_OUTPUT"
+          echo "resolved version=$version dist-tag=$tag"
+
+      - name: npm publish (with provenance)
+        if: github.event_name == 'push' || inputs.dry_run == false
+        working-directory: packages/zsh-core
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          pnpm build
+          pnpm exec npm publish \
+            --provenance \
+            --access public \
+            --tag "${{ steps.disttag.outputs.tag }}"
+
+      - name: JSR publish
+        if: github.event_name == 'push' || inputs.dry_run == false
+        working-directory: packages/zsh-core
+        run: deno publish
