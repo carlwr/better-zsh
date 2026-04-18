@@ -102,11 +102,11 @@
     "test:integration": "pnpm run check && pnpm run test && pnpm run test:smoke && pnpm run test:install && pnpm run jsr:check"
   },
   "dependencies": {
-    "@carlwr/typescript-extra": "0.7.0"
+    "@carlwr/typescript-extra": "0.8.2"
   },
   "devDependencies": {
     "ajv": "^8.17.1",
     "ts-json-schema-generator": "^2.4.0",
-    "vitest": "^4.1.2"
+    "vitest": "^4.1.4"
   }
 }
