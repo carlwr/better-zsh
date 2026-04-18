@@ -27,7 +27,7 @@ jobs:
       - run: pnpm config set store-dir /tmp/pnpm-store
       - run: pnpm install --frozen-lockfile
       - run: pnpm docs:zsh-core
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: packages/zsh-core/.aux/docs/site
 
