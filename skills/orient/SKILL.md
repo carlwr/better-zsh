@@ -35,7 +35,7 @@ Rather than listing files that may become stale, the skill provides executable s
 |--------|--------------|
 | `bash ./scripts/overview.sh` | All source and test files with line counts, plus API rollup status |
 | `bash ./scripts/exports.sh zsh-core` | All public exports from zsh-core source |
-| `bash ./scripts/exports.sh mcp` | All public exports from the zsh-ref-mcp source |
+| `bash ./scripts/exports.sh mcp` | All public exports from the zshref-mcp source |
 | `bash ./scripts/exports.sh ext` | All public exports from extension source |
 | `bash ./scripts/providers.sh` | Extension provider registrations, classes, and semantic token scope config |
 
@@ -79,11 +79,11 @@ These describe **which directories** to look in, not specific files. Use the dis
 - When a test needs VS Code types: provide `vi.mock("vscode", ...)` — find an example with `rg 'vi.mock.*vscode' packages/vscode-better-zsh/src/test/`
 - `src/test/integration/` and `src/test/bundled/` — run under VS Code/Mocha harness, **not** Vitest
 
-### zsh-ref-mcp: MCP server package
-1. `packages/zsh-ref-mcp/` — package root with `index.ts` (library surface) and `server.ts` (stdio bin)
-2. `packages/zsh-ref-mcp/src/tools/` — pure tool implementations; one file per tool, no `vscode`/`child_process`/`node:fs` imports (scope-fenced by `src/test/scope.test.ts`)
-3. `packages/zsh-ref-mcp/src/server/` — MCP SDK server construction; transport-agnostic factory
-4. `packages/zsh-ref-mcp/src/test/` — unit tests + stdio integration test (spawns the built bin via the MCP SDK client)
+### zshref-mcp: MCP server package
+1. `packages/zshref-mcp/` — package root with `index.ts` (library surface) and `server.ts` (stdio bin)
+2. `packages/zshref-mcp/src/tools/` — pure tool implementations; one file per tool, no `vscode`/`child_process`/`node:fs` imports (scope-fenced by `src/test/scope.test.ts`)
+3. `packages/zshref-mcp/src/server/` — MCP SDK server construction; transport-agnostic factory
+4. `packages/zshref-mcp/src/test/` — unit tests + stdio integration test (spawns the built bin via the MCP SDK client)
 5. Pattern: each tool is `(DocCorpus, input) → output` + a `ToolDef` metadata entry in `src/tool-defs.ts`; adapters (the MCP stdio server, `packages/vscode-better-zsh/src/zsh-ref-tools.ts`) walk the aggregate list uniformly
 
 ## Symbol navigation
@@ -118,9 +118,9 @@ rg "^export" --type ts packages/zsh-core/src/docs/yodl/
 
 **Extension unit tests mock `vscode`:** The vitest config aliases `vscode` to `/dev/null`. Tests that use VS Code types must provide their own mock — find examples with `rg 'vi.mock.*vscode' packages/vscode-better-zsh/src/test/`.
 
-**MCP package must not depend on `vscode`:** `packages/zsh-ref-mcp/` exports pure tool implementations and metadata; the VS Code LM registration glue lives in the extension (`packages/vscode-better-zsh/src/zsh-ref-tools.ts`), not in the MCP package. The one-to-one correspondence between `contributes.languageModelTools` in the extension manifest and `toolDefs` in the MCP package is asserted by a unit test — drift fails CI.
+**MCP package must not depend on `vscode`:** `packages/zshref-mcp/` exports pure tool implementations and metadata; the VS Code LM registration glue lives in the extension (`packages/vscode-better-zsh/src/zsh-ref-tools.ts`), not in the MCP package. The one-to-one correspondence between `contributes.languageModelTools` in the extension manifest and `toolDefs` in the MCP package is asserted by a unit test — drift fails CI.
 
-**MCP tool surface scope fence:** a test asserts that `packages/zsh-ref-mcp/src/tools/` does not import `child_process`, network APIs, or `node:fs`. The "no execution, no environment access" promise is a product feature advertised in the MCP package description. Adding a tool that legitimately needs these requires loosening the fence deliberately.
+**MCP tool surface scope fence:** a test asserts that `packages/zshref-mcp/src/tools/` does not import `child_process`, network APIs, or `node:fs`. The "no execution, no environment access" promise is a product feature advertised in the MCP package description. Adding a tool that legitimately needs these requires loosening the fence deliberately.
 
 ---
 

@@ -12,7 +12,7 @@ import { outDir } from "./src/build/paths"
     external: ["vscode"],
     noExternal: [
       "@carlwr/zsh-core",
-      "@carlwr/zsh-ref-mcp",
+      "@carlwr/zshref-mcp",
       "@modelcontextprotocol/sdk",
     ],
     watch: process.argv.includes("--watch"),

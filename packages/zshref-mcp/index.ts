@@ -1,7 +1,7 @@
 /**
  * @packageDocumentation
  *
- * `@carlwr/zsh-ref-mcp` — Model Context Protocol tools over the static zsh
+ * `@carlwr/zshref-mcp` — Model Context Protocol tools over the static zsh
  * reference provided by `zsh-core`. Exports pure tool implementations plus
  * `ToolDef` metadata so adapters (the stdio MCP server, the companion VS
  * Code extension) can register the same tools in their own surfaces.

@@ -1,4 +1,4 @@
-# zsh-ref-mcp
+# zshref-mcp
 
 A [Model Context Protocol](https://modelcontextprotocol.io) server that
 - exposes a structured `zsh` reference in the form of tools an agent can call,
@@ -30,12 +30,12 @@ The server performs **no shell execution and reads nothing from the user environ
 ## Run/install
 
 ```sh
-npx -y @carlwr/zsh-ref-mcp            # run with npx
-npm install -g @carlwr/zsh-ref-mcp    # install globally
-npm install @carlwr/zsh-ref-mcp       # install as a project dep
+npx -y @carlwr/zshref-mcp            # run with npx
+npm install -g @carlwr/zshref-mcp    # install globally
+npm install @carlwr/zshref-mcp       # install as a project dep
 ```
 
-The package ships a `zsh-ref-mcp` bin that speaks MCP over stdio.
+The package ships a `zshref-mcp` bin that speaks MCP over stdio.
 
 ## Client configuration
 
@@ -48,7 +48,7 @@ Edit `claude_desktop_config.json` (macOS: `~/Library/Application Support/Claude/
   "mcpServers": {
     "zsh-ref": {
       "command": "npx",
-      "args": ["-y", "@carlwr/zsh-ref-mcp"]
+      "args": ["-y", "@carlwr/zshref-mcp"]
     }
   }
 }
@@ -61,7 +61,7 @@ Restart Claude Desktop to pick up the new server.
 Register the server with the `claude mcp add` command:
 
 ```sh
-claude mcp add zsh-ref -- npx -y @carlwr/zsh-ref-mcp
+claude mcp add zsh-ref -- npx -y @carlwr/zshref-mcp
 ```
 
 This writes an entry equivalent to the Claude Desktop snippet above into the CLI's MCP config.
@@ -75,7 +75,7 @@ Add an entry to `~/.cursor/mcp.json` (global) or `.cursor/mcp.json` (per-project
   "mcpServers": {
     "zsh-ref": {
       "command": "npx",
-      "args": ["-y", "@carlwr/zsh-ref-mcp"]
+      "args": ["-y", "@carlwr/zshref-mcp"]
     }
   }
 }
@@ -92,7 +92,7 @@ VS Code's built-in MCP support reads `.vscode/mcp.json` in the workspace (or the
   "servers": {
     "zsh-ref": {
       "command": "npx",
-      "args": ["-y", "@carlwr/zsh-ref-mcp"]
+      "args": ["-y", "@carlwr/zshref-mcp"]
     }
   }
 }
@@ -108,7 +108,7 @@ Add the server to `settings.json` under `context_servers`:
     "zsh-ref": {
       "command": {
         "path": "npx",
-        "args": ["-y", "@carlwr/zsh-ref-mcp"]
+        "args": ["-y", "@carlwr/zshref-mcp"]
       }
     }
   }
@@ -121,7 +121,7 @@ Any MCP-aware client that can spawn a subprocess over stdio can use the server. 
 
 ```
 command: npx
-args:    ["-y", "@carlwr/zsh-ref-mcp"]
+args:    ["-y", "@carlwr/zshref-mcp"]
 ```
 
 The server communicates via standard MCP JSON-RPC on stdin/stdout; no protocol flags, no environment variables. For CLI introspection, `--help` / `-h` and `--version` / `-V` are available.

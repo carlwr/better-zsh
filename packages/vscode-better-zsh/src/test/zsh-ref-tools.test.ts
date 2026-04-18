@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs"
 import { join } from "node:path"
-import { toolDefs } from "@carlwr/zsh-ref-mcp"
+import { toolDefs } from "@carlwr/zshref-mcp"
 import { describe, expect, test, vi } from "vitest"
 
 vi.mock("vscode", () => {

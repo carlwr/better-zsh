@@ -1,22 +1,22 @@
-name: Release zsh-ref-mcp
+name: Release zshref-mcp
 
 # Triggered by:
-#   - Tag push matching `mcp-v*` → full release (publish to npm + JSR).
+#   - Tag push matching `zshref-mcp-v*` → full release (publish to npm + JSR).
 #   - workflow_dispatch → by default a dry-run (no publish); set the
 #     `dry_run` input to `false` to publish from an ad-hoc manual run.
 #
 # Required to succeed on a real release:
 #   - secrets.NPM_TOKEN — npm token with publish rights on @carlwr scope.
 #     Can be retired once npm Trusted Publisher is configured for
-#     @carlwr/zsh-ref-mcp (see release-zsh-core.yml for the tokenless
+#     @carlwr/zshref-mcp (see release-zsh-core.yml for the tokenless
 #     form).
-#   - JSR package @carlwr/zsh-ref-mcp has the repo linked under
+#   - JSR package @carlwr/zshref-mcp has the repo linked under
 #     https://jsr.io → package Settings → "GitHub actions".
 
 on:
   push:
     tags:
-      - "mcp-v*"
+      - "zshref-mcp-v*"
   workflow_dispatch:
     inputs:
       dry_run:
@@ -47,27 +47,27 @@ jobs:
           deno-version: v2.x
 
       - name: Verify tag matches package version
-        if: startsWith(github.ref, 'refs/tags/mcp-v')
+        if: startsWith(github.ref, 'refs/tags/zshref-mcp-v')
         run: |
-          tag_version=${GITHUB_REF#refs/tags/mcp-v}
-          pkg_version=$(node -p "require('./packages/zsh-ref-mcp/package.json').version")
-          deno_version=$(node -p "require('./packages/zsh-ref-mcp/deno.json').version")
-          pkginfo_version=$(grep -E 'PKG_VERSION\s*=' packages/zsh-ref-mcp/src/pkg-info.ts | sed -E 's/.*"([^"]+)".*/\1/')
+          tag_version=${GITHUB_REF#refs/tags/zshref-mcp-v}
+          pkg_version=$(node -p "require('./packages/zshref-mcp/package.json').version")
+          deno_version=$(node -p "require('./packages/zshref-mcp/deno.json').version")
+          pkginfo_version=$(grep -E 'PKG_VERSION\s*=' packages/zshref-mcp/src/pkg-info.ts | sed -E 's/.*"([^"]+)".*/\1/')
           echo "tag=$tag_version pkg=$pkg_version deno=$deno_version pkg-info=$pkginfo_version"
           [ "$tag_version" = "$pkg_version" ] || { echo "tag mismatch vs package.json"; exit 1; }
           [ "$tag_version" = "$deno_version" ] || { echo "tag mismatch vs deno.json"; exit 1; }
           [ "$tag_version" = "$pkginfo_version" ] || { echo "tag mismatch vs src/pkg-info.ts PKG_VERSION"; exit 1; }
 
-      - run: pnpm --filter @carlwr/zsh-ref-mcp run check
-      - run: pnpm --filter @carlwr/zsh-ref-mcp run test
-      - run: pnpm --filter @carlwr/zsh-ref-mcp run test:smoke
-      - run: pnpm --filter @carlwr/zsh-ref-mcp run test:install
-      - run: pnpm --filter @carlwr/zsh-ref-mcp run jsr:check
+      - run: pnpm --filter @carlwr/zshref-mcp run check
+      - run: pnpm --filter @carlwr/zshref-mcp run test
+      - run: pnpm --filter @carlwr/zshref-mcp run test:smoke
+      - run: pnpm --filter @carlwr/zshref-mcp run test:install
+      - run: pnpm --filter @carlwr/zshref-mcp run jsr:check
 
       - name: Determine npm dist-tag
         id: disttag
         run: |
-          version=$(node -p "require('./packages/zsh-ref-mcp/package.json').version")
+          version=$(node -p "require('./packages/zshref-mcp/package.json').version")
           if [[ "$version" == *-* ]]; then tag=next; else tag=latest; fi
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "tag=$tag"       >> "$GITHUB_OUTPUT"
@@ -75,7 +75,7 @@ jobs:
 
       - name: npm publish (with provenance)
         if: github.event_name == 'push' || inputs.dry_run == false
-        working-directory: packages/zsh-ref-mcp
+        working-directory: packages/zshref-mcp
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
@@ -87,5 +87,5 @@ jobs:
 
       - name: JSR publish
         if: github.event_name == 'push' || inputs.dry_run == false
-        working-directory: packages/zsh-ref-mcp
+        working-directory: packages/zshref-mcp
         run: deno publish

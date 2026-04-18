@@ -23,7 +23,7 @@ export interface PkgIdentity {
  * whether stdin is a TTY. Pure; the side effects live in the bin itself.
  *
  * An MCP client launches the server with no flags and a piped stdin;
- * that returns `"run"`. A human invoking `npx @carlwr/zsh-ref-mcp` in a
+ * that returns `"run"`. A human invoking `npx @carlwr/zshref-mcp` in a
  * terminal gets `"tty-hint"` instead of a silent process that looks hung.
  */
 export function decide({ argv, isTTY }: CliCtx): CliAction {

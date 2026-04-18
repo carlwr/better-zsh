@@ -5,8 +5,8 @@ import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 
 /**
- * End-to-end install smoke: pack @carlwr/zsh-ref-mcp, npm-install the
- * tarball into a fresh temp dir, and invoke the installed `zsh-ref-mcp`
+ * End-to-end install smoke: pack @carlwr/zshref-mcp, npm-install the
+ * tarball into a fresh temp dir, and invoke the installed `zshref-mcp`
  * bin with `--version` — assert it matches the packed version.
  *
  * `@carlwr/zsh-core` is resolved from the npm registry normally (it's
@@ -20,8 +20,8 @@ const npm = process.platform === "win32" ? "npm.cmd" : "npm"
 const here = dirname(fileURLToPath(import.meta.url))
 const mcpDir = join(here, "..")
 
-const packDir = mkdtempSync(join(tmpdir(), "better-zsh-ref-mcp-pack-"))
-const instDir = mkdtempSync(join(tmpdir(), "better-zsh-ref-mcp-inst-"))
+const packDir = mkdtempSync(join(tmpdir(), "better-zshref-mcp-pack-"))
+const instDir = mkdtempSync(join(tmpdir(), "better-zshref-mcp-inst-"))
 
 try {
   const out = execFileSync(
@@ -46,7 +46,7 @@ try {
     { cwd: instDir, encoding: "utf8", stdio: ["ignore", "ignore", "inherit"] },
   )
 
-  const bin = join(instDir, "node_modules", ".bin", "zsh-ref-mcp")
+  const bin = join(instDir, "node_modules", ".bin", "zshref-mcp")
   const versionOut = execFileSync(bin, ["--version"], {
     encoding: "utf8",
   }).trim()
@@ -61,7 +61,7 @@ try {
   }
 
   process.stdout.write(
-    `zsh-ref-mcp install-smoke: OK (--version → ${versionOut})\n`,
+    `zshref-mcp install-smoke: OK (--version → ${versionOut})\n`,
   )
 } finally {
   rmSync(packDir, { recursive: true, force: true })

@@ -8,7 +8,7 @@ cd "$(git -C "$(dirname "$0")" rev-parse --show-toplevel)"
 pkg="${1:-}"
 case "$pkg" in
   zsh-core)   dir=packages/zsh-core/src ;;
-  mcp)        dir=packages/zsh-ref-mcp ;;
+  mcp)        dir=packages/zshref-mcp ;;
   ext)        dir=packages/vscode-better-zsh/src ;;
   *)
     echo "Usage: $0 <zsh-core|mcp|ext>"

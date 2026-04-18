@@ -1,9 +1,9 @@
 import type { DocCorpus } from "@carlwr/zsh-core"
-import { toolDefs } from "@carlwr/zsh-ref-mcp"
+import { toolDefs } from "@carlwr/zshref-mcp"
 import * as vscode from "vscode"
 
 /**
- * Register the `@carlwr/zsh-ref-mcp` tool set as VS Code Language Model tools.
+ * Register the `@carlwr/zshref-mcp` tool set as VS Code Language Model tools.
  *
  * The extension shares the pure tool implementations with the standalone MCP
  * server — both adapters route JSON arguments through the same

@@ -1,7 +1,7 @@
 # Extraction checklist
 
 > **Scope and lifetime.** This file is a working checklist for the day
-> `@carlwr/zsh-ref-mcp` is extracted from the `better-zsh` monorepo into
+> `@carlwr/zshref-mcp` is extracted from the `better-zsh` monorepo into
 > its own git repo. It is intentionally local: it lives in version
 > control here, but is expected to be **deleted on the extraction
 > commit** (or moved to that new repo's private notes). It will not be

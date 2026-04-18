@@ -169,7 +169,7 @@ Per-category renderers are internal; the public API is `renderDoc`.
 
 ## MCP as a consumer
 
-`@carlwr/zsh-ref-mcp` is a second consumer of `zsh-core` — alongside the extension — exposing a subset of the static reference as Model Context Protocol tools (stdio transport; importable by any MCP client: Claude Desktop, VS Code's MCP support, Cursor, Codex CLI, etc.). The extension also imports the package and registers the same tools as VS Code Language Model tools via `vscode.lm.registerTool`.
+`@carlwr/zshref-mcp` is a second consumer of `zsh-core` — alongside the extension — exposing a subset of the static reference as Model Context Protocol tools (stdio transport; importable by any MCP client: Claude Desktop, VS Code's MCP support, Cursor, Codex CLI, etc.). The extension also imports the package and registers the same tools as VS Code Language Model tools via `vscode.lm.registerTool`.
 
 ### Rephrasing the consumer model
 
@@ -187,16 +187,16 @@ The only zsh-core changes driven by the MCP have been additive exports of alread
 
 ### Package boundaries and no-vscode rule
 
-`@carlwr/zsh-ref-mcp` **does not depend on `vscode`** (not even as a type-only import). The extension-side adapter that wires tool defs to `vscode.lm.registerTool` lives in `packages/vscode-better-zsh/src/zsh-ref-tools.ts`. Benefits:
-- the MCP package is usable anywhere Node runs; users without VS Code can install via `npx @carlwr/zsh-ref-mcp` (or a future homebrew/binary distribution) and wire it into any MCP-aware client
+`@carlwr/zshref-mcp` **does not depend on `vscode`** (not even as a type-only import). The extension-side adapter that wires tool defs to `vscode.lm.registerTool` lives in `packages/vscode-better-zsh/src/zsh-ref-tools.ts`. Benefits:
+- the MCP package is usable anywhere Node runs; users without VS Code can install via `npx @carlwr/zshref-mcp` (or a future homebrew/binary distribution) and wire it into any MCP-aware client
 - the extension cost of the abstraction is one thin file: each adapter is <30 lines
-- publish cadence decouples: zsh-ref-mcp versions independently of the extension
+- publish cadence decouples: zshref-mcp versions independently of the extension
 
 A test in `packages/vscode-better-zsh/src/test/zsh-ref-tools.test.ts` asserts that `contributes.languageModelTools` in the extension manifest and the `toolDefs` array in the MCP package stay in one-to-one correspondence (names + `inputSchema`). Drift fails CI.
 
 ### Scope fence: "no execution, no environment access" as a product feature
 
-The MCP's public pitch is "static zsh knowledge as MCP tools; no shell execution, no environment access." This is advertised in the package description and the tool `modelDescription` strings. It is also enforced structurally: a test in `packages/zsh-ref-mcp/src/test/scope.test.ts` fails if any file under `src/tools/` imports `child_process`, network APIs, or `node:fs`. Adding a tool that legitimately needs these (none do today; none are planned) would require loosening the fence deliberately, not by accident.
+The MCP's public pitch is "static zsh knowledge as MCP tools; no shell execution, no environment access." This is advertised in the package description and the tool `modelDescription` strings. It is also enforced structurally: a test in `packages/zshref-mcp/src/test/scope.test.ts` fails if any file under `src/tools/` imports `child_process`, network APIs, or `node:fs`. Adding a tool that legitimately needs these (none do today; none are planned) would require loosening the fence deliberately, not by accident.
 
 Rationale:
 - existing shell-flavored MCP servers mostly involve execution; users searching for a "zsh MCP" will have execution expectations that we do not meet. Leaning into "static, read-only" distinguishes the package and sets correct expectations.

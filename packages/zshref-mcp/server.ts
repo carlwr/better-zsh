@@ -3,7 +3,7 @@
 /**
  * @packageDocumentation
  *
- * Stdio MCP server entry. This is the binary installed as `zsh-ref-mcp`
+ * Stdio MCP server entry. This is the binary installed as `zshref-mcp`
  * via the `bin` field in `package.json`. Reads JSON-RPC frames on stdin,
  * writes frames on stdout, exits on stream close.
  *

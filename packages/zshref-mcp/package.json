@@ -1,5 +1,5 @@
 {
-  "name": "@carlwr/zsh-ref-mcp",
+  "name": "@carlwr/zshref-mcp",
   "description": "Structured zsh reference as MCP tools — classify and look up shell options, builtins, parameters, operators, and more. Static data only: no execution, no environment access.",
   "version": "0.1.0-alpha.0",
   "license": "MIT",
@@ -10,7 +10,7 @@
   "main": "./dist/index.js",
   "types": "./dist/types/index.d.ts",
   "bin": {
-    "zsh-ref-mcp": "./dist/server.mjs"
+    "zshref-mcp": "./dist/server.mjs"
   },
   "files": [
     "dist",

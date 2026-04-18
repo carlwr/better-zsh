@@ -25,7 +25,7 @@ describeIfBuilt("MCP stdio integration", () => {
       args: [serverEntry],
     })
     client = new Client(
-      { name: "zsh-ref-mcp-test-client", version: "0.0.0" },
+      { name: "zshref-mcp-test-client", version: "0.0.0" },
       { capabilities: {} },
     )
     await client.connect(transport)

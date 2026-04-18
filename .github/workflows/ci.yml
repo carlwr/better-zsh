@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  # Dedicated job for @carlwr/zsh-ref-mcp — intentionally mirrors what a
+  # Dedicated job for @carlwr/zshref-mcp — intentionally mirrors what a
   # standalone CI would run in the package's own repo (after extraction).
   # The monorepo-internal `integration` job re-covers unit tests via
   # `pnpm test`; the `mcp` job isolates failures of the MCP-specific
@@ -26,11 +26,11 @@ jobs:
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
-      - run: pnpm --filter @carlwr/zsh-ref-mcp run check
-      - run: pnpm --filter @carlwr/zsh-ref-mcp run test
-      - run: pnpm --filter @carlwr/zsh-ref-mcp run test:smoke
-      - run: pnpm --filter @carlwr/zsh-ref-mcp run test:install
-      - run: pnpm --filter @carlwr/zsh-ref-mcp run jsr:check
+      - run: pnpm --filter @carlwr/zshref-mcp run check
+      - run: pnpm --filter @carlwr/zshref-mcp run test
+      - run: pnpm --filter @carlwr/zshref-mcp run test:smoke
+      - run: pnpm --filter @carlwr/zshref-mcp run test:install
+      - run: pnpm --filter @carlwr/zshref-mcp run jsr:check
 
   integration:
     runs-on: ubuntu-latest

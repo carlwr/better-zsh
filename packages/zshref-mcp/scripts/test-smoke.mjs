@@ -4,7 +4,7 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 
 const pnpm = process.platform === "win32" ? "pnpm.cmd" : "pnpm"
-const tmp = mkdtempSync(join(tmpdir(), "better-zsh-ref-mcp-pack-"))
+const tmp = mkdtempSync(join(tmpdir(), "better-zshref-mcp-pack-"))
 
 try {
   const out = execFileSync(
@@ -120,7 +120,7 @@ try {
     throw new Error(parts.join("\n\n"))
   }
 
-  process.stdout.write("zsh-ref-mcp smoke: OK\n")
+  process.stdout.write("zshref-mcp smoke: OK\n")
 } finally {
   rmSync(tmp, { recursive: true, force: true })
 }
