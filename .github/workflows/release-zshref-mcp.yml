@@ -6,12 +6,15 @@ name: Release zshref-mcp
 #     `dry_run` input to `false` to publish from an ad-hoc manual run.
 #
 # Required to succeed on a real release:
-#   - secrets.NPM_TOKEN — npm token with publish rights on @carlwr scope.
-#     Can be retired once npm Trusted Publisher is configured for
-#     @carlwr/zshref-mcp (see release-zsh-core.yml for the tokenless
-#     form).
+#   - npm Trusted Publisher configured for @carlwr/zshref-mcp (tokenless
+#     publish via OIDC). See npm package Settings → Publishing access.
 #   - JSR package @carlwr/zshref-mcp has the repo linked under
-#     https://jsr.io → package Settings → "GitHub actions".
+#     https://jsr.io → package Settings → "GitHub actions". Enables
+#     tokenless OIDC publish.
+#
+# Pre-releases: any version containing `-` (e.g. 0.1.0-alpha.0) is
+# published to npm with dist-tag `next` rather than `latest`; stable
+# releases use `latest`.
 
 on:
   push:
@@ -73,11 +76,9 @@ jobs:
           echo "tag=$tag"       >> "$GITHUB_OUTPUT"
           echo "resolved version=$version dist-tag=$tag"
 
-      - name: npm publish (with provenance)
+      - name: npm publish (Trusted Publishing + provenance)
         if: github.event_name == 'push' || inputs.dry_run == false
         working-directory: packages/zshref-mcp
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           pnpm build
           pnpm exec npm publish \
