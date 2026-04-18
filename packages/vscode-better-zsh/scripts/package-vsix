@@ -1,5 +1,11 @@
 #!/usr/bin/env sh
 
+# Caller is responsible for having built the extension + upstream deps.
+# Aggregator scripts (`vsix`, `test:smoke`, `testINTERACTIVE:electron-bundled`,
+# `vscode:publish*`, `ovsx:publish*`) run `pnpm build` before invoking this
+# script; the leading build triggers the `prebuild` hook that builds
+# upstream packages.
+
 set -eu
 
 out=${1:-better-zsh.vsix}
@@ -9,6 +15,5 @@ if [ "${1:-}" = -- ]; then
 	out=${1:-better-zsh.vsix}
 fi
 
-pnpm build
 node scripts/check-package.mjs
 pnpm exec vsce package --no-dependencies --out "$out"

@@ -250,6 +250,10 @@ The MCP additionally exposes `test:integration:act` (runs the `mcp` CI job throu
 
 - All `vsce` commands must use `--no-dependencies` — the extension is bundled by tsup (no runtime `node_modules`), and `vsce` internally runs `npm list` which is incompatible with pnpm's symlinked layout.
 
+### `BZ_SKIP_UPSTREAM` — pre-hook gate for aggregators
+
+Extension and MCP `pre*` hooks (`prebuild`, `pretypecheck`, `pretest`, …) build upstream workspace packages by default, so standalone `pnpm typecheck` / `pnpm test` work without ceremony. Aggregator scripts that chain several build-side commands (`vsix`, `test:smoke`, extension `*:publish*`, MCP `test:integration`) would otherwise re-trigger those pre-hooks 3–4× per run. They instead do one upfront `pnpm build` then `export BZ_SKIP_UPSTREAM=1`; subsequent pre-hooks in the chain see the variable and short-circuit. Default (unset) behavior is unchanged.
+
 ## Contributor guidance
 
 ### Agent tool agnostic

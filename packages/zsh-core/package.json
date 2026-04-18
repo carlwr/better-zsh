@@ -9,6 +9,9 @@
   },
   "main": "./dist/index.js",
   "types": "./dist/types/index.d.ts",
+  "engines": {
+    "node": ">=22"
+  },
   "files": [
     "dist",
     "LICENSE",
@@ -95,7 +98,8 @@
     "check": "pnpm typecheck && pnpm lint",
     "test": "vitest run",
     "test:smoke": "pnpm build && tsx scripts/test-smoke.ts && pnpm run jsr:check",
-    "test:integration": "pnpm run check && pnpm run test && pnpm run test:smoke && pnpm run jsr:check"
+    "test:install": "pnpm build && node scripts/test-install.mjs",
+    "test:integration": "pnpm run check && pnpm run test && pnpm run test:smoke && pnpm run test:install && pnpm run jsr:check"
   },
   "dependencies": {
     "@carlwr/typescript-extra": "0.7.0"
