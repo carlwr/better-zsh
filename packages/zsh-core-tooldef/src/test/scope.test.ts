@@ -5,11 +5,12 @@ import { describe, expect, test } from "vitest"
 
 /**
  * Structural scope fence: the "no execution, no environment access" promise
- * is a product feature, so enforce it with a test that no tool implementation
- * reaches for `child_process`, process spawn primitives, networking APIs,
- * `process.env`, `vscode`, or arbitrary `fs`. The MCP server module itself
- * is allowed to touch stdio transport; the bin (`server.ts`) is allowed to
- * report stack traces to stderr on fatal errors.
+ * is a product feature of every adapter that walks `toolDefs` (MCP server,
+ * CLI, VS Code extension), so enforce it at the source — no tool file may
+ * reach for `child_process`, process spawn primitives, networking APIs,
+ * `process.env`, `vscode`, or arbitrary `fs`. Adapters (bin entries,
+ * server modules) are free to handle transport and stderr; tool files
+ * are not.
  */
 
 const here = dirname(fileURLToPath(import.meta.url))
