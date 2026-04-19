@@ -33,7 +33,7 @@ When editing one layer, check whether the same point already lives in another. P
 
 Three orthogonal domains (details in `DESIGN.md`):
 
-- **A — Parsed Documentation** (`src/docs/`): static vendored zsh knowledge; closed taxonomy of 13 `DocCategory` values; each has a doc-record type and a `Documented<K>`-keyed `DocCorpus` map.
+- **A — Parsed Documentation** (`src/docs/`): static vendored zsh knowledge; closed taxonomy of `DocCategory` values (see `docCategories` for the current set); each has a doc-record type and a `Documented<K>`-keyed `DocCorpus` map.
 - **B — Fact Extraction** (`src/analysis/`): coarse annotations about user code. Facts may carry `Observed<K>` values — never `Documented<K>`.
 - **C — Markdown Rendering** (`src/render/`): transforms doc records into markdown; depends on A; orthogonal to B.
 
@@ -152,11 +152,12 @@ Every `as` is a trust assertion. Classify before writing one.
 - Prefer structural enforcement over advisory comments (branded types, `ReadonlySet`, smart constructors).
 - Evaluate zsh-core's public API surface from a **general-consumer perspective**, not just from what the extension uses.
 
-### Never enumerate `DocCategory` in prose or strings
+### Never enumerate or count `DocCategory` in prose or strings
 
-Drift in hand-written category enumerations has bitten us. Rules:
+Drift in hand-written category enumerations *and category counts* has bitten us. Rules:
 
 - **JSDoc, code comments, `.md`**: 1–3 categories as examples are fine; never purport to list the full set.
+- **Do not hard-code the category count** in prose either ("13 `DocCategory` values", "the other 12 categories", "a 13-separate-tools sprawl"). A count is a silent enumeration — adding a category silently invalidates every such phrasing. Refer to `docCategories` by name, or phrase without a number ("every other category", "per-category", "a per-category-tool sprawl").
 - **Runtime strings** (tool descriptions, log/UI copy): interpolate from the zsh-core category exports (branded strings, human labels, ordering). Never hand-type.
 - **Category-indexed tables**: use `Record<DocCategory, T>` or `satisfies { [K in DocCategory]: T }` so the compiler enforces completeness. Such tables belong in zsh-core; consumers import.
 

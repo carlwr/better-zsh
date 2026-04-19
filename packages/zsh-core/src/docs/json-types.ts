@@ -1,6 +1,6 @@
 import type { JsonCountKey, JsonDataFile } from "./json-artifacts.ts"
 import type { DocCategory, DocRecordMap } from "./taxonomy.ts"
-import type { BuiltinDoc, CondOpDoc, PrecmdDoc } from "./types.ts"
+import type { BuiltinDoc, CondOpDoc, ParamExpnDoc, PrecmdDoc } from "./types.ts"
 
 type UnbrandTuple<T extends readonly unknown[]> = {
   readonly [K in keyof T]: Unbrand<T[K]>
@@ -33,13 +33,20 @@ type JsonCondOpDoc = Omit<Unbrand<CondOpDoc>, "operands"> & {
 type JsonPrecmdDoc = Omit<Unbrand<PrecmdDoc>, "synopsis"> & {
   readonly synopsis: readonly string[]
 }
+type JsonParamExpnDoc = Omit<Unbrand<ParamExpnDoc>, "groupSigs"> & {
+  readonly groupSigs: readonly string[]
+}
 
 export type JsonRecordMap = {
-  [K in Exclude<DocCategory, "builtin" | "cond_op" | "precmd">]: JsonDoc<K>
+  [K in Exclude<
+    DocCategory,
+    "builtin" | "cond_op" | "precmd" | "param_expn"
+  >]: JsonDoc<K>
 } & {
   builtin: JsonBuiltinDoc
   cond_op: JsonCondOpDoc
   precmd: JsonPrecmdDoc
+  param_expn: JsonParamExpnDoc
 }
 export type JsonDocArrayMap = {
   [K in DocCategory]: readonly JsonRecordMap[K][]

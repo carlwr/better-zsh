@@ -135,8 +135,7 @@ function renderDumpText(
 // `{kind}:{id}` strings known to trip the unbalanced-backticks check due to
 // a pre-existing upstream typo or rendering-pipeline quirk predating the
 // heuristic. Tracked here as a pinned list of tech debt so the check stays
-// live as a regression guard; drop entries as the root causes are fixed. See
-// HANDOFF-param-expn.md §"Known backtick-heuristic offenders" for details.
+// live as a regression guard; drop entries as the root causes are fixed.
 const knownBacktickOffenders: ReadonlySet<string> = new Set([])
 
 function suspiciousHits(doc: RefDoc): string[] {

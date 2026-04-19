@@ -22,7 +22,7 @@ Every change should preserve this decomposition. It is visible in the directory 
 
 ### A. Parsed Documentation (`src/docs/`)
 
-Static vendored knowledge about zsh language elements. Organized into a **closed taxonomy** of 13 `DocCategory` values. Each category has:
+Static vendored knowledge about zsh language elements. Organized into a **closed taxonomy** of `DocCategory` values (see `docCategories` for the current set). Each category has:
 
 - A doc-record type (e.g. `ZshOption`, `CondOpDoc`, `BuiltinDoc`)
 - A branded corpus identity: `Documented<K>` — see brand semantics below
@@ -126,7 +126,7 @@ Principle: if a consumer is about to hand-write a list or table keyed by categor
 
 Each doc record keeps its domain-specific identity field name (`name`, `op`, `flag`, `key`, `sig`). `.name` for a builtin reads better than `.id`. The parametric `docId` accessor table provides uniform access across categories without renaming fields.
 
-`docDisplay` is a small function (not a full table) because only `option` diverges — its `.display` preserves case and underscores for humans (`AUTO_CD`), while `.name` is the normalized lookup key (`autocd`). The other 12 categories' identity *is* their display. A full table would be 12 trivial entries delegating to `docId[cat]` plus one override.
+`docDisplay` is a small function (not a full table) because only `option` diverges — its `.display` preserves case and underscores for humans (`AUTO_CD`), while `.name` is the normalized lookup key (`autocd`). Every other category's identity *is* its display. A full table would be a pile of trivial entries delegating to `docId[cat]` plus one override.
 
 `docId` is **internal** (not re-exported); `docDisplay` is **public** since consumer-side UIs (hovers, MCP tool responses, dump output) routinely need a human heading without redoing the per-category branching. `refs.ts` consumes `docId` via direct relative import.
 
@@ -216,7 +216,7 @@ Rationale:
 
 ### Tool surface shape: not a mega-tool
 
-`classify(raw)` is the universal entry point — the agent asks "what is this token?" and gets the first matching category. Per-category richer tools (currently `lookup_option`; future candidates) surface extra fields that don't fit a uniform classify response (e.g. option negation). This avoids the "one mega-tool with a `kind` enum" anti-pattern that some LM agents handle poorly, while also staying well clear of a 13-separate-tools sprawl. New tools should justify themselves against both extremes.
+`classify(raw)` is the universal entry point — the agent asks "what is this token?" and gets the first matching category. Per-category richer tools (currently `lookup_option`; future candidates) surface extra fields that don't fit a uniform classify response (e.g. option negation). This avoids the "one mega-tool with a `kind` enum" anti-pattern that some LM agents handle poorly, while also staying well clear of a per-category-tool sprawl. New tools should justify themselves against both extremes.
 
 ### Tie-break in classify
 
