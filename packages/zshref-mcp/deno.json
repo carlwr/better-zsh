@@ -10,7 +10,8 @@
   },
   "imports": {
     "@carlwr/zsh-core": "jsr:@carlwr/zsh-core@^0.1.0-alpha.0",
-    "@carlwr/zsh-core/render": "jsr:@carlwr/zsh-core@^0.1.0-alpha.0/render"
+    "@carlwr/zsh-core/render": "jsr:@carlwr/zsh-core@^0.1.0-alpha.0/render",
+    "@carlwr/zsh-core-tooldef": "jsr:@carlwr/zsh-core-tooldef@^0.1.0-alpha.0"
   },
   "publish": {
     "include": [

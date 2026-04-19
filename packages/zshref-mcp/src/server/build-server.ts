@@ -1,4 +1,9 @@
 import type { DocCorpus } from "@carlwr/zsh-core"
+import {
+  type ToolDef,
+  type ToolInputSchema,
+  toolDefs,
+} from "@carlwr/zsh-core-tooldef"
 import { Server } from "@modelcontextprotocol/sdk/server/index.js"
 import {
   type CallToolRequest,
@@ -6,7 +11,6 @@ import {
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js"
 import { MCP_BIN_NAME, PKG_VERSION } from "../pkg-info.ts"
-import { type ToolDef, type ToolInputSchema, toolDefs } from "../tool-defs.ts"
 
 export interface BuildServerOpts {
   readonly corpus: DocCorpus

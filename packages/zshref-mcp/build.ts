@@ -25,6 +25,7 @@ const distDir = join(pkgDir, "dist")
       "@modelcontextprotocol/sdk",
       "@carlwr/zsh-core",
       "@carlwr/zsh-core/render",
+      "@carlwr/zsh-core-tooldef",
     ],
     shims: true,
     watch: process.argv.includes("--watch"),

@@ -74,9 +74,9 @@ importers:
       '@carlwr/zsh-core':
         specifier: workspace:*
         version: link:../zsh-core
-      '@carlwr/zshref-mcp':
+      '@carlwr/zsh-core-tooldef':
         specifier: workspace:*
-        version: link:../zshref-mcp
+        version: link:../zsh-core-tooldef
     devDependencies:
       vitest:
         specifier: ^4.1.4
@@ -98,17 +98,30 @@ importers:
         specifier: ^4.1.4
         version: 4.1.4(@types/node@22.19.15)(vite@8.0.3(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(@types/node@22.19.15)(esbuild@0.27.5)(tsx@4.21.0)(yaml@2.8.3))
 
+  packages/zsh-core-tooldef:
+    dependencies:
+      '@carlwr/zsh-core':
+        specifier: workspace:*
+        version: link:../zsh-core
+      fuzzysort:
+        specifier: ^3.1.0
+        version: 3.1.0
+    devDependencies:
+      vitest:
+        specifier: ^4.1.4
+        version: 4.1.4(@types/node@22.19.15)(vite@8.0.3(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(@types/node@22.19.15)(esbuild@0.27.5)(tsx@4.21.0)(yaml@2.8.3))
+
   packages/zshref-mcp:
     dependencies:
       '@carlwr/zsh-core':
         specifier: workspace:*
         version: link:../zsh-core
+      '@carlwr/zsh-core-tooldef':
+        specifier: workspace:*
+        version: link:../zsh-core-tooldef
       '@modelcontextprotocol/sdk':
         specifier: ^1.0.0
         version: 1.29.0(zod@4.3.6)
-      fuzzysort:
-        specifier: ^3.1.0
-        version: 3.1.0
     devDependencies:
       vitest:
         specifier: ^4.1.4

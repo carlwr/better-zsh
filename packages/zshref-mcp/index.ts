@@ -1,18 +1,16 @@
 /**
  * @packageDocumentation
  *
- * `@carlwr/zshref-mcp` — Model Context Protocol tools over the static zsh
- * reference provided by `zsh-core`. Exports pure tool implementations plus
- * `ToolDef` metadata so adapters (the stdio MCP server, the companion VS
- * Code extension) can register the same tools in their own surfaces.
+ * `@carlwr/zshref-mcp` — Model Context Protocol server projecting
+ * `@carlwr/zsh-core-tooldef`'s tool definitions over stdio. Exports the
+ * server factory (`buildServer`); the tool surface itself lives in
+ * `@carlwr/zsh-core-tooldef` and is re-exported from there by adapters.
  *
- * Runtime invariant: every tool is a pure function of `(DocCorpus, input) →
- * output`. Nothing in this package opens a shell, spawns a process, or reads
- * from the user environment. See `DESIGN.md` "MCP as a consumer" for the
- * architectural rationale.
+ * Runtime invariant: the tool layer (imported from tooldef) is a pure
+ * function of `(DocCorpus, input) → output`. This package adds only the
+ * MCP SDK glue and stdio transport. See `DESIGN.md` "MCP as a consumer"
+ * for the architectural rationale.
  */
 
 export type { BuildServerOpts } from "./src/server/build-server.ts"
 export { buildServer } from "./src/server/build-server.ts"
-export * from "./src/tool-defs.ts"
-export * from "./src/tools/index.ts"

@@ -7,8 +7,9 @@
  * via the `bin` field in `package.json`. Reads JSON-RPC frames on stdin,
  * writes frames on stdout, exits on stream close.
  *
- * The server advertises and serves the tools defined in `./src/tool-defs.ts`,
- * backed by a loaded `zsh-core` corpus held in-process.
+ * The server advertises and serves the tools defined in
+ * `@carlwr/zsh-core-tooldef`, backed by a loaded `zsh-core` corpus held
+ * in-process.
  *
  * Also handles `--help` / `--version` and a TTY hint for humans who
  * invoke the bin directly; see `./src/cli.ts`.

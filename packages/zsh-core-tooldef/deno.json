@@ -1,0 +1,22 @@
+{
+  "$schema": "https://jsr.io/schema/config-file.v1.json",
+  "name": "@carlwr/zsh-core-tooldef",
+  "version": "0.1.0-alpha.0",
+  "license": "MIT",
+  "nodeModulesDir": "auto",
+  "exports": {
+    ".": "./index.ts"
+  },
+  "imports": {
+    "@carlwr/zsh-core": "jsr:@carlwr/zsh-core@^0.1.0-alpha.0",
+    "@carlwr/zsh-core/render": "jsr:@carlwr/zsh-core@^0.1.0-alpha.0/render"
+  },
+  "publish": {
+    "include": ["LICENSE", "THIRD_PARTY_NOTICES.md", "index.ts", "src/**/*.ts"],
+    "exclude": ["src/test/**/*"]
+  },
+  "lint": {
+    "include": ["index.ts", "src/**/*.ts"],
+    "exclude": ["src/test/**/*.ts"]
+  }
+}
