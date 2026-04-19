@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "allowImportingTsExtensions": true,
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "noUncheckedIndexedAccess": true,
+    "types": ["node", "vitest/globals"],
+    "baseUrl": ".",
+    "paths": {
+      "@cliffy/command": ["./node_modules/@jsr/cliffy__command/_dist/mod.d.ts"],
+      "@cliffy/command/completions": [
+        "./node_modules/@jsr/cliffy__command/_dist/completions/mod.d.ts"
+      ]
+    }
+  },
+  "include": ["index.ts", "bin.ts", "build.ts", "src/**/*.ts"],
+  "exclude": ["node_modules"]
+}
