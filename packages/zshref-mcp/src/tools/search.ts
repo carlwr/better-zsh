@@ -3,6 +3,7 @@ import {
   type DocCorpus,
   type DocRecordMap,
   docCategories,
+  ZSH_UPSTREAM,
 } from "@carlwr/zsh-core"
 import fuzzysort from "fuzzysort"
 import type { ToolDef } from "../tool-defs.ts"
@@ -127,7 +128,7 @@ const brandedCategoryList = docCategories.map(c => `'${c}'`).join(", ")
 
 export const searchToolDef: ToolDef = {
   name: "zsh_search",
-  description: `Search the bundled static zsh reference. Fuzzy-matches the query against doc record ids and human display headings across every category (see \`category\` field for the full \`DocCategory\` list). Omit \`query\` to list records (optionally filtered by \`category\`). Ranking: exact id/display > prefix > fuzzy score. Results carry \`{ category, id, display, score? }\` but NOT the rendered markdown body — follow up with \`zsh_describe\` or \`zsh_classify\` for the full doc. \`limit\` caps response size (default ${DEFAULT_LIMIT}, hard max ${MAX_LIMIT}); the response also returns \`matchesReturned\` (== \`matches.length\`) and \`matchesTotal\` (pre-truncation total), so \`matchesReturned < matchesTotal\` signals truncation — raise \`limit\` or narrow \`category\`/\`query\` to see the rest. No shell execution, no environment access.`,
+  description: `Search the bundled static ${ZSH_UPSTREAM.tag} reference. Fuzzy-matches the query against doc record ids and human display headings across every category (see \`category\` field for the full \`DocCategory\` list). Omit \`query\` to list records (optionally filtered by \`category\`). Ranking: exact id/display > prefix > fuzzy score. Results carry \`{ category, id, display, score? }\` but NOT the rendered markdown body — follow up with \`zsh_describe\` or \`zsh_classify\` for the full doc. \`limit\` caps response size (default ${DEFAULT_LIMIT}, hard max ${MAX_LIMIT}); the response also returns \`matchesReturned\` (== \`matches.length\`) and \`matchesTotal\` (pre-truncation total), so \`matchesReturned < matchesTotal\` signals truncation — raise \`limit\` or narrow \`category\`/\`query\` to see the rest. No shell execution, no environment access.`,
   inputSchema: {
     type: "object",
     properties: {

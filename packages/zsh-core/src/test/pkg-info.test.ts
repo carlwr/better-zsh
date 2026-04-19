@@ -9,10 +9,12 @@ import {
   PKG_REPO_URL,
   PKG_VERSION,
 } from "../pkg-info.ts"
+import { ZSH_UPSTREAM } from "../zsh-upstream.ts"
 
 const pkgDir = join(dirname(fileURLToPath(import.meta.url)), "..", "..")
 const readJson = (file: string) =>
   JSON.parse(readFileSync(join(pkgDir, file), "utf8"))
+const readText = (file: string) => readFileSync(join(pkgDir, file), "utf8")
 
 const pkg = readJson("package.json")
 const deno = readJson("deno.json")
@@ -49,5 +51,28 @@ describe("shared-surface exports stay in sync", () => {
   })
   test("deno.json.exports is exactly the shared subpaths", () => {
     expect(Object.keys(deno.exports).sort()).toEqual([...SHARED_EXPORTS].sort())
+  })
+})
+
+describe("ZSH_UPSTREAM stays in sync with vendored markdown", () => {
+  // The vendored docs carry the tag/commit/date in two places: a plain
+  // `Key: value` block (SOURCE.md) and a `- Key: \`value\`` bullet list
+  // (THIRD_PARTY_NOTICES.md). This pattern matches both.
+  const pick = (text: string, key: string): string | undefined =>
+    text.match(new RegExp(`${key}:\\s*\`?([^\`\\n]+)\`?`))?.[1]?.trim()
+
+  const source = readText("src/data/zsh-docs/SOURCE.md")
+  const notices = readText("src/data/zsh-docs/THIRD_PARTY_NOTICES.md")
+
+  test.each([
+    "tag",
+    "commit",
+    "date",
+  ] as const)("ZSH_UPSTREAM.%s matches SOURCE.md and THIRD_PARTY_NOTICES.md", field => {
+    const key = field === "tag" ? "Tag" : field === "commit" ? "Commit" : "Date"
+    // THIRD_PARTY_NOTICES.md uses "Vendored tag/commit/date"
+    const notKey = `Vendored ${key.toLowerCase()}`
+    expect(pick(source, key)).toBe(ZSH_UPSTREAM[field])
+    expect(pick(notices, notKey)).toBe(ZSH_UPSTREAM[field])
   })
 })

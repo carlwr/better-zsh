@@ -1,4 +1,4 @@
-import { loadCorpus } from "@carlwr/zsh-core"
+import { loadCorpus, PKG_VERSION, ZSH_UPSTREAM } from "@carlwr/zsh-core"
 import * as vscode from "vscode"
 import { evictDocCaches } from "./cache"
 import { CompletionProvider } from "./completions"
@@ -12,7 +12,7 @@ import {
   BETTER_ZSH_TEST_GET_SEMANTIC_TOKENS,
   ZSH_LANG_ID,
 } from "./ids"
-import { initLog, recentLogs } from "./log"
+import { initLog, log, recentLogs } from "./log"
 import { ReferenceProvider } from "./references"
 import { RenameProvider } from "./rename"
 import { SEMANTIC_LEGEND, SemanticTokensProvider } from "./semantic-tokens"
@@ -24,6 +24,11 @@ import { registerZshRefTools } from "./zsh-ref-tools"
 
 export async function activate(ctx: vscode.ExtensionContext) {
   ctx.subscriptions.push(initLog())
+
+  const extVersion = ctx.extension?.packageJSON?.version ?? "unknown"
+  log(
+    `better-zsh ${extVersion} | zsh-core ${PKG_VERSION} | ${ZSH_UPSTREAM.tag} (${ZSH_UPSTREAM.commit.slice(0, 7)})`,
+  )
 
   configureZsh(readZshPathConfig())
   ctx.subscriptions.push(

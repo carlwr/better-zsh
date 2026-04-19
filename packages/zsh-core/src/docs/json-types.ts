@@ -66,6 +66,11 @@ export type JsonCounts = { readonly [K in JsonCountKey]: number }
 export interface JsonIndex {
   readonly version: 1
   readonly packageVersion: string
+  readonly zshUpstream: {
+    readonly tag: string
+    readonly commit: string
+    readonly date: string
+  }
   readonly files: readonly JsonDataFile[]
   readonly counts: JsonCounts
 }

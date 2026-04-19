@@ -15,7 +15,7 @@
  */
 
 import process from "node:process"
-import { loadCorpus } from "@carlwr/zsh-core"
+import { loadCorpus, ZSH_UPSTREAM } from "@carlwr/zsh-core"
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { decide, helpText, type PkgIdentity, ttyHintText } from "./src/cli.ts"
 import {
@@ -49,7 +49,9 @@ async function main(): Promise<void> {
       process.stdout.write(helpText(pkgId))
       return
     case "version":
-      process.stdout.write(`${PKG_VERSION}\n`)
+      process.stdout.write(
+        `${PKG_VERSION} (${ZSH_UPSTREAM.tag}, ${ZSH_UPSTREAM.commit.slice(0, 7)})\n`,
+      )
       return
     case "tty-hint":
       process.stderr.write(ttyHintText(pkgId))

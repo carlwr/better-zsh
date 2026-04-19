@@ -3,6 +3,7 @@ import { existsSync } from "node:fs"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { promisify } from "node:util"
+import { ZSH_UPSTREAM } from "@carlwr/zsh-core"
 import { describe, expect, test } from "vitest"
 import { decide, helpText, type PkgIdentity, ttyHintText } from "../cli.ts"
 import {
@@ -85,13 +86,16 @@ describeIfBuilt("cli bin end-to-end", () => {
     expect(stderr).toBe("")
   })
 
-  test("--version exits 0 and prints version on stdout", async () => {
+  test("--version exits 0 and prints package + upstream zsh identity", async () => {
     const { stdout } = await run(process.execPath, [serverEntry, "--version"])
-    expect(stdout.trim()).toBe(PKG_VERSION)
+    expect(stdout).toContain(PKG_VERSION)
+    expect(stdout).toContain(ZSH_UPSTREAM.tag)
+    expect(stdout).toContain(ZSH_UPSTREAM.commit.slice(0, 7))
   })
 
   test("-V short form works", async () => {
     const { stdout } = await run(process.execPath, [serverEntry, "-V"])
-    expect(stdout.trim()).toBe(PKG_VERSION)
+    expect(stdout).toContain(PKG_VERSION)
+    expect(stdout).toContain(ZSH_UPSTREAM.tag)
   })
 })

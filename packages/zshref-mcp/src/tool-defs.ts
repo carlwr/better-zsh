@@ -29,3 +29,11 @@ export const toolDefs: readonly ToolDef[] = [
   searchToolDef,
   describeToolDef,
 ]
+
+// Corpus-tag naming convention: the two entry-point tools
+// (`zsh_classify`, `zsh_search`) name the vendored upstream tag
+// (`ZSH_UPSTREAM.tag`) in their description so an agent learns which
+// zsh the answers describe. The follow-up tools (`zsh_describe`,
+// `zsh_lookup_option`) deliberately do NOT — they're called after
+// discovery, so repeating the tag there only dilutes per-turn
+// context. Keep it asymmetric.

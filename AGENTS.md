@@ -190,16 +190,19 @@ Rationale in `DESIGN.md`.
 - The Electron test harness runs ALL tests (unit + integration) — unit tests re-running there are meta-tests under a richer harness.
 - Functions that are "obviously correct" don't need tests.
 
-### Script naming axes: `:integration` and `INTERACTIVE`
+### Script naming axes: `:integration`, `INTERACTIVE`, and `verify:published`
 
-Two orthogonal signals in test-script names. A script can carry both, one, or neither.
+Three orthogonal signals in test-script names. A script can carry any combination.
 
 - **`*:integration`** — the script is long-running (tens of seconds to several minutes). Include in an extended-validation final step; run last; expect `&>/dev/null`-worthy output volume.
 - **`testINTERACTIVE:*`** — the script takes over the user's desktop (on macOS, launches VS Code and steals focus). Agents must **never** run it without explicit user consent. CI runs INTERACTIVE scripts under `xvfb` where focus-stealing is moot.
+- **`verify:published`** (and similar non-`test:*` names) — the script verifies interaction with **external registries** (npm, JSR) and therefore depends on the *currently-published* state of upstream packages. Excluded from `test:*` aggregators on principle: ordinary tests must be runnable in a fresh clone with no assumption about what is on the registry, so that a local change that adds an upstream export cannot falsely fail before that upstream has been republished. Run on-demand after the relevant alpha/release is out.
 
-The axes are independent: `:integration` is about time/noise, `INTERACTIVE` is about desktop side effects. The VS Code electron tests happen to carry both properties — they use the `testINTERACTIVE:*` prefix (the stronger constraint dominates the name) and are not additionally tagged `:integration`. A purely noisy, purely headless long-running check uses `*:integration` alone.
+The axes are independent: `:integration` is about time/noise, `INTERACTIVE` is about desktop side effects, `verify:published` is about registry dependency. The VS Code electron tests happen to carry both time and desktop properties — they use the `testINTERACTIVE:*` prefix (the stronger constraint dominates the name) and are not additionally tagged `:integration`. A purely noisy, purely headless long-running check uses `*:integration` alone.
 
-**Per-package `test:integration`**: each package picks the implementation best suited to what it tests. The VS Code extension's `test:integration` runs `act` (electron under xvfb in a container). The MCP's `test:integration` runs a native-host aggregator of its CI checks (`check`, `test`, `test:smoke`, `test:install`, `jsr:check`) — no container needed. Same name, same *meaning* (long-running CI-parity check), different *mechanism*.
+**Per-package `test:integration`**: each package picks the implementation best suited to what it tests. The VS Code extension's `test:integration` runs `act` (electron under xvfb in a container). The MCP's `test:integration` runs a native-host aggregator of its CI checks (`check`, `test`, `test:smoke`) — no container needed, no registry access. Same name, same *meaning* (long-running CI-parity check that is safe to run any time), different *mechanism*.
+
+Registry-dependent MCP checks live under `verify:published` (currently `test:install` + `jsr:check`, deliberately named off the `test:*` axis; see `packages/zshref-mcp/DEVELOPMENT.md`). CI still invokes those directly as separate steps.
 
 The MCP additionally exposes `test:integration:act` (runs the `mcp` CI job through act, for when Docker is available and you want true CI-parity before a release). The extension does not need a `:act` suffix — its `test:integration` is already act-based, because there is no cheaper native variant worth defaulting to.
 

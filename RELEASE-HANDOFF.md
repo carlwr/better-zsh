@@ -61,6 +61,7 @@ For the extension, a version string containing `-` (e.g. `0.1.0-alpha.0`) publis
 - **Always rehearse with `workflow_dispatch` + `dry_run=true` first.** The default is dry-run for a reason.
 - **The `contributes.languageModelTools` manifest mirrors the MCP `toolDefs`.** A unit test asserts equality. If you add or edit a tool, update both — the test tells you if you forgot.
 - **Dependabot will churn against the release workflows.** Expect periodic PRs bumping actions versions. Low-risk; merge them. The `@types/node` ignore rule should stay in place until `engines.node` is raised deliberately.
+- **After a zsh-core public-API addition, `verify:published` is red until zsh-core is republished.** A `@carlwr/zshref-mcp` change that imports a newly-added zsh-core export makes `pnpm --filter @carlwr/zshref-mcp run verify:published` (`test:install` + `jsr:check`) fail against the registry-pinned upstream; local `test:integration` is unaffected by design. Publish order to unblock: new `@carlwr/zsh-core` alpha → new `@carlwr/zshref-mcp` alpha pinning it. Concrete case in flight as of 2026-04-19: `ZSH_UPSTREAM` was added to zsh-core's public API and is consumed by the MCP (tool descriptions, `--version`) and the extension startup log. See `packages/zshref-mcp/DEVELOPMENT.md` §"Published-state verification".
 
 ## Likely drift points to re-verify before acting
 

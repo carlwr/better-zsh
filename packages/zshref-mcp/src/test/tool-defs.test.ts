@@ -1,4 +1,9 @@
-import { docCategories, docCategoryLabels, loadCorpus } from "@carlwr/zsh-core"
+import {
+  docCategories,
+  docCategoryLabels,
+  loadCorpus,
+  ZSH_UPSTREAM,
+} from "@carlwr/zsh-core"
 import { describe, expect, test } from "vitest"
 import {
   type ClassifyResult,
@@ -116,5 +121,16 @@ describe("toolDefs description shape", () => {
     const d = describeToolDef.description
     expect(d).toMatch(/canonical|exact/i)
     expect(d).toMatch(/markdown/i)
+  })
+
+  // See the "Corpus-tag naming convention" comment in `tool-defs.ts`:
+  // entry-point tools name the tag; follow-ups don't.
+  test("entry-point tools name the vendored zsh tag", () => {
+    expect(classifyToolDef.description).toContain(ZSH_UPSTREAM.tag)
+    expect(searchToolDef.description).toContain(ZSH_UPSTREAM.tag)
+  })
+  test("follow-up tools do NOT repeat the vendored zsh tag", () => {
+    expect(describeToolDef.description).not.toContain(ZSH_UPSTREAM.tag)
+    expect(lookupOptionToolDef.description).not.toContain(ZSH_UPSTREAM.tag)
   })
 })

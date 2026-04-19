@@ -59,9 +59,13 @@ Each tool file under `src/tools/` owns everything about its tool — pure impl, 
 - `src/test/mcp-stdio.test.ts` — end-to-end MCP round-trip via a spawned, real SDK client.
 
 `scripts/test-smoke.mjs` is the tarball-level packaging check (required/forbidden paths, plus every `package.json` ref — `main`, `types`, `bin`, `exports` — must resolve to a file actually in the tarball).
-`scripts/test-install.mjs` is the install-from-tarball check: npm-install the packed tarball into a throwaway temp dir under `os.tmpdir()` (outside the workspace, so npm's upward `node_modules` walk can't find the repo's install) and invoke the installed bin with `--version`. `@carlwr/zsh-core` is resolved from the npm registry normally.
-`pnpm run jsr:check` is the JSR publish dry-run. Deliberately **not** chained into `test:smoke` — CI runs it as its own step so failures name themselves.
 `scripts/probe-opencode` is a manual agent-client probe: it points opencode at the local built server `.mjs` file via a temp isolated config and performs a test or runs a custom prompt; see `probe-opencode --help` for details. It is intentionally manual-use only; keep it out of package scripts and CI.
+
+### Published-state verification (`verify:published`)
+
+Two checks depend on external registries: `scripts/test-install.mjs` npm-installs the packed tarball into a throwaway temp dir, which resolves the declared `@carlwr/zsh-core` dependency **from the npm registry**; `pnpm run jsr:check` (= `deno publish --dry-run`) resolves the JSR `imports` map in `deno.json`, which points at `jsr:@carlwr/zsh-core@...`.
+
+Both scripts are grouped under **`verify:published`** — a deliberately non-`test:*` name. They are excluded from `test:integration` and any `test:*` aggregator: ordinary tests must be runnable in a fresh clone with no published-state assumptions, so that a change that adds a zsh-core export cannot falsely fail the MCP's own test flow before that export has been republished. Invoke `verify:published` explicitly (manually, or as its own CI step) after the upstream `@carlwr/zsh-core` alpha is known to be out on both registries with the needed surface. The CI workflow already calls `test:install` and `jsr:check` as separate jobs; the split here mirrors and formalizes that.
 
 ## API Extractor note
 

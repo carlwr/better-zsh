@@ -54,9 +54,11 @@ try {
   const expected = JSON.parse(
     readFileSync(join(mcpDir, "package.json"), "utf8"),
   ).version
-  if (versionOut !== expected) {
+  // `--version` prepends the package version, then appends vendored zsh
+  // identity (e.g. `0.1.0 (zsh-5.9, 73d3173)`). Tolerate the suffix.
+  if (!versionOut.includes(expected)) {
     throw new Error(
-      `bin --version mismatch: got "${versionOut}", expected "${expected}"`,
+      `bin --version mismatch: got "${versionOut}", expected to contain "${expected}"`,
     )
   }
 

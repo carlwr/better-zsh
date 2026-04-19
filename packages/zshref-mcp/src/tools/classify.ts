@@ -6,6 +6,7 @@ import {
   type DocRecordMap,
   docCategoryLabels,
   resolve,
+  ZSH_UPSTREAM,
 } from "@carlwr/zsh-core"
 import { renderDoc } from "@carlwr/zsh-core/render"
 import type { ToolDef } from "../tool-defs.ts"
@@ -64,7 +65,7 @@ const humanCategoryList = classifyOrder
 
 export const classifyToolDef: ToolDef = {
   name: "zsh_classify",
-  description: `Classify a raw zsh token against the bundled static reference. Returns the first matching zsh element (categories, in classify order: ${humanCategoryList}) with its display form, category, and rendered markdown documentation. Returns { match: null } when the token does not name any documented element. Handles zsh option quirks: case-insensitive matching, underscore stripping, and the NO_* negation convention (without the NOTIFY vs TIFY ambiguity). No shell execution, no environment access.`,
+  description: `Classify a raw zsh token against the bundled static ${ZSH_UPSTREAM.tag} reference. Returns the first matching zsh element (categories, in classify order: ${humanCategoryList}) with its display form, category, and rendered markdown documentation. Returns { match: null } when the token does not name any documented element. Handles zsh option quirks: case-insensitive matching, underscore stripping, and the NO_* negation convention (without the NOTIFY vs TIFY ambiguity). No shell execution, no environment access.`,
   inputSchema: {
     type: "object",
     properties: {

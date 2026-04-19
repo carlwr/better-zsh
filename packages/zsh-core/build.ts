@@ -6,6 +6,7 @@ import { loadCorpus } from "./src/docs/corpus.ts"
 import { jsonArtifact, jsonDataFiles } from "./src/docs/json-artifacts.ts"
 import { docCategories } from "./src/docs/taxonomy.ts"
 import { PKG_VERSION } from "./src/pkg-info.ts"
+import { ZSH_UPSTREAM } from "./src/zsh-upstream.ts"
 
 const pkgDir =
   typeof __dirname !== "undefined"
@@ -37,6 +38,7 @@ function writeJsonArtifacts() {
   const index = {
     version: 1,
     packageVersion: PKG_VERSION,
+    zshUpstream: ZSH_UPSTREAM,
     files: [...jsonDataFiles],
     counts,
   }

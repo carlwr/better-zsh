@@ -48,8 +48,9 @@
     "test": "vitest run",
     "test:smoke": "pnpm build && node scripts/test-smoke.mjs",
     "test:install": "pnpm build && node scripts/test-install.mjs",
-    "test:integration": "pnpm build && export BZ_SKIP_UPSTREAM=1 && pnpm run check && pnpm run test && pnpm run test:smoke && pnpm run test:install && pnpm run jsr:check",
-    "test:integration:act": "ACT_JOB=mcp ../../scripts/test-integration-act"
+    "test:integration": "pnpm build && export BZ_SKIP_UPSTREAM=1 && pnpm run check && pnpm run test && pnpm run test:smoke",
+    "test:integration:act": "ACT_JOB=mcp ../../scripts/test-integration-act",
+    "verify:published": "pnpm run test:install && pnpm run jsr:check"
   },
   "engines": {
     "node": ">=22"
