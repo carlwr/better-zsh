@@ -269,7 +269,7 @@ The server has no side effects beyond writing MCP JSON-RPC frames to stdout (and
 - No environment variables read.
 - No shell execution, no subprocesses.
 
-This posture is structurally enforced, not just policy: a scope-fence test bans `child_process`, networking modules, `node:fs`, and `process.env` reads inside `src/tools/`.
+This posture is structurally enforced, not just policy: a scope-fence test in the shared tool package bans `child_process`, networking modules, `node:fs`, and `process.env` reads in every tool implementation consumed by this server.
 
 ## License
 

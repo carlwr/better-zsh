@@ -35,7 +35,9 @@ Rather than listing files that may become stale, the skill provides executable s
 |--------|--------------|
 | `bash ./scripts/overview.sh` | All source and test files with line counts, plus API rollup status |
 | `bash ./scripts/exports.sh zsh-core` | All public exports from zsh-core source |
+| `bash ./scripts/exports.sh tooldef` | All public exports from the zsh-core-tooldef source |
 | `bash ./scripts/exports.sh mcp` | All public exports from the zshref-mcp source |
+| `bash ./scripts/exports.sh zshref` | All public exports from the zshref CLI source |
 | `bash ./scripts/exports.sh ext` | All public exports from extension source |
 | `bash ./scripts/providers.sh` | Extension provider registrations, classes, and semantic token scope config |
 
@@ -79,12 +81,23 @@ These describe **which directories** to look in, not specific files. Use the dis
 - When a test needs VS Code types: provide `vi.mock("vscode", ...)` — find an example with `rg 'vi.mock.*vscode' packages/vscode-better-zsh/src/test/`
 - `src/test/integration/` and `src/test/bundled/` — run under VS Code/Mocha harness, **not** Vitest
 
-### zshref-mcp: MCP server package
-1. `packages/zshref-mcp/` — package root with `index.ts` (library surface) and `server.ts` (stdio bin)
-2. `packages/zshref-mcp/src/tools/` — pure tool implementations; one file per tool, no `vscode`/`child_process`/`node:fs` imports (scope-fenced by `src/test/scope.test.ts`)
-3. `packages/zshref-mcp/src/server/` — MCP SDK server construction; transport-agnostic factory
-4. `packages/zshref-mcp/src/test/` — unit tests + stdio integration test (spawns the built bin via the MCP SDK client)
-5. Pattern: each tool is `(DocCorpus, input) → output` + a `ToolDef` metadata entry in `src/tool-defs.ts`; adapters (the MCP stdio server, `packages/vscode-better-zsh/src/zsh-ref-tools.ts`) walk the aggregate list uniformly
+### zsh-core-tooldef: shared tool layer
+1. `packages/zsh-core-tooldef/src/tools/` — one file per tool; pure `(DocCorpus, input) → output` functions. Scope-fenced against `child_process`/networking/`node:fs`/`vscode`/`process.env`.
+2. `packages/zsh-core-tooldef/src/` — `ToolDef` metadata + aggregate `toolDefs` barrel consumed by every adapter.
+3. `packages/zsh-core-tooldef/src/test/` — per-tool unit tests, metadata invariants, scope fence.
+4. Consumers: MCP server, CLI, VS Code extension; each walks `toolDefs` uniformly.
+
+### zshref-mcp: MCP server adapter
+1. `packages/zshref-mcp/` — package root with library surface + stdio server bin entry.
+2. `packages/zshref-mcp/src/server/` — MCP SDK server construction; transport-agnostic factory. Registers every tool from `@carlwr/zsh-core-tooldef`.
+3. `packages/zshref-mcp/src/test/` — CLI-flag tests, pkg-info drift guards, and a stdio integration test (spawns the built bin via the MCP SDK client).
+4. No tool implementations live here; they live in tooldef.
+
+### zshref: CLI adapter
+1. `packages/zshref/` — package root with library surface + `zshref` bin entry.
+2. `packages/zshref/src/` — cliffy adapter: walks `toolDefs` into subcommands; JSON on stdout; `--category` via cliffy `EnumType(docCategories)`.
+3. `packages/zshref/src/test/` — adapter unit tests + end-to-end bin invocation test + pkg-info drift guards.
+4. Exit codes: 0 well-formed (incl. empty match), 1 internal error, 2 bad input.
 
 ## Symbol navigation
 
@@ -118,9 +131,11 @@ rg "^export" --type ts packages/zsh-core/src/docs/yodl/
 
 **Extension unit tests mock `vscode`:** The vitest config aliases `vscode` to `/dev/null`. Tests that use VS Code types must provide their own mock — find examples with `rg 'vi.mock.*vscode' packages/vscode-better-zsh/src/test/`.
 
-**MCP package must not depend on `vscode`:** `packages/zshref-mcp/` exports pure tool implementations and metadata; the VS Code LM registration glue lives in the extension (`packages/vscode-better-zsh/src/zsh-ref-tools.ts`), not in the MCP package. The one-to-one correspondence between `contributes.languageModelTools` in the extension manifest and `toolDefs` in the MCP package is asserted by a unit test — drift fails CI.
+**Tool layer must not depend on `vscode`:** `packages/zsh-core-tooldef/` exports pure tool implementations and metadata; the VS Code LM registration glue lives in the extension, not in any of the tool-related packages. The one-to-one correspondence between `contributes.languageModelTools` in the extension manifest and `toolDefs` in tooldef is asserted by a unit test — drift fails CI.
 
-**MCP tool surface scope fence:** a test asserts that `packages/zshref-mcp/src/tools/` does not import `child_process`, network APIs, or `node:fs`. The "no execution, no environment access" promise is a product feature advertised in the MCP package description. Adding a tool that legitimately needs these requires loosening the fence deliberately.
+**Tool surface scope fence:** a test in `packages/zsh-core-tooldef/src/test/` asserts that `src/tools/` does not import `child_process`, network APIs, `node:fs`, `vscode`, or read `process.env`. The "no execution, no environment access" promise is a product feature advertised by the MCP and CLI package descriptions. Adding a tool that legitimately needs these requires loosening the fence deliberately.
+
+**zsh-core static entrypoint fence:** a test in `packages/zsh-core/src/test/` walks the import graph from the `.`, `./render`, and `./assets` entrypoints and rejects reached files that import execution/network/env APIs. `./exec` is excluded (exposes a `ZshRunner` injection type). Prophylactic — keeps the static-reference consumers structurally execution-free even when zsh-core gains new internal helpers.
 
 ---
 

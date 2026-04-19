@@ -167,9 +167,21 @@ Per-category renderers are internal; the public API is `renderDoc`.
 
 ---
 
+## Consumers of the tooldef layer
+
+The static reference is wrapped into a framework-neutral tool layer (`@carlwr/zsh-core-tooldef`: pure `(DocCorpus, input) → output` impls plus `ToolDef` metadata). Three consumer packages today adapt that layer to different host protocols:
+
+- **`@carlwr/zshref-mcp`** — a Model Context Protocol server over stdio; importable by any MCP client (Claude Desktop, VS Code's MCP support, Cursor, Codex CLI, etc.).
+- **`@carlwr/zshref`** — a CLI (`zshref` bin) with one cliffy subcommand per `ToolDef`, emitting JSON on stdout. Pipe-friendly; same pure-tool layer as the MCP, different adapter.
+- **`vscode-better-zsh`** — the VS Code extension; registers the same tools as VS Code Language Model tools via `vscode.lm.registerTool`.
+
+Three consumers is what justifies the tooldef extraction: with only one or two, the shared layer is overhead; at three, collapsing the per-adapter glue into a walk over `toolDefs` pays for itself in both code and drift prevention (tool name, description, and input schema live in exactly one place and every adapter picks them up automatically).
+
+The remaining subsections of this chapter are framed around the MCP specifically — that package was the original second consumer and remains the most illustrative case; the rationale generalizes to the CLI (no-vscode posture, static-only scope) and to the extension's LM-tool registration.
+
 ## MCP as a consumer
 
-`@carlwr/zshref-mcp` is a second consumer of `zsh-core` — alongside the extension — exposing a subset of the static reference as Model Context Protocol tools (stdio transport; importable by any MCP client: Claude Desktop, VS Code's MCP support, Cursor, Codex CLI, etc.). The extension also imports the package and registers the same tools as VS Code Language Model tools via `vscode.lm.registerTool`.
+`@carlwr/zshref-mcp` exposes the tooldef surface as Model Context Protocol tools.
 
 ### Rephrasing the consumer model
 
@@ -192,11 +204,11 @@ The only zsh-core changes driven by the MCP have been additive exports of alread
 - the extension cost of the abstraction is one thin file: each adapter is <30 lines
 - publish cadence decouples: zshref-mcp versions independently of the extension
 
-A test in `packages/vscode-better-zsh/src/test/zsh-ref-tools.test.ts` asserts that `contributes.languageModelTools` in the extension manifest and the `toolDefs` array in the MCP package stay in one-to-one correspondence (names + `inputSchema`). Drift fails CI.
+A test in `packages/vscode-better-zsh/src/test/zsh-ref-tools.test.ts` asserts that `contributes.languageModelTools` in the extension manifest and the `toolDefs` array (now in `@carlwr/zsh-core-tooldef`; same array consumed by the MCP and the CLI) stay in one-to-one correspondence (names + `inputSchema`). Drift fails CI.
 
 ### Scope fence: "no execution, no environment access" as a product feature
 
-The MCP's public pitch is "static zsh knowledge as MCP tools; no shell execution, no environment access." This is advertised in the package description and the tool `modelDescription` strings. It is also enforced structurally: a test in `packages/zshref-mcp/src/test/scope.test.ts` fails if any file under `src/tools/` imports `child_process`, network APIs, or `node:fs`. Adding a tool that legitimately needs these (none do today; none are planned) would require loosening the fence deliberately, not by accident.
+The MCP's public pitch is "static zsh knowledge as MCP tools; no shell execution, no environment access." This is advertised in the package description and the tool `modelDescription` strings. It is also enforced structurally: a test in `packages/zsh-core-tooldef/src/test/scope.test.ts` (alongside the tool implementations) fails if any file under `src/tools/` imports `child_process`, network APIs, `node:fs`, `vscode`, or reads `process.env`. Because the CLI and the VS Code extension consume the same tool layer, they inherit the same guarantee. Adding a tool that legitimately needs these (none do today; none are planned) would require loosening the fence deliberately, not by accident.
 
 Rationale:
 - existing shell-flavored MCP servers mostly involve execution; users searching for a "zsh MCP" will have execution expectations that we do not meet. Leaning into "static, read-only" distinguishes the package and sets correct expectations.

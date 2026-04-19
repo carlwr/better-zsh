@@ -6,16 +6,17 @@
 
 ## Companion docs
 
-- `EXTRACTION.md` — working checklist for the day this package is split out of the monorepo. Scoped to that transition; deleted on the extraction commit.
+- `EXTRACTION.md` — working checklist for the day the MCP package is split out of the monorepo. Scoped to MCP extraction (not tooldef, which is shared infrastructure and stays in-repo); deleted on the extraction commit.
 
 
 ## Architectural invariants
 
-Three rules keep the package honest:
+This package is the MCP-adapter slice. The tool layer itself — pure `(DocCorpus, input) → output` implementations, `ToolDef` metadata, and the scope fence — lives in `@carlwr/zsh-core-tooldef`. See that package's `DEVELOPMENT.md` for the tool-layer invariants and the adding-a-tool checklist.
 
-- **Pure tool implementations.** Files under `src/tools/` are `(DocCorpus, input) → output`. No `child_process`, no networking, no `node:fs`. The tool layer never looks at process env or disk; the corpus is passed in.
-- **Shared `ToolDef` metadata.** `src/tool-defs.ts` is the single source of tool name, description, JSON-Schema input, and an `execute` wrapper. Any adapter (the stdio server here, or an embedder) walks the `toolDefs` array uniformly — no per-tool switch statements at adapter level.
-- **Transport-agnostic server.** `src/server/build-server.ts` returns an `@modelcontextprotocol/sdk` `Server` with no transport attached. The bin (`server.ts`) wires stdio; tests wire an in-process client via `StdioClientTransport` spawning the built bin.
+What stays here:
+
+- **Transport-agnostic server.** `src/server/build-server.ts` returns an `@modelcontextprotocol/sdk` `Server` with the tools from `toolDefs` (imported from `@carlwr/zsh-core-tooldef`) registered. No transport attached. The bin (`server.ts`) wires stdio; tests wire an in-process client via `StdioClientTransport` spawning the built bin.
+- **CLI-flag decision logic.** `src/cli.ts` is the pure `(argv, isTTY) → CliAction` function driving `--help`, `--version`, and the TTY-hint behavior for humans who run the bin directly.
 
 The classifier walks `classifyOrder` imported from zsh-core; rationale and completeness guard live there (`DESIGN.md` §"Tie-break in classify"). No MCP-side maintenance when categories are added.
 
@@ -35,37 +36,30 @@ Keep the prefix on every new tool. `snake_case` throughout; the short name after
 
 ## Adding a new tool
 
-Each tool file under `src/tools/` owns everything about its tool — pure impl, I/O types, and the `*ToolDef` metadata. `src/tool-defs.ts` is a barrel + aggregate array.
+Tool implementations, metadata, and unit tests all live in `@carlwr/zsh-core-tooldef`. Follow that package's checklist. The cross-adapter updates are:
 
-1. New file under `src/tools/`: export I/O types, a pure `(corpus, input) → result` function, and a `*ToolDef` constant. No execution, network, or `node:fs` imports.
-2. Re-export from the tools barrel.
-3. In `src/tool-defs.ts`: re-export the `*ToolDef` and push it into `toolDefs`. No per-tool detail lives here.
-4. Name: stable `snake_case`, `zsh_`-prefixed (see "Tool naming"). Any category enumeration in the description must be interpolated from zsh-core exports (see `AGENTS.md`).
-5. Unit tests under `src/test/tools/`. Happy path + one negative + any quirk the tool promises.
-6. Metadata assertions in `src/test/tool-defs.test.ts`.
-7. Stdio-visible tools: extend the stdio end-to-end test.
-8. `pnpm run check && pnpm run test` — the scope fence trips on stray imports.
+1. Extend `src/test/mcp-stdio.test.ts` here if the new tool should have a stdio-visible end-to-end check (recommended for any tool exposed to MCP clients).
+2. The VS Code extension's `contributes.languageModelTools` manifest mirrors each tool's name + description + inputSchema; a test on the extension side (`packages/vscode-better-zsh/src/test/zsh-ref-tools.test.ts`) asserts full equality. Update the manifest when adding/editing a tool in tooldef.
+3. `pnpm run check && pnpm run test` here verifies the MCP end of the wire picks up the new tool.
 
-`toolDefs` is the registry; no codegen.
-
-**Cross-package note.** The VS Code extension's `contributes.languageModelTools` manifest mirrors each tool's name + description + inputSchema. A test on the extension side asserts full equality; update the manifest when adding/editing a tool here.
+`toolDefs` (imported from `@carlwr/zsh-core-tooldef`) is the registry; no codegen.
 
 ## Test layout
 
-- `src/test/tools/<tool>.test.ts` — pure-function unit tests, one file per tool.
-- `src/test/tool-defs.test.ts` — `ToolDef` metadata invariants + description-shape guards shared across all tools.
 - `src/test/cli.test.ts` — `--help` / `--version` / TTY-hint decision + end-to-end bin invocation.
-- `src/test/scope.test.ts` — structural scope fence (see below).
 - `src/test/mcp-stdio.test.ts` — end-to-end MCP round-trip via a spawned, real SDK client.
+- `src/test/pkg-info.test.ts` — identity strings and shared-surface exports kept in sync with `package.json` / `deno.json`.
+
+Tool-level unit tests (`src/test/tools/<tool>.test.ts`) and metadata-invariant tests (`tool-defs.test.ts`) live in `@carlwr/zsh-core-tooldef`.
 
 `scripts/test-smoke.mjs` is the tarball-level packaging check (required/forbidden paths, plus every `package.json` ref — `main`, `types`, `bin`, `exports` — must resolve to a file actually in the tarball).
 `scripts/probe-opencode` is a manual agent-client probe: it points opencode at the local built server `.mjs` file via a temp isolated config and performs a test or runs a custom prompt; see `probe-opencode --help` for details. It is intentionally manual-use only; keep it out of package scripts and CI.
 
 ### Published-state verification (`verify:published`)
 
-Two checks depend on external registries: `scripts/test-install.mjs` npm-installs the packed tarball into a throwaway temp dir, which resolves the declared `@carlwr/zsh-core` dependency **from the npm registry**; `pnpm run jsr:check` (= `deno publish --dry-run`) resolves the JSR `imports` map in `deno.json`, which points at `jsr:@carlwr/zsh-core@...`.
+Two checks depend on external registries: `scripts/test-install.mjs` npm-installs the packed tarball into a throwaway temp dir, which resolves the declared `@carlwr/zsh-core` and `@carlwr/zsh-core-tooldef` dependencies **from the npm registry**; `pnpm run jsr:check` (= `deno publish --dry-run`) resolves the JSR `imports` map in `deno.json`, which points at `jsr:@carlwr/zsh-core@...` and `jsr:@carlwr/zsh-core-tooldef@...`.
 
-Both scripts are grouped under **`verify:published`** — a deliberately non-`test:*` name. They are excluded from `test:integration` and any `test:*` aggregator: ordinary tests must be runnable in a fresh clone with no published-state assumptions, so that a change that adds a zsh-core export cannot falsely fail the MCP's own test flow before that export has been republished. Invoke `verify:published` explicitly (manually, or as its own CI step) after the upstream `@carlwr/zsh-core` alpha is known to be out on both registries with the needed surface. The CI workflow already calls `test:install` and `jsr:check` as separate jobs; the split here mirrors and formalizes that.
+Both scripts are grouped under **`verify:published`** — a deliberately non-`test:*` name. They are excluded from `test:integration` and any `test:*` aggregator: ordinary tests must be runnable in a fresh clone with no published-state assumptions, so that a change that adds an upstream export cannot falsely fail the MCP's own test flow before that export has been republished. Invoke `verify:published` explicitly (manually, or as its own CI step) after the upstream alphas are known to be out on both registries with the needed surface. The CI workflow already calls `test:install` and `jsr:check` as separate jobs; the split here mirrors and formalizes that.
 
 ## API Extractor note
 
@@ -75,20 +69,13 @@ API Extractor only runs on the `index` entry. `server.ts` is a bin with top-leve
 
 ## Scope fence
 
-`src/test/scope.test.ts` walks every `.ts` file under `src/tools/` and greps for forbidden imports / call patterns:
+The "no execution, no environment access" guarantee is enforced by the scope-fence test in `@carlwr/zsh-core-tooldef` (`src/test/scope.test.ts`), which walks every tool file and rejects forbidden imports (`child_process`, networking modules, `node:fs`, `vscode`, `process.env` reads). See that package's `DEVELOPMENT.md` for details and the process for deliberately loosening the fence. The MCP server layer here is allowed stdio transport and the bin is allowed to write stack traces to stderr on fatal errors; the tools themselves are fenced at source.
 
-- any process-spawn or networking module (`child_process`, `dgram`, `net`, `tls`, `http`/`https`/`http2`)
-- `node:fs` / `from "fs"`
-- `from "vscode"` (the MCP package is `vscode`-free — any extension adapter lives in the VS Code package, not here)
-- `process.env` reads (the tools must be env-agnostic)
-
-This is the structural backing for the package's public promise ("no shell execution, no environment access"). The server layer is allowed stdio transport and the bin is allowed to write stack traces to stderr on fatal errors, but tool implementations are not.
-
-If you have a legitimate need to loosen the fence, treat it as an intentional change: update the forbidden-imports list in `scope.test.ts` with a comment explaining which tool needed what and why, and update the package's marketing copy accordingly. Don't paper over a violation by moving code out of `src/tools/` to dodge the walker.
+In addition, a complementary fence in `@carlwr/zsh-core` (`src/test/static-scope.test.ts`) walks the import graph from the static entrypoints (`.`, `./render`, `./assets`) and asserts no reached file touches execution/network/env APIs — so the corpus layer consumed through `loadCorpus` is structurally guaranteed to be execution-free too.
 
 ## JSR import map
 
-`deno.json` declares the JSR package surface (`.` → `index.ts`, `./server` → `server.ts`) plus an import map pointing `@carlwr/zsh-core` at its published JSR specifier. Bump the pinned version in `deno.json` `imports` when moving to a newer `@carlwr/zsh-core`.
+`deno.json` declares the JSR package surface (`.` → `index.ts`, `./server` → `server.ts`) plus an import map pointing `@carlwr/zsh-core` and `@carlwr/zsh-core-tooldef` at their published JSR specifiers. Bump the pinned versions in `deno.json` `imports` when moving to newer upstream alphas.
 
 ### `deno.lock`
 

@@ -34,6 +34,10 @@
 - `dependencies.@carlwr/zsh-core` — currently `workspace:*`. Replace with a
   pinned version from the npm/JSR registry (`"@carlwr/zsh-core": "^X.Y.Z"`).
   Requires `@carlwr/zsh-core` to have been published first.
+- `dependencies.@carlwr/zsh-core-tooldef` — currently `workspace:*`. Replace
+  with a pinned npm version (`"@carlwr/zsh-core-tooldef": "^X.Y.Z"`).
+  Requires tooldef to have been published first. (Added after the tooldef
+  extraction; wasn't in the original checklist.)
 - ~~`engines.node` — carry forward (currently `>=22`; keep in sync with the new repo's CI).~~ **Done** — `engines.node: ">=22"` present in `package.json`; carry-forward note still applies at extraction.
 - `scripts.prebuild`, `scripts.pretypecheck`, `scripts.pretest` all
   currently do `pnpm --filter @carlwr/zsh-core build`. Post-extraction these
@@ -44,6 +48,7 @@
 ### `deno.json` edits
 
 - ~~`imports` points at `jsr:@carlwr/zsh-core@…` (done once `@carlwr/zsh-core` was published).~~ **Done** — `deno.json` already pins `jsr:@carlwr/zsh-core@^0.1.0-alpha.0`. On version bumps of the dep, update the pinned JSR specifier here in the same commit.
+- `imports` must also include `jsr:@carlwr/zsh-core-tooldef@...` — already present post-tooldef-extraction; same version-bump-in-same-commit discipline applies.
 
 ### CI / act
 
@@ -81,12 +86,19 @@
 
 ### Cross-repo drift guards
 
-- `packages/vscode-better-zsh/src/test/zsh-ref-tools.test.ts` currently
-  imports `toolDefs` from the workspace-local MCP package. Post-split:
-  either pin the published version in the extension's dependencies so
-  the drift guard keeps working unchanged, or rewrite the guard to
-  fetch `toolDefs` metadata from the installed package's tarball. The
-  first is simpler.
+- `packages/vscode-better-zsh/src/test/zsh-ref-tools.test.ts` imports
+  `toolDefs` from `@carlwr/zsh-core-tooldef` (not the MCP package —
+  post-tooldef-extraction it's the tooldef package that owns that
+  export). The drift guard is independent of MCP extraction: as long
+  as tooldef stays published and the extension pins a compatible
+  version, the guard keeps working unchanged.
+
+### Scope fence
+
+- The scope fence no longer lives in this package — it moved to
+  `@carlwr/zsh-core-tooldef/src/test/scope.test.ts` alongside the tool
+  implementations. No action at MCP extraction; the tooldef package
+  keeps the fence as a standalone concern.
 
 ### Orient skill
 

@@ -1,16 +1,20 @@
 ## Overview
 
-A small monorepo with three packages:
+A small monorepo with five packages:
 - **zsh-core** — standalone package of structured zsh knowledge (not just a support lib for the extension). Expected to have exposed functionality not used by the extension. Exports its API surface in machine-readable forms (e.g. API Extractor, llms.txt) for AI-friendly consumption.
-- **@carlwr/zshref-mcp** — a Model Context Protocol server projecting the `zsh-core` reference as agent tools (`zsh_classify`, `zsh_lookup_option`). Pure Node, no `vscode` dep; shipped to npm/JSR and also consumed by the extension. See `DESIGN.md` "MCP as a consumer" for why it is a separate package.
-- **vscode-better-zsh** — a VS Code extension; consumer of both `zsh-core` and `@carlwr/zshref-mcp`. Registers the MCP tool set as VS Code Language Model tools via `vscode.lm.registerTool`.
+- **@carlwr/zsh-core-tooldef** — framework-neutral tool definitions over zsh-core: pure `(DocCorpus, input) → output` tool implementations plus shared `ToolDef` metadata, consumed by MCP, CLI, and VS Code adapters.
+- **@carlwr/zshref-mcp** — a Model Context Protocol server projecting the tooldef surface as agent tools (`zsh_classify`, `zsh_lookup_option`, …). Pure Node, no `vscode` dep; shipped to npm/JSR. See `DESIGN.md` "MCP as a consumer" for why it is a separate package.
+- **@carlwr/zshref** — a CLI (`zshref` bin) over the same tooldef surface via a cliffy adapter; each tool becomes a subcommand emitting JSON on stdout.
+- **vscode-better-zsh** — a VS Code extension; consumer of zsh-core and the tooldef package. Registers the shared tool set as VS Code Language Model tools via `vscode.lm.registerTool`.
 
-Only alpha pre-releases published so far (`zsh-core`, `@carlwr/zshref-mcp` at `0.1.0-alpha.*`) — APIs can still move freely until the first non-alpha.
+Only alpha pre-releases published so far (`zsh-core`, `@carlwr/zshref-mcp` at `0.1.0-alpha.*`; `@carlwr/zsh-core-tooldef` and `@carlwr/zshref` are post-refactor and pre-release) — APIs can still move freely until the first non-alpha.
 
 ## See also
 
 - **[`DESIGN.md`](./DESIGN.md)** — design intent, principles, rationale ("why").
 - **`packages/zsh-core/dist/types/*.d.ts`** — rolled-up public API with JSDoc ("what").
+- **`packages/zsh-core-tooldef/`** — shared tool layer consumed by MCP, CLI, and extension.
+- **`packages/zshref/`** — CLI adapter over the tool layer (cliffy subcommands).
 - **Orientation skill** at `skills/orient/` — discovery scripts and reading paths.
 - **[`plan-json-artifacts.md`](./plan-json-artifacts.md)** — deferred plan: pre-parsed JSON as GitHub release assets (out of current work).
 
@@ -33,7 +37,7 @@ Three orthogonal domains (details in `DESIGN.md`):
 - **B — Fact Extraction** (`src/analysis/`): coarse annotations about user code. Facts may carry `Observed<K>` values — never `Documented<K>`.
 - **C — Markdown Rendering** (`src/render/`): transforms doc records into markdown; depends on A; orthogonal to B.
 
-Consumers plumb A+B→C procedurally, not via zsh-core internals. "Consumer" here means anything that wraps zsh-core into a feature surface — today that's the VS Code extension and the `@carlwr/zshref-mcp` MCP/LM tool package; any future consumer follows the same contract.
+Consumers plumb A+B→C procedurally, not via zsh-core internals. "Consumer" here means anything that wraps zsh-core into a feature surface — today that's the VS Code extension, the `@carlwr/zshref-mcp` MCP server, and the `@carlwr/zshref` CLI (the last two share a common tool layer in `@carlwr/zsh-core-tooldef`); any future consumer follows the same contract.
 
 Brand boundary crossing is exactly one public API: `resolve(corpus, cat, raw)` dispatches through a per-category resolver table in `docs/corpus.ts`. `renderDoc(corpus, pieceId)` produces markdown; no combined convenience function. See `DESIGN.md` for the rationale.
 
@@ -48,22 +52,33 @@ Keep low-level parsing rules in the core layer. Keep corpus-specific interpretat
 
 `src/analysis/facts.ts` is the public fact-model surface. Shared document/span helpers, line scanning, and context/setopt detection live in sibling analysis modules. Keep the public fact vocabulary centralized there; keep scanner mechanics and context heuristics out of it.
 
-### MCP package layout
+### Tooldef + consumer packages layout
 
-`packages/zshref-mcp/`:
-- `index.ts` — public package surface: pure tool impls (`classify`, `lookupOption`), tool metadata (`toolDefs`, per-tool `*ToolDef`), and the server factory (`buildServer`).
-- `server.ts` — the stdio MCP server binary (package `bin` entry).
+The tool layer is shared; each consumer is a thin adapter over it.
+
+`packages/zsh-core-tooldef/`:
+- `index.ts` — public package surface: pure tool impls (`classify`, `lookupOption`, `search`, `describe`), tool metadata (`toolDefs`, per-tool `*ToolDef`).
 - `src/tools/` — one file per tool. Pure functions of `(DocCorpus, input) → output`. No IO, no process env, no `vscode` import. Enforced by the scope-fence test (`src/test/scope.test.ts`).
 - `src/tool-defs.ts` — aggregate `toolDefs` list + per-tool metadata (name, description, JSON-Schema input). Adapters walk this list.
-- `src/server/build-server.ts` — constructs an MCP SDK `Server` with tools registered; transport-agnostic.
 
-Principle: "MCP is another consumer of zsh-core." No new query APIs in zsh-core to support the MCP. See `DESIGN.md` "MCP as a consumer".
+`packages/zshref-mcp/` — MCP adapter:
+- `index.ts` — the server factory (`buildServer`).
+- `server.ts` — the stdio MCP server binary (package `bin` entry).
+- `src/server/build-server.ts` — constructs an MCP SDK `Server` with tools from `toolDefs` registered; transport-agnostic.
 
-**Before proposing new MCP tools, reshaping the tool surface, or loosening the scope fence, read all three:**
+`packages/zshref/` — CLI adapter (`zshref` bin):
+- `index.ts` — library surface: `buildCli`/`runCli`.
+- `bin.ts` — argv entry point; loads corpus, walks `toolDefs` into cliffy subcommands, emits JSON.
+
+`packages/vscode-better-zsh/src/zsh-ref-tools.ts` — VS Code extension adapter; registers the same `toolDefs` as VS Code LM tools.
+
+Principle: "MCP, CLI, and extension are all consumers of tooldef; tooldef is a consumer of zsh-core." No new query APIs in zsh-core to support any consumer. See `DESIGN.md` "MCP as a consumer" (generalized to "Consumers of the tooldef layer").
+
+**Before proposing new tools, reshaping the tool surface, or loosening the scope fence, read all three:**
 
 - `packages/zshref-mcp/README.md` — user-facing pitch; the "Out of scope features" list is load-bearing.
 - `DESIGN.md` §"MCP as a consumer" — rationale for the static, read-only posture and the scope fence.
-- `packages/zshref-mcp/DEVELOPMENT.md` — architectural invariants, adding-a-tool checklist, scope-fence details.
+- `packages/zsh-core-tooldef/DEVELOPMENT.md` — architectural invariants, adding-a-tool checklist, scope-fence details.
 
 The static, read-only, no-execution posture is a **product feature**, not incidental. Bringing host-dependent capabilities (listing live `setopt` state, `$commands`, process env, filesystem, shell invocation) into this package is antithetical to its pitch — `analyze/` and similar dynamic surfaces stay out. Extending the MCP with **more static knowledge** from the vendored reference is always on the table; extending it with runtime introspection is not.
 
@@ -244,7 +259,7 @@ The MCP additionally exposes `test:integration:act` (runs the `mcp` CI job throu
 
 ### npm + JSR dual publish
 
-`zsh-core` and `@carlwr/zshref-mcp` publish to both npm (build artifacts) and JSR (`.ts` sources). Consequences:
+`zsh-core`, `@carlwr/zsh-core-tooldef`, `@carlwr/zshref-mcp`, and `@carlwr/zshref` publish to both npm (build artifacts) and JSR (`.ts` sources). Consequences:
 
 - **No runtime `package.json` reads.** JSR consumers receive `.ts` sources only — `package.json` does not exist for them. Library code must never read it (`readFileSync("package.json")` or equivalent). Dev/CI-only code (build scripts, tests) may read it, but prefer importing from `pkg-info.ts` for values already captured there — single source of truth, no reparse-site drift.
 - **Package identity in a `.ts` source of truth.** Each dual-published package has a `src/pkg-info.ts` (names, version, URLs, license, bin). Runtime *and* build code imports from there. `src/test/pkg-info.test.ts` asserts the constants match `package.json` + `deno.json`; adding a new identity string means adding a constant, updating both manifests, and extending the test.

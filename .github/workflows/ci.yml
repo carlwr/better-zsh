@@ -11,6 +11,10 @@ jobs:
   # The monorepo-internal `integration` job re-covers unit tests via
   # `pnpm test`; the `mcp` job isolates failures of the MCP-specific
   # packaging/install/JSR surface.
+  #
+  # Release workflows for @carlwr/zsh-core-tooldef and @carlwr/zshref
+  # are TODO — today only zsh-core, the extension, and zshref-mcp have
+  # dedicated release pipelines under `.github/workflows/release-*.yml`.
   mcp:
     runs-on: ubuntu-latest
     permissions:
@@ -31,6 +35,55 @@ jobs:
       - run: pnpm --filter @carlwr/zshref-mcp run test:smoke
       - run: pnpm --filter @carlwr/zshref-mcp run test:install
       - run: pnpm --filter @carlwr/zshref-mcp run jsr:check
+
+  # Dedicated job for @carlwr/zsh-core-tooldef — shared tool layer
+  # consumed by the MCP server, the CLI, and the extension. Unlike
+  # mcp/zshref this is shared infrastructure (no standalone-extraction
+  # target today), so no `test:install` step: the package has no bin.
+  tooldef:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+      - run: corepack enable
+      - run: pnpm config set store-dir /tmp/pnpm-store
+      - run: pnpm install --frozen-lockfile
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - run: pnpm --filter @carlwr/zsh-core-tooldef run check
+      - run: pnpm --filter @carlwr/zsh-core-tooldef run test
+      - run: pnpm --filter @carlwr/zsh-core-tooldef run test:smoke
+      - run: pnpm --filter @carlwr/zsh-core-tooldef run jsr:check
+
+  # Dedicated job for @carlwr/zshref — CLI adapter over tooldef.
+  # Mirrors the `mcp` job: same packaging/install/JSR surface as would
+  # apply in a standalone repo after extraction. Requires the workspace
+  # root `.npmrc` for `@jsr:registry=https://npm.jsr.io` (cliffy).
+  zshref:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+      - run: corepack enable
+      - run: pnpm config set store-dir /tmp/pnpm-store
+      - run: pnpm install --frozen-lockfile
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - run: pnpm --filter @carlwr/zshref run check
+      - run: pnpm --filter @carlwr/zshref run test
+      - run: pnpm --filter @carlwr/zshref run test:smoke
+      - run: pnpm --filter @carlwr/zshref run test:install
+      - run: pnpm --filter @carlwr/zshref run jsr:check
 
   integration:
     runs-on: ubuntu-latest
