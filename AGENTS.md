@@ -12,6 +12,7 @@ Only alpha pre-releases published so far (`zsh-core`, `@carlwr/zshref-mcp` at `0
 - **[`DESIGN.md`](./DESIGN.md)** — design intent, principles, rationale ("why").
 - **`packages/zsh-core/dist/types/*.d.ts`** — rolled-up public API with JSDoc ("what").
 - **Orientation skill** at `skills/orient/` — discovery scripts and reading paths.
+- **[`plan-json-artifacts.md`](./plan-json-artifacts.md)** — deferred plan: pre-parsed JSON as GitHub release assets (out of current work).
 
 ## DRY across documentation layers
 
