@@ -4,6 +4,9 @@ import { tmpdir } from "node:os"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 
+// End-user installs need no JSR registry config: cliffy is inlined into
+// dist by esbuild, and no runtime dep resolves to `@jsr/*`.
+
 /**
  * End-to-end install smoke: pack @carlwr/zshref, npm-install the tarball
  * into a fresh temp dir, and invoke the installed `zshref` bin with
@@ -40,10 +43,6 @@ try {
       2,
     )}\n`,
   )
-
-  // The consumer install needs the JSR npm registry for cliffy. Mirror the
-  // workspace root's .npmrc.
-  writeFileSync(join(instDir, ".npmrc"), "@jsr:registry=https://npm.jsr.io\n")
 
   execFileSync(
     npm,

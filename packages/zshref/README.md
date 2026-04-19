@@ -21,11 +21,8 @@ Structurally enforced: a scope-fence test in the shared tool package bans `child
 ## Install
 
 ```sh
-npm config set @jsr:registry https://npm.jsr.io   # once, globally
 npm install -g @carlwr/zshref
 ```
-
-The `npm config` line points npm at the JSR registry for a transitive dependency; without it, install fails with an unresolved `@jsr/*` package. A project-local `.npmrc` with the same line works too.
 
 ## Usage
 
@@ -77,6 +74,14 @@ See `zshref completions --help` for other supported shells.
 ## More
 
 See the [monorepo](https://github.com/carlwr/better-zsh) for source, issues, and companion packages — the MCP server `@carlwr/zshref-mcp` and the `better-zsh` VS Code extension share the same underlying reference.
+
+## Build from source
+
+The CLI ships cliffy inlined, so end-user installs need no registry config. Contributors building the workspace need npm to resolve `@jsr/*` dev deps — the repo's root `.npmrc` handles that. If you build outside the monorepo, run once:
+
+```sh
+npm config set @jsr:registry https://npm.jsr.io
+```
 
 ## License
 

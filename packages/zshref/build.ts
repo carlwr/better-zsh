@@ -19,19 +19,16 @@ const distDir = join(pkgDir, "dist")
     clean: true,
     sourcemap: true,
     target: "es2022",
-    // Keep dependencies external so zsh-core and cliffy are resolved from
-    // node_modules at runtime, not inlined.
-    // Keep runtime deps external so cliffy + zsh-core are resolved from
-    // node_modules, not inlined. Note: we alias `@cliffy/command` (the
-    // JSR-style spec used in the TS source and the deno.json imports
-    // map) to its npm-registry alias `@jsr/cliffy__command`; see
-    // `esbuildOptions` below.
+    // zsh-core / tooldef stay external — consumers resolve them from
+    // node_modules at runtime. Cliffy is NOT external: the esbuild alias
+    // below rewrites `@cliffy/command` → `@jsr/cliffy__command` before
+    // external-matching, so cliffy ends up inlined into the bin. That's
+    // by design — it removes the JSR-registry requirement for end users,
+    // and cliffy is only listed as a devDependency in `package.json`.
     external: [
       "@carlwr/zsh-core",
       "@carlwr/zsh-core/render",
       "@carlwr/zsh-core-tooldef",
-      "@jsr/cliffy__command",
-      "@jsr/cliffy__command/completions",
     ],
     shims: true,
     watch: process.argv.includes("--watch"),

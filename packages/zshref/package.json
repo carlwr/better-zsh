@@ -58,10 +58,10 @@
   },
   "dependencies": {
     "@carlwr/zsh-core": "workspace:*",
-    "@carlwr/zsh-core-tooldef": "workspace:*",
-    "@jsr/cliffy__command": "^1.0.0"
+    "@carlwr/zsh-core-tooldef": "workspace:*"
   },
   "devDependencies": {
+    "@jsr/cliffy__command": "^1.0.0",
     "vitest": "^4.1.4"
   }
 }
