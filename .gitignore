@@ -13,3 +13,4 @@ packages/**/*.vsix
 packages/**/out/
 example_*.zsh
 examples_*.zsh
+.claude/
