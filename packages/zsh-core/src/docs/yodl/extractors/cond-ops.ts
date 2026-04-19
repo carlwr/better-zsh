@@ -3,19 +3,19 @@ import type { CondOpDoc } from "../../types.ts"
 import { extractItems, flattenAliasedEntries } from "../core/doc.ts"
 import { extractTokens } from "../core/text.ts"
 
-interface ParsedUnaryHeader {
+interface ParsedUnary {
   op: string
   operands: readonly [string]
   arity: "unary"
 }
 
-interface ParsedBinaryHeader {
+interface ParsedBinary {
   op: string
   operands: readonly [string, string]
   arity: "binary"
 }
 
-type ParsedCondHeader = ParsedUnaryHeader | ParsedBinaryHeader
+type ParsedCondHeader = ParsedUnary | ParsedBinary
 
 /** Parse cond.yo → CondOpDoc[] */
 export function parseCondOps(yo: string): readonly CondOpDoc[] {
@@ -56,7 +56,7 @@ function parseHeader(
 function parseUnaryHeader(
   op: string,
   operands: string[],
-): ParsedUnaryHeader | undefined {
+): ParsedUnary | undefined {
   const [arg] = operands
   return arg ? { op, operands: [arg], arity: "unary" } : undefined
 }
@@ -64,7 +64,7 @@ function parseUnaryHeader(
 function parseBinaryHeader(
   op: string,
   operands: string[],
-): ParsedBinaryHeader | undefined {
+): ParsedBinary | undefined {
   const [left, right] = operands
   return left && right
     ? { op, operands: [left, right], arity: "binary" }

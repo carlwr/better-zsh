@@ -3,7 +3,7 @@ import { isSetoptContext } from "../../analysis/setopt-context"
 import { doc } from "./test-util"
 
 suite("isSetoptContext", () => {
-  for (const [text, line, want] of [
+  test.each([
     ["setopt extendedglob", 0, true],
     ["unsetopt extendedglob", 0, true],
     ["builtin setopt extendedglob", 0, true],
@@ -17,9 +17,7 @@ suite("isSetoptContext", () => {
     ["echo hello", 0, false],
     ["set extendedglob", 0, false],
     ["", 0, false],
-  ] as const) {
-    test(`${want ? "yes" : "no"}: ${text}`, () => {
-      assert.strictEqual(isSetoptContext(doc(text), line), want)
-    })
-  }
+  ] as const)("%s @%d → %s", (text, line, want) => {
+    assert.strictEqual(isSetoptContext(doc(text), line), want)
+  })
 })

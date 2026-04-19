@@ -10,7 +10,7 @@ import type {
 import * as core from "@carlwr/zsh-core"
 import { mkDocumented } from "@carlwr/zsh-core/internal"
 import { vi } from "vitest"
-import { wordDoc } from "./test-util"
+import { by, emptyCorpus, wordDoc } from "./test-util"
 
 vi.mock("vscode", () => ({
   MarkdownString: class {
@@ -84,14 +84,8 @@ const c = (
 
 // --- corpus -----------------------------------------------------------------
 
-const by = <K extends PropertyKey, T extends Record<K, unknown>>(
-  field: K,
-  xs: readonly T[],
-) => new Map(xs.map(x => [x[field], x]))
-
-const mt = new Map()
-
 const corpus: DocCorpus = {
+  ...emptyCorpus(),
   option: by("name", [
     o("GLOB", "Expansion and Globbing"),
     o("RCS", "Initialisation"),
@@ -113,17 +107,6 @@ const corpus: DocCorpus = {
     r(">&!", ">&! word", "d:!"),
     r("&>", "&> word", "d:&"),
   ]),
-  precmd: mt,
-  reserved_word: mt,
-  process_subst: mt,
-  param_expn: mt,
-  subscript_flag: mt,
-  param_flag: mt,
-  history: mt,
-  glob_op: mt,
-  glob_flag: mt,
-  prompt_escape: mt,
-  zle_widget: mt,
 }
 
 // --- helpers ----------------------------------------------------------------

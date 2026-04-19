@@ -143,10 +143,7 @@ function buildUsage(
   required: ReadonlySet<string>,
 ): string {
   return Object.keys(props)
-    .map(key => {
-      const bare = `--${key}`
-      return required.has(key) ? bare : `[${bare}]`
-    })
+    .map(key => (required.has(key) ? `--${key}` : `[--${key}]`))
     .join(" ")
 }
 

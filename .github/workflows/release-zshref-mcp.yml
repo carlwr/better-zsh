@@ -64,8 +64,8 @@ jobs:
       - run: pnpm --filter @carlwr/zshref-mcp run check
       - run: pnpm --filter @carlwr/zshref-mcp run test
       - run: pnpm --filter @carlwr/zshref-mcp run test:smoke
-      - run: pnpm --filter @carlwr/zshref-mcp run test:install
-      - run: pnpm --filter @carlwr/zshref-mcp run jsr:check
+      - run: pnpm --filter @carlwr/zshref-mcp run testREGISTRY:install
+      - run: pnpm --filter @carlwr/zshref-mcp run jsrREGISTRY:check
 
       - name: Determine npm dist-tag
         id: disttag

@@ -62,7 +62,7 @@ export class CompletionProvider implements vscode.CompletionItemProvider {
       return this.optionCompletions(doc, pos)
     }
     if (ctx.kind === "cond") {
-      return this.condCompletions(doc, pos)
+      return this.condCompletions()
     }
     return this.generalCompletions(doc, pos)
   }
@@ -97,7 +97,7 @@ export class CompletionProvider implements vscode.CompletionItemProvider {
     return new vscode.CompletionList(items, true)
   }
 
-  private condCompletions(_doc: vscode.TextDocument, _pos: vscode.Position) {
+  private condCompletions() {
     const items = this.condOps.map(cop => {
       const item = new vscode.CompletionItem(
         cop.op,

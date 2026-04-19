@@ -4,10 +4,14 @@ import { fileURLToPath } from "node:url"
 import { Client } from "@modelcontextprotocol/sdk/client/index.js"
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 import {
+  type CallToolResult,
   CallToolResultSchema,
   ListToolsResultSchema,
 } from "@modelcontextprotocol/sdk/types.js"
 import { afterAll, beforeAll, describe, expect, test } from "vitest"
+
+const parseText = (r: CallToolResult): unknown =>
+  JSON.parse((r.content[0] as { type: "text"; text: string }).text)
 
 const here = dirname(fileURLToPath(import.meta.url))
 const pkgDir = join(here, "..", "..")
@@ -62,8 +66,7 @@ describeIfBuilt("MCP stdio integration", () => {
       CallToolResultSchema,
     )
     expect(result.isError).toBeFalsy()
-    const text = (result.content[0] as { type: "text"; text: string }).text
-    const parsed = JSON.parse(text) as {
+    const parsed = parseText(result) as {
       match: { category: string; id: string; markdown: string } | null
     }
     expect(parsed.match?.category).toBe("builtin")
@@ -82,8 +85,7 @@ describeIfBuilt("MCP stdio integration", () => {
       },
       CallToolResultSchema,
     )
-    const text = (result.content[0] as { type: "text"; text: string }).text
-    const parsed = JSON.parse(text) as {
+    const parsed = parseText(result) as {
       match: { id: string; negated: boolean } | null
     }
     expect(parsed.match?.id).toBe("autocd")
@@ -102,8 +104,7 @@ describeIfBuilt("MCP stdio integration", () => {
       CallToolResultSchema,
     )
     expect(result.isError).toBeFalsy()
-    const text = (result.content[0] as { type: "text"; text: string }).text
-    const parsed = JSON.parse(text) as {
+    const parsed = parseText(result) as {
       matches: Array<{
         category: string
         id: string
@@ -128,8 +129,7 @@ describeIfBuilt("MCP stdio integration", () => {
       CallToolResultSchema,
     )
     expect(result.isError).toBeFalsy()
-    const text = (result.content[0] as { type: "text"; text: string }).text
-    const parsed = JSON.parse(text) as {
+    const parsed = parseText(result) as {
       match: { id: string; markdown: string } | null
     }
     expect(parsed.match?.id).toBe("echo")
@@ -148,8 +148,7 @@ describeIfBuilt("MCP stdio integration", () => {
       CallToolResultSchema,
     )
     expect(result.isError).toBeFalsy()
-    const text = (result.content[0] as { type: "text"; text: string }).text
-    expect(JSON.parse(text)).toEqual({ match: null })
+    expect(parseText(result)).toEqual({ match: null })
   })
 
   test("unknown tool returns isError", async () => {

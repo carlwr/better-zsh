@@ -191,35 +191,43 @@ Rationale in `DESIGN.md`.
 - Run: `pnpm format && pnpm check && pnpm test && pnpm test:smoke && pnpm vsix && pnpm test:integration &>/dev/null`
 - `pnpm format` applies safe auto-fixes — run first to avoid a wasted check/fix/re-check cycle.
 - If any step fails, fix and re-run — don't return with known failures.
-- Build scripts with "INTERACTIVE" in the name are **excluded** — only run when explicitly requested.
+- Build scripts with "INTERACTIVE" or "REGISTRY" in the name are **excluded** — only run when explicitly requested.
 
 **If you only answered questions or wrote docs/non-code files, _do not run tests_** unless explicitly asked.
 
 ### Rules
 
-- "All tests" does **not** include "INTERACTIVE" scripts.
+- "All tests" does **not** include "INTERACTIVE" or "REGISTRY" scripts.
 - **NEVER run "INTERACTIVE" scripts** unless the user explicitly asks — on macOS they bring a full VS Code app into focus momentarily and cannot be safely run while the user might be working.
+- **NEVER run "REGISTRY" scripts (or `verifyREGISTRY`) unless the user explicitly asks** — they depend on the currently-published state of upstream packages on npm/JSR and can legitimately fail after local changes that add or rename upstream exports (the upstream must be republished first). Running them at the wrong time produces misleading red.
 - `test:integration` is long-running and noisy — run with `&>/dev/null`, last, when other tests are iterated. See "Script naming axes" below for what it actually does.
-- Non-INTERACTIVE scripts must not call INTERACTIVE ones.
+- **Non-scary scripts must not call scary ones.** No `test:*`, `build*`, `vsix`, `dump:*`, or similar aggregator may chain into an `INTERACTIVE` or `REGISTRY` script (or `verifyREGISTRY`). This isolation is what makes the "never run without explicit ask" rule enforceable.
 - Unit tests are the baseline; integration tests a bonus layer. Integration may overlap with unit.
 - Pure logic should always have unit tests independent of external deps (zsh, VS Code APIs).
 - Integration tests depending on external tools must skip gracefully when absent.
 - The Electron test harness runs ALL tests (unit + integration) — unit tests re-running there are meta-tests under a richer harness.
 - Functions that are "obviously correct" don't need tests.
 
-### Script naming axes: `:integration`, `INTERACTIVE`, and `verify:published`
+### Script naming axes: `:integration`, `INTERACTIVE`, `REGISTRY`
 
-Three orthogonal signals in test-script names. A script can carry any combination.
+Three orthogonal signals in test/build-script names. A script can carry any combination.
 
 - **`*:integration`** — the script is long-running (tens of seconds to several minutes). Include in an extended-validation final step; run last; expect `&>/dev/null`-worthy output volume.
-- **`testINTERACTIVE:*`** — the script takes over the user's desktop (on macOS, launches VS Code and steals focus). Agents must **never** run it without explicit user consent. CI runs INTERACTIVE scripts under `xvfb` where focus-stealing is moot.
-- **`verify:published`** (and similar non-`test:*` names) — the script verifies interaction with **external registries** (npm, JSR) and therefore depends on the *currently-published* state of upstream packages. Excluded from `test:*` aggregators on principle: ordinary tests must be runnable in a fresh clone with no assumption about what is on the registry, so that a local change that adds an upstream export cannot falsely fail before that upstream has been republished. Run on-demand after the relevant alpha/release is out.
+- **`*INTERACTIVE*`** (e.g. `testINTERACTIVE:electron`) — the script takes over the user's desktop (on macOS, launches VS Code and steals focus). Agents must **never** run it without explicit user consent. CI runs INTERACTIVE scripts under `xvfb` where focus-stealing is moot.
+- **`*REGISTRY*`** (e.g. `jsrREGISTRY:check`, `testREGISTRY:install`) plus the wrapper **`verifyREGISTRY`** — the script depends on the *currently-published* state of upstream packages on npm/JSR. Running it after a local change that adds or renames an upstream export produces misleading red until the upstream is republished. Agents must **never** run it without explicit user consent.
 
-The axes are independent: `:integration` is about time/noise, `INTERACTIVE` is about desktop side effects, `verify:published` is about registry dependency. The VS Code electron tests happen to carry both time and desktop properties — they use the `testINTERACTIVE:*` prefix (the stronger constraint dominates the name) and are not additionally tagged `:integration`. A purely noisy, purely headless long-running check uses `*:integration` alone.
+The axes are independent: `:integration` is about time/noise, `INTERACTIVE` is about desktop side effects, `REGISTRY` is about registry dependency. The VS Code electron tests happen to carry both time and desktop properties — they use the `*INTERACTIVE*` marker (the stronger constraint dominates the name) and are not additionally tagged `:integration`. A purely noisy, purely headless long-running check uses `*:integration` alone.
+
+**Aggregator isolation — the rule that makes the marker useful.** A non-scary script (plain `test:*`, `build*`, `vsix`, `dump:*`, workspace-root aggregators) **must not** chain into any `INTERACTIVE` or `REGISTRY` script, nor into `verifyREGISTRY`. Otherwise a routine `pnpm test` could pop VS Code open or fail because the registry hasn't caught up to a local change. The marker is meaningless without this isolation.
+
+The scary scripts:
+- `jsrREGISTRY:check` — `deno publish --dry-run`; resolves the `deno.json` `imports` map against JSR.
+- `jsrREGISTRY:dry` — `jsr publish --dry-run`; resolves npm-side deps.
+- `testREGISTRY:install` — packs the tarball and `npm install`s into a fresh temp dir; resolves runtime deps from npm.
+- `verifyREGISTRY` — convenience wrapper: `testREGISTRY:install` + `jsrREGISTRY:check`. One target covers both registries.
+- `testINTERACTIVE:*` — Electron/VS Code desktop tests.
 
 **Per-package `test:integration`**: each package picks the implementation best suited to what it tests. The VS Code extension's `test:integration` runs `act` (electron under xvfb in a container). The MCP's `test:integration` runs a native-host aggregator of its CI checks (`check`, `test`, `test:smoke`) — no container needed, no registry access. Same name, same *meaning* (long-running CI-parity check that is safe to run any time), different *mechanism*.
-
-Registry-dependent MCP checks live under `verify:published` (currently `test:install` + `jsr:check`, deliberately named off the `test:*` axis; see `packages/zshref-mcp/DEVELOPMENT.md`). CI still invokes those directly as separate steps.
 
 The MCP additionally exposes `test:integration:act` (runs the `mcp` CI job through act, for when Docker is available and you want true CI-parity before a release). The extension does not need a `:act` suffix — its `test:integration` is already act-based, because there is no cheaper native variant worth defaulting to.
 

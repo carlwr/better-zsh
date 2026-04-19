@@ -22,7 +22,7 @@ bootstrap build of upstream packages — see `AGENTS.md` § `BZ_SKIP_UPSTREAM`):
 | **total** | **47** | **521** |
 
 Also green: `pnpm format`, `pnpm check`, `pnpm test:smoke`, `pnpm vsix`,
-`pnpm --filter @carlwr/zsh-core run jsr:check`, and per-package
+`pnpm --filter @carlwr/zsh-core run jsrREGISTRY:check`, and per-package
 `test:integration` for zsh-core / tooldef / mcp / zshref.
 
 ## Deferred (not run at this state)
@@ -36,11 +36,13 @@ latest pass. Re-run before any release.
 - **`vscode-better-zsh` `test:integration`.** Runs the `integration`
   workflow job through `act` (Docker). Not run locally without explicit
   user consent; CI covers it.
-- **Registry-dependent checks** (`verify:published`, per-package
-  `test:install`, `jsr:check` for tooldef / mcp / zshref). Will fail
-  against the current registry state because the relevant alpha
-  publishes have not yet happened — see "Known orthogonal blockers"
-  below.
+- **Registry-dependent checks** (`REGISTRY`-marked scripts: per-package
+  `testREGISTRY:install`, `jsrREGISTRY:check`, plus the `verifyREGISTRY`
+  wrapper for tooldef / mcp / zshref). Will fail against the current
+  registry state because the relevant alpha publishes have not yet
+  happened — see "Known orthogonal blockers" below. Agents must not run
+  these without explicit user consent; see `AGENTS.md` §"Script naming
+  axes".
 
 ## Known orthogonal blockers
 
@@ -53,19 +55,24 @@ first; then `@carlwr/zsh-core-tooldef` `0.1.0-alpha.0`, then a matching
 `0.1.0-alpha.0`. Until this lands, three CI checks are red against
 registry-pinned versions:
 
-- `@carlwr/zshref-mcp run jsr:check` and `test:install`
-- `@carlwr/zsh-core-tooldef run jsr:check`
-- `@carlwr/zshref run jsr:check` and `test:install`
+- `@carlwr/zshref-mcp run jsrREGISTRY:check` and `testREGISTRY:install`
+- `@carlwr/zsh-core-tooldef run jsrREGISTRY:check`
+- `@carlwr/zshref run jsrREGISTRY:check` and `testREGISTRY:install`
 
 See `RELEASE-HANDOFF.md` for the publish-workflow details and
 `packages/zshref-mcp/DEVELOPMENT.md` § "Published-state verification".
 
 ## Followups still open
 
-- **`HANDOFF-param-expn.md`** — remaining post-merge items (DESIGN.md
-  fold-in of param-expn rationale; post-release
-  `dist/json/param-expns.json` via the deferred plan; MCP sanity-render
-  after next release).
+- **Post-release `dist/json/param-expns.json` cleanup.** When the deferred
+  `plan-json-artifacts.md` lands (JSON as GitHub release assets rather
+  than npm subpaths), retire the `./data/param-expns.json` /
+  `./schema/param-expns.schema.json` exports alongside the other data
+  exports.
+- **MCP sanity render of `param_expn` after next alpha.** Once the
+  MCP ships with the updated zsh-core, verify `zsh_describe { category:
+  "param_expn", id: "${name:-word}" }` renders a well-formed doc block
+  and `zsh_search { query: "expansion" }` returns sensible matches.
 - **Two upstream zsh doc typos** to report and eventually fix at source
   (so the `fixupUpstreamTypos` patches in
   `packages/zsh-core/src/docs/yodl/extractors/{options,param-expns}.ts`

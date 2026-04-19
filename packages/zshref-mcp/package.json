@@ -39,18 +39,18 @@
     "pretest": "[ -n \"$BZ_SKIP_UPSTREAM\" ] || (pnpm --filter @carlwr/zsh-core build && pnpm --filter @carlwr/zsh-core-tooldef build)",
     "build": "tsx build.ts && node scripts/build-api.mjs",
     "watch": "tsx build.ts --watch",
-    "jsr:dry": "pnpm dlx jsr publish --dry-run --allow-dirty",
-    "jsr:check": "deno publish --dry-run --allow-dirty",
+    "jsrREGISTRY:dry": "pnpm dlx jsr publish --dry-run --allow-dirty",
+    "jsrREGISTRY:check": "deno publish --dry-run --allow-dirty",
     "typecheck": "tsc --noEmit",
     "format": "biome check --error-on-warnings --write index.ts server.ts build.ts deno.json scripts src tsconfig.build.json tsconfig.json vitest.config.ts package.json",
     "lint": "biome check --error-on-warnings index.ts server.ts build.ts deno.json scripts src tsconfig.build.json tsconfig.json vitest.config.ts package.json",
     "check": "pnpm typecheck && pnpm lint",
     "test": "vitest run",
     "test:smoke": "pnpm build && node scripts/test-smoke.mjs",
-    "test:install": "pnpm build && node scripts/test-install.mjs",
+    "testREGISTRY:install": "pnpm build && node scripts/test-install.mjs",
     "test:integration": "pnpm build && export BZ_SKIP_UPSTREAM=1 && pnpm run check && pnpm run test && pnpm run test:smoke",
     "test:integration:act": "ACT_JOB=mcp ../../scripts/test-integration-act",
-    "verify:published": "pnpm run test:install && pnpm run jsr:check"
+    "verifyREGISTRY": "pnpm run testREGISTRY:install && pnpm run jsrREGISTRY:check"
   },
   "engines": {
     "node": ">=22"

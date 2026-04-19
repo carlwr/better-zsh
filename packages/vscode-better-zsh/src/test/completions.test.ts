@@ -44,11 +44,10 @@ import type { DocCorpus } from "@carlwr/zsh-core"
 import { optSections } from "@carlwr/zsh-core"
 import { mkDocumented } from "@carlwr/zsh-core/internal"
 import { CompletionProvider } from "../completions"
-import { wordDoc } from "./test-util"
+import { emptyCorpus, wordDoc } from "./test-util"
 
 suite("CompletionProvider", () => {
   test("offers static builtins, precmds, reserved words, and params", async () => {
-    const emptyMap = new Map() as unknown as ReadonlyMap<never, never>
     const builtin = {
       name: mkDocumented("builtin", "echo"),
       synopsis: ["echo"] as [string],
@@ -81,22 +80,12 @@ suite("CompletionProvider", () => {
       desc: "",
     }
     const corpus: DocCorpus = {
+      ...emptyCorpus(),
       builtin: new Map([[builtin.name, builtin]]),
       reserved_word: new Map([[reservedWord.name, reservedWord]]),
       precmd: new Map([[precmd.name, precmd]]),
       shell_param: new Map([[param.name, param]]),
       option: new Map([[option.name, option]]),
-      cond_op: emptyMap as DocCorpus["cond_op"],
-      redir: emptyMap as DocCorpus["redir"],
-      process_subst: emptyMap as DocCorpus["process_subst"],
-      param_expn: emptyMap as DocCorpus["param_expn"],
-      subscript_flag: emptyMap as DocCorpus["subscript_flag"],
-      param_flag: emptyMap as DocCorpus["param_flag"],
-      history: emptyMap as DocCorpus["history"],
-      glob_op: emptyMap as DocCorpus["glob_op"],
-      glob_flag: emptyMap as DocCorpus["glob_flag"],
-      prompt_escape: emptyMap as DocCorpus["prompt_escape"],
-      zle_widget: emptyMap as DocCorpus["zle_widget"],
     }
     const provider = new CompletionProvider(corpus)
 

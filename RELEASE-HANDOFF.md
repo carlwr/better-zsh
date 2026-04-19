@@ -10,7 +10,7 @@ If the repo has drifted meaningfully, consider updating this file before you pub
 
 ## What was done (pre-release)
 
-All three publishable packages have working release plumbing. Two already shipped an alpha.
+The release workflows that exist at time of writing are listed below. Some of the packages they cover have already shipped an alpha; the rest have had their workflows dry-run end-to-end.
 
 | Package | State at time of writing | Publish auth |
 |---|---|---|
@@ -18,10 +18,12 @@ All three publishable packages have working release plumbing. Two already shippe
 | `@carlwr/zshref-mcp` | alpha published (npm + JSR) | Tokenless (same) |
 | `better-zsh` (VS Code extension) | unpublished; release workflow dry-run verified end-to-end | `secrets.VSCE_PAT` + `secrets.OPEN_VSX_TOKEN` |
 
-Shared conventions across the three release workflows under `.github/workflows/`:
+Shared conventions across each release workflow under `.github/workflows/`:
 - Tag push → real release.
 - `workflow_dispatch` → dry-run by default; set `dry_run=false` to publish from an ad-hoc manual run.
 - Tag-vs-version guard: workflow fails early if the pushed tag does not match the package's in-repo version sites.
+
+**Other workspace publishables may exist without a dedicated release workflow.** Walk `.github/workflows/release-*.yml` against the current `packages/` inventory before tagging — if a package is publishable (has `version`, `deno.json`, a JSR surface, and shows up in the CI jobs) but has no `release-*.yml`, its publish plumbing still needs to be added before its first tag. `ci.yml` carries a `TODO` comment for any such gaps known at a given point.
 
 Other housekeeping that landed in the same window:
 - Dependabot configured with grouped minor/patch updates and an `ignore` rule pinning `@types/node` to the `engines.node` major (currently Node 22).
@@ -44,10 +46,7 @@ Sequence assumed at time of writing. Re-evaluate before following.
 
 **Y1 — version bump to first non-alpha.** Each package has *multiple* version sites that must all agree; a guard in each release workflow fails the publish if they drift. For `@carlwr/zshref-mcp` the sites at time of writing include `package.json`, `deno.json`, and `src/pkg-info.ts`. Read the in-package release checklist before bumping rather than trusting this list.
 
-**Y2 — tag and push per package.** Tag prefixes at time of writing:
-- `@carlwr/zsh-core` — see its workflow for the current pattern
-- `@carlwr/zshref-mcp` — `zshref-mcp-v*`
-- `better-zsh` (ext) — `ext-v*`
+**Y2 — tag and push per package.** Tag prefixes are defined in each `release-*.yml` under `on.push.tags`; inspect the current workflow for the pattern rather than trusting a list here. Known patterns at time of writing: `zsh-core-v*`, `zshref-mcp-v*`, `ext-v*` (for `better-zsh`).
 
 For the extension, a version string containing `-` (e.g. `0.1.0-alpha.0`) publishes with `--pre-release`; a clean version publishes stable. Marketplace convention: stable on even-minor, pre-release on odd-minor — honor it if you care about clean pre-release→stable rollovers for opted-in users.
 
@@ -61,7 +60,7 @@ For the extension, a version string containing `-` (e.g. `0.1.0-alpha.0`) publis
 - **Always rehearse with `workflow_dispatch` + `dry_run=true` first.** The default is dry-run for a reason.
 - **The `contributes.languageModelTools` manifest mirrors the MCP `toolDefs`.** A unit test asserts equality. If you add or edit a tool, update both — the test tells you if you forgot.
 - **Dependabot will churn against the release workflows.** Expect periodic PRs bumping actions versions. Low-risk; merge them. The `@types/node` ignore rule should stay in place until `engines.node` is raised deliberately.
-- **After a zsh-core public-API addition, `verify:published` is red until zsh-core is republished.** A `@carlwr/zshref-mcp` change that imports a newly-added zsh-core export makes `pnpm --filter @carlwr/zshref-mcp run verify:published` (`test:install` + `jsr:check`) fail against the registry-pinned upstream; local `test:integration` is unaffected by design. Publish order to unblock: new `@carlwr/zsh-core` alpha → new `@carlwr/zshref-mcp` alpha pinning it. Concrete case in flight as of 2026-04-19: `ZSH_UPSTREAM` was added to zsh-core's public API and is consumed by the MCP (tool descriptions, `--version`) and the extension startup log. See `packages/zshref-mcp/DEVELOPMENT.md` §"Published-state verification".
+- **After a zsh-core public-API addition, `verifyREGISTRY` is red until zsh-core is republished.** A `@carlwr/zshref-mcp` change that imports a newly-added zsh-core export makes `pnpm --filter @carlwr/zshref-mcp run verifyREGISTRY` (= `testREGISTRY:install` + `jsrREGISTRY:check`) fail against the registry-pinned upstream; local `test:integration` is unaffected by design. Publish order to unblock: new `@carlwr/zsh-core` alpha → new `@carlwr/zshref-mcp` alpha pinning it. Concrete case in flight as of 2026-04-19: `ZSH_UPSTREAM` was added to zsh-core's public API and is consumed by the MCP (tool descriptions, `--version`) and the extension startup log. See `AGENTS.md` §"Script naming axes" and `packages/zshref-mcp/DEVELOPMENT.md` §"Published-state verification".
 
 ## Likely drift points to re-verify before acting
 

@@ -10,11 +10,8 @@ import {
 } from "../pkg-info.ts"
 
 const pkgDir = join(dirname(fileURLToPath(import.meta.url)), "..", "..")
-const readJson = (file: string) =>
-  JSON.parse(readFileSync(join(pkgDir, file), "utf8"))
-
-const pkg = readJson("package.json")
-const deno = readJson("deno.json")
+const pkg = JSON.parse(readFileSync(join(pkgDir, "package.json"), "utf8"))
+const deno = JSON.parse(readFileSync(join(pkgDir, "deno.json"), "utf8"))
 
 const SHARED_EXPORTS = ["."] as const
 

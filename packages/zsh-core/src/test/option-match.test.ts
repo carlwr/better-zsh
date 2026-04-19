@@ -11,18 +11,16 @@ function labels(typed: string) {
 }
 
 suite("matchOptions", () => {
-  for (const [typed, want] of [
+  test.each([
     ["er", ["errexit", "errreturn"]],
     ["err_ret", ["errreturn"]],
     ["ERR_RET", ["errreturn"]],
     ["no_er", ["no_errexit", "no_errreturn"]],
     ["noer", ["no_errexit", "no_errreturn"]],
     ["noti", ["notify"]],
-  ] as const) {
-    test(typed, () => {
-      assert.deepStrictEqual(labels(typed), want)
-    })
-  }
+  ] as const)("%s", (typed, want) => {
+    assert.deepStrictEqual(labels(typed), want)
+  })
 
   test("no bare options leak when typing negation prefix", () => {
     const result = matchOptions(opts, "no_er")

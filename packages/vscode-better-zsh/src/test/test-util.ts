@@ -1,3 +1,6 @@
+import type { DocCorpus } from "@carlwr/zsh-core"
+import { docCategories } from "@carlwr/zsh-core"
+
 const WORD = /[\w-]/
 
 let id = 0
@@ -16,6 +19,20 @@ export function lineDoc(text: string, scope = "doc") {
       return { text: lines[i] ?? "" }
     },
   } as import("vscode").TextDocument
+}
+
+/** Index records by a field value into a Map. */
+export const by = <K extends PropertyKey, T extends Record<K, unknown>>(
+  field: K,
+  xs: readonly T[],
+) => new Map(xs.map(x => [x[field], x]))
+
+/** A `DocCorpus` with every category as an empty Map; override per test. */
+export function emptyCorpus(): DocCorpus {
+  const mt = new Map()
+  return Object.fromEntries(
+    docCategories.map(c => [c, mt]),
+  ) as unknown as DocCorpus
 }
 
 export function wordDoc(text: string, scope = "doc") {

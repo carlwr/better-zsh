@@ -66,8 +66,8 @@ jobs:
       - run: pnpm --filter @carlwr/zsh-core run check
       - run: pnpm --filter @carlwr/zsh-core run test
       - run: pnpm --filter @carlwr/zsh-core run test:smoke
-      - run: pnpm --filter @carlwr/zsh-core run test:install
-      - run: pnpm --filter @carlwr/zsh-core run jsr:check
+      - run: pnpm --filter @carlwr/zsh-core run testREGISTRY:install
+      - run: pnpm --filter @carlwr/zsh-core run jsrREGISTRY:check
 
       - name: Determine npm dist-tag
         id: disttag

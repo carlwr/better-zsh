@@ -28,6 +28,8 @@ const forbidden = [
   /\bprocess\.env\b/,
 ] as const
 
+const fsPatterns = [/\bnode:fs\b|from ["']fs["']/] as const
+
 function walkTs(dir: string): string[] {
   const out: string[] = []
   for (const entry of readdirSync(dir)) {
@@ -38,27 +40,24 @@ function walkTs(dir: string): string[] {
   return out
 }
 
+function findViolations(patterns: readonly RegExp[]): string[] {
+  const violations: string[] = []
+  for (const file of walkTs(toolsDir)) {
+    const body = readFileSync(file, "utf8")
+    for (const pat of patterns) {
+      if (pat.test(body)) violations.push(`${file}: ${pat}`)
+    }
+  }
+  return violations
+}
+
 describe("scope fence for tool implementations", () => {
   test("tool files do not import execution/network APIs", () => {
-    const files = walkTs(toolsDir)
-    expect(files.length).toBeGreaterThan(0)
-    const violations: string[] = []
-    for (const file of files) {
-      const body = readFileSync(file, "utf8")
-      for (const pat of forbidden) {
-        if (pat.test(body)) violations.push(`${file}: ${pat}`)
-      }
-    }
-    expect(violations).toEqual([])
+    expect(walkTs(toolsDir).length).toBeGreaterThan(0)
+    expect(findViolations(forbidden)).toEqual([])
   })
 
   test("tool files do not import node:fs", () => {
-    const files = walkTs(toolsDir)
-    const violations: string[] = []
-    for (const file of files) {
-      const body = readFileSync(file, "utf8")
-      if (/\bnode:fs\b|from ["']fs["']/.test(body)) violations.push(file)
-    }
-    expect(violations).toEqual([])
+    expect(findViolations(fsPatterns)).toEqual([])
   })
 })

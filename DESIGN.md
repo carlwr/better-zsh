@@ -140,6 +140,17 @@ Redirection identity is the full signature (see `RedirDoc` JSDoc), not the leadi
 
 ---
 
+## Parameter-expansion identity and shape
+
+`param_expn` identity is the full sig (e.g. `${name:-word}`), not a leading operator — same precedent as redirections. `${name:-word}` and `${name-word}` are separate records, not sub-variants of a `:-` operator. This keeps identity mechanical: two sigs are equal iff the literal templates match.
+
+- **`simpleResolver` kept for totality, not utility.** Sigs are literal doc templates; no user-code token will ever match them. The category is reached through search + describe rather than raw-token classification. Keeping a resolver in the per-category table preserves the closed-union completeness guards across `docs/corpus.ts`.
+- **`subKind` is a fixed closed union, not a computed label.** Literal values; extending the union is a deliberate, single-point change that the type system propagates.
+- **Placeholders are extracted via an exact-string table, not a regex.** The table is the single source of truth for both `subKind` and operand-slot names (`name`, `word`, `pattern`, `repl`, `spec`, `arrayname`, `offset`, `length`). Silent upstream renames trip an "unknown sig" throw on the next build — drift fails loudly at extraction time rather than rendering as garbage.
+- **No raw-text resolver.** Considered and dropped: the added testing burden outweighed the zero practical value, given that sigs are template-shaped and won't appear in user code.
+
+---
+
 ## Casts (`as`)
 
 See `AGENTS.md` for the full classification (principled vs smell) with examples. The key design-level point: the sanctioned brand crossing is the resolver layer. Everything else is either brand-mint (smart constructor) or symptom. Cross-brand casts outside these are a data-model smell.
