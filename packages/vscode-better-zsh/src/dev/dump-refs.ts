@@ -13,6 +13,7 @@ const categoryLabel: Record<DocCategory, string> = {
   reserved_word: "reserved words",
   redir: "redirs",
   process_subst: "process substs",
+  param_expn: "param expansions",
   subscript_flag: "subscript flags",
   param_flag: "param flags",
   history: "history",

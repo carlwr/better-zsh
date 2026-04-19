@@ -9,6 +9,7 @@ import { docCategories, docId } from "../../docs/taxonomy"
 import type {
   BuiltinDoc,
   CondOpDoc,
+  ParamExpnDoc,
   PrecmdDoc,
   ProcessSubstDoc,
   PromptEscapeDoc,
@@ -29,6 +30,7 @@ import {
   mdGlobOp,
   mdHistory,
   mdOpt,
+  mdParamExpn,
   mdParamFlag,
   mdPrecmd,
   mdProcessSubst,
@@ -86,6 +88,15 @@ const sub: ProcessSubstDoc = {
   sig: "<(list)",
   desc: "d:ps",
   section: "",
+}
+const px: ParamExpnDoc = {
+  sig: mkDocumented("param_expn", "${name:-word}"),
+  groupSigs: ["${name-word}", "${name:-word}"],
+  orderInGroup: 1,
+  subKind: "default",
+  placeholders: ["name", "word"],
+  desc: "d:px",
+  section: "Parameter Expansion",
 }
 const word: ReservedWordDoc = {
   name: mkDocumented("reserved_word", "if"),
@@ -151,6 +162,7 @@ const baseArrays: DocArrays = {
   reserved_word: [word],
   redir: [rd],
   process_subst: [sub],
+  param_expn: [px],
   subscript_flag: [sf],
   param_flag: [pf],
   history: [hi],
@@ -193,6 +205,19 @@ const renderedMarkdownCases = [
     "process_subst",
     mdProcessSubst(sub),
     ["`<(...)`", "d:ps", "_Category:_ Process Substitution"],
+  ],
+  [
+    "param_expn",
+    mdParamExpn(px),
+    [
+      "`${name:-word}`",
+      "_(default, form 2 of 2)_",
+      "```zsh",
+      "${name-word}",
+      "${name:-word}    # <- this form",
+      "d:px",
+      "_Category:_ Parameter Expansion",
+    ],
   ],
   [
     "reserved_word",
@@ -238,6 +263,7 @@ const dumpByCat: {
   reserved_word: ["reserved-words.md", "## if", "d:rw"],
   redir: ["redirs.md", "## >> word", "d:r"],
   process_subst: ["process-substs.md", "## <(...)", "d:ps"],
+  param_expn: ["param-expns.md", "## ${name:-word}", "d:px"],
   subscript_flag: ["subscript-flags.md", "## (w)", "TBD"],
   param_flag: ["param-flags.md", "## (U)", "TBD"],
   history: ["history.md", "## !!", "TBD"],
@@ -336,6 +362,7 @@ describe("render markdown", () => {
       "precmd:noglob",
       "shell_param:argv",
       "shell_param:SECONDS",
+      "param_expn:${name:-word}",
       "subscript_flag:(w)",
       "param_flag:(U)",
       "history:!!",

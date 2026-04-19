@@ -89,6 +89,7 @@ suite("CompletionProvider", () => {
       cond_op: emptyMap as DocCorpus["cond_op"],
       redir: emptyMap as DocCorpus["redir"],
       process_subst: emptyMap as DocCorpus["process_subst"],
+      param_expn: emptyMap as DocCorpus["param_expn"],
       subscript_flag: emptyMap as DocCorpus["subscript_flag"],
       param_flag: emptyMap as DocCorpus["param_flag"],
       history: emptyMap as DocCorpus["history"],

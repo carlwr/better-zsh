@@ -221,6 +221,54 @@ export interface ProcessSubstDoc extends SyntaxDocBase {
   readonly op: ProcessSubstOp
 }
 
+/**
+ * Semantic kind of a parameter-expansion form.
+ *
+ * One literal per logical operation; sigs that differ only in "null-check"
+ * (`-` vs `:-`), match-scope (`#` vs `##`), or similar scope modifiers
+ * collapse to the same subKind and are distinguished at the record level by
+ * the sig itself.
+ */
+export type ParamExpnSubKind =
+  | "plain"
+  | "set-test"
+  | "default"
+  | "alt"
+  | "assign"
+  | "err"
+  | "strip-pre"
+  | "strip-suf"
+  | "exclude"
+  | "array-remove"
+  | "array-retain"
+  | "array-zip"
+  | "substring"
+  | "replace"
+  | "length"
+  | "rc-expand"
+  | "word-split"
+  | "glob-subst"
+
+/**
+ * Parameter-expansion form -- e.g. `${name:-word}`, `${name/pattern/repl}`.
+ *
+ * One record per sig. Related sigs that share a doc chunk in the upstream
+ * manual (e.g. the three `replace` variants) carry identical `desc`; each
+ * record also knows every sibling in its group via `groupSigs` (manual source
+ * order) and its own position via `orderInGroup`. This mirrors the "full sig
+ * is the identity" precedent from `RedirDoc`.
+ */
+export interface ParamExpnDoc extends SyntaxDocBase<Documented<"param_expn">> {
+  readonly sig: Documented<"param_expn">
+  /** Every sig sharing this record's desc, in manual source order. */
+  readonly groupSigs: NonEmpty<string>
+  /** Zero-based position of `sig` within `groupSigs`. */
+  readonly orderInGroup: number
+  readonly subKind: ParamExpnSubKind
+  /** Named operand slots in `sig` (e.g. `["name","word"]`). */
+  readonly placeholders: readonly string[]
+}
+
 /** Subscript flags -- e.g. `(e)`, `(w)` inside `${arr[(...)...]}`. */
 export interface SubscriptFlagDoc extends SyntaxDocBase {
   readonly flag: Documented<"subscript_flag">

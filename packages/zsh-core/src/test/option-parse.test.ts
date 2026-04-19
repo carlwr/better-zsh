@@ -18,6 +18,7 @@ const corpus: DocCorpus = {
   reserved_word: empty,
   redir: empty,
   process_subst: empty,
+  param_expn: empty,
   subscript_flag: empty,
   param_flag: empty,
   history: empty,

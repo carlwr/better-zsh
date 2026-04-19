@@ -21,6 +21,7 @@ const norm: { [K in DocCategory]: (s: string) => string } = {
   reserved_word: s => s.trim(),
   redir: s => s.trim(),
   process_subst: s => s.trim(),
+  param_expn: s => s.trim(),
   subscript_flag: s => s.trim(),
   param_flag: s => s.trim(),
   history: s => s.trim(),

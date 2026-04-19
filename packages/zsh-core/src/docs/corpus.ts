@@ -27,6 +27,7 @@ import type {
   GlobFlagDoc,
   GlobOpDoc,
   HistoryDoc,
+  ParamExpnDoc,
   ParamFlagDoc,
   PrecmdDoc,
   ProcessSubstDoc,
@@ -44,6 +45,7 @@ import { parseGlobFlags } from "./yodl/extractors/glob-flags.ts"
 import { parseGlobOps } from "./yodl/extractors/glob-ops.ts"
 import { parseHistory } from "./yodl/extractors/history.ts"
 import { parseOptions } from "./yodl/extractors/options.ts"
+import { parseParamExpns } from "./yodl/extractors/param-expns.ts"
 import { parseParamFlags } from "./yodl/extractors/param-flags.ts"
 import { parsePrecmds } from "./yodl/extractors/precmds.ts"
 import { parseProcessSubsts } from "./yodl/extractors/process-substs.ts"
@@ -72,6 +74,7 @@ const categoryLoader: CategoryLoader = {
   reserved_word: { file: "grammar.yo", parse: parseReswords },
   redir: { file: "redirect.yo", parse: parseRedirs },
   process_subst: { file: "expn.yo", parse: parseProcessSubsts },
+  param_expn: { file: "expn.yo", parse: parseParamExpns },
   subscript_flag: { file: "params.yo", parse: parseSubscriptFlags },
   param_flag: { file: "expn.yo", parse: parseParamFlags },
   history: { file: "expn.yo", parse: parseHistory },
@@ -97,6 +100,7 @@ export interface DocCorpus {
     Documented<"process_subst">,
     ProcessSubstDoc
   >
+  readonly param_expn: ReadonlyMap<Documented<"param_expn">, ParamExpnDoc>
   readonly subscript_flag: ReadonlyMap<
     Documented<"subscript_flag">,
     SubscriptFlagDoc
@@ -215,6 +219,11 @@ const resolvers: { [K in DocCategory]: Resolver<K> } = {
   reserved_word: simpleResolver("reserved_word"),
   redir: resolveRedir,
   process_subst: simpleResolver("process_subst"),
+  // param_expn ids are literal doc-template strings (e.g. `${name:-word}`),
+  // so `simpleResolver` will essentially never match live user-code tokens;
+  // the category is reached via search/describe rather than classify. Kept
+  // in the table for total coverage of the closed `DocCategory` union.
+  param_expn: simpleResolver("param_expn"),
   subscript_flag: simpleResolver("subscript_flag"),
   param_flag: simpleResolver("param_flag"),
   history: simpleResolver("history"),

@@ -57,6 +57,7 @@
     "./data/glob-operators.json": "./dist/json/glob-operators.json",
     "./data/glob-flags.json": "./dist/json/glob-flags.json",
     "./data/process-substs.json": "./dist/json/process-substs.json",
+    "./data/param-expns.json": "./dist/json/param-expns.json",
     "./data/prompt-escapes.json": "./dist/json/prompt-escapes.json",
     "./data/zle-widgets.json": "./dist/json/zle-widgets.json",
     "./schema/index.schema.json": "./dist/schema/index.schema.json",
@@ -73,6 +74,7 @@
     "./schema/glob-operators.schema.json": "./dist/schema/glob-operators.schema.json",
     "./schema/glob-flags.schema.json": "./dist/schema/glob-flags.schema.json",
     "./schema/process-substs.schema.json": "./dist/schema/process-substs.schema.json",
+    "./schema/param-expns.schema.json": "./dist/schema/param-expns.schema.json",
     "./schema/prompt-escapes.schema.json": "./dist/schema/prompt-escapes.schema.json",
     "./schema/zle-widgets.schema.json": "./dist/schema/zle-widgets.schema.json",
     "./internal": {

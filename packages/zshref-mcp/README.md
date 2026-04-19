@@ -15,6 +15,7 @@ The exposed structured knowledge includes:
 - **redirections** (`1>&2`, `&>`, ...)
 - **conditional operators** (`-f`, `-eq`, `=~`, ...)
 - **process substitutions** (`<(..)`, `>(..)`, `=(..)`)
+- **parameter-expansion forms** (`${name:-word}`, `${name/pattern/repl}`, ...)
 - **parameter/glob/history/subscript flags**
 - **prompt escapes** (`%n`, `%~`, `%F{…}`, ...)
 - **ZLE widgets** (standard + special)

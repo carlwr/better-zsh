@@ -15,6 +15,11 @@ export const jsonArtifact = {
   },
   history: { file: "history.json", count: "history", schema: "HistoryJson" },
   option: { file: "options.json", count: "options", schema: "OptionsJson" },
+  param_expn: {
+    file: "param-expns.json",
+    count: "paramExpns",
+    schema: "ParamExpnsJson",
+  },
   param_flag: {
     file: "param-flags.json",
     count: "paramFlags",

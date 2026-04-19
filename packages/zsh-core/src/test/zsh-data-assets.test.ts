@@ -80,6 +80,11 @@ describe("vendored zsh data assets", () => {
       "=(...)",
     ])
     expect(
+      [...corpus.param_expn.values()].some(
+        doc => (doc.sig as string) === "${name:-word}",
+      ),
+    ).toBe(true)
+    expect(
       [...corpus.prompt_escape.values()].some(doc => doc.key === "%n"),
     ).toBe(true)
     expect(

@@ -11,6 +11,7 @@ import type {
   OptFlagAlias,
   OptFlagSign,
   OptState,
+  ParamExpnDoc,
   ParamFlagDoc,
   PrecmdDoc,
   ProcessSubstDoc,
@@ -156,6 +157,32 @@ export function mdProcessSubst(doc: ProcessSubstDoc): string {
   )
 }
 
+/**
+ * Render one parameter-expansion doc block as markdown.
+ *
+ * For grouped sigs (the doc's `groupSigs` has 2+ entries sharing one desc),
+ * a zsh code block lists every sibling sig in manual order with `# <- this
+ * form` on the focused row — the reader sees which form they asked about in
+ * the context of the family it belongs to. Solo sigs skip the code block
+ * entirely (the header already shows the sig).
+ */
+export function mdParamExpn(doc: ParamExpnDoc): string {
+  const multi = doc.groupSigs.length > 1
+  const subtitle = multi
+    ? `_(${doc.subKind}, form ${doc.orderInGroup + 1} of ${doc.groupSigs.length})_`
+    : `_(${doc.subKind})_`
+  const parts: string[] = [`${mdFmt.code(doc.sig as string)}    ${subtitle}`]
+  if (multi) {
+    const lines = doc.groupSigs.map((s, i) =>
+      i === doc.orderInGroup ? `${s}    # <- this form` : s,
+    )
+    parts.push(codeBlock("zsh", ...lines))
+  }
+  parts.push(doc.desc)
+  parts.push("_Category:_ Parameter Expansion")
+  return docBlock(...parts)
+}
+
 /** Render one reserved-word doc block as markdown. */
 export function mdReservedWord(doc: ReservedWordDoc): string {
   return docBlock(
@@ -249,6 +276,7 @@ export const mdRenderer: {
   reserved_word: mdReservedWord,
   redir: mdRedir,
   process_subst: mdProcessSubst,
+  param_expn: mdParamExpn,
   subscript_flag: mdSubscriptFlag,
   param_flag: mdParamFlag,
   history: mdHistory,

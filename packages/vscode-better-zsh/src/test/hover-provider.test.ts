@@ -116,6 +116,7 @@ const corpus: DocCorpus = {
   precmd: mt,
   reserved_word: mt,
   process_subst: mt,
+  param_expn: mt,
   subscript_flag: mt,
   param_flag: mt,
   history: mt,

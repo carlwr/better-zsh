@@ -6,6 +6,7 @@ import type {
   GlobFlagDoc,
   GlobOpDoc,
   HistoryDoc,
+  ParamExpnDoc,
   ParamFlagDoc,
   PrecmdDoc,
   ProcessSubstDoc,
@@ -27,6 +28,7 @@ export const docCategories = [
   "reserved_word",
   "redir",
   "process_subst",
+  "param_expn",
   "subscript_flag",
   "param_flag",
   "history",
@@ -39,6 +41,10 @@ export const docCategories = [
 export type DocCategory = (typeof docCategories)[number]
 
 // Order rationale (resolver-shadowing facts) lives in DESIGN.md §"Tie-break in classify".
+// `param_expn` placement: its sigs are all literal templates (e.g. `${name:-word}`)
+// that no real user-code token will match via `simpleResolver`; the category reaches
+// consumers via search/describe rather than classify. Position is therefore
+// irrelevant for shadowing; grouped with the other expansion-form categories.
 const classifyOrderTuple = [
   "reserved_word",
   "precmd",
@@ -46,6 +52,7 @@ const classifyOrderTuple = [
   "cond_op",
   "shell_param",
   "process_subst",
+  "param_expn",
   "param_flag",
   "subscript_flag",
   "glob_flag",
@@ -80,6 +87,7 @@ export const docCategoryLabels: Readonly<Record<DocCategory, string>> = {
   reserved_word: "reserved word",
   redir: "redirection",
   process_subst: "process substitution",
+  param_expn: "parameter-expansion form",
   subscript_flag: "subscript flag",
   param_flag: "parameter-expansion flag",
   history: "history designator",
@@ -98,6 +106,7 @@ export interface DocRecordMap {
   reserved_word: ReservedWordDoc
   redir: RedirDoc
   process_subst: ProcessSubstDoc
+  param_expn: ParamExpnDoc
   subscript_flag: SubscriptFlagDoc
   param_flag: ParamFlagDoc
   history: HistoryDoc
@@ -141,6 +150,7 @@ export const docId: {
   reserved_word: d => d.name,
   redir: d => d.sig,
   process_subst: d => d.op as Documented<"process_subst">,
+  param_expn: d => d.sig,
   subscript_flag: d => d.flag,
   param_flag: d => d.flag,
   history: d => d.key,
