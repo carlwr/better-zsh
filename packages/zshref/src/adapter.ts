@@ -54,6 +54,10 @@ export function buildCli(opts: BuildCliOpts): Command {
     .description(
       "Query the static zsh reference from the command line — JSON on stdout, pipe-friendly.",
     )
+    // Suppress the auto-generated hints column (Values: ..., required) — the
+    // enum values and required markers are already documented in option
+    // descriptions, so the hints column only adds line-length overflow.
+    .help({ hints: false })
     // Route cliffy's own error output (ValidationError / missing required /
     // unknown option) via `throwErrors: true` so we can map to exit code 2.
     .throwErrors()
@@ -61,14 +65,15 @@ export function buildCli(opts: BuildCliOpts): Command {
   const categoryType = new EnumType([...docCategories])
 
   for (const td of opts.toolDefs) {
-    const sub = new Command()
-      .name(subcommandName(td.name))
-      .description(td.description)
-      .type(CATEGORY_PROP, categoryType, { global: false })
-
     const schema = td.inputSchema as JsonSchema
     const props = schema.properties ?? {}
     const required = new Set(schema.required ?? [])
+
+    const sub = new Command()
+      .name(subcommandName(td.name))
+      .description(td.description)
+      .usage(buildUsage(props, required))
+      .type(CATEGORY_PROP, categoryType, { global: false })
 
     for (const [key, spec] of Object.entries(props)) {
       const flag = propertyToOption(key, spec, required.has(key))
@@ -119,6 +124,30 @@ function propertyToOption(
     flagSpec: `${flag} ${placeholder}`,
     desc: `${spec.description ?? ""}${suffix}`,
   }
+}
+
+/**
+ * Build a compact usage synopsis for a subcommand, e.g.:
+ *   --raw RAW  [--category CATEGORY] [--limit LIMIT]
+ *
+ * Required flags are bare; optional are wrapped in `[...]`.  Note: the usage
+ * string is passed through cliffy's `highlightArguments()` which treats
+ * space-separated tokens starting+ending with `[`/`]` or `<`/`>` as
+ * positional-argument tokens (and colorizes them).  We deliberately keep each
+ * `[--flag VALUE]` as a single bracket-wrapped token so cliffy treats the
+ * entire token (flag + placeholder) as one highlighted argument, which
+ * produces readable output without un-parseable fragments.
+ */
+function buildUsage(
+  props: Readonly<Record<string, JsonSchemaProp>>,
+  required: ReadonlySet<string>,
+): string {
+  return Object.keys(props)
+    .map(key => {
+      const bare = `--${key}`
+      return required.has(key) ? bare : `[${bare}]`
+    })
+    .join(" ")
 }
 
 // The `category` property uses cliffy's EnumType registered at the
