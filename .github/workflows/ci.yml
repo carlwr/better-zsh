@@ -89,6 +89,14 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    # Sequential bootstrap of upstream packages + BZ_SKIP_UPSTREAM=1 for
+    # aggregator steps. Without this, workspace-recursive runs race on
+    # shared `dist/` of upstream packages — each package's prebuild hook
+    # tries to `clean: true`-rebuild zsh-core / tooldef, clobbering a
+    # sibling's in-progress build and producing "no declaration file"
+    # errors mid-typecheck. See `AGENTS.md` §`BZ_SKIP_UPSTREAM`.
+    env:
+      BZ_SKIP_UPSTREAM: "1"
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
@@ -100,6 +108,12 @@ jobs:
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
+      - name: Sequential bootstrap build of upstream packages
+        run: |
+          pnpm --filter @carlwr/zsh-core build
+          pnpm --filter @carlwr/zsh-core-tooldef build
+          pnpm --filter @carlwr/zshref-mcp build
+          pnpm --filter @carlwr/zshref build
       - run: pnpm check
       - run: pnpm test
       - name: Install ripgrep (required by test:smoke — orient skill scripts)
