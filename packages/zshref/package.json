@@ -1,8 +1,16 @@
 {
   "name": "@carlwr/zshref",
-  "description": "CLI over @carlwr/zsh-core-tooldef — each declarative tool exposed as a cliffy subcommand emitting JSON on stdout.",
+  "description": "Structured zsh reference as a CLI — classify, search, and describe zsh options, builtins, parameters, and operators. Static data only: no shell execution, no environment access.",
   "version": "0.1.0-alpha.0",
   "license": "MIT",
+  "keywords": [
+    "zsh",
+    "shell",
+    "reference",
+    "cli",
+    "docs",
+    "completion"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/carlwr/better-zsh"
