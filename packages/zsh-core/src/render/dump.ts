@@ -137,15 +137,7 @@ function renderDumpText(
 // heuristic. Tracked here as a pinned list of tech debt so the check stays
 // live as a regression guard; drop entries as the root causes are fixed. See
 // HANDOFF-param-expn.md §"Known backtick-heuristic offenders" for details.
-const knownBacktickOffenders: ReadonlySet<string> = new Set([
-  "option:globassign",
-  "option:cshjunkiequotes",
-  "builtin:print",
-  "builtin:source",
-  "prompt_escape:%[xstring]",
-  "prompt_escape:%<string<",
-  "prompt_escape:%>string>",
-])
+const knownBacktickOffenders: ReadonlySet<string> = new Set([])
 
 function suspiciousHits(doc: RefDoc): string[] {
   const id = `${doc.kind}:${doc.id}`

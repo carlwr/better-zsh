@@ -31,9 +31,25 @@ const DEFAULT_EMULATIONS: Record<DefaultMarker, readonly Emulation[]> = {
 
 const OPTION_SECTION_SET: ReadonlySet<string> = new Set(optSections)
 
+/**
+ * Narrow pre-parse patches for known upstream typos in options.yo.
+ * Each entry is keyed to a verbatim source snippet; removing becomes a no-op
+ * once upstream fixes the typo.
+ *
+ * Current entries:
+ * - GLOB_ASSIGN: `` `var(name)tt(=)var(pattern) `` is missing its closing `'`,
+ *   leaving an unclosed backtick-quote span that renders as a lone backtick.
+ */
+function fixupUpstreamTypos(yo: string): string {
+  return yo.replace(
+    "`var(name)tt(=)var(pattern) (e.g. `tt(foo=*)')",
+    "`var(name)tt(=)var(pattern)' (e.g. `tt(foo=*)')",
+  )
+}
+
 /** Parse options.yo → ZshOption[] */
 export function parseOptions(yo: string): readonly ZshOption[] {
-  const nodes = parseNodes(yo)
+  const nodes = parseNodes(fixupUpstreamTypos(yo))
   const items = extractItems(nodes)
   const flagMap = parseDefaultFlagAliases(nodes)
   return items.flatMap(item => {

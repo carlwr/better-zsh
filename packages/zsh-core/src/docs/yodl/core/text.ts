@@ -147,7 +147,7 @@ function walkTokens(nodes: YNodeSeq, out: YodlToken[]) {
 
 function finishPlain(s: string): string {
   return s
-    .replace(/\\'/g, "'")
+    .replace(/(?<!`)\\'/g, "'") // strip escaped-apostrophe, but not inside `\' spans
     .replace(/\n{3,}/g, "\n\n")
     .trim()
 }

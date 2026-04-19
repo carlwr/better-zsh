@@ -121,8 +121,12 @@ function extractCmdName(synopsis: string): string | undefined {
 }
 
 function extractAlias(body: YNodeSeq) {
-  const m = stripYodl(body).match(/\bSame as ([^.\s]+)/)
-  return m?.[1] ? mkDocumented("builtin", m[1]) : undefined
+  // Match either a backtick-apostrophe-wrapped name (e.g. `.' for the dot builtin)
+  // or a plain word. The backtick-quote form arises when the upstream source uses
+  // `tt(name)' and stripYodl leaves the wrapping delimiters around the rendered name.
+  const m = stripYodl(body).match(/\bSame as (?:`([^']*)'|([^.\s]+))/)
+  const name = m?.[1] ?? m?.[2]
+  return name ? mkDocumented("builtin", name) : undefined
 }
 
 function extractModule(body: YNodeSeq): string | undefined {

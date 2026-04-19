@@ -5,7 +5,7 @@ HEAD. Written for cross-session continuity. **Stale after the next code
 change** — re-confirm before relying on these claims.
 
 > Snapshot date: 2026-04-19
-> Snapshot HEAD: `d22102a` (extension: sync zsh_classify modelDescription with new param_expn category)
+> Snapshot HEAD: `0e0e391` (fix(options): patch missing closing apostrophe in GLOB_ASSIGN desc; drain knownBacktickOffenders)
 
 ## Confirmed green at this HEAD
 
@@ -69,14 +69,18 @@ green CI.
    See `RELEASE-HANDOFF.md` for the publish-workflow details and
    `packages/zshref-mcp/DEVELOPMENT.md` § "Published-state verification".
 
-## Followups in flight at snapshot time
+## Followups still open
 
-- **`knownBacktickOffenders` audit** (subagent dispatched at HEAD
-  `d22102a`). 7 pre-existing offenders pinned in
-  `packages/zsh-core/src/render/dump.ts` per the cats handoff. Subagent
-  outcome will land as separate commits; this section can be retired
-  once the set is empty (or shrunk to those that genuinely cannot be
-  fixed).
-- **`HANDOFF-param-expn.md` post-merge TODO list.** Items 1, 6 above
-  are addressed here; items 2 (lockfile), 3 (DESIGN.md fold-in), 4
-  (post-release JSON), 5 (sanity-render via MCP) remain open.
+- **`HANDOFF-param-expn.md` post-merge TODO list.** Items 1
+  (extension tests) and 6 (drain `knownBacktickOffenders`) are now
+  addressed; items 2 (lockfile — N/A, no boundary changed), 3
+  (DESIGN.md fold-in of param-expn rationale), 4 (post-release
+  `dist/json/param-expns.json` — depends on next zsh-core publish),
+  5 (sanity-render via MCP — depends on next MCP release pulling the
+  updated zsh-core) remain open.
+- **Two upstream zsh doc typos** to report and eventually fix at
+  source (so the `fixupUpstreamTypos` patches in
+  `packages/zsh-core/src/docs/yodl/extractors/{options,param-expns}.ts`
+  can be retired on the next vendoring update):
+  - `options.yo:556` — missing closing `'` after `` `var(name)tt(=)var(pattern) `` in GLOB_ASSIGN.
+  - `expn.yo:838` — missing closing `'` after `` `tt(%)' and `tt(#%) are not active ``.
