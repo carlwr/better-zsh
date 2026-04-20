@@ -12,13 +12,22 @@ export type ToolInputSchema = Readonly<Record<string, unknown>>
 /**
  * Metadata + runtime for one MCP/LM tool. `execute` receives a JSON input
  * already validated against `inputSchema` by the adapter layer.
+ *
+ * `brief` is a ≤50-char one-line summary for narrow rendering contexts
+ * (CLI help commands-column, UI list rows); `description` is the long-form
+ * prose shown in LLM tool selection / full help blocks. Consumers that
+ * don't need a short form (MCP, LM) ignore `brief`.
  */
 export interface ToolDef {
   readonly name: string
+  readonly brief: string
   readonly description: string
   readonly inputSchema: ToolInputSchema
   readonly execute: (corpus: DocCorpus, input: ToolInputSchema) => unknown
 }
+
+/** Max character length for `ToolDef.brief`. */
+export const BRIEF_MAX_LEN = 50
 
 export { classifyToolDef, describeToolDef, lookupOptionToolDef, searchToolDef }
 

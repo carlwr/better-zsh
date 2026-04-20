@@ -124,11 +124,26 @@ function toMatch(e: Entry, score?: number): SearchMatch {
     : { category: e.category, id: e.id, display: e.display, score }
 }
 
-const brandedCategoryList = docCategories.map(c => `'${c}'`).join(", ")
+const brandedCategoryList = docCategories.map(c => `  - '${c}'`).join("\n")
 
 export const searchToolDef: ToolDef = {
   name: "zsh_search",
-  description: `Search the bundled static ${ZSH_UPSTREAM.tag} reference. Fuzzy-matches the query against doc record ids and human display headings across every category (see \`category\` field for the full \`DocCategory\` list). Omit \`query\` to list records (optionally filtered by \`category\`). Ranking: exact id/display > prefix > fuzzy score. Results carry \`{ category, id, display, score? }\` but NOT the rendered markdown body — follow up with \`zsh_describe\` or \`zsh_classify\` for the full doc. \`limit\` caps response size (default ${DEFAULT_LIMIT}, hard max ${MAX_LIMIT}); the response also returns \`matchesReturned\` (== \`matches.length\`) and \`matchesTotal\` (pre-truncation total), so \`matchesReturned < matchesTotal\` signals truncation — raise \`limit\` or narrow \`category\`/\`query\` to see the rest. No shell execution, no environment access.`,
+  brief: "fuzzy-search the zsh reference by id/display",
+  description: `Search the bundled static ${ZSH_UPSTREAM.tag} reference. Fuzzy-matches the query against doc record ids and human display headings across every category.
+
+Omit \`query\` to list records (optionally filtered by \`category\`).
+
+Ranking: exact id/display > prefix > fuzzy score.
+
+Results carry \`{ category, id, display, score? }\` but NOT the rendered markdown body — follow up with \`zsh_describe\` or \`zsh_classify\` for the full doc.
+
+\`limit\` caps response size (default ${DEFAULT_LIMIT}, hard max ${MAX_LIMIT}). The response also returns \`matchesReturned\` (== \`matches.length\`) and \`matchesTotal\` (pre-truncation total), so \`matchesReturned < matchesTotal\` signals truncation — raise \`limit\` or narrow \`category\`/\`query\` to see the rest.
+
+Valid \`category\` values (zsh-core \`DocCategory\` strings):
+
+${brandedCategoryList}
+
+No shell execution, no environment access.`,
   inputSchema: {
     type: "object",
     properties: {
@@ -139,7 +154,8 @@ export const searchToolDef: ToolDef = {
       },
       category: {
         type: "string",
-        description: `Optional filter to a single doc category. Valid values are the zsh-core \`DocCategory\` strings: ${brandedCategoryList}. An unknown category yields an empty match set.`,
+        description:
+          "Optional filter to a single doc category. See command help for valid values. Unknown categories yield an empty match set.",
       },
       limit: {
         type: "integer",

@@ -6,6 +6,7 @@ import {
 } from "@carlwr/zsh-core"
 import { describe, expect, test } from "vitest"
 import {
+  BRIEF_MAX_LEN,
   type ClassifyResult,
   classifyToolDef,
   type DescribeResult,
@@ -73,6 +74,21 @@ describe("toolDefs metadata", () => {
       id: "echo",
     }) as DescribeResult
     expect(d.match?.markdown).toMatch(/echo/i)
+  })
+})
+
+// `brief` is what narrow rendering contexts (CLI commands-column) see;
+// drift past the width cap breaks single-line rendering. Briefs are
+// phrases, not sentences — lowercase-start, no trailing period.
+describe("toolDefs brief shape", () => {
+  test.each(
+    toolDefs.map(d => [d.name, d] as const),
+  )("%s.brief conforms", (_n, def) => {
+    expect(def.brief.length).toBeGreaterThan(0)
+    expect(def.brief.length).toBeLessThanOrEqual(BRIEF_MAX_LEN)
+    expect(def.brief).not.toMatch(/\n/)
+    expect(def.brief[0]).toBe(def.brief[0]?.toLowerCase())
+    expect(def.brief).not.toMatch(/\.$/)
   })
 })
 

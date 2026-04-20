@@ -2,9 +2,7 @@
  * Cliffy tree builder: walks `ToolDef`s and exposes each as a subcommand.
  *
  * Subcommand name = `ToolDef.name` with the `zsh_` prefix stripped — the
- * root bin already scopes under `zshref`, so the redundant prefix costs
- * typing without adding discrimination. Shortened names (classify, search,
- * describe, lookup_option) read naturally under `zshref <sub>`.
+ * root bin already scopes under `zshref`, so the prefix is redundant.
  *
  * Exit codes: 0 on any well-formed invocation (incl. empty matches); 2 on
  * bad input (cliffy ValidationError — unknown enum, missing required flag,
@@ -29,8 +27,6 @@ export interface BuildCliOpts {
 interface JsonSchemaProp {
   readonly type?: string
   readonly description?: string
-  readonly minimum?: number
-  readonly maximum?: number
 }
 
 interface JsonSchema {
@@ -39,6 +35,32 @@ interface JsonSchema {
 }
 
 const CATEGORY_PROP = "category"
+
+// Pre-wrap widths for description text. Cliffy does not word-wrap, so we
+// insert `\n` at word boundaries and cliffy re-indents continuations.
+// 80-col terminal target; DESC_WIDTH 76 leaves margin after cliffy's
+// 2-space indent. ToolDef.brief (<=50 chars, single line) is kept
+// unwrapped — cliffy uses the first `\n`-separated line as the
+// commands-column entry at root `--help`.
+const DESC_WIDTH = 76
+const OPTION_DESC_WIDTH = 50
+
+const ROOT_DESCRIPTION = `Query the bundled static zsh reference from the command line.
+
+stdout is always valid JSON (pretty-printed, newline-terminated) — pipe to \`jq\`. Human messages (errors, help) go to stderr.
+
+Exit codes:
+  0  success (also for {match:null} / empty matches)
+  2  invalid input (bad flag, enum, or subcommand)
+  1  unexpected internal error`
+
+const ROOT_EXAMPLES: ReadonlyArray<readonly [name: string, cmd: string]> = [
+  ["Classify a token", "zshref classify --raw AUTO_CD"],
+  ["Fuzzy search", "zshref search --query printf --limit 5"],
+  ["Describe by id", "zshref describe --category builtin --id echo"],
+  ["Look up an option", "zshref lookup_option --raw NO_AUTO_CD"],
+  ["Detailed help", "zshref <command> --help"],
+]
 
 export function subcommandName(toolName: string): string {
   return toolName.replace(/^zsh_/, "").toLowerCase()
@@ -51,16 +73,13 @@ export function buildCli(opts: BuildCliOpts): Command {
   const root = new Command()
     .name(opts.name)
     .version(opts.version)
-    .description(
-      "Query the static zsh reference from the command line — JSON on stdout, pipe-friendly.",
-    )
-    // Suppress the auto-generated hints column (Values: ..., required) — the
-    // enum values and required markers are already documented in option
-    // descriptions, so the hints column only adds line-length overflow.
-    .help({ hints: false })
-    // Route cliffy's own error output (ValidationError / missing required /
-    // unknown option) via `throwErrors: true` so we can map to exit code 2.
+    .description(wrapText(ROOT_DESCRIPTION, DESC_WIDTH))
+    .usage("<command> [options]")
+    // throwErrors: cliffy ValidationError surfaces as a thrown exception
+    // rather than direct stderr/exit so we can map to exit code 2.
     .throwErrors()
+
+  for (const [name, cmdLine] of ROOT_EXAMPLES) root.example(name, cmdLine)
 
   const categoryType = new EnumType([...docCategories])
 
@@ -68,16 +87,26 @@ export function buildCli(opts: BuildCliOpts): Command {
     const schema = td.inputSchema as JsonSchema
     const props = schema.properties ?? {}
     const required = new Set(schema.required ?? [])
+    const subName = subcommandName(td.name)
 
     const sub = new Command()
-      .name(subcommandName(td.name))
-      .description(td.description)
+      .name(subName)
+      .description(composeSubDescription(td))
       .usage(buildUsage(props, required))
+      // version(""): suppresses the inherited "Version:" line cliffy would
+      // otherwise emit on every sub --help (empty string is falsy).
+      .version("")
+      // hints: false suppresses cliffy's auto-appended hints, which include
+      // an unwanted "(Values: a, b, c, ...)" enum dump that overflows 80
+      // cols for our --category. We re-add "(required)" manually below.
+      .help({ hints: false })
       .type(CATEGORY_PROP, categoryType, { global: false })
 
     for (const [key, spec] of Object.entries(props)) {
       const flag = propertyToOption(key, spec, required.has(key))
-      sub.option(flag.flagSpec, flag.desc)
+      sub.option(flag.flagSpec, wrapText(flag.desc, OPTION_DESC_WIDTH), {
+        required: required.has(key),
+      })
     }
 
     sub.action(rawOpts => {
@@ -91,15 +120,33 @@ export function buildCli(opts: BuildCliOpts): Command {
         )
         process.exit(1)
       }
-      stdout.write(`${JSON.stringify(result)}\n`)
+      stdout.write(`${JSON.stringify(result, null, 2)}\n`)
     })
 
-    root.command(subcommandName(td.name), sub)
+    root.command(subName, sub)
   }
 
-  root.command("completions", new CompletionsCommand())
+  root.command("completions", new CompletionsCommand().help({ hints: false }))
 
   return root
+}
+
+/**
+ * Cliffy renders the first `\n`-separated line of `.description()` in the
+ * root `--help` commands column — so the unwrapped brief goes there. The
+ * sub's own `--help` shows the full composed block.
+ */
+function composeSubDescription(td: ToolDef): string {
+  return `${td.brief}\n\n${wrapText(td.description, DESC_WIDTH)}`
+}
+
+/**
+ * Uppercase placeholder for a JSON-schema property key (e.g. `raw → RAW`).
+ * Cliffy echoes placeholders verbatim, so this gives POSIX-style
+ * `--flag <VALUE>` instead of `--flag <value>`.
+ */
+function placeholderOf(key: string): string {
+  return key.toUpperCase()
 }
 
 interface OptionSpec {
@@ -112,43 +159,79 @@ function propertyToOption(
   spec: JsonSchemaProp,
   isRequired: boolean,
 ): OptionSpec {
-  const flag = `--${key}`
   const typeTag = cliffyTypeFor(key, spec.type)
-  const placeholder = isRequired ? `<${key}:${typeTag}>` : `[${key}:${typeTag}]`
-  // cliffy attaches `.required()` via a trailing marker in the flag spec
-  // ONLY via the builder method; we instead append a space then the
-  // placeholder and set `required: true` via chained call — simpler is
-  // to bake it into the spec string.
-  const suffix = isRequired ? " (required)" : ""
+  const ph = placeholderOf(key)
+  const placeholder = isRequired ? `<${ph}:${typeTag}>` : `[${ph}:${typeTag}]`
   return {
-    flagSpec: `${flag} ${placeholder}`,
-    desc: `${spec.description ?? ""}${suffix}`,
+    flagSpec: `--${key} ${placeholder}`,
+    desc: `${spec.description ?? ""}${isRequired ? " (required)" : ""}`,
   }
 }
 
 /**
- * Build a compact usage synopsis for a subcommand, e.g.:
- *   --raw RAW  [--category CATEGORY] [--limit LIMIT]
+ * Compact usage synopsis, e.g. `--raw=RAW [--category=CATEGORY]`.
  *
- * Required flags are bare; optional are wrapped in `[...]`.  Note: the usage
- * string is passed through cliffy's `highlightArguments()` which treats
- * space-separated tokens starting+ending with `[`/`]` or `<`/`>` as
- * positional-argument tokens (and colorizes them).  We deliberately keep each
- * `[--flag VALUE]` as a single bracket-wrapped token so cliffy treats the
- * entire token (flag + placeholder) as one highlighted argument, which
- * produces readable output without un-parseable fragments.
+ * Uses `=` (not space) between flag and value: cliffy's `highlightArguments()`
+ * splits on whitespace first, so `[--flag VALUE]` becomes two un-parseable
+ * tokens. `[--flag=VALUE]` is one bracketed token (also POSIX long-option
+ * form). Required flags are unbracketed and render unhighlighted; optional
+ * are bracketed and colorized — small asymmetry, syntactically correct.
  */
 function buildUsage(
   props: Readonly<Record<string, JsonSchemaProp>>,
   required: ReadonlySet<string>,
 ): string {
   return Object.keys(props)
-    .map(key => (required.has(key) ? `--${key}` : `[--${key}]`))
+    .map(key => {
+      const token = `--${key}=${placeholderOf(key)}`
+      return required.has(key) ? token : `[${token}]`
+    })
     .join(" ")
 }
 
-// The `category` property uses cliffy's EnumType registered at the
-// subcommand level; other properties fall back to built-in scalar types.
+/**
+ * Word-wrap `text` so no line exceeds `width` chars. Preserves blank-line
+ * paragraph breaks (`\n\n+`), hard newlines, and leading indent on wrapped
+ * lines (so list items keep their hang). Words longer than `width` are
+ * left unbroken: breaking identifiers is worse than a wide line.
+ */
+export function wrapText(text: string, width: number): string {
+  return text
+    .split(/\n{2,}/)
+    .map(para =>
+      para
+        .split(/\n/)
+        .map(line => wrapLine(line, width))
+        .join("\n"),
+    )
+    .join("\n\n")
+}
+
+function wrapLine(line: string, width: number): string {
+  if (line.length <= width) return line
+  const indent = line.match(/^\s*/)?.[0] ?? ""
+  const words = line
+    .slice(indent.length)
+    .split(/\s+/)
+    .filter(w => w.length > 0)
+  const lines: string[] = []
+  let cur = indent
+  for (const w of words) {
+    if (cur === indent) {
+      cur += w
+    } else if (cur.length + 1 + w.length <= width) {
+      cur += ` ${w}`
+    } else {
+      lines.push(cur)
+      cur = indent + w
+    }
+  }
+  if (cur !== indent) lines.push(cur)
+  return lines.join("\n")
+}
+
+// `category` uses the EnumType registered per-sub; other props fall back
+// to cliffy built-in scalar types.
 function cliffyTypeFor(key: string, jsonType: string | undefined): string {
   if (key === CATEGORY_PROP) return CATEGORY_PROP
   if (jsonType === "integer") return "integer"
@@ -158,10 +241,9 @@ function cliffyTypeFor(key: string, jsonType: string | undefined): string {
 }
 
 /**
- * Run `cli.parse(argv)` and map thrown cliffy `ValidationError` to an
- * exit(2) with the message on stderr. Any other error bubbles as an
- * exit(1) (the per-subcommand action handler already catches tool
- * errors before they reach here).
+ * Parse `argv` and map cliffy `ValidationError` to exit(2); any other
+ * error to exit(1). Tool-layer errors are already caught in the
+ * sub action handler, so anything reaching here is unexpected.
  */
 export async function runCli(
   cli: Command,

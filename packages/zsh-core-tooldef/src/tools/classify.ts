@@ -60,12 +60,23 @@ function formatMatch(corpus: DocCorpus, pid: DocPieceId): ClassifyMatch {
 }
 
 const humanCategoryList = classifyOrder
-  .map(c => docCategoryLabels[c])
-  .join(", ")
+  .map(c => `  - ${docCategoryLabels[c]}`)
+  .join("\n")
 
 export const classifyToolDef: ToolDef = {
   name: "zsh_classify",
-  description: `Classify a raw zsh token against the bundled static ${ZSH_UPSTREAM.tag} reference. Returns the first matching zsh element (categories, in classify order: ${humanCategoryList}) with its display form, category, and rendered markdown documentation. Returns { match: null } when the token does not name any documented element. Handles zsh option quirks: case-insensitive matching, underscore stripping, and the NO_* negation convention (without the NOTIFY vs TIFY ambiguity). No shell execution, no environment access.`,
+  brief: "classify a raw zsh token, return its doc",
+  description: `Classify a raw zsh token against the bundled static ${ZSH_UPSTREAM.tag} reference.
+
+Returns the first matching zsh element from these categories (in classify order):
+
+${humanCategoryList}
+
+Each match carries display form, category, and rendered markdown. Returns \`{ match: null }\` when the token does not name any documented element.
+
+Handles zsh option quirks: case-insensitive matching, underscore stripping, and the NO_* negation convention (without the NOTIFY vs TIFY ambiguity).
+
+No shell execution, no environment access.`,
   inputSchema: {
     type: "object",
     properties: {
