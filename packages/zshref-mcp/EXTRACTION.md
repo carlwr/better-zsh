@@ -1,14 +1,10 @@
 # Extraction checklist
 
-> **Scope and lifetime.** This file is a working checklist for the day
-> `@carlwr/zshref-mcp` is extracted from the `better-zsh` monorepo into
-> its own git repo. It is intentionally local: it lives in version
-> control here, but is expected to be **deleted on the extraction
-> commit** (or moved to that new repo's private notes). It will not be
-> pushed to any public remote.
+> **Scope and lifetime.** Working checklist for the day
+> `@carlwr/zshref-mcp` leaves the `better-zsh` monorepo for its own repo.
+> Keep it local; delete it on the extraction commit or move it to private notes.
 >
-> Nothing here is a promise or a spec — it's a running todo. Add items
-> as you notice them; cross them off as they land.
+> Nothing here is a promise or a spec. Add items as you notice them; cross them off as they land.
 
 ---
 
@@ -19,29 +15,17 @@
 - `deno.lock` — currently gitignored (see `DEVELOPMENT.md` §`deno.lock`).
   Remove from `.gitignore`, commit it. `pnpm-lock.yaml` disappears with
   the workspace; `deno.lock` becomes the JSR-side lockfile.
-- `pnpm-lock.yaml` — not currently present at package level (the one
-  that matters today is at the workspace root). Decide: keep using pnpm
-  in the standalone repo (retain a lockfile at the package root), or
-  switch to npm/yarn — pnpm has no advantage once the workspace is
-  gone, but equally no cost.
-- `packageManager` field in `package.json` — currently absent here
-  (inherited from workspace root). If sticking with pnpm, add it.
+- `pnpm-lock.yaml` — today the authoritative lockfile is the workspace root one. Decide on extraction whether the standalone repo stays on pnpm or switches to npm/yarn.
+- `packageManager` field in `package.json` — currently inherited from the workspace root. If the standalone repo keeps pnpm, add it.
 
 ### `package.json` edits
 
 - `repository.url` — currently points at `carlwr/better-zsh`. Update to
   the new repo URL.
-- `dependencies.@carlwr/zsh-core` — currently `workspace:*`. Replace with a
-  pinned version from the npm/JSR registry (`"@carlwr/zsh-core": "^X.Y.Z"`).
-  Requires `@carlwr/zsh-core` to have been published first.
-- `dependencies.@carlwr/zsh-core-tooldef` — currently `workspace:*`. Replace
-  with a pinned npm version (`"@carlwr/zsh-core-tooldef": "^X.Y.Z"`).
-  Requires tooldef to have been published first. (Added after the tooldef
-  extraction; wasn't in the original checklist.)
+- `dependencies.@carlwr/zsh-core` — currently `workspace:*`. Replace with a pinned registry version. Requires zsh-core to be published first.
+- `dependencies.@carlwr/zsh-core-tooldef` — currently `workspace:*`. Replace with a pinned registry version. Requires tooldef to be published first.
 - ~~`engines.node` — carry forward (currently `>=22`; keep in sync with the new repo's CI).~~ **Done** — `engines.node: ">=22"` present in `package.json`; carry-forward note still applies at extraction.
-- `scripts.prebuild`, `scripts.pretypecheck`, `scripts.pretest` all
-  currently do `pnpm --filter @carlwr/zsh-core build`. Post-extraction these
-  lines go away — `@carlwr/zsh-core` is a published dep, nothing to pre-build.
+- `scripts.prebuild`, `scripts.pretypecheck`, `scripts.pretest` currently prebuild workspace deps (`@carlwr/zsh-core` and `@carlwr/zsh-core-tooldef`). Post-extraction those lines go away; published deps are no longer prebuilt locally.
 - ~~`files` — double-check still accurate; currently `["dist", "LICENSE",
   "THIRD_PARTY_NOTICES.md", "deno.json"]`.~~ **Verified** — matches `package.json` today; re-check on extraction day.
 
@@ -59,60 +43,32 @@
 - New `scripts/test-integration-act` at the repo root. Template: the
   monorepo's script. This repo's version is much simpler — no
   Electron/xvfb/zsh/libasound2t64 step — so it's mostly delete work.
-- `scripts.test:integration` and `scripts.test:integration:act` in
-  `package.json`: today the `:act` variant exists only because the
-  monorepo co-hosts the extension (which needs act for its electron
-  matrix), and the MCP's cheap native aggregator is worth keeping as
-  the default. Post-extraction there is no second package to mirror,
-  so the split collapses: either keep the act wrapper as
-  `test:integration` (single CI job, one ACT invocation) or retain
-  both — the native aggregator stays faster to iterate on. Decide on
-  extraction day; either is coherent.
-- Release workflow: tag → build → `npm publish --provenance` + `jsr
-  publish` (or equivalent). Monorepo has `.github/workflows/release-zshref-mcp.yml` today; at extraction, port/adapt to the standalone repo's paths.
+- `scripts.test:integration` and `scripts.test:integration:act` in `package.json` — today the split exists because the monorepo also hosts the extension. Post-extraction, either collapse to a single `test:integration` or keep both if the native aggregator still pays for itself. Decide on extraction day.
+- Release workflow: tag → build → `npm publish --provenance` plus `jsr publish` (or equivalent). Port the current monorepo workflow to standalone-repo paths.
 
 ### Docs
 
-- `README.md` — internal monorepo links (if any) → stable URLs (GitHub
-  releases, JSR page, etc.).
-- `DEVELOPMENT.md §deno.lock` — replace with "committed; standard JSR
-  lockfile policy."
+- `README.md` — replace internal monorepo links with stable public URLs.
+- `DEVELOPMENT.md §deno.lock` — replace with "committed; standard JSR lockfile policy."
 - This file (`EXTRACTION.md`) — delete on the extraction commit.
-- Workspace-level `DESIGN.md` §"MCP as a consumer" stays in the
-  monorepo but can be reworded to past-tense ("the MCP *was* a second
-  consumer, now lives at …"). Optionally keep a 2-line pointer.
-- Workspace-level `AGENTS.md` — prune MCP layout/paragraphs; leave a
-  pointer to the new repo for agents starting from the monorepo.
+- Workspace-level `DESIGN.md` §"MCP as a consumer" can move to past tense and keep a short pointer to the new repo.
+- Workspace-level `AGENTS.md` should drop MCP-specific layout details and keep a pointer.
 
 ### Cross-repo drift guards
 
-- `packages/vscode-better-zsh/src/test/zsh-ref-tools.test.ts` imports
-  `toolDefs` from `@carlwr/zsh-core-tooldef` (not the MCP package —
-  post-tooldef-extraction it's the tooldef package that owns that
-  export). The drift guard is independent of MCP extraction: as long
-  as tooldef stays published and the extension pins a compatible
-  version, the guard keeps working unchanged.
+- `packages/vscode-better-zsh/src/test/zsh-ref-tools.test.ts` imports `toolDefs` from `@carlwr/zsh-core-tooldef`, not from the MCP package. That guard should survive extraction unchanged as long as tooldef stays published and the extension pins a compatible version.
 
 ### Scope fence
 
-- The scope fence no longer lives in this package — it moved to
-  `@carlwr/zsh-core-tooldef/src/test/scope.test.ts` alongside the tool
-  implementations. No action at MCP extraction; the tooldef package
-  keeps the fence as a standalone concern.
+- The scope fence already lives in `@carlwr/zsh-core-tooldef/src/test/scope.test.ts`. No extraction-time action needed there.
 
 ### Orient skill
 
-- `.agents/skills/orient/` does not reference the MCP package by name
-  per its hard rules (directories only; no file names). A quick audit
-  at extraction time to confirm nothing has crept in since.
+- The orientation skill should still avoid MCP-package naming by its own hard rules; do a quick audit on extraction day.
 
 ---
 
 ## Conventions while this file exists
 
-- Keep entries short and actionable. No prose rationale — the rationale
-  already lives elsewhere (`DESIGN.md`, `DEVELOPMENT.md`, commit
-  messages). Reference rather than duplicate.
-- When an item is addressed by a non-extraction commit (e.g. landing
-  new work that already respects the future shape), cross it off here
-  in the same commit.
+- Keep entries short and actionable. Rationale belongs elsewhere.
+- If a non-extraction commit already satisfies an item, cross it off here in the same commit.

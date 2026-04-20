@@ -68,9 +68,9 @@ The key insight: the right handling of `no_` is **corpus-dependent**. `NOTIFY` i
 
 ### Three phases: raw / observed / documented
 
-1. **Raw** — user-code text. Untyped `string`.
-2. **Observed** — normalized, category-shaped, corpus-blind. `Observed<K>`. Appropriate for fact extraction.
-3. **Documented** — corpus-confirmed. `Documented<K>`. Produced by trusted corpus construction or the resolver layer.
+- **Raw** — user-code text. Untyped `string`.
+- **Observed** — normalized, category-shaped, corpus-blind. `Observed<K>`. Appropriate for fact extraction.
+- **Documented** — corpus-confirmed. `Documented<K>`. Produced by trusted corpus construction or the resolver layer.
 
 The resolver layer bridges phases 2→3. Trying to bridge them inside phase-2 constructors is where the bugs lived in the previous design. The current architecture keeps them cleanly separated.
 
@@ -86,9 +86,9 @@ If an operation decomposes into A→B→C, prefer exporting A→B and B→C rath
 
 The rendering path is `raw string → DocPieceId → markdown` (`resolve` + `renderDoc`). No combined convenience function. Reasons:
 
-1. `DocPieceId` is a first-class concept (type-safe corpus identity) — an A→C function hides it.
-2. Two ways to do the same thing forces consumers to choose and encourages drift.
-3. Each step has a crisp meaning: "is this in the corpus?" vs "render this known element."
+- `DocPieceId` is a first-class concept (type-safe corpus identity) — an A→C function hides it.
+- Two ways to do the same thing force consumers to choose and encourage drift.
+- Each step has a crisp meaning: "is this in the corpus?" vs "render this known element."
 
 Corpus-driven aggregation helpers (e.g. `refDocs`) are fine — they operate on already-known corpus records, not on hidden brand crossings.
 
@@ -161,9 +161,9 @@ See `AGENTS.md` for the full classification (principled vs smell) with examples.
 
 Three consumption routes for the vendored `.yo` docs:
 
-1. **Programmatic API** (`loadCorpus()`) — runtime parsing into `DocCorpus`; cached.
-2. **Pre-parsed JSON** (`"./data/*.json"` package exports) — same data, pre-serialized.
-3. **Raw Yodl source** (`dist/data/zsh-docs/`) — for advanced consumers.
+- **Programmatic API** (`loadCorpus()`) — runtime parsing into `DocCorpus`; cached.
+- **Pre-parsed JSON** (`"./data/*.json"` package exports) — same data, pre-serialized.
+- **Raw Yodl source** (`dist/data/zsh-docs/`) — for advanced consumers.
 
 Per-category renderers are internal; the public API is `renderDoc`.
 
@@ -185,7 +185,6 @@ The static reference is wrapped into a framework-neutral tool layer (`@carlwr/zs
 - **`@carlwr/zshref-mcp`** — a Model Context Protocol server over stdio; importable by any MCP client (Claude Desktop, VS Code's MCP support, Cursor, Codex CLI, etc.).
 - **`@carlwr/zshref`** — a CLI (`zshref` bin) with one cliffy subcommand per `ToolDef`, emitting JSON on stdout. Pipe-friendly; same pure-tool layer as the MCP, different adapter.
 - **`vscode-better-zsh`** — the VS Code extension; registers the same tools as VS Code Language Model tools via `vscode.lm.registerTool`.
-
 Three consumers is what justifies the tooldef extraction: with only one or two, the shared layer is overhead; at three, collapsing the per-adapter glue into a walk over `toolDefs` pays for itself in both code and drift prevention (tool name, description, and input schema live in exactly one place and every adapter picks them up automatically).
 
 The remaining subsections of this chapter are framed around the MCP specifically — that package was the original second consumer and remains the most illustrative case; the rationale generalizes to the CLI (no-vscode posture, static-only scope) and to the extension's LM-tool registration.

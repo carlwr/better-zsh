@@ -1,6 +1,7 @@
 # DEVELOPMENT
 
-CLI bin (`zshref`) that walks `toolDefs` from `@carlwr/zsh-core-tooldef` and exposes each tool as a subcommand. The CLI framework (cliffy) is inlined into `dist/bin.mjs` at build time; end-user installs need no registry config.
+`zshref` is the cliffy-based CLI adapter over `@carlwr/zsh-core-tooldef`.
+Each tool becomes a subcommand. The published tarball inlines the CLI framework, so end-user installs need no extra registry config.
 
 ## Build and run locally
 
@@ -14,35 +15,32 @@ pnpm --filter @carlwr/zshref build
 ./packages/zshref/dist/bin.mjs search --query echo --category builtin
 ```
 
-The `build` pre-hook rebuilds upstream packages (`@carlwr/zsh-core`, `@carlwr/zsh-core-tooldef`) automatically. The built bin has a shebang + executable bit, so invoking the file directly is enough — `node` not required.
-
-For a fresh run after pulling: `pnpm install && pnpm --filter @carlwr/zshref build`.
+The `build` pre-hook rebuilds upstream packages automatically. The built bin has a shebang and executable bit, so invoking the file directly is enough.
 
 ## Architectural invariants
 
-- **Framework isolation.** Cliffy is imported only from `src/adapter.ts`. Other files depend on `@carlwr/zsh-core` + `@carlwr/zsh-core-tooldef` only. Swapping the CLI framework is a single-file change.
-- **Cliffy is inlined.** `build.ts` aliases `@cliffy/command` → `@jsr/cliffy__command` and esbuild inlines it; the published tarball has no `@jsr/*` runtime dependency. Cliffy is declared as a **dev dependency** only.
-- **Pure tool execution.** The adapter treats each `ToolDef` as opaque: collect JSON args, call `execute(corpus, input)`, serialize to stdout. No tool-specific branching in the CLI layer.
-- **Exit codes.** `0` well-formed (including empty results), `1` unexpected/internal error, `2` bad input (cliffy `ValidationError`).
-- **Stream discipline.** JSON payload on stdout; help, errors, and TTY hints on stderr or cliffy's default stream (see `README.md` install note).
+- Cliffy is imported only from `src/adapter.ts`; swapping CLI frameworks should be a one-file change.
+- `build.ts` aliases `@cliffy/command` to `@jsr/cliffy__command` and inlines it; the published tarball has no `@jsr/*` runtime dependency.
+- The adapter treats each `ToolDef` as opaque: parse args, call `execute(corpus, input)`, write JSON to stdout.
+- Exit codes are `0` for well-formed results, `1` for unexpected/internal failure, `2` for bad input.
+- JSON belongs on stdout; help, errors, and TTY hints belong on stderr or cliffy's own stream.
 
 ## Subcommand naming
 
-The `zsh_` prefix on tool names is stripped for subcommand names: `zsh_classify` → `classify`, `zsh_lookup_option` → `lookup_option`. The root bin (`zshref`) already scopes the call, so the redundant prefix costs typing without adding discrimination. See `src/adapter.ts` §`subcommandName`.
+The CLI strips the `zsh_` prefix from tool names: `zsh_classify` becomes `classify`, `zsh_lookup_option` becomes `lookup_option`. The bin name already scopes the call.
 
 ## Tests
 
-- `src/test/adapter.test.ts` — unit: the cliffy tree built from a real `toolDefs` array (subcommand count, required flags, category enum population).
-- `src/test/bin.test.ts` — end-to-end: gated on `existsSync(dist/bin.mjs)`; spawns the bin and checks `--help`, `--version`, a happy-path call per tool, and a bad-input call (exit 2).
-- `src/test/pkg-info.test.ts` — identity constants stay in sync with `package.json` and `deno.json`.
-
-`scripts/test-smoke.mjs` — tarball-level packaging check (required/forbidden paths + every `package.json` reference resolves in-tarball).
-`scripts/test-install.mjs` — packs the tarball, `npm install`s it into a temp dir, invokes the installed bin. Verifies the end-user install story: no registry config, no cliffy fetch.
+- `src/test/adapter.test.ts` — cliffy tree structure from the real `toolDefs`.
+- `src/test/bin.test.ts` — end-to-end bin invocation.
+- `src/test/pkg-info.test.ts` — package identity drift guards.
+- `scripts/test-smoke.mjs` — tarball packaging check.
+- `scripts/test-install.mjs` — pack, install into a temp dir, invoke the installed bin.
 
 ## JSR import map
 
-`deno.json` declares `@cliffy/command` as a JSR import plus JSR pins for `@carlwr/zsh-core` and `@carlwr/zsh-core-tooldef`. Bump the pinned specifiers when moving to a newer upstream.
+`deno.json` declares `@cliffy/command` plus JSR pins for `@carlwr/zsh-core` and `@carlwr/zsh-core-tooldef`. Bump those pins when moving to a newer upstream.
 
-## Adding a new subcommand
+## Adding a subcommand
 
-Subcommands are generated from `toolDefs`. To add one, add a `ToolDef` to `@carlwr/zsh-core-tooldef` (see that package's `DEVELOPMENT.md`). Nothing in `@carlwr/zshref` needs to change.
+Subcommands are generated from `toolDefs`. Add the new `ToolDef` in `@carlwr/zsh-core-tooldef`; nothing in `@carlwr/zshref` should need bespoke work.
