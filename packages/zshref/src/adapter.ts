@@ -47,12 +47,16 @@ const OPTION_DESC_WIDTH = 50
 
 const ROOT_DESCRIPTION = `Query the bundled static zsh reference from the command line.
 
-stdout is always valid JSON (pretty-printed, newline-terminated) — pipe to \`jq\`. Human messages (errors, help) go to stderr.
+On a successful tool invocation, stdout is valid JSON (pretty-printed, newline-terminated) — pipe to \`jq\`. All other output (help, version, errors) goes to stderr. ANSI colors are auto-disabled when stderr is not a TTY.
 
 Exit codes:
   0  success (also for {match:null} / empty matches)
+  1  unexpected internal error
   2  invalid input (bad flag, enum, or subcommand)
-  1  unexpected internal error`
+
+Environment:
+  NO_COLOR  present+non-empty disables ANSI colors (no-color.org)
+  NOCOLOR   accepted as alias for NO_COLOR`
 
 const ROOT_EXAMPLES: ReadonlyArray<readonly [name: string, cmd: string]> = [
   ["Classify a token", "zshref classify --raw AUTO_CD"],
@@ -66,9 +70,57 @@ export function subcommandName(toolName: string): string {
   return toolName.replace(/^zsh_/, "").toLowerCase()
 }
 
+/**
+ * Standard + tolerance: NO_COLOR is the documented spec (disables colors
+ * when *present and non-empty*); NOCOLOR is accepted as an alias since
+ * users reach for either spelling.
+ */
+function noColorEnv(env: NodeJS.ProcessEnv): boolean {
+  const v = env.NO_COLOR ?? env.NOCOLOR
+  return v !== undefined && v !== ""
+}
+
+function shouldColor(
+  stream: NodeJS.WritableStream & { isTTY?: boolean },
+  env: NodeJS.ProcessEnv,
+): boolean {
+  return stream.isTTY === true && !noColorEnv(env)
+}
+
+/**
+ * Write `text` (with trailing newline) and exit 0 after the write drains.
+ * Returns a Promise so cliffy's `Promise.all(ctx.actions)` awaits the
+ * flush — otherwise cliffy's normal post-action return path races the
+ * kernel-level fd write and truncates the output on piped (non-TTY)
+ * stderr. Node's `process.exit()` does not wait for async writes, so the
+ * exit itself must be deferred to the write callback.
+ */
+function writeAndExit(
+  stream: NodeJS.WritableStream,
+  text: string,
+): Promise<never> {
+  return new Promise<never>(resolve => {
+    stream.write(`${text}\n`, () => {
+      // resolve first so cliffy's Promise.all settles; exit runs next tick
+      resolve(undefined as never)
+      process.exit(0)
+    })
+  })
+}
+
 export function buildCli(opts: BuildCliOpts): Command {
   const stdout = opts.stdout ?? process.stdout
   const stderr = opts.stderr ?? process.stderr
+  // Colors follow the destination of human-facing output (stderr). Pretty
+  // JSON on stdout is always uncolored — keep downstream `jq` pipelines
+  // parseable.
+  const colors = shouldColor(stderr, process.env)
+  // long: true always — cliffy's default passes long=false to `-h` and
+  // `long=true` to `--help`; the difference is that short-mode truncates
+  // option descriptions at their first `\n`. Our descriptions are
+  // multi-line by design (pre-wrapped for 80 cols, with embedded lists),
+  // so short-mode hides information we want visible in both spellings.
+  const helpOpts = { colors, hints: false, long: true } as const
 
   const root = new Command()
     .name(opts.name)
@@ -78,6 +130,20 @@ export function buildCli(opts: BuildCliOpts): Command {
     // throwErrors: cliffy ValidationError surfaces as a thrown exception
     // rather than direct stderr/exit so we can map to exit code 2.
     .throwErrors()
+    // Cliffy's default --help / --version both `console.log` → stdout.
+    // Route to stderr so the "stdout is always JSON" contract holds even
+    // when users pipe `zshref --help | …`. Both options are registered
+    // with { global: true } by cliffy, so subs inherit automatically.
+    .helpOption("-h, --help", "Show this help.", async function () {
+      await writeAndExit(stderr, this.getHelp(helpOpts))
+    })
+    .versionOption("-V, --version", "Show the version.", async function () {
+      // `getMainCommand()` walks to root: subs set `version("")` to
+      // suppress the "Version:" line in their own --help, so their own
+      // getVersion() returns "". We always want the root (program) version.
+      await writeAndExit(stderr, this.getMainCommand().getVersion() ?? "")
+    })
+    .help(helpOpts)
 
   for (const [name, cmdLine] of ROOT_EXAMPLES) root.example(name, cmdLine)
 
@@ -99,7 +165,7 @@ export function buildCli(opts: BuildCliOpts): Command {
       // hints: false suppresses cliffy's auto-appended hints, which include
       // an unwanted "(Values: a, b, c, ...)" enum dump that overflows 80
       // cols for our --category. We re-add "(required)" manually below.
-      .help({ hints: false })
+      .help(helpOpts)
       .type(CATEGORY_PROP, categoryType, { global: false })
 
     for (const [key, spec] of Object.entries(props)) {
@@ -126,7 +192,7 @@ export function buildCli(opts: BuildCliOpts): Command {
     root.command(subName, sub)
   }
 
-  root.command("completions", new CompletionsCommand().help({ hints: false }))
+  root.command("completions", new CompletionsCommand().help(helpOpts))
 
   return root
 }

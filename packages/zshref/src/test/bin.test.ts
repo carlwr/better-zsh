@@ -1,6 +1,6 @@
 import { expect, test } from "vitest"
 import { PKG_VERSION } from "../pkg-info.ts"
-import { describeIfBuilt, runBin } from "./_spawn.ts"
+import { describeIfBuilt, runBin } from "./bin-util.ts"
 
 describeIfBuilt("bin end-to-end", () => {
   test("--help exits 0", async () => {

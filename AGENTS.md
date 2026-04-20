@@ -251,6 +251,12 @@ The MCP additionally exposes `test:integration:act` (runs the `mcp` CI job throu
 
 - `testINTERACTIVE:electron-zsh-path` (zsh-path-matrix) runs in CI/Docker only. On macOS, VS Code's shell env resolution replaces test-injected PATH before the extension host activates, defeating env isolation. With pure logic surfaced in unit-testable functions, container tests are a bonus layer.
 
+### Test helpers
+
+- Unit-test files: `*.test.ts` under `src/test/`. Vitest's include glob matches only these.
+- Helper modules (shared fixtures, spawn/exec wrappers, stubs) live alongside the test files under `src/test/`, but with filenames that do **not** match `*.test.ts`. Pick a descriptive name for the purpose: `test-util.ts`, `bin-util.ts`, `tmp-dir.ts`, `id-fns.ts` (examples in-tree).
+- Do **not** rely on a leading-underscore prefix — the glob filter is the actual mechanism; a naming convention on top of it is redundant and inconsistent with other packages.
+
 ### Testing tools
 
 - Vitest for unit; Mocha for Electron.

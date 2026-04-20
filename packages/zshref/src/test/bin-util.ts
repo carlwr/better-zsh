@@ -1,7 +1,8 @@
 /**
- * Test-only helpers for spawning the built bin. Shared between
- * `bin.test.ts` and `help-render.test.ts`. Not picked up by vitest
- * (vitest config matches `**\/*.test.ts` only).
+ * Test-only helpers for spawning the built bin. Not picked up by vitest
+ * — the config glob matches `**\/*.test.ts` only, so any `.ts` file in
+ * `src/test/` that does not end in `.test.ts` is treated as a helper
+ * module. Repo-wide convention; see AGENTS.md.
  */
 
 import { execFile } from "node:child_process"

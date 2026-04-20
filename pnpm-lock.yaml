@@ -143,6 +143,22 @@ importers:
         specifier: ^4.1.4
         version: 4.1.4(@types/node@22.19.15)(vite@8.0.3(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(@types/node@22.19.15)(esbuild@0.27.5)(tsx@4.21.0)(yaml@2.8.3))
 
+  packages/zshref-stricli:
+    dependencies:
+      '@carlwr/zsh-core':
+        specifier: workspace:*
+        version: link:../zsh-core
+      '@carlwr/zsh-core-tooldef':
+        specifier: workspace:*
+        version: link:../zsh-core-tooldef
+      '@stricli/core':
+        specifier: ^1.2.6
+        version: 1.2.6
+    devDependencies:
+      vitest:
+        specifier: ^4.1.4
+        version: 4.1.4(@types/node@22.19.15)(vite@8.0.3(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(@types/node@22.19.15)(esbuild@0.27.5)(tsx@4.21.0)(yaml@2.8.3))
+
 packages:
 
   '@azu/format-text@1.0.2':
@@ -859,6 +875,9 @@ packages:
 
   '@standard-schema/spec@1.1.0':
     resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
+
+  '@stricli/core@1.2.6':
+    resolution: {integrity: sha512-j5fa1wyOLrP9WJqqLFEJeQviqb3cK46K+FXTuISEkG/H5C820YfKDoVQ3CDVdM5WLhEx1ARdpiW6+hU4tYHjCQ==}
 
   '@textlint/ast-node-types@15.5.4':
     resolution: {integrity: sha512-bVtB6VEy9U9DpW8cTt25k5T+lz86zV5w6ImePZqY1AXzSuPhqQNT77lkMPxonXzUducEIlSvUu3o7sKw3y9+Sw==}
@@ -3645,6 +3664,8 @@ snapshots:
   '@sindresorhus/merge-streams@2.3.0': {}
 
   '@standard-schema/spec@1.1.0': {}
+
+  '@stricli/core@1.2.6': {}
 
   '@textlint/ast-node-types@15.5.4': {}
 
