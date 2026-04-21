@@ -135,7 +135,9 @@ function renderRootHelp(binName: string, subNames: readonly string[]): string {
   lines.push("Environment:")
   lines.push("  NO_COLOR          present+non-empty disables ANSI colors")
   lines.push("  NOCOLOR           accepted as alias for NO_COLOR")
-  lines.push("  STRICLI_NO_COLOR  stricli's own disable-color signal (forwarded)")
+  lines.push(
+    "  STRICLI_NO_COLOR  stricli's own disable-color signal (forwarded)",
+  )
   lines.push("")
   lines.push("Commands:")
   const briefs = Object.fromEntries(

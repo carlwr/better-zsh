@@ -160,13 +160,12 @@ describeIfBuilt("sub --help rendering", () => {
     expect(firstLine.length).toBeLessThanOrEqual(80)
   })
 
-  test.each(subs)(
-    "%s: no duplicated built-in 'Version:' line from sub-level help",
-    async sub => {
-      const out = await renderHelp([sub, "--help"])
-      expect(out).not.toMatch(/^Version:/m)
-    },
-  )
+  test.each(
+    subs,
+  )("%s: no duplicated built-in 'Version:' line from sub-level help", async sub => {
+    const out = await renderHelp([sub, "--help"])
+    expect(out).not.toMatch(/^Version:/m)
+  })
 })
 
 describeIfBuilt("(required) markers match schema", () => {

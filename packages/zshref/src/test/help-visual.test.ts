@@ -104,28 +104,27 @@ describeIfBuilt("root --help rendering", () => {
 describeIfBuilt("silent visual compromise guards", () => {
   const MAX_LINES_PER_OPTION = 6
 
-  test.each(subs)(
-    `%s: no single option renders in > ${MAX_LINES_PER_OPTION} lines`,
-    async sub => {
-      const out = await renderHelp([sub, "--help"])
-      const optsStart = out.indexOf("Options:")
-      expect(optsStart).toBeGreaterThanOrEqual(0)
-      const rest = out.slice(optsStart).split(/\n\s*\n\s*\n/)[0] ?? ""
-      const lines = rest.split("\n").slice(2) // drop "Options:" + blank
-      // Each option's block starts at "  --" or "  -h,"; continuation
-      // rows of a description accumulate under the current group.
-      const FLAG_ROW = /^ {2}-/
-      const groups: string[][] = []
-      for (const line of lines) {
-        if (FLAG_ROW.test(line)) groups.push([line])
-        else if (groups.length > 0) groups.at(-1)?.push(line)
-      }
-      for (const g of groups) {
-        while (g.length > 0 && g.at(-1)?.trim() === "") g.pop()
-        expect(g.length).toBeLessThanOrEqual(MAX_LINES_PER_OPTION)
-      }
-    },
-  )
+  test.each(
+    subs,
+  )(`%s: no single option renders in > ${MAX_LINES_PER_OPTION} lines`, async sub => {
+    const out = await renderHelp([sub, "--help"])
+    const optsStart = out.indexOf("Options:")
+    expect(optsStart).toBeGreaterThanOrEqual(0)
+    const rest = out.slice(optsStart).split(/\n\s*\n\s*\n/)[0] ?? ""
+    const lines = rest.split("\n").slice(2) // drop "Options:" + blank
+    // Each option's block starts at "  --" or "  -h,"; continuation
+    // rows of a description accumulate under the current group.
+    const FLAG_ROW = /^ {2}-/
+    const groups: string[][] = []
+    for (const line of lines) {
+      if (FLAG_ROW.test(line)) groups.push([line])
+      else if (groups.length > 0) groups.at(-1)?.push(line)
+    }
+    for (const g of groups) {
+      while (g.length > 0 && g.at(-1)?.trim() === "") g.pop()
+      expect(g.length).toBeLessThanOrEqual(MAX_LINES_PER_OPTION)
+    }
+  })
 
   test.each(subs)("%s: Description body has ≥ 2 non-blank lines", async sub => {
     const out = await renderHelp([sub, "--help"])
@@ -144,13 +143,12 @@ describeIfBuilt("sub --help rendering (uniform)", () => {
     expect(out).not.toMatch(/--[a-z_]+=[a-z]+(?![A-Z_])/)
   })
 
-  test.each(subs)(
-    "%s: Options column renders UPPERCASE placeholder",
-    async sub => {
-      const out = await renderHelp([sub, "--help"])
-      expect(out).toMatch(/[<[][A-Z][A-Z_]*[\]>]/)
-    },
-  )
+  test.each(
+    subs,
+  )("%s: Options column renders UPPERCASE placeholder", async sub => {
+    const out = await renderHelp([sub, "--help"])
+    expect(out).toMatch(/[<[][A-Z][A-Z_]*[\]>]/)
+  })
 
   test.each(subs)("%s: no Version: line (clutter-suppressed)", async sub => {
     const out = await renderHelp([sub, "--help"])

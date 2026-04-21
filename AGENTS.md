@@ -249,7 +249,7 @@ Always use `--no-dependencies`. The extension is bundled, and `vsce`'s internal 
 
 ### `BZ_SKIP_UPSTREAM`
 
-Extension and MCP `pre*` hooks build upstream packages by default so standalone package commands work. Aggregators such as `vsix`, `test:smoke`, publish scripts, and MCP `test:integration` should instead build once, export `BZ_SKIP_UPSTREAM=1`, and avoid retriggering the same upstream builds.
+Extension and MCP `pre*` hooks build upstream packages by default so standalone package commands work. Aggregators — the workspace `test` and `test:integration`, `vsix`, `test:smoke`, publish scripts, MCP `test:integration`, etc. — should instead build upstreams once, export `BZ_SKIP_UPSTREAM=1`, and avoid retriggering the same upstream builds (otherwise workspace-recursive runs race on the shared `dist/` of upstream packages).
 
 ## Contributor guidance
 

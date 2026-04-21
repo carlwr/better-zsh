@@ -25,11 +25,11 @@ import { docCategories } from "@carlwr/zsh-core"
 import type { ToolDef, ToolInputSchema } from "@carlwr/zsh-core-tooldef"
 import {
   type Application,
-  type CommandContext,
   buildApplication,
   buildChoiceParser,
   buildCommand,
   buildRouteMap,
+  type CommandContext,
   numberParser,
   text_en,
 } from "@stricli/core"

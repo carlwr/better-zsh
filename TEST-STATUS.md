@@ -1,12 +1,12 @@
 # Test status — snapshot
 
 Snapshot for cross-session continuity.
-Written against `main` on 2026-04-19.
+Written against `main` on 2026-04-21.
 Stale after the next code change.
 
 ## Confirmed green at this snapshot
 
-Confirmed via `BZ_SKIP_UPSTREAM=1 pnpm test` after a one-shot upstream bootstrap build:
+Confirmed via `pnpm test`:
 
 - `@carlwr/zsh-core`
 - `@carlwr/zsh-core-tooldef`
@@ -20,12 +20,11 @@ Also green at the same snapshot:
 - `pnpm test:smoke`
 - `pnpm vsix`
 - `pnpm --filter @carlwr/zsh-core run jsrREGISTRY:check`
-- per-package `test:integration` for zsh-core, tooldef, mcp, and zshref
+- `pnpm test:integration` (all packages, including the extension's `act`-based job)
 
 ## Deferred, not known broken
 
 - `INTERACTIVE` tests such as the Electron desktop runs and the zsh-path matrix. CI covers these on Linux.
-- `better-zsh` `test:integration`, which runs the `integration` workflow job through `act`.
 - Registry-dependent checks (`testREGISTRY:install`, `jsrREGISTRY:check`, `verifyREGISTRY`) that depend on published upstream state. See `AGENTS.md` for the `REGISTRY` rule and `packages/zshref-mcp/DEVELOPMENT.md` for the MCP-side rationale.
 
 ## Known orthogonal blocker
