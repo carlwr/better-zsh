@@ -2,6 +2,8 @@
 
 A command-line reference for zsh syntax. Ask what a token is, search the manual, or print the docs for a known element — from a terminal, a script, or an agent pipeline. Output is one JSON object per invocation on stdout; pipe into `jq` for human reading.
 
+> **Status: pre-release (alpha).** This crate is developed inside the [`better-zsh`](https://github.com/carlwr/better-zsh) monorepo and will be extracted to its own repository on first stable release. Until then, the install path below requires a full monorepo checkout (the bundled JSON corpus is generated from the TypeScript side of the repo). The `cargo install zshref` entry point from crates.io is not yet live.
+
 Answers come from a structured reference parsed from the upstream zsh-5.9 docs and baked into the binary at build time, so they are stable, offline, and independent of whatever zsh is installed on the host.
 
 ## What it covers
@@ -20,7 +22,7 @@ The corpus and all tool logic are bundled into a single statically-linked binary
 
 ## Install
 
-Build from source (requires a stable Rust toolchain and a Node/pnpm workspace checkout, since the bundled JSON is generated from the TypeScript side):
+Build from source. Requires a stable Rust toolchain **and** the full monorepo checkout (the `better-zsh` Node/pnpm workspace), because the bundled JSON corpus is generated from the TypeScript side and embedded at compile time:
 
 ```sh
 git clone https://github.com/carlwr/better-zsh
@@ -28,7 +30,7 @@ cd better-zsh
 make cli            # release binary at zshref-rs/target/release/zshref
 ```
 
-A `cargo install zshref` entry point (via crates.io) is planned but not yet published.
+A `cargo install zshref` entry point (via crates.io) is planned for the first stable release.
 
 ## Usage
 

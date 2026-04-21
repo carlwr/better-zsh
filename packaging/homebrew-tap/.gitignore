@@ -1,0 +1,17 @@
+# Pre-release scaffold. Does not install anything real yet.
+#
+# Standard ignores for a Homebrew tap repo.
+# When this directory is extracted to its own repo, this file becomes the
+# repo-root .gitignore.
+
+# macOS
+.DS_Store
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*~
+
+# Homebrew working files
+.brew/

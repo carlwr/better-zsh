@@ -1,5 +1,7 @@
 # zshref-mcp
 
+> **Status: pre-release (alpha).** This package is developed inside the [`better-zsh`](https://github.com/carlwr/better-zsh) monorepo and will be extracted to its own repository on first stable release. The npm package `@carlwr/zshref-mcp` is already published and the install paths below work today; the monorepo is transparent to end users.
+
 A [Model Context Protocol](https://modelcontextprotocol.io) server that
 - exposes a structured `zsh` reference in the form of tools an agent can call,
 - only uses static data shipped with the package, and

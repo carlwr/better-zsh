@@ -1,5 +1,11 @@
 # Development — zshref-rs
 
+## Note: pre-release, monorepo
+
+This document describes dev workflows during the monorepo phase. Post-extraction, rebuild/test commands change (the `pnpm --filter` steps are replaced by the cross-repo data-sync mechanism) — see `EXTRACTION.md` for the transition plan.
+
+---
+
 Rust CLI that bundles two TS-generated artifacts via `include_bytes!`:
 
 - **Corpus JSONs** — `packages/zsh-core/dist/json/*.json` (built by `pnpm --filter @carlwr/zsh-core build`)
