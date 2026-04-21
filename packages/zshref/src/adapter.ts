@@ -169,7 +169,12 @@ export function buildCli(opts: BuildCliOpts): Command {
       .type(CATEGORY_PROP, categoryType, { global: false })
 
     for (const [key, spec] of Object.entries(props)) {
-      const flag = propertyToOption(key, spec, required.has(key))
+      const flag = propertyToOption(
+        key,
+        spec,
+        required.has(key),
+        td.flagBriefs[key],
+      )
       sub.option(flag.flagSpec, wrapText(flag.desc, OPTION_DESC_WIDTH), {
         required: required.has(key),
       })
@@ -224,13 +229,19 @@ function propertyToOption(
   key: string,
   spec: JsonSchemaProp,
   isRequired: boolean,
+  flagBrief: string | undefined,
 ): OptionSpec {
   const typeTag = cliffyTypeFor(key, spec.type)
   const ph = placeholderOf(key)
   const placeholder = isRequired ? `<${ph}:${typeTag}>` : `[${ph}:${typeTag}]`
+  // Prefer the short CLI brief; fall back to the long LLM-oriented
+  // description if a tool pre-dates `flagBriefs`. The short form wraps
+  // into ~1-2 lines in the Options column; the long fallback renders
+  // via our in-house `wrapText` at 50 cols, producing ~3-6 rows.
+  const body = flagBrief ?? spec.description ?? ""
   return {
     flagSpec: `--${key} ${placeholder}`,
-    desc: `${spec.description ?? ""}${isRequired ? " (required)" : ""}`,
+    desc: `${body}${isRequired ? " (required)" : ""}`,
   }
 }
 

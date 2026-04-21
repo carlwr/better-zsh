@@ -9,8 +9,10 @@ import {
   BRIEF_MAX_LEN,
   type ClassifyResult,
   classifyToolDef,
+  DESCRIPTION_LINE_MAX_LEN,
   type DescribeResult,
   describeToolDef,
+  FLAG_BRIEF_MAX_LEN,
   type LookupOptionResult,
   lookupOptionToolDef,
   type SearchResult,
@@ -75,6 +77,43 @@ describe("toolDefs metadata", () => {
     }) as DescribeResult
     expect(d.match?.markdown).toMatch(/echo/i)
   })
+})
+
+// `flagBriefs` are one-line CLI FLAGS-column entries. Compile-time
+// checks via `makeToolDef<K>` enforce that keys match the schema's
+// property keys exactly — no runtime key-match test needed. We still
+// runtime-check the length cap and single-line shape, since those are
+// string-content invariants the builder type can't express.
+describe("toolDefs flagBriefs shape", () => {
+  test.each(toolDefs.map(d => [d.name, d] as const))(
+    "%s.flagBriefs values are non-empty one-liners within the cap",
+    (_n, def) => {
+      for (const [key, brief] of Object.entries(def.flagBriefs)) {
+        expect(brief.length).toBeGreaterThan(0)
+        expect(brief.length).toBeLessThanOrEqual(FLAG_BRIEF_MAX_LEN)
+        expect(brief, `${def.name}.flagBriefs.${key}`).not.toMatch(/\n/)
+      }
+    },
+  )
+})
+
+// Source-wrap discipline: every line of a description is ≤70 cols, so
+// adapters that render the string verbatim (stricli) break paragraphs
+// at word boundaries. Single `\n` is collapsed to whitespace by
+// CommonMark renderers, so MCP/LM chat surfaces see the prose
+// unchanged; cliffy's re-wrapper leaves ≤70-col lines alone.
+describe("toolDefs description wrap discipline", () => {
+  test.each(toolDefs.map(d => [d.name, d] as const))(
+    `%s.description: every line ≤ ${DESCRIPTION_LINE_MAX_LEN} cols`,
+    (_n, def) => {
+      for (const line of def.description.split("\n")) {
+        expect(
+          line.length,
+          `overflow (${line.length} > ${DESCRIPTION_LINE_MAX_LEN}): ${line}`,
+        ).toBeLessThanOrEqual(DESCRIPTION_LINE_MAX_LEN)
+      }
+    },
+  )
 })
 
 // `brief` is what narrow rendering contexts (CLI commands-column) see;

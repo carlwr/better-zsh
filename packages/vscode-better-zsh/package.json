@@ -107,7 +107,7 @@
         "name": "zsh_classify",
         "toolReferenceName": "zshClassify",
         "displayName": "Classify zsh token",
-        "modelDescription": "Classify a raw zsh token against the bundled static zsh-5.9 reference.\n\nReturns the first matching zsh element from these categories (in classify order):\n\n  - reserved word\n  - precommand modifier\n  - builtin\n  - conditional operator\n  - shell parameter\n  - process substitution\n  - parameter-expansion form\n  - parameter-expansion flag\n  - subscript flag\n  - glob flag\n  - glob operator\n  - history designator\n  - prompt escape\n  - ZLE widget\n  - option\n  - redirection\n\nEach match carries display form, category, and rendered markdown. Returns `{ match: null }` when the token does not name any documented element.\n\nHandles zsh option quirks: case-insensitive matching, underscore stripping, and the NO_* negation convention (without the NOTIFY vs TIFY ambiguity).\n\nNo shell execution, no environment access.",
+        "modelDescription": "Classify a raw zsh token against the bundled static zsh-5.9\nreference.\n\nReturns the first matching zsh element from these categories (in\nclassify order):\n\n  - reserved word\n  - precommand modifier\n  - builtin\n  - conditional operator\n  - shell parameter\n  - process substitution\n  - parameter-expansion form\n  - parameter-expansion flag\n  - subscript flag\n  - glob flag\n  - glob operator\n  - history designator\n  - prompt escape\n  - ZLE widget\n  - option\n  - redirection\n\nEach match carries display form, category, and rendered markdown.\nReturns `{ match: null }` when the token does not name any documented\nelement.\n\nHandles zsh option quirks: case-insensitive matching, underscore\nstripping, and the NO_* negation convention (without the NOTIFY vs\nTIFY ambiguity).\n\nNo shell execution, no environment access.",
         "canBeReferencedInPrompt": true,
         "tags": [
           "zsh"
@@ -130,7 +130,7 @@
         "name": "zsh_lookup_option",
         "toolReferenceName": "zshLookupOption",
         "displayName": "Look up a zsh option",
-        "modelDescription": "Look up a zsh shell option (the names used with `setopt` / `unsetopt`) in the bundled static reference.\n\nMatching is case-insensitive and ignores underscores.\n\nSurfaces `negated: true` when the input was `NO_*` (e.g. `NO_AUTO_CD`) so agents can reason about the state being set, not just the option's identity. Handles the NOTIFY / NO_NOTIFY edge case correctly.\n\nReturns `{ match: null }` when the token is not a documented option.\n\nNo shell execution, no environment access.",
+        "modelDescription": "Look up a zsh shell option (the names used with `setopt` /\n`unsetopt`) in the bundled static reference.\n\nMatching is case-insensitive and ignores underscores.\n\nSurfaces `negated: true` when the input was `NO_*` (e.g.\n`NO_AUTO_CD`) so agents can reason about the state being set, not\njust the option's identity. Handles the NOTIFY / NO_NOTIFY edge case\ncorrectly.\n\nReturns `{ match: null }` when the token is not a documented option.\n\nNo shell execution, no environment access.",
         "canBeReferencedInPrompt": true,
         "tags": [
           "zsh"
@@ -153,7 +153,7 @@
         "name": "zsh_search",
         "toolReferenceName": "zshSearch",
         "displayName": "Search zsh reference",
-        "modelDescription": "Search the bundled static zsh-5.9 reference. Fuzzy-matches the query against doc record ids and human display headings across every category.\n\nOmit `query` to list records (optionally filtered by `category`).\n\nRanking: exact id/display > prefix > fuzzy score.\n\nResults carry `{ category, id, display, score? }` but NOT the rendered markdown body — follow up with `zsh_describe` or `zsh_classify` for the full doc.\n\n`limit` caps response size (default 20, hard max 500). The response also returns `matchesReturned` (== `matches.length`) and `matchesTotal` (pre-truncation total), so `matchesReturned < matchesTotal` signals truncation — raise `limit` or narrow `category`/`query` to see the rest.\n\nValid `category` values (zsh-core `DocCategory` strings):\n\n  - 'option'\n  - 'cond_op'\n  - 'builtin'\n  - 'precmd'\n  - 'shell_param'\n  - 'reserved_word'\n  - 'redir'\n  - 'process_subst'\n  - 'param_expn'\n  - 'subscript_flag'\n  - 'param_flag'\n  - 'history'\n  - 'glob_op'\n  - 'glob_flag'\n  - 'prompt_escape'\n  - 'zle_widget'\n\nNo shell execution, no environment access.",
+        "modelDescription": "Search the bundled static zsh-5.9 reference. Fuzzy-matches\nthe query against doc record ids and human display headings across\nevery category.\n\nOmit `query` to list records (optionally filtered by `category`).\n\nRanking: exact id/display > prefix > fuzzy score.\n\nResults carry `{ category, id, display, score? }` but NOT the\nrendered markdown body — follow up with `zsh_describe` or\n`zsh_classify` for the full doc.\n\n`limit` caps response size (default 20, hard max 500). The response\nalso returns `matchesReturned` (== `matches.length`) and\n`matchesTotal` (pre-truncation total), so `matchesReturned <\nmatchesTotal` signals truncation — raise `limit` or narrow\n`category`/`query` to see the rest.\n\nValid `category` values (zsh-core `DocCategory` strings):\n\n  - 'option'\n  - 'cond_op'\n  - 'builtin'\n  - 'precmd'\n  - 'shell_param'\n  - 'reserved_word'\n  - 'redir'\n  - 'process_subst'\n  - 'param_expn'\n  - 'subscript_flag'\n  - 'param_flag'\n  - 'history'\n  - 'glob_op'\n  - 'glob_flag'\n  - 'prompt_escape'\n  - 'zle_widget'\n\nNo shell execution, no environment access.",
         "canBeReferencedInPrompt": true,
         "tags": [
           "zsh"
@@ -183,7 +183,7 @@
         "name": "zsh_describe",
         "toolReferenceName": "zshDescribe",
         "displayName": "Describe zsh reference record",
-        "modelDescription": "Fetch the full record for a known `{ category, id }` from the bundled static zsh reference.\n\nReturns `{ match: { category, id, display, markdown } }` with the rendered markdown body, or `{ match: null }` when the id is not a member of the given category's corpus.\n\nExpects exact canonical ids (typically surfaced by a prior `zsh_search` response). Unlike `zsh_classify` / `zsh_lookup_option` it does NOT apply per-category normalization such as NO_* stripping.\n\nNo shell execution, no environment access.",
+        "modelDescription": "Fetch the full record for a known `{ category, id }` from the\nbundled static zsh reference.\n\nReturns `{ match: { category, id, display, markdown } }` with the\nrendered markdown body, or `{ match: null }` when the id is not a\nmember of the given category's corpus.\n\nExpects exact canonical ids (typically surfaced by a prior\n`zsh_search` response). Unlike `zsh_classify` /\n`zsh_lookup_option` it does NOT apply per-category normalization\nsuch as NO_* stripping.\n\nNo shell execution, no environment access.",
         "canBeReferencedInPrompt": true,
         "tags": [
           "zsh"

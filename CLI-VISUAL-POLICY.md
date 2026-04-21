@@ -17,8 +17,12 @@ Strengths:
 - **MUST**: auto-disable ANSI color when the destination stream is not a tty (`isTTY` or equivalent).
 - **MUST**: if `NO_COLOR` is set and non-empty, disable ANSI unconditionally, per <https://no-color.org>.
 - **MAY**: accept `NOCOLOR` too.
-- **SHOULD**: document color env vars under `Environment:` in help.
-- **SHOULD**: document exit codes in `--help`: `0` success, `1` internal or unexpected error, `2` bad input (malformed flag, unknown enum, missing required argument).
+- **MUST**: document color in `--help`, preferrably suitable dedicated section headings:
+  - exit codes:
+    - `0`: success
+    - `1`: internal or unexpected error
+    - `2`: bad input (malformed flag, unknown enum, missing required argument)
+  - env vars (for color, and preferrably any other)
 
 ## --help: typography & layout
 
@@ -83,18 +87,35 @@ NOTE: line length refers to number of characters _after ANSI stripping_ (since A
 - **SHOULD**: render enumerations one (possibly indented) item per line, not comma-heavy inline prose.
 - **SHOULD**: keep `Options` descriptions short and single-paragraph. Put enum tables or references in top-level `Description`, where the column is (possibly) wider.
 - **SHOULD**: keep any one option to roughly a flag line plus a few continuation rows. `~6` physical rows is a good soft cap; tune per CLI.
+- **MUST**: in top-level `--help`, state the I/O contract: what `stdout` carries, where human output goes, and the exit-code map.
+- **MUST**: add an `Examples:` section (for the top-level `prog --help`) with a small set of common invocations; often the fastest onboarding surface.
+- **SHOULD**: keep each subcommand `Description` non-empty: say what it does and returns.
 
-## --help: content
+## option-arguments (`--option=OPTION-ARG` etc.)
+
+- **MAY**: accept both of the two forms `--option=OPTION-ARG` and `--option OPTION-ARG`
+- **note**: if only one form is supported, the `--option=OPTION-ARG` form is preferred
+
+## "Usage:"-line forms etc.
 
 - **MUST**: make the `Usage:` line end with a useful synopsis, never just the program name. `prog <command> [options]` is fine; bare `prog` looks like a crash.
-- **SHOULD**: in both `Usage:` and `Options:`, pair value-taking flags with uppercase placeholders: `[--query=QUERY]`, not `[--query]` or `[--query=query]`.
+- **MUST**: _not_ give `Usage:` line(s) that are inconsistent with valid usage
+  - example:
+    - given: `--query` is mandatory, and has a mandatory option-arg, i.e. valid forms are `prog --query=QUERY ..`/`prog --query QUERY ..`
+    - -> a usage line `prog [--query] ..` would be _actively misleading_ for two separate reasons: 1.) the []s in `[--query]` suggests `--query` is not mandatory, and, separately, 2.) `[--query]` suggests `--query` does not have a mandatory option-arg
+    - note: this rule is about `Usage:` lines only. E.g. if an "Options:" section describes such an option with the line "  [--query]   - search string (default: --query='.*')", then that does not violate this rule
+- **MUST**: be case-consistent if placeholders are repeated (so that their identity can be inferred)
+  - example: if a `Usage:` line is `prog --to=FILE ..`, an `Options:` text may _not_ say "`file` must be a readable file...", but must if referenced be referenced as "`FILE` must be a readable file..."
+- **MAY/SHOULD** use upper-case for placeholders (`--to=FILE`, not `--to=file`)
+
+## args/options specs
+
+- **MUST**: somehow communicate what the default is for boolean-like flags that are not required
 - **SHOULD**: visually flag required options: `(required)`, unbracketed placement in `Usage:`, or both.
-- **SHOULD**: in top-level `--help`, state the I/O contract: what `stdout` carries, where human output goes, and the exit-code map.
-- **MAY**: add a top-level `Examples:` section with a small set of common invocations; often the fastest onboarding surface.
-- **SHOULD**: keep each subcommand `Description` non-empty: say what it does and returns.
 
 ## Subcommand CLIs
 
+- **MUST**: IF some help contents requires a subcommand-specific `--help` invocation (`prog sub --help`), THEN clear information about these `--help` forms must be provided in the top-level `--help`
 - **SHOULD**: in top-level `--help`, list subcommands with one-line briefs. Aim for `~50` chars to avoid wrapping the `Commands` column.
 - **SHOULD**: write briefs as phrases, not sentences: lowercase first letter, no trailing period. `classify a raw zsh token, return its doc`, not `Classify a raw zsh token.`
 - **SHOULD**: in subcommand `--help`, show `brief`, blank line, expanded description. If the framework uses the first description line as the top-level brief, format it as `brief\n\nexpanded` instead of plumbing a separate `brief` field.

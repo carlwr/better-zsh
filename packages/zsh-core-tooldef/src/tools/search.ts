@@ -6,7 +6,7 @@ import {
   ZSH_UPSTREAM,
 } from "@carlwr/zsh-core"
 import fuzzysort from "fuzzysort"
-import type { ToolDef } from "../tool-defs.ts"
+import { makeToolDef } from "../tool-defs.ts"
 import { display } from "./doc-display.ts"
 
 export interface SearchInput {
@@ -126,18 +126,27 @@ function toMatch(e: Entry, score?: number): SearchMatch {
 
 const brandedCategoryList = docCategories.map(c => `  - '${c}'`).join("\n")
 
-export const searchToolDef: ToolDef = {
+export const searchToolDef = makeToolDef({
   name: "zsh_search",
   brief: "fuzzy-search the zsh reference by id/display",
-  description: `Search the bundled static ${ZSH_UPSTREAM.tag} reference. Fuzzy-matches the query against doc record ids and human display headings across every category.
+  description: `\
+Search the bundled static ${ZSH_UPSTREAM.tag} reference. Fuzzy-matches
+the query against doc record ids and human display headings across
+every category.
 
 Omit \`query\` to list records (optionally filtered by \`category\`).
 
 Ranking: exact id/display > prefix > fuzzy score.
 
-Results carry \`{ category, id, display, score? }\` but NOT the rendered markdown body — follow up with \`zsh_describe\` or \`zsh_classify\` for the full doc.
+Results carry \`{ category, id, display, score? }\` but NOT the
+rendered markdown body — follow up with \`zsh_describe\` or
+\`zsh_classify\` for the full doc.
 
-\`limit\` caps response size (default ${DEFAULT_LIMIT}, hard max ${MAX_LIMIT}). The response also returns \`matchesReturned\` (== \`matches.length\`) and \`matchesTotal\` (pre-truncation total), so \`matchesReturned < matchesTotal\` signals truncation — raise \`limit\` or narrow \`category\`/\`query\` to see the rest.
+\`limit\` caps response size (default ${DEFAULT_LIMIT}, hard max ${MAX_LIMIT}). The response
+also returns \`matchesReturned\` (== \`matches.length\`) and
+\`matchesTotal\` (pre-truncation total), so \`matchesReturned <
+matchesTotal\` signals truncation — raise \`limit\` or narrow
+\`category\`/\`query\` to see the rest.
 
 Valid \`category\` values (zsh-core \`DocCategory\` strings):
 
@@ -166,6 +175,11 @@ No shell execution, no environment access.`,
     },
     additionalProperties: false,
   },
+  flagBriefs: {
+    query: "Fuzzy-search string (omit to list all).",
+    category: "Filter to one doc category (see description).",
+    limit: `Max matches to return (default ${DEFAULT_LIMIT}, max ${MAX_LIMIT}).`,
+  },
   execute: (corpus, input): SearchResult =>
     search(corpus, input as unknown as SearchInput),
-}
+})

@@ -7,7 +7,7 @@ import {
   mkPieceId,
 } from "@carlwr/zsh-core"
 import { renderDoc } from "@carlwr/zsh-core/render"
-import type { ToolDef } from "../tool-defs.ts"
+import { makeToolDef } from "../tool-defs.ts"
 import { display } from "./doc-display.ts"
 
 export interface DescribeInput {
@@ -56,14 +56,21 @@ export function describe(
   }
 }
 
-export const describeToolDef: ToolDef = {
+export const describeToolDef = makeToolDef({
   name: "zsh_describe",
   brief: "fetch the full doc for a known {category, id}",
-  description: `Fetch the full record for a known \`{ category, id }\` from the bundled static zsh reference.
+  description: `\
+Fetch the full record for a known \`{ category, id }\` from the
+bundled static zsh reference.
 
-Returns \`{ match: { category, id, display, markdown } }\` with the rendered markdown body, or \`{ match: null }\` when the id is not a member of the given category's corpus.
+Returns \`{ match: { category, id, display, markdown } }\` with the
+rendered markdown body, or \`{ match: null }\` when the id is not a
+member of the given category's corpus.
 
-Expects exact canonical ids (typically surfaced by a prior \`zsh_search\` response). Unlike \`zsh_classify\` / \`zsh_lookup_option\` it does NOT apply per-category normalization such as NO_* stripping.
+Expects exact canonical ids (typically surfaced by a prior
+\`zsh_search\` response). Unlike \`zsh_classify\` /
+\`zsh_lookup_option\` it does NOT apply per-category normalization
+such as NO_* stripping.
 
 No shell execution, no environment access.`,
   inputSchema: {
@@ -83,6 +90,10 @@ No shell execution, no environment access.`,
     required: ["category", "id"],
     additionalProperties: false,
   },
+  flagBriefs: {
+    category: "Doc category (see description for valid values).",
+    id: "Canonical id within the category (exact corpus key).",
+  },
   execute: (corpus, input): DescribeResult =>
     describe(corpus, input as unknown as DescribeInput),
-}
+})

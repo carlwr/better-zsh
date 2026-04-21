@@ -1,6 +1,6 @@
 import { type DocCorpus, mkPieceId, resolveOption } from "@carlwr/zsh-core"
 import { renderDoc } from "@carlwr/zsh-core/render"
-import type { ToolDef } from "../tool-defs.ts"
+import { makeToolDef } from "../tool-defs.ts"
 
 export interface LookupOptionInput {
   readonly raw: string
@@ -45,14 +45,19 @@ export function lookupOption(
   }
 }
 
-export const lookupOptionToolDef: ToolDef = {
+export const lookupOptionToolDef = makeToolDef({
   name: "zsh_lookup_option",
   brief: "look up a zsh option; handles NO_* negation",
-  description: `Look up a zsh shell option (the names used with \`setopt\` / \`unsetopt\`) in the bundled static reference.
+  description: `\
+Look up a zsh shell option (the names used with \`setopt\` /
+\`unsetopt\`) in the bundled static reference.
 
 Matching is case-insensitive and ignores underscores.
 
-Surfaces \`negated: true\` when the input was \`NO_*\` (e.g. \`NO_AUTO_CD\`) so agents can reason about the state being set, not just the option's identity. Handles the NOTIFY / NO_NOTIFY edge case correctly.
+Surfaces \`negated: true\` when the input was \`NO_*\` (e.g.
+\`NO_AUTO_CD\`) so agents can reason about the state being set, not
+just the option's identity. Handles the NOTIFY / NO_NOTIFY edge case
+correctly.
 
 Returns \`{ match: null }\` when the token is not a documented option.
 
@@ -69,6 +74,9 @@ No shell execution, no environment access.`,
     required: ["raw"],
     additionalProperties: false,
   },
+  flagBriefs: {
+    raw: "Raw option name, e.g. AUTO_CD, autocd, NO_AUTO_CD.",
+  },
   execute: (corpus, input): LookupOptionResult =>
     lookupOption(corpus, input as unknown as LookupOptionInput),
-}
+})

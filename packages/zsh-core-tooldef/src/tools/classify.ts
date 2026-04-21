@@ -9,7 +9,7 @@ import {
   ZSH_UPSTREAM,
 } from "@carlwr/zsh-core"
 import { renderDoc } from "@carlwr/zsh-core/render"
-import type { ToolDef } from "../tool-defs.ts"
+import { makeToolDef } from "../tool-defs.ts"
 import { display } from "./doc-display.ts"
 
 export interface ClassifyInput {
@@ -63,18 +63,29 @@ const humanCategoryList = classifyOrder
   .map(c => `  - ${docCategoryLabels[c]}`)
   .join("\n")
 
-export const classifyToolDef: ToolDef = {
+export const classifyToolDef = makeToolDef({
   name: "zsh_classify",
   brief: "classify a raw zsh token, return its doc",
-  description: `Classify a raw zsh token against the bundled static ${ZSH_UPSTREAM.tag} reference.
+  // Description is hardwrapped at the source so CLI adapters that render
+  // the string verbatim (stricli) break at word boundaries. Single `\n`
+  // is collapsed to whitespace by CommonMark renderers, so MCP/LM
+  // chat surfaces see the paragraphs unchanged. Wrap budget: 70 cols.
+  description: `\
+Classify a raw zsh token against the bundled static ${ZSH_UPSTREAM.tag}
+reference.
 
-Returns the first matching zsh element from these categories (in classify order):
+Returns the first matching zsh element from these categories (in
+classify order):
 
 ${humanCategoryList}
 
-Each match carries display form, category, and rendered markdown. Returns \`{ match: null }\` when the token does not name any documented element.
+Each match carries display form, category, and rendered markdown.
+Returns \`{ match: null }\` when the token does not name any documented
+element.
 
-Handles zsh option quirks: case-insensitive matching, underscore stripping, and the NO_* negation convention (without the NOTIFY vs TIFY ambiguity).
+Handles zsh option quirks: case-insensitive matching, underscore
+stripping, and the NO_* negation convention (without the NOTIFY vs
+TIFY ambiguity).
 
 No shell execution, no environment access.`,
   inputSchema: {
@@ -89,6 +100,9 @@ No shell execution, no environment access.`,
     required: ["raw"],
     additionalProperties: false,
   },
+  flagBriefs: {
+    raw: "Raw zsh token to classify (e.g. AUTO_CD, echo, [[, <<<).",
+  },
   execute: (corpus, input): ClassifyResult =>
     classify(corpus, input as unknown as ClassifyInput),
-}
+})
