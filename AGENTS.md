@@ -24,6 +24,7 @@ Keep documentation non-redundant; audience decides placement.
 
 - **JSDoc** — end-user facing. Terse. Covers what/how, not why. Avoid rationale, history, and cross-file narrative.
 - **Code comments** — maintainer facing. Local rationale, invariants, workarounds, and "why not the obvious alternative."
+- **File-header comments** — the first few lines of any Makefile/config/source file. Stick to what's locally essential. Do NOT: (a) claim global state about other files, packages, or tools ("everything else stays pnpm-driven"); (b) restate what the filename, location, or structure already expresses; (c) restate design decisions whose home is elsewhere. When implementing from a plan, treat plan prose as intent, not as copy-paste-ready file content — re-derive header text from the destination file's own purpose.
 - **`DESIGN.md`** — cross-file design rationale. Refer to identifiers by name; avoid signatures, paths, counts, and other drift-prone specifics.
 - **`DEVELOPMENT.md`** — repo- or package-local operational notes. Good for package-specific invariants, build/test/release mechanics, and concise pointers to the source of truth. Avoid repeating repo-wide policy from `AGENTS.md` or design rationale from `DESIGN.md`.
 - **`AGENTS.md`** — contributor conventions: style, testing, packaging, and workflow.
@@ -132,6 +133,11 @@ Rules of thumb:
 - Prefer "obviously correct islands": narrow, pure, strongly-typed helpers.
 - Prefer structural enforcement over advisory comments.
 - Evaluate zsh-core's public surface from a general-consumer perspective, not only through extension needs.
+
+### Makefile conventions
+
+- `.PHONY: <target>` inline on its own line directly above each target block, not one grouped declaration at the top. Keeps diffs minimal as targets come and go.
+- No top-of-file prose that duplicates what the target list already expresses; see §"File-header comments".
 
 ### Never enumerate or count `DocCategory`
 
@@ -246,6 +252,10 @@ If you touch tests, look for conciseness wins unless that would hide intent.
 ### `vsce`
 
 Always use `--no-dependencies`. The extension is bundled, and `vsce`'s internal `npm list` is incompatible with pnpm's layout.
+
+### Linguist hints (deferred)
+
+GitHub's Linguist can be steered via `.gitattributes` (`linguist-generated`, `linguist-vendored`, `linguist-documentation`) to keep the language-bar honest and collapse generated diffs. Today nothing committed warrants it. Revisit if either: (a) `zshref-rs/data/` gets committed post-extraction (mark `linguist-generated`), or (b) upstream `.yo` Yodl sources start being vendored into the tree.
 
 ### `BZ_SKIP_UPSTREAM`
 
