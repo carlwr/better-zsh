@@ -1,11 +1,11 @@
 ## Overview
 
-Five workspace packages:
+Four workspace packages plus one Rust crate:
 - **zsh-core** — standalone package of structured zsh knowledge. Not merely extension support code; it should expose useful surface area beyond current consumers. Exports machine-readable API forms such as API Extractor rollups and `llms.txt`.
 - **@carlwr/zsh-core-tooldef** — framework-neutral tool definitions over zsh-core: pure `(DocCorpus, input) → output` tool implementations plus shared `ToolDef` metadata, consumed by adapters.
 - **@carlwr/zshref-mcp** — Node MCP server exposing the shared tool surface as `zsh_*` tools; published to npm and JSR.
-- **@carlwr/zshref** — CLI adapter over the same tool surface; each tool becomes a JSON-emitting subcommand.
 - **vscode-better-zsh** — VS Code extension; consumes zsh-core and the shared tooldef layer, including LM tool registration.
+- **zshref-rs/** — Rust+clap CLI (`zshref` bin) over the baked-in corpus + tool-def JSON. Built via `make cli`; not a pnpm workspace package. Not touched by the TS toolchain.
 
 Published state remains pre-1.0. The libraries are still free to move.
 
@@ -14,7 +14,7 @@ Published state remains pre-1.0. The libraries are still free to move.
 - **[`DESIGN.md`](./DESIGN.md)** — design rationale and architectural intent.
 - **`packages/zsh-core/dist/types/*.d.ts`** — rolled-up public API with JSDoc.
 - **`packages/zsh-core-tooldef/`** — shared tool layer consumed by adapters.
-- **`packages/zshref/`** — stable CLI adapter over the tool layer.
+- **`zshref-rs/`** — Rust CLI over the baked-in tool-def JSON.
 - **`skills/orient/`** — discovery scripts and reading paths.
 - **[`plan-json-artifacts.md`](./plan-json-artifacts.md)** — deferred plan for release-hosted JSON artifacts.
 
@@ -57,7 +57,7 @@ The tool layer is shared; adapters stay thin.
 
 Primary adapters:
 - `packages/zshref-mcp/` — MCP adapter.
-- `packages/zshref/` — cliffy CLI adapter.
+- `zshref-rs/` — Rust+clap CLI adapter; consumes the tool-def JSON baked into the binary at build time.
 - `packages/vscode-better-zsh/src/zsh-ref-tools.ts` — VS Code LM tool adapter.
 
 Principle: tooldef is a consumer of zsh-core; adapters are consumers of tooldef. Do not add new zsh-core query APIs just to support an adapter.
@@ -235,7 +235,7 @@ If you touch tests, look for conciseness wins unless that would hide intent.
 
 ### npm + JSR dual publish
 
-`zsh-core`, `@carlwr/zsh-core-tooldef`, `@carlwr/zshref-mcp`, and `@carlwr/zshref` publish to npm and JSR.
+`zsh-core`, `@carlwr/zsh-core-tooldef`, and `@carlwr/zshref-mcp` publish to npm and JSR. The Rust CLI under `zshref-rs/` publishes through cargo/crates.io; see `zshref-rs/` for its own release conventions.
 
 - No runtime `package.json` reads in library code; JSR consumers receive `.ts` sources only.
 - Package identity lives in `src/pkg-info.ts`; runtime and build code import from there.

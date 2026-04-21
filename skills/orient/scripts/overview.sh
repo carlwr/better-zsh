@@ -51,23 +51,6 @@ find packages/zshref-mcp/src/test -type f -name '*.ts' 2>/dev/null \
   | while read -r f; do printf '  %4d  %s\n' "$(wc -l < "$f")" "$f"; done
 
 echo ""
-echo "=== packages/zshref ==="
-find packages/zshref \
-  -maxdepth 1 -type f -name '*.ts' 2>/dev/null \
-  | sort \
-  | while read -r f; do printf '  %4d  %s\n' "$(wc -l < "$f")" "$f"; done
-find packages/zshref/src -type f -name '*.ts' 2>/dev/null \
-  | grep -v '/test/' \
-  | sort \
-  | while read -r f; do printf '  %4d  %s\n' "$(wc -l < "$f")" "$f"; done
-
-echo ""
-echo "=== packages/zshref/src/test ==="
-find packages/zshref/src/test -type f -name '*.ts' 2>/dev/null \
-  | sort \
-  | while read -r f; do printf '  %4d  %s\n' "$(wc -l < "$f")" "$f"; done
-
-echo ""
 echo "=== packages/vscode-better-zsh/src ==="
 find packages/vscode-better-zsh/src -type f -name '*.ts' \
   | grep -v '/test/' \

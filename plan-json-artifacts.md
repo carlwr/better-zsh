@@ -1,6 +1,6 @@
 # Plan: pre-parsed JSON as GitHub release assets
 
-Small standalone refactor. Independent of the tooldef/CLI work. Defer until that lands.
+Small standalone refactor. Independent of the tooldef/CLI work. Defer until that lands (the TS tool surface landed; the Rust CLI under `zshref-rs/` is the current form).
 
 ## Goal
 
@@ -44,4 +44,4 @@ Stop shipping generated JSON artifacts inside `@carlwr/zsh-core`. Publish them a
 
 ## Sequencing
 
-Standalone. Do it after the tooldef/CLI work lands; not urgent.
+Standalone. Not urgent.

@@ -1,8 +1,8 @@
 # CLI Visual Policy
 
-Framework-agnostic rules for human-facing CLI output in repo CLIs: current (`zshref`) and future.
+Framework-agnostic rules for human-facing CLI output in repo CLIs: the current `zshref` (Rust+clap under `zshref-rs/`) and any future ones.
 
-This doc covers visual *what*/*why*; tests under `packages/*/src/test/` cover what is practical to assert. Change either, check the other. Keep even hard-to-assert rules here.
+This doc covers visual *what*/*why*; the CLI's own tests cover what is practical to assert. Change either, check the other. Keep even hard-to-assert rules here.
 
 Strengths:
 - **MUST**: contract-breaking if violated; always tested
@@ -124,7 +124,7 @@ NOTE: line length refers to number of characters _after ANSI stripping_ (since A
 
 ## Testing discipline
 
-- **SHOULD**: keep visual-presentation tests in a dedicated file per package, separate from behavior/contract tests. Example: `help-visual.test.ts`.
+- **SHOULD**: keep visual-presentation tests in a dedicated file, separate from behavior/contract tests.
 - **SHOULD**: give that file a top-of-file comment stating its purpose.
 - **SHOULD**: gate rules that are mechanically assertable; rely on review plus this doc for the rest.
 - **SHOULD**: use generous layout thresholds; catch runaway regressions, not normal growth.

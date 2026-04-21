@@ -8,7 +8,7 @@ This package owns the pure tool implementations plus `ToolDef` metadata; every c
 - Files under `src/tools/` are pure `(DocCorpus, input) → output`.
 - No `child_process`, networking, `node:fs`, `process.env`, or `vscode` in the tool layer.
 - `src/tool-defs.ts` is the single source of tool name, description, JSON-Schema input, and execute wrapper.
-- The package knows about zsh-core only, not MCP, cliffy, or VS Code.
+- The package knows about zsh-core only, not MCP, CLI framework, or VS Code.
 
 ## Tool naming
 
@@ -34,7 +34,7 @@ Any category enumeration in tool descriptions must come from zsh-core exports; d
 ## Consumers
 
 - `@carlwr/zshref-mcp` — stdio MCP server.
-- `@carlwr/zshref` — CLI bin.
+- `zshref-rs/` — Rust+clap CLI; consumes the tool-def JSON artifact exported from this package, baked into the binary via `include_bytes!`.
 - `vscode-better-zsh` — VS Code LM tools.
 
 Cross-package note: the VS Code extension manifest mirrors each `ToolDef`'s name, description, and `inputSchema`; an extension test asserts the equality.

@@ -37,9 +37,10 @@ Rather than listing files that may become stale, the skill provides executable s
 | `bash ./scripts/exports.sh zsh-core` | All public exports from zsh-core source |
 | `bash ./scripts/exports.sh tooldef` | All public exports from the zsh-core-tooldef source |
 | `bash ./scripts/exports.sh mcp` | All public exports from the zshref-mcp source |
-| `bash ./scripts/exports.sh zshref` | All public exports from the zshref CLI source |
 | `bash ./scripts/exports.sh ext` | All public exports from extension source |
 | `bash ./scripts/providers.sh` | Extension provider registrations, classes, and semantic token scope config |
+
+The `zshref` CLI now lives under `zshref-rs/` as a Rust crate and is built via `make cli`. It is out of scope for the TypeScript-oriented discovery scripts above.
 
 These are the **primary navigation entry point**. Start here, then read specific files as needed.
 
@@ -85,7 +86,7 @@ These describe **which directories** to look in, not specific files. Use the dis
 1. `packages/zsh-core-tooldef/src/tools/` — one file per tool; pure `(DocCorpus, input) → output` functions. Scope-fenced against `child_process`/networking/`node:fs`/`vscode`/`process.env`.
 2. `packages/zsh-core-tooldef/src/` — `ToolDef` metadata + aggregate `toolDefs` barrel consumed by every adapter.
 3. `packages/zsh-core-tooldef/src/test/` — per-tool unit tests, metadata invariants, scope fence.
-4. Consumers: MCP server, CLI, VS Code extension; each walks `toolDefs` uniformly.
+4. Consumers: MCP server, VS Code extension, Rust CLI (via baked-in JSON). Each walks `toolDefs` uniformly in source form, or the exported JSON artifact for the Rust crate.
 
 ### zshref-mcp: MCP server adapter
 1. `packages/zshref-mcp/` — package root with library surface + stdio server bin entry.
@@ -93,11 +94,10 @@ These describe **which directories** to look in, not specific files. Use the dis
 3. `packages/zshref-mcp/src/test/` — CLI-flag tests, pkg-info drift guards, and a stdio integration test (spawns the built bin via the MCP SDK client).
 4. No tool implementations live here; they live in tooldef.
 
-### zshref: CLI adapter
-1. `packages/zshref/` — package root with library surface + `zshref` bin entry.
-2. `packages/zshref/src/` — cliffy adapter: walks `toolDefs` into subcommands; JSON on stdout; `--category` via cliffy `EnumType(docCategories)`.
-3. `packages/zshref/src/test/` — adapter unit tests + end-to-end bin invocation test + pkg-info drift guards.
-4. Exit codes: 0 well-formed (incl. empty match), 1 internal error, 2 bad input.
+### zshref-rs: Rust CLI adapter
+1. `zshref-rs/` — Rust+clap crate; `zshref` bin emitting JSON on stdout. Not a pnpm workspace package.
+2. Built via `make cli` (release) / `make cli-debug` / `make cli-test`. The `artifacts` prerequisite ensures the zsh-core corpus and tool-def JSON are fresh before cargo runs; both are baked into the binary via `include_bytes!`.
+3. Exit codes: 0 well-formed (incl. empty match), 1 internal error, 2 bad input.
 
 ## Symbol navigation
 

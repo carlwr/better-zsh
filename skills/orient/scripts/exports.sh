@@ -10,11 +10,11 @@ case "$pkg" in
   zsh-core)   dir=packages/zsh-core/src ;;
   tooldef)    dir=packages/zsh-core-tooldef ;;
   mcp)        dir=packages/zshref-mcp ;;
-  zshref)     dir=packages/zshref ;;
   ext)        dir=packages/vscode-better-zsh/src ;;
   *)
-    echo "Usage: $0 <zsh-core|tooldef|mcp|zshref|ext>"
+    echo "Usage: $0 <zsh-core|tooldef|mcp|ext>"
     echo "Lists all 'export' lines from source (excluding tests)."
+    echo "The Rust CLI under zshref-rs/ is out of scope; browse that crate directly."
     exit 1
     ;;
 esac
