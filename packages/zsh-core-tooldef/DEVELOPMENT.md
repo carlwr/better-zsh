@@ -16,6 +16,18 @@ Tools are named `zsh_<verb>[_<object>]`.
 Keep the `zsh_` prefix and use `snake_case`.
 For the rationale, see `packages/zshref-mcp/DEVELOPMENT.md`.
 
+## `brief` vs `flagBriefs` vs `description`
+
+Each `ToolDef` carries three docstring-like fields. The asymmetry is load-bearing:
+
+- `description` — long-form prose shown in LLM tool selection and full CLI help blocks. MCP and VS Code LM consume this directly; it is the source of truth for LLM-facing docs.
+- `brief` — ≤50-char phrase for narrow rendering contexts: the CLI help's commands column, UI list rows, any surface with a column budget.
+- `flagBriefs[key]` — ≤60-char per-flag phrase keyed by schema property; CLI help's flag column.
+
+MCP and VS Code LM ignore `brief` and `flagBriefs` — LM-facing surfaces have no column budget. The CLI consumes all three: clap's commands column, `long_about`, and per-flag `help` would wrap badly on the default ~80-col terminal if fed the long-form `description` strings. `makeToolDef` enforces at compile time that `flagBriefs`'s keys are exactly the schema's property keys, and that `required` lists only reference actual properties — so adding a flag without a brief, or referencing a non-existent flag in `required`, is a type error rather than a rendering bug.
+
+A consumer that needs neither short form reads only `description`; a consumer that needs narrow rendering reads the briefs too. The one tooldef record serves both.
+
 ## Adding a tool
 
 - Add a file under `src/tools/` exporting I/O types, a pure implementation, and a `*ToolDef` constant.

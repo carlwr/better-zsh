@@ -64,9 +64,9 @@ Primary adapters:
 Principle: tooldef is a consumer of zsh-core; adapters are consumers of tooldef. Do not add new zsh-core query APIs just to support an adapter.
 
 Before proposing new tools, reshaping the tool surface, or loosening the scope fence, read:
-- `packages/zshref-mcp/README.md` — user-facing pitch; the out-of-scope list matters.
-- `DESIGN.md` §"Consumers of the tooldef layer" / §"MCP as a consumer" — rationale for the static, read-only posture.
-- `packages/zsh-core-tooldef/DEVELOPMENT.md` — tool-layer invariants and adding-a-tool checklist.
+- `packages/zshref-mcp/README.md` and `zshref-rs/README.md` — user-facing pitches; the out-of-scope list and "No trust surface" claims matter. The two "Why …?" sections are written independently per adapter and are expected to drift in phrasing; the load-bearing claims (static-only, non-trivial resolvers, token-efficient) should stay true in both.
+- `DESIGN.md` §"Consumers of the tooldef layer" / §"MCP as a consumer" / §"CLI as a consumer" — rationale for the static, read-only posture and the multi-adapter shape.
+- `packages/zsh-core-tooldef/DEVELOPMENT.md` — tool-layer invariants, adding-a-tool checklist, and `brief` vs `flagBriefs` vs `description` asymmetry.
 
 The static, read-only, no-execution posture is a product feature. Host-dependent capabilities such as live `setopt`, `$commands`, process env, filesystem access, or shell execution do not belong in the tool layer.
 

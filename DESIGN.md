@@ -245,6 +245,40 @@ Rendered markdown is withheld from search results to keep responses small and en
 
 ---
 
+## CLI as a consumer
+
+Symmetric to "MCP as a consumer" above. `zshref-rs/` wraps the same `toolDefs` surface as a Rust+clap CLI emitting JSON on stdout.
+
+### Why a CLI adapter, given the MCP
+
+MCP is an ~18-month-old protocol; POSIX CLIs have a 50-year backward-compat history. A CLI adapter is cheap insurance against protocol churn and a better fit for shell pipelines, air-gapped / Node-less environments, and single-binary distribution. The tooldef seam keeps the marginal cost small — see "Dynamic `clap::Command` assembly" below.
+
+### Completions and `--help` as the agent interface
+
+Two design consequences of "agents read the CLI the same way humans do — except more literally":
+
+- `zshref completions {bash,zsh,fish,…}` emits sourceable completion scripts that embed closed-set enums as shell completion values. For agents this replaces "recall the valid categories" with "tab-expand them"; for humans it's the native shell UX. One feature, two audiences.
+- Every subcommand's `--help` text comes from the shared `ToolDef.description` (MCP-primary prose, `zsh_*` rewritten to `zshref *`); `ToolDef.brief` / `flagBriefs` feed the narrower CLI columns where long prose would wrap badly. Rationale for the three-field split is in `packages/zsh-core-tooldef/DEVELOPMENT.md`.
+
+`CLI-VISUAL-POLICY.md` captures the framework-neutral visual rules (stdout for JSON, stderr for prose, color gating, line-length discipline). The clap implementation follows it.
+
+### Dynamic `clap::Command` assembly
+
+`zshref-rs/src/cli.rs` walks `toolDefs` (JSON-exported from `@carlwr/zsh-core-tooldef`) at startup and builds the clap tree on the fly: subcommand names are tool names with `zsh_` stripped; per-flag clap types are inferred from the schema fragment (`category` enum → `PossibleValues`, integer with bounds → `u32` range, else `String`); `brief` → `about`, `description` → `long_about`, `flagBriefs[key]` → `help`. Adding a tool to `@carlwr/zsh-core-tooldef` automatically extends the CLI surface; the only CLI-side change is an entry in the Rust `dispatch` match. Drift is guarded — `cli::DOC_CATEGORIES`, `CATEGORY_FILES`, and `CLASSIFY_ORDER` are cross-checked against the canonical `index.json` emitted by zsh-core.
+
+### Maintenance-mode posture
+
+Re-vendoring cadence for the embedded corpus is years, not months. The CLI is shaped for that rhythm: single statically-linked binary with baked-in corpus (`include_bytes!`); dual-mode build (`zshref-rs/DATA-SYNC.md` option 6) auto-detects monorepo-source vs vendored-source; `make cli-package` validates the extraction path in CI; no runtime feature flags, plugin system, or user-supplied data paths. Expected durability is decade-scale, for the same reasons zsh itself has stayed stable.
+
+### `zshref info` and fuzzy-score divergence
+
+Two small CLI-only notes worth pinning:
+
+- `zshref info` emits corpus metadata as JSON (package version, upstream zsh tag/commit/date, per-category counts, category list). CLI-only because MCP's `initialize` frames already carry equivalent metadata. New programmatic-introspection additions belong here rather than as `--version`-adjacent subcommands.
+- The CLI uses an in-tree ASCII subsequence scorer (`src/fuzzy.rs`); the MCP uses `fuzzysort`. Fuzzy scores are not comparable across adapters. The shared-fixture integration test strips `score` fields before comparison and asserts on rank + identity only. The tradeoff (no third-party fuzzy dep in the Rust crate, same ordering in practice) is deliberate.
+
+---
+
 ## Vendored `.yo` files are domain invariants
 
 In practice, the vendored Yodl files only change if we re-vendor (every 10–20 years for a zsh upgrade). We do **not** design around continuous re-vendoring.

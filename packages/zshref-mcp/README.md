@@ -2,33 +2,38 @@
 
 > **Status: pre-release (alpha).** This package is developed inside the [`better-zsh`](https://github.com/carlwr/better-zsh) monorepo and will be extracted to its own repository on first stable release. The npm package `@carlwr/zshref-mcp` is already published and the install paths below work today; the monorepo is transparent to end users.
 
-A [Model Context Protocol](https://modelcontextprotocol.io) server that
-- exposes a structured `zsh` reference in the form of tools an agent can call,
-- only uses static data shipped with the package, and
-- has a trust model that is conservative and simple.
+A [Model Context Protocol](https://modelcontextprotocol.io) server that exposes a structured `zsh` reference as tools an agent can call. Static data only, shipped inside the package.
 
-The exposed structured knowledge includes:
+Categories covered:
+
 - **shell builtins**
 - **precommand modifiers**
 - **reserved words**
-- **shell options**
-  - resolves with zsh's quirks (case, underscores, `NO_*` negation)
-- **special parameters** (`$?`, `$argv`, `$pipestatus`, ...)
-- **redirections** (`1>&2`, `&>`, ...)
-- **conditional operators** (`-f`, `-eq`, `=~`, ...)
+- **shell options** (resolves zsh's case / underscore / `NO_*` quirks)
+- **special parameters** (`$?`, `$argv`, `$pipestatus`, …)
+- **redirections** (`1>&2`, `&>`, …)
+- **conditional operators** (`-f`, `-eq`, `=~`, …)
 - **process substitutions** (`<(..)`, `>(..)`, `=(..)`)
-- **parameter-expansion forms** (`${name:-word}`, `${name/pattern/repl}`, ...)
-- **parameter/glob/history/subscript flags**
-- **prompt escapes** (`%n`, `%~`, `%F{…}`, ...)
+- **parameter-expansion forms** (`${name:-word}`, `${name/pattern/repl}`, …)
+- **parameter / glob / history / subscript flags**
+- **prompt escapes** (`%n`, `%~`, `%F{…}`, …)
 - **ZLE widgets** (standard + special)
- 
-All data is the result of parsing the official documentation.
 
-The server performs **no network requests** - the parsed upstream sources are vendored and included statically, i.e. shipped inside the package.
+## Why zshref-mcp?
 
-The server performs **no shell execution and reads nothing from the user environment** — this is a feature: the answers it gives are stable, reproducible, and independent of whatever zsh happens to be installed on the host.
+Built for agents, acceptable for humans. One of three adapters over the same parsed zsh reference (alongside the [single-binary CLI `zshref`](https://github.com/carlwr/better-zsh/tree/main/zshref-rs) and the [VS Code extension](https://github.com/carlwr/better-zsh/tree/main/packages/vscode-better-zsh)). What the MCP server adds:
 
-**Out of scope features for this MCP:** Any runtime introspection — no `setopt` listing, no process environment, no filesystem, no shell invocation. If you need to know what options are set in a live shell, that's a different tool.
+- **First-class in MCP-aware clients.** One line in a client config (Claude Desktop, Cursor, VS Code's built-in MCP, Zed, any generic MCP host) and the tools appear alongside the client's other MCP servers, selectable by the agent like any built-in.
+- **Conservative by default.** Unlike most shell-flavored MCP servers, this one does not execute shell or touch the host environment at all. Installing it is low-commitment — no trust boundary to defend, no shell review to do before adopting.
+
+What it shares with the other adapters — and, for most users, the reason to pick any of them over a "shell out to `man zshall`" MCP:
+
+- **Structured, not textual.** Parsed from upstream Yodl source into typed per-category records, not regex-scraped from `man`. Every record carries its own shape; every category carries its own resolver.
+- **Non-trivial resolvers.** Corpus-aware `NO_*` negation (including the `NOTIFY` / `TIFY` edge case), redirection decomposition into `groupOp` + tail, parameter-expansion sig matching. The real value-add.
+- **Token-efficient.** `zsh_search` returns identity-only rows (no markdown body); `zsh_classify` / `zsh_describe` / `zsh_lookup_option` are single-match direct lookups. Tool `modelDescription` strings enumerate the closed category set so agents don't burn tokens guessing.
+- **No trust surface.** No shell execution, no subprocess, no network, no filesystem writes, no logs, no environment reads, no telemetry. Structurally enforced by a scope-fence test in the shared tool layer, not policy.
+
+Runtime introspection is deliberately out of scope: no `setopt` listing, no process environment, no filesystem, no shell invocation. If you need live-shell introspection, that is a different tool.
 
 ## Run/install
 
@@ -264,15 +269,7 @@ Other example inputs: `"AUTO_CD"`, `"autocd"`, `"NOTIFY"`, `"NO_NOTIFY"`.
 
 ## Privacy & side effects
 
-The server has no side effects beyond writing MCP JSON-RPC frames to stdout (and fatal errors to stderr):
-
-- No telemetry.
-- No files written, no logs to disk.
-- No network connections.
-- No environment variables read.
-- No shell execution, no subprocesses.
-
-This posture is structurally enforced, not just policy: a scope-fence test in the shared tool package bans `child_process`, networking modules, `node:fs`, and `process.env` reads in every tool implementation consumed by this server.
+The server has no side effects beyond writing MCP JSON-RPC frames to stdout (and fatal errors to stderr). See the **No trust surface** bullet in [§ Why zshref-mcp?](#why-zshref-mcp) for the enumeration and the structural enforcement (scope-fence test in `@carlwr/zsh-core-tooldef`).
 
 ## License
 

@@ -49,6 +49,7 @@
 ### Docs
 
 - `README.md` — replace internal monorepo links with stable public URLs.
+  - The cross-link to the CLI in §"Why zshref-mcp?" (currently `tree/main/zshref-rs`) still works post-MCP-extraction if the CLI remains in the better-zsh repo; update to the CLI's own repo if the CLI has also been extracted by then.
 - `DEVELOPMENT.md §deno.lock` — replace with "committed; standard JSR lockfile policy."
 - This file (`EXTRACTION.md`) — delete on the extraction commit.
 - Workspace-level `DESIGN.md` §"MCP as a consumer" can move to past tense and keep a short pointer to the new repo.

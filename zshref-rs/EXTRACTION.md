@@ -49,6 +49,7 @@ directory is committed. See `DATA-SYNC.md`.
 ### Docs
 
 - `README.md` — remove the `../` relative links to monorepo root `LICENSE` and `THIRD_PARTY_NOTICES.md` in the License section. Both files are committed in the extracted repo; use `./LICENSE` and `./THIRD_PARTY_NOTICES.md` (or bare filenames). Also update the "More" section so it no longer points at the monorepo as the canonical source.
+  - The cross-link to the MCP in §"Why zshref?" (currently `tree/main/packages/zshref-mcp`) still works post-CLI-extraction if the MCP remains in the better-zsh repo; update to the MCP's own repo if the MCP has also been extracted by then.
 - `DEVELOPMENT.md` — update the rebuild-rule table once the TS→Rust coupling changes (cross-repo data sync replaces the `pnpm --filter … build` steps). The `make artifacts` target description changes too.
 - `THIRD_PARTY_NOTICES.md` — no changes.
 - This file (`EXTRACTION.md`) — delete on the extraction commit.
