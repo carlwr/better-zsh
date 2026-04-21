@@ -1,7 +1,5 @@
 //! Corpus + tool-def JSON decoding.
 //!
-//! The JSONs are embedded in the binary at build time via `include_bytes!`.
-//! The Makefile ensures the TS artifacts exist before `cargo build` runs.
 //! Record shapes are intentionally loose (`serde_json::Value` for per-category
 //! bodies) — the CLI only needs a handful of well-known fields (`name`,
 //! `display`, `id`, `markdown`, …) and benefits from forward-compatibility
@@ -11,12 +9,37 @@ use anyhow::{Context, Result};
 use serde::Deserialize;
 use serde_json::{Map, Value};
 
-// Monorepo paths. At extraction, these become package-local relative paths
-// (see EXTRACTION.md and the data-sync design).
-const TOOLDEF_JSON: &[u8] =
-    include_bytes!("../../packages/zsh-core-tooldef/dist/json/tooldef.json");
+// Data-source paths are cfg-gated: `build.rs` picks `vendored` (data/*.json
+// shipped inside the crate) or `monorepo` (JSONs read from the sibling TS
+// packages' dist/). See DATA-SYNC.md.
+#[cfg(data_source = "vendored")]
+macro_rules! corpus_path {
+    ($f:literal) => {
+        concat!("../data/", $f)
+    };
+}
+#[cfg(data_source = "vendored")]
+macro_rules! tooldef_path {
+    ($f:literal) => {
+        concat!("../data/", $f)
+    };
+}
+#[cfg(data_source = "monorepo")]
+macro_rules! corpus_path {
+    ($f:literal) => {
+        concat!("../../packages/zsh-core/dist/json/", $f)
+    };
+}
+#[cfg(data_source = "monorepo")]
+macro_rules! tooldef_path {
+    ($f:literal) => {
+        concat!("../../packages/zsh-core-tooldef/dist/json/", $f)
+    };
+}
 
-const INDEX_JSON: &[u8] = include_bytes!("../../packages/zsh-core/dist/json/index.json");
+const TOOLDEF_JSON: &[u8] = include_bytes!(tooldef_path!("tooldef.json"));
+
+const INDEX_JSON: &[u8] = include_bytes!(corpus_path!("index.json"));
 
 // One per DocCategory. Keep this list in lock-step with `docCategories` in
 // `packages/zsh-core/src/docs/taxonomy.ts`. Order matters for `search`,
@@ -24,10 +47,7 @@ const INDEX_JSON: &[u8] = include_bytes!("../../packages/zsh-core/dist/json/inde
 // `classify` walks `CLASSIFY_ORDER` instead — see `tools/classify.rs`.
 macro_rules! include_category {
     ($cat:literal, $file:literal) => {
-        (
-            $cat,
-            include_bytes!(concat!("../../packages/zsh-core/dist/json/", $file)) as &[u8],
-        )
+        ($cat, include_bytes!(corpus_path!($file)) as &[u8])
     };
 }
 

@@ -15,3 +15,6 @@ example_*.zsh
 examples_*.zsh
 .claude/
 zshref-rs/target/
+# Vendored JSON snapshot; populated by `make vendor` at release-prep time.
+# Gitignored pre-extraction; committed post-extraction (see zshref-rs/DATA-SYNC.md).
+zshref-rs/data/

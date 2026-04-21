@@ -4,7 +4,36 @@ version = "0.1.0-alpha.0"
 edition = "2021"
 description = "Query the bundled static zsh reference from the command line."
 license = "MIT"
+# Flip to `true` on extraction / first crates.io publish. See EXTRACTION.md.
 publish = false
+
+# Metadata that crates.io / docs.rs surface. Values marked "TBD" are the
+# user's call at publish time — don't invent URLs or keywords that the
+# human hasn't confirmed.
+authors = ["TBD"]
+repository = "TBD"                      # post-extraction: github.com/carlwr/zshref
+homepage = "TBD"                        # usually == repository, or the docs site
+readme = "README.md"
+keywords = ["zsh", "shell", "cli", "reference", "documentation"]
+categories = ["command-line-utilities", "development-tools"]
+rust-version = "1.82"                   # Option::is_none_or stabilized 1.82
+
+# Files that land in the published `.crate` tarball. Gitignored files can
+# still be included here (cargo's packaging layer takes precedence over
+# .gitignore — exactly what lets the dual-mode build ship `data/` even
+# though it's gitignored pre-extraction). See DATA-SYNC.md.
+include = [
+    "src/**/*.rs",
+    "build.rs",
+    "tests/**/*.rs",
+    "tests/fixtures/**/*.json",
+    "Cargo.toml",
+    "Cargo.lock",
+    "README.md",
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md",
+    "data/*.json",
+]
 
 [[bin]]
 name = "zshref"

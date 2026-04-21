@@ -7,6 +7,23 @@ Repo-level notes that do not fit better in a package-local `DEVELOPMENT.md`.
 Use `pnpm dump:refs` to write the current static reference markdown under `.aux/refs/`.
 This is visual QA for zsh-core's rendered reference corpus, including the subset consumed by VS Code hovers.
 
+## Changes that feed the Rust CLI
+
+`zshref-rs/` embeds JSON artifacts produced by `zsh-core` and
+`zsh-core-tooldef`. Anything that alters those artifacts — taxonomy
+changes, new record fields, resolver behaviour, schema edits — is a
+cross-language change.
+
+Pre-extraction, the monorepo rebuild chain catches drift automatically
+(`make cli` runs the TS build first; Rust-side `#[cfg(test)]` drift
+guards fail loudly).
+
+Post-extraction, propagation is explicit and manual: see
+`zshref-rs/DATA-SYNC.md` for how the vendored data snapshot is updated.
+No polling or bot loop — it is the maintainer's job to run
+`make vendor` (or its post-extraction equivalent) when the TS side
+changes in a way that should reach CLI users.
+
 ## zsh-core API docs
 
 Use `pnpm docs:zsh-core` to build the local `zsh-core` API site under `packages/zsh-core/.aux/docs/site/`.

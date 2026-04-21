@@ -62,3 +62,11 @@ jobs:
 
       - name: Tests (fixture parity + drift-guards + fuzz)
         run: make cli-test
+
+      # Vendored-mode smoke: proves the published `.crate` is self-contained.
+      # `cargo package` builds the tarball with the same include rules as
+      # `cargo publish` and verifies it compiles standalone. See DATA-SYNC.md.
+      - name: Vendored-mode test + package dry-run
+        run: |
+          make cli-vendored-test
+          make cli-package
