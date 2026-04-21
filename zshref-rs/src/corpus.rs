@@ -11,6 +11,8 @@ use anyhow::{Context, Result};
 use serde::Deserialize;
 use serde_json::{Map, Value};
 
+// Monorepo paths. At extraction, these become package-local relative paths
+// (see EXTRACTION.md and the data-sync design).
 const TOOLDEF_JSON: &[u8] =
     include_bytes!("../../packages/zsh-core-tooldef/dist/json/tooldef.json");
 
@@ -92,27 +94,34 @@ pub fn load_tool_defs() -> Result<ToolDefs> {
     serde_json::from_slice(TOOLDEF_JSON).context("parsing embedded tooldef.json")
 }
 
-/// Metadata fields on the corpus index. `version`, `package_version`, and
-/// `zsh_upstream` are retained for future `--version` enrichment and
-/// `zshref info`-style introspection (not consumed today). `doc_categories`
-/// and `classify_order` are the canonical taxonomy lists from the TS source
-/// of truth; the drift-guard test in this module cross-checks them against
-/// the Rust-side hard-coded constants.
-#[allow(dead_code)]
+/// Metadata fields on the corpus index. `package_version` and `zsh_upstream`
+/// back the enriched `--version` output and the `zshref info` subcommand.
+/// `doc_categories` and `classify_order` are the canonical taxonomy lists
+/// from the TS source of truth; the drift-guard tests in this module
+/// cross-check them against the Rust-side hard-coded constants. `version`
+/// (schema version) is still unused on the read side; kept for future
+/// compatibility gating.
 #[derive(Debug, Deserialize)]
 pub struct Index {
+    #[allow(dead_code)]
     pub version: u32,
     #[serde(rename = "packageVersion")]
     pub package_version: String,
     #[serde(rename = "zshUpstream")]
     pub zsh_upstream: ZshUpstream,
+    // `doc_categories` / `classify_order` are only read by the drift-guard
+    // tests in this module; production code uses the Rust-side hard-coded
+    // `CATEGORY_FILES` / `CLASSIFY_ORDER` constants. Silence dead_code for
+    // non-test builds without removing the fields — the tests are their
+    // entire reason to exist.
+    #[cfg_attr(not(test), allow(dead_code))]
     #[serde(rename = "docCategories", default)]
     pub doc_categories: Vec<String>,
+    #[cfg_attr(not(test), allow(dead_code))]
     #[serde(rename = "classifyOrder", default)]
     pub classify_order: Vec<String>,
 }
 
-#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 pub struct ZshUpstream {
     pub tag: String,
@@ -121,7 +130,6 @@ pub struct ZshUpstream {
 }
 
 pub struct Corpus {
-    #[allow(dead_code)]
     pub index: Index,
     /// One vec of records per category, in `CATEGORY_FILES` order
     /// (== `classifyOrder`). Each record is a JSON object; the

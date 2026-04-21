@@ -9,6 +9,7 @@
 use clap::error::ErrorKind;
 use clap::Command;
 use serde_json::Value;
+use std::io::{IsTerminal, Write};
 
 /// Write `value` as pretty JSON to stdout (2-space indent, trailing newline).
 pub fn emit(value: &Value) {
@@ -22,17 +23,18 @@ pub fn emit(value: &Value) {
 ///
 /// Stream routing: clap sends `DisplayHelp` / `DisplayVersion` to stdout by
 /// default. CLI-VISUAL-POLICY.md reserves stdout for JSON results, so we
-/// render those variants ourselves and print to stderr.
+/// render those variants ourselves and print to stderr. Styling is preserved
+/// via `StyledStr::ansi()` when stderr is a TTY + color isn't suppressed;
+/// the clap-internal `Display` impl strips ANSI, so `err.render()` formatted
+/// with `{}` would lose all bold/underline/color.
 pub fn handle_clap_error(err: clap::Error, _cmd: &mut Command) -> i32 {
     match err.kind() {
         ErrorKind::DisplayHelp | ErrorKind::DisplayVersion => {
-            // `err.render()` already carries the right help / version text
-            // for the specific (sub)command that produced the error.
-            eprint!("{}", err.render());
+            write_to_stderr(&err);
             0
         }
         ErrorKind::DisplayHelpOnMissingArgumentOrSubcommand => {
-            eprint!("{}", err.render());
+            write_to_stderr(&err);
             2
         }
         ErrorKind::InvalidValue
@@ -46,6 +48,9 @@ pub fn handle_clap_error(err: clap::Error, _cmd: &mut Command) -> i32 {
         | ErrorKind::ArgumentConflict
         | ErrorKind::MissingRequiredArgument
         | ErrorKind::MissingSubcommand => {
+            // For non-help errors, clap's own `err.print()` goes to stderr
+            // with `anstream::AutoStream`, which already handles TTY + the
+            // `NO_COLOR` env var correctly. Use it.
             let _ = err.print();
             2
         }
@@ -54,4 +59,50 @@ pub fn handle_clap_error(err: clap::Error, _cmd: &mut Command) -> i32 {
             1
         }
     }
+}
+
+/// Render the help- / version-flag message to stderr, preserving ANSI styling
+/// when stderr is a TTY and color isn't suppressed.
+fn write_to_stderr(err: &clap::Error) {
+    let rendered = err.render();
+    let mut stderr = std::io::stderr().lock();
+    let _ = if stderr_wants_color() {
+        write!(stderr, "{}", rendered.ansi())
+    } else {
+        write!(stderr, "{rendered}")
+    };
+}
+
+/// Treat `NOCOLOR` as an alias for `NO_COLOR` (documented in the root help).
+/// Idempotent: if `NO_COLOR` is already set, or `NOCOLOR` is empty / unset,
+/// this does nothing. Must run before clap / anstream read the environment.
+pub fn normalize_nocolor_env() {
+    if std::env::var_os("NO_COLOR")
+        .map(|v| !v.is_empty())
+        .unwrap_or(false)
+    {
+        return;
+    }
+    if let Some(val) = std::env::var_os("NOCOLOR") {
+        if !val.is_empty() {
+            // SAFETY: single-threaded at startup (before `run()` spawns any
+            // threads). set_var is unsafe on Rust 2024 edition; we're on
+            // 2021, but documenting the invariant here for future edition
+            // bumps.
+            std::env::set_var("NO_COLOR", val);
+        }
+    }
+}
+
+/// Local copy of the stream-gating logic used for help/version messages.
+/// Mirrors `anstream::AutoStream::choice(&std::io::stderr())`:
+/// honor `NO_COLOR` unconditionally, then fall back to TTY detection.
+fn stderr_wants_color() -> bool {
+    if std::env::var_os("NO_COLOR")
+        .map(|v| !v.is_empty())
+        .unwrap_or(false)
+    {
+        return false;
+    }
+    std::io::stderr().is_terminal()
 }

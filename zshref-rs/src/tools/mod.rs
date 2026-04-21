@@ -3,6 +3,7 @@
 
 pub mod classify;
 pub mod describe;
+pub mod info;
 pub mod lookup_option;
 pub mod search;
 
