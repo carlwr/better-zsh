@@ -125,17 +125,14 @@ fn build_arg(key: &str, spec: &Value, required: bool, help: &str) -> Arg {
             // clap's range bound is i64; u32 value-parser narrows on parse.
             arg = arg.value_parser(clap::value_parser!(u32).range(min..=max));
         }
-        "string" => {
+        "string"
             // The `category` flag has a closed enum — expose as PossibleValues
             // so clap generates a clean error + completion for bad inputs.
             // We detect this by name rather than from the schema (the schema
             // stays generic; the category list is owned by zsh-core).
-            if key == "category" {
-                arg = arg.value_parser(clap::builder::PossibleValuesParser::new(
-                    DOC_CATEGORIES,
-                ));
+            if key == "category" => {
+                arg = arg.value_parser(clap::builder::PossibleValuesParser::new(DOC_CATEGORIES));
             }
-        }
         _ => {}
     }
     arg

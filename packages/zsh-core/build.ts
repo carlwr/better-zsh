@@ -7,6 +7,7 @@ import { jsonArtifact, jsonDataFiles } from "./src/docs/json-artifacts.ts"
 import {
   type DocCategory,
   type DocRecordMap,
+  classifyOrder,
   docCategories,
   mkPieceId,
 } from "./src/docs/taxonomy.ts"
@@ -66,6 +67,11 @@ function writeJsonArtifacts() {
     zshUpstream: ZSH_UPSTREAM,
     files: [...jsonDataFiles],
     counts,
+    // Canonical taxonomy lists. Exposed here so out-of-process consumers
+    // (the Rust CLI) can cross-check their own hard-coded constants
+    // against the TS source of truth and catch drift at test time.
+    docCategories: [...docCategories],
+    classifyOrder: [...classifyOrder],
   }
 
   for (const cat of docCategories) {

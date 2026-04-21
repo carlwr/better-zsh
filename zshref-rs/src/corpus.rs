@@ -22,10 +22,10 @@ const INDEX_JSON: &[u8] = include_bytes!("../../packages/zsh-core/dist/json/inde
 // `classify` walks `CLASSIFY_ORDER` instead — see `tools/classify.rs`.
 macro_rules! include_category {
     ($cat:literal, $file:literal) => {
-        ($cat, include_bytes!(concat!(
-            "../../packages/zsh-core/dist/json/",
-            $file
-        )) as &[u8])
+        (
+            $cat,
+            include_bytes!(concat!("../../packages/zsh-core/dist/json/", $file)) as &[u8],
+        )
     };
 }
 
@@ -92,9 +92,12 @@ pub fn load_tool_defs() -> Result<ToolDefs> {
     serde_json::from_slice(TOOLDEF_JSON).context("parsing embedded tooldef.json")
 }
 
-/// Metadata fields on the corpus index — retained for future `--version`
-/// enrichment and for `zshref info`-style introspection. Held but not
-/// consumed today.
+/// Metadata fields on the corpus index. `version`, `package_version`, and
+/// `zsh_upstream` are retained for future `--version` enrichment and
+/// `zshref info`-style introspection (not consumed today). `doc_categories`
+/// and `classify_order` are the canonical taxonomy lists from the TS source
+/// of truth; the drift-guard test in this module cross-checks them against
+/// the Rust-side hard-coded constants.
 #[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 pub struct Index {
@@ -103,6 +106,10 @@ pub struct Index {
     pub package_version: String,
     #[serde(rename = "zshUpstream")]
     pub zsh_upstream: ZshUpstream,
+    #[serde(rename = "docCategories", default)]
+    pub doc_categories: Vec<String>,
+    #[serde(rename = "classifyOrder", default)]
+    pub classify_order: Vec<String>,
 }
 
 #[allow(dead_code)]
@@ -129,8 +136,7 @@ pub struct Category {
 }
 
 pub fn load_corpus() -> Result<Corpus> {
-    let index: Index =
-        serde_json::from_slice(INDEX_JSON).context("parsing embedded index.json")?;
+    let index: Index = serde_json::from_slice(INDEX_JSON).context("parsing embedded index.json")?;
     let mut categories = Vec::with_capacity(CATEGORY_FILES.len());
     for (name, bytes) in CATEGORY_FILES {
         let records: Vec<Map<String, Value>> = serde_json::from_slice(bytes)
@@ -143,5 +149,95 @@ pub fn load_corpus() -> Result<Corpus> {
 impl Corpus {
     pub fn category(&self, name: &str) -> Option<&Category> {
         self.categories.iter().find(|c| c.name == name)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    //! Drift guards. The Rust source holds three hard-coded taxonomy lists —
+    //! `CATEGORY_FILES` (and its derived `categories` order), `CLASSIFY_ORDER`,
+    //! and `cli::DOC_CATEGORIES` — that must stay in sync with the TS source
+    //! (`packages/zsh-core/src/docs/taxonomy.ts`). We cross-check them here
+    //! against the canonical lists emitted into `index.json`. If the TS side
+    //! adds or reorders a category, this test fails, prompting the matching
+    //! Rust-side edit.
+    //!
+    //! Also verifies that `classify::record_id`'s per-category key lookup
+    //! returns a non-empty string for at least one record in each category —
+    //! catches drift where a category's record shape gains a new `id` field
+    //! but `record_id` still points at the old one.
+    use super::*;
+
+    #[test]
+    fn category_files_matches_ts_doc_categories() {
+        let corpus = load_corpus().expect("load_corpus");
+        let rust_names: Vec<&str> = CATEGORY_FILES.iter().map(|(n, _)| *n).collect();
+        let ts_names: Vec<&str> = corpus
+            .index
+            .doc_categories
+            .iter()
+            .map(String::as_str)
+            .collect();
+        assert_eq!(
+            rust_names, ts_names,
+            "CATEGORY_FILES drifted from index.docCategories — sync with \
+             packages/zsh-core/src/docs/taxonomy.ts::docCategories"
+        );
+    }
+
+    #[test]
+    fn classify_order_matches_ts_classify_order() {
+        let corpus = load_corpus().expect("load_corpus");
+        let ts_names: Vec<&str> = corpus
+            .index
+            .classify_order
+            .iter()
+            .map(String::as_str)
+            .collect();
+        assert_eq!(
+            CLASSIFY_ORDER,
+            ts_names.as_slice(),
+            "CLASSIFY_ORDER drifted from index.classifyOrder — sync with \
+             packages/zsh-core/src/docs/taxonomy.ts::classifyOrder"
+        );
+    }
+
+    #[test]
+    fn doc_categories_constant_matches_ts_doc_categories() {
+        // `cli::DOC_CATEGORIES` duplicates the category list for `--category`
+        // PossibleValues. Make sure it stays equal to the canonical set.
+        let corpus = load_corpus().expect("load_corpus");
+        let ts_names: Vec<&str> = corpus
+            .index
+            .doc_categories
+            .iter()
+            .map(String::as_str)
+            .collect();
+        assert_eq!(
+            crate::cli::DOC_CATEGORIES,
+            ts_names.as_slice(),
+            "cli::DOC_CATEGORIES drifted from index.docCategories"
+        );
+    }
+
+    #[test]
+    fn record_id_key_populated_for_every_category() {
+        // `classify::record_id` dispatches per category to a specific record
+        // field. If the TS record shape for a category changes and the id
+        // key moves, Rust would silently read empty strings. This guards it.
+        let corpus = load_corpus().expect("load_corpus");
+        for cat in &corpus.categories {
+            let first = cat
+                .records
+                .first()
+                .unwrap_or_else(|| panic!("category {} has zero records", cat.name));
+            let id = crate::tools::classify::record_id(cat.name, first);
+            assert!(
+                !id.is_empty(),
+                "record_id returned empty string for category {} — the \
+                 category→field map in classify::record_id is stale",
+                cat.name
+            );
+        }
     }
 }

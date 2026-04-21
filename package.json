@@ -34,7 +34,11 @@
     "vscode:publish:dry": "pnpm --filter better-zsh vscode:publish:dry",
     "vscode:publish": "pnpm --filter better-zsh vscode:publish",
     "ovsx:publish:dry": "pnpm --filter better-zsh ovsx:publish:dry",
-    "ovsx:publish": "pnpm --filter better-zsh ovsx:publish"
+    "ovsx:publish": "pnpm --filter better-zsh ovsx:publish",
+    "cli": "make cli",
+    "cli:debug": "make cli-debug",
+    "cli:test": "make cli-test",
+    "cli:check": "make cli-check"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.12",

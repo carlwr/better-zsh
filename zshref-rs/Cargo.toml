@@ -18,6 +18,9 @@ serde_json = { version = "1", features = ["preserve_order"] }
 anyhow = "1"
 nucleo-matcher = "0.3"
 
+[dev-dependencies]
+proptest = "1"
+
 [profile.release]
 lto = "thin"
 strip = true

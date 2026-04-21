@@ -1,54 +1,27 @@
 //! `zsh_classify` — port of `packages/zsh-core-tooldef/src/tools/classify.ts`.
 //! Walks `classifyOrder`, returns the first category whose resolver matches.
+//!
+//! Also hosts the shared record-field helpers (`str_field`, `record_id`,
+//! `record_display`, `normalize_option`, `strip_no_prefix`) used by the
+//! other three tools. Keeping them here tracks the TS side, which colocates
+//! them with the classify resolver table in `zsh-core/src/docs/corpus.ts`.
 
 use crate::corpus::Corpus;
 use anyhow::Result;
 use clap::ArgMatches;
-use serde_json::{json, Value};
+use serde_json::{json, Map, Value};
+
+type Rec = Map<String, Value>;
 
 pub fn run(matches: &ArgMatches, corpus: &Corpus) -> Result<Value> {
-    let raw = matches
-        .get_one::<String>("raw")
-        .map(String::as_str)
-        .unwrap_or("");
-    Ok(match classify(corpus, raw) {
-        Some(m) => json!({ "match": Value::from(m) }),
-        None => json!({ "match": Value::Null }),
-    })
+    let raw = str_arg(matches, "raw");
+    let m = crate::corpus::CLASSIFY_ORDER
+        .iter()
+        .find_map(|cat| resolve_in(corpus, cat, raw));
+    Ok(json!({ "match": m.unwrap_or(Value::Null) }))
 }
 
-fn classify(corpus: &Corpus, raw: &str) -> Option<ClassifyMatch> {
-    for cat_name in crate::corpus::CLASSIFY_ORDER {
-        if let Some(m) = resolve_in(corpus, cat_name, raw) {
-            return Some(m);
-        }
-    }
-    None
-}
-
-pub struct ClassifyMatch {
-    pub category: &'static str,
-    pub id: String,
-    pub display: String,
-    pub markdown: String,
-}
-
-impl From<ClassifyMatch> for Value {
-    fn from(m: ClassifyMatch) -> Value {
-        json!({
-            "category": m.category,
-            "id": m.id,
-            "display": m.display,
-            "markdown": m.markdown,
-        })
-    }
-}
-
-/// Category-specific resolution. Mirrors the TS `resolvers` table in
-/// `packages/zsh-core/src/docs/corpus.ts`. Covers the three non-trivial
-/// cases (`option` with NO_ negation, `redir` with group-op + tail) plus a
-/// default literal-lookup path for the simple resolvers.
-fn resolve_in(corpus: &Corpus, cat_name: &str, raw: &str) -> Option<ClassifyMatch> {
+fn resolve_in(corpus: &Corpus, cat_name: &str, raw: &str) -> Option<Value> {
     match cat_name {
         "option" => resolve_option_simple(corpus, raw),
         "redir" => resolve_redir(corpus, raw),
@@ -56,141 +29,106 @@ fn resolve_in(corpus: &Corpus, cat_name: &str, raw: &str) -> Option<ClassifyMatc
     }
 }
 
-fn resolve_literal(corpus: &Corpus, cat_name: &str, raw: &str) -> Option<ClassifyMatch> {
+fn resolve_literal(corpus: &Corpus, cat_name: &str, raw: &str) -> Option<Value> {
     let cat = corpus.category(cat_name)?;
     let trimmed = raw.trim();
-    // The TS `mkDocumented` normalizer is category-specific; for the
-    // categories routed here (everything except option/redir), either the
-    // identity is case-sensitive and normalization is a trim, or the corpus
-    // contains literal symbols. A straight `==` against id/display fields
-    // covers both cases for classify's purposes.
-    for rec in &cat.records {
-        let id = record_id(cat_name, rec);
-        let display = record_display(cat_name, rec);
-        if id == trimmed || display == trimmed {
-            return Some(mk_match(cat.name, id, display, rec));
-        }
-    }
-    None
-}
-
-fn resolve_option_simple(corpus: &Corpus, raw: &str) -> Option<ClassifyMatch> {
-    let cat = corpus.category("option")?;
-    let norm = normalize_option(raw);
-    // Literal first; on miss, try NO_ strip.
-    if let Some(rec) = cat.records.iter().find(|r| record_id("option", r) == norm) {
-        return Some(mk_match(
-            cat.name,
-            record_id("option", rec),
-            record_display("option", rec),
-            rec,
-        ));
-    }
-    if let Some(stripped) = strip_no_prefix(raw) {
-        let norm2 = normalize_option(&stripped);
-        if let Some(rec) = cat.records.iter().find(|r| record_id("option", r) == norm2) {
-            return Some(mk_match(
+    // For categories routed here (everything except option/redir), identity
+    // is either case-sensitive or the corpus contains literal symbols.
+    // Straight `==` against id/display suffices for classify's purposes.
+    cat.records
+        .iter()
+        .find(|r| record_id(cat_name, r) == trimmed || record_display(cat_name, r) == trimmed)
+        .map(|r| {
+            mk_match(
                 cat.name,
-                record_id("option", rec),
-                record_display("option", rec),
-                rec,
-            ));
-        }
-    }
-    None
+                record_id(cat_name, r),
+                record_display(cat_name, r),
+                r,
+            )
+        })
 }
 
-/// Redirection resolver — port of `resolveRedir` in corpus.ts.
-fn resolve_redir(corpus: &Corpus, raw: &str) -> Option<ClassifyMatch> {
-    let cat = corpus.category("redir")?;
-    let trimmed = raw.trim();
-    // Strip a leading sequence of digits (fd number).
-    let text: &str = {
-        let mut i = 0;
-        for (idx, ch) in trimmed.char_indices() {
-            if ch.is_ascii_digit() {
-                i = idx + ch.len_utf8();
-            } else {
-                break;
-            }
-        }
-        &trimmed[i..]
+fn resolve_option_simple(corpus: &Corpus, raw: &str) -> Option<Value> {
+    let cat = corpus.category("option")?;
+    let find = |norm: &str| {
+        cat.records
+            .iter()
+            .find(|r| record_id("option", r) == norm)
+            .map(|r| {
+                mk_match(
+                    cat.name,
+                    record_id("option", r),
+                    record_display("option", r),
+                    r,
+                )
+            })
     };
+    find(&normalize_option(raw)).or_else(|| {
+        let stripped = strip_no_prefix(raw)?;
+        find(&normalize_option(&stripped))
+    })
+}
+
+/// Redirection resolver — port of `resolveRedir` in corpus.ts. Strip leading
+/// fd digits, pick the longest matching `groupOp`, disambiguate the tail.
+fn resolve_redir(corpus: &Corpus, raw: &str) -> Option<Value> {
+    let cat = corpus.category("redir")?;
+    let text = raw.trim().trim_start_matches(|c: char| c.is_ascii_digit());
     if text.is_empty() {
         return None;
     }
 
-    // Collect all redir docs.
-    let docs: Vec<(&str, &str, &serde_json::Map<String, Value>)> = cat
+    let docs: Vec<(&str, &str, &Rec)> = cat
         .records
         .iter()
-        .map(|r| {
-            let sig = r.get("sig").and_then(Value::as_str).unwrap_or("");
-            let group_op = r.get("groupOp").and_then(Value::as_str).unwrap_or("");
-            (sig, group_op, r)
-        })
+        .map(|r| (str_field(r, "sig"), str_field(r, "groupOp"), r))
         .collect();
 
-    // Longest matching group op.
-    let mut group_op: Option<&str> = None;
-    for (_, go, _) in &docs {
-        if text.starts_with(go) {
-            if group_op.map_or(true, |cur| go.len() > cur.len()) {
-                group_op = Some(go);
-            }
-        }
-    }
-    let group_op = group_op?;
-
-    // Candidates sharing the same group op.
-    let matches: Vec<_> = docs.iter().filter(|(_, g, _)| *g == group_op).collect();
-    if matches.len() == 1 {
-        let (sig, _, rec) = matches[0];
-        return Some(mk_match(cat.name, sig.to_string(), sig.to_string(), rec));
-    }
-
-    // Disambiguate by tail kind.
-    let tail = &text[group_op.len()..];
-    let want_kind = tail_kind_of(tail.trim_start());
-    let narrowed: Vec<_> = matches
+    let group_op = docs
         .iter()
-        .filter(|(sig, go, _)| doc_tail(sig, go.len()) == want_kind)
-        .collect();
-    if narrowed.len() == 1 {
-        let (sig, _, rec) = narrowed[0];
-        return Some(mk_match(cat.name, sig.to_string(), sig.to_string(), rec));
-    }
-    None
-}
+        .filter(|(_, g, _)| text.starts_with(*g))
+        .map(|(_, g, _)| *g)
+        .max_by_key(|g| g.len())?;
 
-fn doc_tail(sig: &str, group_op_len: usize) -> &str {
-    sig[group_op_len..].trim_start()
+    let matched: Vec<_> = docs.iter().filter(|(_, g, _)| *g == group_op).collect();
+    let unique = |entries: &[&(&str, &str, &Rec)]| -> Option<Value> {
+        if entries.len() == 1 {
+            let (sig, _, rec) = entries[0];
+            Some(mk_match(cat.name, sig.to_string(), sig.to_string(), rec))
+        } else {
+            None
+        }
+    };
+    if let Some(v) = unique(&matched) {
+        return Some(v);
+    }
+
+    let want_kind = tail_kind_of(text[group_op.len()..].trim_start());
+    let narrowed: Vec<_> = matched
+        .iter()
+        .copied()
+        .filter(|(sig, go, _)| sig[go.len()..].trim_start() == want_kind)
+        .collect();
+    unique(&narrowed)
 }
 
 fn tail_kind_of(tail: &str) -> &str {
-    if !tail.is_empty() && tail.chars().all(|c| c.is_ascii_digit()) {
-        return "number";
-    }
-    if tail == "-" || tail == "p" {
-        return tail;
-    }
-    if !tail.is_empty() {
-        "word"
-    } else {
-        ""
+    match tail {
+        "" => "",
+        "-" | "p" => tail,
+        t if t.chars().all(|c| c.is_ascii_digit()) => "number",
+        _ => "word",
     }
 }
 
-fn strip_no_prefix(raw: &str) -> Option<String> {
-    let t = raw.trim();
-    let lower = t.to_ascii_lowercase();
-    if let Some(rest) = lower.strip_prefix("no_") {
-        return Some(rest.to_string());
-    }
-    if let Some(rest) = lower.strip_prefix("no") {
-        return Some(rest.to_string());
-    }
-    None
+/// Return the non-empty remainder after stripping a case-insensitive `no_`
+/// or `no` prefix from `raw`. `None` if `raw` doesn't begin with either.
+pub fn strip_no_prefix(raw: &str) -> Option<String> {
+    let lower = raw.trim().to_ascii_lowercase();
+    lower
+        .strip_prefix("no_")
+        .or_else(|| lower.strip_prefix("no"))
+        .map(str::to_string)
 }
 
 /// Option normalization: lowercase, strip underscores. Mirrors
@@ -203,48 +141,49 @@ pub fn normalize_option(raw: &str) -> String {
         .collect()
 }
 
-pub fn record_id(cat_name: &str, rec: &serde_json::Map<String, Value>) -> String {
+/// Lookup a record's string field, returning `""` when absent/non-string.
+pub fn str_field<'r>(rec: &'r Rec, key: &str) -> &'r str {
+    rec.get(key).and_then(Value::as_str).unwrap_or("")
+}
+
+/// String CLI arg accessor: returns the captured value or `""`.
+pub fn str_arg<'a>(matches: &'a ArgMatches, name: &str) -> &'a str {
+    matches
+        .get_one::<String>(name)
+        .map(String::as_str)
+        .unwrap_or("")
+}
+
+/// Canonical id field per category — the TS `mkDocumented` brands.
+pub fn record_id(cat_name: &str, rec: &Rec) -> String {
     let key = match cat_name {
-        "option" | "shell_param" | "builtin" | "precmd" | "reserved_word" | "zle_widget" => {
-            "name"
-        }
-        "cond_op" | "glob_op" => "op",
+        "option" | "shell_param" | "builtin" | "precmd" | "reserved_word" | "zle_widget" => "name",
+        "cond_op" | "glob_op" | "process_subst" => "op",
         "redir" | "param_expn" => "sig",
         "subscript_flag" | "param_flag" | "glob_flag" => "flag",
         "history" | "prompt_escape" => "key",
-        "process_subst" => "op",
         _ => "name",
     };
-    rec.get(key)
-        .and_then(Value::as_str)
-        .unwrap_or("")
-        .to_string()
+    str_field(rec, key).to_string()
 }
 
-pub fn record_display(cat_name: &str, rec: &serde_json::Map<String, Value>) -> String {
+/// Display form per category. `option` carries a separate `display` field;
+/// all others render as their id.
+pub fn record_display(cat_name: &str, rec: &Rec) -> String {
     if cat_name == "option" {
-        if let Some(s) = rec.get("display").and_then(Value::as_str) {
-            return s.to_string();
+        let d = str_field(rec, "display");
+        if !d.is_empty() {
+            return d.to_string();
         }
     }
     record_id(cat_name, rec)
 }
 
-fn mk_match(
-    cat: &'static str,
-    id: String,
-    display: String,
-    rec: &serde_json::Map<String, Value>,
-) -> ClassifyMatch {
-    let markdown = rec
-        .get("markdown")
-        .and_then(Value::as_str)
-        .unwrap_or("")
-        .to_string();
-    ClassifyMatch {
-        category: cat,
-        id,
-        display,
-        markdown,
-    }
+fn mk_match(cat: &'static str, id: String, display: String, rec: &Rec) -> Value {
+    json!({
+        "category": cat,
+        "id": id,
+        "display": display,
+        "markdown": str_field(rec, "markdown"),
+    })
 }
