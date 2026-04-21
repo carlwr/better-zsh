@@ -1,0 +1,72 @@
+# Rust CI for the `zshref-rs/` crate.
+#
+# CAVEAT: this workflow has been tested locally with `act` only.
+# It has NOT yet been validated on GitHub's hosted workers. Before
+# relying on its status (e.g. as a required check on PRs), do one of:
+#   - run it manually via `workflow_dispatch` on a throwaway branch
+#     and confirm green + reasonable runtime, OR
+#   - review the step list + `make cli-*` targets against the current
+#     runner image's pre-installed toolchains.
+# When validated, remove this caveat block.
+#
+# Scope: format check, clippy, test. Artifact publishing (a binary
+# release) is out of scope here — add a separate release-zshref-rs.yml
+# when a cargo publish / GH-release cadence is decided.
+
+name: CI — zshref-rs
+
+on:
+  pull_request:
+    paths:
+      - "zshref-rs/**"
+      - "packages/zsh-core/**"
+      - "packages/zsh-core-tooldef/**"
+      - "Makefile"
+      - ".github/workflows/ci-rust.yml"
+  push:
+    paths:
+      - "zshref-rs/**"
+      - "packages/zsh-core/**"
+      - "packages/zsh-core-tooldef/**"
+      - "Makefile"
+      - ".github/workflows/ci-rust.yml"
+  workflow_dispatch:
+
+jobs:
+  rust:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+
+      # TS artifacts first: the Rust crate `include_bytes!`-embeds
+      # dist/json/*.json from packages/zsh-core and zsh-core-tooldef.
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+      - run: corepack enable
+      - run: pnpm config set store-dir /tmp/pnpm-store
+      - run: pnpm install --frozen-lockfile
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      # Cache cargo registry + target/ to keep iterations fast. Keyed
+      # on Cargo.lock so dep upgrades invalidate cleanly.
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            zshref-rs/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('zshref-rs/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Hygiene (fmt + clippy)
+        run: make cli-check
+
+      - name: Tests (fixture parity + drift-guards + fuzz)
+        run: make cli-test
