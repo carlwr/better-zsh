@@ -45,7 +45,6 @@ clap_mangen = "0.2"
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["preserve_order"] }
 anyhow = "1"
-nucleo-matcher = "0.3"
 
 [dev-dependencies]
 proptest = "1"

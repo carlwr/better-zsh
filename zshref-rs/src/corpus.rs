@@ -249,6 +249,34 @@ mod tests {
     }
 
     #[test]
+    fn corpus_id_and_display_are_ascii() {
+        // `crate::fuzzy::score` is ASCII-only — non-ASCII `id` or `display`
+        // values silently fall through to "no fuzzy match" for those
+        // records. Fail loud here so upstream drift (a non-ASCII identifier
+        // sneaking into the corpus) forces a conscious decision before the
+        // search tier degrades in production.
+        let corpus = load_corpus().expect("load_corpus");
+        let mut violations: Vec<String> = Vec::new();
+        for cat in &corpus.categories {
+            for rec in &cat.records {
+                let id = crate::tools::classify::record_id(cat.name, rec);
+                let display = crate::tools::classify::record_display(cat.name, rec);
+                if !id.is_ascii() {
+                    violations.push(format!("category {}: id {:?}", cat.name, id));
+                }
+                if !display.is_ascii() {
+                    violations.push(format!("category {}: display {:?}", cat.name, display));
+                }
+            }
+        }
+        assert!(
+            violations.is_empty(),
+            "non-ASCII id/display in corpus — src/fuzzy.rs assumes ASCII:\n  {}",
+            violations.join("\n  ")
+        );
+    }
+
+    #[test]
     fn record_id_key_populated_for_every_category() {
         // `classify::record_id` dispatches per category to a specific record
         // field. If the TS record shape for a category changes and the id

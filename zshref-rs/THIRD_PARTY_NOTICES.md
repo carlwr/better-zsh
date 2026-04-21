@@ -39,7 +39,6 @@ generate about.hbs` — or update this file by hand for now.
 - serde_json 1.0.149
 - syn 2.0.117
 - terminal_size 0.4.4
-- unicode-segmentation 1.13.2
 - utf8parse 0.2.2
 - windows-link 0.2.1
 - windows-sys 0.61.2
@@ -61,7 +60,3 @@ generate about.hbs` — or update this file by hand for now.
 ## (MIT OR Apache-2.0) AND Unicode-3.0
 
 - unicode-ident 1.0.24
-
-## MPL-2.0
-
-- nucleo-matcher 0.3.1

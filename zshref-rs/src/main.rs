@@ -7,6 +7,7 @@
 
 mod cli;
 mod corpus;
+mod fuzzy;
 mod output;
 mod tools;
 
