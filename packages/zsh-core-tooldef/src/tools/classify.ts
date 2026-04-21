@@ -67,7 +67,7 @@ export const classifyToolDef = makeToolDef({
   name: "zsh_classify",
   brief: "classify a raw zsh token, return its doc",
   description: `\
-Classify a raw zsh token against the bundled static ${ZSH_UPSTREAM.tag} reference.
+Classify a raw zsh token against a bundled static ${ZSH_UPSTREAM.tag} reference.
 
 Returns the first matching zsh element from these categories (in classify order):
 

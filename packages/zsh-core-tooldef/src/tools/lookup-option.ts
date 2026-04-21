@@ -49,7 +49,7 @@ export const lookupOptionToolDef = makeToolDef({
   name: "zsh_lookup_option",
   brief: "look up a zsh option; handles NO_* negation",
   description: `\
-Look up a zsh shell option (the names used with \`setopt\` / \`unsetopt\`) in the bundled static reference.
+Look up a zsh shell option (the names used with \`setopt\` / \`unsetopt\`) in a bundled static reference.
 
 Matching is case-insensitive and ignores underscores.
 

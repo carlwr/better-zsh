@@ -1,6 +1,6 @@
 # zshref
 
-A command-line reference for zsh syntax. Ask what a token is, search the manual, or print the docs for a known element — from a terminal, a script, or an agent pipeline. Output is one JSON object per invocation on stdout; pipe into `jq` for human reading.
+A command-line reference for zsh syntax. Ask what a token is, search the manual, or print the docs for a known element — from a terminal, a script, or an agent pipeline. Tool subcommands emit one JSON object on stdout per invocation — pipe into `jq` for human reading. The `completions` and `mangen` utility subcommands emit their script / roff man page on stdout instead.
 
 > **Status: pre-release (alpha).** This crate is developed inside the [`better-zsh`](https://github.com/carlwr/better-zsh) monorepo and will be extracted to its own repository on first stable release. Until then, the install path below requires a full monorepo checkout (the bundled JSON corpus is generated from the TypeScript side of the repo). The `cargo install zshref` entry point from crates.io is not yet live.
 

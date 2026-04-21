@@ -14,7 +14,7 @@ use serde_json::Value;
 
 const ROOT_BIN_NAME: &str = "zshref";
 
-const ROOT_BRIEF: &str = "Query the bundled static zsh reference from the command line.";
+const ROOT_BRIEF: &str = "Query a bundled static zsh reference from the command line.";
 
 const ROOT_AFTER_HELP: &str = concat!(
     "Exit codes:\n",
@@ -42,11 +42,12 @@ pub fn build_cli(tool_defs: &ToolDefs, corpus: &Corpus) -> Command {
         .version(version_string(corpus))
         .about(ROOT_BRIEF)
         .long_about(concat!(
-            "Query the bundled static zsh reference from the command line.\n\n",
-            "On a successful tool invocation, stdout is valid JSON (pretty-",
-            "printed, newline-terminated) — pipe to `jq`. All other output ",
-            "(help, version, errors) goes to stderr. ANSI colors are auto-",
-            "disabled when stderr is not a TTY.",
+            "Query a bundled static zsh reference from the command line.\n\n",
+            "Tool subcommands (classify, search, describe, lookup_option) emit ",
+            "pretty JSON on stdout — pipe to `jq`. Utility subcommands (",
+            "`completions`, `mangen`) emit the requested script / roff man page ",
+            "on stdout instead. Help, version, errors, and warnings go to stderr. ",
+            "ANSI colors in help output are auto-disabled when stderr is not a TTY.",
         ))
         .after_help(ROOT_AFTER_HELP)
         .arg_required_else_help(true)

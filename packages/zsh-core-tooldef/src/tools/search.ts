@@ -130,7 +130,7 @@ export const searchToolDef = makeToolDef({
   name: "zsh_search",
   brief: "fuzzy-search the zsh reference by id/display",
   description: `\
-Search the bundled static ${ZSH_UPSTREAM.tag} reference. Fuzzy-matches the query against doc record ids and human display headings across every category.
+Search a bundled static ${ZSH_UPSTREAM.tag} reference. Fuzzy-matches the query against record ids and display headings across every category.
 
 Omit \`query\` to list records (optionally filtered by \`category\`).
 
@@ -140,7 +140,7 @@ Results carry \`{ category, id, display, score? }\` but NOT the rendered markdow
 
 \`limit\` caps response size (default ${DEFAULT_LIMIT}, hard max ${MAX_LIMIT}). The response also returns \`matchesReturned\` (== \`matches.length\`) and \`matchesTotal\` (pre-truncation total), so \`matchesReturned < matchesTotal\` signals truncation — raise \`limit\` or narrow \`category\`/\`query\` to see the rest.
 
-Valid \`category\` values (zsh-core \`DocCategory\` strings):
+Valid \`category\` values:
 
 ${brandedCategoryList}
 

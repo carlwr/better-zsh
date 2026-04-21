@@ -60,7 +60,7 @@ export const describeToolDef = makeToolDef({
   name: "zsh_describe",
   brief: "fetch the full doc for a known {category, id}",
   description: `\
-Fetch the full record for a known \`{ category, id }\` from the bundled static zsh reference.
+Fetch the full record for a known \`{ category, id }\` from a bundled static zsh reference.
 
 Returns \`{ match: { category, id, display, markdown } }\` with the rendered markdown body, or \`{ match: null }\` when the id is not a member of the given category's corpus.
 
@@ -73,7 +73,7 @@ No shell execution, no environment access.`,
       category: {
         type: "string",
         description:
-          "Doc category (a zsh-core `DocCategory` value) — e.g. 'option', 'builtin', 'cond_op', 'reserved_word'. Unknown values yield { match: null }.",
+          "Doc category — e.g. 'option', 'builtin', 'cond_op', 'reserved_word'. Unknown values yield { match: null }.",
       },
       id: {
         type: "string",
