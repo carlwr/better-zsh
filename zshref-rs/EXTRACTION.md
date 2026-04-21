@@ -16,9 +16,8 @@
 
 ### `Cargo.toml` edits
 
-- `publish = false` → `publish = true`.
 - `repository` / `homepage`: currently `https://github.com/carlwr/better-zsh`; update to the extracted repo URL (e.g. `https://github.com/carlwr/zshref`).
-- `authors`, `keywords`, `categories`, `readme`, `rust-version`, `description`, `include` — already filled; re-verify wording is still accurate on extraction day.
+- `publish`, `authors`, `keywords`, `categories`, `readme`, `rust-version`, `description`, `include` — already filled; re-verify wording is still accurate on extraction day.
 
 ### Embedded JSON paths — largest single code change
 

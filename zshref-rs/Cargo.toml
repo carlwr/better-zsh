@@ -4,12 +4,12 @@ version = "0.1.0-alpha.0"
 edition = "2021"
 description = "Query the bundled static zsh reference from the command line."
 license = "MIT"
-# Flip to `true` on extraction / first crates.io publish. See EXTRACTION.md.
-publish = false
+# crates.io enabled pre-extraction — first alpha cut from the monorepo.
+publish = true
 
 # Metadata that crates.io / docs.rs surface. Pre-extraction URLs point at
 # the monorepo; update to the extracted repo when that happens.
-authors = ["Carl <carl@wernhoff.com>"]
+authors = ["Carl (carlwr)"]
 repository = "https://github.com/carlwr/better-zsh"
 homepage = "https://github.com/carlwr/better-zsh"
 readme = "README.md"
