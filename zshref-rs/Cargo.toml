@@ -7,12 +7,11 @@ license = "MIT"
 # Flip to `true` on extraction / first crates.io publish. See EXTRACTION.md.
 publish = false
 
-# Metadata that crates.io / docs.rs surface. Values marked "TBD" are the
-# user's call at publish time — don't invent URLs or keywords that the
-# human hasn't confirmed.
-authors = ["TBD"]
-repository = "TBD"                      # post-extraction: github.com/carlwr/zshref
-homepage = "TBD"                        # usually == repository, or the docs site
+# Metadata that crates.io / docs.rs surface. Pre-extraction URLs point at
+# the monorepo; update to the extracted repo when that happens.
+authors = ["Carl <carl@wernhoff.com>"]
+repository = "https://github.com/carlwr/better-zsh"
+homepage = "https://github.com/carlwr/better-zsh"
 readme = "README.md"
 keywords = ["zsh", "shell", "cli", "reference", "documentation"]
 categories = ["command-line-utilities", "development-tools"]
