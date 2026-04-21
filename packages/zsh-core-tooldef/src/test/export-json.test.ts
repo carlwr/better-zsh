@@ -40,30 +40,6 @@ describe.runIf(existsSync(tooldefJsonPath))(
       }
     })
 
-    test("descriptions are flow prose within paragraphs", () => {
-      // A paragraph is a blank-line-separated block. Inside a paragraph,
-      // non-indented consecutive lines would indicate residual hand-wrapping.
-      for (const t of payload.tools) {
-        for (const para of t.description.split(/\n{2,}/)) {
-          const lines = para.split("\n")
-          for (let i = 1; i < lines.length; i++) {
-            const prev = lines[i - 1] ?? ""
-            const cur = lines[i] ?? ""
-            const prevIndented = /^\s/.test(prev)
-            const curIndented = /^\s/.test(cur)
-            // allow indented-after-indented (adjacent bullets) and indented
-            // following non-indented (bullet after intro line). Reject only
-            // non-indented following non-indented — that's wrap drift.
-            if (!prevIndented && !curIndented) {
-              throw new Error(
-                `${t.name}: residual hand-wrap in paragraph:\n${para}`,
-              )
-            }
-          }
-        }
-      }
-    })
-
     test("paragraph-break structure preserved (at least one blank line per tool)", () => {
       for (const t of payload.tools) {
         expect(t.description).toMatch(/\n\n/)

@@ -40,9 +40,6 @@ export const BRIEF_MAX_LEN = 50
 /** Max character length for any single `ToolDef.flagBriefs` entry. */
 export const FLAG_BRIEF_MAX_LEN = 60
 
-/** Max character length for any single line of `ToolDef.description`. */
-export const DESCRIPTION_LINE_MAX_LEN = 70
-
 /**
  * JSON-Schema property spec accepted by tool schemas. Keeps the type
  * narrow enough for the builder below to infer property keys while

@@ -2,7 +2,7 @@
 
 A command-line reference for zsh syntax. Ask what a token is, search the manual, or print the docs for a known element — from a terminal, a script, or an agent pipeline. Output is one JSON object per invocation on stdout; pipe into `jq` for human reading.
 
-Answers come from a structured reference parsed from the upstream zsh-5.9 docs and shipped inside the package (via `@carlwr/zsh-core`), so they are stable and independent of whatever zsh is installed on the host.
+Answers come from a structured reference parsed from the upstream zsh-5.9 docs and baked into the binary at build time, so they are stable, offline, and independent of whatever zsh is installed on the host.
 
 ## What it covers
 
@@ -13,16 +13,22 @@ Builtins, precommand modifiers, reserved words, shell options (with zsh's case /
 - No shell execution, no subprocesses.
 - No network.
 - No filesystem writes: output goes to stdout; no logs, no caches, no config files.
-- No environment variables read, no user shell config consulted.
+- No environment variables read (other than `NO_COLOR` / `NOCOLOR`), no user shell config consulted.
 - No telemetry.
 
-Structurally enforced: a scope-fence test in the shared tool package bans `child_process`, networking modules, `node:fs`, and `process.env` reads in every tool the CLI exposes. If you need to introspect a live shell (`setopt` output, `$commands`, aliases), that is a different tool.
+The corpus and all tool logic are bundled into a single statically-linked binary; there are no runtime dependencies on zsh, node, or any other toolchain. If you need to introspect a live shell (`setopt` output, `$commands`, aliases), that is a different tool.
 
 ## Install
 
+Build from source (requires a stable Rust toolchain and a Node/pnpm workspace checkout, since the bundled JSON is generated from the TypeScript side):
+
 ```sh
-npm install -g @carlwr/zshref
+git clone https://github.com/carlwr/better-zsh
+cd better-zsh
+make cli            # release binary at zshref-rs/target/release/zshref
 ```
+
+A `cargo install zshref` entry point (via crates.io) is planned but not yet published.
 
 ## Usage
 
@@ -75,14 +81,6 @@ See `zshref completions --help` for other supported shells.
 
 See the [monorepo](https://github.com/carlwr/better-zsh) for source, issues, and companion packages — the MCP server `@carlwr/zshref-mcp` and the `better-zsh` VS Code extension share the same underlying reference.
 
-## Build from source
-
-The CLI ships cliffy inlined, so end-user installs need no registry config. Contributors building the workspace need npm to resolve `@jsr/*` dev deps — the repo's root `.npmrc` handles that. If you build outside the monorepo, run once:
-
-```sh
-npm config set @jsr:registry https://npm.jsr.io
-```
-
 ## License
 
-MIT. See [LICENSE](./LICENSE). Upstream zsh documentation notices: see [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md).
+MIT. See the repository root [LICENSE](../LICENSE). Upstream zsh documentation notices: see the root [THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md). Bundled Rust crate notices: see [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md).

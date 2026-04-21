@@ -9,7 +9,6 @@ import {
   BRIEF_MAX_LEN,
   type ClassifyResult,
   classifyToolDef,
-  DESCRIPTION_LINE_MAX_LEN,
   type DescribeResult,
   describeToolDef,
   FLAG_BRIEF_MAX_LEN,
@@ -92,24 +91,6 @@ describe("toolDefs flagBriefs shape", () => {
       expect(brief.length).toBeGreaterThan(0)
       expect(brief.length).toBeLessThanOrEqual(FLAG_BRIEF_MAX_LEN)
       expect(brief, `${def.name}.flagBriefs.${key}`).not.toMatch(/\n/)
-    }
-  })
-})
-
-// Source-wrap discipline: every line of a description is ≤70 cols, so
-// adapters that render the string verbatim (stricli) break paragraphs
-// at word boundaries. Single `\n` is collapsed to whitespace by
-// CommonMark renderers, so MCP/LM chat surfaces see the prose
-// unchanged; cliffy's re-wrapper leaves ≤70-col lines alone.
-describe("toolDefs description wrap discipline", () => {
-  test.each(
-    toolDefs.map(d => [d.name, d] as const),
-  )(`%s.description: every line ≤ ${DESCRIPTION_LINE_MAX_LEN} cols`, (_n, def) => {
-    for (const line of def.description.split("\n")) {
-      expect(
-        line.length,
-        `overflow (${line.length} > ${DESCRIPTION_LINE_MAX_LEN}): ${line}`,
-      ).toBeLessThanOrEqual(DESCRIPTION_LINE_MAX_LEN)
     }
   })
 })

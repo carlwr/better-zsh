@@ -1,12 +1,12 @@
 import { mkdirSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 import type { ToolDef } from "./tool-defs.ts"
-import { unwrapDescription } from "./unwrap-description.ts"
 
 /**
  * Metadata-only projection of a `ToolDef` — the `execute` function is
- * intentionally dropped (it is not serialisable) and the `description` is
- * flow-unwrapped so clap can re-wrap to terminal width.
+ * intentionally dropped (it is not serialisable). Descriptions are already
+ * flow prose in `tool-defs.ts` and pass through unchanged; clap handles
+ * terminal-width wrapping at render time.
  */
 export interface ToolDefJson {
   readonly name: string
@@ -25,7 +25,7 @@ function projectToolDef(td: ToolDef): ToolDefJson {
   return {
     name: td.name,
     brief: td.brief,
-    description: unwrapDescription(td.description),
+    description: td.description,
     flagBriefs: td.flagBriefs,
     inputSchema: td.inputSchema,
   }

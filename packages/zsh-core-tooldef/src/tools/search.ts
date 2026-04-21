@@ -130,23 +130,15 @@ export const searchToolDef = makeToolDef({
   name: "zsh_search",
   brief: "fuzzy-search the zsh reference by id/display",
   description: `\
-Search the bundled static ${ZSH_UPSTREAM.tag} reference. Fuzzy-matches
-the query against doc record ids and human display headings across
-every category.
+Search the bundled static ${ZSH_UPSTREAM.tag} reference. Fuzzy-matches the query against doc record ids and human display headings across every category.
 
 Omit \`query\` to list records (optionally filtered by \`category\`).
 
 Ranking: exact id/display > prefix > fuzzy score.
 
-Results carry \`{ category, id, display, score? }\` but NOT the
-rendered markdown body — follow up with \`zsh_describe\` or
-\`zsh_classify\` for the full doc.
+Results carry \`{ category, id, display, score? }\` but NOT the rendered markdown body — follow up with \`zsh_describe\` or \`zsh_classify\` for the full doc.
 
-\`limit\` caps response size (default ${DEFAULT_LIMIT}, hard max ${MAX_LIMIT}). The response
-also returns \`matchesReturned\` (== \`matches.length\`) and
-\`matchesTotal\` (pre-truncation total), so \`matchesReturned <
-matchesTotal\` signals truncation — raise \`limit\` or narrow
-\`category\`/\`query\` to see the rest.
+\`limit\` caps response size (default ${DEFAULT_LIMIT}, hard max ${MAX_LIMIT}). The response also returns \`matchesReturned\` (== \`matches.length\`) and \`matchesTotal\` (pre-truncation total), so \`matchesReturned < matchesTotal\` signals truncation — raise \`limit\` or narrow \`category\`/\`query\` to see the rest.
 
 Valid \`category\` values (zsh-core \`DocCategory\` strings):
 
