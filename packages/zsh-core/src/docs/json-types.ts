@@ -90,4 +90,8 @@ export interface JsonIndex {
   }
   readonly files: readonly JsonDataFile[]
   readonly counts: JsonCounts
+  /** Canonical list of `DocCategory` values, in primary ordering. */
+  readonly docCategories: readonly string[]
+  /** Classify-walk order (first-match resolver iteration). */
+  readonly classifyOrder: readonly string[]
 }
