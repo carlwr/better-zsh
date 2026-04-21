@@ -1,17 +1,9 @@
 # Rust CI for the `zshref-rs/` crate.
 #
-# CAVEAT: this workflow has been tested locally with `act` only.
-# It has NOT yet been validated on GitHub's hosted workers. Before
-# relying on its status (e.g. as a required check on PRs), do one of:
-#   - run it manually via `workflow_dispatch` on a throwaway branch
-#     and confirm green + reasonable runtime, OR
-#   - review the step list + `make cli-*` targets against the current
-#     runner image's pre-installed toolchains.
-# When validated, remove this caveat block.
-#
 # Scope: format check, clippy, test. Artifact publishing (a binary
 # release) is out of scope here — add a separate release-zshref-rs.yml
 # when a cargo publish / GH-release cadence is decided.
+# Validated on GitHub-hosted workers (ubuntu-latest, ~1m30s typical).
 
 name: CI — zshref-rs
 
