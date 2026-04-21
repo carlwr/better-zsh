@@ -130,7 +130,7 @@ export const searchToolDef = makeToolDef({
   name: "zsh_search",
   brief: "fuzzy-search the zsh reference by id/display",
   description: `\
-Search a bundled static ${ZSH_UPSTREAM.tag} reference. Fuzzy-matches the query against record ids and display headings across every category.
+Search the bundled static ${ZSH_UPSTREAM.tag} reference. Fuzzy-matches the query against record ids and display headings across every category.
 
 Omit \`query\` to list records (optionally filtered by \`category\`).
 

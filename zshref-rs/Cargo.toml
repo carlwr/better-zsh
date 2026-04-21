@@ -2,13 +2,13 @@
 name = "zshref"
 version = "0.1.0-alpha.0"
 edition = "2021"
-description = "Query a bundled static zsh reference from the command line."
+description = "Offline static zsh reference, hihgly structured — CLI over parsed zsh 5.9 docs, built for agent pipelines and shells"
 license = "MIT"
 # crates.io enabled pre-extraction — first alpha cut from the monorepo.
 publish = true
 
 # Metadata that crates.io / docs.rs surface. Pre-extraction URLs point at
-# the monorepo; update to the extracted repo when that happens.
+# the monorepo; update to github.com/carlwr/zshref when repo is extracted.
 authors = ["Carl (carlwr)"]
 repository = "https://github.com/carlwr/better-zsh"
 homepage = "https://github.com/carlwr/better-zsh"
