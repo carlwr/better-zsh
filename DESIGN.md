@@ -185,6 +185,7 @@ The static reference is wrapped into a framework-neutral tool layer (`@carlwr/zs
 - **`@carlwr/zshref-mcp`** — a Model Context Protocol server over stdio; importable by any MCP client (Claude Desktop, VS Code's MCP support, Cursor, Codex CLI, etc.).
 - **`zshref-rs/`** — a Rust+clap CLI (`zshref` bin) with one subcommand per `ToolDef`, emitting JSON on stdout. Pipe-friendly; same pure-tool surface as the MCP, bridged by reading the tool-def JSON baked into the binary at build time.
 - **`vscode-better-zsh`** — the VS Code extension; registers the same tools as VS Code Language Model tools via `vscode.lm.registerTool`.
+
 Three consumers is what justifies the tooldef extraction: with only one or two, the shared layer is overhead; at three, collapsing the per-adapter glue into a walk over `toolDefs` pays for itself in both code and drift prevention (tool name, description, and input schema live in exactly one place and every adapter picks them up automatically).
 
 The remaining subsections of this chapter are framed around the MCP specifically — that package was the original second consumer and remains the most illustrative case; the rationale generalizes to the CLI (no-vscode posture, static-only scope) and to the extension's LM-tool registration.

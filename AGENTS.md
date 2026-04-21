@@ -1,11 +1,11 @@
 ## Overview
 
 Four workspace packages plus one Rust crate:
-- **zsh-core** — standalone package of structured zsh knowledge. Not merely extension support code; it should expose useful surface area beyond current consumers. Exports machine-readable API forms such as API Extractor rollups and `llms.txt`.
-- **@carlwr/zsh-core-tooldef** — framework-neutral tool definitions over zsh-core: pure `(DocCorpus, input) → output` tool implementations plus shared `ToolDef` metadata, consumed by adapters.
-- **@carlwr/zshref-mcp** — Node MCP server exposing the shared tool surface as `zsh_*` tools; published to npm and JSR.
-- **vscode-better-zsh** — VS Code extension; consumes zsh-core and the shared tooldef layer, including LM tool registration.
-- **zshref-rs/** — Rust+clap CLI (`zshref` bin) over the baked-in corpus + tool-def JSON. Built via `make cli`; not a pnpm workspace package. Not touched by the TS toolchain.
+- **`@carlwr/zsh-core`** — standalone package of structured zsh knowledge. Not merely extension support code; it should expose useful surface area beyond current consumers. Ships API Extractor rollups and an `llms.txt` docs-site artifact alongside the typed API.
+- **`@carlwr/zsh-core-tooldef`** — framework-neutral tool definitions over zsh-core: pure `(DocCorpus, input) → output` tool implementations plus shared `ToolDef` metadata, consumed by adapters.
+- **`@carlwr/zshref-mcp`** — Node MCP server exposing the shared tool surface as `zsh_*` tools; published to npm and JSR.
+- **`better-zsh`** (`packages/vscode-better-zsh/`) — VS Code extension; consumes zsh-core and the shared tooldef layer, including LM tool registration.
+- **`zshref-rs/`** — Rust+clap CLI (`zshref` bin) over the baked-in corpus + tool-def JSON. Built via `make cli`; not a pnpm workspace package. Not touched by the TS toolchain.
 
 Published state remains pre-1.0. The libraries are still free to move.
 
@@ -277,6 +277,12 @@ This repo is worked on from multiple agent tools. Contributor docs and skills mu
 - If `SECURITY.md` needs updates, tell the user and suggest them. Agents may not edit `SECURITY.md`.
 - `SECURITY.md` may need updates when extension zsh execution, `source`/`.` link resolution, or extension settings change.
 
+### Markdown style in docs
+
+- No running numbering in headings or bullet lists. Renumbering on insert or delete balloons diffs and silently breaks cross-references; use bullets instead. Exception: the ordinal is semantically load-bearing (cross-referenced as "option 3", numbered steps in a runnable recipe).
+- Prefer cross-references (`see DESIGN.md §…`) over restating another doc's content. Same-layer repetition drifts.
+- Enumerating a concrete list (files, paths, tool dirs) is acceptable when the members are not easily inferrable and the enumeration's value outweighs its drift risk. Mark such exceptions inline with an HTML comment so future editors understand the intent.
+
 ### Recording design decisions
 
 Record "why" when it helps future work. Prefer the narrowest home that stays discoverable:
@@ -297,20 +303,11 @@ Treat explore/survey proposals as hypotheses. Verify by reading the file before 
 
 ### Keeping the orientation skill fresh
 
-The source of truth is `$REPO_ROOT/skills/orient/`; tool-specific discovery may use symlinks elsewhere.
+The source of truth is `$REPO_ROOT/skills/orient/`; tool-specific discovery may use symlinks elsewhere. The hard rules for editing the skill live alongside it — see `skills/orient/SKILL.md` §"RULES: keeping this skill fresh".
 
-Hard rules:
-- Never add filenames, except `package.json`.
-- Never add function/class/variable names, except gotchas that require the specific name.
-- Never add file counts, line counts, or other volatile metrics.
-- Do add new directory entry points when they become common reading paths.
-- Do add new gotchas when they span files or are not obvious from local code.
-- Do update discovery scripts when structure changes break them.
-
-Structural-change rules:
-- New public API does not require a skill update; the d.ts rollup reflects it.
-- New common entry-point directory does require a reading-path update.
-- Design rationale belongs in `DESIGN.md` or source comments, not in the skill.
+Structural-change notes:
+- New public API does not require a skill update; the `.d.ts` rollup reflects it.
+- A new common entry-point directory does require a reading-path update.
 
 ### New feature ideation
 

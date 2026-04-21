@@ -342,17 +342,16 @@ build` will too.
 
 Two kinds of drift to worry about:
 
-1. **TS source → vendored `data/`.** Anyone who edits TS source but
-   forgets to re-vendor ships stale data on next publish. Guard: the
-   `rust-vendored` CI job does a clean `make vendor-clean && make
-   vendor && make cli-vendored-test`. Drift from stale vendored data
-   would surface as: either the build embeds different bytes in the
-   two modes (CI compares `zshref info` output), or the drift-guard
-   `#[cfg(test)]` tests in `corpus.rs` fail.
-
-2. **Schema drift (Rust structs vs. TS JSON shape).** Already handled
-   by the four drift-guard tests in `corpus.rs::tests`. Unchanged by
-   this design.
+- **TS source → vendored `data/`.** Anyone who edits TS source but
+  forgets to re-vendor ships stale data on next publish. Guard: the
+  `rust-vendored` CI job does a clean `make vendor-clean && make
+  vendor && make cli-vendored-test`. Drift from stale vendored data
+  would surface as: either the build embeds different bytes in the
+  two modes (CI compares `zshref info` output), or the drift-guard
+  `#[cfg(test)]` tests in `corpus.rs` fail.
+- **Schema drift (Rust structs vs. TS JSON shape).** Already handled
+  by the drift-guard tests in `corpus.rs::tests`. Unchanged by
+  this design.
 
 ## Answers to your sketch
 

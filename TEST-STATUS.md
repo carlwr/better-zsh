@@ -13,7 +13,7 @@ Confirmed via `pnpm test`:
 - `@carlwr/zshref-mcp`
 - `vscode-better-zsh`
 
-The Rust CLI under `zshref-rs/` is out of scope for `pnpm test`; its status is `make cli-test`-driven (17 fixtures green at the retirement commit).
+The Rust CLI under `zshref-rs/` is out of scope for `pnpm test`; its status is driven by `make cli-test` and was green at this snapshot.
 
 Also green at the same snapshot:
 - `pnpm format`

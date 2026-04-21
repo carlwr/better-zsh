@@ -17,12 +17,12 @@ Strengths:
 - **MUST**: auto-disable ANSI color when the destination stream is not a tty (`isTTY` or equivalent).
 - **MUST**: if `NO_COLOR` is set and non-empty, disable ANSI unconditionally, per <https://no-color.org>.
 - **SHOULD**: honor `CLICOLOR_FORCE` (non-empty) as the opposite override — force ANSI on even without a tty. Enables testable styled-help assertions without spawning a PTY.
-- **MUST**: document color in `--help`, preferrably suitable dedicated section headings:
+- **MUST**: document color in `--help`, preferably under dedicated section headings:
   - exit codes:
     - `0`: success
     - `1`: internal or unexpected error
     - `2`: bad input (malformed flag, unknown enum, missing required argument)
-  - env vars (for color, and preferrably any other)
+  - env vars (for color, and preferably any others)
 
 ## --help: typography & layout
 
@@ -106,7 +106,7 @@ NOTE: line length refers to number of characters _after ANSI stripping_ (since A
     - note: this rule is about `Usage:` lines only. E.g. if an "Options:" section describes such an option with the line "  [--query]   - search string (default: --query='.*')", then that does not violate this rule
 - **MUST**: be case-consistent if placeholders are repeated (so that their identity can be inferred)
   - example: if a `Usage:` line is `prog --to=FILE ..`, an `Options:` text may _not_ say "`file` must be a readable file...", but must if referenced be referenced as "`FILE` must be a readable file..."
-- **MAY/SHOULD** use upper-case for placeholders (`--to=FILE`, not `--to=file`)
+- **SHOULD**: use upper-case for placeholders (`--to=FILE`, not `--to=file`).
 
 ## args/options specs
 

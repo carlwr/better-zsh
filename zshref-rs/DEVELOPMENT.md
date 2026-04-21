@@ -84,6 +84,7 @@ zshref --help 2>&1 | less
 | `main.rs` | entry point |
 | `cli.rs` | clap `Command` builder driven by `tooldef.json`; dispatches built-in subcommands (`completions`, `info`, `mangen`) |
 | `corpus.rs` | loads embedded corpus JSON; data paths gated by `cfg(data_source = …)` from `build.rs` |
+| `fuzzy.rs` | ASCII subsequence scorer used by `search`'s bottom-tier ranking |
 | `tools/mod.rs` | tools module surface + dispatch |
 | `tools/classify.rs` | `classify` subcommand |
 | `tools/search.rs` | `search` subcommand |
