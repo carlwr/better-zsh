@@ -86,6 +86,10 @@ For cached completions (slightly faster startup), write the zsh script to a dire
 
 See `zshref completions --help` for other supported shells.
 
+## Man page
+
+`zshref mangen` emits a roff-format man page (section 1) to stdout — pipe it where your packager expects. The Homebrew formula installs it automatically.
+
 ## More
 
 See the [monorepo](https://github.com/carlwr/better-zsh) for source, issues, and companion packages — the MCP server `@carlwr/zshref-mcp` and the `better-zsh` VS Code extension share the same underlying reference.

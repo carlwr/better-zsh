@@ -41,6 +41,7 @@ path = "src/main.rs"
 [dependencies]
 clap = { version = "4.5", features = ["string", "wrap_help", "color", "suggestions"] }
 clap_complete = "4.5"
+clap_mangen = "0.2"
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["preserve_order"] }
 anyhow = "1"
