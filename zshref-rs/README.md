@@ -32,6 +32,13 @@ make cli            # release binary at zshref-rs/target/release/zshref
 
 A `cargo install zshref` entry point (via crates.io) is planned for the first stable release.
 
+Homebrew distribution is also planned; the formula under [`Formula/zshref.rb`](./Formula/zshref.rb) is a pre-release scaffold. Once released, install via:
+
+```sh
+brew tap carlwr/zshref https://github.com/carlwr/zshref.git
+brew install zshref
+```
+
 ## Usage
 
 ```sh

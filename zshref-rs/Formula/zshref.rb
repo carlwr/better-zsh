@@ -1,23 +1,14 @@
 # Pre-release scaffold. Does not install anything real yet.
 #
-# PACKAGING NOTE — embedded JSON assets:
-#   The Rust binary embeds TS-generated JSON files at compile time via
-#   `include_bytes!` (see zshref-rs/src/corpus.rs). Those files live under
-#   packages/zsh-core/dist/json/ and packages/zsh-core-tooldef/dist/json/ in
-#   the monorepo. Any source tarball used with Path A below must include these
-#   pre-generated JSONs, i.e. the tarball is produced AFTER running
-#   `pnpm install && pnpm build` across the relevant packages.
-#   This constraint is tracked separately and does NOT need to be solved here.
+# Layout: during the monorepo phase this formula lives at
+# zshref-rs/Formula/zshref.rb. At extraction, the parent `zshref-rs/`
+# becomes the new repo root, so this file ends up at Formula/zshref.rb —
+# the default path Homebrew scans when tapped via
+#   brew tap carlwr/zshref https://github.com/carlwr/zshref.git
 #
-# PATH A (active) — build from source via cargo.
-#   Requires: a GitHub Release source tarball that includes pre-built JSONs.
-#   User machine needs a Rust toolchain (pulled in via `depends_on "rust" => :build`).
-#   Update `url` + `sha256` when cutting the first release.
-#
-# PATH B (stubbed, commented out below) — pre-built binary tarball.
-#   Uncomment and fill in once macOS binaries are uploaded to a GitHub Release.
-#   Much faster for end-users (no Rust toolchain required).
-#   See the `# TODO: PATH B` block below.
+# Pre-extraction tip: `Dir.chdir("zshref-rs")` below is needed because the
+# source tarball currently unpacks the whole monorepo; drop it (use
+# --path ".") at extraction time.
 
 class Zshref < Formula
   desc "Query the bundled static zsh reference from the command-line"
@@ -36,14 +27,14 @@ class Zshref < Formula
 
   head "https://github.com/carlwr/better-zsh.git", branch: "main"
 
-  # -------------------------------------------------------------------------
-  # PATH A — source install via cargo (active)
-  # -------------------------------------------------------------------------
+  # PATH A — source install via cargo (active).
+  # Requires a GitHub Release source tarball that includes the pre-generated
+  # TS JSONs under zshref-rs/data/ (see DATA-SYNC.md). Users need a Rust
+  # toolchain at install time (pulled in via depends_on).
   depends_on "rust" => :build
 
   def install
-    # Build inside the zshref-rs subdirectory (monorepo layout).
-    # When extracted to its own repo, change "zshref-rs" to "." below.
+    # Monorepo tip (pre-extraction): drop Dir.chdir post-extraction.
     Dir.chdir("zshref-rs") do
       system "cargo", "install",
              "--locked",
@@ -52,32 +43,29 @@ class Zshref < Formula
     end
   end
 
-  # -------------------------------------------------------------------------
-  # PATH B — binary tarball (post-release; uncomment + remove PATH A above)
-  # -------------------------------------------------------------------------
-  # TODO: uncomment once we cut github release tarballs with pre-built macOS binaries.
+  # PATH B — binary tarball (deferred; faster, no Rust toolchain on user side).
+  # Uncomment + fill in once macOS binaries are uploaded to a GitHub Release,
+  # then drop the PATH A block (depends_on + install).
   #
-  # On arm64 (Apple Silicon):
-  # url "https://github.com/carlwr/better-zsh/releases/download/zshref-v0.1.0-alpha.0/zshref-aarch64-apple-darwin.tar.gz"
-  # sha256 "0000000000000000000000000000000000000000000000000000000000000000"
-  #
-  # On x86_64 (Intel Mac):
-  # url "https://github.com/carlwr/better-zsh/releases/download/zshref-v0.1.0-alpha.0/zshref-x86_64-apple-darwin.tar.gz"
-  # sha256 "0000000000000000000000000000000000000000000000000000000000000000"
-  #
+  # on_arm do
+  #   url "https://github.com/carlwr/better-zsh/releases/download/zshref-v0.1.0-alpha.0/zshref-aarch64-apple-darwin.tar.gz"
+  #   sha256 "0000000000000000000000000000000000000000000000000000000000000000"
+  # end
+  # on_intel do
+  #   url "https://github.com/carlwr/better-zsh/releases/download/zshref-v0.1.0-alpha.0/zshref-x86_64-apple-darwin.tar.gz"
+  #   sha256 "0000000000000000000000000000000000000000000000000000000000000000"
+  # end
   # def install
   #   bin.install "zshref"
   # end
 
   test do
-    # Verify binary runs and self-identifies.
     output = shell_output("#{bin}/zshref --version")
     assert_match "zshref", output
 
-    # Spot-check classify with jq if available.
-    if Formula["jq"].any_version_installed?
-      jq = Formula["jq"].opt_bin/"jq"
-      system "#{bin}/zshref", "classify", "--raw", "AUTO_CD", "|", jq.to_s, "-e", ".match != null"
-    end
+    # End-to-end sanity: classify a known option. jq is optional; fall back to
+    # a string contains check if the user doesn't have it.
+    classify = shell_output("#{bin}/zshref classify --raw AUTO_CD")
+    assert_match(/"category"\s*:\s*"option"/, classify)
   end
 end

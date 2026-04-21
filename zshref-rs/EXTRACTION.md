@@ -60,6 +60,12 @@ include = [
   - Keep the `dtolnay/rust-toolchain`, cargo cache, fmt/clippy, and test steps unchanged.
   - Remove the untested-on-GitHub-hosted-runners caveat block once validated.
 
+### Homebrew
+
+- `Formula/zshref.rb` is already positioned for the default Homebrew tap scan (repo-root `Formula/`). At extraction, drop `Dir.chdir("zshref-rs")` from `def install` and switch to `--path "."`.
+- `url` + `sha256` need replacing with the real GitHub Release source tarball (or a `bin.install "zshref"` PATH B once binaries are uploaded).
+- Consider `brew audit --strict --online` as a CI gate at that point (macOS runner).
+
 ### Docs
 
 - `README.md` — remove the `../` relative links to monorepo root `LICENSE` and `THIRD_PARTY_NOTICES.md` in the License section. Both files are committed in the extracted repo; use `./LICENSE` and `./THIRD_PARTY_NOTICES.md` (or bare filenames). Also update the "More" section so it no longer points at the monorepo as the canonical source.
