@@ -31,7 +31,7 @@ cli-fmt:
 cli-fmt-check:
 	cd zshref-rs && cargo fmt --check
 
-cli-clippy:
+cli-clippy: artifacts
 	cd zshref-rs && cargo clippy --all-targets -- -D warnings
 
 cli-check: cli-fmt-check cli-clippy
