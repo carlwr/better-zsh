@@ -1,0 +1,22 @@
+{
+  "tool": "zsh_search",
+  "input": {
+    "query": "printf"
+  },
+  "argv": [
+    "search",
+    "--query",
+    "printf"
+  ],
+  "expectedOutput": {
+    "matches": [
+      {
+        "category": "builtin",
+        "id": "printf",
+        "display": "printf"
+      }
+    ],
+    "matchesReturned": 1,
+    "matchesTotal": 1
+  }
+}

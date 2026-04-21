@@ -1,0 +1,19 @@
+{
+  "tool": "zsh_search",
+  "input": {
+    "query": "xxyyzz",
+    "limit": 5
+  },
+  "argv": [
+    "search",
+    "--query",
+    "xxyyzz",
+    "--limit",
+    "5"
+  ],
+  "expectedOutput": {
+    "matches": [],
+    "matchesReturned": 0,
+    "matchesTotal": 0
+  }
+}

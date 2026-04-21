@@ -2,10 +2,17 @@ import { cpSync, mkdirSync, writeFileSync } from "node:fs"
 import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 import { build } from "tsup"
-import { loadCorpus } from "./src/docs/corpus.ts"
+import { type DocCorpus, loadCorpus } from "./src/docs/corpus.ts"
 import { jsonArtifact, jsonDataFiles } from "./src/docs/json-artifacts.ts"
-import { docCategories } from "./src/docs/taxonomy.ts"
+import {
+  type DocCategory,
+  type DocRecordMap,
+  docCategories,
+  mkPieceId,
+} from "./src/docs/taxonomy.ts"
+import type { Documented } from "./src/docs/types.ts"
 import { PKG_VERSION } from "./src/pkg-info.ts"
+import { renderDoc } from "./src/render/md.ts"
 import { ZSH_UPSTREAM } from "./src/zsh-upstream.ts"
 
 const pkgDir =
@@ -22,6 +29,24 @@ function fmtJson(data: unknown): string {
 
 function writeJson(path: string, data: unknown) {
   writeFileSync(path, fmtJson(data), "utf8")
+}
+
+/**
+ * Augment each record with its rendered markdown body. The in-memory corpus
+ * deliberately does not carry `markdown`; it is attached at JSON-emission time
+ * for out-of-process consumers (the Rust CLI) that cannot call `renderDoc`
+ * themselves. In-process TS consumers (MCP, vscode) keep calling `renderDoc`
+ * on demand.
+ */
+function augmentWithMarkdown<K extends DocCategory>(
+  corpus: DocCorpus,
+  cat: K,
+): readonly (DocRecordMap[K] & { readonly markdown: string })[] {
+  const map = corpus[cat] as ReadonlyMap<Documented<K>, DocRecordMap[K]>
+  return [...map.entries()].map(([id, rec]) => ({
+    ...rec,
+    markdown: renderDoc(corpus, mkPieceId(cat, id)),
+  }))
 }
 
 function writeJsonArtifacts() {
@@ -44,7 +69,10 @@ function writeJsonArtifacts() {
   }
 
   for (const cat of docCategories) {
-    writeJson(join(jsonDir, jsonArtifact[cat].file), [...corpus[cat].values()])
+    writeJson(
+      join(jsonDir, jsonArtifact[cat].file),
+      augmentWithMarkdown(corpus, cat),
+    )
   }
   writeJson(join(jsonDir, "index.json"), index)
 }

@@ -37,16 +37,25 @@ type JsonParamExpnDoc = Omit<Unbrand<ParamExpnDoc>, "groupSigs"> & {
   readonly groupSigs: readonly string[]
 }
 
+/**
+ * Rendered markdown body attached to every JSON record at build time. The
+ * in-memory corpus does not carry this field — it is computed by
+ * `renderDoc` during JSON emission for out-of-process consumers (notably
+ * the Rust CLI) that cannot call the renderer themselves. Categories
+ * whose renderer is a stub emit `"TBD"`.
+ */
+type WithMarkdown<T> = T & { readonly markdown: string }
+
 export type JsonRecordMap = {
   [K in Exclude<
     DocCategory,
     "builtin" | "cond_op" | "precmd" | "param_expn"
-  >]: JsonDoc<K>
+  >]: WithMarkdown<JsonDoc<K>>
 } & {
-  builtin: JsonBuiltinDoc
-  cond_op: JsonCondOpDoc
-  precmd: JsonPrecmdDoc
-  param_expn: JsonParamExpnDoc
+  builtin: WithMarkdown<JsonBuiltinDoc>
+  cond_op: WithMarkdown<JsonCondOpDoc>
+  precmd: WithMarkdown<JsonPrecmdDoc>
+  param_expn: WithMarkdown<JsonParamExpnDoc>
 }
 export type JsonDocArrayMap = {
   [K in DocCategory]: readonly JsonRecordMap[K][]

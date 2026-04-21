@@ -1,0 +1,14 @@
+{
+  "tool": "zsh_classify",
+  "input": {
+    "raw": "not-a-real-token"
+  },
+  "argv": [
+    "classify",
+    "--raw",
+    "not-a-real-token"
+  ],
+  "expectedOutput": {
+    "match": null
+  }
+}

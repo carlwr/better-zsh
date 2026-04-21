@@ -1,0 +1,42 @@
+{
+  "tool": "zsh_search",
+  "input": {
+    "limit": 5
+  },
+  "argv": [
+    "search",
+    "--limit",
+    "5"
+  ],
+  "expectedOutput": {
+    "matches": [
+      {
+        "category": "option",
+        "id": "autocd",
+        "display": "AUTO_CD"
+      },
+      {
+        "category": "option",
+        "id": "autopushd",
+        "display": "AUTO_PUSHD"
+      },
+      {
+        "category": "option",
+        "id": "cdablevars",
+        "display": "CDABLE_VARS"
+      },
+      {
+        "category": "option",
+        "id": "cdsilent",
+        "display": "CD_SILENT"
+      },
+      {
+        "category": "option",
+        "id": "chasedots",
+        "display": "CHASE_DOTS"
+      }
+    ],
+    "matchesReturned": 5,
+    "matchesTotal": 962
+  }
+}

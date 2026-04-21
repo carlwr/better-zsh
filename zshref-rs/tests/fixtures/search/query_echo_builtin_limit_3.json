@@ -1,0 +1,38 @@
+{
+  "tool": "zsh_search",
+  "input": {
+    "query": "echo",
+    "category": "builtin",
+    "limit": 3
+  },
+  "argv": [
+    "search",
+    "--query",
+    "echo",
+    "--category",
+    "builtin",
+    "--limit",
+    "3"
+  ],
+  "expectedOutput": {
+    "matches": [
+      {
+        "category": "builtin",
+        "id": "echo",
+        "display": "echo"
+      },
+      {
+        "category": "builtin",
+        "id": "echotc",
+        "display": "echotc"
+      },
+      {
+        "category": "builtin",
+        "id": "echoti",
+        "display": "echoti"
+      }
+    ],
+    "matchesReturned": 3,
+    "matchesTotal": 3
+  }
+}

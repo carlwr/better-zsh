@@ -1,0 +1,35 @@
+{
+  "tool": "zsh_search",
+  "input": {
+    "category": "option",
+    "limit": 3
+  },
+  "argv": [
+    "search",
+    "--category",
+    "option",
+    "--limit",
+    "3"
+  ],
+  "expectedOutput": {
+    "matches": [
+      {
+        "category": "option",
+        "id": "autocd",
+        "display": "AUTO_CD"
+      },
+      {
+        "category": "option",
+        "id": "autopushd",
+        "display": "AUTO_PUSHD"
+      },
+      {
+        "category": "option",
+        "id": "cdablevars",
+        "display": "CDABLE_VARS"
+      }
+    ],
+    "matchesReturned": 3,
+    "matchesTotal": 197
+  }
+}

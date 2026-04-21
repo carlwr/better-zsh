@@ -1,0 +1,19 @@
+{
+  "tool": "zsh_classify",
+  "input": {
+    "raw": "[["
+  },
+  "argv": [
+    "classify",
+    "--raw",
+    "[["
+  ],
+  "expectedOutput": {
+    "match": {
+      "category": "reserved_word",
+      "id": "[[",
+      "display": "[[",
+      "markdown": "`[[`\n\nRecognized as a reserved word when used as the first word of a command unless quoted or disabled with `disable -r`.\n\n_Role:_ reserved word (command position)"
+    }
+  }
+}

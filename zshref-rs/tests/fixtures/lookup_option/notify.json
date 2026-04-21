@@ -1,0 +1,19 @@
+{
+  "tool": "zsh_lookup_option",
+  "input": {
+    "raw": "NOTIFY"
+  },
+  "argv": [
+    "lookup_option",
+    "--raw",
+    "NOTIFY"
+  ],
+  "expectedOutput": {
+    "match": {
+      "id": "notify",
+      "display": "NOTIFY",
+      "negated": false,
+      "markdown": "`NOTIFY`\n\n```zsh\nsetopt notify        # on\nunsetopt notify      # off\nset -5               # on\nset +5               # off\nset -b               # on\nset +b               # off\n```\n\n**Default in zsh: `on`**\n\nReport the status of background jobs immediately, rather than waiting until just before printing a prompt.\n\n_Option category:_ Job Control"
+    }
+  }
+}

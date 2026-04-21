@@ -1,0 +1,14 @@
+{
+  "tool": "zsh_lookup_option",
+  "input": {
+    "raw": "not-an-option"
+  },
+  "argv": [
+    "lookup_option",
+    "--raw",
+    "not-an-option"
+  ],
+  "expectedOutput": {
+    "match": null
+  }
+}

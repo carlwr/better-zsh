@@ -1,0 +1,17 @@
+{
+  "tool": "zsh_describe",
+  "input": {
+    "category": "builtin",
+    "id": "nope"
+  },
+  "argv": [
+    "describe",
+    "--category",
+    "builtin",
+    "--id",
+    "nope"
+  ],
+  "expectedOutput": {
+    "match": null
+  }
+}
