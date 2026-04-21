@@ -9,7 +9,6 @@ use crate::corpus::{Corpus, ToolDef, ToolDefs};
 use crate::output;
 use crate::tools;
 use anyhow::Result;
-use clap::builder::styling::{AnsiColor, Effects, Styles};
 use clap::{Arg, ArgAction, Command};
 use serde_json::Value;
 
@@ -25,7 +24,6 @@ const ROOT_AFTER_HELP: &str = concat!(
     "\n",
     "Environment:\n",
     "  NO_COLOR          present + non-empty disables ANSI colors\n",
-    "  NOCOLOR           accepted as alias for NO_COLOR\n",
     "\n",
     "Examples:\n",
     "  zshref classify --raw AUTO_CD\n",
@@ -36,29 +34,6 @@ const ROOT_AFTER_HELP: &str = concat!(
 
 pub fn subcommand_name(tool_name: &str) -> &str {
     tool_name.strip_prefix("zsh_").unwrap_or(tool_name)
-}
-
-/// Explicit `--help` styling.
-///
-/// Matches `clap::builder::Styles::styled()`'s defaults for `header`,
-/// `usage`, `literal`, `error`, `valid`, and `invalid`, but pins them here
-/// so styling doesn't silently drift with clap upgrades. `placeholder`
-/// (`<RAW>`, `<QUERY>`, ...) is left unstyled; clap's default is also
-/// unstyled but that's under-documented — making it explicit removes
-/// ambiguity for future readers.
-///
-/// Styles only render when stderr is a TTY and `NO_COLOR`/`NOCOLOR` are
-/// unset (per `CLI-VISUAL-POLICY.md` + clap's auto-color detection);
-/// `output::handle_clap_error` respects the same gate for help / version.
-fn help_styles() -> Styles {
-    Styles::styled()
-        .header(AnsiColor::Yellow.on_default() | Effects::BOLD | Effects::UNDERLINE)
-        .usage(AnsiColor::Yellow.on_default() | Effects::BOLD)
-        .literal(AnsiColor::Green.on_default() | Effects::BOLD)
-        .placeholder(AnsiColor::White.on_default())
-        .error(AnsiColor::Red.on_default() | Effects::BOLD)
-        .valid(AnsiColor::Green.on_default())
-        .invalid(AnsiColor::Yellow.on_default())
 }
 
 pub fn build_cli(tool_defs: &ToolDefs, corpus: &Corpus) -> Command {
@@ -75,8 +50,7 @@ pub fn build_cli(tool_defs: &ToolDefs, corpus: &Corpus) -> Command {
         .after_help(ROOT_AFTER_HELP)
         .arg_required_else_help(true)
         .subcommand_required(true)
-        .color(clap::ColorChoice::Auto)
-        .styles(help_styles());
+        .color(clap::ColorChoice::Auto);
 
     for td in &tool_defs.tools {
         root = root.subcommand(build_subcommand(td));

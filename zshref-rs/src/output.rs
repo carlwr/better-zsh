@@ -23,10 +23,9 @@ pub fn emit(value: &Value) {
 ///
 /// Stream routing: clap sends `DisplayHelp` / `DisplayVersion` to stdout by
 /// default. CLI-VISUAL-POLICY.md reserves stdout for JSON results, so we
-/// render those variants ourselves and print to stderr. Styling is preserved
-/// via `StyledStr::ansi()` when stderr is a TTY + color isn't suppressed;
-/// the clap-internal `Display` impl strips ANSI, so `err.render()` formatted
-/// with `{}` would lose all bold/underline/color.
+/// render those variants to stderr ourselves — preserving ANSI via
+/// `StyledStr::ansi()` when color is wanted (clap's own `Display` strips
+/// ANSI, so `"{err}"` loses all styling).
 pub fn handle_clap_error(err: clap::Error, _cmd: &mut Command) -> i32 {
     match err.kind() {
         ErrorKind::DisplayHelp | ErrorKind::DisplayVersion => {
@@ -49,8 +48,8 @@ pub fn handle_clap_error(err: clap::Error, _cmd: &mut Command) -> i32 {
         | ErrorKind::MissingRequiredArgument
         | ErrorKind::MissingSubcommand => {
             // For non-help errors, clap's own `err.print()` goes to stderr
-            // with `anstream::AutoStream`, which already handles TTY + the
-            // `NO_COLOR` env var correctly. Use it.
+            // through `anstream::AutoStream` — already gated correctly on
+            // NO_COLOR / CLICOLOR_FORCE / TTY.
             let _ = err.print();
             2
         }
@@ -61,8 +60,6 @@ pub fn handle_clap_error(err: clap::Error, _cmd: &mut Command) -> i32 {
     }
 }
 
-/// Render the help- / version-flag message to stderr, preserving ANSI styling
-/// when stderr is a TTY and color isn't suppressed.
 fn write_to_stderr(err: &clap::Error) {
     let rendered = err.render();
     let mut stderr = std::io::stderr().lock();
@@ -73,36 +70,22 @@ fn write_to_stderr(err: &clap::Error) {
     };
 }
 
-/// Treat `NOCOLOR` as an alias for `NO_COLOR` (documented in the root help).
-/// Idempotent: if `NO_COLOR` is already set, or `NOCOLOR` is empty / unset,
-/// this does nothing. Must run before clap / anstream read the environment.
-pub fn normalize_nocolor_env() {
-    if std::env::var_os("NO_COLOR")
-        .map(|v| !v.is_empty())
-        .unwrap_or(false)
-    {
-        return;
-    }
-    if let Some(val) = std::env::var_os("NOCOLOR") {
-        if !val.is_empty() {
-            // SAFETY: single-threaded at startup (before `run()` spawns any
-            // threads). set_var is unsafe on Rust 2024 edition; we're on
-            // 2021, but documenting the invariant here for future edition
-            // bumps.
-            std::env::set_var("NO_COLOR", val);
-        }
-    }
-}
-
-/// Local copy of the stream-gating logic used for help/version messages.
-/// Mirrors `anstream::AutoStream::choice(&std::io::stderr())`:
-/// honor `NO_COLOR` unconditionally, then fall back to TTY detection.
+/// Mirror the gating `anstream::AutoStream` applies to stderr:
+///   NO_COLOR (non-empty)   → never
+///   CLICOLOR_FORCE ("1"…)  → always
+///   otherwise              → `stderr.is_terminal()`
 fn stderr_wants_color() -> bool {
-    if std::env::var_os("NO_COLOR")
-        .map(|v| !v.is_empty())
-        .unwrap_or(false)
-    {
+    if env_nonempty("NO_COLOR") {
         return false;
     }
+    if env_nonempty("CLICOLOR_FORCE") {
+        return true;
+    }
     std::io::stderr().is_terminal()
+}
+
+fn env_nonempty(key: &str) -> bool {
+    std::env::var_os(key)
+        .map(|v| !v.is_empty())
+        .unwrap_or(false)
 }

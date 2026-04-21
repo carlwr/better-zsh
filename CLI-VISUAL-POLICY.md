@@ -16,7 +16,7 @@ Strengths:
 - **SHOULD**: pretty-print JSON on `stdout`: indented, newline-terminated. Use compact JSON only for a measured bandwidth reason.
 - **MUST**: auto-disable ANSI color when the destination stream is not a tty (`isTTY` or equivalent).
 - **MUST**: if `NO_COLOR` is set and non-empty, disable ANSI unconditionally, per <https://no-color.org>.
-- **MAY**: accept `NOCOLOR` too.
+- **SHOULD**: honor `CLICOLOR_FORCE` (non-empty) as the opposite override — force ANSI on even without a tty. Enables testable styled-help assertions without spawning a PTY.
 - **MUST**: document color in `--help`, preferrably suitable dedicated section headings:
   - exit codes:
     - `0`: success
