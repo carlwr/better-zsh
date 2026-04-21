@@ -58,12 +58,13 @@ pub fn build_cli(tool_defs: &ToolDefs) -> Command {
         root = root.subcommand(build_subcommand(td));
     }
 
-    // `zshref completions <shell>` — emit completion script to stdout.
+    // `zshref completions <SHELL>` — emit completion script to stdout.
     root = root.subcommand(
         Command::new("completions")
             .about("emit a shell-completion script for the given shell to stdout")
             .arg(
                 Arg::new("shell")
+                    .value_name("SHELL")
                     .required(true)
                     .value_parser(clap::value_parser!(clap_complete::Shell))
                     .help("target shell (bash, zsh, fish, elvish, powershell)"),
@@ -76,8 +77,8 @@ pub fn build_cli(tool_defs: &ToolDefs) -> Command {
 fn build_subcommand(td: &ToolDef) -> Command {
     let name = subcommand_name(&td.name).to_string();
     let mut cmd = Command::new(name)
-        .about(td.brief.clone())
-        .long_about(td.description.clone())
+        .about(cli_prose(&td.brief))
+        .long_about(cli_prose(&td.description))
         .disable_help_flag(false);
 
     let props = td
@@ -112,7 +113,12 @@ fn build_arg(key: &str, spec: &Value, required: bool, help: &str) -> Arg {
         .value_name(value_name)
         .help(help.to_string())
         .required(required)
-        .action(ArgAction::Set);
+        .action(ArgAction::Set)
+        // Accept leading-dash values: real zsh tokens include `-`, `-p`,
+        // numeric fd prefixes (`2>`), etc. Without this, `--raw -p` errors
+        // with "unexpected argument '-p'". The `--raw=VALUE` form was the
+        // only other escape, which is surprising for users.
+        .allow_hyphen_values(true);
 
     let ty = spec.get("type").and_then(Value::as_str).unwrap_or("string");
     match ty {
@@ -130,12 +136,37 @@ fn build_arg(key: &str, spec: &Value, required: bool, help: &str) -> Arg {
             // so clap generates a clean error + completion for bad inputs.
             // We detect this by name rather than from the schema (the schema
             // stays generic; the category list is owned by zsh-core).
-            if key == "category" => {
-                arg = arg.value_parser(clap::builder::PossibleValuesParser::new(DOC_CATEGORIES));
-            }
+            if key == "category" =>
+        {
+            arg = arg
+                .value_parser(clap::builder::PossibleValuesParser::new(DOC_CATEGORIES))
+                // The tool description already enumerates the 16 category
+                // values one-per-line; clap's default inline `[possible
+                // values: ...]` block is redundant + wraps awkwardly at
+                // narrow terminal widths.
+                .hide_possible_values(true);
+        }
         _ => {}
     }
     arg
+}
+
+/// Rewrite tool descriptions (which are MCP-primary, naming tools as
+/// `zsh_describe` / `zsh_classify` / etc.) into CLI-appropriate form
+/// (`zshref describe` / `zshref classify` / ...). One line of text rewrite
+/// here saves duplicating the descriptions on two sides of the seam.
+fn cli_prose(s: &str) -> String {
+    let mut out = s.to_string();
+    for tool in [
+        "zsh_classify",
+        "zsh_search",
+        "zsh_describe",
+        "zsh_lookup_option",
+    ] {
+        let sub = subcommand_name(tool);
+        out = out.replace(tool, &format!("zshref {sub}"));
+    }
+    out
 }
 
 /// Closed list of `DocCategory` values. Must mirror
