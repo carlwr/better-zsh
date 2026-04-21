@@ -17,8 +17,8 @@
 ### `Cargo.toml` edits
 
 - `publish = false` → `publish = true`.
-- Add fields: `authors`, `repository`, `homepage`, `keywords`, `categories`, `readme`, `rust-version` (MSRV — pin to the stable channel the CI validates against).
-- `description` already present (`"Query the bundled static zsh reference from the command line."`); re-verify wording is still accurate on extraction day.
+- `repository` / `homepage`: currently `https://github.com/carlwr/better-zsh`; update to the extracted repo URL (e.g. `https://github.com/carlwr/zshref`).
+- `authors`, `keywords`, `categories`, `readme`, `rust-version`, `description`, `include` — already filled; re-verify wording is still accurate on extraction day.
 
 ### Embedded JSON paths — largest single code change
 
@@ -32,20 +32,9 @@ At extraction these must become package-local relative paths (e.g. `data/tooldef
 
 ### `include` / `exclude` in `Cargo.toml`
 
-Add an `include` list covering at minimum:
-
-```toml
-include = [
-  "src/**",
-  "tests/**",
-  "Cargo.toml",
-  "README.md",
-  "LICENSE",
-  "THIRD_PARTY_NOTICES.md",
-  "build.rs",
-  "data/*.json",   # gitignored pre-extraction, committed post-extraction; see DATA-SYNC.md
-]
-```
+Already filled (see `Cargo.toml`). `data/*.json` is gitignored pre-extraction
+and enters the `.crate` via cargo's `include` override; post-extraction the
+directory is committed. See `DATA-SYNC.md`.
 
 ### Makefile
 
