@@ -78,13 +78,7 @@ const toolDefsJsonSchema = {
       type: "array",
       items: {
         type: "object",
-        required: [
-          "name",
-          "brief",
-          "description",
-          "flagBriefs",
-          "inputSchema",
-        ],
+        required: ["name", "brief", "description", "flagBriefs", "inputSchema"],
         additionalProperties: false,
         properties: {
           name: { type: "string" },

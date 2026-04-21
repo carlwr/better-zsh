@@ -41,7 +41,9 @@ describe.runIf(existsSync(jsonDir))(
     type Rec = { readonly markdown?: unknown } & Record<string, unknown>
 
     test.each(files)("%s records have a non-empty markdown string", file => {
-      const recs = JSON.parse(readFileSync(join(jsonDir, file), "utf8")) as Rec[]
+      const recs = JSON.parse(
+        readFileSync(join(jsonDir, file), "utf8"),
+      ) as Rec[]
       expect(recs.length).toBeGreaterThan(0)
       for (const r of recs) {
         expect(typeof r.markdown).toBe("string")

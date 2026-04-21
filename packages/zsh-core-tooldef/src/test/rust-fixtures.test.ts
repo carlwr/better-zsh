@@ -85,7 +85,11 @@ const cases: readonly Case[] = [
 
   // lookup_option
   { tool: "zsh_lookup_option", name: "auto_cd", input: { raw: "AUTO_CD" } },
-  { tool: "zsh_lookup_option", name: "no_auto_cd", input: { raw: "NO_AUTO_CD" } },
+  {
+    tool: "zsh_lookup_option",
+    name: "no_auto_cd",
+    input: { raw: "NO_AUTO_CD" },
+  },
   { tool: "zsh_lookup_option", name: "notify", input: { raw: "NOTIFY" } },
   {
     tool: "zsh_lookup_option",
@@ -136,27 +140,28 @@ function fixturePath(c: Case): string {
 }
 
 describe.runIf(writeMode)("rust fixtures — write mode", () => {
-  test.each(cases.map(c => [`${c.tool}/${c.name}`, c] as const))(
-    "write %s",
-    (_n, c) => {
-      const expected = stripScores(runTool(c))
-      const payload = {
-        tool: c.tool,
-        input: c.input,
-        argv: toArgv(c.tool, c.input as Record<string, unknown>),
-        expectedOutput: expected,
-      }
-      const path = fixturePath(c)
-      mkdirSync(dirname(path), { recursive: true })
-      writeFileSync(path, `${JSON.stringify(payload, null, 2)}\n`, "utf8")
-    },
-  )
+  test.each(
+    cases.map(c => [`${c.tool}/${c.name}`, c] as const),
+  )("write %s", (_n, c) => {
+    const expected = stripScores(runTool(c))
+    const payload = {
+      tool: c.tool,
+      input: c.input,
+      argv: toArgv(c.tool, c.input as Record<string, unknown>),
+      expectedOutput: expected,
+    }
+    const path = fixturePath(c)
+    mkdirSync(dirname(path), { recursive: true })
+    writeFileSync(path, `${JSON.stringify(payload, null, 2)}\n`, "utf8")
+  })
 })
 
-describe.runIf(!writeMode)("rust fixtures — assert mode (TS drift guard)", () => {
-  test.each(cases.map(c => [`${c.tool}/${c.name}`, c] as const))(
-    "%s matches fixture",
-    (_n, c) => {
+describe.runIf(!writeMode)(
+  "rust fixtures — assert mode (TS drift guard)",
+  () => {
+    test.each(
+      cases.map(c => [`${c.tool}/${c.name}`, c] as const),
+    )("%s matches fixture", (_n, c) => {
       const path = fixturePath(c)
       if (!existsSync(path)) {
         // No fixture yet — skip rather than fail. Users regenerate
@@ -169,6 +174,6 @@ describe.runIf(!writeMode)("rust fixtures — assert mode (TS drift guard)", () 
       }
       const actual = stripScores(runTool(c))
       expect(actual).toEqual(fixture.expectedOutput)
-    },
-  )
-})
+    })
+  },
+)

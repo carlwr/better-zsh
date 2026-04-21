@@ -5,9 +5,9 @@ import { build } from "tsup"
 import { type DocCorpus, loadCorpus } from "./src/docs/corpus.ts"
 import { jsonArtifact, jsonDataFiles } from "./src/docs/json-artifacts.ts"
 import {
+  classifyOrder,
   type DocCategory,
   type DocRecordMap,
-  classifyOrder,
   docCategories,
   mkPieceId,
 } from "./src/docs/taxonomy.ts"
