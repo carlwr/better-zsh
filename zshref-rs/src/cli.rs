@@ -24,6 +24,7 @@ const ROOT_AFTER_HELP: &str = concat!(
     "\n",
     "Environment:\n",
     "  NO_COLOR          present + non-empty disables ANSI colors\n",
+    "  CLICOLOR_FORCE    present + non-empty forces ANSI colors on (even off a TTY)\n",
     "\n",
     "Examples:\n",
     "  zshref classify --raw AUTO_CD\n",

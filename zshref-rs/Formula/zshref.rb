@@ -7,7 +7,7 @@
 # Tap via: brew tap carlwr/zshref https://github.com/carlwr/zshref.git
 
 class Zshref < Formula
-  desc "Query the bundled static zsh reference from the command-line"
+  desc "Query the bundled static zsh reference from the command line"
   homepage "https://github.com/carlwr/better-zsh"
   url "https://static.crates.io/crates/zshref/zshref-0.1.0-alpha.0.crate"
   sha256 "96eb81d3ff430606eb5764244ad1020c6df88fad481c1619b231495d029cebd0"

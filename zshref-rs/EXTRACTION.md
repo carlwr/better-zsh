@@ -19,15 +19,9 @@
 - `repository` / `homepage`: currently `https://github.com/carlwr/better-zsh`; update to the extracted repo URL (e.g. `https://github.com/carlwr/zshref`).
 - `publish`, `authors`, `keywords`, `categories`, `readme`, `rust-version`, `description`, `include` — already filled; re-verify wording is still accurate on extraction day.
 
-### Embedded JSON paths — largest single code change
+### Embedded JSON paths
 
-`src/corpus.rs` hard-codes monorepo-relative paths in three places:
-
-- `include_bytes!("../../packages/zsh-core-tooldef/dist/json/tooldef.json")` — line 15
-- `include_bytes!("../../packages/zsh-core/dist/json/index.json")` — line 17
-- `include_bytes!(concat!("../../packages/zsh-core/dist/json/", $file))` — inside the `include_category!` macro, line 27
-
-At extraction these must become package-local relative paths (e.g. `data/tooldef.json`, `data/index.json`, `data/options.json`, …). Details + landing plan: see `DATA-SYNC.md`. Under the recommended option-6 hybrid, these paths are already routed through cfg-gated macros (`corpus_path!`, `tooldef_path!`) — extraction drops the `monorepo` arm and leaves the `vendored` arm in place.
+Already routed through cfg-gated macros (`corpus_path!`, `tooldef_path!` in `src/corpus.rs`) by the option-6 dual-mode build. At extraction, drop the `monorepo` arm from the macros and from `build.rs`, leaving only the `vendored` arm. See `DATA-SYNC.md` for the landed design.
 
 ### `include` / `exclude` in `Cargo.toml`
 
@@ -45,13 +39,11 @@ directory is committed. See `DATA-SYNC.md`.
 - `.github/workflows/ci-rust.yml` is close-to-portable. Required changes at extraction:
   - Remove path filters referencing `packages/zsh-core/**`, `packages/zsh-core-tooldef/**`, and the root `Makefile`; narrow to `src/**`, `tests/**`, `Cargo.*`.
   - Remove `actions/setup-node`, `corepack enable`, `pnpm install` steps — unless the extracted repo vendored-JSON sync still drives a Node checkout.
-  - Keep the `dtolnay/rust-toolchain`, cargo cache, fmt/clippy, and test steps unchanged.
-  - Remove the untested-on-GitHub-hosted-runners caveat block once validated.
+  - Keep the `dtolnay/rust-toolchain`, cargo cache, fmt/clippy, test, and `cli-vendored-test` + `cli-package` steps unchanged.
 
 ### Homebrew
 
-- `Formula/zshref.rb` is already positioned for the default Homebrew tap scan (repo-root `Formula/`). At extraction, drop `Dir.chdir("zshref-rs")` from `def install` and switch to `--path "."`.
-- `url` + `sha256` need replacing with the real GitHub Release source tarball (or a `bin.install "zshref"` PATH B once binaries are uploaded).
+- `Formula/zshref.rb` is already positioned for the default Homebrew tap scan (repo-root `Formula/`) and already pulls from the crates.io-published `.crate`. On each new release, bump `url` + `sha256` to the new version's tarball. No structural changes needed at extraction.
 - Consider `brew audit --strict --online` as a CI gate at that point (macOS runner).
 
 ### Docs

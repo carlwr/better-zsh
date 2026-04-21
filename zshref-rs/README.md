@@ -15,7 +15,7 @@ Builtins, precommand modifiers, reserved words, shell options (with zsh's case /
 - No shell execution, no subprocesses.
 - No network.
 - No filesystem writes: output goes to stdout; no logs, no caches, no config files.
-- No environment variables read (other than `NO_COLOR` / `NOCOLOR`), no user shell config consulted.
+- No environment variables read (other than `NO_COLOR` and `CLICOLOR_FORCE`, which gate the ANSI styling in `--help` output), no user shell config consulted.
 - No telemetry.
 
 The corpus and all tool logic are bundled into a single statically-linked binary; there are no runtime dependencies on zsh, node, or any other toolchain. If you need to introspect a live shell (`setopt` output, `$commands`, aliases), that is a different tool.

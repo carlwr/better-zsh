@@ -15,10 +15,8 @@ jobs:
   # A dedicated release workflow for @carlwr/zsh-core-tooldef is TODO;
   # today only zsh-core, the extension, and zshref-mcp have dedicated
   # release pipelines under `.github/workflows/release-*.yml`. The Rust
-  # CLI (`zshref-rs/`) ships through cargo/crates.io on its own schedule
-  # and has no TS-side release workflow here.
-  # TODO(post-landing): when cutting a zshref-rs release, add a Rust job
-  # here; untested on GH workers so marking for later.
+  # CLI (`zshref-rs/`) has its own CI at `.github/workflows/ci-rust.yml`
+  # and ships through cargo/crates.io on its own schedule.
   mcp:
     runs-on: ubuntu-latest
     permissions:

@@ -20,6 +20,7 @@ generate about.hbs` — or update this file by hand for now.
 - clap_builder 4.6.0
 - clap_complete 4.6.2
 - clap_lex 1.1.0
+- clap_mangen 0.2.33
 - colorchoice 1.0.5
 - equivalent 1.0.2
 - errno 0.3.14
@@ -31,6 +32,7 @@ generate about.hbs` — or update this file by hand for now.
 - once_cell_polyfill 1.70.2
 - proc-macro2 1.0.106
 - quote 1.0.45
+- roff 1.1.1
 - serde 1.0.228
 - serde_core 1.0.228
 - serde_derive 1.0.228

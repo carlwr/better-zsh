@@ -13,14 +13,18 @@ Rust CLI that bundles two TS-generated artifacts via `include_bytes!`:
 
 Because data is embedded at compile time, a stale artifact means a stale binary. Know when to rebuild.
 
+The `build.rs` auto-detects two data sources (monorepo paths vs. vendored `data/`) — see `DATA-SYNC.md` for the design. Pre-extraction the monorepo path is what you'll hit during normal dev; vendored mode exists for `cargo publish` validation.
+
 ## Rebuild rules
 
 | What changed | What to run |
 |---|---|
-| Pure Rust only | `cargo build` (skip TS entirely) |
-| Tool-def (flag name, description, schema) | `pnpm --filter @carlwr/zsh-core-tooldef build` then `cargo build` — or just `make cli-debug` |
-| Corpus (zsh-core docs/types) | `pnpm --filter @carlwr/zsh-core build && pnpm --filter @carlwr/zsh-core-tooldef build` then `cargo build` — or just `make cli-debug` |
+| Pure Rust only | `cargo build` |
+| Tool-def (flag name, description, schema) | `make cli-debug` (runs TS build first) |
+| Corpus (zsh-core docs/types) | `make cli-debug` (runs TS build first) |
 | Test fixtures | regenerate (see Testing), then `cargo test` |
+
+`make cli-debug` depends on `make artifacts`, which runs the `pnpm --filter` steps for both TS packages. For vendored-mode dev (e.g. verifying what `cargo publish` will see), use `make cli-vendored` / `make cli-vendored-test` instead.
 
 ## Make targets (from repo root)
 
@@ -29,6 +33,10 @@ Because data is embedded at compile time, a stale artifact means a stale binary.
 - `make cli` — TS artifacts + `cargo build --release`
 - `make cli-test` — TS artifacts + `cargo test`
 - `make cli-clean` — `cargo clean`
+- `make cli-fmt` / `cli-fmt-check` / `cli-clippy` / `cli-check` — formatting + lint
+- `make vendor` / `vendor-clean` — populate / remove `zshref-rs/data/` from TS output (see `DATA-SYNC.md`)
+- `make cli-vendored` / `cli-vendored-test` — build/test in vendored mode
+- `make cli-package` — `cargo package --allow-dirty` (publishable-tarball smoke)
 
 ## Fast dev loop
 
@@ -74,10 +82,12 @@ zshref --help 2>&1 | less
 | File | Role |
 |---|---|
 | `main.rs` | entry point |
-| `cli.rs` | clap `Command` builder driven by `tooldef.json` |
-| `corpus.rs` | loads embedded corpus JSON |
+| `cli.rs` | clap `Command` builder driven by `tooldef.json`; dispatches built-in subcommands (`completions`, `info`, `mangen`) |
+| `corpus.rs` | loads embedded corpus JSON; data paths gated by `cfg(data_source = …)` from `build.rs` |
+| `tools/mod.rs` | tools module surface + dispatch |
 | `tools/classify.rs` | `classify` subcommand |
 | `tools/search.rs` | `search` subcommand |
 | `tools/describe.rs` | `describe` subcommand |
-| `tools/lookup_option.rs` | `lookup-option` subcommand |
-| `output.rs` | JSON-on-stdout / help-on-stderr routing |
+| `tools/lookup_option.rs` | `lookup_option` subcommand |
+| `tools/info.rs` | `info` subcommand |
+| `output.rs` | JSON-on-stdout / help-on-stderr routing; `NO_COLOR` + `CLICOLOR_FORCE` handling |
