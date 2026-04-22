@@ -16,6 +16,7 @@ import {
   lookupOptionToolDef,
   type SearchResult,
   searchToolDef,
+  TOOL_SUITE_PREAMBLE,
   toolDefs,
 } from "../../index.ts"
 
@@ -166,5 +167,27 @@ describe("toolDefs description shape", () => {
   test("follow-up tools do NOT repeat the vendored zsh tag", () => {
     expect(describeToolDef.description).not.toContain(ZSH_UPSTREAM.tag)
     expect(lookupOptionToolDef.description).not.toContain(ZSH_UPSTREAM.tag)
+  })
+})
+
+// The preamble is single-sourced but rendered into two surfaces (MCP
+// handshake instructions + CLI `--help`). Every `zsh_*` mention must
+// resolve to a real tool, otherwise the CLI's `cli_prose()` leaves a
+// stale name in terminal output. Tone/length drift is on reviewers;
+// this guards only the mechanically-checkable part.
+describe("TOOL_SUITE_PREAMBLE", () => {
+  test("only references real tool names", () => {
+    const mentioned = new Set<string>()
+    for (const m of TOOL_SUITE_PREAMBLE.matchAll(/\bzsh_[a-z][a-z0-9_]*\b/g)) {
+      mentioned.add(m[0])
+    }
+    const known = new Set(toolDefs.map(d => d.name))
+    for (const name of mentioned) {
+      expect(
+        known.has(name),
+        `preamble references ${name} which is not a tool`,
+      ).toBe(true)
+    }
+    expect(mentioned.size).toBeGreaterThan(0)
   })
 })

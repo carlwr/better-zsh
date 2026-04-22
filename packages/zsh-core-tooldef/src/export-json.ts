@@ -19,6 +19,13 @@ export interface ToolDefJson {
 export interface ToolDefsJson {
   readonly version: 1
   readonly tools: readonly ToolDefJson[]
+  /**
+   * Suite-level intent→tool cheat-sheet. The Rust CLI renders this into
+   * `zshref --help` after tool-name rewriting; the MCP adapter passes it
+   * as server `instructions`. See `TOOL_SUITE_PREAMBLE` in
+   * `src/tool-defs.ts` for the drift warning that governs edits.
+   */
+  readonly preamble: string
 }
 
 function projectToolDef(td: ToolDef): ToolDefJson {
@@ -45,12 +52,14 @@ function fmtJson(data: unknown): string {
  */
 export function writeToolDefsJson(
   toolDefs: readonly ToolDef[],
+  preamble: string,
   outDir: string,
 ): void {
   mkdirSync(outDir, { recursive: true })
   const payload: ToolDefsJson = {
     version: 1,
     tools: toolDefs.map(projectToolDef),
+    preamble,
   }
   writeFileSync(join(outDir, "tooldef.json"), fmtJson(payload), "utf8")
   writeFileSync(
@@ -70,7 +79,7 @@ const toolDefsJsonSchema = {
   $schema: "https://json-schema.org/draft/2020-12/schema",
   title: "ToolDefsJson",
   type: "object",
-  required: ["version", "tools"],
+  required: ["version", "tools", "preamble"],
   additionalProperties: false,
   properties: {
     version: { const: 1 },
@@ -94,6 +103,11 @@ const toolDefsJsonSchema = {
           },
         },
       },
+    },
+    preamble: {
+      type: "string",
+      description:
+        "Suite-level intent→tool cheat-sheet, rendered into CLI --help and MCP server instructions.",
     },
   },
 } as const

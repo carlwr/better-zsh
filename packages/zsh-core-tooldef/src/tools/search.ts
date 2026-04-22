@@ -132,7 +132,7 @@ export const searchToolDef = makeToolDef({
   description: `\
 Search the bundled static ${ZSH_UPSTREAM.tag} reference. Fuzzy-matches the query against record ids and display headings across every category.
 
-Omit \`query\` to list records (optionally filtered by \`category\`).
+Listing mode: omit \`query\` to enumerate records, optionally filtered by \`category\`. Set \`category\` and leave \`query\` empty to list every record in a category; raise \`limit\` up to ${MAX_LIMIT} to see all of them in one response.
 
 Ranking: exact id/display > prefix > fuzzy score.
 

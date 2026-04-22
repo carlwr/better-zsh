@@ -2,7 +2,7 @@ import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 import { build } from "tsup"
 import { writeToolDefsJson } from "./src/export-json.ts"
-import { toolDefs } from "./src/tool-defs.ts"
+import { TOOL_SUITE_PREAMBLE, toolDefs } from "./src/tool-defs.ts"
 
 const pkgDir =
   typeof __dirname !== "undefined"
@@ -31,5 +31,5 @@ const distDir = join(pkgDir, "dist")
     },
   })
 
-  writeToolDefsJson(toolDefs, join(distDir, "json"))
+  writeToolDefsJson(toolDefs, TOOL_SUITE_PREAMBLE, join(distDir, "json"))
 })()

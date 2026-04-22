@@ -1,5 +1,6 @@
 import type { DocCorpus } from "@carlwr/zsh-core"
 import {
+  TOOL_SUITE_PREAMBLE,
   type ToolDef,
   type ToolInputSchema,
   toolDefs,
@@ -25,12 +26,19 @@ export interface BuildServerOpts {
  * stdio (typical), in-memory (tests), or other.
  */
 export function buildServer(opts: BuildServerOpts): Server {
+  // `instructions` is surfaced at handshake; MCP clients typically inject
+  // it as system context for the LLM. Shared across adapters; see the
+  // drift warning on `TOOL_SUITE_PREAMBLE` in
+  // `@carlwr/zsh-core-tooldef/src/tool-defs.ts`.
   const server = new Server(
     {
       name: opts.name ?? MCP_BIN_NAME,
       version: opts.version ?? PKG_VERSION,
     },
-    { capabilities: { tools: {} } },
+    {
+      capabilities: { tools: {} },
+      instructions: TOOL_SUITE_PREAMBLE,
+    },
   )
 
   const defByName = new Map<string, ToolDef>(

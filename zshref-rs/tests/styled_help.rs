@@ -42,6 +42,29 @@ fn help_is_plain_when_no_color_set() {
 }
 
 #[test]
+fn help_renders_suite_preamble_with_rewritten_tool_names() {
+    // The shared tool-suite preamble is MCP-tone prose (references `zsh_*`
+    // tool names); `cli_prose()` rewrites those to `zshref *` at render.
+    // Asserts both: (a) the preamble reached the CLI help output,
+    // (b) the rewrite actually ran (no stray `zsh_search` etc. in help).
+    let help = String::from_utf8(help_stderr(&[])).expect("help is utf-8");
+    assert!(
+        help.contains("Intent"),
+        "preamble missing from --help output:\n{help}"
+    );
+    assert!(
+        help.contains("zshref search"),
+        "cli_prose() rewrite did not produce `zshref search` in --help:\n{help}"
+    );
+    for raw in ["zsh_classify", "zsh_search", "zsh_describe", "zsh_lookup_option"] {
+        assert!(
+            !help.contains(raw),
+            "raw MCP tool name `{raw}` leaked through into --help:\n{help}"
+        );
+    }
+}
+
+#[test]
 fn help_omits_removed_mangen_subcommand() {
     let help = String::from_utf8(help_stderr(&[])).expect("help is utf-8");
     assert!(

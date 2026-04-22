@@ -97,6 +97,12 @@ pub struct ToolDefs {
     #[allow(dead_code)]
     pub version: u32,
     pub tools: Vec<ToolDef>,
+    /// Suite-level intent→tool cheat-sheet. Rendered into `zshref --help`
+    /// after `cli::cli_prose()` rewrites `zsh_*` tool names to `zshref *`.
+    /// Source of truth is `TOOL_SUITE_PREAMBLE` in
+    /// `packages/zsh-core-tooldef/src/tool-defs.ts`; the drift warning
+    /// there also applies here.
+    pub preamble: String,
 }
 
 #[derive(Debug, Deserialize)]

@@ -83,6 +83,9 @@ zshref classify --raw '<<<'
 # Fuzzy search; optionally narrow by category.
 zshref search --query echo --category builtin --limit 5
 
+# List every record in a category (omit --query).
+zshref search --category option --limit 500
+
 # Fetch docs for a known { category, id }.
 zshref describe --category option --id autocd
 

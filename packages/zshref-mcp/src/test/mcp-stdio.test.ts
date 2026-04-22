@@ -39,6 +39,13 @@ describeIfBuilt("MCP stdio integration", () => {
     await client.close()
   })
 
+  test("server instructions surface the suite preamble", () => {
+    const instructions = client.getInstructions()
+    expect(instructions).toBeDefined()
+    expect(instructions).toMatch(/zsh_search/)
+    expect(instructions).toMatch(/category/i)
+  })
+
   test("tools/list advertises all four tools", async () => {
     const result = await client.request(
       { method: "tools/list" },

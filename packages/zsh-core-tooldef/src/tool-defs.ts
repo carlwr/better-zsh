@@ -115,3 +115,44 @@ export const toolDefs: readonly ToolDef[] = [
 // `zsh_lookup_option`) deliberately do NOT — they're called after
 // discovery, so repeating the tag there only dilutes per-turn
 // context. Keep it asymmetric.
+
+/**
+ * Suite-level intent→tool cheat-sheet consumed by adapters that have a
+ * place to surface suite-level framing:
+ *   - MCP (`@carlwr/zshref-mcp`) — passed as `Server` `instructions` at
+ *     handshake; clients typically inject it as system context for the
+ *     LLM.
+ *   - Rust CLI (`zshref-rs`) — inlined into `zshref --help`'s
+ *     `ROOT_AFTER_HELP` after `cli_prose()` rewrites `zsh_*` tool names
+ *     to `zshref *` subcommand names.
+ *
+ * The VS Code LM adapter has no server-level slot and does not consume
+ * this field; per-tool descriptions already route between tools there.
+ *
+ * WARNING — DRIFT-PRONE: this string is rendered VERBATIM (modulo the
+ * tool-name rewrite) into BOTH an LLM prompt and a terminal user's
+ * `--help`. The single-source convenience means edits reach both
+ * audiences at once. When editing:
+ *   - keep tone neutral enough to read naturally in both a chat context
+ *     and a terminal;
+ *   - refer to tool parameters by name (e.g. "set `category`"), not as
+ *     CLI flag syntax (`--category`) or JSON syntax — `cli_prose()`
+ *     only rewrites tool names, nothing else;
+ *   - after editing, run `zshref --help` in a real terminal and check
+ *     that the block scans cleanly at ≤80 columns;
+ *   - keep it short (terminal users scan; LLM context windows are
+ *     finite). Aim for under ~10 lines.
+ *
+ * The drift-guard test in `tool-defs.test.ts` asserts that every
+ * `zsh_*` name mentioned here exists in `toolDefs`; it does NOT catch
+ * tone, length, or formatting drift — those are on reviewer eyes.
+ */
+export const TOOL_SUITE_PREAMBLE = `\
+Intent → tool:
+
+  - classify an unknown zsh token → \`zsh_classify\`
+  - look up a shell option (handles NO_* negation) → \`zsh_lookup_option\`
+  - fuzzy discovery by name → \`zsh_search\` (set \`query\`)
+  - list every record in a category → \`zsh_search\` (set \`category\`, omit \`query\`)
+  - full doc for a known { category, id } → \`zsh_describe\`
+`

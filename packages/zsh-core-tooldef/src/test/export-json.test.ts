@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { describe, expect, test } from "vitest"
-import { toolDefs } from "../tool-defs.ts"
+import { TOOL_SUITE_PREAMBLE, toolDefs } from "../tool-defs.ts"
 
 const pkgDir = join(dirname(fileURLToPath(import.meta.url)), "..", "..")
 const tooldefJsonPath = join(pkgDir, "dist", "json", "tooldef.json")
@@ -17,6 +17,7 @@ interface ToolJson {
 interface ToolDefsJson {
   version: 1
   tools: ToolJson[]
+  preamble: string
 }
 
 describe.runIf(existsSync(tooldefJsonPath))(
@@ -54,6 +55,10 @@ describe.runIf(existsSync(tooldefJsonPath))(
         const flagKeys = Object.keys(t.flagBriefs).sort()
         expect(flagKeys).toEqual(schemaProps)
       }
+    })
+
+    test("preamble round-trips from the source constant", () => {
+      expect(payload.preamble).toBe(TOOL_SUITE_PREAMBLE)
     })
   },
 )

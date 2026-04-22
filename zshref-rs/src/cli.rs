@@ -16,7 +16,7 @@ const ROOT_BIN_NAME: &str = "zshref";
 
 const ROOT_BRIEF: &str = "Query a bundled static zsh reference from the command line.";
 
-const ROOT_AFTER_HELP: &str = concat!(
+const ROOT_AFTER_HELP_TAIL: &str = concat!(
     "Exit codes:\n",
     "  0  success (also for {match:null} / empty matches)\n",
     "  1  unexpected internal error\n",
@@ -29,6 +29,7 @@ const ROOT_AFTER_HELP: &str = concat!(
     "Examples:\n",
     "  zshref classify --raw AUTO_CD\n",
     "  zshref search --query printf --limit 5\n",
+    "  zshref search --category option --limit 500   # list every record in a category\n",
     "  zshref describe --category builtin --id echo\n",
     "  zshref lookup_option --raw NO_AUTO_CD\n",
 );
@@ -38,6 +39,18 @@ pub fn subcommand_name(tool_name: &str) -> &str {
 }
 
 pub fn build_cli(tool_defs: &ToolDefs, corpus: &Corpus) -> Command {
+    // Preamble is MCP-primary prose (`zsh_*` tool-name references);
+    // `cli_prose()` rewrites those to `zshref *` before rendering. See
+    // the WARNING on `TOOL_SUITE_PREAMBLE` in
+    // `packages/zsh-core-tooldef/src/tool-defs.ts` — the preamble is
+    // rendered VERBATIM into `--help` below, so tone/length drift on
+    // that source affects terminal output here.
+    let root_after_help = format!(
+        "{}\n{}",
+        cli_prose(&tool_defs.preamble),
+        ROOT_AFTER_HELP_TAIL,
+    );
+
     let mut root = Command::new(ROOT_BIN_NAME)
         .version(version_string(corpus))
         .about(ROOT_BRIEF)
@@ -49,7 +62,7 @@ pub fn build_cli(tool_defs: &ToolDefs, corpus: &Corpus) -> Command {
             "errors, and warnings go to stderr. ",
             "ANSI colors in help output are auto-disabled when stderr is not a TTY.",
         ))
-        .after_help(ROOT_AFTER_HELP)
+        .after_help(root_after_help)
         .arg_required_else_help(true)
         .subcommand_required(true)
         .color(clap::ColorChoice::Auto);
