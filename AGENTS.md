@@ -286,6 +286,14 @@ This repo is worked on from multiple agent tools. Contributor docs and skills mu
 - If `SECURITY.md` needs updates, tell the user and suggest them. Agents may not edit `SECURITY.md`.
 - `SECURITY.md` may need updates when extension zsh execution, `source`/`.` link resolution, or extension settings change.
 
+### Post-extraction repo URLs in user-facing docs
+
+Extraction on first stable release: `zshref-rs/` → `zshref` repo; `packages/zshref-mcp/` → `zshref-mcp` repo. Rest stays `better-zsh`.
+
+- User-facing `.md` (`README.md`, `DEVELOPMENT.md`, `SECURITY.md`, `THIRD_PARTY_NOTICES.md`) in workspace root and each to-be-extracted dir already uses post-extraction repo URLs; don't revert to monorepo-subpath form.
+- Project name is `zshref`; `zshref-rs` is only the current monorepo dir path.
+- Maintainer-focused docs (`AGENTS.md`, `DESIGN.md`, `*EXTRACTION.md`, handoffs) keep describing pre-release monorepo state.
+
 ### Markdown style in docs
 
 - No running numbering in headings or bullet lists. Renumbering on insert or delete balloons diffs and silently breaks cross-references; use bullets instead. Exception: the ordinal is semantically load-bearing (cross-referenced as "option 3", numbered steps in a runnable recipe).

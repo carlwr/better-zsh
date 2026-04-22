@@ -1,4 +1,4 @@
-# Development — zshref-rs
+# Development — zshref
 
 ## Note: pre-release, monorepo
 

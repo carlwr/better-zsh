@@ -6,7 +6,7 @@ A command-line reference for zsh syntax. Ask what a token is, search the manual,
 
 ## Why zshref?
 
-Built for agents, acceptable for humans. One of three adapters over the same parsed zsh reference (alongside the [MCP server](https://github.com/carlwr/better-zsh/tree/main/packages/zshref-mcp) and the [VS Code extension](https://github.com/carlwr/better-zsh/tree/main/packages/vscode-better-zsh)). What the CLI adds on top of the shared corpus:
+Built for agents, acceptable for humans. One of three adapters over the same parsed zsh reference (alongside the [MCP server](https://github.com/carlwr/zshref-mcp) and the [VS Code extension](https://github.com/carlwr/better-zsh/tree/main/packages/vscode-better-zsh)). What the CLI adds on top of the shared corpus:
 
 - **Single statically-linked binary** — no Node, Python, or zsh at runtime; drops into containers, air-gapped CI, and minimal base images.
 - **Pipes and scripts.** JSON on stdout, human prose on stderr, stable exit-code contract. `zshref classify --raw AUTO_CD | jq ...` is the intended shape, including for LLM agents composing through `sh`.
@@ -123,7 +123,7 @@ See `zshref completions --help` for other supported shells.
 
 ## More
 
-See the [monorepo](https://github.com/carlwr/better-zsh) for source, issues, and companion packages — the MCP server `@carlwr/zshref-mcp` and the `better-zsh` VS Code extension share the same underlying reference.
+Companion projects sharing the same underlying reference: the [`@carlwr/zshref-mcp`](https://github.com/carlwr/zshref-mcp) MCP server and the [`better-zsh`](https://github.com/carlwr/better-zsh) VS Code extension.
 
 ## License
 
