@@ -259,7 +259,16 @@ GitHub's Linguist can be steered via `.gitattributes` (`linguist-generated`, `li
 
 ### `BZ_SKIP_UPSTREAM`
 
-Extension and MCP `pre*` hooks build upstream packages by default so standalone package commands work. Aggregators — the workspace `test` and `test:integration`, `vsix`, `test:smoke`, publish scripts, MCP `test:integration`, etc. — should instead build upstreams once, export `BZ_SKIP_UPSTREAM=1`, and avoid retriggering the same upstream builds (otherwise workspace-recursive runs race on the shared `dist/` of upstream packages).
+Downstream `pre*` hooks build upstream packages by default so per-package commands work in a fresh checkout. Any workspace-recursive run with those hooks live races on the shared `dist/` of upstream packages, because tsup's `clean: true` wipes the directory at the start of each concurrent rebuild.
+
+Two contracts prevent the race:
+
+- Downstream `pre*` hooks check `BZ_SKIP_UPSTREAM` and short-circuit when set. A caller that has already built upstreams sets the env to opt out.
+- Workspace-level aggregators (`test`, `test:integration`, `check`, `typecheck`) run `pnpm bootstrap:upstream` first (which is itself `BZ_SKIP_UPSTREAM`-gated) and then export `BZ_SKIP_UPSTREAM=1` for the `pnpm -r …` phase.
+
+CI achieves the same outcome by setting `BZ_SKIP_UPSTREAM: "1"` at job level and running a bootstrap step before recursive scripts.
+
+When adding a new workspace-recursive aggregator that invokes a script with upstream-rebuilding `pre*` hooks (`build`, `typecheck`, `test`, etc. on downstream packages), follow the same bootstrap + `BZ_SKIP_UPSTREAM=1` pattern. Aggregators for scripts without such hooks (`format`, `lint`) do not need it.
 
 ## Contributor guidance
 
