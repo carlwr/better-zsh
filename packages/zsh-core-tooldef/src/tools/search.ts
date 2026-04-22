@@ -3,6 +3,7 @@ import {
   type DocCorpus,
   type DocRecordMap,
   docCategories,
+  docSubKind,
   ZSH_UPSTREAM,
 } from "@carlwr/zsh-core"
 import fuzzysort from "fuzzysort"
@@ -19,6 +20,8 @@ export interface SearchMatch {
   readonly category: DocCategory
   readonly id: string
   readonly display: string
+  /** Typed sub-facet of the record (e.g. history `kind`, glob_op `kind`). Absent when the category has no meaningful subKind. */
+  readonly subKind?: string
   /** Fuzzy score (0..1). Absent on list-all / exact / prefix entries. */
   readonly score?: number
 }
@@ -38,6 +41,7 @@ interface Entry {
   readonly category: DocCategory
   readonly id: string
   readonly display: string
+  readonly subKind?: string
 }
 
 /**
@@ -49,8 +53,16 @@ function entries(corpus: DocCorpus, cat?: DocCategory): Entry[] {
   const out: Entry[] = []
   for (const c of cats) {
     const map = corpus[c] as ReadonlyMap<string, DocRecordMap[DocCategory]>
+    const getSubKind = docSubKind[c] as (
+      d: DocRecordMap[DocCategory],
+    ) => string | undefined
     for (const [id, rec] of map) {
-      out.push({ category: c, id, display: display(c, rec) })
+      const subKind = getSubKind(rec)
+      out.push(
+        subKind === undefined
+          ? { category: c, id, display: display(c, rec) }
+          : { category: c, id, display: display(c, rec), subKind },
+      )
     }
   }
   return out
@@ -119,9 +131,10 @@ export function search(corpus: DocCorpus, input: SearchInput): SearchResult {
 }
 
 function toMatch(e: Entry, score?: number): SearchMatch {
-  return score === undefined
-    ? { category: e.category, id: e.id, display: e.display }
-    : { category: e.category, id: e.id, display: e.display, score }
+  const base: SearchMatch = { category: e.category, id: e.id, display: e.display }
+  const withSub: SearchMatch =
+    e.subKind === undefined ? base : { ...base, subKind: e.subKind }
+  return score === undefined ? withSub : { ...withSub, score }
 }
 
 const brandedCategoryList = docCategories.map(c => `  - '${c}'`).join("\n")
@@ -136,7 +149,7 @@ Listing mode: omit \`query\` to enumerate records, optionally filtered by \`cate
 
 Ranking: exact id/display > prefix > fuzzy score.
 
-Results carry \`{ category, id, display, score? }\` but NOT the rendered markdown body — follow up with \`zsh_describe\` or \`zsh_classify\` for the full doc.
+Results carry \`{ category, id, display, subKind?, score? }\` but NOT the rendered markdown body — follow up with \`zsh_describe\` or \`zsh_classify\` for the full doc. \`subKind\` is surfaced when the category has a meaningful sub-facet (e.g. history \`kind\`, glob_op \`kind\`, reserved_word \`pos\`).
 
 \`limit\` caps response size (default ${DEFAULT_LIMIT}, hard max ${MAX_LIMIT}). The response also returns \`matchesReturned\` (== \`matches.length\`) and \`matchesTotal\` (pre-truncation total), so \`matchesReturned < matchesTotal\` signals truncation — raise \`limit\` or narrow \`category\`/\`query\` to see the rest.
 

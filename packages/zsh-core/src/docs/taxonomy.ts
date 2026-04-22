@@ -176,3 +176,33 @@ export const docDisplay = <K extends DocCategory>(
   cat === "option"
     ? (doc as ZshOption).display
     : (docId[cat](doc as never) as string)
+
+/**
+ * Optional typed sub-facet of a doc record; `undefined` when a category has
+ * no meaningful subKind.
+ *
+ * Surfaces record-level fields such as `HistoryKind`, `ZleWidgetKind`,
+ * `ParamExpnSubKind`, `CondArity`, `ReservedWordPos`, and `GlobOpKind`.
+ * Consumers (e.g. MCP search results) can forward this to give agents and
+ * humans more structure than a bare id list.
+ */
+export const docSubKind: {
+  [K in DocCategory]: (doc: DocRecordMap[K]) => string | undefined
+} = {
+  option: _ => undefined,
+  cond_op: d => d.arity,
+  builtin: _ => undefined,
+  precmd: _ => undefined,
+  shell_param: _ => undefined,
+  reserved_word: d => d.pos,
+  redir: _ => undefined,
+  process_subst: _ => undefined,
+  param_expn: d => d.subKind,
+  subscript_flag: _ => undefined,
+  param_flag: _ => undefined,
+  history: d => d.kind,
+  glob_op: d => d.kind,
+  glob_flag: _ => undefined,
+  prompt_escape: _ => undefined,
+  zle_widget: d => d.kind,
+}

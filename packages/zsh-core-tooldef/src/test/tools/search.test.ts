@@ -56,6 +56,22 @@ describe("search", () => {
     expect(r.matches).toEqual([])
   })
 
+  test("history match surfaces subKind", () => {
+    const r = search(corpus, { category: "history", limit: 50 })
+    expect(r.matches.length).toBeGreaterThan(0)
+    for (const m of r.matches) {
+      expect(["event-designator", "word-designator", "modifier"]).toContain(
+        m.subKind,
+      )
+    }
+  })
+
+  test("builtin match has no subKind key", () => {
+    const r = search(corpus, { query: "echo", category: "builtin", limit: 1 })
+    expect(r.matches[0]).toBeDefined()
+    expect(r.matches[0]).not.toHaveProperty("subKind")
+  })
+
   test("results omit markdown body (size containment)", () => {
     const r = search(corpus, { query: "echo" })
     for (const m of r.matches) {

@@ -110,17 +110,23 @@ function toArgv(toolName: string, input: Record<string, unknown>): string[] {
 }
 
 /**
- * Strip `score` fields recursively. fuzzysort (TS) and nucleo-matcher
- * (Rust) use different scoring scales; comparing exact numeric scores
- * across them is not meaningful. The ranking order is what matters and
- * is what both sides are written to produce identically.
+ * Strip fields that are known not to match across the TS/Rust sides:
+ *
+ * - `score`: fuzzysort (TS) and nucleo-matcher (Rust) use different scoring
+ *   scales; exact numeric equality is not meaningful. Ranking order is what
+ *   both sides are written to produce identically.
+ * - `subKind`: TS-only until the Rust side surfaces the same per-category
+ *   sub-facet. Dropping it here keeps existing fixtures valid. Remove this
+ *   branch once Rust fixtures carry `subKind`.
  */
+const DROPPED_KEYS = new Set(["score", "subKind"])
+
 function stripScores(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(stripScores)
   if (value && typeof value === "object") {
     const out: Record<string, unknown> = {}
     for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
-      if (k === "score") continue
+      if (DROPPED_KEYS.has(k)) continue
       out[k] = stripScores(v)
     }
     return out
