@@ -1,6 +1,6 @@
 # zshref
 
-A command-line reference for zsh syntax. Ask what a token is, search the manual, or print the docs for a known element — from a terminal, a script, or an agent pipeline. Tool subcommands emit one JSON object on stdout per invocation — pipe into `jq` for human reading. The `completions` and `mangen` utility subcommands emit their script / roff man page on stdout instead.
+A command-line reference for zsh syntax. Ask what a token is, search the manual, or print the docs for a known element — from a terminal, a script, or an agent pipeline. Tool subcommands emit one JSON object on stdout per invocation — pipe into `jq` for human reading. `zshref info` does likewise; `zshref completions` emits its shell script on stdout instead.
 
 > **Status: pre-release (alpha).** This crate is developed inside the [`better-zsh`](https://github.com/carlwr/better-zsh) monorepo and will be extracted to its own repository on first stable release. Until then, the install path below requires a full monorepo checkout (the bundled JSON corpus is generated from the TypeScript side of the repo). The `cargo install zshref` entry point from crates.io is not yet live.
 
@@ -88,6 +88,9 @@ zshref describe --category option --id autocd
 
 # Look up a shell option by name, `NO_*` forms included.
 zshref lookup_option --raw NO_AUTO_CD
+
+# Emit corpus + upstream metadata.
+zshref info
 ```
 
 ## Exit codes
@@ -116,10 +119,6 @@ zshref completions fish | source
 For cached completions (slightly faster startup), write the zsh script to a directory already on your `$fpath` (inspect with `print -l $fpath`), named exactly `_zshref`, with `compinit` running after.
 
 See `zshref completions --help` for other supported shells.
-
-## Man page
-
-`zshref mangen` emits a roff-format man page (section 1) to stdout — pipe it where your packager expects. The Homebrew formula installs it automatically.
 
 ## More
 

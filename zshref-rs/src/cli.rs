@@ -43,10 +43,10 @@ pub fn build_cli(tool_defs: &ToolDefs, corpus: &Corpus) -> Command {
         .about(ROOT_BRIEF)
         .long_about(concat!(
             "Query a bundled static zsh reference from the command line.\n\n",
-            "Tool subcommands (classify, search, describe, lookup_option) emit ",
-            "pretty JSON on stdout — pipe to `jq`. Utility subcommands (",
-            "`completions`, `mangen`) emit the requested script / roff man page ",
-            "on stdout instead. Help, version, errors, and warnings go to stderr. ",
+            "Tool subcommands (classify, search, describe, lookup_option) and ",
+            "`info` emit pretty JSON on stdout — pipe to `jq`. `completions` ",
+            "emits the requested shell script on stdout instead. Help, version, ",
+            "errors, and warnings go to stderr. ",
             "ANSI colors in help output are auto-disabled when stderr is not a TTY.",
         ))
         .after_help(ROOT_AFTER_HELP)
@@ -75,10 +75,6 @@ pub fn build_cli(tool_defs: &ToolDefs, corpus: &Corpus) -> Command {
     root = root.subcommand(
         Command::new("info").about("emit corpus + upstream metadata as JSON (no flags)"),
     );
-
-    // `zshref mangen` — emit a roff man page to stdout.
-    root =
-        root.subcommand(Command::new("mangen").about("emit a roff man page (section 1) to stdout"));
 
     root
 }
@@ -246,17 +242,6 @@ pub fn dispatch(cmd: Command, tool_defs: &ToolDefs, corpus: &Corpus) -> Result<i
     if sub_name == "info" {
         let result = tools::info::run(corpus)?;
         output::emit(&result);
-        return Ok(0);
-    }
-
-    if sub_name == "mangen" {
-        // The multi-line `--version` string (pkg version + zsh upstream +
-        // corpus totals) is intentional for humans, but groff's `.TH` date
-        // slot expects a single line — leak the extra lines and they render
-        // as garbage at the top of the man page. Override for this path.
-        let cmd_for_man = cmd_for_err.version(env!("CARGO_PKG_VERSION"));
-        let mut stdout = std::io::stdout();
-        clap_mangen::Man::new(cmd_for_man).render(&mut stdout)?;
         return Ok(0);
     }
 

@@ -20,10 +20,6 @@ class Zshref < Formula
   def install
     system "cargo", "install", *std_cargo_args
 
-    # Man page: `zshref mangen` emits roff(1) to stdout.
-    (buildpath/"zshref.1").write Utils.safe_popen_read(bin/"zshref", "mangen")
-    man1.install "zshref.1"
-
     # Shell completions: `zshref completions <shell>` for each supported shell.
     generate_completions_from_executable(bin/"zshref", "completions")
   end
@@ -35,8 +31,5 @@ class Zshref < Formula
     # End-to-end sanity: classify a known option.
     classify = shell_output("#{bin}/zshref classify --raw AUTO_CD")
     assert_match(/"category"\s*:\s*"option"/, classify)
-
-    # Man page installed and renders.
-    assert_path_exists man1/"zshref.1"
   end
 end

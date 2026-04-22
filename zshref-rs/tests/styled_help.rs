@@ -40,3 +40,24 @@ fn help_is_plain_when_no_color_set() {
         "NO_COLOR must override CLICOLOR_FORCE: saw ANSI in --help stderr"
     );
 }
+
+#[test]
+fn help_omits_removed_mangen_subcommand() {
+    let help = String::from_utf8(help_stderr(&[])).expect("help is utf-8");
+    assert!(
+        !help.contains("mangen"),
+        "root --help still mentions removed `mangen` subcommand:\n{help}"
+    );
+
+    let out = Command::new(BIN)
+        .arg("mangen")
+        .output()
+        .expect("spawn zshref mangen");
+    assert_eq!(out.status.code(), Some(2), "removed subcommand should fail");
+
+    let stderr = String::from_utf8_lossy(&out.stderr);
+    assert!(
+        stderr.contains("subcommand") && stderr.contains("mangen"),
+        "expected clap unknown-subcommand error, got:\n{stderr}"
+    );
+}
