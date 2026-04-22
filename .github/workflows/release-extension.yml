@@ -19,7 +19,7 @@ name: Release better-zsh (VS Code extension)
 # cleanly).
 #
 # Build: runs `pnpm vsix` which chains prebuild (builds @carlwr/zsh-core
-# and @carlwr/zshref-mcp), typecheck + lint, vitest, and finally
+# and @carlwr/zsh-core-tooldef), typecheck + lint, vitest, and finally
 # `scripts/package-vsix` → produces a single better-zsh.vsix that is
 # uploaded as a workflow artifact AND published byte-identically to
 # both registries.

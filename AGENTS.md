@@ -264,9 +264,11 @@ Downstream `pre*` hooks build upstream packages by default so per-package comman
 Two contracts prevent the race:
 
 - Downstream `pre*` hooks check `BZ_SKIP_UPSTREAM` and short-circuit when set. A caller that has already built upstreams sets the env to opt out.
-- Workspace-level aggregators (`test`, `test:integration`, `check`, `typecheck`) run `pnpm bootstrap:upstream` first (which is itself `BZ_SKIP_UPSTREAM`-gated) and then export `BZ_SKIP_UPSTREAM=1` for the `pnpm -r …` phase.
+- Workspace-level recursive aggregators run through `scripts/upstream-ready.mjs`; it bootstraps once, then runs the recursive phase with `BZ_SKIP_UPSTREAM=1`.
 
-CI achieves the same outcome by setting `BZ_SKIP_UPSTREAM: "1"` at job level and running a bootstrap step before recursive scripts.
+`scripts/verify-upstream-contract.mjs` is the executable guard for root recursive scripts, package `pre*` hooks, and CI workflow use of the guarded root scripts.
+
+CI achieves the same outcome by setting `BZ_SKIP_UPSTREAM: "1"` at job level and running a bootstrap step before guarded recursive scripts.
 
 When adding a new workspace-recursive aggregator that invokes a script with upstream-rebuilding `pre*` hooks (`build`, `typecheck`, `test`, etc. on downstream packages), follow the same bootstrap + `BZ_SKIP_UPSTREAM=1` pattern. Aggregators for scripts without such hooks (`format`, `lint`) do not need it.
 
