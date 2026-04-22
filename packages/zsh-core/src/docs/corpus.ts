@@ -225,6 +225,122 @@ function tailKindOf(tail: string): string {
   return tail.length > 0 ? "word" : ""
 }
 
+/**
+ * History resolver -- event-designator forms only.
+ *
+ * Word-designators (`0`, `a`, `n`, `x-y`, ...) and modifiers (`h`, `s/l/r[/]`,
+ * ...) are grammatical components that only have meaning after an event
+ * designator; they are NOT independent user-code tokens. A bare `0` or `a`
+ * in isolation is never a history token. `classify` is context-free, so this
+ * resolver stays out of those forms on the same "totality, not utility"
+ * grounds as `param_expn`'s resolver (see DESIGN.md §"History: grammar
+ * components, not independent tokens").
+ *
+ * Recognized forms (first match wins):
+ * - `!!`                     -> `!!`
+ * - `!#`                     -> `!#`
+ * - `!{...}`                 -> `!{...}` (literal corpus template)
+ * - `!?str` / `!?str?`       -> `!?str[?]`
+ * - `!-n` (digits)           -> `!-n`
+ * - `!n`  (digits)           -> `!n`
+ * - `!str` (no spaces, no !) -> `!str`
+ * - `^foo^bar` / `^foo^bar^` -> `!!` (documented synonym of `!!:s^foo^bar^`)
+ */
+function resolveHistory(
+  c: DocCorpus,
+  raw: string,
+): Documented<"history"> | undefined {
+  const t = raw.trim()
+  if (!t) return undefined
+
+  const key = matchHistoryKey(t)
+  if (!key) return undefined
+
+  const id = mkDocumented("history", key)
+  return c.history.has(id) ? id : undefined
+}
+
+function matchHistoryKey(t: string): string | undefined {
+  if (t === "!!") return "!!"
+  if (t === "!#") return "!#"
+  if (t === "!{...}") return "!{...}"
+
+  if (t.startsWith("!?")) {
+    const rest = t.slice(2)
+    if (rest.length === 0) return undefined
+    // optional trailing `?` terminator
+    const body = rest.endsWith("?") ? rest.slice(0, -1) : rest
+    if (body.length === 0) return undefined
+    return "!?str[?]"
+  }
+
+  if (t.startsWith("!-")) {
+    const rest = t.slice(2)
+    if (rest.length > 0 && /^\d+$/.test(rest)) return "!-n"
+    return undefined
+  }
+
+  if (t.startsWith("!")) {
+    const rest = t.slice(1)
+    if (rest.length === 0) return undefined
+    if (/^\d+$/.test(rest)) return "!n"
+    // `!str`: non-space, non-`!` chars
+    if (/^[^!\s]+$/.test(rest)) return "!str"
+    return undefined
+  }
+
+  // `^old^new` / `^old^new^` substitution shorthand -- documented as synonymous
+  // with `!!:s^old^new^`, so resolve to the `!!` record.
+  if (t.startsWith("^")) {
+    const rest = t.slice(1)
+    const secondCaret = rest.indexOf("^")
+    if (secondCaret <= 0) return undefined
+    // require at least one char before and after the middle `^`
+    const after = rest.slice(secondCaret + 1)
+    if (after.length === 0) return undefined
+    // trailing `^` is optional; already covered
+    return "!!"
+  }
+
+  return undefined
+}
+
+/**
+ * Resolver factory for flag categories whose corpus keys are single letters
+ * (`e`, `U`, `i`, ...) but whose user-code tokens may appear wrapped in
+ * parentheses (e.g. `(e)` inside `${arr[(e)...]}`) or, for glob flags, with
+ * the `#` marker (e.g. `(#i)` inside glob patterns).
+ *
+ * Tries the raw-trimmed form verbatim; if that misses and the raw token is
+ * wrapped (`(X)` or, for `glob_flag`, `(#X)`), retries the inner form. Falls
+ * back to undefined — a bare letter that is NOT a documented flag never
+ * cross-resolves to an unrelated category entry.
+ */
+function parensAgnosticFlagResolver<
+  K extends "subscript_flag" | "param_flag" | "glob_flag",
+>(cat: K): Resolver<K> {
+  return (c, raw) => {
+    const map = c[cat] as ReadonlyMap<string, unknown>
+
+    const direct = mkDocumented(cat, raw)
+    if (map.has(direct as string)) return direct
+
+    const t = raw.trim()
+    if (t.startsWith("(") && t.endsWith(")") && t.length >= 2) {
+      const inner = t.slice(1, -1)
+      // glob_flag may be written `(#i)` -- drop the `#` marker too
+      const stripped =
+        cat === "glob_flag" && inner.startsWith("#") ? inner.slice(1) : inner
+      if (stripped.length > 0) {
+        const id = mkDocumented(cat, stripped)
+        if (map.has(id as string)) return id
+      }
+    }
+
+    return undefined
+  }
+}
+
 const resolvers: { [K in DocCategory]: Resolver<K> } = {
   option: (c, raw) => resolveOption(c, raw)?.id,
   cond_op: simpleResolver("cond_op"),
@@ -239,11 +355,11 @@ const resolvers: { [K in DocCategory]: Resolver<K> } = {
   // the category is reached via search/describe rather than classify. Kept
   // in the table for total coverage of the closed `DocCategory` union.
   param_expn: simpleResolver("param_expn"),
-  subscript_flag: simpleResolver("subscript_flag"),
-  param_flag: simpleResolver("param_flag"),
-  history: simpleResolver("history"),
+  subscript_flag: parensAgnosticFlagResolver("subscript_flag"),
+  param_flag: parensAgnosticFlagResolver("param_flag"),
+  history: resolveHistory,
   glob_op: simpleResolver("glob_op"),
-  glob_flag: simpleResolver("glob_flag"),
+  glob_flag: parensAgnosticFlagResolver("glob_flag"),
   prompt_escape: simpleResolver("prompt_escape"),
   zle_widget: simpleResolver("zle_widget"),
 }
