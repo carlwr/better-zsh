@@ -51,6 +51,20 @@ function parseSeq(src: string, start: number, stop?: ")"): ParseResult {
       return { nodes, pos: pos + 1, closed: true }
     }
 
+    // Yodl uses a `+` immediately before a macro call as a separator marker
+    // that the yodl renderer consumes. `tt(realpath+LPAR()3+RPAR())` renders
+    // as `realpath(3)`: the `+` is eaten, LPAR/RPAR expand. Without this,
+    // vendored docs leak stray `+` chars around function/manpage refs.
+    if (src[pos] === "+") {
+      const macro = parseMacroAt(src, pos + 1)
+      if (macro) {
+        flush()
+        nodes.push(macro.node)
+        pos = macro.pos
+        continue
+      }
+    }
+
     const macro = parseMacroAt(src, pos)
     if (!macro) {
       // Vendored docs sometimes contain literal parenthesized text inside a

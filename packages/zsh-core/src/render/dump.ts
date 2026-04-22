@@ -59,6 +59,11 @@ const suspiciousPatterns: readonly [string, (md: string) => boolean][] = [
   ["dangling continuation", md => /\\$/m.test(md)],
   ["raw yodl marker", md => /\b(?:tt|var|example|manref|noderef)\(/.test(md)],
   ["unbalanced inline backticks", hasUnbalancedInlineBackticks],
+  [
+    'stray "+" before macro-shaped call',
+    md => /[A-Za-z_][A-Za-z0-9_]+\+\(/.test(md),
+  ],
+  ["double comma (null reference substitution)", md => /,\s*,/.test(md)],
 ]
 
 /**
@@ -140,20 +145,23 @@ function renderDumpText(
   return `<!-- preamble for category -->\n\n${preamble}\n\n---\n\n${body}`
 }
 
-// `{kind}:{id}` strings known to trip the unbalanced-backticks check due to
-// a pre-existing upstream typo or rendering-pipeline quirk predating the
-// heuristic. Tracked here as a pinned list of tech debt so the check stays
-// live as a regression guard; drop entries as the root causes are fixed.
-const knownBacktickOffenders: ReadonlySet<string> = new Set([])
+// `{kind}:{id}|{heuristic}` strings known to trip a given suspicious-pattern
+// check due to a pre-existing rendering-pipeline quirk predating the
+// heuristic. Tracked here as a pinned list of tech debt so the checks stay
+// live as regression guards; root causes are separate yodl-rendering bugs
+// (notably tt(name()) content loss and noderef() empty rendering). Drop
+// entries as fixes land.
+const knownRenderArtifacts: ReadonlySet<string> = new Set([
+  "option:globalrcs|double comma (null reference substitution)",
+  "option:rcs|double comma (null reference substitution)",
+])
 
 function suspiciousHits(doc: RefDoc): string[] {
   const id = `${doc.kind}:${doc.id}`
-  const knownBacktick = knownBacktickOffenders.has(id)
   return suspiciousPatterns
     .filter(
       ([name, check]) =>
-        check(doc.md) &&
-        !(knownBacktick && name === "unbalanced inline backticks"),
+        check(doc.md) && !knownRenderArtifacts.has(`${id}|${name}`),
     )
     .map(([name]) => `- ${id} — ${name}`)
 }
