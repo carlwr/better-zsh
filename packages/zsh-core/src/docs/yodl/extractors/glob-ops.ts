@@ -5,9 +5,10 @@ import {
   extractSectionBody,
   flattenAliasedEntries,
 } from "../core/doc.ts"
+import type { YNodeSeq } from "../core/nodes.ts"
 import { normalizeHeader } from "../core/text.ts"
 
-export function parseGlobOps(yo: string): readonly GlobOpDoc[] {
+export function parseGlobOps(yo: string | YNodeSeq): readonly GlobOpDoc[] {
   return [
     ...parseSection(extractSectionBody(yo, "Glob Operators"), "Glob Operators"),
     ...parseSection(

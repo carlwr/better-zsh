@@ -2,11 +2,12 @@ import type { NonEmpty } from "@carlwr/typescript-extra"
 import type { PrecmdDoc } from "../../types.ts"
 import { type PrecmdName, precmdNames } from "../../types.ts"
 import { extractItems } from "../core/doc.ts"
+import type { YNodeSeq } from "../core/nodes.ts"
 import { normalizeBody, normalizeHeader } from "../core/text.ts"
 
 const PRECMDS = new Set<PrecmdName>(precmdNames)
 
-export function parsePrecmds(yo: string): readonly PrecmdDoc[] {
+export function parsePrecmds(yo: string | YNodeSeq): readonly PrecmdDoc[] {
   return extractItems(yo)
     .filter(item => item.section === "Precommand Modifiers" && item.body)
     .flatMap(item => {

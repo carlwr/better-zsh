@@ -1,6 +1,7 @@
 import { mkDocumented } from "../../brands.ts"
 import type { CondOpDoc } from "../../types.ts"
 import { extractItems, flattenAliasedEntries } from "../core/doc.ts"
+import type { YNodeSeq } from "../core/nodes.ts"
 import { extractTokens } from "../core/text.ts"
 
 interface ParsedUnary {
@@ -18,7 +19,7 @@ interface ParsedBinary {
 type ParsedCondHeader = ParsedUnary | ParsedBinary
 
 /** Parse cond.yo → CondOpDoc[] */
-export function parseCondOps(yo: string): readonly CondOpDoc[] {
+export function parseCondOps(yo: string | YNodeSeq): readonly CondOpDoc[] {
   return flattenAliasedEntries(extractItems(yo), parseHeader, (parsed, desc) =>
     parsed.arity === "unary"
       ? {

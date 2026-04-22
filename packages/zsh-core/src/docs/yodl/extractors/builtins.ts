@@ -10,8 +10,8 @@ interface SynopsisLine {
   continuation: boolean
 }
 
-export function parseBuiltins(yo: string): readonly BuiltinDoc[] {
-  const nodes = parseNodes(yo)
+export function parseBuiltins(yo: string | YNodeSeq): readonly BuiltinDoc[] {
+  const nodes = typeof yo === "string" ? parseNodes(yo) : yo
   const byName = new Map<string, BuiltinDoc>()
 
   for (const doc of macroDocs(nodes)) {

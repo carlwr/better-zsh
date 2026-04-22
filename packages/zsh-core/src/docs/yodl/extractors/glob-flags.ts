@@ -6,6 +6,7 @@ import {
   extractSectionBody,
   type YodlEntry,
 } from "../core/doc.ts"
+import type { YNodeSeq } from "../core/nodes.ts"
 import { extractTokens, normalizeBody } from "../core/text.ts"
 import { flagSigText } from "./flag-section.ts"
 
@@ -13,7 +14,7 @@ function bodyDoc(item: YodlEntry): string | undefined {
   return item.body ? normalizeBody(item.body) : undefined
 }
 
-export function parseGlobFlags(yo: string): readonly GlobFlagDoc[] {
+export function parseGlobFlags(yo: string | YNodeSeq): readonly GlobFlagDoc[] {
   const section = "Globbing Flags"
   const sec = extractSectionBody(yo, "Globbing Flags")
   const list = extractFirstList(sec, "item")

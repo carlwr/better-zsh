@@ -7,9 +7,10 @@ import {
   extractSitemList,
   flattenAliasedEntries,
 } from "../core/doc.ts"
+import type { YNodeSeq } from "../core/nodes.ts"
 import { normalizeBody, normalizeHeader } from "../core/text.ts"
 
-export function parseHistory(yo: string): readonly HistoryDoc[] {
+export function parseHistory(yo: string | YNodeSeq): readonly HistoryDoc[] {
   return [
     ...parseSection(yo, "Event Designators", "event-designator"),
     ...parseWordDesignators(yo),
@@ -18,7 +19,7 @@ export function parseHistory(yo: string): readonly HistoryDoc[] {
 }
 
 function parseSection(
-  yo: Parameters<typeof extractSectionBody>[0],
+  yo: string | YNodeSeq,
   section: string,
   kind: HistoryKind,
 ): HistoryDoc[] {
@@ -38,7 +39,7 @@ function parseSection(
   )
 }
 
-function parseWordDesignators(yo: string): HistoryDoc[] {
+function parseWordDesignators(yo: string | YNodeSeq): HistoryDoc[] {
   const body = extractSectionBody(yo, "Word Designators")
   const list = extractFirstList(body, "sitem")
   if (!list) return []

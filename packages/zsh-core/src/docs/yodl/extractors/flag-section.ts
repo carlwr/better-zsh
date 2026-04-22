@@ -1,6 +1,7 @@
 import { mkDocumented } from "../../brands.ts"
 import type { ParamFlagDoc, SubscriptFlagDoc } from "../../types.ts"
 import { extractItems, extractSectionBody } from "../core/doc.ts"
+import type { YNodeSeq } from "../core/nodes.ts"
 import { normalizeBody, normalizeHeader } from "../core/text.ts"
 
 export function flagSigText(
@@ -23,7 +24,7 @@ export function splitFlagSig(sig: string): FlagSigParts {
 }
 
 export function parseSubscriptFlagSection(
-  yo: string,
+  yo: string | YNodeSeq,
   section: string,
 ): readonly SubscriptFlagDoc[] {
   return parseFlagSection(yo, section, sig =>
@@ -32,14 +33,14 @@ export function parseSubscriptFlagSection(
 }
 
 export function parseParamFlagSection(
-  yo: string,
+  yo: string | YNodeSeq,
   section: string,
 ): readonly ParamFlagDoc[] {
   return parseFlagSection(yo, section, sig => mkDocumented("param_flag", sig))
 }
 
 function parseFlagSection<T>(
-  yo: string,
+  yo: string | YNodeSeq,
   section: string,
   mkFlag: (raw: string) => T,
 ): readonly {

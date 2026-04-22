@@ -15,7 +15,7 @@ import {
   extractSectionBody,
   extractSitemList,
 } from "../core/doc.ts"
-import { parseNodes } from "../core/nodes.ts"
+import { parseNodes, type YNodeSeq } from "../core/nodes.ts"
 import { extractTokens, normalizeBody, stripYodl } from "../core/text.ts"
 
 const DEFAULT_RE = /<([DKSCZ])>/g
@@ -32,15 +32,18 @@ const DEFAULT_EMULATIONS: Record<DefaultMarker, readonly Emulation[]> = {
 const OPTION_SECTION_SET: ReadonlySet<string> = new Set(optSections)
 
 /**
- * Narrow pre-parse patches for known upstream typos in options.yo.
- * Each entry is keyed to a verbatim source snippet; removing becomes a no-op
- * once upstream fixes the typo.
+ * Narrow pre-parse patch for a known upstream typo in options.yo.
  *
  * Current entries:
  * - GLOB_ASSIGN: `` `var(name)tt(=)var(pattern) `` is missing its closing `'`,
  *   leaving an unclosed backtick-quote span that renders as a lone backtick.
+ *   Removing becomes a no-op once upstream fixes the typo.
+ *
+ * Exported so `loadCorpus` can apply it before parsing the shared file once;
+ * also applied here when `parseOptions` receives a raw string, so direct
+ * callers (tests, one-off tools) see the same fixed input as production.
  */
-function fixupUpstreamTypos(yo: string): string {
+export function fixupOptionsYo(yo: string): string {
   return yo.replace(
     "`var(name)tt(=)var(pattern) (e.g. `tt(foo=*)')",
     "`var(name)tt(=)var(pattern)' (e.g. `tt(foo=*)')",
@@ -48,8 +51,8 @@ function fixupUpstreamTypos(yo: string): string {
 }
 
 /** Parse options.yo → ZshOption[] */
-export function parseOptions(yo: string): readonly ZshOption[] {
-  const nodes = parseNodes(fixupUpstreamTypos(yo))
+export function parseOptions(yo: string | YNodeSeq): readonly ZshOption[] {
+  const nodes = typeof yo === "string" ? parseNodes(fixupOptionsYo(yo)) : yo
   const items = extractItems(nodes)
   const flagMap = parseDefaultFlagAliases(nodes)
   return items.flatMap(item => {

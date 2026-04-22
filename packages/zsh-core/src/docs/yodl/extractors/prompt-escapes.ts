@@ -1,6 +1,7 @@
 import { mkDocumented } from "../../brands.ts"
 import type { PromptEscapeDoc } from "../../types.ts"
 import { extractItems, flattenAliasedEntries } from "../core/doc.ts"
+import type { YNodeSeq } from "../core/nodes.ts"
 import { normalizeHeader } from "../core/text.ts"
 
 /**
@@ -12,7 +13,9 @@ import { normalizeHeader } from "../core/text.ts"
  * rendered header text (e.g. `%n`, `%D{string}`, `%B (%b)`); lookup key is
  * the first whitespace-separated run starting at `%`.
  */
-export function parsePromptEscapes(yo: string): readonly PromptEscapeDoc[] {
+export function parsePromptEscapes(
+  yo: string | YNodeSeq,
+): readonly PromptEscapeDoc[] {
   return flattenAliasedEntries(
     extractItems(yo, 1),
     header => {

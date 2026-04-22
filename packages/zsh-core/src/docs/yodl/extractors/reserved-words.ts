@@ -1,6 +1,7 @@
 import { mkDocumented } from "../../brands.ts"
 import type { ReservedWordDoc } from "../../types.ts"
 import { extractSectionBody } from "../core/doc.ts"
+import type { YNodeSeq } from "../core/nodes.ts"
 import { extractTokens } from "../core/text.ts"
 
 const CMD_DESC =
@@ -9,7 +10,9 @@ const CMD_DESC =
 const ANY_DESC =
   "Recognized in any position if neither `IGNORE_BRACES` nor `IGNORE_CLOSE_BRACES` is set."
 
-export function parseReswords(yo: string): readonly ReservedWordDoc[] {
+export function parseReswords(
+  yo: string | YNodeSeq,
+): readonly ReservedWordDoc[] {
   const words = extractTokens(extractSectionBody(yo, "Reserved Words"))
     .filter(tok => tok.kind === "tt")
     .map(tok => tok.text)

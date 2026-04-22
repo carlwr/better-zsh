@@ -5,6 +5,7 @@ import {
   extractItemList,
   extractSectionBody,
 } from "../core/doc.ts"
+import type { YNodeSeq } from "../core/nodes.ts"
 import { extractTokens, normalizeBody, stripYodl } from "../core/text.ts"
 
 const PARAM_SECTIONS = [
@@ -17,12 +18,14 @@ interface ParamHead {
   tied?: string
 }
 
-export function parseShellParams(yo: string): readonly ShellParamDoc[] {
+export function parseShellParams(
+  yo: string | YNodeSeq,
+): readonly ShellParamDoc[] {
   return PARAM_SECTIONS.flatMap(section => parseParamSection(yo, section))
 }
 
 function parseParamSection(
-  yo: Parameters<typeof extractFirstList>[0],
+  yo: string | YNodeSeq,
   section: (typeof PARAM_SECTIONS)[number],
 ) {
   const list = extractFirstList(extractSectionBody(yo, section), "item")

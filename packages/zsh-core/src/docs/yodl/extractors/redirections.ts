@@ -6,9 +6,10 @@ import {
   extractSectionBody,
   flattenAliasedEntries,
 } from "../core/doc.ts"
+import type { YNodeSeq } from "../core/nodes.ts"
 import { normalizeHeader } from "../core/text.ts"
 
-export function parseRedirs(yo: string): readonly RedirDoc[] {
+export function parseRedirs(yo: string | YNodeSeq): readonly RedirDoc[] {
   const section = extractSectionBody(yo, "Redirection")
   return flattenAliasedEntries(
     extractItems(section.length > 0 ? section : yo, 1),

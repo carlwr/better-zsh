@@ -6,6 +6,7 @@ import {
   extractItems,
   extractSectionBody,
 } from "../core/doc.ts"
+import type { YNodeSeq } from "../core/nodes.ts"
 import { normalizeBody, normalizeHeader } from "../core/text.ts"
 
 // Sigs here are literal doc templates — e.g. `${name:-word}` — not live
@@ -91,10 +92,8 @@ const SIG_CLASSIFICATION: Readonly<Record<string, SigClassification>> = {
 }
 
 /**
- * Narrow pre-parse patches for known upstream typos in zshexpn's PARAMETER
- * EXPANSION section. Each entry is keyed to a verbatim source snippet and
- * inserts the one missing character; if upstream fixes the typo the
- * substitution becomes a no-op and can be removed.
+ * Narrow pre-parse patch for a known upstream typo in zshexpn's PARAMETER
+ * EXPANSION section.
  *
  * Current entries:
  * - `replace` doc body: source has `` `tt(#%) are not active `` — missing
@@ -102,8 +101,13 @@ const SIG_CLASSIFICATION: Readonly<Record<string, SigClassification>> = {
  *   preceding `` `tt(#)' `` and `` `tt(%)' `` in the same sentence). Without
  *   the fix, `renderInlineMd` leaves a lone backtick in the rendered desc
  *   and the `#%` never becomes an inline-code span like its siblings.
+ *   Removing becomes a no-op once upstream fixes the typo.
+ *
+ * Exported so `loadCorpus` can apply it before parsing the shared file once;
+ * also applied here when `parseParamExpns` receives a raw string, so direct
+ * callers (tests, one-off tools) see the same fixed input as production.
  */
-function fixupUpstreamTypos(yo: string): string {
+export function fixupExpnYo(yo: string): string {
   return yo.replace(
     "`tt(%)' and `tt(#%) are not active",
     "`tt(%)' and `tt(#%)' are not active",
@@ -118,9 +122,11 @@ function fixupUpstreamTypos(yo: string): string {
  * its own sig but lists every sibling in `groupSigs` (manual source order) so
  * renderers can show the family together.
  */
-export function parseParamExpns(yo: string): readonly ParamExpnDoc[] {
+export function parseParamExpns(
+  yo: string | YNodeSeq,
+): readonly ParamExpnDoc[] {
   const section = extractSectionBody(
-    fixupUpstreamTypos(yo),
+    typeof yo === "string" ? fixupExpnYo(yo) : yo,
     "Parameter Expansion",
   )
   const entries = extractItems(section, 1)

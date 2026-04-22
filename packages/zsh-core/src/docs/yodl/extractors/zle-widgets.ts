@@ -6,6 +6,7 @@ import {
   extractSectionBody,
   flattenAliasedEntries,
 } from "../core/doc.ts"
+import type { YNodeSeq } from "../core/nodes.ts"
 import { extractTokens, normalizeHeader } from "../core/text.ts"
 
 /**
@@ -23,7 +24,9 @@ import { extractTokens, normalizeHeader } from "../core/text.ts"
  * rendered header (including the default-bindings-per-keymap triple when
  * present).
  */
-export function parseZleWidgets(yo: string): readonly ZleWidgetDoc[] {
+export function parseZleWidgets(
+  yo: string | YNodeSeq,
+): readonly ZleWidgetDoc[] {
   return [
     ...parseWidgetSection(extractSectBody(yo, "Standard Widgets"), "standard"),
     ...parseWidgetSection(

@@ -1,5 +1,6 @@
 import type { ProcessSubstDoc, ProcessSubstOp } from "../../types.ts"
 import { extractSectionBody } from "../core/doc.ts"
+import type { YNodeSeq } from "../core/nodes.ts"
 
 const DOCS = [
   {
@@ -23,7 +24,9 @@ const DOCS = [
   desc: string
 }[]
 
-export function parseProcessSubsts(yo: string): readonly ProcessSubstDoc[] {
+export function parseProcessSubsts(
+  yo: string | YNodeSeq,
+): readonly ProcessSubstDoc[] {
   return extractSectionBody(yo, "Process Substitution").length > 0
     ? DOCS.map(doc => ({ ...doc, section: "Process Substitution" }))
     : []
