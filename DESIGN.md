@@ -140,6 +140,16 @@ Redirection identity is the full signature (see `RedirDoc` JSDoc), not the leadi
 
 ---
 
+## History: grammar components, not independent tokens
+
+The `history` category looks superficially like other short-key categories (single-character keys, flat record list) but has a different underlying shape that should guide its resolver and presentation.
+
+- **Three subkinds compose into one grammatical form.** `HistoryKind` (`event-designator` | `word-designator` | `modifier`) are not parallel taxonomies of independent tokens; they are components of `![event][:word][:modifier…]`. A bare `^` or `:h` is not a zsh token in isolation. This distinguishes `history` from, say, `glob_op`, where each record *is* a standalone user-code token.
+- **Corpus keys are templates, not literals.** `!n`, `!str`, `!-n`, `h [ digits ]`, `s/l/r[/]` — the `n` / `str` / `digits` stand for a syntactic class. `simpleResolver` therefore resolves only the degenerate literal cases (`!!`, `!#`); real-world tokens like `!42`, `!vim`, `:h3`, `gs/foo/bar/` miss the corpus. This is the widest resolver gap in the taxonomy.
+- **`classify` is context-free; word-designators and modifiers are not.** A token `0` or `a` is a history word-designator or modifier only *after* an event designator; in isolation it is not a history token at all. A typed `resolveHistory` should therefore parse only event-designator forms (tokens starting with `!`, plus the `^str^repl` shorthand). Word-designators and modifiers stay out of `classify` — same "totality, not utility" posture as `param_expn`'s resolver.
+- **In-expansion decomposition belongs in the analysis layer.** Hover/UI for the inner parts of `!!:1:h` needs a history-expansion fact kind in `src/analysis/`, not a richer classify resolver. This is a larger future direction; it does not block event-designator resolver work.
+- **`kind` is the typed facet; surface it to consumers.** The `SearchMatch` / display surface currently hides `kind`, leaving the flat list of short keys cryptic. Promoting `kind` into search results (and into the rendered role line) is the minimum viable fix; `docDisplay` stays equal to `id` so the identity surface doesn't grow divergent-from-id cases beyond `option`.
+
 ## Parameter-expansion identity and shape
 
 `param_expn` identity is the full sig (e.g. `${name:-word}`), not a leading operator — same precedent as redirections. `${name:-word}` and `${name-word}` are separate records, not sub-variants of a `:-` operator. This keeps identity mechanical: two sigs are equal iff the literal templates match.
@@ -228,6 +238,8 @@ Rationale:
 ### Tool surface shape: not a mega-tool
 
 `classify(raw)` is the universal entry point — the agent asks "what is this token?" and gets the first matching category. Per-category richer tools (currently `lookup_option`; future candidates) surface extra fields that don't fit a uniform classify response (e.g. option negation). This avoids the "one mega-tool with a `kind` enum" anti-pattern that some LM agents handle poorly, while also staying well clear of a per-category-tool sprawl. New tools should justify themselves against both extremes.
+
+"List every record in a category" is deliberately a *mode* of `zsh_search` (empty `query` + `category` filter), not a dedicated `zsh_list` tool. The existing code path already returns the right shape (`{matches, matchesReturned, matchesTotal}`) and a corpus-margin test guarantees every category fits in one `MAX_LIMIT` response. A dedicated tool would duplicate the surface without adding capability; discoverability is addressed by promoting the mode in `searchToolDef.description` and by the suite-level `TOOL_SUITE_PREAMBLE` (rendered into MCP `instructions` and `zshref --help`).
 
 ### Tie-break in classify
 
@@ -334,6 +346,8 @@ Design choices:
 - **Rich fact-to-doc links.** `DocPieceId` is the natural return type if future analysis produces tighter fact→doc connections.
 - **New doc categories.** Local additions to the taxonomy tables; the typechecker enforces completeness everywhere else.
 - **Richer markdown rendering.** Internal `md*()` renderers can be enriched independently. An upgrade path is noted in `renderDoc`'s JSDoc for a future `level: "full" | "sig"` axis if multiple categories grow meaningful compact forms.
+- **TBD renderers.** Five categories still return the literal `"TBD"` via `stubRenderer`: `history`, `glob_op`, `glob_flag`, `param_flag`, `subscript_flag`. Fixing them is a single coordinated pass — each should follow the `docBlock(code(sig), fmtOptRefsInMd(desc, corpus), "_Role:_ …")` shape already used for `reserved_word` / `zle_widget` / `process_subst`. Role-vs-category-line wording is currently inconsistent across the typed renderers; pick one (`_Role:_` fits these grammar-ish categories) and apply it uniformly across the five when the stubs are replaced. `mdHistory` additionally surfaces `kind` in the role line.
+- **Richer resolvers for the short-key categories.** The history resolver has the widest gap (see §"History: grammar components, not independent tokens"). Smaller but analogous opportunities: `subscript_flag` / `param_flag` / `glob_flag` corpus keys carry surrounding parens (`(e)`, `(U)`, `(#i)`) while user-code context strips them; a one-line resolver extension that accepts both bare and parenthesized forms would be faithful to zsh's own tokenization. Word-designator / modifier forms remain out of classify on the same context-free grounds as `param_expn`.
 - **Environment-dependent introspection** may later be offered through agent-facing Language Model Tools, where agents explicitly opt in with clear caveats about side effects and env-specificity.
 
 ---
