@@ -145,23 +145,9 @@ function renderDumpText(
   return `<!-- preamble for category -->\n\n${preamble}\n\n---\n\n${body}`
 }
 
-// `{kind}:{id}|{heuristic}` strings known to trip a given suspicious-pattern
-// check due to a pre-existing rendering-pipeline quirk predating the
-// heuristic. Tracked here as a pinned list of tech debt so the checks stay
-// live as regression guards; root causes are separate yodl-rendering bugs
-// (notably tt(name()) content loss and noderef() empty rendering). Drop
-// entries as fixes land.
-const knownRenderArtifacts: ReadonlySet<string> = new Set([
-  "option:globalrcs|double comma (null reference substitution)",
-  "option:rcs|double comma (null reference substitution)",
-])
-
 function suspiciousHits(doc: RefDoc): string[] {
   const id = `${doc.kind}:${doc.id}`
   return suspiciousPatterns
-    .filter(
-      ([name, check]) =>
-        check(doc.md) && !knownRenderArtifacts.has(`${id}|${name}`),
-    )
+    .filter(([, check]) => check(doc.md))
     .map(([name]) => `- ${id} — ${name}`)
 }

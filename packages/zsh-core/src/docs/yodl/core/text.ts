@@ -5,6 +5,8 @@ export interface YodlToken {
   text: string
 }
 
+type RenderMode = "text" | "code"
+
 const SPECIAL_MACROS: Record<string, string> = {
   AMP: "&",
   DASH: "-",
@@ -86,19 +88,19 @@ function asNodes(src: string | YNodeSeq): YNodeSeq {
   return typeof src === "string" ? parseNodes(src) : src
 }
 
-function renderSeq(nodes: YNodeSeq): string {
-  return nodes.map(renderNode).join("")
+function renderSeq(nodes: YNodeSeq, mode: RenderMode = "text"): string {
+  return nodes.map(node => renderNode(node, mode)).join("")
 }
 
-function renderNode(node: YNode): string {
+function renderNode(node: YNode, mode: RenderMode): string {
   if (node.kind === "text") return node.text
-
-  const inner = node.args.map(arg => renderSeq(arg))
-  const [a = "", b = ""] = inner
 
   if (node.name in SPECIAL_MACROS) return SPECIAL_MACROS[node.name] ?? ""
 
   switch (node.name) {
+    case "tt":
+    case "var":
+      return renderSeq(node.args[0] ?? [], "code")
     case "COMMENT":
     case "cindex":
     case "findex":
@@ -114,21 +116,32 @@ function renderNode(node: YNode): string {
     case "endmenu":
       return ""
     case "example":
-      return `\n\n\`\`\`zsh\n${finishPlain(a)}\n\`\`\`\n\n`
-    case "ifnzman":
-      return a
-    case "ifzman":
-      return ""
-    case "manref":
-      return `${a}(${b})`
-    case "sitem":
-      return node.args.length >= 2 ? `- ${a}: ${b}` : a
-    case "item":
-    case "xitem":
-      return inner.join("")
-    default:
-      return inner.join("")
+      return `\n\n\`\`\`zsh\n${finishPlain(renderSeq(node.args[0] ?? [], "code"))}\n\`\`\`\n\n`
+    default: {
+      const inner = node.args.map(arg => renderSeq(arg, mode))
+      const [a = "", b = ""] = inner
+      if (mode === "code" && hasEmptyArg(node)) return `${node.name}()`
+      switch (node.name) {
+        case "ifnzman":
+          return a
+        case "ifzman":
+          return ""
+        case "manref":
+          return `${a}(${b})`
+        case "sitem":
+          return node.args.length >= 2 ? `- ${a}: ${b}` : a
+        case "item":
+        case "xitem":
+          return inner.join("")
+        default:
+          return inner.join("")
+      }
+    }
   }
+}
+
+function hasEmptyArg(node: Extract<YNode, { kind: "macro" }>): boolean {
+  return node.args.length === 1 && (node.args[0]?.length ?? 0) === 0
 }
 
 function walkTokens(nodes: YNodeSeq, out: YodlToken[]) {
@@ -137,7 +150,7 @@ function walkTokens(nodes: YNodeSeq, out: YodlToken[]) {
     if (node.name === "tt" || node.name === "var") {
       out.push({
         kind: node.name,
-        text: renderSeq(node.args[0] ?? []),
+        text: renderSeq(node.args[0] ?? [], "code"),
       })
       continue
     }
@@ -155,8 +168,7 @@ function finishPlain(s: string): string {
 function renderInlineMd(s: string): string {
   let out = s
   out = out.replace(/`([^`\n]+?)'/g, (_m, code) => `\`${code}\``)
-  out = out.replace(/\s+([.,;:!?])/g, "$1")
-  return out
+  return tightenPunctuation(out)
 }
 
 function mergeReferenceParas(parts: readonly string[]): string[] {
@@ -189,7 +201,16 @@ function shouldJoinParas(prev: string, next: string): boolean {
 }
 
 function finishDoc(s: string): string {
+  return tightenPunctuation(
+    s.replace(
+      /(\b(?:see|in|described in|noted in))\n\n([A-Z][^\n]+)/gi,
+      "$1 $2",
+    ),
+  )
+}
+
+function tightenPunctuation(s: string): string {
   return s
-    .replace(/(\b(?:see|in|described in|noted in))\n\n([A-Z][^\n]+)/gi, "$1 $2")
-    .replace(/\s+([.,;:!?])/g, "$1")
+    .replace(/\s+([,;:!?])/g, "$1")
+    .replace(/\s+\.(?=$|[\s)\]}>"'])/g, ".")
 }

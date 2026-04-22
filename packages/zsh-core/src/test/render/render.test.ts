@@ -430,9 +430,9 @@ describe("render dump", () => {
     expect(history?.startsWith("<!-- preamble for category -->")).toBe(true)
     expect(history).toContain(preamble)
     // Separator between preamble and first record.
-    expect(
-      history?.indexOf(preamble) ?? -1,
-    ).toBeLessThan(history?.indexOf("## !!") ?? -1)
+    expect(history?.indexOf(preamble) ?? -1).toBeLessThan(
+      history?.indexOf("## !!") ?? -1,
+    )
   })
 
   test("all.md does NOT contain the history preamble", () => {
@@ -502,6 +502,29 @@ describe("render dump", () => {
       expect(out).toContain("**`PUSHD_SILENT`**")
       expect(out).toContain("**`POSIX_CD`**")
       expect(out).not.toContain("`CDPATH`")
+    })
+
+    test("keeps literal pseudo-calls in vendored option prose", () => {
+      const globalRcs = vendored.option.get(
+        mkDocumented("option", "GLOBAL_RCS"),
+      )
+      const rcs = vendored.option.get(mkDocumented("option", "RCS"))
+      expect(globalRcs).toBeTruthy()
+      expect(rcs).toBeTruthy()
+      // biome-ignore lint/style/noNonNullAssertion: asserted above
+      const globalMd = mdOpt(globalRcs!, vendored)
+      // biome-ignore lint/style/noNonNullAssertion: asserted above
+      const rcsMd = mdOpt(rcs!, vendored)
+      expect(globalMd).toContain(
+        "startup files zprofile(), zshrc(), zlogin() and zlogout() will not be run.",
+      )
+      expect(globalMd).not.toContain(",,")
+      expect(rcsMd).toContain(
+        "After zshenv() is sourced on startup, source the .zshenv, zprofile(), .zprofile, zshrc(), .zshrc, zlogin(), .zlogin, and .zlogout files, as described in Files.",
+      )
+      expect(rcsMd).toContain("the zshenv() file is still sourced")
+      expect(rcsMd).toContain("Files")
+      expect(rcsMd).not.toContain(",,")
     })
   })
 })

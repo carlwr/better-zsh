@@ -13,6 +13,7 @@ function extract(s: string) {
 describe("stripYodl", () => {
   test.each([
     ["tt()", "tt(foo)", "foo"],
+    ["literal pseudo-call in tt()", "tt(zshenv())", "zshenv()"],
     ["var()", "var(file)", "file"],
     ["nested tt+var", "tt(AUTO_CD) and var(name)", "AUTO_CD and name"],
     ["LPAR", "tt(LPAR())", "("],
@@ -25,6 +26,11 @@ describe("stripYodl", () => {
       "ifzman → noderef",
       "ifzman(the section FILES in zmanref(zshmisc))ifnzman(noderef(Files))",
       "Files",
+    ],
+    [
+      "literal pseudo-call in example()",
+      "example(fn1() { ... } >~/logfile)",
+      "```zsh\nfn1() { ... } >~/logfile\n```",
     ],
     ["startsitem/endsitem", "startsitem()\nendsitem()", ""],
     ["startitem/enditem", "startitem()\nenditem()", ""],
@@ -82,6 +88,11 @@ describe("normalizeDoc", () => {
       "code quotes → markdown",
       "code followed by `&&' `||' does not trigger",
       "code followed by `&&` `||` does not trigger",
+    ],
+    [
+      "keeps spaces before dotfiles",
+      "source the .zshenv, zprofile(), .zprofile",
+      "source the .zshenv, zprofile(), .zprofile",
     ],
     [
       "joins continued prose lines",
