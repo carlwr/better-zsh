@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs"
 import { join } from "node:path"
 import { describe, expect, test } from "vitest"
 import { mkDocumented } from "../../docs/brands"
+import { docCategoryPreamble } from "../../docs/category-preamble"
 import type { DocCorpus } from "../../docs/corpus"
 import * as zd from "../../docs/corpus"
 import type { DocCategory, DocRecordMap } from "../../docs/taxonomy"
@@ -418,6 +419,33 @@ describe("render dump", () => {
       expect(files.get("all.md")).toContain(heading)
     }
     expect(files.get("suspicious.md")).toBe("")
+  })
+
+  test("history.md starts with the category preamble", () => {
+    const files = dumpText(corpus())
+    // biome-ignore lint/style/noNonNullAssertion: table-driven presence
+    const preamble = docCategoryPreamble.history!
+    const history = files.get("history.md")
+    expect(history).toBeDefined()
+    expect(history?.startsWith("<!-- preamble for category -->")).toBe(true)
+    expect(history).toContain(preamble)
+    // Separator between preamble and first record.
+    expect(
+      history?.indexOf(preamble) ?? -1,
+    ).toBeLessThan(history?.indexOf("## !!") ?? -1)
+  })
+
+  test("all.md does NOT contain the history preamble", () => {
+    const files = dumpText(corpus())
+    // biome-ignore lint/style/noNonNullAssertion: table-driven presence
+    const preamble = docCategoryPreamble.history!
+    expect(files.get("all.md")).not.toContain(preamble)
+  })
+
+  test("categories without a preamble dump without the marker", () => {
+    const files = dumpText(corpus())
+    expect(files.get("options.md")).not.toContain("<!-- preamble for category")
+    expect(files.get("builtins.md")).not.toContain("<!-- preamble for category")
   })
 
   test("writes dump files", async () => {

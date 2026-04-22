@@ -1,5 +1,6 @@
 import { mkdir, writeFile } from "node:fs/promises"
 import { join } from "node:path"
+import { docCategoryPreamble } from "../docs/category-preamble.ts"
 import { type DocCategory, docCategories } from "../docs/taxonomy.ts"
 import type { RefDoc } from "./refs.ts"
 
@@ -129,7 +130,14 @@ function renderDumpText(
   byKind: Map<DocCategory, RefDoc[]>,
 ): string {
   const selected = kind === "all" ? docs : (byKind.get(kind) ?? [])
-  return `${selected.map(section).join("\n\n---\n\n")}\n`
+  const body = `${selected.map(section).join("\n\n---\n\n")}\n`
+  // Preambles are per-category context; `all.md` intermixes categories and
+  // would fragment if each section were prefixed, so only prepend for
+  // per-category dumps with a preamble defined.
+  if (kind === "all") return body
+  const preamble = docCategoryPreamble[kind]
+  if (preamble === undefined) return body
+  return `<!-- preamble for category -->\n\n${preamble}\n\n---\n\n${body}`
 }
 
 // `{kind}:{id}` strings known to trip the unbalanced-backticks check due to
