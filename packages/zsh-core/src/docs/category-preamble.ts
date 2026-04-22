@@ -13,9 +13,9 @@ Word-designators and modifiers are only meaningful inside a history expansion (a
  * meaningfully interpreted on their own. Composable with per-record markdown;
  * not a substitute for it.
  */
-export const docCategoryPreamble: {
-  readonly [K in DocCategory]: string | undefined
-} = {
+export const docCategoryPreamble: Readonly<
+  Record<DocCategory, string | undefined>
+> = {
   option: undefined,
   cond_op: undefined,
   builtin: undefined,
@@ -32,4 +32,4 @@ export const docCategoryPreamble: {
   glob_flag: undefined,
   prompt_escape: undefined,
   zle_widget: undefined,
-} satisfies Record<DocCategory, string | undefined>
+}
