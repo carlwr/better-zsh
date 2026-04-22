@@ -9,6 +9,7 @@ export default defineConfig({
       "src/test/bundled/**",
       "src/test/zsh-path-matrix/**",
     ],
+    pool: "threads",
   },
   resolve: {
     alias: { vscode: "/dev/null" },

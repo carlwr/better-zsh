@@ -5,5 +5,6 @@ export default defineConfig({
     globals: true,
     include: ["src/test/**/*.test.ts"],
     setupFiles: ["src/test/setup-fast-check.ts"],
+    pool: "threads",
   },
 })

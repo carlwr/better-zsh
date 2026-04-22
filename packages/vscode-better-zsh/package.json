@@ -210,11 +210,11 @@
     ]
   },
   "scripts": {
-    "prebuild": "[ -n \"$BZ_SKIP_UPSTREAM\" ] || (pnpm --filter @carlwr/zsh-core build && pnpm --filter @carlwr/zsh-core-tooldef build)",
-    "prewatch": "[ -n \"$BZ_SKIP_UPSTREAM\" ] || (pnpm --filter @carlwr/zsh-core build && pnpm --filter @carlwr/zsh-core-tooldef build)",
+    "prebuild": "[ -n \"$BZ_SKIP_UPSTREAM\" ] || (pnpm --filter @carlwr/zsh-core build && BZ_SKIP_UPSTREAM=1 pnpm --filter @carlwr/zsh-core-tooldef build)",
+    "prewatch": "[ -n \"$BZ_SKIP_UPSTREAM\" ] || (pnpm --filter @carlwr/zsh-core build && BZ_SKIP_UPSTREAM=1 pnpm --filter @carlwr/zsh-core-tooldef build)",
     "predump:refs": "[ -n \"$BZ_SKIP_UPSTREAM\" ] || pnpm --filter @carlwr/zsh-core build",
-    "pretypecheck": "[ -n \"$BZ_SKIP_UPSTREAM\" ] || (pnpm --filter @carlwr/zsh-core build && pnpm --filter @carlwr/zsh-core-tooldef build)",
-    "pretest": "[ -n \"$BZ_SKIP_UPSTREAM\" ] || (pnpm --filter @carlwr/zsh-core build && pnpm --filter @carlwr/zsh-core-tooldef build)",
+    "pretypecheck": "[ -n \"$BZ_SKIP_UPSTREAM\" ] || (pnpm --filter @carlwr/zsh-core build && BZ_SKIP_UPSTREAM=1 pnpm --filter @carlwr/zsh-core-tooldef build)",
+    "pretest": "[ -n \"$BZ_SKIP_UPSTREAM\" ] || (pnpm --filter @carlwr/zsh-core build && BZ_SKIP_UPSTREAM=1 pnpm --filter @carlwr/zsh-core-tooldef build)",
     "build": "tsx build.ts",
     "watch": "tsx build.ts --watch",
     "format": "biome check --error-on-warnings --write src build.ts tsconfig.json tsconfig.vscode-test.json vitest.config.ts package.json .vscodeignore .vscode-test.mjs scripts",

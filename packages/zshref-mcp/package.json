@@ -34,9 +34,9 @@
     "./package.json": "./package.json"
   },
   "scripts": {
-    "prebuild": "[ -n \"$BZ_SKIP_UPSTREAM\" ] || (pnpm --filter @carlwr/zsh-core build && pnpm --filter @carlwr/zsh-core-tooldef build)",
-    "pretypecheck": "[ -n \"$BZ_SKIP_UPSTREAM\" ] || (pnpm --filter @carlwr/zsh-core build && pnpm --filter @carlwr/zsh-core-tooldef build)",
-    "pretest": "[ -n \"$BZ_SKIP_UPSTREAM\" ] || (pnpm --filter @carlwr/zsh-core build && pnpm --filter @carlwr/zsh-core-tooldef build)",
+    "prebuild": "[ -n \"$BZ_SKIP_UPSTREAM\" ] || (pnpm --filter @carlwr/zsh-core build && BZ_SKIP_UPSTREAM=1 pnpm --filter @carlwr/zsh-core-tooldef build)",
+    "pretypecheck": "[ -n \"$BZ_SKIP_UPSTREAM\" ] || (pnpm --filter @carlwr/zsh-core build && BZ_SKIP_UPSTREAM=1 pnpm --filter @carlwr/zsh-core-tooldef build)",
+    "pretest": "[ -n \"$BZ_SKIP_UPSTREAM\" ] || (pnpm --filter @carlwr/zsh-core build && BZ_SKIP_UPSTREAM=1 pnpm --filter @carlwr/zsh-core-tooldef build)",
     "build": "tsx build.ts && node scripts/build-api.mjs",
     "watch": "tsx build.ts --watch",
     "jsrREGISTRY:dry": "pnpm dlx jsr publish --dry-run --allow-dirty",
