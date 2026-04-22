@@ -24,7 +24,6 @@ import type {
   ZshOption,
 } from "../docs/types.ts"
 
-const TBD = "TBD"
 const OPT_REF_RE = /\b(?:NO_?)?[A-Z][A-Z0-9_]*\b/g
 const inlineCodeRe = /(`[^`\n]+`)/
 
@@ -99,22 +98,60 @@ export function mdShellParam(doc: ShellParamDoc): string {
   )
 }
 
-const stubRenderer = () => TBD
-
 /** Render one parameter-expansion flag doc block as markdown. */
-export const mdParamFlag: (_doc: ParamFlagDoc) => string = stubRenderer
+export function mdParamFlag(doc: ParamFlagDoc, corpus: DocCorpus): string {
+  const role = `_Role:_ parameter-expansion flag${argsSuffix(doc.args)}`
+  return docBlock(
+    mdFmt.code(doc.sig),
+    fmtOptRefsInMd(doc.desc, corpus),
+    role,
+  )
+}
 
 /** Render one subscript flag doc block as markdown. */
-export const mdSubscriptFlag: (_doc: SubscriptFlagDoc) => string = stubRenderer
+export function mdSubscriptFlag(
+  doc: SubscriptFlagDoc,
+  corpus: DocCorpus,
+): string {
+  const role = `_Role:_ subscript flag${argsSuffix(doc.args)}`
+  return docBlock(
+    mdFmt.code(doc.sig),
+    fmtOptRefsInMd(doc.desc, corpus),
+    role,
+  )
+}
 
 /** Render one history-expansion doc block as markdown. */
-export const mdHistory: (_doc: HistoryDoc) => string = stubRenderer
+export function mdHistory(doc: HistoryDoc, corpus: DocCorpus): string {
+  return docBlock(
+    mdFmt.code(doc.sig),
+    fmtOptRefsInMd(doc.desc, corpus),
+    `_Role:_ history ${doc.kind.replace("-", " ")}`,
+  )
+}
 
 /** Render one globbing-operator doc block as markdown. */
-export const mdGlobOp: (_doc: GlobOpDoc) => string = stubRenderer
+export function mdGlobOp(doc: GlobOpDoc, corpus: DocCorpus): string {
+  return docBlock(
+    mdFmt.code(doc.sig),
+    fmtOptRefsInMd(doc.desc, corpus),
+    `_Role:_ glob operator (${doc.kind})`,
+  )
+}
 
 /** Render one glob-flag doc block as markdown. */
-export const mdGlobFlag: (_doc: GlobFlagDoc) => string = stubRenderer
+export function mdGlobFlag(doc: GlobFlagDoc, corpus: DocCorpus): string {
+  const role = `_Role:_ glob flag${argsSuffix(doc.args)}`
+  return docBlock(
+    mdFmt.code(doc.sig),
+    fmtOptRefsInMd(doc.desc, corpus),
+    role,
+  )
+}
+
+function argsSuffix(args: readonly string[]): string {
+  return args.length > 0 ? ` (args: ${args.join(", ")})` : ""
+}
 
 /** Render one builtin doc block as markdown. */
 export function mdBuiltin(doc: BuiltinDoc): string {

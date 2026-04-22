@@ -129,11 +129,17 @@ const stub = <K extends DocCategory>(
     ...extra,
   }) as unknown as DocRecordMap[K]
 
-const sf = stub("subscript_flag", "flag", "(w)")
-const pf = stub("param_flag", "flag", "(U)")
-const hi = stub("history", "key", "!!", { kind: "event-designator" })
-const go = stub("glob_op", "op", "*")
-const gf = stub("glob_flag", "flag", "i")
+const sf = stub("subscript_flag", "flag", "(w)", {
+  desc: "d:sf",
+  args: ["string"],
+})
+const pf = stub("param_flag", "flag", "(U)", { desc: "d:pf" })
+const hi = stub("history", "key", "!!", {
+  kind: "event-designator",
+  desc: "d:hi",
+})
+const go = stub("glob_op", "op", "*", { kind: "standard", desc: "d:go" })
+const gf = stub("glob_flag", "flag", "i", { desc: "d:gf", args: ["expr"] })
 
 const pe: PromptEscapeDoc = {
   key: mkDocumented("prompt_escape", "%n"),
@@ -242,12 +248,34 @@ const renderedMarkdownCases = [
   ],
 ] as const
 
+const noOptsCorpus = mkTestCorpus({ option: [] })
+
 const stubMarkdownCases = [
-  ["subscript_flag", mdSubscriptFlag(sf)],
-  ["param_flag", mdParamFlag(pf)],
-  ["history", mdHistory(hi)],
-  ["glob_op", mdGlobOp(go)],
-  ["glob_flag", mdGlobFlag(gf)],
+  [
+    "subscript_flag",
+    mdSubscriptFlag(sf, noOptsCorpus),
+    ["`(w)`", "d:sf", "_Role:_ subscript flag (args: string)"],
+  ],
+  [
+    "param_flag",
+    mdParamFlag(pf, noOptsCorpus),
+    ["`(U)`", "d:pf", "_Role:_ parameter-expansion flag"],
+  ],
+  [
+    "history",
+    mdHistory(hi, noOptsCorpus),
+    ["`!!`", "d:hi", "_Role:_ history event designator"],
+  ],
+  [
+    "glob_op",
+    mdGlobOp(go, noOptsCorpus),
+    ["`*`", "d:go", "_Role:_ glob operator (standard)"],
+  ],
+  [
+    "glob_flag",
+    mdGlobFlag(gf, noOptsCorpus),
+    ["`i`", "d:gf", "_Role:_ glob flag (args: expr)"],
+  ],
 ] as const
 
 // Dump metadata per category: file, heading, snippet. Used both for
@@ -264,11 +292,11 @@ const dumpByCat: {
   redir: ["redirs.md", "## >> word", "d:r"],
   process_subst: ["process-substs.md", "## <(...)", "d:ps"],
   param_expn: ["param-expns.md", "## ${name:-word}", "d:px"],
-  subscript_flag: ["subscript-flags.md", "## (w)", "TBD"],
-  param_flag: ["param-flags.md", "## (U)", "TBD"],
-  history: ["history.md", "## !!", "TBD"],
-  glob_op: ["glob-ops.md", "## *", "TBD"],
-  glob_flag: ["glob-flags.md", "## i", "TBD"],
+  subscript_flag: ["subscript-flags.md", "## (w)", "d:sf"],
+  param_flag: ["param-flags.md", "## (U)", "d:pf"],
+  history: ["history.md", "## !!", "d:hi"],
+  glob_op: ["glob-ops.md", "## *", "d:go"],
+  glob_flag: ["glob-flags.md", "## i", "d:gf"],
   prompt_escape: ["prompt-escapes.md", "## %n", "d:pe"],
   zle_widget: ["zle-widgets.md", "## backward-kill-word", "d:zw"],
 }
@@ -326,8 +354,8 @@ describe("render markdown", () => {
     containsAll(md, parts)
   })
 
-  test.each(stubMarkdownCases)("%s is TBD", (_, md) => {
-    expect(md).toBe("TBD")
+  test.each(stubMarkdownCases)("%s markdown", (_, md, parts) => {
+    containsAll(md, parts)
   })
 
   test("reserved-word — any position", () => {

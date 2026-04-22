@@ -286,9 +286,12 @@ export interface HistoryDoc extends SyntaxDocBase {
   readonly kind: HistoryKind
 }
 
+export type GlobOpKind = "standard" | "ksh-like"
+
 /** Globbing operators -- e.g. `*`, `?`, `[...]`. */
 export interface GlobOpDoc extends SyntaxDocBase {
   readonly op: Documented<"glob_op">
+  readonly kind: GlobOpKind
 }
 
 /** Glob flags -- e.g. `(#i)`, `(#b)` inside glob patterns. */
