@@ -59,7 +59,7 @@
     "tsup": "^8.5.1",
     "tsx": "^4.21.0",
     "typedoc": "^0.28.19",
-    "typescript": "^5.8.0",
+    "typescript": "^6.0.3",
     "vitest": "^4.1.4",
     "zod": "^4.3.6",
     "zzz_LAST_dummy": "npm:empty-npm-package@1.0.0"
