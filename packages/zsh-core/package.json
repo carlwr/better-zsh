@@ -1,7 +1,7 @@
 {
   "name": "@carlwr/zsh-core",
   "description": "Structured zsh reference data parsed from official zsh documentation + analysis APIs",
-  "version": "0.1.0-alpha.0",
+  "version": "0.1.0-alpha.1",
   "license": "MIT",
   "repository": {
     "type": "git",

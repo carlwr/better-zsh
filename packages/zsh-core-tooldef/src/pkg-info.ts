@@ -6,5 +6,5 @@
  */
 
 export const PKG_NAME = "@carlwr/zsh-core-tooldef"
-export const PKG_VERSION = "0.1.0-alpha.0"
+export const PKG_VERSION = "0.1.0-alpha.1"
 export const PKG_REPO_URL = "https://github.com/carlwr/better-zsh"
