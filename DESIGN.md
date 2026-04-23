@@ -161,6 +161,34 @@ The `history` category looks superficially like other short-key categories (sing
 
 ---
 
+## Complex commands + alternate forms
+
+`ComplexCommandDoc` models zsh's structured control-flow constructs parsed from `grammar.yo`'s "Complex Commands" section, with entries from "Alternate Forms For Complex Commands" attached as an `alternateForms` array.
+
+- **Head-keyword identity.** Records are keyed by a closed `HeadKey` set — `if`, `for`, `for-arith`, `while`, `until`, `repeat`, `case`, `select`, `function`, `time`, `(`, `{`, `{try}always`, `[[`. Two `for` entries (`for name ... in ... do ... done` and `for (( ; ; )) do ... done`) are deliberate: the arithmetic form is structurally distinct enough that collapsing would cost clarity.
+- **Array fields precedent.** `alternateForms: readonly AlternateForm[]` follows `ZshOption.flags` and `ParamExpnDoc.groupSigs` — variable-length composite data on a doc record. Each alternate carries its own `template` + `keywords` so renderers can present forms uniformly.
+- **Classify-order placement: before `reserved_word`.** `classify("for")` returns the structured `complex_command` record, not the reserved-word boilerplate. `for`/`while`/`[[`/… overlap with `reserved_word` by design; the walk-order lets consumer layers absorb the ambiguity without restructuring the taxonomy. See `PRINCIPLES.md` §"Overlap between categories is accepted".
+
+## Glob qualifiers vs glob flags vs glob operators
+
+Three sibling categories under the `glob_*` prefix — the shared prefix is labelling, not ontological coupling. Each fits its own syntactic slot:
+
+- `glob_op` — in-pattern meta-chars (`*`, `?`, `[...]`, `@(...)` et al.), with a `kind: "standard" | "ksh-like"` discriminator.
+- `glob_flag` — the in-pattern `(#…)` marker (e.g. `(#i)`, `(#b)`), requires `EXTENDED_GLOB`.
+- `glob_qualifier` — the trailing parenthesised form that *filters the match list* (e.g. `*(/)`, `*(#q@)`), keyed on single letters + multi-character variants like `%b` / `%c`.
+
+The resolver for `glob_qualifier` reuses `parensAgnosticFlagResolver`; it accepts bare-letter, `(X)` under `BARE_GLOB_QUAL`, and `(#qX)` under `EXTENDED_GLOB`.
+
+## Reserved word desc is optional
+
+`ReservedWordDoc.desc` is `string | undefined` — and `ReservedWordDoc` deliberately does not extend `SyntaxDocBase` (where `desc` would be required).
+
+- **Honesty over placeholder prose.** Heads covered by `complex_command` (e.g. `for`, `while`, `[[`) omit `desc` entirely. A fixed generic "this is a reserved word" string would be an epistemic trap: agents describing a `for` token would settle for the reserved-word record and miss the richer synopsis + alternateForms that live in `complex_command`.
+- **Enriched prose where it pays.** Body words (`do`, `then`, `done`, …), alternate-form keywords (`foreach`, `end`), and standalone entries (`!`, `coproc`, the `typeset` family) each get a one-line per-word `desc`. The role classification is extractor-internal — no typed `role` field on the record, since no consumer today would dispatch on it.
+- **Extractor role-table is the single source.** Drift-prone to stale prose; prefer editing the extractor's `ROLE` table over fan-out elsewhere.
+
+---
+
 ## Casts (`as`)
 
 See `AGENTS.md` for the full classification (principled vs smell) with examples. The key design-level point: the sanctioned brand crossing is the resolver layer. Everything else is either brand-mint (smart constructor) or symptom. Cross-brand casts outside these are a data-model smell.
