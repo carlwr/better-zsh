@@ -135,18 +135,29 @@ fn build_subcommand(td: &ToolDef) -> Command {
 
     for (key, spec) in &props {
         let flag_brief = td.flag_briefs.get(key).cloned().unwrap_or_default();
-        let arg = build_arg(key, spec, required.contains(key), &flag_brief);
+        // Long-help source: `inputSchema.properties[key].description`. MCP
+        // feeds the same field to the LLM-facing tool schema; surfacing it
+        // under `--help` (vs `-h`) keeps the CLI self-contained — humans
+        // don't have to read the top-level Description to understand a
+        // flag. `cli_prose` rewrites `zsh_*` references as for `help`.
+        let long_help = spec
+            .get("description")
+            .and_then(Value::as_str)
+            .unwrap_or("")
+            .to_string();
+        let arg = build_arg(key, spec, required.contains(key), &flag_brief, &long_help);
         cmd = cmd.arg(arg);
     }
     cmd
 }
 
-fn build_arg(key: &str, spec: &Value, required: bool, help: &str) -> Arg {
+fn build_arg(key: &str, spec: &Value, required: bool, help: &str, long_help: &str) -> Arg {
     let value_name = key.to_uppercase();
     let mut arg = Arg::new(key.to_string())
         .long(key.to_string())
         .value_name(value_name)
         .help(help.to_string())
+        .long_help(cli_prose(long_help))
         .required(required)
         .action(ArgAction::Set)
         // Accept leading-dash values: real zsh tokens include `-`, `-p`,

@@ -164,25 +164,24 @@ No shell execution, no environment access.`,
       query: {
         type: "string",
         description:
-          "Optional fuzzy search string matched against ids and display headings. Empty/omitted returns records ordered by corpus iteration, capped by `limit`.",
+          "Optional fuzzy search string matched against ids and display headings.\n\nRanking: exact id/display > prefix > fuzzy score. Empty/omitted is listing mode: returns records ordered by corpus iteration, capped by `limit` — combine with `category` and raise `limit` to enumerate a whole category.",
       },
       category: {
         type: "string",
-        description:
-          "Optional filter to a single doc category. See command help for valid values. Unknown categories yield an empty match set.",
+        description: `Optional filter to a single doc category. Unknown categories yield an empty match set.\n\nValid values:\n\n${brandedCategoryList}`,
       },
       limit: {
         type: "integer",
         minimum: 1,
         maximum: MAX_LIMIT,
-        description: `Maximum matches to return. Default ${DEFAULT_LIMIT}, hard max ${MAX_LIMIT}.`,
+        description: `Maximum matches to return. Default ${DEFAULT_LIMIT}, hard max ${MAX_LIMIT}.\n\nThe response also carries \`matchesReturned\` (== \`matches.length\`) and \`matchesTotal\` (pre-truncation total); \`matchesReturned < matchesTotal\` signals truncation — raise \`limit\` or narrow \`category\`/\`query\`.`,
       },
     },
     additionalProperties: false,
   },
   flagBriefs: {
     query: "Fuzzy-search string (omit to list all).",
-    category: "Filter to one doc category (see description).",
+    category: "Filter to one doc category.",
     limit: `Max matches to return (default ${DEFAULT_LIMIT}, max ${MAX_LIMIT}).`,
   },
   execute: (corpus, input): SearchResult =>

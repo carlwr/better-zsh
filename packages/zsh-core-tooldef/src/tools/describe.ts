@@ -4,6 +4,7 @@ import {
   type DocRecordMap,
   type Documented,
   docCategories,
+  docCategoryLabels,
   mkPieceId,
 } from "@carlwr/zsh-core"
 import { renderDoc } from "@carlwr/zsh-core/render"
@@ -27,6 +28,10 @@ export type DescribeResult =
   | { readonly match: null }
 
 const validCategories = new Set<string>(docCategories)
+
+const brandedCategoryList = docCategories
+  .map(c => `  - '${c}'  (${docCategoryLabels[c]})`)
+  .join("\n")
 
 /**
  * Fetch the full record + rendered markdown for a known `{category, id}`.
@@ -72,20 +77,19 @@ No shell execution, no environment access.`,
     properties: {
       category: {
         type: "string",
-        description:
-          "Doc category — e.g. 'option', 'builtin', 'cond_op', 'reserved_word'. Unknown values yield { match: null }.",
+        description: `Doc category. Unknown values yield \`{ match: null }\`.\n\nValid values:\n\n${brandedCategoryList}`,
       },
       id: {
         type: "string",
         description:
-          "Canonical id within `category` (e.g. 'autocd' for option, 'echo' for builtin). Must be an exact corpus key — usually obtained from `zsh_search`.",
+          "Canonical id within `category`. Must be an exact corpus key — usually obtained from `zsh_search`.\n\nExamples by category: option → `autocd`; builtin → `echo`; cond_op → `-nt`; reserved_word → `for`.",
       },
     },
     required: ["category", "id"],
     additionalProperties: false,
   },
   flagBriefs: {
-    category: "Doc category (see description for valid values).",
+    category: "Doc category.",
     id: "Canonical id within the category (exact corpus key).",
   },
   execute: (corpus, input): DescribeResult =>
