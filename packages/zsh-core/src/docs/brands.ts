@@ -31,6 +31,10 @@ const norm: { [K in DocCategory]: (s: string) => string } = {
   glob_qualifier: s => s.trim(),
   prompt_escape: s => s.trim(),
   zle_widget: s => s.trim(),
+  keymap: s => s.trim(),
+  job_spec: s => s.trim(),
+  arith_op: s => s.trim(),
+  special_function: s => s.trim(),
 }
 
 /**

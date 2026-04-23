@@ -23,6 +23,10 @@ const categoryLabel: Record<DocCategory, string> = {
   glob_qualifier: "glob qualifiers",
   prompt_escape: "prompt escapes",
   zle_widget: "zle widgets",
+  keymap: "keymaps",
+  job_spec: "job specs",
+  arith_op: "arith ops",
+  special_function: "special functions",
 }
 
 async function main() {

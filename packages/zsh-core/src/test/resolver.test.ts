@@ -9,6 +9,8 @@ const subFlag = mkDocumented_("subscript_flag")
 const parFlag = mkDocumented_("param_flag")
 const glFlag = mkDocumented_("glob_flag")
 const glQual = mkDocumented_("glob_qualifier")
+const jobSpec = mkDocumented_("job_spec")
+const specFn = mkDocumented_("special_function")
 
 describe("resolveHistory (event designators)", () => {
   test.each([
@@ -131,5 +133,74 @@ describe("parens-agnostic flag resolvers", () => {
     test.each(["Z", "(Z)", "(#qZ)", "(#q)", ""])("%s -> undefined", raw => {
       expect(resolve(corpus, "glob_qualifier", raw)).toBeUndefined()
     })
+  })
+})
+
+describe("resolveJobSpec", () => {
+  test.each([
+    ["%%", jobSpec("%%")],
+    ["%+", jobSpec("%+")],
+    ["%-", jobSpec("%-")],
+    ["%1", jobSpec("%number")],
+    ["%42", jobSpec("%number")],
+    ["%bash", jobSpec("%string")],
+    ["%?foo", jobSpec("%?string")],
+    ["  %1  ", jobSpec("%number")],
+  ] as const)("%s -> %s", (raw, expected) => {
+    expect(resolve(corpus, "job_spec", raw)).toEqual({
+      category: "job_spec",
+      id: expected,
+    })
+  })
+
+  test.each([
+    "",
+    "   ",
+    "foo",
+    "1",
+    "%",
+    "%?",
+    "not-a-spec",
+  ])("%s -> undefined", raw => {
+    expect(resolve(corpus, "job_spec", raw)).toBeUndefined()
+  })
+})
+
+describe("resolveSpecialFunction", () => {
+  test.each([
+    ["chpwd", specFn("chpwd")],
+    ["precmd", specFn("precmd")],
+    ["TRAPDEBUG", specFn("TRAPDEBUG")],
+    ["TRAPEXIT", specFn("TRAPEXIT")],
+    ["TRAPZERR", specFn("TRAPZERR")],
+    // hook array → hook record
+    ["precmd_functions", specFn("precmd")],
+    ["chpwd_functions", specFn("chpwd")],
+    // TRAP* template fallback — any uncategorized signal name
+    ["TRAPHUP", specFn("TRAPNAL")],
+    ["TRAPUSR1", specFn("TRAPNAL")],
+    ["TRAPINT", specFn("TRAPNAL")],
+    // TRAPERR: not a literal corpus record (upstream treats it as xindex on
+    // TRAPZERR), so it lands on the template.
+    ["TRAPERR", specFn("TRAPNAL")],
+  ] as const)("%s -> %s", (raw, expected) => {
+    expect(resolve(corpus, "special_function", raw)).toEqual({
+      category: "special_function",
+      id: expected,
+    })
+  })
+
+  test.each([
+    "",
+    "   ",
+    // `_functions` only resolves for the closed hook set
+    "foo_functions",
+    "bar_functions",
+    // TRAP must be followed by an uppercase/digit tail
+    "TRAP",
+    "TRAPfoo",
+    "unrelated",
+  ])("%s -> undefined", raw => {
+    expect(resolve(corpus, "special_function", raw)).toBeUndefined()
   })
 })

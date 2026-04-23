@@ -26,6 +26,7 @@ import {
   mkPieceId,
 } from "./taxonomy.ts"
 import type {
+  ArithOpDoc,
   BuiltinDoc,
   ComplexCommandDoc,
   CondOpDoc,
@@ -34,6 +35,8 @@ import type {
   GlobOpDoc,
   GlobQualifierDoc,
   HistoryDoc,
+  JobSpecDoc,
+  KeymapDoc,
   ParamExpnDoc,
   ParamFlagDoc,
   PrecmdDoc,
@@ -42,11 +45,13 @@ import type {
   RedirDoc,
   ReservedWordDoc,
   ShellParamDoc,
+  SpecialFunctionDoc,
   SubscriptFlagDoc,
   ZleWidgetDoc,
   ZshOption,
 } from "./types.ts"
 import { parseNodes, type YNodeSeq } from "./yodl/core/nodes.ts"
+import { parseArithOps } from "./yodl/extractors/arith-ops.ts"
 import { parseBuiltins } from "./yodl/extractors/builtins.ts"
 import { parseComplexCommands } from "./yodl/extractors/complex-commands.ts"
 import { parseCondOps } from "./yodl/extractors/cond-ops.ts"
@@ -54,6 +59,8 @@ import { parseGlobFlags } from "./yodl/extractors/glob-flags.ts"
 import { parseGlobOps } from "./yodl/extractors/glob-ops.ts"
 import { parseGlobQualifiers } from "./yodl/extractors/glob-qualifiers.ts"
 import { parseHistory } from "./yodl/extractors/history.ts"
+import { parseJobSpecs } from "./yodl/extractors/job-specs.ts"
+import { parseKeymaps } from "./yodl/extractors/keymaps.ts"
 import { fixupOptionsYo, parseOptions } from "./yodl/extractors/options.ts"
 import { fixupExpnYo, parseParamExpns } from "./yodl/extractors/param-expns.ts"
 import { parseParamFlags } from "./yodl/extractors/param-flags.ts"
@@ -62,7 +69,11 @@ import { parseProcessSubsts } from "./yodl/extractors/process-substs.ts"
 import { parsePromptEscapes } from "./yodl/extractors/prompt-escapes.ts"
 import { parseRedirs } from "./yodl/extractors/redirections.ts"
 import { parseReswords } from "./yodl/extractors/reserved-words.ts"
-import { parseShellParams } from "./yodl/extractors/shell-params.ts"
+import {
+  parseShellParams,
+  parseWidgetParams,
+} from "./yodl/extractors/shell-params.ts"
+import { parseSpecialFunctions } from "./yodl/extractors/special-functions.ts"
 import { parseSubscriptFlags } from "./yodl/extractors/subscript-flags.ts"
 import { parseZleWidgets } from "./yodl/extractors/zle-widgets.ts"
 
@@ -103,6 +114,10 @@ const categoryLoader: CategoryLoader = {
   glob_qualifier: { file: "expn.yo", parse: parseGlobQualifiers },
   prompt_escape: { file: "prompt.yo", parse: parsePromptEscapes },
   zle_widget: { file: "zle.yo", parse: parseZleWidgets },
+  keymap: { file: "zle.yo", parse: parseKeymaps },
+  job_spec: { file: "jobs.yo", parse: parseJobSpecs },
+  arith_op: { file: "arith.yo", parse: parseArithOps },
+  special_function: { file: "func.yo", parse: parseSpecialFunctions },
 }
 
 /** In-memory corpus of parsed zsh documentation, keyed by category then identity. */
@@ -143,6 +158,13 @@ export interface DocCorpus {
     PromptEscapeDoc
   >
   readonly zle_widget: ReadonlyMap<Documented<"zle_widget">, ZleWidgetDoc>
+  readonly keymap: ReadonlyMap<Documented<"keymap">, KeymapDoc>
+  readonly job_spec: ReadonlyMap<Documented<"job_spec">, JobSpecDoc>
+  readonly arith_op: ReadonlyMap<Documented<"arith_op">, ArithOpDoc>
+  readonly special_function: ReadonlyMap<
+    Documented<"special_function">,
+    SpecialFunctionDoc
+  >
 }
 
 type _AssertDocCorpusKeys1 = Assert<
@@ -156,6 +178,17 @@ function loadCategoryDocs<K extends DocCategory>(
   cat: K,
   getNodes: (file: string) => YNodeSeq,
 ): readonly DocRecordMap[K][] {
+  // shell_param is composed from two files: `params.yo` (global parameters)
+  // plus `zle.yo` widget-local params. Widget-params share ShellParamDoc's
+  // shape; they surface under the `zle-widget` section. Kept out of the
+  // generic CategoryLoader to avoid a multi-file dispatch schema for a
+  // single outlier.
+  if (cat === "shell_param") {
+    return [
+      ...parseShellParams(getNodes("params.yo")),
+      ...parseWidgetParams(getNodes("zle.yo")),
+    ] as unknown as readonly DocRecordMap[K][]
+  }
   const { file, parse } = categoryLoader[cat]
   return parse(getNodes(file)) as readonly DocRecordMap[K][]
 }
@@ -362,6 +395,80 @@ function parensAgnosticFlagResolver<
   }
 }
 
+/**
+ * Job-spec resolver. Literal-first for `%%`, `%+`, `%-`; template matches for
+ * `%n` (digits), `%?str`, `%str`.
+ */
+function resolveJobSpec(
+  c: DocCorpus,
+  raw: string,
+): Documented<"job_spec"> | undefined {
+  const t = raw.trim()
+  if (!t.startsWith("%")) return undefined
+  const key = jobSpecKey(t)
+  if (!key) return undefined
+  const id = mkDocumented("job_spec", key)
+  return c.job_spec.has(id) ? id : undefined
+}
+
+function jobSpecKey(t: string): string | undefined {
+  if (t === "%%" || t === "%+" || t === "%-") return t
+  const body = t.slice(1)
+  if (body.length === 0) return undefined
+  if (/^\d+$/.test(body)) return "%number"
+  if (body.startsWith("?")) return body.length > 1 ? "%?string" : undefined
+  return "%string"
+}
+
+const HOOK_FN_SET: ReadonlySet<string> = new Set([
+  "chpwd",
+  "periodic",
+  "precmd",
+  "preexec",
+  "zshaddhistory",
+  "zshexit",
+])
+
+/**
+ * Special-function resolver.
+ *
+ * Literal-first: hook names (`chpwd`, `precmd`, ...) and literal TRAP* names
+ * (`TRAPDEBUG`, `TRAPEXIT`, `TRAPZERR`, `TRAPERR`) hit their own records.
+ * Compositional fallbacks close the two identifier-composition patterns zsh
+ * exposes for this category:
+ * - `^(chpwd|periodic|precmd|preexec|zshaddhistory|zshexit)_functions$` →
+ *   the matching hook record (the companion array is the same concept).
+ * - `^TRAP[A-Z0-9]+$` → the TRAPNAL template record.
+ * Deliberately no signal-name validation: host-level `kill -l` contents are
+ * not baked (zsh-aware, not environment-aware).
+ */
+function resolveSpecialFunction(
+  c: DocCorpus,
+  raw: string,
+): Documented<"special_function"> | undefined {
+  const t = raw.trim()
+  if (!t) return undefined
+
+  const literal = mkDocumented("special_function", t)
+  if (c.special_function.has(literal)) return literal
+
+  const hookArrayMatch = t.match(/^(\w+)_functions$/)
+  if (hookArrayMatch) {
+    const hook = hookArrayMatch[1] ?? ""
+    if (HOOK_FN_SET.has(hook)) {
+      const id = mkDocumented("special_function", hook)
+      if (c.special_function.has(id)) return id
+    }
+  }
+
+  if (/^TRAP[A-Z0-9]+$/.test(t)) {
+    const id = mkDocumented("special_function", "TRAPNAL")
+    if (c.special_function.has(id)) return id
+  }
+
+  return undefined
+}
+
 const resolvers: { [K in DocCategory]: Resolver<K> } = {
   option: (c, raw) => resolveOption(c, raw)?.id,
   cond_op: simpleResolver("cond_op"),
@@ -385,6 +492,10 @@ const resolvers: { [K in DocCategory]: Resolver<K> } = {
   glob_qualifier: parensAgnosticFlagResolver("glob_qualifier"),
   prompt_escape: simpleResolver("prompt_escape"),
   zle_widget: simpleResolver("zle_widget"),
+  keymap: simpleResolver("keymap"),
+  job_spec: resolveJobSpec,
+  arith_op: simpleResolver("arith_op"),
+  special_function: resolveSpecialFunction,
 }
 
 /**

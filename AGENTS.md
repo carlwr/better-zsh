@@ -162,6 +162,14 @@ When writing or extending a per-category resolver, stay on the right side of the
 - Option hovers should show executable `zsh` forms first, category last, and prefer plain-zsh defaults over other emulations.
 - When adjusting Yodl parsing for rendered markdown, preserve visible prose unless there is a strong reason not to; inspect reference dumps for regressions.
 
+### Reference-dump review workflow
+
+When adding or changing parsing/rendering, dump the full rendered corpus and inspect it. Both parse and render bugs surface in the output.
+
+- Generate: `pnpm --filter better-zsh run dump:refs [OUTDIR]` writes per-category markdown files plus `all.md` and `suspicious.md` to `OUTDIR` (default `.aux/refs`).
+- Review: for changes touching one category, read that category's file; for cross-cutting changes, scan `all.md` or delegate an Explore subagent to read it. `suspicious.md` is an auto-generated list of lines tripped by built-in heuristics (unbalanced inline backticks, leftover yodl markers, dangling continuations, ...).
+- When a bug is found: first prefer adding a wider-catching heuristic in `src/render/dump.ts` (`suspiciousPatterns`) so the same family of bugs is caught at review time across the whole corpus; fall back to a targeted regression test only when a general heuristic is not tractable. Prototypical shape of a wider heuristic: count non-escaped backticks in each markdown chunk and assert the count is even.
+
 ### Other tools
 
 - `@carlwr/typescript-extra` is a workspace-root dev dependency. Keep it there even if temporarily unused; individual packages may add or drop it based on actual use.

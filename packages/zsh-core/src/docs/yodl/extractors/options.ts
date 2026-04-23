@@ -14,6 +14,7 @@ import {
   extractItems,
   extractSectionBody,
   extractSitemList,
+  parseClosedUnion,
 } from "../core/doc.ts"
 import { parseNodes, type YNodeSeq } from "../core/nodes.ts"
 import { extractTokens, normalizeBody, stripYodl } from "../core/text.ts"
@@ -59,22 +60,42 @@ export function parseOptions(yo: string | YNodeSeq): readonly ZshOption[] {
     if (!item.body) return []
     const parsed = parseOptHeader(item.header)
     if (!parsed) return []
+    const category = parseOptionCategory(item.section)
+    const aliasOf =
+      category === "Option Aliases" ? parseAliasTarget(item.body) : undefined
     return [
       {
         name: parsed.name,
         display: parsed.display,
         flags: mergeFlags(flagMap.get(parsed.name), parsed.flags),
         defaultIn: emulationsFor(defaultMarkers(item.header)),
-        category: parseOptionCategory(item.section),
+        category,
         desc: normalizeBody(item.body),
+        ...(aliasOf && { aliasOf }),
       } satisfies ZshOption,
     ]
   })
 }
 
+// Option-alias bodies are `em(NO_)tt(TARGET) (prose)` or `tt(TARGET) (prose)`.
+// `em(NO_)` tokens render as `var` tokens via the yodl parser (em == var-style
+// emphasis). The tt() is the target; the preceding em()/var() text signals
+// negation.
+function parseAliasTarget(
+  body: Parameters<typeof extractTokens>[0],
+): ZshOption["aliasOf"] {
+  const [targetTok] = extractTokens(body).filter(t => t.kind === "tt")
+  const target = targetTok?.text.trim()
+  if (!target) return undefined
+  const negated = /\bNO_/.test(stripYodl(body))
+  return {
+    target: mkDocumented("option", target),
+    negated,
+  }
+}
+
 function parseOptionCategory(raw: string): OptSection {
-  if (OPTION_SECTION_SET.has(raw)) return raw as OptSection
-  throw new Error(`Unknown zsh option category: ${raw}`)
+  return parseClosedUnion(raw, OPTION_SECTION_SET, "zsh option category")
 }
 
 function parseOptHeader(header: Parameters<typeof extractTokens>[0]):

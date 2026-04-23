@@ -71,7 +71,7 @@ const p = (name: string, desc: string): ShellParamDoc => ({
   name: mkDocumented("shell_param", name),
   sig: name,
   desc,
-  section: "",
+  section: "shell-set",
 })
 
 const c = (

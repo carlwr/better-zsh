@@ -1,8 +1,18 @@
 import { mkDocumented } from "../../brands.ts"
-import type { PromptEscapeDoc } from "../../types.ts"
-import { extractItems, flattenAliasedEntries } from "../core/doc.ts"
+import {
+  type PromptEscapeDoc,
+  type PromptSubsection,
+  promptSubsections,
+} from "../../types.ts"
+import {
+  extractItems,
+  flattenAliasedEntries,
+  parseClosedUnion,
+} from "../core/doc.ts"
 import type { YNodeSeq } from "../core/nodes.ts"
 import { normalizeHeader } from "../core/text.ts"
+
+const PROMPT_SUBSECTION_SET: ReadonlySet<string> = new Set(promptSubsections)
 
 /**
  * Parse prompt expansion escapes from `prompt.yo`.
@@ -27,8 +37,16 @@ export function parsePromptEscapes(
       key: mkDocumented("prompt_escape", key),
       sig,
       desc,
-      section: entry.section,
+      section: parsePromptSubsection(entry.section),
     }),
+  )
+}
+
+function parsePromptSubsection(raw: string): PromptSubsection {
+  return parseClosedUnion(
+    raw,
+    PROMPT_SUBSECTION_SET,
+    "prompt-escape subsection",
   )
 }
 

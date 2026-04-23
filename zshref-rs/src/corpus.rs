@@ -70,6 +70,10 @@ const CATEGORY_FILES: &[(&str, &[u8])] = &[
     include_category!("glob_qualifier", "glob-qualifiers.json"),
     include_category!("prompt_escape", "prompt-escapes.json"),
     include_category!("zle_widget", "zle-widgets.json"),
+    include_category!("keymap", "keymaps.json"),
+    include_category!("job_spec", "job-specs.json"),
+    include_category!("arith_op", "arith-ops.json"),
+    include_category!("special_function", "special-functions.json"),
 ];
 
 /// Classify-walk order. Mirrors `classifyOrder` in
@@ -81,6 +85,7 @@ pub const CLASSIFY_ORDER: &[&str] = &[
     "precmd",
     "builtin",
     "cond_op",
+    "special_function",
     "shell_param",
     "process_subst",
     "param_expn",
@@ -91,7 +96,10 @@ pub const CLASSIFY_ORDER: &[&str] = &[
     "glob_op",
     "history",
     "prompt_escape",
+    "job_spec",
     "zle_widget",
+    "keymap",
+    "arith_op",
     "option",
     "redir",
 ];

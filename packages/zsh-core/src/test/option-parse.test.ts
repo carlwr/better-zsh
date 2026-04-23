@@ -28,6 +28,10 @@ const corpus: DocCorpus = {
   glob_qualifier: empty,
   prompt_escape: empty,
   zle_widget: empty,
+  keymap: empty,
+  job_spec: empty,
+  arith_op: empty,
+  special_function: empty,
 }
 
 describe("resolveOption", () => {

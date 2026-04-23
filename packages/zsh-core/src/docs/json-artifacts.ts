@@ -71,6 +71,22 @@ export const jsonArtifact = {
     count: "zleWidgets",
     schema: "ZleWidgetsJson",
   },
+  keymap: { file: "keymaps.json", count: "keymaps", schema: "KeymapsJson" },
+  job_spec: {
+    file: "job-specs.json",
+    count: "jobSpecs",
+    schema: "JobSpecsJson",
+  },
+  arith_op: {
+    file: "arith-ops.json",
+    count: "arithOps",
+    schema: "ArithOpsJson",
+  },
+  special_function: {
+    file: "special-functions.json",
+    count: "specialFunctions",
+    schema: "SpecialFunctionsJson",
+  },
 } as const satisfies {
   [K in DocCategory]: {
     file: string

@@ -7,6 +7,21 @@ import {
 } from "./nodes.ts"
 import { normalizeBody, stripYodl } from "./text.ts"
 
+/**
+ * Narrow a raw section/subsection string to a closed union, throwing on
+ * unknown. Used by extractors that want to fail loud when upstream Yodl
+ * introduces a new subsection name the type system hasn't been taught about.
+ * Precedent: `parseOptionCategory` in options.ts.
+ */
+export function parseClosedUnion<T extends string>(
+  raw: string,
+  set: ReadonlySet<string>,
+  label: string,
+): T {
+  if (set.has(raw)) return raw as T
+  throw new Error(`Unknown ${label}: ${raw}`)
+}
+
 export interface YodlEntry {
   kind: "item" | "sitem" | "xitem"
   header: YNodeSeq

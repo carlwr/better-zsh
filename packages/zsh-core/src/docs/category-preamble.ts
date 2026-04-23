@@ -34,4 +34,8 @@ export const docCategoryPreamble: Readonly<
   glob_qualifier: undefined,
   prompt_escape: undefined,
   zle_widget: undefined,
+  keymap: undefined,
+  job_spec: undefined,
+  arith_op: undefined,
+  special_function: undefined,
 }

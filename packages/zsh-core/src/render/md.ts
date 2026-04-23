@@ -2,6 +2,7 @@ import type { DocCorpus } from "../docs/corpus.ts"
 import { resolve } from "../docs/corpus.ts"
 import type { DocCategory, DocPieceId, DocRecordMap } from "../docs/taxonomy.ts"
 import type {
+  ArithOpDoc,
   BuiltinDoc,
   ComplexCommandDoc,
   CondOpDoc,
@@ -10,6 +11,8 @@ import type {
   GlobOpDoc,
   GlobQualifierDoc,
   HistoryDoc,
+  JobSpecDoc,
+  KeymapDoc,
   OptFlagAlias,
   OptFlagSign,
   OptState,
@@ -21,6 +24,7 @@ import type {
   RedirDoc,
   ReservedWordDoc,
   ShellParamDoc,
+  SpecialFunctionDoc,
   SubscriptFlagDoc,
   ZleWidgetDoc,
   ZshOption,
@@ -64,6 +68,12 @@ export function mdOpt(opt: ZshOption, corpus: DocCorpus): string {
   const title = mdFmt.code(opt.display)
   const long = opt.display.toLowerCase()
   const defaultLine = `**Default in zsh: \`${defaultStateIn(opt, "zsh")}\`**`
+  // Render the alias target using the target option's display form when the
+  // corpus knows the target, falling back to the raw normalized key. Keeps
+  // `_Alias of: NO_IGNORE_BRACES` readable instead of `NO_ignorebraces`.
+  const aliasLine = opt.aliasOf
+    ? `_Alias of:_ ${mdFmt.code(aliasTargetDisplay(opt.aliasOf, corpus))}`
+    : undefined
   // Keep the preamble to executable zsh forms; status/context lines read better outside it.
   return docBlock(
     title,
@@ -75,8 +85,18 @@ export function mdOpt(opt: ZshOption, corpus: DocCorpus): string {
     ),
     defaultLine,
     fmtOptRefsInMd(opt.desc, corpus),
+    ...(aliasLine ? [aliasLine] : []),
     `_Option category:_ ${opt.category}`,
   )
+}
+
+function aliasTargetDisplay(
+  aliasOf: NonNullable<ZshOption["aliasOf"]>,
+  corpus: DocCorpus,
+): string {
+  const rec = corpus.option.get(aliasOf.target)
+  const display = rec?.display ?? (aliasOf.target as string)
+  return aliasOf.negated ? `NO_${display}` : display
 }
 
 function sigCond(cop: CondOpDoc): string {
@@ -96,7 +116,7 @@ export function mdShellParam(doc: ShellParamDoc): string {
     mdFmt.code(doc.name),
     doc.desc,
     ...(doc.tied ? [`_Tied with:_ ${mdFmt.code(doc.tied)}`] : []),
-    "_Category:_ Shell Parameter",
+    `_Category:_ Shell Parameter — ${doc.section}`,
   )
 }
 
@@ -252,7 +272,58 @@ export function mdPromptEscape(doc: PromptEscapeDoc): string {
   return docBlock(
     mdFmt.code(doc.sig),
     doc.desc,
-    `_Category:_ Prompt Escape${doc.section ? ` (${doc.section})` : ""}`,
+    `_Category:_ Prompt Escape — ${doc.section}`,
+  )
+}
+
+/** Render one ZLE keymap doc block as markdown. */
+export function mdKeymap(doc: KeymapDoc): string {
+  return docBlock(
+    mdFmt.code(doc.name),
+    doc.desc,
+    "_Role:_ ZLE keymap",
+    ...(doc.isSpecial ? ["_Special:_ cannot be altered"] : []),
+    ...(doc.linkedFrom.length > 0
+      ? [`_Linked from:_ ${doc.linkedFrom.map(mdFmt.code).join(", ")}`]
+      : []),
+  )
+}
+
+/** Render one job-spec doc block as markdown. */
+export function mdJobSpec(doc: JobSpecDoc): string {
+  return docBlock(
+    mdFmt.code(doc.sig),
+    doc.desc,
+    `_Role:_ job spec (${doc.kind})`,
+  )
+}
+
+/** Render one arithmetic-operator doc block as markdown. */
+export function mdArithOp(doc: ArithOpDoc): string {
+  return docBlock(
+    mdFmt.code(doc.op),
+    doc.desc,
+    `_Role:_ arithmetic operator (${doc.arity})`,
+  )
+}
+
+const specialFunctionRoleLabel = {
+  hook: "hook function",
+  "trap-literal": "trap function",
+  "trap-template": "trap function (template)",
+} as const
+
+/** Render one special-function doc block as markdown. */
+export function mdSpecialFunction(doc: SpecialFunctionDoc): string {
+  const role = `_Role:_ ${specialFunctionRoleLabel[doc.kind]}`
+  const hookLine = doc.hookArray
+    ? codeBlock("zsh", `${doc.hookArray}=( funcname1 funcname2 ... )`)
+    : undefined
+  return docBlock(
+    mdFmt.code(doc.name),
+    doc.desc,
+    ...(hookLine ? [hookLine] : []),
+    role,
   )
 }
 
@@ -264,7 +335,8 @@ export function mdZleWidget(doc: ZleWidgetDoc): string {
     mdFmt.code(doc.name),
     codeBlock("zsh", doc.sig),
     doc.desc,
-    `_Role:_ ${role}${doc.section ? ` (${doc.section})` : ""}`,
+    `_Role:_ ${role}`,
+    `_Subsection:_ ${doc.section}`,
   )
 }
 
@@ -341,6 +413,10 @@ export const mdRenderer: {
   glob_qualifier: mdGlobQualifier,
   prompt_escape: mdPromptEscape,
   zle_widget: mdZleWidget,
+  keymap: mdKeymap,
+  job_spec: mdJobSpec,
+  arith_op: mdArithOp,
+  special_function: mdSpecialFunction,
 }
 
 /**

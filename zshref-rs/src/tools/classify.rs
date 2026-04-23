@@ -25,8 +25,93 @@ fn resolve_in(corpus: &Corpus, cat_name: &str, raw: &str) -> Option<Value> {
     match cat_name {
         "option" => resolve_option_simple(corpus, raw),
         "redir" => resolve_redir(corpus, raw),
+        "job_spec" => resolve_job_spec(corpus, raw),
+        "special_function" => resolve_special_function(corpus, raw),
         _ => resolve_literal(corpus, cat_name, raw),
     }
+}
+
+const HOOK_NAMES: &[&str] = &[
+    "chpwd",
+    "periodic",
+    "precmd",
+    "preexec",
+    "zshaddhistory",
+    "zshexit",
+];
+
+// Port of `resolveJobSpec` in corpus.ts. Literal forms first (`%%`, `%+`,
+// `%-`); templated forms mapped to their canonical corpus keys.
+fn resolve_job_spec(corpus: &Corpus, raw: &str) -> Option<Value> {
+    let t = raw.trim();
+    if !t.starts_with('%') {
+        return None;
+    }
+    let key = match t {
+        "%%" | "%+" | "%-" => t,
+        _ => {
+            let body = &t[1..];
+            if body.is_empty() {
+                return None;
+            }
+            if body.chars().all(|c| c.is_ascii_digit()) {
+                "%number"
+            } else if body.starts_with('?') {
+                if body.len() > 1 {
+                    "%?string"
+                } else {
+                    return None;
+                }
+            } else {
+                "%string"
+            }
+        }
+    };
+    mk_match_by_id(corpus, "job_spec", key)
+}
+
+// Port of `resolveSpecialFunction` in corpus.ts. Literal first, then the two
+// identifier-composition patterns zsh exposes: `<hook>_functions` → hook
+// record, `TRAP<NAL>` → `TRAPNAL` template record.
+fn resolve_special_function(corpus: &Corpus, raw: &str) -> Option<Value> {
+    let t = raw.trim();
+    if t.is_empty() {
+        return None;
+    }
+    if let Some(m) = mk_match_by_id(corpus, "special_function", t) {
+        return Some(m);
+    }
+    if let Some(stripped) = t.strip_suffix("_functions") {
+        if HOOK_NAMES.contains(&stripped) {
+            if let Some(m) = mk_match_by_id(corpus, "special_function", stripped) {
+                return Some(m);
+            }
+        }
+    }
+    if t.starts_with("TRAP")
+        && t.len() > 4
+        && t[4..]
+            .chars()
+            .all(|c| c.is_ascii_uppercase() || c.is_ascii_digit())
+    {
+        return mk_match_by_id(corpus, "special_function", "TRAPNAL");
+    }
+    None
+}
+
+fn mk_match_by_id(corpus: &Corpus, cat_name: &str, id: &str) -> Option<Value> {
+    let cat = corpus.category(cat_name)?;
+    cat.records
+        .iter()
+        .find(|r| record_id(cat_name, r) == id)
+        .map(|r| {
+            mk_match(
+                cat.name,
+                record_id(cat_name, r),
+                record_display(cat_name, r),
+                r,
+            )
+        })
 }
 
 fn resolve_literal(corpus: &Corpus, cat_name: &str, raw: &str) -> Option<Value> {
@@ -163,11 +248,13 @@ pub fn record_id(cat_name: &str, rec: &Rec) -> String {
         | "precmd"
         | "reserved_word"
         | "complex_command"
-        | "zle_widget" => "name",
-        "cond_op" | "glob_op" | "process_subst" => "op",
+        | "zle_widget"
+        | "keymap"
+        | "special_function" => "name",
+        "cond_op" | "glob_op" | "process_subst" | "arith_op" => "op",
         "redir" | "param_expn" => "sig",
         "subscript_flag" | "param_flag" | "glob_flag" | "glob_qualifier" => "flag",
-        "history" | "prompt_escape" => "key",
+        "history" | "prompt_escape" | "job_spec" => "key",
         _ => "name",
     };
     str_field(rec, key).to_string()

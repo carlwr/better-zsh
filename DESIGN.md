@@ -98,7 +98,7 @@ Not an absolute ban. If post-refactor usage justifies a convenience wrapper, it 
 
 ## Why per-category resolvers
 
-The raw→documented relationship has genuinely different shapes per category (`option` needs corpus-aware negation; `redir` decomposes composite tokens; most others are trivial lookup). A per-category resolver table lets each category carry its own logic while the public API stays uniform. Adding a new complex category is a local addition: drop a resolver entry, the public API picks it up automatically.
+The raw→documented relationship has genuinely different shapes per category (`option` needs corpus-aware negation; `redir` decomposes composite tokens; `job_spec` and `special_function` apply template + compositional fallback matching; most others are trivial lookup). A per-category resolver table lets each category carry its own logic while the public API stays uniform. Adding a new complex category is a local addition: drop a resolver entry, the public API picks it up automatically.
 
 ---
 

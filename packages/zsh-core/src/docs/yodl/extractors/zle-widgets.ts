@@ -1,13 +1,21 @@
 import { mkDocumented } from "../../brands.ts"
-import type { ZleWidgetDoc, ZleWidgetKind } from "../../types.ts"
+import {
+  type ZleWidgetDoc,
+  type ZleWidgetKind,
+  type ZleWidgetSubsection,
+  zleWidgetSubsections,
+} from "../../types.ts"
 import {
   extractItems,
   extractSectBody,
   extractSectionBody,
   flattenAliasedEntries,
+  parseClosedUnion,
 } from "../core/doc.ts"
 import type { YNodeSeq } from "../core/nodes.ts"
 import { extractTokens, normalizeHeader } from "../core/text.ts"
+
+const WIDGET_SUBSECTION_SET: ReadonlySet<string> = new Set(zleWidgetSubsections)
 
 /**
  * Parse ZLE widget names from `zle.yo`.
@@ -53,10 +61,14 @@ function parseWidgetSection(
       name: mkDocumented("zle_widget", name),
       sig,
       desc,
-      section: entry.section || sectionDefault,
+      section: parseSubsection(entry.section || sectionDefault),
       kind,
     }),
   )
+}
+
+function parseSubsection(raw: string): ZleWidgetSubsection {
+  return parseClosedUnion(raw, WIDGET_SUBSECTION_SET, "ZLE widget subsection")
 }
 
 /** Take the first `tt(...)` token text from a Yodl node sequence. */

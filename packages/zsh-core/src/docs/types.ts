@@ -150,6 +150,11 @@ export interface ZshOption {
   readonly defaultIn: readonly Emulation[]
   readonly category: OptSection
   readonly desc: string
+  /** Present on `Option Aliases` entries: the option this alias resolves to, and whether it inverts. */
+  readonly aliasOf?: {
+    readonly target: Documented<"option">
+    readonly negated: boolean
+  }
 }
 
 /** Parsed unary `[[ ... ]]` conditional operator docs. */
@@ -198,9 +203,19 @@ export interface SyntaxDocBase<Sig extends string = string> {
   readonly section: string
 }
 
-/** Shell-managed parameters documented in `zshparam`. */
+/**
+ * Typed source of a shell-parameter record.
+ *
+ * - `shell-set`: global parameters the shell assigns to (`zshparam` §"Parameters Set By The Shell").
+ * - `shell-used`: global parameters the shell reads (`zshparam` §"Parameters Used By The Shell").
+ * - `zle-widget`: widget-local parameters visible inside user-defined ZLE widgets (BUFFER, CURSOR, ...); `zle.yo` §"User-Defined Widgets".
+ */
+export type ShellParamSection = "shell-set" | "shell-used" | "zle-widget"
+
+/** Shell-managed parameters documented in `zshparam` and ZLE widget-local parameters from `zle.yo`. */
 export interface ShellParamDoc extends SyntaxDocBase {
   readonly name: Documented<"shell_param">
+  readonly section: ShellParamSection
   readonly tied?: Documented<"shell_param">
 }
 
@@ -364,16 +379,97 @@ export interface GlobQualifierDoc extends SyntaxDocBase {
   readonly args: readonly string[]
 }
 
+export const promptSubsections = [
+  "Special characters",
+  "Login information",
+  "Shell state",
+  "Date and time",
+  "Visual effects",
+  "Conditional Substrings in Prompts",
+] as const
+
+export type PromptSubsection = (typeof promptSubsections)[number]
+
 /** Prompt-expansion escape sequences -- e.g. `%n`, `%~`, `%D{string}`, `%F{color}`. */
 export interface PromptEscapeDoc extends SyntaxDocBase {
   readonly key: Documented<"prompt_escape">
+  readonly section: PromptSubsection
 }
+
+export const zleWidgetSubsections = [
+  "Movement",
+  "History Control",
+  "Modifying Text",
+  "Arguments",
+  "Completion",
+  "Miscellaneous",
+  "Text Objects",
+  "Special Widgets",
+] as const
+
+export type ZleWidgetSubsection = (typeof zleWidgetSubsections)[number]
 
 /** Zsh Line Editor widget names -- standard and special widgets from `zle.yo`. */
 export interface ZleWidgetDoc extends SyntaxDocBase {
   readonly name: Documented<"zle_widget">
   /** `"standard"` for bindable editing widgets; `"special"` for shell-called hooks. */
   readonly kind: ZleWidgetKind
+  readonly section: ZleWidgetSubsection
 }
 
 export type ZleWidgetKind = "standard" | "special"
+
+/**
+ * ZLE keymap entry -- one of the fixed initial keymaps (`emacs`, `viins`,
+ * `vicmd`, `viopp`, `visual`, `isearch`, `command`, `.safe`).
+ *
+ * `main` is not a keymap in its own right but an alias to `emacs` or `viins`
+ * depending on `$VISUAL`/`$EDITOR`; it is tracked via `linkedFrom` on the
+ * default target (emacs).
+ */
+export interface KeymapDoc extends SyntaxDocBase {
+  readonly name: Documented<"keymap">
+  /** `.safe` is special — immutable and always present. */
+  readonly isSpecial: boolean
+  /** Aliases from other names (e.g. `main` onto `emacs`). Empty when none. */
+  readonly linkedFrom: readonly string[]
+}
+
+/** Zsh job-spec forms -- `%number`, `%string`, `%?string`, `%%`, `%+`, `%-`. */
+export type JobSpecKind =
+  | "number"
+  | "string"
+  | "contains"
+  | "current"
+  | "previous"
+
+export interface JobSpecDoc extends SyntaxDocBase {
+  readonly key: Documented<"job_spec">
+  readonly kind: JobSpecKind
+}
+
+/** Arithmetic operator arity. `overloaded` means the same op serves as both unary and binary (`+`, `-`). */
+export type ArithOpArity = "unary" | "binary" | "ternary" | "overloaded"
+
+/** Arithmetic operator — one record per unique op from `arith.yo` native-precedence table. */
+export interface ArithOpDoc extends SyntaxDocBase {
+  readonly op: Documented<"arith_op">
+  readonly arity: ArithOpArity
+}
+
+/**
+ * Special-function kind.
+ *
+ * - `hook`: user-defined callback with a companion `${name}_functions` array (chpwd, periodic, precmd, preexec, zshaddhistory, zshexit).
+ * - `trap-literal`: specifically named trap function (TRAPDEBUG, TRAPEXIT, TRAPZERR, TRAPERR).
+ * - `trap-template`: the `TRAPNAL` template where `NAL` is any signal name (see `man 7 signal`).
+ */
+export type SpecialFunctionKind = "hook" | "trap-literal" | "trap-template"
+
+/** Zsh "special function" — hook functions and TRAP* functions from `func.yo` §Special Functions. */
+export interface SpecialFunctionDoc extends SyntaxDocBase {
+  readonly name: Documented<"special_function">
+  readonly kind: SpecialFunctionKind
+  /** For hooks: the companion `${name}_functions` array name. Absent on TRAP* records. */
+  readonly hookArray?: string
+}

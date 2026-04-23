@@ -239,6 +239,10 @@ pub const DOC_CATEGORIES: &[&str] = &[
     "glob_qualifier",
     "prompt_escape",
     "zle_widget",
+    "keymap",
+    "job_spec",
+    "arith_op",
+    "special_function",
 ];
 
 pub fn dispatch(cmd: Command, tool_defs: &ToolDefs, corpus: &Corpus) -> Result<i32> {

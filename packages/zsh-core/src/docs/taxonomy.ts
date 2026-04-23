@@ -1,5 +1,6 @@
 import type { Assert, Eq } from "@carlwr/typescript-extra"
 import type {
+  ArithOpDoc,
   BuiltinDoc,
   ComplexCommandDoc,
   CondOpDoc,
@@ -8,6 +9,8 @@ import type {
   GlobOpDoc,
   GlobQualifierDoc,
   HistoryDoc,
+  JobSpecDoc,
+  KeymapDoc,
   ParamExpnDoc,
   ParamFlagDoc,
   PrecmdDoc,
@@ -16,6 +19,7 @@ import type {
   RedirDoc,
   ReservedWordDoc,
   ShellParamDoc,
+  SpecialFunctionDoc,
   SubscriptFlagDoc,
   ZleWidgetDoc,
   ZshOption,
@@ -40,6 +44,10 @@ export const docCategories = [
   "glob_qualifier",
   "prompt_escape",
   "zle_widget",
+  "keymap",
+  "job_spec",
+  "arith_op",
+  "special_function",
 ] as const
 
 export type DocCategory = (typeof docCategories)[number]
@@ -59,6 +67,10 @@ const classifyOrderTuple = [
   "precmd",
   "builtin",
   "cond_op",
+  // special_function precedes option so `TRAPHUP` / `precmd_functions` resolve
+  // to the function record rather than misclassifying; see DESIGN.md §"Tie-break
+  // in classify".
+  "special_function",
   "shell_param",
   "process_subst",
   "param_expn",
@@ -68,8 +80,18 @@ const classifyOrderTuple = [
   "glob_qualifier",
   "glob_op",
   "history",
+  // prompt_escape precedes job_spec because `job_spec`'s `%string` fallback
+  // would otherwise shadow `%n`, `%~`, `%F`, etc. Real job-spec tokens
+  // (`%%`, `%1`, `%?foo`) have no prompt-escape conflict, so nothing is
+  // lost by this ordering.
   "prompt_escape",
+  "job_spec",
   "zle_widget",
+  "keymap",
+  // arith_op sits after cond_op so that `==`, `!=`, `<`, `>`, `<=`, `>=` prefer
+  // the more common cond_op interpretation; bare arith ops (`**`, `<<`, `%`, ...)
+  // still route here.
+  "arith_op",
   "option",
   "redir",
 ] as const satisfies readonly DocCategory[]
@@ -107,6 +129,10 @@ export const docCategoryLabels: Readonly<Record<DocCategory, string>> = {
   glob_qualifier: "glob qualifier",
   prompt_escape: "prompt escape",
   zle_widget: "ZLE widget",
+  keymap: "ZLE keymap",
+  job_spec: "job spec",
+  arith_op: "arithmetic operator",
+  special_function: "special function",
 }
 
 export interface DocRecordMap {
@@ -128,6 +154,10 @@ export interface DocRecordMap {
   glob_qualifier: GlobQualifierDoc
   prompt_escape: PromptEscapeDoc
   zle_widget: ZleWidgetDoc
+  keymap: KeymapDoc
+  job_spec: JobSpecDoc
+  arith_op: ArithOpDoc
+  special_function: SpecialFunctionDoc
 }
 
 /**
@@ -174,6 +204,10 @@ export const docId: {
   glob_qualifier: d => d.flag,
   prompt_escape: d => d.key,
   zle_widget: d => d.name,
+  keymap: d => d.name,
+  job_spec: d => d.key,
+  arith_op: d => d.op,
+  special_function: d => d.name,
 }
 
 /**
@@ -209,7 +243,7 @@ export const docSubKind: {
   cond_op: d => d.arity,
   builtin: _ => undefined,
   precmd: _ => undefined,
-  shell_param: _ => undefined,
+  shell_param: d => d.section,
   complex_command: _ => undefined,
   reserved_word: d => d.pos,
   redir: _ => undefined,
@@ -221,6 +255,10 @@ export const docSubKind: {
   glob_op: d => d.kind,
   glob_flag: _ => undefined,
   glob_qualifier: _ => undefined,
-  prompt_escape: _ => undefined,
-  zle_widget: d => d.kind,
+  prompt_escape: d => d.section,
+  zle_widget: d => `${d.kind}:${d.section}`,
+  keymap: d => (d.isSpecial ? "special" : "regular"),
+  job_spec: d => d.kind,
+  arith_op: d => d.arity,
+  special_function: d => d.kind,
 }

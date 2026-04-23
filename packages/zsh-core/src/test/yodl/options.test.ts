@@ -142,5 +142,27 @@ endsitem()`
         expect(o.desc).not.toContain("manref(")
       }
     })
+
+    test("option-alias records carry aliasOf with normalized target + negation", () => {
+      const map = by(opts, o => o.name)
+      // BRACE_EXPAND aliases `em(NO_)IGNORE_BRACES` — negated alias.
+      const brace = map.get(opt("BRACE_EXPAND"))
+      expect(brace?.category).toBe("Option Aliases")
+      expect(brace?.aliasOf).toEqual({
+        target: opt("IGNORE_BRACES"),
+        negated: true,
+      })
+      // DOT_GLOB aliases `tt(GLOB_DOTS)` — non-negated.
+      const dot = map.get(opt("DOT_GLOB"))
+      expect(dot?.aliasOf).toEqual({
+        target: opt("GLOB_DOTS"),
+        negated: false,
+      })
+    })
+
+    test("non-alias options have no aliasOf", () => {
+      const map = by(opts, o => o.name)
+      expect(map.get(opt("AUTO_CD"))?.aliasOf).toBeUndefined()
+    })
   })
 })

@@ -79,6 +79,10 @@ export type GlobFlagsJson = JsonDocArrayMap["glob_flag"]
 export type GlobQualifiersJson = JsonDocArrayMap["glob_qualifier"]
 export type PromptEscapesJson = JsonDocArrayMap["prompt_escape"]
 export type ZleWidgetsJson = JsonDocArrayMap["zle_widget"]
+export type KeymapsJson = JsonDocArrayMap["keymap"]
+export type JobSpecsJson = JsonDocArrayMap["job_spec"]
+export type ArithOpsJson = JsonDocArrayMap["arith_op"]
+export type SpecialFunctionsJson = JsonDocArrayMap["special_function"]
 
 export type JsonCounts = { readonly [K in JsonCountKey]: number }
 

@@ -69,7 +69,7 @@ suite("CompletionProvider", () => {
       name: mkDocumented("shell_param", "SECONDS"),
       sig: "SECONDS",
       desc: "",
-      section: "Parameters Set By The Shell" as const,
+      section: "shell-set" as const,
     }
     const option = {
       name: mkDocumented("option", "AUTO_CD"),

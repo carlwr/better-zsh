@@ -25,6 +25,10 @@ export type RefDumpFile =
   | "glob-qualifiers.md"
   | "prompt-escapes.md"
   | "zle-widgets.md"
+  | "keymaps.md"
+  | "job-specs.md"
+  | "arith-ops.md"
+  | "special-functions.md"
   | "suspicious.md"
 
 const dumpFile: { [K in DocCategory]: RefDumpFile } = {
@@ -46,6 +50,10 @@ const dumpFile: { [K in DocCategory]: RefDumpFile } = {
   glob_qualifier: "glob-qualifiers.md",
   prompt_escape: "prompt-escapes.md",
   zle_widget: "zle-widgets.md",
+  keymap: "keymaps.md",
+  job_spec: "job-specs.md",
+  arith_op: "arith-ops.md",
+  special_function: "special-functions.md",
 }
 
 const dumpSpecs = [

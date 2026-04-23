@@ -8,9 +8,12 @@ import * as zd from "../../docs/corpus"
 import type { DocCategory, DocRecordMap } from "../../docs/taxonomy"
 import { docCategories, docId } from "../../docs/taxonomy"
 import type {
+  ArithOpDoc,
   BuiltinDoc,
   ComplexCommandDoc,
   CondOpDoc,
+  JobSpecDoc,
+  KeymapDoc,
   ParamExpnDoc,
   PrecmdDoc,
   ProcessSubstDoc,
@@ -18,6 +21,7 @@ import type {
   RedirDoc,
   ReservedWordDoc,
   ShellParamDoc,
+  SpecialFunctionDoc,
   ZleWidgetDoc,
   ZshOption,
 } from "../../docs/types"
@@ -26,6 +30,7 @@ import { dumpText, type RefDumpFile, writeRefDump } from "../../render/dump"
 import {
   defaultStateIn,
   fmtOptRefsInMd,
+  mdArithOp,
   mdBuiltin,
   mdComplexCommand,
   mdCondOp,
@@ -33,6 +38,8 @@ import {
   mdGlobOp,
   mdGlobQualifier,
   mdHistory,
+  mdJobSpec,
+  mdKeymap,
   mdOpt,
   mdParamExpn,
   mdParamFlag,
@@ -42,6 +49,7 @@ import {
   mdRedir,
   mdReservedWord,
   mdShellParam,
+  mdSpecialFunction,
   mdSubscriptFlag,
   mdZleWidget,
 } from "../../render/md"
@@ -121,7 +129,7 @@ const sec: ShellParamDoc = {
   name: mkDocumented("shell_param", "SECONDS"),
   sig: "SECONDS",
   desc: "d:p",
-  section: "",
+  section: "shell-set",
 }
 // Stub-rendered categories: only the identifier is load-bearing — renderers
 // return "TBD" regardless. Central helper bridges the K↔idField correlation
@@ -167,6 +175,36 @@ const zw: ZleWidgetDoc = {
   section: "Modifying Text",
   kind: "standard",
 }
+const km: KeymapDoc = {
+  name: mkDocumented("keymap", "emacs"),
+  sig: "emacs",
+  desc: "d:km",
+  section: "Keymaps",
+  isSpecial: false,
+  linkedFrom: ["main"],
+}
+const js: JobSpecDoc = {
+  key: mkDocumented("job_spec", "%%"),
+  sig: "%%",
+  desc: "d:js",
+  section: "Jobs",
+  kind: "current",
+}
+const ao: ArithOpDoc = {
+  op: mkDocumented("arith_op", "+"),
+  sig: "+",
+  desc: "d:ao",
+  section: "Arithmetic Evaluation",
+  arity: "overloaded",
+}
+const sfn: SpecialFunctionDoc = {
+  name: mkDocumented("special_function", "chpwd"),
+  sig: "chpwd",
+  desc: "d:sfn",
+  section: "Hook Functions",
+  kind: "hook",
+  hookArray: "chpwd_functions",
+}
 
 // --- corpus builder ---------------------------------------------------------
 
@@ -191,6 +229,10 @@ const baseArrays: DocArrays = {
   glob_qualifier: [gq],
   prompt_escape: [pe],
   zle_widget: [zw],
+  keymap: [km],
+  job_spec: [js],
+  arith_op: [ao],
+  special_function: [sfn],
 }
 
 function mkTestCorpus(overrides: Partial<DocArrays> = {}): DocCorpus {
@@ -272,7 +314,7 @@ const renderedMarkdownCases = [
   [
     "prompt_escape",
     mdPromptEscape(pe),
-    ["`%n`", "d:pe", "_Category:_ Prompt Escape (Login information)"],
+    ["`%n`", "d:pe", "_Category:_ Prompt Escape — Login information"],
   ],
   [
     "zle_widget",
@@ -282,7 +324,30 @@ const renderedMarkdownCases = [
       "```zsh",
       "backward-kill-word (^W ESC-^H ESC-^?) (unbound) (unbound)",
       "d:zw",
-      "_Role:_ ZLE standard widget (Modifying Text)",
+      "_Role:_ ZLE standard widget",
+      "_Subsection:_ Modifying Text",
+    ],
+  ],
+  [
+    "keymap",
+    mdKeymap(km),
+    ["`emacs`", "d:km", "_Role:_ ZLE keymap", "_Linked from:_ `main`"],
+  ],
+  ["job_spec", mdJobSpec(js), ["`%%`", "d:js", "_Role:_ job spec (current)"]],
+  [
+    "arith_op",
+    mdArithOp(ao),
+    ["`+`", "d:ao", "_Role:_ arithmetic operator (overloaded)"],
+  ],
+  [
+    "special_function",
+    mdSpecialFunction(sfn),
+    [
+      "`chpwd`",
+      "d:sfn",
+      "```zsh",
+      "chpwd_functions=( funcname1 funcname2 ... )",
+      "_Role:_ hook function",
     ],
   ],
 ] as const
@@ -345,6 +410,10 @@ const dumpByCat: {
   glob_qualifier: ["glob-qualifiers.md", "## @", "d:gq"],
   prompt_escape: ["prompt-escapes.md", "## %n", "d:pe"],
   zle_widget: ["zle-widgets.md", "## backward-kill-word", "d:zw"],
+  keymap: ["keymaps.md", "## emacs", "d:km"],
+  job_spec: ["job-specs.md", "## %%", "d:js"],
+  arith_op: ["arith-ops.md", "## +", "d:ao"],
+  special_function: ["special-functions.md", "## chpwd", "d:sfn"],
 }
 
 const dumpCases = docCategories.map(k => dumpByCat[k])
@@ -446,6 +515,10 @@ describe("render markdown", () => {
       "glob_qualifier:@",
       "prompt_escape:%n",
       "zle_widget:backward-kill-word",
+      "keymap:emacs",
+      "job_spec:%%",
+      "arith_op:+",
+      "special_function:chpwd",
     ])
   })
 
