@@ -186,7 +186,7 @@ fn build_arg(key: &str, spec: &Value, required: bool, help: &str, long_help: &st
         {
             arg = arg
                 .value_parser(clap::builder::PossibleValuesParser::new(DOC_CATEGORIES))
-                // The tool description already enumerates the 16 category
+                // The tool description already enumerates the category
                 // values one-per-line; clap's default inline `[possible
                 // values: ...]` block is redundant + wraps awkwardly at
                 // narrow terminal widths.

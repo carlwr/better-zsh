@@ -6,7 +6,8 @@
  *   - `input` is what the TS `execute(corpus, input)` sees.
  *   - `argv` is what the Rust CLI receives on the command line.
  *   - `expectedOutput` is the JSON both must produce (score fields
- *     stripped — fuzzysort vs. nucleo scores are not expected to match).
+ *     stripped — TS fuzzysort and the Rust in-tree ASCII subsequence
+ *     scorer use different scales, so numeric scores aren't compared).
  *
  * Modes:
  *   - Write (env `BZ_WRITE_RUST_FIXTURES=1`): regenerate fixtures from
@@ -118,9 +119,10 @@ function toArgv(toolName: string, input: Record<string, unknown>): string[] {
 /**
  * Strip fields that are known not to match across the TS/Rust sides:
  *
- * - `score`: fuzzysort (TS) and nucleo-matcher (Rust) use different scoring
- *   scales; exact numeric equality is not meaningful. Ranking order is what
- *   both sides are written to produce identically.
+ * - `score`: TS fuzzysort and Rust's in-tree ASCII subsequence scorer
+ *   (`zshref-rs/src/fuzzy.rs`) use different scales; exact numeric
+ *   equality is not meaningful. Ranking order is what both sides are
+ *   written to produce identically.
  */
 const DROPPED_KEYS = new Set(["score"])
 

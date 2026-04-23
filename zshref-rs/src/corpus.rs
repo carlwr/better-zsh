@@ -162,9 +162,10 @@ pub struct ZshUpstream {
 pub struct Corpus {
     pub index: Index,
     /// One vec of records per category, in `CATEGORY_FILES` order
-    /// (== `classifyOrder`). Each record is a JSON object; the
-    /// CLI only pulls out `markdown` plus the category-specific id/display
-    /// fields at point-of-use.
+    /// (== TS `docCategories`; drives `search` listing order).
+    /// `classify` walks `CLASSIFY_ORDER` instead. Each record is a JSON
+    /// object; the CLI only pulls out `markdown` plus the category-specific
+    /// id/display fields at point-of-use.
     pub categories: Vec<Category>,
 }
 

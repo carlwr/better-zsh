@@ -9,7 +9,7 @@ Library-first: the VS Code extension, MCP server, and Rust CLI in the same monor
 ## What you get
 
 - **`DocCorpus`** — typed, category-keyed maps of parsed doc records. One map per `DocCategory`.
-- **`DocCategory`** — a closed, enumerable `as const` union of the ~16 categories (`option`, `cond_op`, `builtin`, `redir`, `param_expn`, …). Iterable at runtime; exhaustive at compile time.
+- **`DocCategory`** — a closed `as const` union of doc categories (`option`, `cond_op`, `builtin`, `redir`, `param_expn`, …). Iterable at runtime; exhaustive at compile time.
 - **Brand types `Observed<K>` / `Documented<K>`** — separate "normalized from user code" and "corpus-confirmed" identities so they cannot be confused. See [`DESIGN.md`](https://github.com/carlwr/better-zsh/blob/main/DESIGN.md) §"Brand semantics" for the rationale.
 - **`resolve(corpus, cat, raw)` / `resolveOption`** — the sanctioned crossing from raw user-code text to a corpus-verified `DocPieceId`. Handles zsh-specific quirks: corpus-aware `NO_*` negation (including the `NOTIFY` / `TIFY` edge case), redirection decomposition into `groupOp` + tail, parameter-expansion sig matching.
 - **`renderDoc(corpus, pieceId)`** — markdown generation for a known `DocPieceId`. Per-category renderers internal; the public API is uniform.

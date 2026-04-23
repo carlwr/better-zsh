@@ -26,6 +26,7 @@ const DOC_CATEGORIES: &[&str] = &[
     "builtin",
     "precmd",
     "shell_param",
+    "complex_command",
     "reserved_word",
     "redir",
     "process_subst",
@@ -35,6 +36,7 @@ const DOC_CATEGORIES: &[&str] = &[
     "history",
     "glob_op",
     "glob_flag",
+    "glob_qualifier",
     "prompt_escape",
     "zle_widget",
 ];
@@ -83,6 +85,7 @@ fn known_category() -> impl Strategy<Value = &'static str> {
         Just("builtin"),
         Just("precmd"),
         Just("shell_param"),
+        Just("complex_command"),
         Just("reserved_word"),
         Just("redir"),
         Just("process_subst"),
@@ -92,6 +95,7 @@ fn known_category() -> impl Strategy<Value = &'static str> {
         Just("history"),
         Just("glob_op"),
         Just("glob_flag"),
+        Just("glob_qualifier"),
         Just("prompt_escape"),
         Just("zle_widget"),
     ]
@@ -266,7 +270,7 @@ proptest! {
 fn doc_categories_stable_count() {
     assert_eq!(
         DOC_CATEGORIES.len(),
-        16,
+        18,
         "DOC_CATEGORIES drifted; update property tests to cover new categories"
     );
 }

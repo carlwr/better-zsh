@@ -1,9 +1,5 @@
 import { mkDocumented } from "../../brands.ts"
-import type {
-  AlternateForm,
-  ComplexCommandDoc,
-  Documented,
-} from "../../types.ts"
+import type { AlternateForm, ComplexCommandDoc } from "../../types.ts"
 import {
   collectAliasedEntries,
   extractFirstList,
@@ -148,10 +144,7 @@ export function parseComplexCommands(
       if (!winner?.head) continue
       if (out.has(winner.head)) continue
       out.set(winner.head, {
-        name: mkDocumented(
-          "complex_command",
-          winner.head,
-        ) as Documented<"complex_command">,
+        name: mkDocumented("complex_command", winner.head),
         sig: winner.sig,
         desc: normalizeBody(grp.entry.body),
         section: "Complex Commands",

@@ -289,6 +289,7 @@ This repo is worked on from multiple agent tools. Contributor docs and skills mu
 - Prefer constraints and intent over enumerating volatile specifics.
 - Prefer patterns over exact filenames where source or scripts already provide the list.
 - For `DEVELOPMENT.md`, keep the scope local: package-local docs stay package-local; repo-wide policy belongs in root docs.
+- This repo is public. Treat checked-in docs, skills, handoffs, and workflow comments as public artifacts: do not include secrets, tokens, recovery codes, session material, or other security-sensitive detail. Secret names and high-level auth posture are fine when operationally necessary.
 - Snapshot or handoff docs should declare their staleness posture near the top and stay intentionally short. They are orientation notes, not specs or runbooks, unless explicitly written as one.
 - If a detail is cheaply derivable from manifests, workflows, scripts, or tests, prefer pointing to that source of truth and summarizing the invariant rather than copying the current full inventory.
 - If `SECURITY.md` needs updates, tell the user and suggest them. Agents may not edit `SECURITY.md`.
