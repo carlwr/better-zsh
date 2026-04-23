@@ -246,6 +246,16 @@ const renderedMarkdownCases = [
     ["`if`", "d:rw", "_Role:_ reserved word (command position)"],
   ],
   [
+    "reserved_word no-desc",
+    mdReservedWord({
+      name: mkDocumented("reserved_word", "for"),
+      sig: "for",
+      section: "Reserved Words",
+      pos: "command",
+    }),
+    ["`for`", "_Role:_ reserved word (command position)"],
+  ],
+  [
     "complex_command",
     mdComplexCommand(cc, mkTestCorpus({ option: [] })),
     [

@@ -237,11 +237,12 @@ export function mdParamExpn(doc: ParamExpnDoc): string {
 
 /** Render one reserved-word doc block as markdown. */
 export function mdReservedWord(doc: ReservedWordDoc): string {
-  return docBlock(
-    mdFmt.code(doc.name),
-    doc.desc,
+  const parts: string[] = [mdFmt.code(doc.name)]
+  if (doc.desc) parts.push(doc.desc)
+  parts.push(
     `_Role:_ reserved word (${doc.pos === "command" ? "command position" : "any position"})`,
   )
+  return docBlock(...parts)
 }
 
 /** Render one complex-command doc block as markdown. */

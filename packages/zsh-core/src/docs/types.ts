@@ -204,9 +204,23 @@ export interface ShellParamDoc extends SyntaxDocBase {
   readonly tied?: Documented<"shell_param">
 }
 
-export interface ReservedWordDoc extends SyntaxDocBase {
+/**
+ * Reserved word.
+ *
+ * `desc` is optional (deliberately unlike other `SyntaxDocBase`-shaped records,
+ * which is why `ReservedWordDoc` does not extend `SyntaxDocBase`). Heads
+ * covered by `complex_command` (e.g. `for`, `while`, `[[`) omit it entirely
+ * — a fixed generic "this is a reserved word" string would be an epistemic
+ * trap, pushing agents toward the cheapest record when the richer one lives
+ * elsewhere. Body words (`do`, `then`, …) and standalone entries (`!`,
+ * `coproc`, typeset family) keep enriched per-word prose.
+ */
+export interface ReservedWordDoc {
   readonly name: Documented<"reserved_word">
   readonly pos: ReservedWordPos
+  readonly sig: string
+  readonly section: string
+  readonly desc?: string
 }
 
 /** One alternate-form synopsis attached to a `ComplexCommandDoc`. */
