@@ -23,7 +23,7 @@ description: Orient quickly in the better-zsh monorepo. Use at the start of any 
 
 # Orientation: better-zsh monorepo
 
-Read `AGENTS.md` first — it is the primary source for conventions, testing rules, and design decisions. This skill adds navigation strategies and discovery scripts.
+Read `AGENTS.md` first — it is the primary source for conventions, testing rules, and contributor workflow. Cross-cutting design principles live in `PRINCIPLES.md`; subsystem-specific rationale in `DESIGN.md`. This skill adds navigation strategies and discovery scripts.
 
 ## Tool-agnostic note
 
@@ -155,4 +155,4 @@ These are **hard rules**, not suggestions. Agents modifying this file must follo
 - **DO add new directory paths** when a new source directory becomes a common entry point.
 - **DO add new gotchas** when a non-obvious invariant or ordering constraint is discovered. Prefer source comments for code-adjacent invariants; add here only when the gotcha spans multiple files or isn't obvious from reading the code.
 - **DO update discovery scripts** when the directory structure changes in ways that break them.
-- **Design rationale** belongs in source comments or `DESIGN.md`, not here.
+- **Design rationale** belongs in source comments, `PRINCIPLES.md`, or `DESIGN.md`, not here.

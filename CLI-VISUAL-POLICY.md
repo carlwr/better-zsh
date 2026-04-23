@@ -85,8 +85,9 @@ NOTE: line length refers to number of characters _after ANSI stripping_ (since A
 - **SHOULD**: split long descriptions into paragraphs with blank lines between logical sections.
 - **SHOULD**: drop non-load-bearing hyphens. `parameter expansion flag` wraps better than `parameter-expansion flag`; keep hyphens when meaning changes.
 - **SHOULD**: render enumerations one (possibly indented) item per line, not comma-heavy inline prose.
-- **SHOULD**: keep `Options` descriptions short and single-paragraph. Put enum tables or references in top-level `Description`, where the column is (possibly) wider.
-- **SHOULD**: keep any one option to roughly a flag line plus a few continuation rows. `~6` physical rows is a good soft cap; tune per CLI.
+- **SHOULD**: keep each flag's `--help` (long) description concise. Multi-paragraph is fine when it aids scannability; prefer 1–2 short paragraphs. Long enum tables still belong in the top-level `Description`, where the column is (possibly) wider.
+- **SHOULD**: keep each flag's `-h` (short) description to a single terse phrase — this is the column-constrained form.
+- **SHOULD**: cap any one paragraph at a handful of physical rows; use paragraph breaks to aid scanning rather than runaway prose. Tune per CLI.
 - **MUST**: in top-level `--help`, state the I/O contract: what `stdout` carries, where human output goes, and the exit-code map.
 - **MUST**: add an `Examples:` section (for the top-level `prog --help`) with a small set of common invocations; often the fastest onboarding surface.
 - **SHOULD**: keep each subcommand `Description` non-empty: say what it does and returns.

@@ -11,7 +11,8 @@ Published state remains pre-1.0. The libraries are still free to move.
 
 ## See also
 
-- **[`DESIGN.md`](./DESIGN.md)** — design rationale and architectural intent.
+- **[`PRINCIPLES.md`](./PRINCIPLES.md)** — cross-cutting design principles (scope, category ontology, adapter judgement). Read before new feature work.
+- **[`DESIGN.md`](./DESIGN.md)** — subsystem-specific design rationale.
 - **`packages/zsh-core/dist/types/*.d.ts`** — rolled-up public API with JSDoc.
 - **`packages/zsh-core-tooldef/`** — shared tool layer consumed by adapters.
 - **`zshref-rs/`** — Rust CLI over the baked-in tool-def JSON.
@@ -25,8 +26,9 @@ Keep documentation non-redundant; audience decides placement.
 - **JSDoc** — end-user facing. Terse. Covers what/how, not why. Avoid rationale, history, and cross-file narrative.
 - **Code comments** — maintainer facing. Local rationale, invariants, workarounds, and "why not the obvious alternative."
 - **File-header comments** — the first few lines of any Makefile/config/source file. Stick to what's locally essential. Do NOT: (a) claim global state about other files, packages, or tools ("everything else stays pnpm-driven"); (b) restate what the filename, location, or structure already expresses; (c) restate design decisions whose home is elsewhere. When implementing from a plan, treat plan prose as intent, not as copy-paste-ready file content — re-derive header text from the destination file's own purpose.
-- **`DESIGN.md`** — cross-file design rationale. Refer to identifiers by name; avoid signatures, paths, counts, and other drift-prone specifics.
-- **`DEVELOPMENT.md`** — repo- or package-local operational notes. Good for package-specific invariants, build/test/release mechanics, and concise pointers to the source of truth. Avoid repeating repo-wide policy from `AGENTS.md` or design rationale from `DESIGN.md`.
+- **`PRINCIPLES.md`** — cross-cutting design principles. Read before designing a new feature or doc category; edit when a tradeoff genuinely shifts.
+- **`DESIGN.md`** — subsystem-specific design rationale. Refer to identifiers by name; avoid signatures, paths, counts, and other drift-prone specifics.
+- **`DEVELOPMENT.md`** — repo- or package-local operational notes. Good for package-specific invariants, build/test/release mechanics, and concise pointers to the source of truth. Avoid repeating repo-wide policy from `AGENTS.md`, principles from `PRINCIPLES.md`, or subsystem rationale from `DESIGN.md`.
 - **`AGENTS.md`** — contributor conventions: style, testing, packaging, and workflow.
 
 When editing one layer, check whether the same point already belongs in another. Prefer cross-references over repetition.
@@ -148,7 +150,11 @@ Hand-written category lists drift.
 - Runtime strings must interpolate from zsh-core exports, never hand-type category names or ordering.
 - Category-indexed tables belong in zsh-core with structural completeness guards; consumers import them.
 
-Rationale lives in `DESIGN.md`.
+Rationale: `DESIGN.md` §"Category-indexed artifacts belong in zsh-core"; `PRINCIPLES.md` §"Category inflation cost" for the agent-visibility cost.
+
+### Resolver scope
+
+When writing or extending a per-category resolver, stay on the right side of the scope balance: close-variant normalization of a raw token against a documented identity is in scope; in-context decomposition of user expressions is not. See `PRINCIPLES.md` §"Resolver scope balance" for the load-bearing examples.
 
 ### Hover docs
 
@@ -306,9 +312,12 @@ Extraction on first stable release: `zshref-rs/` → `zshref` repo; `packages/zs
 
 Record "why" when it helps future work. Prefer the narrowest home that stays discoverable:
 - source comments for local rationale;
-- `DESIGN.md` for cross-file intent;
+- `DESIGN.md` for subsystem-level intent (brand semantics, resolver shape, identity-per-record, ...);
+- `PRINCIPLES.md` for cross-cutting tradeoffs that shape decisions across subsystems;
 - `AGENTS.md` for contributor workflow and conventions;
 - a dedicated doc only when the topic genuinely needs one.
+
+Close-call local decisions where neither option was strongly preferred are worth pinning as a short source comment ("considered X; picked Y because …") — cheaper for future reviewers than re-derivation. Reserve this for genuinely local calls; wide-context decisions rot as the surrounding code moves.
 
 ### Refactoring-opportunities pass
 
@@ -332,12 +341,14 @@ Structural-change notes:
 
 Judge ideas along implementation cost, value, robustness, future-proofness, and testability.
 
+When shaping a new doc category or reshaping an existing one, compare the proposed record against existing precedents in `DocRecordMap`: array fields for composite data, `SyntaxDocBase` extension for sig-shaped records, `args` arrays for parameterized flags. Follow patterns when they genuinely model the domain. See `PRINCIPLES.md` §"Category types".
+
 ### Git; commits
 
 If making commits:
 - pre-release commits need not be perfectly atomic;
 - subject line max 55 chars;
-- usually subject only; avoid commit bodies unless they clearly pay for themselves.
+- subject line only by default. A commit body is justified only when the subject genuinely cannot carry the essential information a future reader needs; most commits do not meet that bar. When tempted to add a body, first try to write a better subject.
 
 ## References & sources
 

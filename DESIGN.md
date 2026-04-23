@@ -1,10 +1,10 @@
 # Design
 
-**Why**, not what. This file complements the API docs (JSDoc in the d.ts rollups); the two should be read side by side. The d.ts tells consumers *what the API does*; this file tells contributors *why the design is shaped this way*.
+**Why**, not what — for subsystems. This file complements the API docs (JSDoc in the d.ts rollups): the d.ts tells consumers *what the API does*; this file tells contributors *why each subsystem is shaped the way it is*.
+
+Cross-cutting principles (scope, category ontology, adapter judgement) live in [`PRINCIPLES.md`](./PRINCIPLES.md); contributor conventions, testing, tooling, and code style live in [`AGENTS.md`](./AGENTS.md).
 
 Avoid duplicating what JSDoc already says (types, signatures, behavioral contracts). Refer to the relevant type or function JSDoc instead. This keeps the two in sync: if a function's behavior changes, only its JSDoc needs updating.
-
-`AGENTS.md` covers contributor conventions, testing, tooling, and code style.
 
 ---
 
@@ -176,15 +176,6 @@ Three consumption routes for the vendored `.yo` docs:
 - **Raw Yodl source** (`dist/data/zsh-docs/`) — for advanced consumers.
 
 Per-category renderers are internal; the public API is `renderDoc`.
-
----
-
-## Scope philosophy
-
-- "Pick the low-hanging fruit."
-- We can't, in general, have zsh tokenize user files for us — that would require running user code. We only invoke `zsh -f` where actual shell execution is worth the host-dependent cost: diagnostics (`zsh -n`) and tokenization to enrich completions.
-- **Zsh-aware, not environment-aware.** Static zsh knowledge (builtins, options, shell-managed parameters, parameter expansion flags, grammar) is preferred over probing the host shell — it's intrinsic to zsh, stable enough to bundle, and more consistent. Environment-dependent data (`$commands`, `$aliases`, `$fpath` beyond system defaults) is *not* used for core features: it varies by machine, launch method, editor, and target execution environment.
-- **Mental model:** "if we could bundle a zsh binary and run it in an isolated container, we would." We use system zsh only where execution is intrinsic; otherwise bundled/static knowledge for consistency, startup latency, and smaller security surface.
 
 ---
 
