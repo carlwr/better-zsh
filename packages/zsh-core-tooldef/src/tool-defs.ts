@@ -147,7 +147,7 @@ export const toolDefs: readonly ToolDef[] = [
  * `zsh_*` name mentioned here exists in `toolDefs`; it does NOT catch
  * tone, length, or formatting drift — those are on reviewer eyes.
  */
-export const TOOL_SUITE_PREAMBLE = `\
+export const TOOL_SUITE_PREAMBLE: string = `\
 Intent → tool:
 
   - classify an unknown zsh token → \`zsh_classify\`

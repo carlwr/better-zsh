@@ -1,6 +1,6 @@
 import { type DocCorpus, mkPieceId, resolveOption } from "@carlwr/zsh-core"
 import { renderDoc } from "@carlwr/zsh-core/render"
-import { makeToolDef } from "../tool-defs.ts"
+import { makeToolDef, type ToolDef } from "../tool-defs.ts"
 
 export interface LookupOptionInput {
   readonly raw: string
@@ -45,7 +45,7 @@ export function lookupOption(
   }
 }
 
-export const lookupOptionToolDef = makeToolDef({
+export const lookupOptionToolDef: ToolDef = makeToolDef({
   name: "zsh_lookup_option",
   brief: "look up a zsh option; handles NO_* negation",
   description: `\

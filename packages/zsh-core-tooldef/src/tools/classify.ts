@@ -9,7 +9,7 @@ import {
   ZSH_UPSTREAM,
 } from "@carlwr/zsh-core"
 import { renderDoc } from "@carlwr/zsh-core/render"
-import { makeToolDef } from "../tool-defs.ts"
+import { makeToolDef, type ToolDef } from "../tool-defs.ts"
 import { display } from "./doc-display.ts"
 
 export interface ClassifyInput {
@@ -59,11 +59,11 @@ function formatMatch(corpus: DocCorpus, pid: DocPieceId): ClassifyMatch {
   }
 }
 
-const humanCategoryList = classifyOrder
+const humanCategoryList: string = classifyOrder
   .map(c => `  - ${docCategoryLabels[c]}`)
   .join("\n")
 
-export const classifyToolDef = makeToolDef({
+export const classifyToolDef: ToolDef = makeToolDef({
   name: "zsh_classify",
   brief: "classify a raw zsh token, return its doc",
   description: `\

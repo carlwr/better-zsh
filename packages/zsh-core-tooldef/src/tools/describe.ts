@@ -8,7 +8,7 @@ import {
   mkPieceId,
 } from "@carlwr/zsh-core"
 import { renderDoc } from "@carlwr/zsh-core/render"
-import { makeToolDef } from "../tool-defs.ts"
+import { makeToolDef, type ToolDef } from "../tool-defs.ts"
 import { display } from "./doc-display.ts"
 
 export interface DescribeInput {
@@ -29,7 +29,7 @@ export type DescribeResult =
 
 const validCategories = new Set<string>(docCategories)
 
-const brandedCategoryList = docCategories
+const brandedCategoryList: string = docCategories
   .map(c => `  - '${c}'  (${docCategoryLabels[c]})`)
   .join("\n")
 
@@ -61,7 +61,7 @@ export function describe(
   }
 }
 
-export const describeToolDef = makeToolDef({
+export const describeToolDef: ToolDef = makeToolDef({
   name: "zsh_describe",
   brief: "fetch the full doc for a known {category, id}",
   description: `\

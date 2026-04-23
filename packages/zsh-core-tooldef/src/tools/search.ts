@@ -7,7 +7,7 @@ import {
   ZSH_UPSTREAM,
 } from "@carlwr/zsh-core"
 import fuzzysort from "fuzzysort"
-import { makeToolDef } from "../tool-defs.ts"
+import { makeToolDef, type ToolDef } from "../tool-defs.ts"
 import { display } from "./doc-display.ts"
 
 export interface SearchInput {
@@ -141,9 +141,11 @@ function toMatch(e: Entry, score?: number): SearchMatch {
   return score === undefined ? withSub : { ...withSub, score }
 }
 
-const brandedCategoryList = docCategories.map(c => `  - '${c}'`).join("\n")
+const brandedCategoryList: string = docCategories
+  .map(c => `  - '${c}'`)
+  .join("\n")
 
-export const searchToolDef = makeToolDef({
+export const searchToolDef: ToolDef = makeToolDef({
   name: "zsh_search",
   brief: "fuzzy-search the zsh reference by id/display",
   description: `\
