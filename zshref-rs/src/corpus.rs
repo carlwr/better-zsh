@@ -66,6 +66,7 @@ const CATEGORY_FILES: &[(&str, &[u8])] = &[
     include_category!("history", "history.json"),
     include_category!("glob_op", "glob-operators.json"),
     include_category!("glob_flag", "glob-flags.json"),
+    include_category!("glob_qualifier", "glob-qualifiers.json"),
     include_category!("prompt_escape", "prompt-escapes.json"),
     include_category!("zle_widget", "zle-widgets.json"),
 ];
@@ -84,6 +85,7 @@ pub const CLASSIFY_ORDER: &[&str] = &[
     "param_flag",
     "subscript_flag",
     "glob_flag",
+    "glob_qualifier",
     "glob_op",
     "history",
     "prompt_escape",

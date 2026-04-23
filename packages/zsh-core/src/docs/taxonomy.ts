@@ -5,6 +5,7 @@ import type {
   Documented,
   GlobFlagDoc,
   GlobOpDoc,
+  GlobQualifierDoc,
   HistoryDoc,
   ParamExpnDoc,
   ParamFlagDoc,
@@ -34,6 +35,7 @@ export const docCategories = [
   "history",
   "glob_op",
   "glob_flag",
+  "glob_qualifier",
   "prompt_escape",
   "zle_widget",
 ] as const
@@ -56,6 +58,7 @@ const classifyOrderTuple = [
   "param_flag",
   "subscript_flag",
   "glob_flag",
+  "glob_qualifier",
   "glob_op",
   "history",
   "prompt_escape",
@@ -93,6 +96,7 @@ export const docCategoryLabels: Readonly<Record<DocCategory, string>> = {
   history: "history designator",
   glob_op: "glob operator",
   glob_flag: "glob flag",
+  glob_qualifier: "glob qualifier",
   prompt_escape: "prompt escape",
   zle_widget: "ZLE widget",
 }
@@ -112,6 +116,7 @@ export interface DocRecordMap {
   history: HistoryDoc
   glob_op: GlobOpDoc
   glob_flag: GlobFlagDoc
+  glob_qualifier: GlobQualifierDoc
   prompt_escape: PromptEscapeDoc
   zle_widget: ZleWidgetDoc
 }
@@ -156,6 +161,7 @@ export const docId: {
   history: d => d.key,
   glob_op: d => d.op,
   glob_flag: d => d.flag,
+  glob_qualifier: d => d.flag,
   prompt_escape: d => d.key,
   zle_widget: d => d.name,
 }
@@ -203,6 +209,7 @@ export const docSubKind: {
   history: d => d.kind,
   glob_op: d => d.kind,
   glob_flag: _ => undefined,
+  glob_qualifier: _ => undefined,
   prompt_escape: _ => undefined,
   zle_widget: d => d.kind,
 }

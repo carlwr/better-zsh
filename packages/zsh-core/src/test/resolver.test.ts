@@ -8,6 +8,7 @@ const hist = mkDocumented_("history")
 const subFlag = mkDocumented_("subscript_flag")
 const parFlag = mkDocumented_("param_flag")
 const glFlag = mkDocumented_("glob_flag")
+const glQual = mkDocumented_("glob_qualifier")
 
 describe("resolveHistory (event designators)", () => {
   test.each([
@@ -110,6 +111,25 @@ describe("parens-agnostic flag resolvers", () => {
 
     test.each(["Z", "(Z)", "(#Z)", "(#)", ""])("%s -> undefined", raw => {
       expect(resolve(corpus, "glob_flag", raw)).toBeUndefined()
+    })
+  })
+
+  describe("glob_qualifier", () => {
+    test.each([
+      ["/", glQual("/")],
+      ["(/)", glQual("/")],
+      ["(#q/)", glQual("/")],
+      ["@", glQual("@")],
+      ["(#q@)", glQual("@")],
+    ] as const)("%s -> %s", (raw, expected) => {
+      expect(resolve(corpus, "glob_qualifier", raw)).toEqual({
+        category: "glob_qualifier",
+        id: expected,
+      })
+    })
+
+    test.each(["Z", "(Z)", "(#qZ)", "(#q)", ""])("%s -> undefined", raw => {
+      expect(resolve(corpus, "glob_qualifier", raw)).toBeUndefined()
     })
   })
 })

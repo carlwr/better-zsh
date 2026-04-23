@@ -24,6 +24,7 @@ const corpus: DocCorpus = {
   history: empty,
   glob_op: empty,
   glob_flag: empty,
+  glob_qualifier: empty,
   prompt_escape: empty,
   zle_widget: empty,
 }

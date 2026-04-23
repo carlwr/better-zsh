@@ -75,6 +75,7 @@ export type ParamFlagsJson = JsonDocArrayMap["param_flag"]
 export type HistoryJson = JsonDocArrayMap["history"]
 export type GlobOperatorsJson = JsonDocArrayMap["glob_op"]
 export type GlobFlagsJson = JsonDocArrayMap["glob_flag"]
+export type GlobQualifiersJson = JsonDocArrayMap["glob_qualifier"]
 export type PromptEscapesJson = JsonDocArrayMap["prompt_escape"]
 export type ZleWidgetsJson = JsonDocArrayMap["zle_widget"]
 

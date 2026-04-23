@@ -309,6 +309,18 @@ export interface GlobFlagDoc extends SyntaxDocBase {
   readonly args: readonly string[]
 }
 
+/**
+ * Glob qualifiers -- pattern-trailer single-letter flags used with
+ * `BARE_GLOB_QUAL` / `EXTENDED_GLOB`, e.g. `*(.)`, `*(/)`, `*(#q@)`. Distinct
+ * syntactic category from `glob_op` (in-pattern) and `glob_flag` (in-pattern
+ * `(#...)`): qualifiers are the trailing parenthesised form that filters the
+ * match list after globbing.
+ */
+export interface GlobQualifierDoc extends SyntaxDocBase {
+  readonly flag: Documented<"glob_qualifier">
+  readonly args: readonly string[]
+}
+
 /** Prompt-expansion escape sequences -- e.g. `%n`, `%~`, `%D{string}`, `%F{color}`. */
 export interface PromptEscapeDoc extends SyntaxDocBase {
   readonly key: Documented<"prompt_escape">

@@ -31,6 +31,7 @@ import type {
   Documented,
   GlobFlagDoc,
   GlobOpDoc,
+  GlobQualifierDoc,
   HistoryDoc,
   ParamExpnDoc,
   ParamFlagDoc,
@@ -49,6 +50,7 @@ import { parseBuiltins } from "./yodl/extractors/builtins.ts"
 import { parseCondOps } from "./yodl/extractors/cond-ops.ts"
 import { parseGlobFlags } from "./yodl/extractors/glob-flags.ts"
 import { parseGlobOps } from "./yodl/extractors/glob-ops.ts"
+import { parseGlobQualifiers } from "./yodl/extractors/glob-qualifiers.ts"
 import { parseHistory } from "./yodl/extractors/history.ts"
 import { fixupOptionsYo, parseOptions } from "./yodl/extractors/options.ts"
 import { fixupExpnYo, parseParamExpns } from "./yodl/extractors/param-expns.ts"
@@ -95,6 +97,7 @@ const categoryLoader: CategoryLoader = {
   history: { file: "expn.yo", parse: parseHistory },
   glob_op: { file: "expn.yo", parse: parseGlobOps },
   glob_flag: { file: "expn.yo", parse: parseGlobFlags },
+  glob_qualifier: { file: "expn.yo", parse: parseGlobQualifiers },
   prompt_escape: { file: "prompt.yo", parse: parsePromptEscapes },
   zle_widget: { file: "zle.yo", parse: parseZleWidgets },
 }
@@ -124,6 +127,10 @@ export interface DocCorpus {
   readonly history: ReadonlyMap<Documented<"history">, HistoryDoc>
   readonly glob_op: ReadonlyMap<Documented<"glob_op">, GlobOpDoc>
   readonly glob_flag: ReadonlyMap<Documented<"glob_flag">, GlobFlagDoc>
+  readonly glob_qualifier: ReadonlyMap<
+    Documented<"glob_qualifier">,
+    GlobQualifierDoc
+  >
   readonly prompt_escape: ReadonlyMap<
     Documented<"prompt_escape">,
     PromptEscapeDoc
@@ -308,16 +315,16 @@ function matchHistoryKey(t: string): string | undefined {
 /**
  * Resolver factory for flag categories whose corpus keys are single letters
  * (`e`, `U`, `i`, ...) but whose user-code tokens may appear wrapped in
- * parentheses (e.g. `(e)` inside `${arr[(e)...]}`) or, for glob flags, with
- * the `#` marker (e.g. `(#i)` inside glob patterns).
+ * parentheses (e.g. `(e)` inside `${arr[(e)...]}`) or with a leading marker
+ * (glob_flag: `(#i)`; glob_qualifier: `(#qX)` under `EXTENDED_GLOB`).
  *
  * Tries the raw-trimmed form verbatim; if that misses and the raw token is
- * wrapped (`(X)` or, for `glob_flag`, `(#X)`), retries the inner form. Falls
- * back to undefined — a bare letter that is NOT a documented flag never
- * cross-resolves to an unrelated category entry.
+ * wrapped, retries the inner form after stripping the category-specific
+ * marker prefix. Falls back to undefined — a bare letter that is NOT a
+ * documented flag never cross-resolves to an unrelated category entry.
  */
 function parensAgnosticFlagResolver<
-  K extends "subscript_flag" | "param_flag" | "glob_flag",
+  K extends "subscript_flag" | "param_flag" | "glob_flag" | "glob_qualifier",
 >(cat: K): Resolver<K> {
   return (c, raw) => {
     const map = c[cat] as ReadonlyMap<string, unknown>
@@ -328,9 +335,16 @@ function parensAgnosticFlagResolver<
     const t = raw.trim()
     if (t.startsWith("(") && t.endsWith(")") && t.length >= 2) {
       const inner = t.slice(1, -1)
-      // glob_flag may be written `(#i)` -- drop the `#` marker too
-      const stripped =
-        cat === "glob_flag" && inner.startsWith("#") ? inner.slice(1) : inner
+      // Strip category-specific leading marker from the parenthesised form:
+      //   glob_flag:      `(#i)`  → `i`
+      //   glob_qualifier: `(#q@)` → `@`  (EXTENDED_GLOB form; BARE_GLOB_QUAL
+      //                                    form `(@)` works via direct match)
+      let stripped = inner
+      if (cat === "glob_flag" && stripped.startsWith("#")) {
+        stripped = stripped.slice(1)
+      } else if (cat === "glob_qualifier" && stripped.startsWith("#q")) {
+        stripped = stripped.slice(2)
+      }
       if (stripped.length > 0) {
         const id = mkDocumented(cat, stripped)
         if (map.has(id as string)) return id
@@ -360,6 +374,7 @@ const resolvers: { [K in DocCategory]: Resolver<K> } = {
   history: resolveHistory,
   glob_op: simpleResolver("glob_op"),
   glob_flag: parensAgnosticFlagResolver("glob_flag"),
+  glob_qualifier: parensAgnosticFlagResolver("glob_qualifier"),
   prompt_escape: simpleResolver("prompt_escape"),
   zle_widget: simpleResolver("zle_widget"),
 }

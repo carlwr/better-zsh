@@ -27,6 +27,7 @@ const norm: { [K in DocCategory]: (s: string) => string } = {
   history: s => s.trim(),
   glob_op: s => s.trim(),
   glob_flag: s => s.trim(),
+  glob_qualifier: s => s.trim(),
   prompt_escape: s => s.trim(),
   zle_widget: s => s.trim(),
 }

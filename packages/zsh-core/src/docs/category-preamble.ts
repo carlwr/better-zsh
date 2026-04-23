@@ -30,6 +30,7 @@ export const docCategoryPreamble: Readonly<
   history: historyPreamble,
   glob_op: undefined,
   glob_flag: undefined,
+  glob_qualifier: undefined,
   prompt_escape: undefined,
   zle_widget: undefined,
 }

@@ -19,6 +19,7 @@ const categoryLabel: Record<DocCategory, string> = {
   history: "history",
   glob_op: "glob ops",
   glob_flag: "glob flags",
+  glob_qualifier: "glob qualifiers",
   prompt_escape: "prompt escapes",
   zle_widget: "zle widgets",
 }

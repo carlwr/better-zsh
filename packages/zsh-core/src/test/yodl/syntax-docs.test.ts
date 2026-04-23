@@ -3,6 +3,7 @@ import { mkDocumented } from "../../docs/brands"
 import { mkRedirOp } from "../../docs/types"
 import { parseGlobFlags } from "../../docs/yodl/extractors/glob-flags"
 import { parseGlobOps } from "../../docs/yodl/extractors/glob-ops"
+import { parseGlobQualifiers } from "../../docs/yodl/extractors/glob-qualifiers"
 import { parseHistory } from "../../docs/yodl/extractors/history"
 import { parseParamFlags } from "../../docs/yodl/extractors/param-flags"
 import { parseProcessSubsts } from "../../docs/yodl/extractors/process-substs"
@@ -241,6 +242,18 @@ enditem()`
         }),
     ],
     [
+      "vendored glob qualifier corpus parses",
+      () =>
+        expectDocCorpus({
+          docs: parseGlobQualifiers(EXPN_YO),
+          minCount: 30,
+          keyOf: doc => doc.flag,
+          descOf: doc => doc.desc,
+          sectionOf: doc => doc.section,
+          known: ["/", ".", "@", "=", "*", "%", "%b", "r", "w", "x"],
+        }),
+    ],
+    [
       "vendored prompt-escape corpus parses",
       () =>
         expectDocCorpus({
@@ -298,6 +311,10 @@ enditem()`
       [
         parseGlobFlags(EXPN_YO).map(doc => doc.flag),
         mkDocumented_("glob_flag"),
+      ],
+      [
+        parseGlobQualifiers(EXPN_YO).map(doc => doc.flag),
+        mkDocumented_("glob_qualifier"),
       ],
       [
         parsePromptEscapes(PROMPT_YO).map(doc => doc.key),

@@ -7,6 +7,7 @@ import type {
   Emulation,
   GlobFlagDoc,
   GlobOpDoc,
+  GlobQualifierDoc,
   HistoryDoc,
   OptFlagAlias,
   OptFlagSign,
@@ -142,6 +143,19 @@ export function mdGlobOp(doc: GlobOpDoc, corpus: DocCorpus): string {
 /** Render one glob-flag doc block as markdown. */
 export function mdGlobFlag(doc: GlobFlagDoc, corpus: DocCorpus): string {
   const role = `_Role:_ glob flag${argsSuffix(doc.args)}`
+  return docBlock(
+    mdFmt.code(doc.sig),
+    fmtOptRefsInMd(doc.desc, corpus),
+    role,
+  )
+}
+
+/** Render one glob-qualifier doc block as markdown. */
+export function mdGlobQualifier(
+  doc: GlobQualifierDoc,
+  corpus: DocCorpus,
+): string {
+  const role = `_Role:_ glob qualifier${argsSuffix(doc.args)}`
   return docBlock(
     mdFmt.code(doc.sig),
     fmtOptRefsInMd(doc.desc, corpus),
@@ -319,6 +333,7 @@ export const mdRenderer: {
   history: mdHistory,
   glob_op: mdGlobOp,
   glob_flag: mdGlobFlag,
+  glob_qualifier: mdGlobQualifier,
   prompt_escape: mdPromptEscape,
   zle_widget: mdZleWidget,
 }

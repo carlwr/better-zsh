@@ -29,6 +29,7 @@ import {
   mdCondOp,
   mdGlobFlag,
   mdGlobOp,
+  mdGlobQualifier,
   mdHistory,
   mdOpt,
   mdParamExpn,
@@ -141,6 +142,7 @@ const hi = stub("history", "key", "!!", {
 })
 const go = stub("glob_op", "op", "*", { kind: "standard", desc: "d:go" })
 const gf = stub("glob_flag", "flag", "i", { desc: "d:gf", args: ["expr"] })
+const gq = stub("glob_qualifier", "flag", "@", { desc: "d:gq", args: [] })
 
 const pe: PromptEscapeDoc = {
   key: mkDocumented("prompt_escape", "%n"),
@@ -175,6 +177,7 @@ const baseArrays: DocArrays = {
   history: [hi],
   glob_op: [go],
   glob_flag: [gf],
+  glob_qualifier: [gq],
   prompt_escape: [pe],
   zle_widget: [zw],
 }
@@ -277,6 +280,11 @@ const stubMarkdownCases = [
     mdGlobFlag(gf, noOptsCorpus),
     ["`i`", "d:gf", "_Role:_ glob flag (args: expr)"],
   ],
+  [
+    "glob_qualifier",
+    mdGlobQualifier(gq, noOptsCorpus),
+    ["`@`", "d:gq", "_Role:_ glob qualifier"],
+  ],
 ] as const
 
 // Dump metadata per category: file, heading, snippet. Used both for
@@ -298,6 +306,7 @@ const dumpByCat: {
   history: ["history.md", "## !!", "d:hi"],
   glob_op: ["glob-ops.md", "## *", "d:go"],
   glob_flag: ["glob-flags.md", "## i", "d:gf"],
+  glob_qualifier: ["glob-qualifiers.md", "## @", "d:gq"],
   prompt_escape: ["prompt-escapes.md", "## %n", "d:pe"],
   zle_widget: ["zle-widgets.md", "## backward-kill-word", "d:zw"],
 }
@@ -397,6 +406,7 @@ describe("render markdown", () => {
       "history:!!",
       "glob_op:*",
       "glob_flag:i",
+      "glob_qualifier:@",
       "prompt_escape:%n",
       "zle_widget:backward-kill-word",
     ])

@@ -235,6 +235,7 @@ pub const DOC_CATEGORIES: &[&str] = &[
     "history",
     "glob_op",
     "glob_flag",
+    "glob_qualifier",
     "prompt_escape",
     "zle_widget",
 ];

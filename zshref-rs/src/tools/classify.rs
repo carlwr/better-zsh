@@ -160,7 +160,7 @@ pub fn record_id(cat_name: &str, rec: &Rec) -> String {
         "option" | "shell_param" | "builtin" | "precmd" | "reserved_word" | "zle_widget" => "name",
         "cond_op" | "glob_op" | "process_subst" => "op",
         "redir" | "param_expn" => "sig",
-        "subscript_flag" | "param_flag" | "glob_flag" => "flag",
+        "subscript_flag" | "param_flag" | "glob_flag" | "glob_qualifier" => "flag",
         "history" | "prompt_escape" => "key",
         _ => "name",
     };

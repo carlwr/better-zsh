@@ -13,6 +13,11 @@ export const jsonArtifact = {
     count: "globOperators",
     schema: "GlobOperatorsJson",
   },
+  glob_qualifier: {
+    file: "glob-qualifiers.json",
+    count: "globQualifiers",
+    schema: "GlobQualifiersJson",
+  },
   history: { file: "history.json", count: "history", schema: "HistoryJson" },
   option: { file: "options.json", count: "options", schema: "OptionsJson" },
   param_expn: {
