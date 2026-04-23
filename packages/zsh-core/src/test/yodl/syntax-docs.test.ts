@@ -153,7 +153,8 @@ enditem()`
           known: ["do", "done", "foreach", "typeset", "!"],
         })
         const names = docs.map(d => d.name)
-        for (const id of ["if", "for", "[[", "{", "}"]) expect(names).toContain(id)
+        for (const id of ["if", "for", "[[", "{", "}"])
+          expect(names).toContain(id)
       },
     ],
     [

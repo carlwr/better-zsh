@@ -22,11 +22,12 @@ const COMPLEX_HEADS: ReadonlySet<string> = new Set([
 
 // Per-word prose — terse, honest, and avoids reiterating what lives more
 // fully in `complex_command`. Missing keys fall back to `undefined` (desc
-// omitted).
+// omitted). `then` is an ordinary zsh reserved word here, not a thenable.
 const ROLE: Readonly<Record<string, string>> = {
   // body keywords of complex commands
   do: "Body keyword delimiting the action block of `for`, `while`, `until`, `repeat`, `select`.",
   done: "Body keyword closing the action block of `for`, `while`, `until`, `repeat`, `select`.",
+  // biome-ignore lint/suspicious/noThenProperty: zsh reserved-word name, not a thenable
   then: "Body keyword introducing the true branch of `if` / `elif`.",
   elif: "Body keyword introducing a chained condition in `if`.",
   else: "Body keyword introducing the false branch of `if`.",
@@ -49,7 +50,8 @@ const ROLE: Readonly<Record<string, string>> = {
   readonly: "Reserved-word alias for `typeset -r` (mark variables read-only).",
   local: "Reserved-word alias for `typeset` within a function's local scope.",
   integer: "Reserved-word alias for `typeset -i` (integer variables).",
-  float: "Reserved-word alias for `typeset -F` / `-E` (floating-point variables).",
+  float:
+    "Reserved-word alias for `typeset -F` / `-E` (floating-point variables).",
   // misc / completion bypass
   nocorrect:
     "Precommand-modifier-shaped reserved word that disables spelling correction for the command.",

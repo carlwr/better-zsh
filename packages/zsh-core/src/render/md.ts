@@ -103,11 +103,7 @@ export function mdShellParam(doc: ShellParamDoc): string {
 /** Render one parameter-expansion flag doc block as markdown. */
 export function mdParamFlag(doc: ParamFlagDoc, corpus: DocCorpus): string {
   const role = `_Role:_ parameter-expansion flag${argsSuffix(doc.args)}`
-  return docBlock(
-    mdFmt.code(doc.sig),
-    fmtOptRefsInMd(doc.desc, corpus),
-    role,
-  )
+  return docBlock(mdFmt.code(doc.sig), fmtOptRefsInMd(doc.desc, corpus), role)
 }
 
 /** Render one subscript flag doc block as markdown. */
@@ -116,11 +112,7 @@ export function mdSubscriptFlag(
   corpus: DocCorpus,
 ): string {
   const role = `_Role:_ subscript flag${argsSuffix(doc.args)}`
-  return docBlock(
-    mdFmt.code(doc.sig),
-    fmtOptRefsInMd(doc.desc, corpus),
-    role,
-  )
+  return docBlock(mdFmt.code(doc.sig), fmtOptRefsInMd(doc.desc, corpus), role)
 }
 
 /** Render one history-expansion doc block as markdown. */
@@ -144,11 +136,7 @@ export function mdGlobOp(doc: GlobOpDoc, corpus: DocCorpus): string {
 /** Render one glob-flag doc block as markdown. */
 export function mdGlobFlag(doc: GlobFlagDoc, corpus: DocCorpus): string {
   const role = `_Role:_ glob flag${argsSuffix(doc.args)}`
-  return docBlock(
-    mdFmt.code(doc.sig),
-    fmtOptRefsInMd(doc.desc, corpus),
-    role,
-  )
+  return docBlock(mdFmt.code(doc.sig), fmtOptRefsInMd(doc.desc, corpus), role)
 }
 
 /** Render one glob-qualifier doc block as markdown. */
@@ -157,11 +145,7 @@ export function mdGlobQualifier(
   corpus: DocCorpus,
 ): string {
   const role = `_Role:_ glob qualifier${argsSuffix(doc.args)}`
-  return docBlock(
-    mdFmt.code(doc.sig),
-    fmtOptRefsInMd(doc.desc, corpus),
-    role,
-  )
+  return docBlock(mdFmt.code(doc.sig), fmtOptRefsInMd(doc.desc, corpus), role)
 }
 
 function argsSuffix(args: readonly string[]): string {

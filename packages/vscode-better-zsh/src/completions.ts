@@ -121,14 +121,14 @@ function isWordName<T extends { name: string }>(doc: T): boolean {
   return WORD_EXACT.test(doc.name)
 }
 
-function mkCompletionItem<T extends { name: string; desc: string }>(
+function mkCompletionItem<T extends { name: string; desc?: string }>(
   doc: T,
   kind: vscode.CompletionItemKind,
   pieceId: DocPieceId,
   corpus: DocCorpus,
 ): vscode.CompletionItem {
   const item = new vscode.CompletionItem(doc.name, kind)
-  item.detail = doc.desc
+  if (doc.desc) item.detail = doc.desc
   item.documentation = new vscode.MarkdownString(renderDoc(corpus, pieceId))
   return item
 }

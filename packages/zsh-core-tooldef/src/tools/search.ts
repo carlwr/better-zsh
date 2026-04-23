@@ -131,7 +131,11 @@ export function search(corpus: DocCorpus, input: SearchInput): SearchResult {
 }
 
 function toMatch(e: Entry, score?: number): SearchMatch {
-  const base: SearchMatch = { category: e.category, id: e.id, display: e.display }
+  const base: SearchMatch = {
+    category: e.category,
+    id: e.id,
+    display: e.display,
+  }
   const withSub: SearchMatch =
     e.subKind === undefined ? base : { ...base, subKind: e.subKind }
   return score === undefined ? withSub : { ...withSub, score }
