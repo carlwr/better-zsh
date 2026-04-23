@@ -1,7 +1,6 @@
 # Test status — snapshot
 
-Snapshot for cross-session continuity.
-Written against `main` on 2026-04-21.
+Snapshot for cross-session continuity, taken against `main` on 2026-04-21.
 Stale after the next code change.
 
 ## Confirmed green at this snapshot
@@ -30,9 +29,7 @@ Also green at the same snapshot:
 
 ## Known orthogonal blocker
 
-Registry verification in downstream packages stays red until the next intended publish chain lands in order: zsh-core first, then packages that depend on its newly published surface. That is a publish-state issue, not an ordinary local-test issue.
-
-See `RELEASE-HANDOFF.md` for release workflow context.
+Registry verification in downstream packages stays red until the next publish chain lands in order (zsh-core first, then dependents). Publish-state issue, not an ordinary local-test issue. See `RELEASE-HANDOFF.md` for release workflow context.
 
 ## Followups still open
 

@@ -24,10 +24,8 @@ import { activeWordRangeAt, commentStart, funcDocs } from "./funcs"
 
 // NOTE: Hovering `setopt NO_AUTO_CD` currently shows the same markdown as
 // `setopt AUTO_CD` — the "negated" flag from `resolveOption` is discarded
-// here. Distinguishing the two at the UX level (e.g. "AUTO_CD is being
-// turned OFF") is a deliberate follow-up; see DESIGN.md "Hover UX for
-// negated options".
-// DON'T DELETE THIS COMMENT
+// here. A potential improvement would be to distinguish the two at the UX
+// level (e.g. "AUTO_CD is being turned OFF").
 
 interface OptFlagHit {
   readonly opt: ZshOption

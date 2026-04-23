@@ -5,9 +5,9 @@ Audience: whoever picks up release work later, human or agent.
 
 ## Posture
 
-This is a handoff note, not a runbook. Treat every concrete claim here as "true when written, verify before acting." If this file and the repo disagree, the repo wins.
+Handoff note, not a runbook. Every concrete claim is "true when written, verify before acting." If this file and the repo disagree, the repo wins.
 
-If you end up publishing from a meaningfully drifted repo, update this file first or immediately after.
+If you publish from a meaningfully drifted repo, update this file first or immediately after.
 
 ## Release state at handoff
 

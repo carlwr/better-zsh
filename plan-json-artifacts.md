@@ -1,6 +1,6 @@
 # Plan: pre-parsed JSON as GitHub release assets
 
-Small standalone refactor. Independent of the tooldef/CLI work. Defer until that lands (the TS tool surface landed; the Rust CLI under `zshref-rs/` is the current form).
+Small standalone refactor. Independent of the tooldef/CLI work (both landed; the Rust CLI under `zshref-rs/` is the current form).
 
 ## Goal
 

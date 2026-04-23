@@ -1,18 +1,18 @@
 ## Overview
 
 Four workspace packages plus one Rust crate:
-- **`@carlwr/zsh-core`** — standalone package of structured zsh knowledge. Not merely extension support code; it should expose useful surface area beyond current consumers. Ships API Extractor rollups and an `llms.txt` docs-site artifact alongside the typed API.
-- **`@carlwr/zsh-core-tooldef`** — framework-neutral tool definitions over zsh-core: pure `(DocCorpus, input) → output` tool implementations plus shared `ToolDef` metadata, consumed by adapters.
+- **`@carlwr/zsh-core`** — standalone package of structured zsh knowledge. Not merely extension support code; should expose useful surface beyond current consumers. Ships API Extractor rollups and an `llms.txt` docs-site artifact alongside the typed API.
+- **`@carlwr/zsh-core-tooldef`** — framework-neutral tool definitions over zsh-core: pure `(DocCorpus, input) → output` impls plus shared `ToolDef` metadata, consumed by adapters.
 - **`@carlwr/zshref-mcp`** — Node MCP server exposing the shared tool surface as `zsh_*` tools; published to npm and JSR.
-- **`better-zsh`** (`packages/vscode-better-zsh/`) — VS Code extension; consumes zsh-core and the shared tooldef layer, including LM tool registration.
-- **`zshref-rs/`** — Rust+clap CLI (`zshref` bin) over the baked-in corpus + tool-def JSON. Built via `make cli`; not a pnpm workspace package. Not touched by the TS toolchain.
+- **`better-zsh`** (`packages/vscode-better-zsh/`) — VS Code extension; consumes zsh-core and the tooldef layer, including LM tool registration.
+- **`zshref-rs/`** — Rust+clap CLI (`zshref` bin) over the baked-in corpus + tool-def JSON. Built via `make cli`; not a pnpm workspace package, not touched by the TS toolchain.
 
-Published state remains pre-1.0. The libraries are still free to move.
+Pre-1.0; libraries still free to move.
 
 ## See also
 
-- **[`PRINCIPLES.md`](./PRINCIPLES.md)** — cross-cutting design principles (scope, category ontology, adapter judgement). Read before new feature work.
-- **[`DESIGN.md`](./DESIGN.md)** — subsystem-specific design rationale.
+See §"DRY across documentation layers" for the roles of `PRINCIPLES.md`, `DESIGN.md`, `DEVELOPMENT.md`.
+
 - **`packages/zsh-core/dist/types/*.d.ts`** — rolled-up public API with JSDoc.
 - **`packages/zsh-core-tooldef/`** — shared tool layer consumed by adapters.
 - **`zshref-rs/`** — Rust CLI over the baked-in tool-def JSON.
@@ -25,7 +25,7 @@ Keep documentation non-redundant; audience decides placement.
 
 - **JSDoc** — end-user facing. Terse. Covers what/how, not why. Avoid rationale, history, and cross-file narrative.
 - **Code comments** — maintainer facing. Local rationale, invariants, workarounds, and "why not the obvious alternative."
-- **File-header comments** — the first few lines of any Makefile/config/source file. Stick to what's locally essential. Do NOT: (a) claim global state about other files, packages, or tools ("everything else stays pnpm-driven"); (b) restate what the filename, location, or structure already expresses; (c) restate design decisions whose home is elsewhere. When implementing from a plan, treat plan prose as intent, not as copy-paste-ready file content — re-derive header text from the destination file's own purpose.
+- **File-header comments** — first few lines of any Makefile/config/source file. Keep to locally essential content. Do NOT: (a) claim global state about other files/packages/tools ("everything else stays pnpm-driven"); (b) restate what filename, location, or structure already expresses; (c) restate design decisions whose home is elsewhere. When implementing from a plan, treat plan prose as intent, not copy-paste file content — re-derive header text from the destination file's own purpose.
 - **`PRINCIPLES.md`** — cross-cutting design principles. Read before designing a new feature or doc category; edit when a tradeoff genuinely shifts.
 - **`DESIGN.md`** — subsystem-specific design rationale. Refer to identifiers by name; avoid signatures, paths, counts, and other drift-prone specifics.
 - **`DEVELOPMENT.md`** — repo- or package-local operational notes. Good for package-specific invariants, build/test/release mechanics, and concise pointers to the source of truth. Avoid repeating repo-wide policy from `AGENTS.md`, principles from `PRINCIPLES.md`, or subsystem rationale from `DESIGN.md`.
@@ -172,8 +172,7 @@ When adding or changing parsing/rendering, dump the full rendered corpus and ins
 
 ### Other tools
 
-- `@carlwr/typescript-extra` is a workspace-root dev dependency. Keep it there even if temporarily unused; individual packages may add or drop it based on actual use.
-- `@carlwr/fastcheck-utils` may likewise remain as a dev dependency even when temporarily unused.
+- `@carlwr/typescript-extra` and `@carlwr/fastcheck-utils` are workspace-root dev dependencies. Keep them even when temporarily unused; individual packages may add or drop based on actual use.
 
 ## Testing
 
@@ -277,14 +276,12 @@ Downstream `pre*` hooks build upstream packages by default so per-package comman
 
 Two contracts prevent the race:
 
-- Downstream `pre*` hooks check `BZ_SKIP_UPSTREAM` and short-circuit when set. A caller that has already built upstreams sets the env to opt out.
+- Downstream `pre*` hooks check `BZ_SKIP_UPSTREAM` and short-circuit when set.
 - Workspace-level recursive aggregators run through `scripts/upstream-ready.mjs`; it bootstraps once, then runs the recursive phase with `BZ_SKIP_UPSTREAM=1`.
 
-`scripts/verify-upstream-contract.mjs` is the executable guard for root recursive scripts, package `pre*` hooks, and CI workflow use of the guarded root scripts.
+`scripts/verify-upstream-contract.mjs` is the executable guard for root recursive scripts, package `pre*` hooks, and CI workflow use of the guarded root scripts. CI achieves the same outcome by setting `BZ_SKIP_UPSTREAM: "1"` at job level and running a bootstrap step before guarded recursive scripts.
 
-CI achieves the same outcome by setting `BZ_SKIP_UPSTREAM: "1"` at job level and running a bootstrap step before guarded recursive scripts.
-
-When adding a new workspace-recursive aggregator that invokes a script with upstream-rebuilding `pre*` hooks (`build`, `typecheck`, `test`, etc. on downstream packages), follow the same bootstrap + `BZ_SKIP_UPSTREAM=1` pattern. Aggregators for scripts without such hooks (`format`, `lint`) do not need it.
+New workspace-recursive aggregators invoking scripts with upstream-rebuilding `pre*` hooks (`build`, `typecheck`, `test`, etc. on downstream packages) must follow the same bootstrap + `BZ_SKIP_UPSTREAM=1` pattern. Aggregators for scripts without such hooks (`format`, `lint`) do not need it.
 
 ## Contributor guidance
 
@@ -300,8 +297,7 @@ This repo is worked on from multiple agent tools. Contributor docs and skills mu
 - This repo is public. Treat checked-in docs, skills, handoffs, and workflow comments as public artifacts: do not include secrets, tokens, recovery codes, session material, or other security-sensitive detail. Secret names and high-level auth posture are fine when operationally necessary.
 - Snapshot or handoff docs should declare their staleness posture near the top and stay intentionally short. They are orientation notes, not specs or runbooks, unless explicitly written as one.
 - If a detail is cheaply derivable from manifests, workflows, scripts, or tests, prefer pointing to that source of truth and summarizing the invariant rather than copying the current full inventory.
-- If `SECURITY.md` needs updates, tell the user and suggest them. Agents may not edit `SECURITY.md`.
-- `SECURITY.md` may need updates when extension zsh execution, `source`/`.` link resolution, or extension settings change.
+- Agents may not edit `SECURITY.md`; tell the user and suggest updates instead. Likely triggers: changes to extension zsh execution, `source`/`.` link resolution, or extension settings.
 
 ### Post-extraction repo URLs in user-facing docs
 
