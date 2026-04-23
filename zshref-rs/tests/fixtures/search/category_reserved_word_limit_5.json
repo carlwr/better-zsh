@@ -1,0 +1,50 @@
+{
+  "tool": "zsh_search",
+  "input": {
+    "category": "reserved_word",
+    "limit": 5
+  },
+  "argv": [
+    "search",
+    "--category",
+    "reserved_word",
+    "--limit",
+    "5"
+  ],
+  "expectedOutput": {
+    "matches": [
+      {
+        "category": "reserved_word",
+        "id": "do",
+        "display": "do",
+        "subKind": "command"
+      },
+      {
+        "category": "reserved_word",
+        "id": "done",
+        "display": "done",
+        "subKind": "command"
+      },
+      {
+        "category": "reserved_word",
+        "id": "esac",
+        "display": "esac",
+        "subKind": "command"
+      },
+      {
+        "category": "reserved_word",
+        "id": "then",
+        "display": "then",
+        "subKind": "command"
+      },
+      {
+        "category": "reserved_word",
+        "id": "elif",
+        "display": "elif",
+        "subKind": "command"
+      }
+    ],
+    "matchesReturned": 5,
+    "matchesTotal": 31
+  }
+}

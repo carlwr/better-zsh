@@ -7,10 +7,10 @@
 //! detect whether the result was limited.
 
 use crate::corpus::Corpus;
-use crate::tools::classify::{record_display, record_id};
+use crate::tools::classify::{record_display, record_id, str_field};
 use anyhow::Result;
 use clap::ArgMatches;
-use serde_json::{json, Value};
+use serde_json::{json, Map, Value};
 
 pub const DEFAULT_LIMIT: u32 = 20;
 pub const MAX_LIMIT: u32 = 500;
@@ -19,6 +19,7 @@ struct Entry<'c> {
     category: &'c str,
     id: String,
     display: String,
+    sub_kind: Option<String>,
 }
 
 pub fn run(matches: &ArgMatches, corpus: &Corpus) -> Result<Value> {
@@ -85,12 +86,22 @@ pub fn run(matches: &ArgMatches, corpus: &Corpus) -> Result<Value> {
 }
 
 fn entry_json(e: &Entry, score: Option<f64>) -> Value {
-    match score {
-        None => json!({ "category": e.category, "id": e.id, "display": e.display }),
-        Some(s) => {
-            json!({ "category": e.category, "id": e.id, "display": e.display, "score": s })
-        }
+    let mut obj = Map::new();
+    obj.insert("category".into(), Value::String(e.category.to_string()));
+    obj.insert("id".into(), Value::String(e.id.clone()));
+    obj.insert("display".into(), Value::String(e.display.clone()));
+    // `subKind` ordering: TS emits it between `display` and `score`. Insert
+    // here to mirror byte-for-byte (serde_json::Map preserves insertion order).
+    if let Some(sk) = &e.sub_kind {
+        obj.insert("subKind".into(), Value::String(sk.clone()));
     }
+    if let Some(s) = score {
+        obj.insert(
+            "score".into(),
+            Value::Number(serde_json::Number::from_f64(s).expect("score finite")),
+        );
+    }
+    Value::Object(obj)
 }
 
 fn assemble(items: impl Iterator<Item = Value>, total: usize) -> Value {
@@ -112,7 +123,24 @@ fn entries<'c>(corpus: &'c Corpus, cat_filter: Option<&str>) -> Vec<Entry<'c>> {
                 category: cat.name,
                 id: record_id(cat.name, rec),
                 display: record_display(cat.name, rec),
+                sub_kind: record_sub_kind(cat.name, rec),
             })
         })
         .collect()
+}
+
+/// Per-category typed sub-facet. Mirror of `docSubKind` in
+/// `packages/zsh-core/src/docs/taxonomy.ts`. Categories with no meaningful
+/// subKind return `None`; absent-or-empty fields also return `None` so the
+/// JSON omits the key (matches TS `undefined`-drop behaviour).
+fn record_sub_kind(cat_name: &str, rec: &Map<String, Value>) -> Option<String> {
+    let key = match cat_name {
+        "cond_op" => "arity",
+        "reserved_word" => "pos",
+        "param_expn" => "subKind",
+        "history" | "glob_op" | "zle_widget" => "kind",
+        _ => return None,
+    };
+    let s = str_field(rec, key);
+    (!s.is_empty()).then(|| s.to_string())
 }

@@ -288,7 +288,16 @@ export interface HistoryDoc extends SyntaxDocBase {
 
 export type GlobOpKind = "standard" | "ksh-like"
 
-/** Globbing operators -- e.g. `*`, `?`, `[...]`. */
+/**
+ * Globbing operators -- e.g. `*`, `?`, `[...]`.
+ *
+ * No `requires` field by design: `ksh-like` operators depend on `KSH_GLOB`,
+ * but surfacing that as a structured hint would invite a wider expectation
+ * ("zshref tells me when anything requires an option") that the corpus can't
+ * meet generally — many forms depend on shell state we don't model. The
+ * `kind` discriminator is what consumers have; option-dependency lookup is
+ * left to the rendered prose.
+ */
 export interface GlobOpDoc extends SyntaxDocBase {
   readonly op: Documented<"glob_op">
   readonly kind: GlobOpKind

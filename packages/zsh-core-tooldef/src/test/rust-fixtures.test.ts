@@ -65,6 +65,12 @@ const cases: readonly Case[] = [
     name: "no_hits",
     input: { query: "xxyyzz", limit: 5 },
   },
+  {
+    // Exercises subKind parity: `reserved_word` records surface `pos`.
+    tool: "zsh_search",
+    name: "category_reserved_word_limit_5",
+    input: { category: "reserved_word", limit: 5 },
+  },
 
   // describe
   {
@@ -115,11 +121,8 @@ function toArgv(toolName: string, input: Record<string, unknown>): string[] {
  * - `score`: fuzzysort (TS) and nucleo-matcher (Rust) use different scoring
  *   scales; exact numeric equality is not meaningful. Ranking order is what
  *   both sides are written to produce identically.
- * - `subKind`: TS-only until the Rust side surfaces the same per-category
- *   sub-facet. Dropping it here keeps existing fixtures valid. Remove this
- *   branch once Rust fixtures carry `subKind`.
  */
-const DROPPED_KEYS = new Set(["score", "subKind"])
+const DROPPED_KEYS = new Set(["score"])
 
 function stripScores(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(stripScores)
