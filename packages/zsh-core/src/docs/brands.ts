@@ -18,6 +18,7 @@ const norm: { [K in DocCategory]: (s: string) => string } = {
   builtin: s => s.trim(),
   precmd: s => s.trim(),
   shell_param: s => s.trim(),
+  complex_command: s => s.trim(),
   reserved_word: s => s.trim(),
   redir: s => s.trim(),
   process_subst: s => s.trim(),

@@ -21,6 +21,7 @@ export const docCategoryPreamble: Readonly<
   builtin: undefined,
   precmd: undefined,
   shell_param: undefined,
+  complex_command: undefined,
   reserved_word: undefined,
   redir: undefined,
   process_subst: undefined,

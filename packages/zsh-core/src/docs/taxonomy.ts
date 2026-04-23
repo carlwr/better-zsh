@@ -1,6 +1,7 @@
 import type { Assert, Eq } from "@carlwr/typescript-extra"
 import type {
   BuiltinDoc,
+  ComplexCommandDoc,
   CondOpDoc,
   Documented,
   GlobFlagDoc,
@@ -26,6 +27,7 @@ export const docCategories = [
   "builtin",
   "precmd",
   "shell_param",
+  "complex_command",
   "reserved_word",
   "redir",
   "process_subst",
@@ -47,7 +49,12 @@ export type DocCategory = (typeof docCategories)[number]
 // that no real user-code token will match via `simpleResolver`; the category reaches
 // consumers via search/describe rather than classify. Position is therefore
 // irrelevant for shadowing; grouped with the other expansion-form categories.
+// `complex_command` precedes `reserved_word`: a raw `for`, `while`, `[[`, etc.
+// classifies as the structured complex-command record (rich synopsis +
+// alternateForms), not the reserved-word boilerplate. See PRINCIPLES.md
+// §"Overlap between categories is accepted".
 const classifyOrderTuple = [
+  "complex_command",
   "reserved_word",
   "precmd",
   "builtin",
@@ -87,6 +94,7 @@ export const docCategoryLabels: Readonly<Record<DocCategory, string>> = {
   builtin: "builtin",
   precmd: "precommand modifier",
   shell_param: "shell parameter",
+  complex_command: "complex command",
   reserved_word: "reserved word",
   redir: "redirection",
   process_subst: "process substitution",
@@ -107,6 +115,7 @@ export interface DocRecordMap {
   builtin: BuiltinDoc
   precmd: PrecmdDoc
   shell_param: ShellParamDoc
+  complex_command: ComplexCommandDoc
   reserved_word: ReservedWordDoc
   redir: RedirDoc
   process_subst: ProcessSubstDoc
@@ -152,6 +161,7 @@ export const docId: {
   builtin: d => d.name,
   precmd: d => d.name as Documented<"precmd">,
   shell_param: d => d.name,
+  complex_command: d => d.name,
   reserved_word: d => d.name,
   redir: d => d.sig,
   process_subst: d => d.op as Documented<"process_subst">,
@@ -200,6 +210,7 @@ export const docSubKind: {
   builtin: _ => undefined,
   precmd: _ => undefined,
   shell_param: _ => undefined,
+  complex_command: _ => undefined,
   reserved_word: d => d.pos,
   redir: _ => undefined,
   process_subst: _ => undefined,

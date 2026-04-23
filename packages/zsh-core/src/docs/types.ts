@@ -209,6 +209,35 @@ export interface ReservedWordDoc extends SyntaxDocBase {
   readonly pos: ReservedWordPos
 }
 
+/** One alternate-form synopsis attached to a `ComplexCommandDoc`. */
+export interface AlternateForm {
+  /** Canonical signature of the alternate form, in code shape. */
+  readonly template: string
+  /** Keyword-position tt tokens within the alternate-form synopsis. */
+  readonly keywords: readonly string[]
+  /** Optional shell-option dependency noted by the manual, e.g. `SHORT_LOOPS`. */
+  readonly requires?: string
+}
+
+/**
+ * Complex command -- zsh's structured control-flow constructs from
+ * `grammar.yo`'s "Complex Commands" section, augmented with any matching
+ * entries from "Alternate Forms for Complex Commands".
+ *
+ * Overlap with `reserved_word` on head keywords (`for`, `if`, `while`, ...)
+ * and `[[`, `{`, `time` is deliberate. `classifyOrder` places
+ * `complex_command` before `reserved_word`: a raw `for` classifies as the
+ * structured doc, not the reserved-word boilerplate. See PRINCIPLES.md
+ * §"Overlap between categories is accepted".
+ */
+export interface ComplexCommandDoc extends SyntaxDocBase {
+  readonly name: Documented<"complex_command">
+  /** Alternate synopses the manual lists for this head keyword; may be empty. */
+  readonly alternateForms: readonly AlternateForm[]
+  /** Body-position tt tokens in the canonical synopsis (e.g. `do`, `done`, `esac`). */
+  readonly bodyKeywords: readonly string[]
+}
+
 export interface RedirDoc extends SyntaxDocBase<Documented<"redir">> {
   /** Full signature is the doc identity; `groupOp` is only the shared lookup bucket. */
   readonly sig: Documented<"redir">

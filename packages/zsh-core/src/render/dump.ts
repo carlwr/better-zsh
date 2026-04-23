@@ -10,6 +10,7 @@ export type RefDumpFile =
   | "options.md"
   | "cond-ops.md"
   | "shell-params.md"
+  | "complex-commands.md"
   | "builtins.md"
   | "precmds.md"
   | "redirs.md"
@@ -32,6 +33,7 @@ const dumpFile: { [K in DocCategory]: RefDumpFile } = {
   builtin: "builtins.md",
   precmd: "precmds.md",
   shell_param: "shell-params.md",
+  complex_command: "complex-commands.md",
   reserved_word: "reserved-words.md",
   redir: "redirs.md",
   process_subst: "process-substs.md",

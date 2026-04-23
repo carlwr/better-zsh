@@ -9,6 +9,7 @@ import type { DocCategory, DocRecordMap } from "../../docs/taxonomy"
 import { docCategories, docId } from "../../docs/taxonomy"
 import type {
   BuiltinDoc,
+  ComplexCommandDoc,
   CondOpDoc,
   ParamExpnDoc,
   PrecmdDoc,
@@ -26,6 +27,7 @@ import {
   defaultStateIn,
   fmtOptRefsInMd,
   mdBuiltin,
+  mdComplexCommand,
   mdCondOp,
   mdGlobFlag,
   mdGlobOp,
@@ -107,6 +109,14 @@ const word: ReservedWordDoc = {
   section: "",
   pos: "command",
 }
+const cc: ComplexCommandDoc = {
+  name: mkDocumented("complex_command", "if"),
+  sig: "if list then list fi",
+  desc: "d:cc",
+  section: "Complex Commands",
+  alternateForms: [{ template: "if list { list }", keywords: [] }],
+  bodyKeywords: ["then", "fi"],
+}
 const sec: ShellParamDoc = {
   name: mkDocumented("shell_param", "SECONDS"),
   sig: "SECONDS",
@@ -168,6 +178,7 @@ const baseArrays: DocArrays = {
   builtin: [bi],
   precmd: [pc],
   shell_param: [sec],
+  complex_command: [cc],
   reserved_word: [word],
   redir: [rd],
   process_subst: [sub],
@@ -235,6 +246,20 @@ const renderedMarkdownCases = [
     ["`if`", "d:rw", "_Role:_ reserved word (command position)"],
   ],
   [
+    "complex_command",
+    mdComplexCommand(cc, mkTestCorpus({ option: [] })),
+    [
+      "`if`",
+      "```zsh",
+      "if list then list fi",
+      "d:cc",
+      "_Alternate forms:_",
+      "if list { list }",
+      "_Body keywords:_ `then` `fi`",
+      "_Role:_ complex command",
+    ],
+  ],
+  [
     "prompt_escape",
     mdPromptEscape(pe),
     ["`%n`", "d:pe", "_Category:_ Prompt Escape (Login information)"],
@@ -297,6 +322,7 @@ const dumpByCat: {
   builtin: ["builtins.md", "## echo", "d:bi"],
   precmd: ["precmds.md", "## noglob", "d:pc"],
   shell_param: ["shell-params.md", "## SECONDS", "`SECONDS`"],
+  complex_command: ["complex-commands.md", "## if", "d:cc"],
   reserved_word: ["reserved-words.md", "## if", "d:rw"],
   redir: ["redirs.md", "## >> word", "d:r"],
   process_subst: ["process-substs.md", "## <(...)", "d:ps"],
@@ -400,6 +426,7 @@ describe("render markdown", () => {
       "precmd:noglob",
       "shell_param:argv",
       "shell_param:SECONDS",
+      "complex_command:if",
       "param_expn:${name:-word}",
       "subscript_flag:(w)",
       "param_flag:(U)",

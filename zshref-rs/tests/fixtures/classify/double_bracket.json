@@ -10,10 +10,10 @@
   ],
   "expectedOutput": {
     "match": {
-      "category": "reserved_word",
+      "category": "complex_command",
       "id": "[[",
       "display": "[[",
-      "markdown": "`[[`\n\nRecognized as a reserved word when used as the first word of a command unless quoted or disabled with `disable -r`.\n\n_Role:_ reserved word (command position)"
+      "markdown": "`[[`\n\n```zsh\n[[ exp ]]\n```\n\nEvaluates the conditional expression exp and return a zero exit status if it is true. See Conditional Expressions for a description of exp.\n\n_Role:_ complex command"
     }
   }
 }

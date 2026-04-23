@@ -3,6 +3,7 @@ import { resolve } from "../docs/corpus.ts"
 import type { DocCategory, DocPieceId, DocRecordMap } from "../docs/taxonomy.ts"
 import type {
   BuiltinDoc,
+  ComplexCommandDoc,
   CondOpDoc,
   Emulation,
   GlobFlagDoc,
@@ -243,6 +244,24 @@ export function mdReservedWord(doc: ReservedWordDoc): string {
   )
 }
 
+/** Render one complex-command doc block as markdown. */
+export function mdComplexCommand(
+  doc: ComplexCommandDoc,
+  corpus: DocCorpus,
+): string {
+  const parts: string[] = [mdFmt.code(doc.name), codeBlock("zsh", doc.sig)]
+  parts.push(fmtOptRefsInMd(doc.desc, corpus))
+  if (doc.alternateForms.length > 0) {
+    parts.push("_Alternate forms:_")
+    parts.push(codeBlock("zsh", ...doc.alternateForms.map(a => a.template)))
+  }
+  if (doc.bodyKeywords.length > 0) {
+    parts.push(`_Body keywords:_ ${doc.bodyKeywords.map(code).join(" ")}`)
+  }
+  parts.push("_Role:_ complex command")
+  return docBlock(...parts)
+}
+
 /** Render one prompt-escape doc block as markdown. */
 export function mdPromptEscape(doc: PromptEscapeDoc): string {
   return docBlock(
@@ -324,6 +343,7 @@ export const mdRenderer: {
   builtin: mdBuiltin,
   precmd: mdPrecmd,
   shell_param: mdShellParam,
+  complex_command: mdComplexCommand,
   reserved_word: mdReservedWord,
   redir: mdRedir,
   process_subst: mdProcessSubst,

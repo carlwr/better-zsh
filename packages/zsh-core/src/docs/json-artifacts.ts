@@ -2,6 +2,11 @@ import { type DocCategory, docCategories } from "./taxonomy.ts"
 
 export const jsonArtifact = {
   builtin: { file: "builtins.json", count: "builtins", schema: "BuiltinsJson" },
+  complex_command: {
+    file: "complex-commands.json",
+    count: "complexCommands",
+    schema: "ComplexCommandsJson",
+  },
   cond_op: { file: "cond-ops.json", count: "condOps", schema: "CondOpsJson" },
   glob_flag: {
     file: "glob-flags.json",

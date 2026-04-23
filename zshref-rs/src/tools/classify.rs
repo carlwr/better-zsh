@@ -157,7 +157,13 @@ pub fn str_arg<'a>(matches: &'a ArgMatches, name: &str) -> &'a str {
 /// Canonical id field per category — the TS `mkDocumented` brands.
 pub fn record_id(cat_name: &str, rec: &Rec) -> String {
     let key = match cat_name {
-        "option" | "shell_param" | "builtin" | "precmd" | "reserved_word" | "zle_widget" => "name",
+        "option"
+        | "shell_param"
+        | "builtin"
+        | "precmd"
+        | "reserved_word"
+        | "complex_command"
+        | "zle_widget" => "name",
         "cond_op" | "glob_op" | "process_subst" => "op",
         "redir" | "param_expn" => "sig",
         "subscript_flag" | "param_flag" | "glob_flag" | "glob_qualifier" => "flag",

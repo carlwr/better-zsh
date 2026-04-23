@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest"
 import { mkDocumented } from "../../docs/brands"
 import { mkRedirOp } from "../../docs/types"
+import { parseComplexCommands } from "../../docs/yodl/extractors/complex-commands"
 import { parseGlobFlags } from "../../docs/yodl/extractors/glob-flags"
 import { parseGlobOps } from "../../docs/yodl/extractors/glob-ops"
 import { parseGlobQualifiers } from "../../docs/yodl/extractors/glob-qualifiers"
@@ -254,6 +255,18 @@ enditem()`
         }),
     ],
     [
+      "vendored complex-command corpus parses",
+      () =>
+        expectDocCorpus({
+          docs: parseComplexCommands(GRAMMAR_YO),
+          minCount: 10,
+          keyOf: doc => doc.name,
+          descOf: doc => doc.desc,
+          sectionOf: doc => doc.section,
+          known: ["if", "for", "for-arith", "while", "case", "[["],
+        }),
+    ],
+    [
       "vendored prompt-escape corpus parses",
       () =>
         expectDocCorpus({
@@ -315,6 +328,10 @@ enditem()`
       [
         parseGlobQualifiers(EXPN_YO).map(doc => doc.flag),
         mkDocumented_("glob_qualifier"),
+      ],
+      [
+        parseComplexCommands(GRAMMAR_YO).map(doc => doc.name),
+        mkDocumented_("complex_command"),
       ],
       [
         parsePromptEscapes(PROMPT_YO).map(doc => doc.key),

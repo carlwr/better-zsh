@@ -226,6 +226,7 @@ pub const DOC_CATEGORIES: &[&str] = &[
     "builtin",
     "precmd",
     "shell_param",
+    "complex_command",
     "reserved_word",
     "redir",
     "process_subst",

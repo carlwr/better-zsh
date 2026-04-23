@@ -27,6 +27,7 @@ import {
 } from "./taxonomy.ts"
 import type {
   BuiltinDoc,
+  ComplexCommandDoc,
   CondOpDoc,
   Documented,
   GlobFlagDoc,
@@ -47,6 +48,7 @@ import type {
 } from "./types.ts"
 import { parseNodes, type YNodeSeq } from "./yodl/core/nodes.ts"
 import { parseBuiltins } from "./yodl/extractors/builtins.ts"
+import { parseComplexCommands } from "./yodl/extractors/complex-commands.ts"
 import { parseCondOps } from "./yodl/extractors/cond-ops.ts"
 import { parseGlobFlags } from "./yodl/extractors/glob-flags.ts"
 import { parseGlobOps } from "./yodl/extractors/glob-ops.ts"
@@ -88,6 +90,7 @@ const categoryLoader: CategoryLoader = {
   builtin: { file: "builtins.yo", parse: parseBuiltins },
   precmd: { file: "grammar.yo", parse: parsePrecmds },
   shell_param: { file: "params.yo", parse: parseShellParams },
+  complex_command: { file: "grammar.yo", parse: parseComplexCommands },
   reserved_word: { file: "grammar.yo", parse: parseReswords },
   redir: { file: "redirect.yo", parse: parseRedirs },
   process_subst: { file: "expn.yo", parse: parseProcessSubsts },
@@ -109,6 +112,10 @@ export interface DocCorpus {
   readonly builtin: ReadonlyMap<Documented<"builtin">, BuiltinDoc>
   readonly precmd: ReadonlyMap<Documented<"precmd">, PrecmdDoc>
   readonly shell_param: ReadonlyMap<Documented<"shell_param">, ShellParamDoc>
+  readonly complex_command: ReadonlyMap<
+    Documented<"complex_command">,
+    ComplexCommandDoc
+  >
   readonly reserved_word: ReadonlyMap<
     Documented<"reserved_word">,
     ReservedWordDoc
@@ -361,6 +368,7 @@ const resolvers: { [K in DocCategory]: Resolver<K> } = {
   builtin: simpleResolver("builtin"),
   precmd: simpleResolver("precmd"),
   shell_param: simpleResolver("shell_param"),
+  complex_command: simpleResolver("complex_command"),
   reserved_word: simpleResolver("reserved_word"),
   redir: resolveRedir,
   process_subst: simpleResolver("process_subst"),

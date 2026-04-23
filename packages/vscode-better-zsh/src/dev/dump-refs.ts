@@ -10,6 +10,7 @@ const categoryLabel: Record<DocCategory, string> = {
   builtin: "builtins",
   precmd: "precmds",
   shell_param: "shell params",
+  complex_command: "complex commands",
   reserved_word: "reserved words",
   redir: "redirs",
   process_subst: "process substs",

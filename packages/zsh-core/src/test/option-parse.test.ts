@@ -15,6 +15,7 @@ const corpus: DocCorpus = {
   builtin: empty,
   precmd: empty,
   shell_param: empty,
+  complex_command: empty,
   reserved_word: empty,
   redir: empty,
   process_subst: empty,

@@ -57,6 +57,7 @@ const CATEGORY_FILES: &[(&str, &[u8])] = &[
     include_category!("builtin", "builtins.json"),
     include_category!("precmd", "precmds.json"),
     include_category!("shell_param", "shell-params.json"),
+    include_category!("complex_command", "complex-commands.json"),
     include_category!("reserved_word", "reserved-words.json"),
     include_category!("redir", "redirections.json"),
     include_category!("process_subst", "process-substs.json"),
@@ -75,6 +76,7 @@ const CATEGORY_FILES: &[(&str, &[u8])] = &[
 /// `packages/zsh-core/src/docs/taxonomy.ts`. The first category whose
 /// resolver matches wins.
 pub const CLASSIFY_ORDER: &[&str] = &[
+    "complex_command",
     "reserved_word",
     "precmd",
     "builtin",

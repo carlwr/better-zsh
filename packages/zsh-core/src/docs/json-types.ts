@@ -63,6 +63,7 @@ export type JsonDocArrayMap = {
 
 export type OptionsJson = JsonDocArrayMap["option"]
 export type CondOpsJson = JsonDocArrayMap["cond_op"]
+export type ComplexCommandsJson = JsonDocArrayMap["complex_command"]
 export type BuiltinsJson = JsonDocArrayMap["builtin"]
 export type PrecmdsJson = JsonDocArrayMap["precmd"]
 export type ShellParamsJson = JsonDocArrayMap["shell_param"]

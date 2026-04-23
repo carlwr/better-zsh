@@ -17,7 +17,8 @@ describe("classify", () => {
     { raw: "AUTO_CD", category: "option", id: "autocd" },
     { raw: "autocd", category: "option", id: "autocd" },
     { raw: "echo", category: "builtin", id: "echo" },
-    { raw: "if", category: "reserved_word", id: "if" },
+    { raw: "if", category: "complex_command", id: "if" },
+    { raw: "foreach", category: "reserved_word", id: "foreach" },
     { raw: "errRET_urn", category: "option", id: "errreturn" },
     { raw: "%n", category: "prompt_escape", id: "%n" },
     {
