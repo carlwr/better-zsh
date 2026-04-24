@@ -140,8 +140,16 @@ export class HoverProvider implements vscode.HoverProvider {
     if (onPs) return onPs
 
     const rw = factAt(af, line, token, "reserved-word")
-    const onRw = rw && this.hoverFor("reserved_word", rw.text, tokenRange)
-    if (onRw) return onRw
+    if (rw) {
+      // Heads like `for`, `while`, `[[` are both reserved words and complex
+      // commands; prefer the structured complex_command record (synopsis +
+      // alternateForms) when the token resolves there — mirrors the
+      // classify-order priority.
+      const onCc = this.hoverFor("complex_command", rw.text, tokenRange)
+      if (onCc) return onCc
+      const onRw = this.hoverFor("reserved_word", rw.text, tokenRange)
+      if (onRw) return onRw
+    }
   }
 
   private hoverFor<K extends DocCategory>(

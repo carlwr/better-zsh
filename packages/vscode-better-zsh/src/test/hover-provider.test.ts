@@ -1,9 +1,11 @@
 import * as assert from "node:assert"
 import type {
   BuiltinDoc,
+  ComplexCommandDoc,
   CondOpDoc,
   DocCorpus,
   RedirDoc,
+  ReservedWordDoc,
   ShellParamDoc,
   ZshOption,
 } from "@carlwr/zsh-core"
@@ -82,6 +84,23 @@ const c = (
 ): CondOpDoc =>
   ({ op: mkDocumented("cond_op", op), operands, desc, arity }) as CondOpDoc
 
+const cc = (name: string, desc: string): ComplexCommandDoc => ({
+  name: mkDocumented("complex_command", name),
+  sig: `${name} ...`,
+  desc,
+  section: "Complex Commands",
+  alternateForms: [],
+  bodyKeywords: [],
+})
+
+const rw = (name: string, desc: string): ReservedWordDoc => ({
+  name: mkDocumented("reserved_word", name),
+  sig: name,
+  desc,
+  section: "Reserved Words",
+  pos: "command",
+})
+
 // --- corpus -----------------------------------------------------------------
 
 const corpus: DocCorpus = {
@@ -98,6 +117,8 @@ const corpus: DocCorpus = {
     c("unary", "!", ["exp"], "d:!"),
   ]),
   builtin: by("name", [b("echo", "d:e"), b("fc", "d:f")]),
+  complex_command: by("name", [cc("for", "d:cc-for")]),
+  reserved_word: by("name", [rw("for", "d:rw-for"), rw("do", "d:rw-do")]),
   shell_param: by("name", [p("SECONDS", "d:s")]),
   redir: by("sig", [
     r(">&", ">& number", "d:n"),
@@ -162,5 +183,19 @@ suite("HoverProvider", () => {
     const v = at("echo thing >&2", 1) ?? ""
     assert.match(v, /d:e/)
     assert.doesNotMatch(v, /d:w/)
+  })
+
+  // Heads that are both reserved words and complex commands must route to
+  // the richer complex_command record, not the reserved-word fallback.
+  test("for prefers complex_command over reserved_word", () => {
+    const v = at("for x in 1 2 3; do echo $x; done", 0) ?? ""
+    assert.match(v, /d:cc-for/)
+    assert.doesNotMatch(v, /d:rw-for/)
+  })
+
+  // Body keywords (`do`, `done`, …) remain reserved-word only.
+  test("do falls back to reserved_word", () => {
+    const v = at("for x in 1 2 3; do echo $x; done", 16) ?? ""
+    assert.match(v, /d:rw-do/)
   })
 })
