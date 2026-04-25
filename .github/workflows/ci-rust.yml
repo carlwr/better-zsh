@@ -47,7 +47,7 @@ jobs:
 
       # Cache cargo registry + target/ to keep iterations fast. Keyed
       # on Cargo.lock so dep upgrades invalidate cleanly.
-      - uses: actions/cache@v4
+      - uses: actions/cache@v5
         with:
           path: |
             ~/.cargo/registry
