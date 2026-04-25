@@ -43,13 +43,13 @@
     "cli:check": "make cli-check"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.4.12",
+    "@biomejs/biome": "^2.4.13",
     "@carlwr/fastcheck-utils": "^0.5.1",
     "@carlwr/typescript-extra": "0.9.0",
     "@fast-check/vitest": "^0.4.0",
-    "@microsoft/api-extractor": "^7.58.5",
+    "@microsoft/api-extractor": "^7.58.7",
     "@types/mocha": "^10.0.10",
-    "@types/node": "^22.15.0",
+    "@types/node": "^22.19.17",
     "@types/vscode": "1.116.0",
     "@vscode/test-cli": "^0.0.12",
     "@vscode/test-electron": "^2.5.2",
@@ -60,7 +60,7 @@
     "tsx": "^4.21.0",
     "typedoc": "^0.28.19",
     "typescript": "^5.8.0",
-    "vitest": "^4.1.4",
+    "vitest": "^4.1.5",
     "zod": "^4.3.6",
     "zzz_LAST_dummy": "npm:empty-npm-package@1.0.0"
   },

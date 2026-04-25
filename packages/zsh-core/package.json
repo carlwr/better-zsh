@@ -112,8 +112,8 @@
     "@carlwr/typescript-extra": "0.9.0"
   },
   "devDependencies": {
-    "ajv": "^8.17.1",
+    "ajv": "^8.20.0",
     "ts-json-schema-generator": "^2.4.0",
-    "vitest": "^4.1.4"
+    "vitest": "^4.1.5"
   }
 }
