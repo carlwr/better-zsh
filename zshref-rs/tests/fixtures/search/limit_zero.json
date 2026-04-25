@@ -1,0 +1,22 @@
+{
+  "tool": "zsh_search",
+  "input": {
+    "query": "echo",
+    "category": "builtin",
+    "limit": 0
+  },
+  "argv": [
+    "search",
+    "--query",
+    "echo",
+    "--category",
+    "builtin",
+    "--limit",
+    "0"
+  ],
+  "expectedOutput": {
+    "matches": [],
+    "matchesReturned": 0,
+    "matchesTotal": 3
+  }
+}

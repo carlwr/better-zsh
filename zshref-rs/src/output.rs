@@ -2,7 +2,7 @@
 //!
 //! Exit-code contract (mirrors `CLI-VISUAL-POLICY.md` and the existing TS
 //! adapters):
-//!   0 — success, including `{match:null}` and empty-match results
+//!   0 — success, including empty-match (`matches: []`) results
 //!   1 — unexpected internal error
 //!   2 — invalid input (bad flag, enum, missing required, unknown subcommand)
 

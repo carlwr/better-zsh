@@ -1,0 +1,26 @@
+{
+  "tool": "zsh_docs",
+  "input": {
+    "raw": "%number",
+    "category": "job_spec"
+  },
+  "argv": [
+    "docs",
+    "--raw",
+    "%number",
+    "--category",
+    "job_spec"
+  ],
+  "expectedOutput": {
+    "matches": [
+      {
+        "category": "job_spec",
+        "id": "%number",
+        "display": "%number",
+        "markdown": "`%number`\n\nThe job with the given number.\n\n_Role:_ job spec (number)"
+      }
+    ],
+    "matchesReturned": 1,
+    "matchesTotal": 1
+  }
+}

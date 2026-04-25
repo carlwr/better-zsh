@@ -1,0 +1,29 @@
+{
+  "tool": "zsh_docs",
+  "input": {
+    "raw": "[["
+  },
+  "argv": [
+    "docs",
+    "--raw",
+    "[["
+  ],
+  "expectedOutput": {
+    "matches": [
+      {
+        "category": "complex_command",
+        "id": "[[",
+        "display": "[[",
+        "markdown": "`[[`\n\n```zsh\n[[ exp ]]\n```\n\nEvaluates the conditional expression exp and return a zero exit status if it is true. See Conditional Expressions for a description of exp.\n\n_Role:_ complex command"
+      },
+      {
+        "category": "reserved_word",
+        "id": "[[",
+        "display": "[[",
+        "markdown": "`[[`\n\n_Role:_ reserved word (command position)"
+      }
+    ],
+    "matchesReturned": 2,
+    "matchesTotal": 2
+  }
+}

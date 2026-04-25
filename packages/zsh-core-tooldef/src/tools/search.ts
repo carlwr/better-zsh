@@ -1,17 +1,16 @@
 import {
   type DocCategory,
   type DocCorpus,
-  type DocRecordMap,
   docCategories,
-  docSubKind,
   ZSH_UPSTREAM,
 } from "@carlwr/zsh-core"
 import fuzzysort from "fuzzysort"
 import { makeToolDef, type ToolDef } from "../tool-defs.ts"
-import { display } from "./doc-display.ts"
+import { type Entry, entries } from "./entries.ts"
+import { clampLimit, DEFAULT_LIMIT, MAX_LIMIT } from "./limits.ts"
 
 export interface SearchInput {
-  readonly query?: string
+  readonly query: string
   readonly category?: DocCategory
   readonly limit?: number
 }
@@ -22,7 +21,7 @@ export interface SearchMatch {
   readonly display: string
   /** Typed sub-facet of the record (e.g. history `kind`, glob_op `kind`). Absent when the category has no meaningful subKind. */
   readonly subKind?: string
-  /** Fuzzy score (0..1). Absent on list-all / exact / prefix entries. */
+  /** Fuzzy score (0..1). Absent on exact / prefix entries. */
   readonly score?: number
 }
 
@@ -34,62 +33,18 @@ export interface SearchResult {
   readonly matchesTotal: number
 }
 
-export const DEFAULT_LIMIT = 20
-export const MAX_LIMIT = 500
-
-interface Entry {
-  readonly category: DocCategory
-  readonly id: string
-  readonly display: string
-  readonly subKind?: string
-}
-
-/**
- * Build the flat list of candidate entries from the corpus. Cheap: iterates
- * `corpus[cat].keys()` + `docDisplay(cat, rec)`; no markdown rendering.
- */
-function entries(corpus: DocCorpus, cat?: DocCategory): Entry[] {
-  const cats = cat ? [cat] : docCategories
-  const out: Entry[] = []
-  for (const c of cats) {
-    const map = corpus[c] as ReadonlyMap<string, DocRecordMap[DocCategory]>
-    const getSubKind = docSubKind[c] as (
-      d: DocRecordMap[DocCategory],
-    ) => string | undefined
-    for (const [id, rec] of map) {
-      const subKind = getSubKind(rec)
-      out.push(
-        subKind === undefined
-          ? { category: c, id, display: display(c, rec) }
-          : { category: c, id, display: display(c, rec), subKind },
-      )
-    }
-  }
-  return out
-}
-
-function clampLimit(limit: number | undefined): number {
-  if (typeof limit !== "number" || !Number.isFinite(limit)) return DEFAULT_LIMIT
-  const n = Math.max(1, Math.floor(limit))
-  return Math.min(n, MAX_LIMIT)
-}
-
 /**
  * Search the static zsh reference. Ranking: exact id/display > prefix >
- * fuzzy. Empty query lists records (optionally filtered by category),
- * capped by `limit`. Pure; no IO.
+ * fuzzy. Empty/whitespace query returns an empty match set (use
+ * `zsh_list` to enumerate). `limit=0` returns metadata only.
+ * Pure; no IO.
  */
 export function search(corpus: DocCorpus, input: SearchInput): SearchResult {
   const limit = clampLimit(input.limit)
   const pool = entries(corpus, input.category)
-  const q = (input.query ?? "").trim()
+  const q = input.query.trim()
   if (!q) {
-    const matches = pool.slice(0, limit)
-    return {
-      matches,
-      matchesReturned: matches.length,
-      matchesTotal: pool.length,
-    }
+    return { matches: [], matchesReturned: 0, matchesTotal: 0 }
   }
 
   const qLow = q.toLowerCase()
@@ -145,19 +100,21 @@ const brandedCategoryList: string = docCategories
   .map(c => `  - '${c}'`)
   .join("\n")
 
-export const searchToolDef: ToolDef = makeToolDef({
+export const searchToolDef: ToolDef = makeToolDef<
+  "query" | "category" | "limit"
+>({
   name: "zsh_search",
   brief: "fuzzy-search the zsh reference by id/display",
   description: `\
-Search the bundled static ${ZSH_UPSTREAM.tag} reference. Fuzzy-matches the query against record ids and display headings across every category.
-
-Listing mode: omit \`query\` to enumerate records, optionally filtered by \`category\`. Set \`category\` and leave \`query\` empty to list every record in a category; raise \`limit\` up to ${MAX_LIMIT} to see all of them in one response.
+Search the bundled static ${ZSH_UPSTREAM.tag} reference. Fuzzy-matches the query against record ids and display headings across every category (or one category if \`category\` is set).
 
 Ranking: exact id/display > prefix > fuzzy score.
 
-Results carry \`{ category, id, display, subKind?, score? }\` but NOT the rendered markdown body — follow up with \`zsh_describe\` or \`zsh_classify\` for the full doc. \`subKind\` is surfaced when the category has a meaningful sub-facet (e.g. history \`kind\`, glob_op \`kind\`, reserved_word \`pos\`).
+Results carry \`{ category, id, display, subKind?, score? }\` but NOT the rendered markdown body — follow up with \`zsh_docs\` for the full doc. \`subKind\` is surfaced when the category has a meaningful sub-facet (e.g. history \`kind\`, glob_op \`kind\`, reserved_word \`pos\`).
 
-\`limit\` caps response size (default ${DEFAULT_LIMIT}, hard max ${MAX_LIMIT}). The response also returns \`matchesReturned\` (== \`matches.length\`) and \`matchesTotal\` (pre-truncation total), so \`matchesReturned < matchesTotal\` signals truncation — raise \`limit\` or narrow \`category\`/\`query\` to see the rest.
+\`limit\` caps response size (default ${DEFAULT_LIMIT}, hard max ${MAX_LIMIT} = entire corpus). \`limit=0\` returns metadata only (\`matches: []\`); the response always carries \`matchesReturned\` (== \`matches.length\`) and \`matchesTotal\` (pre-truncation total), so \`matchesReturned < matchesTotal\` signals truncation — raise \`limit\` or narrow \`category\`/\`query\` to see the rest.
+
+To enumerate without a query, use \`zsh_list\`.
 
 Valid \`category\` values:
 
@@ -170,7 +127,7 @@ No shell execution, no environment access.`,
       query: {
         type: "string",
         description:
-          "Optional fuzzy search string matched against ids and display headings.\n\nRanking: exact id/display > prefix > fuzzy score. Empty/omitted is listing mode: returns records ordered by corpus iteration, capped by `limit` — combine with `category` and raise `limit` to enumerate a whole category.",
+          "Fuzzy search string matched against ids and display headings. Empty/whitespace returns an empty match set — use `zsh_list` to enumerate.\n\nRanking: exact id/display > prefix > fuzzy score.",
       },
       category: {
         type: "string",
@@ -178,15 +135,16 @@ No shell execution, no environment access.`,
       },
       limit: {
         type: "integer",
-        minimum: 1,
+        minimum: 0,
         maximum: MAX_LIMIT,
-        description: `Maximum matches to return. Default ${DEFAULT_LIMIT}, hard max ${MAX_LIMIT}.\n\nThe response also carries \`matchesReturned\` (== \`matches.length\`) and \`matchesTotal\` (pre-truncation total); \`matchesReturned < matchesTotal\` signals truncation — raise \`limit\` or narrow \`category\`/\`query\`.`,
+        description: `Maximum matches to return. Default ${DEFAULT_LIMIT}, hard max ${MAX_LIMIT} (entire corpus). \`limit=0\` returns metadata only.\n\nThe response carries \`matchesReturned\` (== \`matches.length\`) and \`matchesTotal\` (pre-truncation total); \`matchesReturned < matchesTotal\` signals truncation — raise \`limit\` or narrow \`category\`/\`query\`.`,
       },
     },
+    required: ["query"],
     additionalProperties: false,
   },
   flagBriefs: {
-    query: "Fuzzy-search string (omit to list all).",
+    query: "Fuzzy-search string (required).",
     category: "Filter to one doc category.",
     limit: `Max matches to return (default ${DEFAULT_LIMIT}, max ${MAX_LIMIT}).`,
   },

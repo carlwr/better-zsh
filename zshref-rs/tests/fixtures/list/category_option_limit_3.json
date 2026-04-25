@@ -1,11 +1,11 @@
 {
-  "tool": "zsh_search",
+  "tool": "zsh_list",
   "input": {
     "category": "option",
     "limit": 3
   },
   "argv": [
-    "search",
+    "list",
     "--category",
     "option",
     "--limit",

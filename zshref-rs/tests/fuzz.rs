@@ -2,9 +2,9 @@
 //!
 //! Filename is `fuzz.rs` for historical reasons (the first wave of cases
 //! were smoke-fuzzes asserting "doesn't crash + top-level shape"). The
-//! current suite is broader: real invariants like classify→describe
-//! round-trips, `--limit` caps, `--category` filter purity, `NO_*` toggle
-//! symmetry, and output determinism. The name is kept to avoid churning
+//! current suite is broader: real invariants like docs round-trips,
+//! `--limit` caps, `--category` filter purity, `NO_*` toggle symmetry,
+//! and output determinism. The name is kept to avoid churning
 //! `Cargo.toml`'s `[[test]]` + `CARGO_BIN_EXE_zshref` wiring. See
 //! `tests/fuzz.proptest-regressions` for auto-checked-in seeds.
 //!
@@ -59,9 +59,9 @@ fn run_json(args: &[&str]) -> Value {
     serde_json::from_slice(&out.stdout).expect("stdout is valid JSON")
 }
 
-/// A small strategy producing raw tokens with a high classify hit-rate.
+/// A small strategy producing raw tokens with a high docs hit-rate.
 /// Covers the prompt-listed union (options, builtins, reserved words,
-/// redir sigils). Free fuzzing is covered by the legacy smoke tests below.
+/// redir sigils). Free fuzzing is covered by the smoke tests below.
 fn known_raw() -> impl Strategy<Value = &'static str> {
     prop_oneof![
         Just("AUTO_CD"),
@@ -78,86 +78,85 @@ fn known_category() -> impl Strategy<Value = String> {
     proptest::sample::select(doc_categories().to_vec())
 }
 
+fn assert_envelope(v: &Value) -> (&Vec<Value>, u64, u64) {
+    let matches = v
+        .get("matches")
+        .and_then(Value::as_array)
+        .expect("`matches` is an array");
+    let returned = v
+        .get("matchesReturned")
+        .and_then(Value::as_u64)
+        .expect("`matchesReturned` is u64");
+    let total = v
+        .get("matchesTotal")
+        .and_then(Value::as_u64)
+        .expect("`matchesTotal` is u64");
+    (matches, returned, total)
+}
+
 proptest! {
     #![proptest_config(ProptestConfig::with_cases(16))]
 
-    // === Legacy smoke fuzz: arbitrary printable input never crashes and ===
-    // === always yields a well-shaped top-level JSON object.            ===
+    // === Smoke fuzz: arbitrary printable input never crashes and ===
+    // === always yields the standard envelope.                    ===
 
     // `\PC` = any printable unicode char; `{0,40}` = 0..=40 chars.
     #[test]
-    fn classify_never_crashes(raw in r"\PC{0,40}") {
-        let v = run_json(&["classify", "--raw", &raw]);
-        prop_assert!(v.get("match").is_some(), "missing `match` key: {v:?}");
+    fn docs_never_crashes(raw in r"\PC{0,40}") {
+        let v = run_json(&["docs", "--raw", &raw]);
+        let (_, returned, total) = assert_envelope(&v);
+        prop_assert_eq!(returned, total, "docs never truncates");
     }
 
     #[test]
-    fn lookup_option_never_crashes(raw in r"\PC{0,40}") {
-        let v = run_json(&["lookup_option", "--raw", &raw]);
-        prop_assert!(v.get("match").is_some(), "missing `match` key: {v:?}");
-    }
-
-    #[test]
-    fn search_never_crashes(q in r"\PC{0,20}") {
+    fn search_never_crashes(q in r"\PC{1,20}") {
         let v = run_json(&["search", "--query", &q, "--limit", "10"]);
-        prop_assert!(v.get("matches").and_then(Value::as_array).is_some());
-        prop_assert!(v.get("matchesReturned").and_then(Value::as_u64).is_some());
-        prop_assert!(v.get("matchesTotal").and_then(Value::as_u64).is_some());
+        assert_envelope(&v);
     }
 
-    // `describe` takes a closed-enum `--category` (clap rejects bad values
-    // at parse time → exit 2), so we only fuzz `--id`.
     #[test]
-    fn describe_never_crashes(id in r"\PC{0,40}") {
-        let v = run_json(&["describe", "--category", "builtin", "--id", &id]);
-        prop_assert!(v.get("match").is_some(), "missing `match` key: {v:?}");
+    fn list_never_crashes(n in 0u32..=20) {
+        let n_s = n.to_string();
+        let v = run_json(&["list", "--limit", &n_s]);
+        let (matches, returned, _) = assert_envelope(&v);
+        prop_assert_eq!(matches.len() as u64, returned);
     }
 
     // === Stronger invariants ===
 
-    /// classify → describe round-trip: when classify resolves to a
-    /// `{category, id}`, `describe` on that same pair must also match and
-    /// return the same id. Skip when classify returned `null` so the
-    /// property still exercises a real lookup on most inputs.
+    /// docs round-trip: when `docs --category=C --raw=ID` resolves, the
+    /// returned `id` must equal `ID`. Closed-identity round-trips like
+    /// `for` against `complex_command` and `reserved_word` confirm direct-
+    /// hit precedence (see DESIGN.md §"docs: direct ∥ resolver"). This
+    /// is a property-level companion to the exhaustive
+    /// `round-trip.test.ts` in tooldef.
     #[test]
-    fn classify_describe_roundtrip(raw in known_raw()) {
-        let v = run_json(&["classify", "--raw", raw]);
-        let Some(m) = v.get("match").and_then(Value::as_object) else {
-            return Ok(());
-        };
-        if m.is_empty() {
-            return Ok(());
+    fn docs_self_roundtrip(raw in known_raw()) {
+        let v = run_json(&["docs", "--raw", raw]);
+        let (matches, _, _) = assert_envelope(&v);
+        for m in matches {
+            let cat = m.get("category").and_then(Value::as_str).expect("category");
+            let id = m.get("id").and_then(Value::as_str).expect("id");
+            // Re-query with `--category` set to the resolved category;
+            // direct lookup of the canonical id must round-trip.
+            let r = run_json(&["docs", "--raw", id, "--category", cat]);
+            let (rm, _, _) = assert_envelope(&r);
+            prop_assert!(
+                !rm.is_empty(),
+                "round-trip docs(raw={id}, cat={cat}) returned empty after first hit"
+            );
+            let rid = rm[0].get("id").and_then(Value::as_str);
+            prop_assert_eq!(rid, Some(id), "round-trip id mismatch");
         }
-        let category = m.get("category").and_then(Value::as_str);
-        let id = m.get("id").and_then(Value::as_str);
-        let (Some(category), Some(id)) = (category, id) else {
-            return Ok(());
-        };
-
-        let d = run_json(&["describe", "--category", category, "--id", id]);
-        let dm = d.get("match").and_then(Value::as_object);
-        prop_assert!(
-            dm.is_some(),
-            "describe({category}, {id}) returned null after classify({raw}) hit"
-        );
-        let dm = dm.unwrap();
-        let d_id = dm.get("id").and_then(Value::as_str);
-        prop_assert_eq!(d_id, Some(id), "describe id mismatch for raw={:?}", raw);
     }
 
     /// `search --limit N`: returned count ≤ N, returned count ≤ total,
-    /// and `matches.len()` must equal `matchesReturned`. (This subsumes
-    /// the spec's item #6, matchesTotal ≥ matchesReturned.)
+    /// and `matches.len()` must equal `matchesReturned`.
     #[test]
-    fn search_limit_invariant(q in r"\PC{0,20}", n in 1u32..=20) {
+    fn search_limit_invariant(q in r"\PC{1,20}", n in 0u32..=20) {
         let n_s = n.to_string();
         let v = run_json(&["search", "--query", &q, "--limit", &n_s]);
-        let matches = v.get("matches").and_then(Value::as_array)
-            .expect("`matches` is an array");
-        let returned = v.get("matchesReturned").and_then(Value::as_u64)
-            .expect("`matchesReturned` is u64");
-        let total = v.get("matchesTotal").and_then(Value::as_u64)
-            .expect("`matchesTotal` is u64");
+        let (matches, returned, total) = assert_envelope(&v);
 
         prop_assert_eq!(
             matches.len() as u64, returned,
@@ -173,15 +172,14 @@ proptest! {
         );
     }
 
-    /// `search --category C` with empty query: every returned match has
-    /// `.category == C`. Confirms the category filter is a pure pass-through
-    /// (no leakage from other categories in the no-query branch).
+    /// `list --category C`: every returned match has `.category == C`.
+    /// Confirms the category filter is a pure pass-through (no leakage
+    /// from other categories).
     #[test]
-    fn search_category_filter_is_pure(cat in known_category(), n in 1u32..=20) {
+    fn list_category_filter_is_pure(cat in known_category(), n in 1u32..=20) {
         let n_s = n.to_string();
-        let v = run_json(&["search", "--query", "", "--category", &cat, "--limit", &n_s]);
-        let matches = v.get("matches").and_then(Value::as_array)
-            .expect("`matches` is an array");
+        let v = run_json(&["list", "--category", &cat, "--limit", &n_s]);
+        let (matches, _, _) = assert_envelope(&v);
         for (i, m) in matches.iter().enumerate() {
             let got = m.get("category").and_then(Value::as_str);
             prop_assert_eq!(
@@ -192,49 +190,45 @@ proptest! {
     }
 
     /// NO_-prefix toggle symmetry: for a curated known-option name, both
-    /// `X` and `NO_X` must resolve via `lookup_option` to the same
+    /// `X` and `NO_X` must resolve via `docs --category=option` to the same
     /// canonical `id`, with `negated` flipping between the two forms.
     #[test]
-    fn lookup_option_no_toggle_symmetry(
-        idx in 0usize..KNOWN_OPTIONS.len(),
-    ) {
+    fn docs_option_no_toggle_symmetry(idx in 0usize..KNOWN_OPTIONS.len()) {
         let name = KNOWN_OPTIONS[idx];
         let negated_name = format!("NO_{name}");
 
-        let bare = run_json(&["lookup_option", "--raw", name]);
-        let no = run_json(&["lookup_option", "--raw", &negated_name]);
+        let bare = run_json(&["docs", "--raw", name, "--category", "option"]);
+        let no = run_json(&["docs", "--raw", &negated_name, "--category", "option"]);
 
-        let bare_m = bare.get("match").and_then(Value::as_object);
-        let no_m = no.get("match").and_then(Value::as_object);
-        prop_assert!(bare_m.is_some(), "lookup_option({name}) returned null");
-        prop_assert!(no_m.is_some(), "lookup_option({negated_name}) returned null");
-        let bare_m = bare_m.unwrap();
-        let no_m = no_m.unwrap();
+        let (bm, _, _) = assert_envelope(&bare);
+        let (nm, _, _) = assert_envelope(&no);
+        prop_assert!(!bm.is_empty(), "docs option={name} returned empty");
+        prop_assert!(!nm.is_empty(), "docs option={negated_name} returned empty");
 
-        let bare_id = bare_m.get("id").and_then(Value::as_str);
-        let no_id = no_m.get("id").and_then(Value::as_str);
+        let bare_id = bm[0].get("id").and_then(Value::as_str);
+        let no_id = nm[0].get("id").and_then(Value::as_str);
         prop_assert_eq!(
             bare_id, no_id,
             "canonical id differs: {:?} vs {:?}", bare_id, no_id
         );
 
-        let bare_neg = bare_m.get("negated").and_then(Value::as_bool);
-        let no_neg = no_m.get("negated").and_then(Value::as_bool);
+        let bare_neg = bm[0].get("negated").and_then(Value::as_bool);
+        let no_neg = nm[0].get("negated").and_then(Value::as_bool);
         prop_assert_eq!(bare_neg, Some(false), "bare `{}` should be negated=false", name);
         prop_assert_eq!(no_neg, Some(true), "`NO_{}` should be negated=true", name);
     }
 
-    /// Byte-level determinism: two successive `classify` spawns with the
+    /// Byte-level determinism: two successive `docs` spawns with the
     /// same argv must produce identical stdout. Catches nondeterminism
     /// (hash ordering, time-based fields) that shape-only assertions miss.
     #[test]
-    fn classify_is_deterministic(raw in known_raw()) {
-        let a = run_raw(&["classify", "--raw", raw]);
-        let b = run_raw(&["classify", "--raw", raw]);
+    fn docs_is_deterministic(raw in known_raw()) {
+        let a = run_raw(&["docs", "--raw", raw]);
+        let b = run_raw(&["docs", "--raw", raw]);
         prop_assert!(a.status.success() && b.status.success());
         prop_assert_eq!(
             &a.stdout, &b.stdout,
-            "classify({:?}) stdout differs between runs", raw
+            "docs({:?}) stdout differs between runs", raw
         );
     }
 }
@@ -242,24 +236,24 @@ proptest! {
 /// Deterministic sweep across every `doc_categories()` entry. Pairs with
 /// the property tests (which sample random categories and may miss a newly
 /// added one within their `with_cases` budget) by guaranteeing each category
-/// is exercised at least once per run: `search --category C --query ""`
-/// must return records that all carry `category == C`, and the category
-/// must contain at least one record (no empty taxonomy entries).
+/// is exercised at least once per run: `list --category C` must return
+/// records that all carry `category == C`, and the category must contain
+/// at least one record (no empty taxonomy entries).
 ///
 /// Adding a new category to zsh-core → tooldef → the baked corpus
 /// automatically extends this sweep; no test code change is needed. If a
 /// new category ships without records (or leaks records from another
 /// category), this test fails.
 #[test]
-fn every_category_search_is_pure_and_nonempty() {
+fn every_category_list_is_pure_and_nonempty() {
     let cats = doc_categories();
     assert!(!cats.is_empty(), "`zshref info` returned no categories");
     for cat in cats {
-        let v = run_json(&["search", "--query", "", "--category", cat, "--limit", "5"]);
+        let v = run_json(&["list", "--category", cat, "--limit", "5"]);
         let matches = v
             .get("matches")
             .and_then(Value::as_array)
-            .unwrap_or_else(|| panic!("search missing `matches` array for {cat}"));
+            .unwrap_or_else(|| panic!("list missing `matches` array for {cat}"));
         assert!(
             !matches.is_empty(),
             "category {cat}: empty match set — either no records or filter drift"
@@ -274,4 +268,3 @@ fn every_category_search_is_pure_and_nonempty() {
         }
     }
 }
-

@@ -1,0 +1,24 @@
+{
+  "tool": "zsh_docs",
+  "input": {
+    "raw": "NOTIFY"
+  },
+  "argv": [
+    "docs",
+    "--raw",
+    "NOTIFY"
+  ],
+  "expectedOutput": {
+    "matches": [
+      {
+        "category": "option",
+        "id": "notify",
+        "display": "NOTIFY",
+        "markdown": "`NOTIFY`\n\n```zsh\nsetopt notify        # on\nunsetopt notify      # off\nset -5               # on\nset +5               # off\nset -b               # on\nset +b               # off\n```\n\n**Default in zsh: `on`**\n\nReport the status of background jobs immediately, rather than waiting until just before printing a prompt.\n\n_Option category:_ Job Control",
+        "negated": false
+      }
+    ],
+    "matchesReturned": 1,
+    "matchesTotal": 1
+  }
+}

@@ -116,15 +116,15 @@ if [[ -z $custom ]]
 then
   # run-test
   agentPrompt=(
-    'Use the zshref MCP tool zsh_lookup_option with raw=NO_NOTIFY.'
+    'Use the zshref MCP tool zsh_docs with raw=NO_NOTIFY and category=option.'
     ''
     'Output exactly: id=notify negated=true. If unavailable, output TOOL_UNAVAILABLE.'
     )
   XDG_CONFIG_HOME=$tmp \
     opencode run $args $prompt_rules$'\n\n'"${(F)agentPrompt}" \
     | tee $tmp/out
-  grep -Fq '"tool":"zshref_zsh_lookup_option"' $tmp/out
-  grep -Fq 'id=notify negated=true'            $tmp/out
+  grep -Fq '"tool":"zshref_zsh_docs"' $tmp/out
+  grep -Fq 'id=notify negated=true'   $tmp/out
   print "\n${me:t}: PASSED."
 else
   # run-custom

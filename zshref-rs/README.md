@@ -9,14 +9,14 @@ A command-line reference for zsh syntax. Ask what a token is, search the manual,
 Built for agents, acceptable for humans. One of three adapters over the same parsed zsh reference (alongside the [MCP server](https://github.com/carlwr/zshref-mcp) and the [VS Code extension](https://github.com/carlwr/better-zsh/tree/main/packages/vscode-better-zsh)). What the CLI adds on top of the shared corpus:
 
 - **Single statically-linked binary** — no Node, Python, or zsh at runtime; drops into containers, air-gapped CI, and minimal base images.
-- **Pipes and scripts.** JSON on stdout, human prose on stderr, stable exit-code contract. `zshref classify --raw AUTO_CD | jq ...` is the intended shape, including for LLM agents composing through `sh`.
+- **Pipes and scripts.** JSON on stdout, human prose on stderr, stable exit-code contract. `zshref docs --raw AUTO_CD | jq ...` is the intended shape, including for LLM agents composing through `sh`.
 - **Protocol-independent.** MCP is young; POSIX CLIs have fifty years of backward-compat. Insurance against whichever agent protocol comes next.
 
 What it shares with the other adapters — and, for most users, the reason to pick any of them over `man zshall | grep`:
 
 - **Structured, not textual.** Parsed from upstream Yodl source into typed per-category records, not regex-scraped from `man`. Every record carries its own shape; every category carries its own resolver.
 - **Non-trivial resolvers.** Corpus-aware `NO_*` negation (including the `NOTIFY` / `TIFY` edge case), redirection decomposition into `groupOp` + tail, parameter-expansion sig matching. The real value-add.
-- **Token-efficient.** `search` returns identity-only rows (no markdown body); `classify` / `describe` / `lookup_option` are single-match direct lookups. The closed category enum surfaces as shell-completion values and clap `PossibleValues`, not prose — callers don't burn tokens recalling category names.
+- **Token-efficient.** `search` and `list` return identity-only rows (no markdown body); only `docs` returns rendered markdown. The closed category enum surfaces as shell-completion values and clap `PossibleValues`, not prose — callers don't burn tokens recalling category names.
 - **No trust surface.** No shell execution, no subprocess, no network, no filesystem writes, no logs, no caches, no config files, no telemetry, no environment-variable reads beyond the `NO_COLOR` / `CLICOLOR_FORCE` color gates. Structurally enforced by a scope-fence test, not policy.
 
 Primary audience: agent pipelines (Claude Code, Codex CLI, Cursor, shell-wrapped LLM flows). Humans aren't locked out, but every design trade-off picks the agent-first answer.
@@ -35,19 +35,19 @@ If you need to introspect a live shell (`setopt` output, `$commands`, aliases), 
      acceptable dev-time dep. -->
 
 ```sh
-# One-shot classification. Pick the interesting fields with jq.
-zshref classify --raw AUTO_CD | jq '.match | {category, display}'
+# One-shot lookup. Pick the interesting fields with jq.
+zshref docs --raw AUTO_CD | jq '.matches[0] | {category, display}'
 # → { "category": "option", "display": "AUTO_CD" }
 
-# Fuzzy search + describe, piped as an agent would.
+# Fuzzy search + docs, piped as an agent would.
 zshref search --query autoc --limit 1 \
-  | jq -r '.matches[0] | "--category \(.category) --id \(.id)"' \
-  | xargs zshref describe \
-  | jq -r '.match.markdown' \
+  | jq -r '.matches[0] | "--category \(.category) --raw \(.id)"' \
+  | xargs zshref docs \
+  | jq -r '.matches[0].markdown' \
   | head -3
 
 # NO_* negation resolves to the base option; `negated` tells you the state.
-zshref lookup_option --raw NO_AUTO_CD | jq '.match | {display, negated}'
+zshref docs --raw NO_AUTO_CD --category option | jq '.matches[0] | {display, negated}'
 # → { "display": "AUTO_CD", "negated": true }
 ```
 
@@ -76,21 +76,22 @@ brew install zshref
 zshref --help
 zshref --version
 
-# Classify a raw token across every category.
-zshref classify --raw AUTO_CD
-zshref classify --raw '<<<'
+# Look up the docs for a raw token across every category.
+zshref docs --raw AUTO_CD
+zshref docs --raw '<<<'
 
-# Fuzzy search; optionally narrow by category.
+# Constrain to one category (e.g. resolve `for` as a complex command,
+# not as a reserved word).
+zshref docs --raw for --category complex_command
+
+# `NO_*` option negation: same canonical id, `negated: true`.
+zshref docs --raw NO_AUTO_CD --category option
+
+# Fuzzy search; optionally narrow by category. Pair with `docs` for the body.
 zshref search --query echo --category builtin --limit 5
 
-# List every record in a category (omit --query).
-zshref search --category option --limit 500
-
-# Fetch docs for a known { category, id }.
-zshref describe --category option --id autocd
-
-# Look up a shell option by name, `NO_*` forms included.
-zshref lookup_option --raw NO_AUTO_CD
+# Enumerate records in a category — id-only, no markdown body.
+zshref list --category option --limit 200
 
 # Emit corpus + upstream metadata.
 zshref info

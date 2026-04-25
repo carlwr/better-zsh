@@ -4,16 +4,15 @@
 //! Ranking: exact id/display > prefix > fuzzy. The fuzzy tier composes
 //! `crate::fuzzy::score` (in-tree ASCII matcher — no third-party fuzzy
 //! dep). `matchesTotal` is reported pre-truncation so callers can
-//! detect whether the result was limited.
+//! detect whether the result was limited. `query` is required (clap-side).
 
 use crate::corpus::Corpus;
-use crate::tools::classify::{record_display, record_id, str_field};
+use crate::tools::shared::{mk_envelope, record_display, record_id, record_sub_kind};
 use anyhow::Result;
 use clap::ArgMatches;
-use serde_json::{json, Map, Value};
+use serde_json::{Map, Value};
 
 pub const DEFAULT_LIMIT: u32 = 20;
-pub const MAX_LIMIT: u32 = 500;
 
 struct Entry<'c> {
     category: &'c str,
@@ -23,24 +22,21 @@ struct Entry<'c> {
 }
 
 pub fn run(matches: &ArgMatches, corpus: &Corpus) -> Result<Value> {
+    // `query` is required at the clap layer, but treat empty/whitespace
+    // here as an empty match set (matches the TS tooldef behavior).
     let query = matches
         .get_one::<String>("query")
         .map(String::as_str)
         .unwrap_or("")
         .trim();
     let category = matches.get_one::<String>("category").cloned();
-    let limit = *matches.get_one::<u32>("limit").unwrap_or(&DEFAULT_LIMIT);
-    let limit = limit.clamp(1, MAX_LIMIT) as usize;
-
-    let pool = entries(corpus, category.as_deref());
+    let limit = *matches.get_one::<u32>("limit").unwrap_or(&DEFAULT_LIMIT) as usize;
 
     if query.is_empty() {
-        return Ok(assemble(
-            pool.iter().take(limit).map(|e| entry_json(e, None)),
-            pool.len(),
-        ));
+        return Ok(mk_envelope(Vec::new(), 0));
     }
 
+    let pool = entries(corpus, category.as_deref());
     let q_low = query.to_ascii_lowercase();
     let (mut exact, mut prefix, mut rest): (Vec<&Entry>, Vec<&Entry>, Vec<&Entry>) =
         (Vec::new(), Vec::new(), Vec::new());
@@ -82,7 +78,8 @@ pub fn run(matches: &ArgMatches, corpus: &Corpus) -> Result<Value> {
             // rely on ranking order, not this absolute value.
             entry_json(e, Some((*s as f64 / 1000.0).min(1.0)))
         }));
-    Ok(assemble(ranked.take(limit), total))
+    let returned: Vec<Value> = ranked.take(limit).collect();
+    Ok(mk_envelope(returned, total))
 }
 
 fn entry_json(e: &Entry, score: Option<f64>) -> Value {
@@ -104,14 +101,6 @@ fn entry_json(e: &Entry, score: Option<f64>) -> Value {
     Value::Object(obj)
 }
 
-fn assemble(items: impl Iterator<Item = Value>, total: usize) -> Value {
-    let matches: Vec<Value> = items.collect();
-    json!({
-        "matches": matches,
-        "matchesReturned": matches.len(),
-        "matchesTotal": total,
-    })
-}
 
 fn entries<'c>(corpus: &'c Corpus, cat_filter: Option<&str>) -> Vec<Entry<'c>> {
     corpus
@@ -127,20 +116,4 @@ fn entries<'c>(corpus: &'c Corpus, cat_filter: Option<&str>) -> Vec<Entry<'c>> {
             })
         })
         .collect()
-}
-
-/// Per-category typed sub-facet. Mirror of `docSubKind` in
-/// `packages/zsh-core/src/docs/taxonomy.ts`. Categories with no meaningful
-/// subKind return `None`; absent-or-empty fields also return `None` so the
-/// JSON omits the key (matches TS `undefined`-drop behaviour).
-fn record_sub_kind(cat_name: &str, rec: &Map<String, Value>) -> Option<String> {
-    let key = match cat_name {
-        "cond_op" => "arity",
-        "reserved_word" => "pos",
-        "param_expn" => "subKind",
-        "history" | "glob_op" | "zle_widget" => "kind",
-        _ => return None,
-    };
-    let s = str_field(rec, key);
-    (!s.is_empty()).then(|| s.to_string())
 }

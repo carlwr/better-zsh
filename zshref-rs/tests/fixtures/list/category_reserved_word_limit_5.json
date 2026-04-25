@@ -1,11 +1,11 @@
 {
-  "tool": "zsh_search",
+  "tool": "zsh_list",
   "input": {
     "category": "reserved_word",
     "limit": 5
   },
   "argv": [
-    "search",
+    "list",
     "--category",
     "reserved_word",
     "--limit",

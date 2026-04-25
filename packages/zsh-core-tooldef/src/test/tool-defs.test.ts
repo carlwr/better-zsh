@@ -1,4 +1,5 @@
 import {
+  classifyOrder,
   docCategories,
   docCategoryLabels,
   loadCorpus,
@@ -7,13 +8,11 @@ import {
 import { describe, expect, test } from "vitest"
 import {
   BRIEF_MAX_LEN,
-  type ClassifyResult,
-  classifyToolDef,
-  type DescribeResult,
-  describeToolDef,
+  type DocsResult,
+  docsToolDef,
   FLAG_BRIEF_MAX_LEN,
-  type LookupOptionResult,
-  lookupOptionToolDef,
+  type ListResult,
+  listToolDef,
   type SearchResult,
   searchToolDef,
   TOOL_SUITE_PREAMBLE,
@@ -25,12 +24,7 @@ const corpus = loadCorpus()
 describe("toolDefs metadata", () => {
   test("names are stable, unique, snake_case, zsh_-prefixed", () => {
     const names = toolDefs.map(def => def.name)
-    expect(names).toEqual([
-      "zsh_classify",
-      "zsh_lookup_option",
-      "zsh_search",
-      "zsh_describe",
-    ])
+    expect(names).toEqual(["zsh_docs", "zsh_search", "zsh_list"])
     expect(new Set(names).size).toBe(names.length)
     for (const name of names) expect(name).toMatch(/^zsh_[a-z][a-z0-9_]*$/)
   })
@@ -42,28 +36,23 @@ describe("toolDefs metadata", () => {
   })
 
   test.each([
-    ["zsh_classify", classifyToolDef, ["raw"]],
-    ["zsh_lookup_option", lookupOptionToolDef, ["raw"]],
-    ["zsh_describe", describeToolDef, ["category", "id"]],
+    ["zsh_docs", docsToolDef, ["raw"]],
+    ["zsh_search", searchToolDef, ["query"]],
   ] as const)("%s declares required=%j", (_n, def, required) => {
     expect(def.inputSchema).toMatchObject({ required })
   })
 
-  test("zsh_search has no required fields", () => {
+  test("zsh_list has no required fields", () => {
     expect(
-      (searchToolDef.inputSchema as { required?: readonly string[] }).required,
+      (listToolDef.inputSchema as { required?: readonly string[] }).required,
     ).toBeUndefined()
   })
 
   test("execute wires corpus through", () => {
-    const c = classifyToolDef.execute(corpus, {
-      raw: "echo",
-    }) as ClassifyResult
-    expect(c.match?.category).toBe("builtin")
-    const l = lookupOptionToolDef.execute(corpus, {
-      raw: "AUTO_CD",
-    }) as LookupOptionResult
-    expect(l.match?.id).toBe("autocd")
+    const d = docsToolDef.execute(corpus, { raw: "echo" }) as DocsResult
+    expect(d.matches[0]?.category).toBe("builtin")
+    expect(d.matches[0]?.markdown.length).toBeGreaterThan(0)
+
     const s = searchToolDef.execute(corpus, {
       query: "echo",
       category: "builtin",
@@ -71,11 +60,13 @@ describe("toolDefs metadata", () => {
     }) as SearchResult
     expect(s.matches.length).toBeGreaterThan(0)
     expect(s.matches[0]?.id).toBe("echo")
-    const d = describeToolDef.execute(corpus, {
-      category: "builtin",
-      id: "echo",
-    }) as DescribeResult
-    expect(d.match?.markdown).toMatch(/echo/i)
+
+    const l = listToolDef.execute(corpus, {
+      category: "precmd",
+      limit: 100,
+    }) as ListResult
+    for (const m of l.matches) expect(m.category).toBe("precmd")
+    expect(l.matches.length).toBeGreaterThan(0)
   })
 })
 
@@ -122,9 +113,20 @@ describe("toolDefs description shape", () => {
     expect(def.description).toMatch(/environment access/i)
   })
 
-  test("zsh_classify mentions every DocCategory (via human label)", () => {
-    const d = classifyToolDef.description
-    for (const cat of docCategories) expect(d).toContain(docCategoryLabels[cat])
+  test("zsh_docs mentions every DocCategory (via branded string)", () => {
+    const d = docsToolDef.description + JSON.stringify(docsToolDef.inputSchema)
+    for (const cat of classifyOrder) expect(d).toContain(`'${cat}'`)
+  })
+
+  test("zsh_docs description mentions option negation semantics", () => {
+    const d = docsToolDef.description
+    expect(d).toMatch(/negat/i)
+    expect(d).toContain("NO_")
+  })
+
+  test("zsh_docs warns about multi-match without `category`", () => {
+    const d = docsToolDef.description
+    expect(d).toMatch(/more than one match/i)
   })
 
   test("zsh_search lists every DocCategory (via branded string)", () => {
@@ -133,40 +135,43 @@ describe("toolDefs description shape", () => {
     for (const cat of docCategories) expect(d).toContain(`'${cat}'`)
   })
 
-  test("zsh_lookup_option mentions negation semantics", () => {
-    const d = lookupOptionToolDef.description
-    expect(d).toMatch(/negat/i)
-    expect(d).toContain("NO_")
-  })
-
   test("zsh_search mentions ranking/limit and points at follow-up", () => {
     const d = searchToolDef.description
     expect(d).toMatch(/fuzzy/i)
     expect(d).toMatch(/limit/i)
-    expect(d).toMatch(/zsh_describe|zsh_classify/)
+    expect(d).toContain("zsh_docs")
   })
 
-  test("zsh_search describes matchesReturned/matchesTotal truncation signal", () => {
-    const d = searchToolDef.description
-    expect(d).toContain("matchesReturned")
-    expect(d).toContain("matchesTotal")
+  test("zsh_search and zsh_list describe matchesReturned/matchesTotal truncation signal", () => {
+    for (const def of [searchToolDef, listToolDef]) {
+      expect(def.description).toContain("matchesReturned")
+      expect(def.description).toContain("matchesTotal")
+    }
   })
 
-  test("zsh_describe mentions canonical id", () => {
-    const d = describeToolDef.description
-    expect(d).toMatch(/canonical|exact/i)
-    expect(d).toMatch(/markdown/i)
+  test("zsh_list lists every DocCategory (via branded string)", () => {
+    const d = listToolDef.description + JSON.stringify(listToolDef.inputSchema)
+    for (const cat of docCategories) expect(d).toContain(`'${cat}'`)
+  })
+
+  test("zsh_list points at zsh_docs for the markdown body", () => {
+    expect(listToolDef.description).toContain("zsh_docs")
+  })
+
+  // Sanity: human-readable category labels make it into the docs description.
+  test("zsh_docs surfaces human-readable category labels", () => {
+    const d = docsToolDef.description
+    for (const cat of classifyOrder) expect(d).toContain(docCategoryLabels[cat])
   })
 
   // See the "Corpus-tag naming convention" comment in `tool-defs.ts`:
   // entry-point tools name the tag; follow-ups don't.
   test("entry-point tools name the vendored zsh tag", () => {
-    expect(classifyToolDef.description).toContain(ZSH_UPSTREAM.tag)
+    expect(docsToolDef.description).toContain(ZSH_UPSTREAM.tag)
     expect(searchToolDef.description).toContain(ZSH_UPSTREAM.tag)
   })
-  test("follow-up tools do NOT repeat the vendored zsh tag", () => {
-    expect(describeToolDef.description).not.toContain(ZSH_UPSTREAM.tag)
-    expect(lookupOptionToolDef.description).not.toContain(ZSH_UPSTREAM.tag)
+  test("zsh_list does NOT repeat the vendored zsh tag", () => {
+    expect(listToolDef.description).not.toContain(ZSH_UPSTREAM.tag)
   })
 })
 

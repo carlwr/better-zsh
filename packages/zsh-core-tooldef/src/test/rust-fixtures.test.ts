@@ -41,15 +41,41 @@ interface Case {
 }
 
 const cases: readonly Case[] = [
-  // classify
-  { tool: "zsh_classify", name: "auto_cd", input: { raw: "AUTO_CD" } },
-  { tool: "zsh_classify", name: "echo", input: { raw: "echo" } },
-  { tool: "zsh_classify", name: "double_bracket", input: { raw: "[[" } },
-  { tool: "zsh_classify", name: "no_notify", input: { raw: "NO_NOTIFY" } },
-  { tool: "zsh_classify", name: "bogus", input: { raw: "not-a-real-token" } },
+  // docs
+  { tool: "zsh_docs", name: "auto_cd", input: { raw: "AUTO_CD" } },
+  { tool: "zsh_docs", name: "no_auto_cd", input: { raw: "NO_AUTO_CD" } },
+  { tool: "zsh_docs", name: "notify", input: { raw: "NOTIFY" } },
+  { tool: "zsh_docs", name: "echo", input: { raw: "echo" } },
+  { tool: "zsh_docs", name: "double_bracket", input: { raw: "[[" } },
+  { tool: "zsh_docs", name: "no_notify", input: { raw: "NO_NOTIFY" } },
+  { tool: "zsh_docs", name: "bogus", input: { raw: "not-a-real-token" } },
+  // multi-match: `for` resolves in both complex_command and reserved_word
+  { tool: "zsh_docs", name: "for_multi_match", input: { raw: "for" } },
+  // direct ∥ resolver: `%number` is a literal job_spec key; resolver
+  // would map non-template digit tail to `%number` — direct keeps it.
+  {
+    tool: "zsh_docs",
+    name: "job_spec_template_key",
+    input: { raw: "%number", category: "job_spec" },
+  },
+  // category-constrained lookup
+  {
+    tool: "zsh_docs",
+    name: "builtin_echo",
+    input: { raw: "echo", category: "builtin" },
+  },
+  {
+    tool: "zsh_docs",
+    name: "option_autocd",
+    input: { raw: "autocd", category: "option" },
+  },
+  {
+    tool: "zsh_docs",
+    name: "not_an_option",
+    input: { raw: "not-an-option" },
+  },
 
   // search
-  { tool: "zsh_search", name: "empty_limit_5", input: { limit: 5 } },
   { tool: "zsh_search", name: "query_printf", input: { query: "printf" } },
   {
     tool: "zsh_search",
@@ -58,50 +84,36 @@ const cases: readonly Case[] = [
   },
   {
     tool: "zsh_search",
+    name: "no_hits",
+    input: { query: "xxyyzz", limit: 5 },
+  },
+  // metadata-only; constrain to one category so the fuzzy tier
+  // (TS fuzzysort vs Rust ASCII matcher have slightly different
+  // thresholds) doesn't disturb matchesTotal parity.
+  {
+    tool: "zsh_search",
+    name: "limit_zero",
+    input: { query: "echo", category: "builtin", limit: 0 },
+  },
+
+  // list
+  { tool: "zsh_list", name: "default_limit_5", input: { limit: 5 } },
+  {
+    tool: "zsh_list",
     name: "category_option_limit_3",
     input: { category: "option", limit: 3 },
   },
   {
-    tool: "zsh_search",
-    name: "no_hits",
-    input: { query: "xxyyzz", limit: 5 },
-  },
-  {
     // Exercises subKind parity: `reserved_word` records surface `pos`.
-    tool: "zsh_search",
+    tool: "zsh_list",
     name: "category_reserved_word_limit_5",
     input: { category: "reserved_word", limit: 5 },
   },
-
-  // describe
+  // metadata-only
   {
-    tool: "zsh_describe",
-    name: "builtin_echo",
-    input: { category: "builtin", id: "echo" },
-  },
-  {
-    tool: "zsh_describe",
-    name: "option_autocd",
-    input: { category: "option", id: "autocd" },
-  },
-  {
-    tool: "zsh_describe",
-    name: "builtin_nope",
-    input: { category: "builtin", id: "nope" },
-  },
-
-  // lookup_option
-  { tool: "zsh_lookup_option", name: "auto_cd", input: { raw: "AUTO_CD" } },
-  {
-    tool: "zsh_lookup_option",
-    name: "no_auto_cd",
-    input: { raw: "NO_AUTO_CD" },
-  },
-  { tool: "zsh_lookup_option", name: "notify", input: { raw: "NOTIFY" } },
-  {
-    tool: "zsh_lookup_option",
-    name: "not_an_option",
-    input: { raw: "not-an-option" },
+    tool: "zsh_list",
+    name: "limit_zero",
+    input: { limit: 0 },
   },
 ]
 

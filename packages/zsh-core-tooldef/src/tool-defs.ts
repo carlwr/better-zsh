@@ -1,10 +1,5 @@
 import type { DocCorpus } from "@carlwr/zsh-core"
-import {
-  classifyToolDef,
-  describeToolDef,
-  lookupOptionToolDef,
-  searchToolDef,
-} from "./tools/index.ts"
+import { docsToolDef, listToolDef, searchToolDef } from "./tools/index.ts"
 
 /** JSON Schema object as shipped to MCP/LM clients; opaque to this package. */
 export type ToolInputSchema = Readonly<Record<string, unknown>>
@@ -98,22 +93,21 @@ export function makeToolDef<K extends string>(
   return args as unknown as ToolDef
 }
 
-export { classifyToolDef, describeToolDef, lookupOptionToolDef, searchToolDef }
+export { docsToolDef, listToolDef, searchToolDef }
 
 /** Aggregate list used by adapters to walk all tools uniformly. */
 export const toolDefs: readonly ToolDef[] = [
-  classifyToolDef,
-  lookupOptionToolDef,
+  docsToolDef,
   searchToolDef,
-  describeToolDef,
+  listToolDef,
 ]
 
-// Corpus-tag naming convention: the two entry-point tools
-// (`zsh_classify`, `zsh_search`) name the vendored upstream tag
-// (`ZSH_UPSTREAM.tag`) in their description so an agent learns which
-// zsh the answers describe. The follow-up tools (`zsh_describe`,
-// `zsh_lookup_option`) deliberately do NOT — they're called after
-// discovery, so repeating the tag there only dilutes per-turn
+// Corpus-tag naming convention: the two entry-point tools (`zsh_docs`,
+// `zsh_search`) name the vendored upstream tag (`ZSH_UPSTREAM.tag`) in
+// their description so an agent learns which zsh the answers describe.
+// The follow-up tool `zsh_list` deliberately does NOT — its job is
+// enumeration of the same corpus already named upstream by the entry-
+// point tools, so repeating the tag there only dilutes per-turn
 // context. Keep it asymmetric.
 
 /**
@@ -150,9 +144,7 @@ export const toolDefs: readonly ToolDef[] = [
 export const TOOL_SUITE_PREAMBLE: string = `\
 Intent → tool:
 
-  - classify an unknown zsh token → \`zsh_classify\`
-  - look up a shell option (handles NO_* negation) → \`zsh_lookup_option\`
-  - fuzzy discovery by name → \`zsh_search\` (set \`query\`)
-  - list every record in a category → \`zsh_search\` (set \`category\`, omit \`query\`)
-  - full doc for a known { category, id } → \`zsh_describe\`
+  - look up the docs for a raw zsh token → \`zsh_docs\` (handles NO_* option negation; returns markdown)
+  - fuzzy discovery by name → \`zsh_search\` (id-only; pair with \`zsh_docs\` for the body)
+  - enumerate records in the corpus → \`zsh_list\` (id-only; pair with \`zsh_docs\` for the body)
 `

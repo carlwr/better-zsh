@@ -42,9 +42,9 @@ const TOOLDEF_JSON: &[u8] = include_bytes!(tooldef_path!("tooldef.json"));
 const INDEX_JSON: &[u8] = include_bytes!(corpus_path!("index.json"));
 
 // One per DocCategory. Keep this list in lock-step with `docCategories` in
-// `packages/zsh-core/src/docs/taxonomy.ts`. Order matters for `search`,
-// which lists records in this order when the query is empty (TS parity).
-// `classify` walks `CLASSIFY_ORDER` instead — see `tools/classify.rs`.
+// `packages/zsh-core/src/docs/taxonomy.ts`. Order matters for `list` (and
+// `search`'s candidate pool), which iterate in this order. `docs` walks
+// `CLASSIFY_ORDER` instead — see `tools/docs.rs`.
 macro_rules! include_category {
     ($cat:literal, $file:literal) => {
         ($cat, include_bytes!(corpus_path!($file)) as &[u8])
@@ -170,8 +170,8 @@ pub struct ZshUpstream {
 pub struct Corpus {
     pub index: Index,
     /// One vec of records per category, in `CATEGORY_FILES` order
-    /// (== TS `docCategories`; drives `search` listing order).
-    /// `classify` walks `CLASSIFY_ORDER` instead. Each record is a JSON
+    /// (== TS `docCategories`; drives `list` and `search` iteration).
+    /// `docs` walks `CLASSIFY_ORDER` instead. Each record is a JSON
     /// object; the CLI only pulls out `markdown` plus the category-specific
     /// id/display fields at point-of-use.
     pub categories: Vec<Category>,
@@ -209,10 +209,10 @@ mod tests {
     //! adds or reorders a category, this test fails, prompting the matching
     //! Rust-side edit.
     //!
-    //! Also verifies that `classify::record_id`'s per-category key lookup
-    //! returns a non-empty string for at least one record in each category —
-    //! catches drift where a category's record shape gains a new `id` field
-    //! but `record_id` still points at the old one.
+    //! Also verifies that `tools::shared::record_id`'s per-category key
+    //! lookup returns a non-empty string for at least one record in each
+    //! category — catches drift where a category's record shape gains a new
+    //! `id` field but `record_id` still points at the old one.
     use super::*;
 
     #[test]
@@ -278,8 +278,8 @@ mod tests {
         let mut violations: Vec<String> = Vec::new();
         for cat in &corpus.categories {
             for rec in &cat.records {
-                let id = crate::tools::classify::record_id(cat.name, rec);
-                let display = crate::tools::classify::record_display(cat.name, rec);
+                let id = crate::tools::shared::record_id(cat.name, rec);
+                let display = crate::tools::shared::record_display(cat.name, rec);
                 if !id.is_ascii() {
                     violations.push(format!("category {}: id {:?}", cat.name, id));
                 }
@@ -297,20 +297,21 @@ mod tests {
 
     #[test]
     fn record_id_key_populated_for_every_category() {
-        // `classify::record_id` dispatches per category to a specific record
-        // field. If the TS record shape for a category changes and the id
-        // key moves, Rust would silently read empty strings. This guards it.
+        // `tools::shared::record_id` dispatches per category to a specific
+        // record field. If the TS record shape for a category changes and
+        // the id key moves, Rust would silently read empty strings. This
+        // guards it.
         let corpus = load_corpus().expect("load_corpus");
         for cat in &corpus.categories {
             let first = cat
                 .records
                 .first()
                 .unwrap_or_else(|| panic!("category {} has zero records", cat.name));
-            let id = crate::tools::classify::record_id(cat.name, first);
+            let id = crate::tools::shared::record_id(cat.name, first);
             assert!(
                 !id.is_empty(),
                 "record_id returned empty string for category {} — the \
-                 category→field map in classify::record_id is stale",
+                 category→field map in tools::shared::record_id is stale",
                 cat.name
             );
         }

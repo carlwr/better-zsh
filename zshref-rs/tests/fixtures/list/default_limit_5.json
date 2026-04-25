@@ -1,10 +1,10 @@
 {
-  "tool": "zsh_search",
+  "tool": "zsh_list",
   "input": {
     "limit": 5
   },
   "argv": [
-    "search",
+    "list",
     "--limit",
     "5"
   ],

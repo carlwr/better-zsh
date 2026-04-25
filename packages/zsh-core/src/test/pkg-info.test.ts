@@ -2,6 +2,9 @@ import { readFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { describe, expect, test } from "vitest"
+import { loadCorpus } from "../docs/corpus.ts"
+import { RECORDS_TOTAL } from "../docs/corpus-meta.ts"
+import { docCategories } from "../docs/taxonomy.ts"
 import {
   PKG_LICENSE,
   PKG_NAME,
@@ -51,6 +54,14 @@ describe("shared-surface exports stay in sync", () => {
   })
   test("deno.json.exports is exactly the shared subpaths", () => {
     expect(Object.keys(deno.exports).sort()).toEqual([...SHARED_EXPORTS].sort())
+  })
+})
+
+describe("RECORDS_TOTAL stays in sync with the loaded corpus", () => {
+  test("equals the sum of per-category corpus map sizes", () => {
+    const corpus = loadCorpus()
+    const sum = docCategories.reduce((n, c) => n + corpus[c].size, 0)
+    expect(RECORDS_TOTAL).toBe(sum)
   })
 })
 

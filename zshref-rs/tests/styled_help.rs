@@ -56,7 +56,7 @@ fn help_renders_suite_preamble_with_rewritten_tool_names() {
         help.contains("zshref search"),
         "cli_prose() rewrite did not produce `zshref search` in --help:\n{help}"
     );
-    for raw in ["zsh_classify", "zsh_search", "zsh_describe", "zsh_lookup_option"] {
+    for raw in ["zsh_docs", "zsh_search", "zsh_list"] {
         assert!(
             !help.contains(raw),
             "raw MCP tool name `{raw}` leaked through into --help:\n{help}"
