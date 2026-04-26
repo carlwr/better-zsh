@@ -75,7 +75,7 @@ No shell execution, no environment access.`,
     },
     additionalProperties: false,
   },
-  outputSchema: mkOutputSchema({ subKind: "optional" }),
+  outputSchema: mkOutputSchema({}),
   flagBriefs: {
     category: "Filter to one doc category.",
     limit: `Max matches to return (default ${DEFAULT_LIMIT}, max ${MAX_LIMIT}).`,

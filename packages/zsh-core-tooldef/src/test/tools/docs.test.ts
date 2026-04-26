@@ -150,6 +150,39 @@ describe("docs — option matches always carry `negated`", () => {
   })
 })
 
+describe("docs — subKind on category branches", () => {
+  test("reserved_word match carries `subKind` reflecting `pos`", () => {
+    const r = docs(corpus, { raw: "do", category: "reserved_word" })
+    const m = r.matches[0]
+    expect(m).toBeDefined()
+    expect(m?.subKind).toBe("command")
+  })
+
+  test("job_spec match carries `subKind` reflecting `kind`", () => {
+    const r = docs(corpus, { raw: "%number", category: "job_spec" })
+    const m = r.matches[0]
+    expect(m).toBeDefined()
+    expect(m?.subKind).toBe("number")
+  })
+
+  test("multi-match: reserved_word branch carries subKind, complex_command branch does not", () => {
+    const r = docs(corpus, { raw: "for" })
+    const cc = r.matches.find(m => m.category === "complex_command")
+    const rw = r.matches.find(m => m.category === "reserved_word")
+    expect(cc).toBeDefined()
+    expect(rw).toBeDefined()
+    expect(cc).not.toHaveProperty("subKind")
+    expect(rw?.subKind).toBe("command")
+  })
+
+  test("option match has no subKind key (option category has no sub-facet)", () => {
+    const r = docs(corpus, { raw: "AUTO_CD", category: "option" })
+    const m = r.matches[0]
+    expect(m).toBeDefined()
+    expect(m).not.toHaveProperty("subKind")
+  })
+})
+
 describe("docs — output envelope shape", () => {
   test("envelope fields are present even on empty result", () => {
     const r = docs(corpus, { raw: "totally_not_real_qq" })

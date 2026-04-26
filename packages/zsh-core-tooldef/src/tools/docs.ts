@@ -4,6 +4,7 @@ import {
   type DocCorpus,
   type DocPieceId,
   type DocRecordMap,
+  docSubKind,
   type Documented,
   mkPieceId,
   resolve,
@@ -26,6 +27,8 @@ export interface DocsMatch {
   readonly id: string
   readonly display: string
   readonly markdown: string
+  /** Typed sub-facet of the record (e.g. history `kind`, glob_op `kind`, reserved_word `pos`). Absent when the category has no meaningful subKind. */
+  readonly subKind?: string
   /** Present on every option-category match; reflects whether the input was a `NO_*` form. */
   readonly negated?: boolean
 }
@@ -83,11 +86,16 @@ function formatMatch(
       `docs: corpus lookup miss for ${pid.category}:${pid.id} — resolver returned a brand that isn't in the corpus map; see zsh-core's docs/corpus.ts resolver table.`,
     )
   }
+  const getSubKind = docSubKind[pid.category] as (
+    d: DocRecordMap[typeof pid.category],
+  ) => string | undefined
+  const subKind = getSubKind(rec)
   const base: DocsMatch = {
     category: pid.category,
     id: pid.id as string,
     display: display(pid.category, rec),
     markdown: renderDoc(corpus, pid),
+    ...(subKind !== undefined ? { subKind } : {}),
   }
   if (pid.category !== "option") return base
   // Surface `negated` on every option match. Direct hits land on canonical
@@ -143,7 +151,7 @@ ${categoryList}
 
 Set \`category\` to constrain the search to one category; otherwise every category is tried and the response may carry more than one match. Some inputs name elements in more than one category (e.g. \`for\`, \`[[\`, \`function\`, \`nocorrect\`); without \`category\` those return multiple matches.
 
-Each match is \`{ category, id, display, markdown }\`. Option matches additionally carry \`negated: true|false\` so agents can distinguish \`setopt AUTO_CD\` from \`setopt NO_AUTO_CD\` (handles the NOTIFY / NO_NOTIFY edge case).
+Each match is \`{ category, id, display, markdown, subKind? }\`. \`subKind\` is surfaced when the category has a meaningful sub-facet (e.g. history \`kind\`, glob_op \`kind\`, reserved_word \`pos\`). Option matches additionally carry \`negated: true|false\` so agents can distinguish \`setopt AUTO_CD\` from \`setopt NO_AUTO_CD\` (handles the NOTIFY / NO_NOTIFY edge case).
 
 Resolution is corpus-aware: case-insensitive option matching, underscore stripping, redirection group-op + tail decomposition, history event-designators, and the option \`NO_*\` negation convention. Canonical record ids (e.g. \`autocd\`) round-trip exactly.
 
@@ -169,7 +177,6 @@ No shell execution, no environment access.`,
   outputSchema: mkOutputSchema({
     markdown: "required",
     negated: "conditional-on-option",
-    subKind: "absent",
   }),
   flagBriefs: {
     raw: "Raw zsh token to look up (e.g. AUTO_CD, echo, [[, %1).",

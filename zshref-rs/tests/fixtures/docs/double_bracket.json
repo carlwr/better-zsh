@@ -20,7 +20,8 @@
         "category": "reserved_word",
         "id": "[[",
         "display": "[[",
-        "markdown": "`[[`\n\n_Role:_ reserved word (command position)"
+        "markdown": "`[[`\n\n_Role:_ reserved word (command position)",
+        "subKind": "command"
       }
     ],
     "matchesReturned": 2,

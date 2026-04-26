@@ -20,7 +20,8 @@
         "category": "reserved_word",
         "id": "for",
         "display": "for",
-        "markdown": "`for`\n\n_Role:_ reserved word (command position)"
+        "markdown": "`for`\n\n_Role:_ reserved word (command position)",
+        "subKind": "command"
       }
     ],
     "matchesReturned": 2,

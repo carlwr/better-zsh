@@ -17,7 +17,8 @@
         "category": "job_spec",
         "id": "%number",
         "display": "%number",
-        "markdown": "`%number`\n\nThe job with the given number.\n\n_Role:_ job spec (number)"
+        "markdown": "`%number`\n\nThe job with the given number.\n\n_Role:_ job spec (number)",
+        "subKind": "number"
       }
     ],
     "matchesReturned": 1,

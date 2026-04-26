@@ -5,7 +5,9 @@
 //! resolving category. Surfaces `negated` on every option-category match.
 
 use crate::corpus::Corpus;
-use crate::tools::shared::{mk_envelope, resolve_in, str_arg, str_field, ResolvedHit};
+use crate::tools::shared::{
+    mk_envelope, record_sub_kind, resolve_in, str_arg, str_field, ResolvedHit,
+};
 use anyhow::Result;
 use clap::ArgMatches;
 use serde_json::{Map, Value};
@@ -42,6 +44,9 @@ fn hit_to_match(h: &ResolvedHit<'_>) -> Value {
         "markdown".into(),
         Value::String(str_field(h.rec, "markdown").to_string()),
     );
+    if let Some(sk) = record_sub_kind(h.category, h.rec) {
+        m.insert("subKind".into(), Value::String(sk));
+    }
     if let Some(n) = h.negated {
         m.insert("negated".into(), Value::Bool(n));
     }

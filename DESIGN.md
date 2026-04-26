@@ -186,13 +186,40 @@ Three sibling categories under `glob_*` — shared prefix is labelling, not onto
 
 `glob_qualifier`'s resolver reuses `parensAgnosticFlagResolver`; accepts bare-letter, `(X)` under `BARE_GLOB_QUAL`, and `(#qX)` under `EXTENDED_GLOB`.
 
-## Reserved word desc is optional
+## Reserved word: an enumeration-primary doc category
 
-`ReservedWordDoc.desc` is `string | undefined`, and `ReservedWordDoc` deliberately does not extend `SyntaxDocBase` (where `desc` would be required).
+`reserved_word` is currently the only enumeration-primary doc category (see PRINCIPLES.md §"Category roles"). It carries three jobs in one record type:
 
-- **Honesty over placeholder prose.** Heads covered by `complex_command` (`for`, `while`, `[[`) omit `desc` entirely. A generic "this is a reserved word" string would be an epistemic trap: agents describing a `for` token would settle for the reserved-word record and miss the richer synopsis + alternateForms in `complex_command`.
-- **Enriched prose where it pays.** Body words (`do`, `then`, `done`, …), alternate-form keywords (`foreach`, `end`), and standalone entries (`!`, `coproc`, `typeset` family) each get a one-line `desc`. Role classification is extractor-internal — no typed `role` field, since no consumer today would dispatch on it.
-- **Extractor role-table is the single source.** Drift-prone to stale prose; edit the extractor's `ROLE` table rather than fanning out elsewhere.
+- **Enumeration source.** The corpus map is the authoritative list of zsh reserved words. Consumers iterate it for completion items, the `list` tool, and syntactic-class membership checks.
+- **Supplementary prose.** Body keywords (`do`, `then`, `done`, …), alternate-form keywords (`foreach`, `end`), and standalone entries (`!`, `coproc`, `typeset` family) carry per-word `desc`. `ReservedWordDoc.desc` is `string | undefined` — heads owned by `complex_command` (`for`, `while`, `[[`, `{`, `time`) deliberately omit it. A generic "this is a reserved word" string would be an epistemic trap, pushing agents toward the cheapest record when the richer one lives elsewhere. Per-word prose lives in the extractor's `ROLE` table — single source of truth.
+- **Corpus identity.** Every record carries `Documented<"reserved_word">` and is reachable via `DocPieceId`, supporting hover, search, and resolver pathways uniformly with other categories.
+
+`pos: ReservedWordPos` (`"command" | "any"`) is required on every record and classifies position semantics. Near-binary in the current corpus: every parsed reserved word is `"command"`; only the synthetic `}` entry is `"any"` (recognized when neither `IGNORE_BRACES` nor `IGNORE_CLOSE_BRACES` is set).
+
+`ReservedWordDoc` does not extend `SyntaxDocBase` because `SyntaxDocBase` requires `desc`, and `reserved_word`'s `desc` is genuinely optional.
+
+The analysis layer has its own `ReservedWordFact`, span-shaped and decoupled from doc identity — it carries `text: string`, not `Observed<"reserved_word">`. Extension hover bridges the two by trying `complex_command` first, falling back to `reserved_word`, mirroring `classifyOrder`.
+
+### Layered consumption
+
+Three consumers of "the reserved-word list" each take a different slice; they are deliberately not unified.
+
+- **Corpus** (`corpus.reserved_word`) — the zsh manual's reserved-word list, parsed from vendored Yodl. Authoritative source for completion items, MCP `list`/`search`, and extension painting.
+- **Analysis layer** (`KEYWORD_HEADS` in `analysis/line-facts.ts`) — the set the line analyzer treats as command-position keywords, emitting `reserved-word` facts and resetting `expectCmd`. Deliberately narrower (omits the typeset family, `nocorrect`, `foreach`, `repeat`, `end`) and adds `in`/`]]` for defensive cases. Pinned by `cmd-position-keywords-lockin.test.ts`; see the comment on `KEYWORD_HEADS` for per-token rationale.
+- **Extension painting** (`SemanticTokensProvider`) — paints the analyzer's `reserved-word` facts as keyword (subset behaviour preserved), AND paints corpus reserved words seen in command position as keyword via the `cmd-head` branch. The two paths cover the union; the divergence between corpus and analyzer surfaces here as additional keyword highlighting (e.g. `declare`, `typeset`) without affecting analysis semantics.
+
+## `subKind` is always-or-never per category
+
+For every doc category `c`:
+
+- Either `docSubKind[c]` returns `undefined` for every record (the category has no sub-facet — `option`, `builtin`, `redir`, etc.), or
+- `docSubKind[c]` returns a non-empty string for every record (the category carries a closed-enum sub-facet — `cond_op` `arity`, `history` `kind`, `reserved_word` `pos`, etc.).
+
+There is no mixed case. The invariant follows from typed structural fields (`d.pos: ReservedWordPos`, `d.kind: HistoryKind`, etc. are all required) and is enforced empirically by `subKindAlwaysOrNever` in zsh-core's test suite.
+
+This invariant lets the tool-layer output schema treat `subKind` as *required-when-non-undefined, forbidden-when-undefined* via per-category `oneOf` branching, with no schema-level optionality.
+
+**Future work.** This is one specific instance of a broader policy that should eventually be named and tested generally: per-category structural fields should follow always-or-never on the corpus, so the schema can encode their presence structurally rather than as optional. When a second instance arises, generalize the test (and this section) into a single named invariant rather than per-field tests. Tracked as a "should do later" item; not blocking.
 
 ---
 

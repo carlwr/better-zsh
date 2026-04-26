@@ -33,12 +33,17 @@ vi.mock("vscode", () => ({
 
 import { SemanticTokensProvider } from "../semantic-tokens"
 
-function tokens(text: string, builtins: readonly string[]) {
+function tokens(
+  text: string,
+  builtins: readonly string[],
+  reservedWords: readonly string[] = [],
+) {
   const lines = text.split("\n")
   return (
-    new SemanticTokensProvider([...builtins]).provideDocumentSemanticTokens(
-      lineDoc(text),
-    ) as unknown as Token[]
+    new SemanticTokensProvider(
+      [...builtins],
+      [...reservedWords],
+    ).provideDocumentSemanticTokens(lineDoc(text)) as unknown as Token[]
   ).map(t => ({
     word: lines[t.line]?.slice(t.start, t.start + t.length) ?? "",
     type: t.type,
@@ -101,6 +106,23 @@ suite("SemanticTokensProvider", () => {
   ] as const) {
     test(text, () => {
       assert.deepStrictEqual(tokens(text, builtins), want)
+    })
+  }
+
+  // Manual-reserved words that the analyzer treats as ordinary command
+  // heads (typeset family etc.) get painted as keyword via the corpus-
+  // derived painting list. See the `reservedWordPainting` comment in
+  // semantic-tokens.ts.
+  const RW = ["declare", "typeset", "local", "export", "readonly", "integer"]
+  for (const [text, builtins, want] of [
+    ["declare foo=bar", [], [kw("declare")]],
+    ["typeset -a arr", [], [kw("typeset")]],
+    ["local x=1", [], [kw("local")]],
+    // Builtin-list classification loses to corpus-reserved painting:
+    ["export PATH=/x", ["export"], [kw("export")]],
+  ] as const) {
+    test(`reserved-word painting: ${text}`, () => {
+      assert.deepStrictEqual(tokens(text, builtins, RW), want)
     })
   }
 })

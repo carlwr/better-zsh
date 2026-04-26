@@ -43,7 +43,11 @@ export async function activate(ctx: vscode.ExtensionContext) {
   // zsh is reserved for diagnostics/tokenization paths where execution matters.
   const corpus = loadCorpus()
   const builtinNames = [...corpus.builtin.values()].map(builtin => builtin.name)
-  const semanticTokensProvider = new SemanticTokensProvider(builtinNames)
+  const reservedWordNames = [...corpus.reserved_word.keys()]
+  const semanticTokensProvider = new SemanticTokensProvider(
+    builtinNames,
+    reservedWordNames,
+  )
 
   setupDiagnostics(ctx)
   registerZshRefTools(ctx, corpus)

@@ -183,7 +183,7 @@ No shell execution, no environment access.`,
     required: ["query"],
     additionalProperties: false,
   },
-  outputSchema: mkOutputSchema({ score: "required", subKind: "optional" }),
+  outputSchema: mkOutputSchema({ score: "required" }),
   flagBriefs: {
     query: "Fuzzy-search string (required).",
     category: "Filter to one doc category.",

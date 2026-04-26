@@ -6,6 +6,12 @@
  * branch is `additionalProperties: false`; the discriminator is
  * `category: { const: "<cat>" }`.
  *
+ * `subKind` is always-or-never per category: when `subKindEnums[cat]` is
+ * non-undefined the branch declares `subKind` with the closed enum AND
+ * requires it; when undefined the branch omits the property and
+ * `additionalProperties: false` forbids it. See DESIGN.md §"`subKind` is
+ * always-or-never per category".
+ *
  * Per AGENTS.md §"Never enumerate or count `DocCategory`", category names
  * and `subKind` enum values are interpolated from canonical zsh-core
  * tables (`docCategories`, `subKindEnums`) — never hand-typed.
@@ -15,6 +21,7 @@
 
 import { type DocCategory, docCategories, subKindEnums } from "@carlwr/zsh-core"
 import type { ToolInputSchema } from "../tool-defs.ts"
+import { MAX_LIMIT } from "./limits.ts"
 
 /** Per-tool match-shape choices passed to `mkMatchSchema`. */
 export interface MatchShape {
@@ -22,26 +29,13 @@ export interface MatchShape {
   readonly markdown?: "required" | "absent"
   /** When set, the `option` branch declares `negated: boolean` (required). */
   readonly negated?: "conditional-on-option"
-  /**
-   * `subKind` declaration:
-   *
-   * - `"absent"` (default): branches do not declare `subKind`; with
-   *   `additionalProperties: false` this forbids it (use for tools whose
-   *   match shape doesn't carry the field, e.g. `zsh_docs`).
-   * - `"optional"`: when `subKindEnums[cat]` is non-undefined, declare
-   *   `subKind` with the closed enum but never require it (records may
-   *   still omit it, e.g. `reserved_word` without `pos`).
-   *
-   * Categories with `subKindEnums[cat] === undefined` omit the property
-   * regardless — nothing to enumerate.
-   */
-  readonly subKind?: "absent" | "optional"
 }
 
 /**
  * One `oneOf` branch for a single category. Closed shape
  * (`additionalProperties: false`) with `category` pinned via `const`;
- * `subKind` handling per `MatchShape.subKind`.
+ * `subKind` required-with-closed-enum when the category has a meaningful
+ * sub-facet, forbidden otherwise.
  */
 function mkMatchSchema(
   cat: DocCategory,
@@ -50,15 +44,16 @@ function mkMatchSchema(
   const subEnum = subKindEnums[cat]
   const properties: Record<string, unknown> = {
     category: { const: cat },
-    id: { type: "string" },
-    display: { type: "string" },
+    id: { type: "string", minLength: 1 },
+    display: { type: "string", minLength: 1 },
   }
   const required: string[] = ["category", "id", "display"]
-  if (shape.subKind === "optional" && subEnum !== undefined) {
+  if (subEnum !== undefined) {
     properties.subKind = { enum: [...subEnum] }
+    required.push("subKind")
   }
   if (shape.markdown === "required") {
-    properties.markdown = { type: "string" }
+    properties.markdown = { type: "string", minLength: 1 }
     required.push("markdown")
   }
   if (shape.score === "required") {
@@ -89,7 +84,7 @@ export function mkOutputSchema(shape: MatchShape): ToolInputSchema {
         type: "array",
         items: { oneOf: docCategories.map(c => mkMatchSchema(c, shape)) },
       },
-      matchesReturned: { type: "integer", minimum: 0 },
+      matchesReturned: { type: "integer", minimum: 0, maximum: MAX_LIMIT },
       matchesTotal: { type: "integer", minimum: 0 },
     },
   }

@@ -22,7 +22,33 @@ const TRANSPARENT: ReadonlySet<string> = new Set([
   "time",
 ])
 
-const RESERVED: ReadonlySet<string> = new Set([
+// Tokens that, when seen in command position, are syntactic keywords —
+// `cmdHeadFactsOnLine` emits a `reserved-word` fact for them and (when
+// `TRANSPARENT`) keeps `expectCmd` true so a following word becomes the
+// next command head.
+//
+// Deliberately *not* the same as `corpus.reserved_word` (the zsh manual's
+// reserved-word list). Two intentional differences:
+//
+//   - Adds `in`, `]]`. They are not zsh-manual reserved words but appear
+//     in zsh syntax in defensive positions; including them here keeps the
+//     analyzer robust if they ever appear in command position.
+//   - Omits `declare`/`typeset`/`local`/`export`/`integer`/`float`/
+//     `readonly`/`foreach`/`repeat`/`end`/`nocorrect`. The manual lists
+//     these as reserved, but the analyzer treats them as ordinary command
+//     heads (or precmd modifiers, in the case of `nocorrect`) — past tests
+//     have shaped this distinction and it is the load-bearing behaviour
+//     for command-position-driven features.
+//
+// Reserved-word painting in the VS Code extension is a separate concern;
+// it consumes `corpus.reserved_word` directly and is therefore broader
+// than this set. See DESIGN.md §"Reserved word: an enumeration-primary
+// doc category" and `packages/vscode-better-zsh/src/semantic-tokens.ts`.
+//
+// The companion lock-in test
+// (`src/test/analysis/cmd-position-keywords-lockin.test.ts`) pins the
+// exact membership; update both together if a deliberate change is made.
+const KEYWORD_HEADS: ReadonlySet<string> = new Set([
   "if",
   "then",
   "else",
@@ -137,7 +163,7 @@ export function cmdHeadFactsOnLine(
       continue
     }
 
-    if (RESERVED.has(word)) {
+    if (KEYWORD_HEADS.has(word)) {
       out.push(reservedWordFact(word, wordSpan, "hard"))
       expectCmd = TRANSPARENT.has(word)
       if (!expectCmd) precmds = []
