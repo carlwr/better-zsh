@@ -4,6 +4,7 @@
 pub mod docs;
 pub mod info;
 pub mod list;
+pub mod schema;
 pub mod search;
 pub mod shared;
 

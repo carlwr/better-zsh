@@ -197,7 +197,7 @@ Other example inputs: `"echo"`, `"[["`, `"<<<"`, `"!$"`, `"%1"`, `"nocorrect"`, 
 
 ### `zsh_search`
 
-Fuzzy discovery across the bundled reference. Matches the query against record ids and human display headings; optionally filtered to a single `category`. Ranking: exact id/display > prefix > fuzzy score. Results carry `{ category, id, display, subKind?, score? }` but **not** the rendered markdown body — compose with `zsh_docs` when you need the full doc. `subKind` is populated for categories with a meaningful sub-facet (e.g. history `kind`, glob_op `kind`, reserved_word `pos`) and omitted otherwise. The response also carries `matchesReturned` (== `matches.length`) and `matchesTotal` (pre-truncation total); `matchesReturned < matchesTotal` signals the `limit` truncated the result — raise `limit` or narrow `category` / `query` to see the rest. `limit=0` returns metadata only.
+Fuzzy discovery across the bundled reference. Matches the query against record ids and human display headings; optionally filtered to a single `category`. Ranking: exact id/display > resolver (corpus-aware close-variant match, e.g. `au_to_cd` → `autocd`) > prefix > fuzzy score. Results carry `{ category, id, display, subKind?, score }` but **not** the rendered markdown body — compose with `zsh_docs` when you need the full doc. `score` is `1.0` for exact / resolver / prefix tiers; fuzzy-tier matches carry a score in `(0, 1)`. `subKind` is populated for categories with a meaningful sub-facet (e.g. history `kind`, glob_op `kind`, reserved_word `pos`) and omitted otherwise. The response also carries `matchesReturned` (== `matches.length`) and `matchesTotal` (pre-truncation total); `matchesReturned < matchesTotal` signals the `limit` truncated the result — raise `limit` or narrow `category` / `query` to see the rest. `limit=0` returns metadata only.
 
 **Input**
 
@@ -210,9 +210,9 @@ Fuzzy discovery across the bundled reference. Matches the query against record i
 ```json
 {
   "matches": [
-    { "category": "builtin", "id": "echo", "display": "echo" },
-    { "category": "builtin", "id": "echotc", "display": "echotc" },
-    { "category": "builtin", "id": "echoti", "display": "echoti" }
+    { "category": "builtin", "id": "echo", "display": "echo", "score": 1.0 },
+    { "category": "builtin", "id": "echotc", "display": "echotc", "score": 1.0 },
+    { "category": "builtin", "id": "echoti", "display": "echoti", "score": 1.0 }
   ],
   "matchesReturned": 3,
   "matchesTotal": 3

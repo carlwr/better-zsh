@@ -14,6 +14,7 @@ export interface ToolDefJson {
   readonly description: string
   readonly flagBriefs: Readonly<Record<string, string>>
   readonly inputSchema: Readonly<Record<string, unknown>>
+  readonly outputSchema: Readonly<Record<string, unknown>>
 }
 
 export interface ToolDefsJson {
@@ -35,6 +36,7 @@ function projectToolDef(td: ToolDef): ToolDefJson {
     description: td.description,
     flagBriefs: td.flagBriefs,
     inputSchema: td.inputSchema,
+    outputSchema: td.outputSchema,
   }
 }
 
@@ -87,7 +89,14 @@ const toolDefsJsonSchema = {
       type: "array",
       items: {
         type: "object",
-        required: ["name", "brief", "description", "flagBriefs", "inputSchema"],
+        required: [
+          "name",
+          "brief",
+          "description",
+          "flagBriefs",
+          "inputSchema",
+          "outputSchema",
+        ],
         additionalProperties: false,
         properties: {
           name: { type: "string" },
@@ -100,6 +109,10 @@ const toolDefsJsonSchema = {
           inputSchema: {
             type: "object",
             description: "Embedded JSON Schema for this tool's input.",
+          },
+          outputSchema: {
+            type: "object",
+            description: "Embedded JSON Schema for this tool's output.",
           },
         },
       },

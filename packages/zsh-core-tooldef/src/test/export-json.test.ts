@@ -13,6 +13,7 @@ interface ToolJson {
   description: string
   flagBriefs: Record<string, string>
   inputSchema: Record<string, unknown>
+  outputSchema: Record<string, unknown>
 }
 interface ToolDefsJson {
   version: 1
@@ -59,6 +60,23 @@ describe.runIf(existsSync(tooldefJsonPath))(
 
     test("preamble round-trips from the source constant", () => {
       expect(payload.preamble).toBe(TOOL_SUITE_PREAMBLE)
+    })
+
+    test("outputSchema is present and shaped per the contract", () => {
+      for (const t of payload.tools) {
+        expect(t.outputSchema).toMatchObject({ type: "object" })
+        const schema = t.outputSchema as {
+          type: string
+          required?: readonly string[]
+          properties?: Record<string, unknown>
+        }
+        expect(schema.required).toEqual([
+          "matches",
+          "matchesReturned",
+          "matchesTotal",
+        ])
+        expect(schema.properties).toBeTypeOf("object")
+      }
     })
   },
 )

@@ -12,7 +12,7 @@ Improved zsh shellscript editing for VS Code. Layers structured zsh knowledge �
 - **Go-to-definition, references, rename, document/workspace symbols** for user-defined functions in the workspace.
 - **Optional diagnostics** via `zsh -n` (syntax check). Disabled per-document if the file reports as a non-zsh shell.
 - **Snippets** for common zsh patterns.
-- **Language Model tools** — four zsh-reference tools (`zshClassify`, `zshLookupOption`, `zshSearch`, `zshDescribe`) registered with VS Code's Language Model API. The same tool surface is shipped as an [MCP server](https://github.com/carlwr/better-zsh/tree/main/packages/zshref-mcp) and as a [single-binary CLI](https://github.com/carlwr/better-zsh/tree/main/zshref-rs).
+- **Language Model tools** — three zsh-reference tools (`zshDocs`, `zshSearch`, `zshList`) registered with VS Code's Language Model API. The same tool surface is shipped as an [MCP server](https://github.com/carlwr/better-zsh/tree/main/packages/zshref-mcp) and as a [single-binary CLI](https://github.com/carlwr/better-zsh/tree/main/zshref-rs).
 
 File associations: `.zsh`, `.zshrc`, `.zshenv`, `.zprofile`, `.zlogin`, `.zlogout`, `.zsh-theme`, plus the bare `zshrc` / `zshenv` / `zlogin` / `zprofile` / `zlogout` filenames.
 

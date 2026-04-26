@@ -148,6 +148,7 @@ Hand-written category lists drift.
 - In JSDoc, comments, and docs: give examples, not exhaustive lists.
 - Do not hard-code category counts in prose.
 - Runtime strings must interpolate from zsh-core exports, never hand-type category names or ordering.
+- JSON Schema `enum` values that mirror closed zsh-core unions must interpolate from canonical exports, not hand-type.
 - Category-indexed tables belong in zsh-core with structural completeness guards; consumers import them.
 
 Rationale: `DESIGN.md` §"Category-indexed artifacts belong in zsh-core"; `PRINCIPLES.md` §"Category inflation cost" for the agent-visibility cost.

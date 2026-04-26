@@ -37,6 +37,13 @@ describe("toolDefs metadata", () => {
     }
   })
 
+  test("outputSchema is always a JSON object schema", () => {
+    for (const def of toolDefs) {
+      expect(typeof def.outputSchema).toBe("object")
+      expect(def.outputSchema).toMatchObject({ type: "object" })
+    }
+  })
+
   test.each([
     ["zsh_docs", docsToolDef, ["raw"]],
     ["zsh_search", searchToolDef, ["query"]],

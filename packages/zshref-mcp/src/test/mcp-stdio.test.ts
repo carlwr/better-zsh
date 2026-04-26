@@ -8,6 +8,7 @@ import {
   CallToolResultSchema,
   ListToolsResultSchema,
 } from "@modelcontextprotocol/sdk/types.js"
+import Ajv2020 from "ajv/dist/2020.js"
 import { afterAll, beforeAll, describe, expect, test } from "vitest"
 
 const parseText = (r: CallToolResult): unknown =>
@@ -62,7 +63,15 @@ describeIfBuilt("MCP stdio integration", () => {
     for (const tool of result.tools) {
       expect((tool.description ?? "").length).toBeGreaterThan(40)
       expect(tool.inputSchema).toMatchObject({ type: "object" })
+      // Every tool advertises an `outputSchema` describing its result
+      // envelope (matches/matchesReturned/matchesTotal).
+      expect(tool.outputSchema).toMatchObject({ type: "object" })
     }
+    const search = result.tools.find(t => t.name === "zsh_search")
+    expect(search?.outputSchema).toMatchObject({
+      type: "object",
+      properties: { matches: { type: "array" } },
+    })
   })
 
   test("zsh_docs returns a match for a builtin", async () => {
@@ -150,5 +159,67 @@ describeIfBuilt("MCP stdio integration", () => {
     ])
     expect(ra.isError).toBeFalsy()
     expect(rb.isError).toBeFalsy()
+  })
+
+  test("tools/call success carries structuredContent alongside text", async () => {
+    const result = await callTool("zsh_search", {
+      query: "echo",
+      category: "builtin",
+      limit: 5,
+    })
+    expect(result.isError).toBeFalsy()
+    // text fallback content kept for older clients
+    expect(result.content[0]).toMatchObject({ type: "text" })
+    // structured object available for schema-aware clients
+    const structured = result.structuredContent as {
+      matches: Array<{ category: string; id: string; score: number }>
+      matchesReturned: number
+      matchesTotal: number
+    }
+    expect(structured).toBeDefined()
+    expect(Array.isArray(structured.matches)).toBe(true)
+    expect(typeof structured.matchesReturned).toBe("number")
+    expect(typeof structured.matchesTotal).toBe("number")
+    expect(structured.matches[0]?.id).toBe("echo")
+    // structuredContent mirrors the text payload (same JSON, not stringified)
+    expect(structured).toEqual(parseText(result))
+  })
+
+  test("structuredContent validates against the tool's outputSchema", async () => {
+    const list = await client.request(
+      { method: "tools/list" },
+      ListToolsResultSchema,
+    )
+    const ajv = new Ajv2020({ allErrors: true, strict: false })
+    const schemaByName = new Map<string, object>()
+    for (const t of list.tools) {
+      if (t.outputSchema) schemaByName.set(t.name, t.outputSchema)
+    }
+
+    const cases: Array<{ tool: string; args: Record<string, unknown> }> = [
+      { tool: "zsh_search", args: { query: "echo", limit: 5 } },
+      { tool: "zsh_docs", args: { raw: "echo" } },
+      { tool: "zsh_list", args: { category: "builtin", limit: 5 } },
+    ]
+    for (const c of cases) {
+      const result = await callTool(c.tool, c.args)
+      expect(result.isError).toBeFalsy()
+      const schema = schemaByName.get(c.tool)
+      expect(schema).toBeDefined()
+      const validate = ajv.compile(schema as object)
+      const ok = validate(result.structuredContent)
+      if (!ok) {
+        throw new Error(
+          `outputSchema validation failed for ${c.tool}: ${JSON.stringify(validate.errors)}`,
+        )
+      }
+      expect(ok).toBe(true)
+    }
+  })
+
+  test("error responses do not include structuredContent", async () => {
+    const result = await callTool("does_not_exist")
+    expect(result.isError).toBe(true)
+    expect(result.structuredContent).toBeUndefined()
   })
 })

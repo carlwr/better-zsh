@@ -36,15 +36,16 @@ const ROOT_AFTER_HELP_TAIL: &str = concat!(
 );
 
 /// Multi-line `Usage:` block for the root `--help`. Hand-aligned so the
-/// three tool subcommands line up across columns; `info`/`completions`/
-/// `help` follow as a separate block. Hard-coded literal — clap's default
-/// single-line usage doesn't make the surface readable.
+/// three tool subcommands line up across columns; `info`/`schema`/
+/// `completions`/`help` follow as a separate block. Hard-coded literal —
+/// clap's default single-line usage doesn't make the surface readable.
 const ROOT_USAGE: &str = concat!(
     "zshref docs    --raw=R   [--category=C]\n",
     "  zshref search  --query=W [--category=C] [--limit=L]\n",
     "  zshref list              [--category=C] [--limit=L]\n",
     "\n",
     "  zshref info\n",
+    "  zshref schema\n",
     "  zshref completions <SHELL>\n",
     "  zshref help [COMMAND]",
 );
@@ -105,6 +106,27 @@ pub fn build_cli(tool_defs: &ToolDefs, corpus: &Corpus) -> Command {
     // `zshref info` — emit build-/corpus-level introspection as JSON.
     root = root.subcommand(
         Command::new("info").about("emit corpus + upstream metadata as JSON (no flags)"),
+    );
+
+    // `zshref schema` — emit JSON Schema bundle for tool outputs. The
+    // size hint on `about` warns agents off bulk-piping into context.
+    let (words, leaves) = tools::schema::size_hint(tool_defs);
+    let schema_about = format!("emit JSON Schema for tool outputs (≈{words} words; see --help)");
+    let schema_long_about = format!(
+        "Emit a JSON bundle of every tool's `outputSchema` to stdout.\n\
+         \n\
+         Intended use: codegen and programmatic validation. Not intended \
+         for human or agent reading — for documentation, prefer the \
+         tool-specific `--help` output and the shell-completion scripts \
+         (`zshref completions <SHELL>`).\n\
+         \n\
+         Size: ≈{words} words / ≈{leaves} leaf JSON properties. Bulk-piping \
+         this into an agent's context window is rarely what you want."
+    );
+    root = root.subcommand(
+        Command::new("schema")
+            .about(schema_about)
+            .long_about(schema_long_about),
     );
 
     root
@@ -284,6 +306,12 @@ pub fn dispatch(cmd: Command, tool_defs: &ToolDefs, corpus: &Corpus) -> Result<i
 
     if sub_name == "info" {
         let result = tools::info::run(corpus)?;
+        output::emit(&result);
+        return Ok(0);
+    }
+
+    if sub_name == "schema" {
+        let result = tools::schema::run(tool_defs)?;
         output::emit(&result);
         return Ok(0);
     }

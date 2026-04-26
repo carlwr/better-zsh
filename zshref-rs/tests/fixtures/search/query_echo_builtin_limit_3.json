@@ -19,17 +19,20 @@
       {
         "category": "builtin",
         "id": "echo",
-        "display": "echo"
+        "display": "echo",
+        "score": 1
       },
       {
         "category": "builtin",
         "id": "echotc",
-        "display": "echotc"
+        "display": "echotc",
+        "score": 1
       },
       {
         "category": "builtin",
         "id": "echoti",
-        "display": "echoti"
+        "display": "echoti",
+        "score": 1
       }
     ],
     "matchesReturned": 3,

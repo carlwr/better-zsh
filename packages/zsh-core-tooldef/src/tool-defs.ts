@@ -25,6 +25,13 @@ export interface ToolDef {
   readonly brief: string
   readonly description: string
   readonly inputSchema: ToolInputSchema
+  /**
+   * JSON Schema for this tool's `execute` return value. Co-located with
+   * `inputSchema`; consumed by adapters (MCP `outputSchema` /
+   * `structuredContent`, CLI `zshref schema`) and by drift-guarding
+   * tests. See DESIGN.md §"Output schemas (tooldef-owned)" for rationale.
+   */
+  readonly outputSchema: ToolInputSchema
   readonly flagBriefs: Readonly<Record<string, string>>
   readonly execute: (corpus: DocCorpus, input: ToolInputSchema) => unknown
 }
@@ -64,6 +71,7 @@ export interface MakeToolDefArgs<K extends string> {
   readonly brief: string
   readonly description: string
   readonly inputSchema: SchemaFor<K>
+  readonly outputSchema: ToolInputSchema
   readonly flagBriefs: Readonly<Record<K, string>>
   readonly execute: (corpus: DocCorpus, input: ToolInputSchema) => unknown
 }

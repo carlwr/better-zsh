@@ -13,7 +13,8 @@
       {
         "category": "builtin",
         "id": "printf",
-        "display": "printf"
+        "display": "printf",
+        "score": 1
       }
     ],
     "matchesReturned": 1,

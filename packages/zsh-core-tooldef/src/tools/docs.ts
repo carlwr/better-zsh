@@ -13,6 +13,7 @@ import {
 import { renderDoc } from "@carlwr/zsh-core/render"
 import { makeToolDef, type ToolDef } from "../tool-defs.ts"
 import { display } from "./doc-display.ts"
+import { mkOutputSchema } from "./output-schema.ts"
 import { humanCategoryList, isValidCategory, mkEnvelope } from "./result.ts"
 
 export interface DocsInput {
@@ -165,6 +166,11 @@ No shell execution, no environment access.`,
     required: ["raw"],
     additionalProperties: false,
   },
+  outputSchema: mkOutputSchema({
+    markdown: "required",
+    negated: "conditional-on-option",
+    subKind: "absent",
+  }),
   flagBriefs: {
     raw: "Raw zsh token to look up (e.g. AUTO_CD, echo, [[, %1).",
     category: "Optional: constrain to one doc category.",

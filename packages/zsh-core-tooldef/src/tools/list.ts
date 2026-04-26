@@ -2,6 +2,7 @@ import type { DocCategory, DocCorpus } from "@carlwr/zsh-core"
 import { makeToolDef, type ToolDef } from "../tool-defs.ts"
 import { entries } from "./entries.ts"
 import { clampLimit, DEFAULT_LIMIT, MAX_LIMIT } from "./limits.ts"
+import { mkOutputSchema } from "./output-schema.ts"
 import { brandedCategoryList, mkEnvelope } from "./result.ts"
 
 export interface ListInput {
@@ -74,6 +75,7 @@ No shell execution, no environment access.`,
     },
     additionalProperties: false,
   },
+  outputSchema: mkOutputSchema({ subKind: "optional" }),
   flagBriefs: {
     category: "Filter to one doc category.",
     limit: `Max matches to return (default ${DEFAULT_LIMIT}, max ${MAX_LIMIT}).`,

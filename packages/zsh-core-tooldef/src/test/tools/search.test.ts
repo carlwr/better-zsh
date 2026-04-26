@@ -8,14 +8,14 @@ describe("search", () => {
   test("exact id wins over prefix and fuzzy", () => {
     const r = search(corpus, { query: "echo", category: "builtin", limit: 5 })
     expect(r.matches[0]?.id).toBe("echo")
-    expect(r.matches[0]?.score).toBeUndefined()
+    expect(r.matches[0]?.score).toBe(1.0)
   })
 
-  test("prefix match returns with no score", () => {
+  test("prefix match returns with score 1.0", () => {
     const r = search(corpus, { query: "auto", category: "option", limit: 5 })
     expect(r.matches.length).toBeGreaterThan(0)
     expect(r.matches[0]?.id.startsWith("auto")).toBe(true)
-    for (const m of r.matches) expect(m.score).toBeUndefined()
+    for (const m of r.matches) expect(m.score).toBe(1.0)
   })
 
   test("category filter narrows results", () => {
@@ -57,11 +57,68 @@ describe("search", () => {
     expect(r.matches.length).toBeLessThanOrEqual(DEFAULT_LIMIT)
   })
 
-  test("fuzzy match surfaces score", () => {
+  test("fuzzy match surfaces score < 1.0", () => {
     const r = search(corpus, { query: "atcd", category: "option", limit: 3 })
     const hit = r.matches.find(m => m.id === "autocd")
     expect(hit).toBeDefined()
     expect(typeof hit?.score).toBe("number")
+    expect(hit?.score).toBeLessThan(1.0)
+  })
+
+  test("resolver tier: au_to_cd resolves to autocd (option)", () => {
+    const r = search(corpus, { query: "au_to_cd", limit: 5 })
+    expect(r.matches).toHaveLength(1)
+    expect(r.matches[0]?.category).toBe("option")
+    expect(r.matches[0]?.id).toBe("autocd")
+    expect(r.matches[0]?.score).toBe(1.0)
+  })
+
+  test("resolver tier: NO_AUTO_CD resolves via NO_-stripping", () => {
+    const r = search(corpus, { query: "NO_AUTO_CD", limit: 5 })
+    expect(r.matches).toHaveLength(1)
+    expect(r.matches[0]?.category).toBe("option")
+    expect(r.matches[0]?.id).toBe("autocd")
+    expect(r.matches[0]?.score).toBe(1.0)
+  })
+
+  test("AUTO_CD: exact-tier hit, not duplicated by resolver", () => {
+    const r = search(corpus, { query: "AUTO_CD", limit: 5 })
+    // option's display is `AUTO_CD`, id is `autocd`; exact tier hits
+    // case-insensitively. Resolver would also resolve `AUTO_CD` →
+    // `autocd`, but the seen-set must keep it from doubling up.
+    const optHits = r.matches.filter(
+      m => m.category === "option" && m.id === "autocd",
+    )
+    expect(optHits).toHaveLength(1)
+    expect(optHits[0]?.score).toBe(1.0)
+  })
+
+  test("dedup invariant: no two matches share (category, id)", () => {
+    // Focused regression test for the seen-set tracked across
+    // exact/resolver/prefix/fuzzy.
+    const queries = [
+      "AUTO_CD",
+      "au_to_cd",
+      "NO_AUTO_CD",
+      "for",
+      "echo",
+      "a",
+      "auto",
+      "atcd",
+    ]
+    for (const query of queries) {
+      const r = search(corpus, { query, limit: 200 })
+      const keys = r.matches.map(m => `${m.category}\0${m.id}`)
+      expect(new Set(keys).size).toBe(keys.length)
+    }
+  })
+
+  test("every match carries a numeric score", () => {
+    const queries = ["echo", "auto", "atcd", "au_to_cd", "a"]
+    for (const query of queries) {
+      const r = search(corpus, { query, limit: 50 })
+      for (const m of r.matches) expect(typeof m.score).toBe("number")
+    }
   })
 
   test("no match returns empty", () => {

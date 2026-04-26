@@ -24,8 +24,9 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { loadCorpus } from "@carlwr/zsh-core"
+import Ajv2020, { type ValidateFunction } from "ajv/dist/2020.js"
 import { describe, expect, test } from "vitest"
-import { toolDefs } from "../tool-defs.ts"
+import { type ToolDef, toolDefs } from "../tool-defs.ts"
 
 const pkgDir = join(dirname(fileURLToPath(import.meta.url)), "..", "..")
 const repoRoot = join(pkgDir, "..", "..")
@@ -151,10 +152,26 @@ function stripScores(value: unknown): unknown {
   return value
 }
 
+function getTool(name: string): ToolDef {
+  const td = toolDefs.find(t => t.name === name)
+  if (!td) throw new Error(`unknown tool ${name}`)
+  return td
+}
+
 function runTool(c: Case): unknown {
-  const td = toolDefs.find(t => t.name === c.tool)
-  if (!td) throw new Error(`unknown tool ${c.tool}`)
-  return td.execute(corpus, c.input)
+  return getTool(c.tool).execute(corpus, c.input)
+}
+
+/** Ajv validators, lazily compiled once per tool name. */
+const ajv = new Ajv2020({ allErrors: true, strict: false })
+const validators = new Map<string, ValidateFunction>()
+function validatorFor(toolName: string): ValidateFunction {
+  let v = validators.get(toolName)
+  if (!v) {
+    v = ajv.compile(getTool(toolName).outputSchema)
+    validators.set(toolName, v)
+  }
+  return v
 }
 
 function fixturePath(c: Case): string {
@@ -166,12 +183,14 @@ describe.runIf(writeMode)("rust fixtures — write mode", () => {
   test.each(
     cases.map(c => [`${c.tool}/${c.name}`, c] as const),
   )("write %s", (_n, c) => {
-    const expected = stripScores(runTool(c))
+    // Fixtures retain `score` so the file documents the full shape;
+    // cross-adapter comparison still strips it at assert time (see
+    // `stripScores` / `DROPPED_KEYS`).
     const payload = {
       tool: c.tool,
       input: c.input,
       argv: toArgv(c.tool, c.input as Record<string, unknown>),
-      expectedOutput: expected,
+      expectedOutput: runTool(c),
     }
     const path = fixturePath(c)
     mkdirSync(dirname(path), { recursive: true })
@@ -195,8 +214,19 @@ describe.runIf(!writeMode)(
       const fixture = JSON.parse(readFileSync(path, "utf8")) as {
         expectedOutput: unknown
       }
-      const actual = stripScores(runTool(c))
-      expect(actual).toEqual(fixture.expectedOutput)
+      const raw = runTool(c)
+      const actual = stripScores(raw)
+      expect(actual).toEqual(stripScores(fixture.expectedOutput))
+
+      // Validate the un-stripped value: the search schema requires
+      // `score` on every match.
+      const validate = validatorFor(c.tool)
+      const ok = validate(raw)
+      if (!ok) {
+        throw new Error(
+          `outputSchema validation failed for ${c.tool}/${c.name}: ${JSON.stringify(validate.errors)}`,
+        )
+      }
     })
   },
 )

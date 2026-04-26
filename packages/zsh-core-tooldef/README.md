@@ -4,7 +4,7 @@
 
 Framework-neutral tool definitions over [`@carlwr/zsh-core`](https://github.com/carlwr/better-zsh/tree/main/packages/zsh-core).
 
-The tool layer: pure `(DocCorpus, input) → output` implementations plus shared `ToolDef` metadata (name, brief, long description, input JSON Schema, per-flag briefs). One record per tool; adapters walk `toolDefs` uniformly.
+The tool layer: pure `(DocCorpus, input) → output` implementations plus shared `ToolDef` metadata (name, brief, long description, input JSON Schema, output JSON Schema, per-flag briefs). One record per tool; adapters walk `toolDefs` uniformly.
 
 ## What you get
 
@@ -23,7 +23,7 @@ Three adapters today:
 - [`zshref`](https://github.com/carlwr/better-zsh/tree/main/zshref-rs) — Rust+clap CLI. Consumes the JSON-exported `tooldef.json` artifact baked into the binary at build time.
 - [`better-zsh`](https://github.com/carlwr/better-zsh/tree/main/packages/vscode-better-zsh) — VS Code extension; registers the same tools as Language Model tools via `vscode.lm.registerTool`. A drift test asserts the extension manifest and `toolDefs` stay in one-to-one correspondence.
 
-Three consumers is what justifies the extraction: at two, the shared layer is overhead; at three, collapsing per-adapter glue into a walk over `toolDefs` pays in both code and drift prevention (tool name, description, input schema live in exactly one place and every adapter picks them up automatically).
+Three consumers is what justifies the extraction: at two, the shared layer is overhead; at three, collapsing per-adapter glue into a walk over `toolDefs` pays in both code and drift prevention (tool name, description, input schema, and output schema live in exactly one place and every adapter picks them up automatically).
 
 ## Install
 
@@ -44,12 +44,12 @@ import { toolDefs } from "@carlwr/zsh-core-tooldef"
 const corpus = await loadCorpus()
 
 for (const td of toolDefs) {
-  // td.name, td.brief, td.description, td.inputSchema, td.flagBriefs
+  // td.name, td.brief, td.description, td.inputSchema, td.outputSchema, td.flagBriefs
   // td.execute(corpus, input) — pure; returns a JSON-serialisable object
 }
 ```
 
-Adapters plug `execute` into their transport of choice. The MCP server registers `name` + `inputSchema` + `execute` with `@modelcontextprotocol/sdk`; the Rust CLI materialises subcommands from the JSON-serialised `toolDefs` at build time; the VS Code adapter wires each one into `vscode.lm.registerTool`.
+Adapters plug `execute` into their transport of choice. The MCP server registers `name` + `inputSchema` + `outputSchema` + `execute` with `@modelcontextprotocol/sdk` (and emits `structuredContent` alongside text on success); the Rust CLI materialises subcommands from the JSON-serialised `toolDefs` at build time and exposes `outputSchema` via `zshref schema`; the VS Code adapter wires each one into `vscode.lm.registerTool`.
 
 ## Scope fence (product feature)
 

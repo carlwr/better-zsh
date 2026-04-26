@@ -49,8 +49,12 @@ export function buildServer(opts: BuildServerOpts): Server {
     isError: true,
     content: [{ type: "text" as const, text: msg }],
   })
+  // `structuredContent` is consumed by clients that honor `outputSchema`
+  // (SDK ≥1.29, spec 2025-03-26+); the text block is the fallback. Errors
+  // omit `structuredContent` — only success responses are schema-validated.
   const txtOk = (json: unknown) => ({
     content: [{ type: "text" as const, text: JSON.stringify(json, null, 2) }],
+    structuredContent: json as Record<string, unknown>,
   })
 
   server.setRequestHandler(ListToolsRequestSchema, () => ({
@@ -58,6 +62,7 @@ export function buildServer(opts: BuildServerOpts): Server {
       name: def.name,
       description: def.description,
       inputSchema: def.inputSchema,
+      outputSchema: def.outputSchema,
     })),
   }))
 

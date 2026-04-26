@@ -4,12 +4,16 @@
 //! were smoke-fuzzes asserting "doesn't crash + top-level shape"). The
 //! current suite is broader: real invariants like docs round-trips,
 //! `--limit` caps, `--category` filter purity, `NO_*` toggle symmetry,
-//! and output determinism. The name is kept to avoid churning
-//! `Cargo.toml`'s `[[test]]` + `CARGO_BIN_EXE_zshref` wiring. See
-//! `tests/fuzz.proptest-regressions` for auto-checked-in seeds.
+//! `outputSchema` conformance on every tool response, search dedup, score
+//! ordering, and per-category total consistency. The name is kept to
+//! avoid churning `Cargo.toml`'s `[[test]]` + `CARGO_BIN_EXE_zshref`
+//! wiring. See `tests/fuzz.proptest-regressions` for auto-checked-in
+//! seeds.
 //!
-//! Cost budget: each property uses `ProptestConfig::with_cases(16)` so the
-//! whole file stays comfortably under ~15s wall-clock.
+//! Cost budget: each property uses `ProptestConfig::with_cases(16)` so
+//! the whole file stays comfortably under ~15s wall-clock.
+
+mod common;
 
 use proptest::prelude::*;
 use serde_json::Value;
@@ -56,7 +60,18 @@ fn run_json(args: &[&str]) -> Value {
             String::from_utf8_lossy(&out.stderr),
         );
     }
-    serde_json::from_slice(&out.stdout).expect("stdout is valid JSON")
+    let v: Value = serde_json::from_slice(&out.stdout).expect("stdout is valid JSON");
+    // Auto-validate every tool-subcommand response against its bundled
+    // `outputSchema`. Wraps the existing property tests transparently —
+    // any of the hundreds of randomized invocations becomes a schema
+    // conformance check. Subcommands without a schema (`info`,
+    // `schema`, `completions`) are passed through.
+    if let Some(sub) = args.first() {
+        if let Some(tool) = common::tool_for_subcommand(sub) {
+            common::validate_or_panic(tool, &v);
+        }
+    }
+    v
 }
 
 /// A small strategy producing raw tokens with a high docs hit-rate.
@@ -265,6 +280,92 @@ fn every_category_list_is_pure_and_nonempty() {
                 Some(cat.as_str()),
                 "category {cat}: match[{i}] category leaked = {got:?}"
             );
+        }
+    }
+}
+
+/// Per-category record-count consistency: the unfiltered `list --limit 0`
+/// reports a `matchesTotal` equal to the sum of every per-category
+/// `list --category C --limit 0` total. Catches double-counting,
+/// dropped-category bugs, and category-leakage bugs that pure-filter tests
+/// miss. Every category must report a non-zero total.
+#[test]
+fn list_per_category_totals_sum_to_total() {
+    let cats = doc_categories();
+    let total_v = run_json(&["list", "--limit", "0"]);
+    let total = total_v
+        .get("matchesTotal")
+        .and_then(Value::as_u64)
+        .expect("matchesTotal");
+    let mut sum: u64 = 0;
+    for cat in cats {
+        let v = run_json(&["list", "--category", cat, "--limit", "0"]);
+        let t = v
+            .get("matchesTotal")
+            .and_then(Value::as_u64)
+            .unwrap_or_else(|| panic!("list --category {cat}: matchesTotal missing"));
+        assert!(t > 0, "category {cat}: matchesTotal = 0");
+        sum += t;
+    }
+    assert_eq!(
+        sum, total,
+        "per-category matchesTotal sum ({sum}) != unfiltered matchesTotal ({total})"
+    );
+}
+
+proptest! {
+    #![proptest_config(ProptestConfig::with_cases(32))]
+
+    /// search dedup invariant: no two matches share `(category, id)`.
+    /// Companion to the focused TS regression test in
+    /// `packages/zsh-core-tooldef/src/test/tools/search.test.ts`,
+    /// exercised across many random queries here. The seen-set is the
+    /// load-bearing structure that makes the four-tier walk
+    /// (exact / resolver / prefix / fuzzy) safe; this catches walk-order
+    /// regressions wherever they manifest.
+    #[test]
+    fn search_dedup_invariant(q in r"\PC{1,20}", n in 1u32..=50) {
+        let n_s = n.to_string();
+        let v = run_json(&["search", "--query", &q, "--limit", &n_s]);
+        let (matches, _, _) = assert_envelope(&v);
+        let mut seen = std::collections::HashSet::new();
+        for m in matches {
+            let cat = m.get("category").and_then(Value::as_str).expect("category");
+            let id = m.get("id").and_then(Value::as_str).expect("id");
+            let key = (cat.to_string(), id.to_string());
+            prop_assert!(
+                seen.insert(key),
+                "duplicate (category, id)=({cat:?}, {id:?}) in search results for query={q:?}"
+            );
+        }
+    }
+
+    /// search score invariants:
+    ///   - every score in `[0, 1]` (matches the schema bound);
+    ///   - scores are non-increasing across the result list — top tiers
+    ///     all score `1.0`, fuzzy tail strictly below; once a score drops
+    ///     below `1.0`, no later score may climb back. Catches
+    ///     tier-walk reordering regressions.
+    #[test]
+    fn search_score_monotone_in_unit_interval(q in r"\PC{1,20}", n in 1u32..=50) {
+        let n_s = n.to_string();
+        let v = run_json(&["search", "--query", &q, "--limit", &n_s]);
+        let (matches, _, _) = assert_envelope(&v);
+        let mut prev = f64::INFINITY;
+        for m in matches {
+            let s = m
+                .get("score")
+                .and_then(Value::as_f64)
+                .expect("score is a number");
+            prop_assert!(
+                (0.0..=1.0).contains(&s),
+                "score {s} not in [0, 1]"
+            );
+            prop_assert!(
+                s <= prev + 1e-9,
+                "score {s} > previous {prev} (expected non-increasing across tiers)"
+            );
+            prev = s;
         }
     }
 }

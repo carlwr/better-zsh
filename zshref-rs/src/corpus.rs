@@ -126,6 +126,11 @@ pub struct ToolDef {
     pub flag_briefs: std::collections::BTreeMap<String, String>,
     #[serde(rename = "inputSchema")]
     pub input_schema: Value,
+    // Consumed by `tools::schema::run` (`zshref schema` bundles every
+    // tool's `outputSchema`) and by `tests/integration.rs` (validates
+    // CLI output against the bundled schema, reading the JSON directly).
+    #[serde(rename = "outputSchema")]
+    pub output_schema: Value,
 }
 
 pub fn load_tool_defs() -> Result<ToolDefs> {

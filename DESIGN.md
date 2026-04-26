@@ -219,6 +219,16 @@ Three consumers justifies the tooldef extraction: at one or two, the shared laye
 
 The remaining subsections are framed around the MCP specifically — the original second consumer and the most illustrative case; the rationale generalizes to the CLI (no-vscode posture, static-only scope) and to the extension's LM-tool registration.
 
+## Output schemas (tooldef-owned)
+
+Symmetric to `inputSchema`: each `ToolDef` carries an `outputSchema` (JSON Schema, Draft 2020-12), hand-written and co-located with the result type alias. Closed-union leaf data (`category`, per-category `subKind` enums) is interpolated from canonical zsh-core tables, never hand-typed (see AGENTS.md §"Never enumerate or count `DocCategory`").
+
+Maximally precise: per-tool match shapes drop fields the tool doesn't emit (`docs` carries `markdown` and conditional `negated`; `search` always carries `score`; `list` carries neither), conditional fields are modeled with `oneOf` (e.g. `negated` keyed on `category === "option"`), and `additionalProperties: false` everywhere. Rationale: PRINCIPLES.md §"Schema precision when schemas are co-released".
+
+Drift is caught by Ajv conformance on every fixture in `rust-fixtures.test.ts`, plus a property test in tooldef (fast-check + Ajv) that walks `toolDefs`, generates inputs from each `inputSchema`, runs `execute()`, and validates outputs against `outputSchema`.
+
+Hand-written today; if maintenance burden grows, migrate inputs+outputs+TS types to zod and derive both schemas from one source. Not warranted at three tools — recorded so future maintainers do not re-derive the choice.
+
 ## MCP as a consumer
 
 `@carlwr/zshref-mcp` exposes the tooldef surface as Model Context Protocol tools.
@@ -282,13 +292,17 @@ When `category` is omitted, `zsh_docs` walks `classifyOrder` (in zsh-core), whic
 
 ### Fuzzy search rationale
 
-`zsh_search` uses fuzzy matching with exact-and-prefix tiers, not exact-only. Reasons:
+`zsh_search` uses fuzzy matching as the bottom of a four-tier walk (exact → resolver → prefix → fuzzy), not exact-only. Reasons:
 
 - Corpus identities aren't a stable API: canonical option names drift in case and underscoring under benign doc edits. Fuzzy decouples agent intent from current corpus spelling.
-- Option names have no universal canonical form (`no_errreturn` vs `NOERRRETURN` — both plausible, neither "right"). The option resolver handles this per-option; fuzzy generalizes the same forgiveness across categories without corpus-aware resolvers.
-- Exact + prefix tiers stay precise: literal id/display hits win outright; fuzzy only fires when earlier tiers miss.
+- Option names have no universal canonical form (`no_errreturn` vs `NOERRRETURN` — both plausible, neither "right"). The option resolver handles this per-option per the resolver tier; fuzzy generalizes the same forgiveness across categories beyond what corpus-aware resolvers cover.
+- Exact / resolver / prefix tiers stay precise (every match scores `1.0`); fuzzy only fires when earlier tiers miss and is the only tier whose score is `< 1.0`. `SearchMatch.score` is required on every match so consumers can route by tier without recomputing.
 
 Rendered markdown is withheld from `search` and `list` results to keep responses small and encourage composition with `zsh_docs` for the body.
+
+### MCP `outputSchema` and `structuredContent`
+
+Tools register their `outputSchema` per the MCP spec since 2025-03-26 (SDK 1.29+). Tool responses emit `structuredContent` alongside the text content block — schema-aware clients get validated, typed responses; older clients still receive the JSON-stringified body in `content[0].text`.
 
 ---
 
@@ -316,6 +330,12 @@ Two design consequences of "agents read the CLI the same way humans do — excep
 ### Maintenance-mode posture
 
 Re-vendoring cadence for the embedded corpus is years, not months. The CLI is shaped for that rhythm: single statically-linked binary with baked-in corpus (`include_bytes!`); dual-mode build (`zshref-rs/DATA-SYNC.md` option 6) auto-detects monorepo-source vs vendored-source; `make cli-package` validates the extraction path in CI; no runtime feature flags, plugin system, or user-supplied data paths. Expected durability is decade-scale, for the same reasons zsh itself has stayed stable.
+
+### `zshref schema`
+
+Emits all `outputSchema`s as a single JSON bundle on stdout. Intended for code generation and programmatic validation — not human or agent reading. Both top-level `--help` and the subcommand's own `--help` carry a size hint (interpolated word count + leaf-property count) and a redirect to `--help` + completions for documentation.
+
+Bundle-only, deliberately. Per-tool cherry-picking is `zshref schema | jq '.tools[] | select(.name == "zsh_search")'` (full tool name; the bundle preserves the `zsh_` prefix). A per-tool subcommand was rejected: it would diverge from clap's `--help`-vs-`help` convention (no nested `help` subcommand) and complicate Usage-line presentation; a future-compatible `zshref schema --tool=NAME` flag remains available if demand emerges.
 
 ### `zshref info` and fuzzy-score divergence
 

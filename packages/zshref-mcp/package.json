@@ -61,6 +61,7 @@
     "@carlwr/zsh-core-tooldef": "workspace:*"
   },
   "devDependencies": {
+    "ajv": "^8.17.1",
     "vitest": "^4.1.4"
   }
 }

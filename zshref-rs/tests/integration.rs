@@ -6,7 +6,11 @@
 //!
 //! Score fields are stripped before comparison: fuzzysort (TS) and
 //! nucleo-matcher (Rust) use different scoring scales, so we assert on
-//! ranking + identity fields only.
+//! ranking + identity fields only. Schema validation runs on the
+//! un-stripped output so per-tool `outputSchema` requirements (e.g.
+//! `score` on search) are enforced as-shipped.
+
+mod common;
 
 use serde_json::{Map, Value};
 use std::fs;
@@ -17,7 +21,6 @@ const BIN: &str = env!("CARGO_BIN_EXE_zshref");
 
 #[derive(serde::Deserialize)]
 struct Fixture {
-    #[allow(dead_code)]
     tool: String,
     argv: Vec<String>,
     #[serde(rename = "expectedOutput")]
@@ -101,6 +104,26 @@ fn fixtures_match_rust_cli_output() {
                 continue;
             }
         };
+
+        // Schema-validate the un-stripped output: schemas require
+        // fields (e.g. `score` on search) that `strip_scores` removes.
+        // Parity check below runs on the stripped projection.
+        let validator = common::validator_for(&fixture.tool);
+        if let Err(errors) = validator.validate(&actual) {
+            let detail = errors
+                .map(|e| format!("  - {e} (path: {})", e.instance_path))
+                .collect::<Vec<_>>()
+                .join("\n");
+            failures.push(format!(
+                "{}: outputSchema validation failed for tool {}\nargv: {:?}\nactual:\n{}\nerrors:\n{}",
+                path.display(),
+                fixture.tool,
+                fixture.argv,
+                serde_json::to_string_pretty(&actual).unwrap_or_default(),
+                detail,
+            ));
+            continue;
+        }
 
         let actual = strip_scores(actual);
         let expected = strip_scores(fixture.expected_output);

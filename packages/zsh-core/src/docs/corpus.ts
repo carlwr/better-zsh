@@ -23,6 +23,7 @@ import {
   type DocRecordMap,
   docCategories,
   docId,
+  docSubKind,
   mkPieceId,
 } from "./taxonomy.ts"
 import type {
@@ -583,3 +584,37 @@ export const loadCorpus: () => DocCorpus = cached(() => {
   }
   return Object.freeze(out) as DocCorpus
 })
+
+/**
+ * Per-category sorted, de-duplicated `subKind` values observed in the
+ * corpus. `undefined` for categories whose `docSubKind[c]` returns
+ * `undefined` for every record (no meaningful sub-facet).
+ *
+ * Consumers (tooldef output schemas) interpolate these into JSON Schema
+ * `enum` keywords; per AGENTS.md §"Never enumerate or count
+ * `DocCategory`", closed-union enum values come from canonical tables.
+ *
+ * Eager, cached, immutable. Total over `DocCategory`, mirroring
+ * `docSubKind` in `taxonomy.ts`.
+ */
+export const subKindEnums: Readonly<{
+  [K in DocCategory]: readonly string[] | undefined
+}> = cached(() => {
+  const corpus = loadCorpus()
+  const out: { [K in DocCategory]?: readonly string[] | undefined } = {}
+  for (const cat of docCategories) {
+    const map = corpus[cat] as ReadonlyMap<string, DocRecordMap[DocCategory]>
+    const getSubKind = docSubKind[cat] as (
+      d: DocRecordMap[DocCategory],
+    ) => string | undefined
+    const seen = new Set<string>()
+    for (const rec of map.values()) {
+      const k = getSubKind(rec)
+      if (k !== undefined && k !== null && k !== "") seen.add(k)
+    }
+    out[cat] = seen.size === 0 ? undefined : [...seen].sort()
+  }
+  return Object.freeze(out) as Readonly<{
+    [K in DocCategory]: readonly string[] | undefined
+  }>
+})()

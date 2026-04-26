@@ -95,6 +95,10 @@ zshref list --category option --limit 200
 
 # Emit corpus + upstream metadata.
 zshref info
+
+# Emit JSON Schema for tool outputs (codegen / programmatic validation
+# only — not for human or agent reading; large, see `zshref schema --help`).
+zshref schema
 ```
 
 ## Exit codes

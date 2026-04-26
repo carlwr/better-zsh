@@ -20,7 +20,7 @@ The `build.rs` auto-detects two data sources (monorepo paths vs. vendored `data/
 | What changed | What to run |
 |---|---|
 | Pure Rust only | `cargo build` |
-| Tool-def (flag name, description, schema) | `make cli-debug` (runs TS build first) |
+| Tool-def (flag name, description, input/output schema) | `make cli-debug` (runs TS build first) |
 | Corpus (zsh-core docs/types) | `make cli-debug` (runs TS build first) |
 | Test fixtures | regenerate (see Testing), then `cargo test` |
 
@@ -82,13 +82,14 @@ zshref --help 2>&1 | less
 | File | Role |
 |---|---|
 | `main.rs` | entry point |
-| `cli.rs` | clap `Command` builder driven by `tooldef.json`; dispatches built-in subcommands (`completions`, `info`) |
+| `cli.rs` | clap `Command` builder driven by `tooldef.json`; dispatches built-in subcommands (`completions`, `info`, `schema`) |
 | `corpus.rs` | loads embedded corpus JSON; data paths gated by `cfg(data_source = …)` from `build.rs` |
 | `fuzzy.rs` | ASCII subsequence scorer used by `search`'s bottom-tier ranking |
 | `tools/mod.rs` | tools module surface + dispatch |
 | `tools/docs.rs` | `docs` subcommand (raw token → matches with rendered markdown) |
-| `tools/search.rs` | `search` subcommand (fuzzy id-only) |
+| `tools/search.rs` | `search` subcommand (fuzzy id-only; four-tier walk shared with the TS tooldef) |
 | `tools/list.rs` | `list` subcommand (id-only enumeration) |
-| `tools/shared.rs` | per-category record-id / display / subKind helpers shared by the tool modules |
+| `tools/shared.rs` | per-category record-id / display / subKind helpers + the `resolve_in` dispatcher shared by `docs` and `search` |
 | `tools/info.rs` | `info` subcommand |
+| `tools/schema.rs` | `schema` subcommand (emits the bundled `outputSchema` JSON for codegen / programmatic validation) |
 | `output.rs` | JSON-on-stdout / help-on-stderr routing; `NO_COLOR` + `CLICOLOR_FORCE` handling |
