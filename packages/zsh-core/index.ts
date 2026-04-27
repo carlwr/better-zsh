@@ -11,6 +11,12 @@ export * from "./src/analysis/setopt-context.ts"
 export * from "./src/comment.ts"
 export * from "./src/docs/corpus.ts"
 export * from "./src/docs/corpus-meta.ts"
+export {
+  type ResolverFeedback,
+  resolve,
+  resolverFeedback,
+  resolverFeedbackKinds,
+} from "./src/docs/resolvers.ts"
 export * from "./src/option-match.ts"
 export { PKG_VERSION } from "./src/pkg-info.ts"
 export * from "./src/quote-state.ts"

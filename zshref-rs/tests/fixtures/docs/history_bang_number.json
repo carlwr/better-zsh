@@ -1,0 +1,27 @@
+{
+  "tool": "zsh_docs",
+  "input": {
+    "raw": "!42",
+    "category": "history"
+  },
+  "argv": [
+    "docs",
+    "--raw",
+    "!42",
+    "--category",
+    "history"
+  ],
+  "expectedOutput": {
+    "matches": [
+      {
+        "category": "history",
+        "id": "!n",
+        "display": "!n",
+        "mdBody": "`!n`\n\nRefer to command-line n.\n\n_Role:_ history event designator",
+        "subKind": "event-designator"
+      }
+    ],
+    "matchesReturned": 1,
+    "matchesTotal": 1
+  }
+}

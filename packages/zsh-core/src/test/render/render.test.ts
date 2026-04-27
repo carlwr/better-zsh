@@ -131,9 +131,8 @@ const sec: ShellParamDoc = {
   desc: "d:p",
   section: "shell-set",
 }
-// Stub-rendered categories: only the identifier is load-bearing — renderers
-// return "TBD" regardless. Central helper bridges the K↔idField correlation
-// TS can't propagate through a computed property key.
+// Flag/key/operator-shaped fixture helper. Centralizes the K↔idField
+// correlation TS can't propagate through a computed property key.
 const stub = <K extends DocCategory>(
   cat: K,
   idField: "flag" | "key" | "op",
@@ -354,7 +353,7 @@ const renderedMarkdownCases = [
 
 const noOptsCorpus = mkTestCorpus({ option: [] })
 
-const stubMarkdownCases = [
+const compactMarkdownCases = [
   [
     "subscript_flag",
     mdSubscriptFlag(sf, noOptsCorpus),
@@ -469,7 +468,7 @@ describe("render markdown", () => {
     containsAll(md, parts)
   })
 
-  test.each(stubMarkdownCases)("%s markdown", (_, md, parts) => {
+  test.each(compactMarkdownCases)("%s markdown", (_, md, parts) => {
     containsAll(md, parts)
   })
 

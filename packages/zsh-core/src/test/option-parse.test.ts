@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest"
 import type { DocCorpus } from "../docs/corpus"
-import { resolveOption } from "../docs/corpus"
+import { resolve, resolverFeedback } from "../docs/resolvers"
 import { mkDocumented_ } from "./id-fns"
 
 const opt = mkDocumented_("option")
@@ -34,22 +34,59 @@ const corpus: DocCorpus = {
   special_function: empty,
 }
 
-describe("resolveOption", () => {
+describe("resolve(corpus, 'option', raw) — option identity", () => {
   test.each([
-    ["AUTO_CD", opt("autocd"), false],
-    ["auto_cd", opt("autocd"), false],
-    ["  AUTO_CD  ", opt("autocd"), false],
-    ["NO_AUTO_CD", opt("autocd"), true],
-    ["noautocd", opt("autocd"), true],
+    ["AUTO_CD", opt("autocd")],
+    ["auto_cd", opt("autocd")],
+    ["  AUTO_CD  ", opt("autocd")],
+    ["NO_AUTO_CD", opt("autocd")],
+    ["noautocd", opt("autocd")],
     // literal "notify" is in corpus → wins over stripped "tify"
-    ["notify", opt("notify"), false],
-    // literal "nonotify" not in corpus → fallback: stripped "notify", negated
-    ["NO_NOTIFY", opt("notify"), true],
-  ] as const)("%s", (raw, id, negated) => {
-    expect(resolveOption(corpus, raw)).toEqual({ id, negated })
+    ["notify", opt("notify")],
+    // literal "nonotify" not in corpus → fallback: stripped "notify"
+    ["NO_NOTIFY", opt("notify")],
+  ] as const)("%s", (raw, id) => {
+    expect(resolve(corpus, "option", raw)).toEqual({ category: "option", id })
   })
 
   test.each(["bogus", "no_bogus"])("%s → undefined", raw => {
-    expect(resolveOption(corpus, raw)).toBeUndefined()
+    expect(resolve(corpus, "option", raw)).toBeUndefined()
+  })
+})
+
+describe("resolverFeedback(corpus, 'option', raw) — input-negated", () => {
+  test.each([
+    "NO_AUTO_CD",
+    "noautocd",
+    "NO_NOTIFY",
+  ])("%s → input-negated", raw => {
+    expect(resolverFeedback(corpus, "option", raw)).toEqual({
+      kind: "input-negated",
+    })
+  })
+
+  test.each([
+    "AUTO_CD",
+    "auto_cd",
+    "  AUTO_CD  ",
+    "notify",
+    // unresolved inputs emit no feedback
+    "bogus",
+    "no_bogus",
+  ])("%s → undefined", raw => {
+    expect(resolverFeedback(corpus, "option", raw)).toBeUndefined()
+  })
+})
+
+describe("resolverFeedback — non-option categories never emit feedback", () => {
+  test.each([
+    "cond_op",
+    "builtin",
+    "redir",
+    "history",
+    "glob_flag",
+    "special_function",
+  ] as const)("%s → undefined", cat => {
+    expect(resolverFeedback(corpus, cat, "anything")).toBeUndefined()
   })
 })

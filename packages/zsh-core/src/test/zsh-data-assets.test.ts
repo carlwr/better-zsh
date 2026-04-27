@@ -3,6 +3,7 @@ import { join } from "node:path"
 import { describe, expect, test } from "vitest"
 import { resolveZshDataDir, vendoredZshDocFiles } from "../data-dir"
 import { loadCorpus } from "../docs/corpus"
+import { corpusYodlFiles } from "../docs/source-files"
 import { mkDocumented_ } from "./id-fns"
 
 const dataDir = resolveZshDataDir()
@@ -12,6 +13,12 @@ const bi = mkDocumented_("builtin")
 const rw = mkDocumented_("reserved_word")
 
 describe("vendored zsh data assets", () => {
+  test("runtime Yodl list matches corpus loader sources", () => {
+    expect(vendoredZshDocFiles.filter(f => f.endsWith(".yo")).sort()).toEqual(
+      corpusYodlFiles,
+    )
+  })
+
   test("ships the full doc set expected by runtime and packaging", () => {
     for (const name of vendoredZshDocFiles) {
       const path = join(dataDir, name)

@@ -78,29 +78,29 @@ describeIfBuilt("MCP stdio integration", () => {
     const result = await callTool("zsh_docs", { raw: "echo" })
     expect(result.isError).toBeFalsy()
     const parsed = parseText(result) as {
-      matches: Array<{ category: string; id: string; markdown: string }>
+      matches: Array<{ category: string; id: string; mdBody: string }>
       matchesReturned: number
       matchesTotal: number
     }
     expect(parsed.matches[0]?.category).toBe("builtin")
     expect(parsed.matches[0]?.id).toBe("echo")
-    expect(parsed.matches[0]?.markdown).toMatch(/echo/i)
+    expect(parsed.matches[0]?.mdBody).toMatch(/echo/i)
     expect(parsed.matchesReturned).toBe(parsed.matchesTotal)
   })
 
-  test("zsh_docs surfaces NO_* option negation", async () => {
+  test("zsh_docs surfaces NO_* option negation via feedback", async () => {
     const result = await callTool("zsh_docs", {
       raw: "NO_AUTO_CD",
       category: "option",
     })
     const parsed = parseText(result) as {
-      matches: Array<{ id: string; negated: boolean }>
+      matches: Array<{ id: string; feedback?: { kind: string } }>
     }
     expect(parsed.matches[0]?.id).toBe("autocd")
-    expect(parsed.matches[0]?.negated).toBe(true)
+    expect(parsed.matches[0]?.feedback).toEqual({ kind: "input-negated" })
   })
 
-  test("zsh_search returns matches without markdown bodies", async () => {
+  test("zsh_search returns matches without mdBody", async () => {
     const result = await callTool("zsh_search", {
       query: "echo",
       category: "builtin",
@@ -112,12 +112,12 @@ describeIfBuilt("MCP stdio integration", () => {
         category: string
         id: string
         display: string
-        markdown?: string
+        mdBody?: string
       }>
     }
     expect(parsed.matches.length).toBeGreaterThan(0)
     expect(parsed.matches[0]?.id).toBe("echo")
-    for (const m of parsed.matches) expect(m.markdown).toBeUndefined()
+    for (const m of parsed.matches) expect(m.mdBody).toBeUndefined()
   })
 
   test("zsh_list enumerates a category", async () => {
@@ -127,13 +127,13 @@ describeIfBuilt("MCP stdio integration", () => {
     })
     expect(result.isError).toBeFalsy()
     const parsed = parseText(result) as {
-      matches: Array<{ category: string; id: string; markdown?: string }>
+      matches: Array<{ category: string; id: string; mdBody?: string }>
       matchesTotal: number
     }
     expect(parsed.matches.length).toBeGreaterThan(0)
     for (const m of parsed.matches) {
       expect(m.category).toBe("precmd")
-      expect(m.markdown).toBeUndefined()
+      expect(m.mdBody).toBeUndefined()
     }
   })
 

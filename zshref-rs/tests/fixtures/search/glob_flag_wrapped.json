@@ -1,0 +1,29 @@
+{
+  "tool": "zsh_search",
+  "input": {
+    "query": "(#i)",
+    "category": "glob_flag",
+    "limit": 3
+  },
+  "argv": [
+    "search",
+    "--query",
+    "(#i)",
+    "--category",
+    "glob_flag",
+    "--limit",
+    "3"
+  ],
+  "expectedOutput": {
+    "matches": [
+      {
+        "category": "glob_flag",
+        "id": "i",
+        "display": "i",
+        "score": 1
+      }
+    ],
+    "matchesReturned": 1,
+    "matchesTotal": 1
+  }
+}

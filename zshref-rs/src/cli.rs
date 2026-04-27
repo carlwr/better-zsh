@@ -5,7 +5,7 @@
 //! property's JSON Schema fragment: enum (`category`) → PossibleValues,
 //! integer with bounds → u32 range, everything else → String.
 
-use crate::corpus::{Corpus, ToolDef, ToolDefs};
+use crate::corpus::{Corpus, ToolDef, ToolDefs, DOC_CATEGORIES};
 use crate::output;
 use crate::tools;
 use anyhow::Result;
@@ -28,7 +28,7 @@ const ROOT_AFTER_HELP_TAIL: &str = concat!(
     "\n",
     "Examples:\n",
     "  zshref docs --raw AUTO_CD\n",
-    "  zshref docs --raw NO_AUTO_CD                  # surfaces negated:true\n",
+    "  zshref docs --raw NO_AUTO_CD                  # surfaces feedback:input-negated\n",
     "  zshref docs --raw for                         # multi-match without --category\n",
     "  zshref search --query printf --limit 5\n",
     "  zshref list --category option --limit 200\n",
@@ -63,7 +63,7 @@ pub fn build_cli(tool_defs: &ToolDefs, corpus: &Corpus) -> Command {
     // that source affects terminal output here.
     let root_after_help = format!(
         "{}\n{}",
-        cli_prose(&tool_defs.preamble),
+        cli_prose(&tool_defs.preamble, &tool_defs.tools),
         ROOT_AFTER_HELP_TAIL,
     );
 
@@ -87,7 +87,7 @@ pub fn build_cli(tool_defs: &ToolDefs, corpus: &Corpus) -> Command {
         .color(clap::ColorChoice::Auto);
 
     for td in &tool_defs.tools {
-        root = root.subcommand(build_subcommand(td));
+        root = root.subcommand(build_subcommand(td, &tool_defs.tools));
     }
 
     // `zshref completions <SHELL>` — emit completion script to stdout.
@@ -149,11 +149,11 @@ fn version_string(corpus: &Corpus) -> String {
     format!("{pkg_version}\n{upstream_line}\n{total} records across {cats} categories")
 }
 
-fn build_subcommand(td: &ToolDef) -> Command {
+fn build_subcommand(td: &ToolDef, tools: &[ToolDef]) -> Command {
     let name = subcommand_name(&td.name).to_string();
     let mut cmd = Command::new(name)
-        .about(cli_prose(&td.brief))
-        .long_about(cli_prose(&td.description))
+        .about(cli_prose(&td.brief, tools))
+        .long_about(cli_prose(&td.description, tools))
         .disable_help_flag(false);
 
     let props = td
@@ -185,19 +185,33 @@ fn build_subcommand(td: &ToolDef) -> Command {
             .and_then(Value::as_str)
             .unwrap_or("")
             .to_string();
-        let arg = build_arg(key, spec, required.contains(key), &flag_brief, &long_help);
+        let arg = build_arg(
+            key,
+            spec,
+            required.contains(key),
+            &flag_brief,
+            &long_help,
+            tools,
+        );
         cmd = cmd.arg(arg);
     }
     cmd
 }
 
-fn build_arg(key: &str, spec: &Value, required: bool, help: &str, long_help: &str) -> Arg {
+fn build_arg(
+    key: &str,
+    spec: &Value,
+    required: bool,
+    help: &str,
+    long_help: &str,
+    tools: &[ToolDef],
+) -> Arg {
     let value_name = key.to_uppercase();
     let mut arg = Arg::new(key.to_string())
         .long(key.to_string())
         .value_name(value_name)
         .help(help.to_string())
-        .long_help(cli_prose(long_help))
+        .long_help(cli_prose(long_help, tools))
         .required(required)
         .action(ArgAction::Set)
         // Accept leading-dash values: real zsh tokens include `-`, `-p`,
@@ -216,6 +230,11 @@ fn build_arg(key: &str, spec: &Value, required: bool, help: &str, long_help: &st
                 .unwrap_or(i64::from(u32::MAX));
             // clap's range bound is i64; u32 value-parser narrows on parse.
             arg = arg.value_parser(clap::value_parser!(u32).range(min..=max));
+            // JSON Schema `default` → clap default; eliminates Rust-side
+            // DEFAULT_LIMIT constants that would otherwise mirror the schema.
+            if let Some(d) = spec.get("default").and_then(Value::as_u64) {
+                arg = arg.default_value(Box::leak(d.to_string().into_boxed_str()) as &'static str);
+            }
         }
         "string"
             // The `category` flag has a closed enum — expose as PossibleValues
@@ -225,7 +244,9 @@ fn build_arg(key: &str, spec: &Value, required: bool, help: &str, long_help: &st
             if key == "category" =>
         {
             arg = arg
-                .value_parser(clap::builder::PossibleValuesParser::new(DOC_CATEGORIES))
+                .value_parser(clap::builder::PossibleValuesParser::new(
+                    DOC_CATEGORIES.as_slice(),
+                ))
                 // The tool description already enumerates the category
                 // values one-per-line; clap's default inline `[possible
                 // values: ...]` block is redundant + wraps awkwardly at
@@ -237,48 +258,16 @@ fn build_arg(key: &str, spec: &Value, required: bool, help: &str, long_help: &st
     arg
 }
 
-/// Rewrite tool descriptions (which are MCP-primary, naming tools as
-/// `zsh_docs` / `zsh_search` / etc.) into CLI-appropriate form
-/// (`zshref docs` / `zshref search` / ...). One line of text rewrite here
-/// saves duplicating the descriptions on two sides of the seam.
-fn cli_prose(s: &str) -> String {
+/// Rewrite MCP-primary tool names into CLI-appropriate command names.
+/// One line of text rewrite here saves duplicating descriptions on two
+/// sides of the seam.
+fn cli_prose(s: &str, tools: &[ToolDef]) -> String {
     let mut out = s.to_string();
-    for tool in ["zsh_docs", "zsh_search", "zsh_list"] {
-        let sub = subcommand_name(tool);
-        out = out.replace(tool, &format!("zshref {sub}"));
+    for td in tools {
+        out = out.replace(&td.name, &format!("zshref {}", subcommand_name(&td.name)));
     }
     out
 }
-
-/// Closed list of `DocCategory` values. Must mirror
-/// `packages/zsh-core/src/docs/taxonomy.ts::docCategories`. The Rust CLI
-/// carries this statically rather than deriving it from the corpus so that
-/// `--help` and completion scripts advertise the exact valid set without
-/// loading JSON.
-pub const DOC_CATEGORIES: &[&str] = &[
-    "option",
-    "cond_op",
-    "builtin",
-    "precmd",
-    "shell_param",
-    "complex_command",
-    "reserved_word",
-    "redir",
-    "process_subst",
-    "param_expn",
-    "subscript_flag",
-    "param_flag",
-    "history",
-    "glob_op",
-    "glob_flag",
-    "glob_qualifier",
-    "prompt_escape",
-    "zle_widget",
-    "keymap",
-    "job_spec",
-    "arith_op",
-    "special_function",
-];
 
 pub fn dispatch(cmd: Command, tool_defs: &ToolDefs, corpus: &Corpus) -> Result<i32> {
     let mut cmd_for_err = cmd.clone();

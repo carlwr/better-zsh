@@ -56,8 +56,8 @@ describe("mkOptFlag", () => {
 
 // Observed<K> and Documented<K> share the same normalization table. The two
 // brands differ only in provenance (user-code vs corpus). Corpus-aware parse
-// concerns like option `no_` negation live in the resolver layer
-// (`resolveOption` / `resolvers.option`), not in these smart constructors.
+// concerns like option `no_` negation live in the resolver layer (the option
+// resolver / `resolverFeedback`), not in these smart constructors.
 describe("mkObserved option is symmetric with mkDocumented option", () => {
   test("strips underscores and lowercases", () => {
     expect(optO("AUTO_CD") as string).toBe("autocd")

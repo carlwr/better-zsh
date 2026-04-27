@@ -22,7 +22,7 @@ Every exposed tool is `zsh_<verb>[_<object>]`.
 
 Why:
 - MCP clients present tools from multiple servers in one flat namespace.
-- The prefix avoids collisions with generic verbs such as `classify`.
+- The prefix avoids collisions with generic tool names.
 - The prefix primes domain reasoning and makes logs self-describing.
 
 Keep the prefix on every new tool. Use `snake_case`. Never move `zsh` into the middle or tail.

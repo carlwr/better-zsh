@@ -52,10 +52,10 @@ export const docCategories = [
 
 export type DocCategory = (typeof docCategories)[number]
 
-// Order rationale (resolver-shadowing facts) lives in DESIGN.md §"Tie-break in classify".
+// Order rationale (resolver-shadowing facts) lives in DESIGN.md §"Tie-break in docs".
 // `param_expn` placement: its sigs are all literal templates (e.g. `${name:-word}`)
 // that no real user-code token will match via `simpleResolver`; the category reaches
-// consumers via search/describe rather than classify. Position is therefore
+// consumers via search/docs rather than raw-token resolution. Position is therefore
 // irrelevant for shadowing; grouped with the other expansion-form categories.
 // `complex_command` precedes `reserved_word`: a raw `for`, `while`, `[[`, etc.
 // classifies as the structured complex-command record (rich synopsis +
@@ -68,8 +68,8 @@ const classifyOrderTuple = [
   "builtin",
   "cond_op",
   // special_function precedes option so `TRAPHUP` / `precmd_functions` resolve
-  // to the function record rather than misclassifying; see DESIGN.md §"Tie-break
-  // in classify".
+  // to the function record rather than misresolving; see DESIGN.md §"Tie-break
+  // in docs".
   "special_function",
   "shell_param",
   "process_subst",
@@ -96,13 +96,19 @@ const classifyOrderTuple = [
   "redir",
 ] as const satisfies readonly DocCategory[]
 
+// Bidirectional set-equality of `docCategories` and `classifyOrderTuple`:
+// (1) every `DocCategory` is in `classifyOrderTuple` (no missed categories);
+// (2) every `classifyOrderTuple` entry is a `DocCategory` (no extras).
 type _AssertClassifyOrderComplete = Assert<
   Eq<Exclude<DocCategory, (typeof classifyOrderTuple)[number]>, never>
 >
+type _AssertClassifyOrderNoExtras = Assert<
+  Eq<Exclude<(typeof classifyOrderTuple)[number], DocCategory>, never>
+>
 
 /**
- * `DocCategory` list ordered for first-hit classification: walk, call
- * `resolve(corpus, cat, raw)` per entry, stop on the first match.
+ * `DocCategory` list ordered for resolver walks. Consumers may stop on the
+ * first match or collect every resolving category.
  */
 export const classifyOrder: readonly DocCategory[] = classifyOrderTuple
 

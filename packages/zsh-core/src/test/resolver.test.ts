@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vitest"
-import { loadCorpus, resolve } from "../docs/corpus"
+import { loadCorpus } from "../docs/corpus"
+import { resolve } from "../docs/resolvers"
 import { mkDocumented_ } from "./id-fns"
 
 const corpus = loadCorpus()
@@ -10,6 +11,7 @@ const parFlag = mkDocumented_("param_flag")
 const glFlag = mkDocumented_("glob_flag")
 const glQual = mkDocumented_("glob_qualifier")
 const jobSpec = mkDocumented_("job_spec")
+const redir = mkDocumented_("redir")
 const specFn = mkDocumented_("special_function")
 
 describe("resolveHistory (event designators)", () => {
@@ -53,6 +55,43 @@ describe("resolveHistory (event designators)", () => {
     "   ",
   ])("%s -> undefined", raw => {
     expect(resolve(corpus, "history", raw)).toBeUndefined()
+  })
+
+  test.each([
+    ["!{foo}", hist("!{...}")],
+  ] as const)("%s resolves as braced history", (raw, expected) => {
+    expect(resolve(corpus, "history", raw)).toEqual({
+      category: "history",
+      id: expected,
+    })
+  })
+
+  test.each(["!$"])("%s does not resolve as `!str`", raw => {
+    expect(resolve(corpus, "history", raw)).toBeUndefined()
+  })
+})
+
+describe("resolveRedir", () => {
+  test.each([
+    ["> file", redir("> word")],
+    ["2>& 1", redir(">& number")],
+    ["<<EOF", redir("<<[-] word")],
+    ["<< EOF", redir("<<[-] word")],
+    ["<<-EOF", redir("<<[-] word")],
+    ["2<<EOF", redir("<<[-] word")],
+    ["2<<-EOF", redir("<<[-] word")],
+  ] as const)("%s resolves to the matching redirection doc", (raw, expected) => {
+    expect(resolve(corpus, "redir", raw)).toEqual({
+      category: "redir",
+      id: expected,
+    })
+  })
+
+  test.each([
+    "<<",
+    "<<-",
+  ])("incomplete here-document %s does not resolve", raw => {
+    expect(resolve(corpus, "redir", raw)).toBeUndefined()
   })
 })
 

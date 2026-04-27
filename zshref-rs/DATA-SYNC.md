@@ -6,11 +6,12 @@
 
 ## Problem shape
 
-The Rust binary embeds ~940 KB of JSON — the zsh reference corpus plus
-the MCP tool definitions — via `include_bytes!`. Those JSONs are
-computed by a deterministic TS pipeline (parse → render → emit). They
-are **not** source code, they are **generated data**, and they flow
-one-way: TS produces them, everything else consumes them.
+The Rust binary embeds the zsh reference corpus plus the MCP tool
+definitions as JSON — order of ~1 MB at time of writing — via
+`include_bytes!`. Those JSONs are computed by a deterministic TS
+pipeline (parse → render → emit). They are **not** source code, they
+are **generated data**, and they flow one-way: TS produces them,
+everything else consumes them.
 
 In the monorepo, Rust reaches across workspace boundaries — the original literal form being:
 
@@ -337,14 +338,18 @@ Two kinds of drift to worry about:
 
 - **TS source → vendored `data/`.** Anyone who edits TS source but
   forgets to re-vendor ships stale data on next publish. Guard: the
-  `rust-vendored` CI job does a clean `make vendor-clean && make
-  vendor && make cli-vendored-test`. Drift from stale vendored data
-  would surface as: either the build embeds different bytes in the
-  two modes (CI compares `zshref info` output), or the drift-guard
-  `#[cfg(test)]` tests in `corpus.rs` fail.
-- **Schema drift (Rust structs vs. TS JSON shape).** Already handled
-  by the drift-guard tests in `corpus.rs::tests`. Unchanged by
-  this design.
+  Rust CI vendored-mode step runs `make cli-vendored-test` and
+  `make cli-package`. Drift from stale vendored data surfaces as
+  Rust-side test failures against the embedded JSON (record-shape
+  sanity in `corpus.rs::tests`, fixtures and property tests) or as a
+  package build failure.
+- **Schema drift (Rust structs vs. TS JSON shape).** Taxonomy order and
+  category→file mapping load directly from `index.json`, so those
+  tables have no Rust-side mirror to drift. The compile-time
+  `include_bytes!` filename table still must cover every indexed file;
+  `load_corpus` and Rust-side tests fail if it does not. Per-record
+  field-shape drift is covered by the `record_id_key_populated_for_every_category`
+  test in `corpus.rs::tests` and by per-tool fixture tests.
 
 ## Source dep vs artifact dep, reconciled
 
@@ -371,6 +376,7 @@ Option 6 formalizes the blend: source dep from the producer's perspective, artif
   The Rust repo releases when the pin bumps, not on TS's cadence.
 - **Cargo.lock policy post-extraction.** Standard for a bin crate
   (commit it), but worth noting in the extraction doc.
-- **Size budget.** 940 KB is fine baked into a binary. If corpus grows
-  past, say, 5 MB, reconsider: either compress (`zstd`/`brotli` at
-  build time, decompress at load) or split the data crate (option 4).
+- **Size budget.** The current ~1 MB is fine baked into a binary. If
+  corpus grows past, say, 5 MB, reconsider: either compress
+  (`zstd`/`brotli` at build time, decompress at load) or split the
+  data crate (option 4).

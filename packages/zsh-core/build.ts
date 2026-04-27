@@ -4,11 +4,15 @@ import { fileURLToPath } from "node:url"
 import { build } from "tsup"
 import { type DocCorpus, loadCorpus } from "./src/docs/corpus.ts"
 import { jsonArtifact, jsonDataFiles } from "./src/docs/json-artifacts.ts"
+import { hookNames } from "./src/docs/resolvers.ts"
 import {
   classifyOrder,
   type DocCategory,
   type DocRecordMap,
   docCategories,
+  docDisplay,
+  docId,
+  docSubKind,
   mkPieceId,
 } from "./src/docs/taxonomy.ts"
 import type { Documented } from "./src/docs/types.ts"
@@ -33,21 +37,32 @@ function writeJson(path: string, data: unknown) {
 }
 
 /**
- * Augment each record with its rendered markdown body. The in-memory corpus
- * deliberately does not carry `markdown`; it is attached at JSON-emission time
- * for out-of-process consumers (the Rust CLI) that cannot call `renderDoc`
- * themselves. In-process TS consumers (MCP, vscode) keep calling `renderDoc`
- * on demand.
+ * Augment each record with its rendered markdown body (`mdBody`) and the
+ * projected identity fields consumed by out-of-process consumers (the Rust
+ * CLI). `_id`/`_display`/`_subKind` use underscore-prefixed names to avoid
+ * collisions with existing record fields (`display` on ZshOption,
+ * `subKind` on ParamExpnDoc).
  */
 function augmentWithMarkdown<K extends DocCategory>(
   corpus: DocCorpus,
   cat: K,
-): readonly (DocRecordMap[K] & { readonly markdown: string })[] {
+): readonly (DocRecordMap[K] & {
+  readonly mdBody: string
+  readonly _id: string
+  readonly _display: string
+  readonly _subKind?: string
+})[] {
   const map = corpus[cat] as ReadonlyMap<Documented<K>, DocRecordMap[K]>
-  return [...map.entries()].map(([id, rec]) => ({
-    ...rec,
-    markdown: renderDoc(corpus, mkPieceId(cat, id)),
-  }))
+  return [...map.entries()].map(([id, rec]) => {
+    const subKind = docSubKind[cat](rec as never)
+    return {
+      ...rec,
+      mdBody: renderDoc(corpus, mkPieceId(cat, id)),
+      _id: docId[cat](rec as never) as string,
+      _display: docDisplay(cat, rec as never),
+      ...(subKind !== undefined ? { _subKind: subKind } : {}),
+    }
+  })
 }
 
 function writeJsonArtifacts() {
@@ -61,17 +76,25 @@ function writeJsonArtifacts() {
     counts[jsonArtifact[cat].count] = corpus[cat].size
   }
 
+  const categoryFiles: Record<string, string> = {}
+  for (const cat of docCategories) {
+    categoryFiles[cat] = jsonArtifact[cat].file
+  }
+
   const index = {
     version: 1,
     packageVersion: PKG_VERSION,
     zshUpstream: ZSH_UPSTREAM,
     files: [...jsonDataFiles],
     counts,
-    // Canonical taxonomy lists. Exposed here so out-of-process consumers
-    // (the Rust CLI) can cross-check their own hard-coded constants
-    // against the TS source of truth and catch drift at test time.
+    // Canonical taxonomy lists, consumed by out-of-process consumers (the
+    // Rust CLI) as the source of truth — no Rust-side mirror.
     docCategories: [...docCategories],
     classifyOrder: [...classifyOrder],
+    /** Per-category JSON filename — pairs `docCategories[i]` with the file holding its records. */
+    categoryFiles,
+    /** Hook base names used by the special_function resolver (`*_functions` suffix pattern). */
+    hookNames: [...hookNames],
   }
 
   for (const cat of docCategories) {

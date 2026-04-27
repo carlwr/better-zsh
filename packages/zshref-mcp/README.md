@@ -21,7 +21,7 @@ Categories covered:
 
 ## Why zshref-mcp?
 
-Built for agents, acceptable for humans. One of three adapters over the same parsed zsh reference (alongside the [single-binary CLI `zshref`](https://github.com/carlwr/better-zsh/tree/main/zshref-rs) and the [VS Code extension](https://github.com/carlwr/better-zsh/tree/main/packages/vscode-better-zsh)). What the MCP server adds:
+Built for agents, acceptable for humans. One of three adapters over the same parsed zsh reference (alongside the [single-binary CLI `zshref`](https://github.com/carlwr/zshref) and the [VS Code extension](https://github.com/carlwr/better-zsh/tree/main/packages/vscode-better-zsh)). What the MCP server adds:
 
 - **First-class in MCP-aware clients.** One line in a client config (Claude Desktop, Cursor, VS Code's built-in MCP, Zed, any generic MCP host) and the tools appear alongside the client's other MCP servers, selectable by the agent like any built-in.
 - **Conservative by default.** Unlike most shell-flavored MCP servers, this one does not execute shell or touch the host environment at all. Installing it is low-commitment — no trust boundary to defend, no shell review to do before adopting.
@@ -29,7 +29,7 @@ Built for agents, acceptable for humans. One of three adapters over the same par
 What it shares with the other adapters — and, for most users, the reason to pick any of them over a "shell out to `man zshall`" MCP:
 
 - **Structured, not textual.** Parsed from upstream Yodl source into typed per-category records, not regex-scraped from `man`. Every record carries its own shape; every category carries its own resolver.
-- **Non-trivial resolvers.** Corpus-aware `NO_*` negation (including the `NOTIFY` / `TIFY` edge case), redirection decomposition into `groupOp` + tail, parameter-expansion sig matching. The real value-add.
+- **Non-trivial resolvers.** Corpus-aware `NO_*` negation (including the `NOTIFY` / `NO_NOTIFY` edge case), redirection decomposition into `groupOp` + tail, parameter-expansion sig matching. The real value-add.
 - **Token-efficient.** `zsh_search` and `zsh_list` return identity-only rows (no markdown body); only `zsh_docs` returns rendered markdown. Tool `modelDescription` strings enumerate the closed category set so agents don't burn tokens guessing.
 - **No trust surface.** No shell execution, no subprocess, no network, no filesystem writes, no logs, no environment reads, no telemetry. Structurally enforced by a scope-fence test in the shared tool layer, not policy.
 
@@ -138,15 +138,15 @@ The server communicates via standard MCP JSON-RPC on stdin/stdout; no protocol f
 
 Three tools, one intent axis each. All three return the same envelope: `{ matches, matchesReturned, matchesTotal }`. Only `zsh_docs` carries the rendered markdown body — pair `zsh_search` / `zsh_list` results with `zsh_docs` for the full doc.
 
-- **`zsh_docs`** — look up the docs for a raw token (handles `NO_*` option negation; returns markdown).
+- **`zsh_docs`** — look up the docs for a raw token (handles `NO_*` option negation; returns the rendered `mdBody`).
 - **`zsh_search`** — fuzzy discovery by name (id-only).
 - **`zsh_list`** — enumerate records in the corpus (id-only).
 
 ### `zsh_docs`
 
-Look up a raw zsh token against the bundled reference. With `category` set, the lookup is restricted to that category (0 or 1 matches). With `category` omitted, every category is tried in classify-walk order — most inputs resolve in 0 or 1 categories, but a few overlap (`for`, `[[`, `function`, `nocorrect`) and return more than one match.
+Look up a raw zsh token against the bundled reference. With `category` set, the lookup is restricted to that category (0 or 1 matches). With `category` omitted, every category is tried in resolver-walk order — most inputs resolve in 0 or 1 categories, but a few overlap (`for`, `[[`, `function`, `nocorrect`) and return more than one match.
 
-Resolution is corpus-aware: case-insensitive option matching, underscore stripping, redirection group-op + tail decomposition, history event-designators, and the `NO_*` option-negation convention (including the `NOTIFY` / `NO_NOTIFY` edge case). Canonical record ids (e.g. `autocd`) round-trip exactly. Each option-category match additionally carries `negated: true|false`.
+Resolution is corpus-aware: case-insensitive option matching, underscore stripping, redirection group-op + tail decomposition, history event-designators, and the `NO_*` option-negation convention (including the `NOTIFY` / `NO_NOTIFY` edge case). Canonical record ids (e.g. `autocd`) round-trip exactly. Matches reached through a lossy-normalization pathway carry `feedback` — today, an option resolved via `NO_`-stripping carries `feedback: { kind: "input-negated" }`.
 
 **Input**
 
@@ -163,8 +163,8 @@ Resolution is corpus-aware: case-insensitive option matching, underscore strippi
       "category": "option",
       "id": "autocd",
       "display": "AUTO_CD",
-      "markdown": "### AUTO_CD ...",
-      "negated": true
+      "mdBody": "### AUTO_CD ...",
+      "feedback": { "kind": "input-negated" }
     }
   ],
   "matchesReturned": 1,
@@ -177,8 +177,8 @@ Resolution is corpus-aware: case-insensitive option matching, underscore strippi
 ```json
 {
   "matches": [
-    { "category": "complex_command", "id": "for", "display": "for", "markdown": "..." },
-    { "category": "reserved_word",   "id": "for", "display": "for", "markdown": "..." }
+    { "category": "complex_command", "id": "for", "display": "for", "mdBody": "..." },
+    { "category": "reserved_word",   "id": "for", "display": "for", "mdBody": "..." }
   ],
   "matchesReturned": 2,
   "matchesTotal": 2

@@ -11,18 +11,18 @@ const corpus = loadCorpus()
 // DESIGN.md §"Reserved word: an enumeration-primary doc category" and the
 // comment block above the constant in `analysis/line-facts.ts`.
 //
-// This test pins the current behaviour so refactors can't drift it
-// silently. If the analyzer's keyword set is intentionally changed, update
-// the EXPECTED set below to match — and add prose justifying the new
-// element in the line-facts.ts comment.
+// This test pins the current corpus-facing behaviour so refactors can't drift
+// it silently. If the analyzer's keyword set is intentionally changed, update
+// EXPECTED when relevant — and add prose justifying the new element in the
+// line-facts.ts comment.
 describe("analysis layer: command-position keyword set lock-in", () => {
   function emitsReservedFact(word: string): boolean {
     const facts = cmdHeadFactsOnLine(word)
     return facts.some(f => f.kind === "reserved-word" && f.text === word)
   }
 
-  // Words the analyzer currently treats as command-position keywords. Exact
-  // membership; any drift breaks this test.
+  // Words the analyzer currently treats as command-position keywords and that
+  // this test guards directly.
   const EXPECTED: ReadonlySet<string> = new Set([
     "if",
     "then",

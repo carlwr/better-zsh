@@ -28,6 +28,13 @@ describe("search", () => {
     expect(r.matches.length).toBeGreaterThan(0)
   })
 
+  test("unknown category yields empty matches", () => {
+    const r = search(corpus, { query: "echo", category: "bogus" as never })
+    expect(r.matches).toEqual([])
+    expect(r.matchesReturned).toBe(0)
+    expect(r.matchesTotal).toBe(0)
+  })
+
   test("empty query returns empty matches[]", () => {
     const r = search(corpus, { query: "", limit: 7 })
     expect(r.matches).toEqual([])
@@ -142,10 +149,10 @@ describe("search", () => {
     expect(r.matches[0]).not.toHaveProperty("subKind")
   })
 
-  test("results omit markdown body (size containment)", () => {
+  test("results omit mdBody (size containment)", () => {
     const r = search(corpus, { query: "echo" })
     for (const m of r.matches) {
-      expect(m).not.toHaveProperty("markdown")
+      expect(m).not.toHaveProperty("mdBody")
     }
   })
 

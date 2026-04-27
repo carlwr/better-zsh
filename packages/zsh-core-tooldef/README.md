@@ -19,8 +19,8 @@ The package knows about `zsh-core` only. It has no knowledge of MCP, clap, or VS
 
 Three adapters today:
 
-- [`@carlwr/zshref-mcp`](https://github.com/carlwr/better-zsh/tree/main/packages/zshref-mcp) — stdio MCP server.
-- [`zshref`](https://github.com/carlwr/better-zsh/tree/main/zshref-rs) — Rust+clap CLI. Consumes the JSON-exported `tooldef.json` artifact baked into the binary at build time.
+- [`@carlwr/zshref-mcp`](https://github.com/carlwr/zshref-mcp) — stdio MCP server.
+- [`zshref`](https://github.com/carlwr/zshref) — Rust+clap CLI. Consumes the JSON-exported `tooldef.json` artifact baked into the binary at build time.
 - [`better-zsh`](https://github.com/carlwr/better-zsh/tree/main/packages/vscode-better-zsh) — VS Code extension; registers the same tools as Language Model tools via `vscode.lm.registerTool`. A drift test asserts the extension manifest and `toolDefs` stay in one-to-one correspondence.
 
 Three consumers is what justifies the extraction: at two, the shared layer is overhead; at three, collapsing per-adapter glue into a walk over `toolDefs` pays in both code and drift prevention (tool name, description, input schema, and output schema live in exactly one place and every adapter picks them up automatically).
@@ -41,7 +41,7 @@ pnpm add @carlwr/zsh-core-tooldef
 import { loadCorpus } from "@carlwr/zsh-core"
 import { toolDefs } from "@carlwr/zsh-core-tooldef"
 
-const corpus = await loadCorpus()
+const corpus = loadCorpus()
 
 for (const td of toolDefs) {
   // td.name, td.brief, td.description, td.inputSchema, td.outputSchema, td.flagBriefs

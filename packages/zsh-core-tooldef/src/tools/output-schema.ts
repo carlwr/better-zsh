@@ -1,10 +1,16 @@
 /**
  * Builders for per-tool `outputSchema` JSON Schema documents.
  *
- * The match shape is per-category (`oneOf`-branched), so closed enums for
- * `subKind` are modeled per-category rather than as a single union. Each
- * branch is `additionalProperties: false`; the discriminator is
- * `category: { const: "<cat>" }`.
+ * Per-category match branches sit in `oneOf` under `matches.items`, with the
+ * common shape factored into `$defs`/`$ref`:
+ *
+ * - `$defs.IdString` — `{ type: "string", minLength: 1 }` referenced by `id`,
+ *   `display`, `mdBody`.
+ * - `$defs.SubKind.<cat>` — closed enum of subKind values per category that
+ *   has a meaningful sub-facet; referenced from the per-category match branch.
+ * - `$defs.Feedback` — closed `oneOf` over `ResolverFeedback` kinds; referenced
+ *   from per-category match branches when the tool surfaces feedback (today,
+ *   only `zsh_docs`). Adding a feedback kind in zsh-core lifts here for free.
  *
  * `subKind` is always-or-never per category: when `subKindEnums[cat]` is
  * non-undefined the branch declares `subKind` with the closed enum AND
@@ -12,30 +18,43 @@
  * `additionalProperties: false` forbids it. See DESIGN.md §"`subKind` is
  * always-or-never per category".
  *
- * Per AGENTS.md §"Never enumerate or count `DocCategory`", category names
- * and `subKind` enum values are interpolated from canonical zsh-core
- * tables (`docCategories`, `subKindEnums`) — never hand-typed.
+ * Per AGENTS.md §"Never enumerate or count `DocCategory`" (extended to closed
+ * zsh-core unions), category names, subKind values, and feedback kinds are
+ * interpolated from canonical zsh-core tables — never hand-typed.
  *
  * See DESIGN.md §"Output schemas (tooldef-owned)" for rationale.
  */
 
-import { type DocCategory, docCategories, subKindEnums } from "@carlwr/zsh-core"
+import {
+  type DocCategory,
+  docCategories,
+  resolverFeedbackKinds,
+  subKindEnums,
+} from "@carlwr/zsh-core"
 import type { ToolInputSchema } from "../tool-defs.ts"
 import { MAX_LIMIT } from "./limits.ts"
 
 /** Per-tool match-shape choices passed to `mkMatchSchema`. */
 export interface MatchShape {
   readonly score?: "required" | "absent"
-  readonly markdown?: "required" | "absent"
-  /** When set, the `option` branch declares `negated: boolean` (required). */
-  readonly negated?: "conditional-on-option"
+  readonly mdBody?: "required" | "absent"
+  /** When `"optional"`, every category branch declares an optional `feedback` slot referencing `$defs/Feedback`. */
+  readonly feedback?: "optional" | "absent"
 }
+
+const idStringRef = { $ref: "#/$defs/IdString" } as const
+const feedbackRef = { $ref: "#/$defs/Feedback" } as const
+
+const subKindRef = (cat: DocCategory): { readonly $ref: string } => ({
+  $ref: `#/$defs/SubKind.${cat}`,
+})
 
 /**
  * One `oneOf` branch for a single category. Closed shape
  * (`additionalProperties: false`) with `category` pinned via `const`;
  * `subKind` required-with-closed-enum when the category has a meaningful
- * sub-facet, forbidden otherwise.
+ * sub-facet, forbidden otherwise; `feedback` parametric across categories
+ * (uniform optional slot when the tool surfaces feedback).
  */
 function mkMatchSchema(
   cat: DocCategory,
@@ -44,25 +63,24 @@ function mkMatchSchema(
   const subEnum = subKindEnums[cat]
   const properties: Record<string, unknown> = {
     category: { const: cat },
-    id: { type: "string", minLength: 1 },
-    display: { type: "string", minLength: 1 },
+    id: idStringRef,
+    display: idStringRef,
   }
   const required: string[] = ["category", "id", "display"]
   if (subEnum !== undefined) {
-    properties.subKind = { enum: [...subEnum] }
+    properties.subKind = subKindRef(cat)
     required.push("subKind")
   }
-  if (shape.markdown === "required") {
-    properties.markdown = { type: "string", minLength: 1 }
-    required.push("markdown")
+  if (shape.mdBody === "required") {
+    properties.mdBody = idStringRef
+    required.push("mdBody")
   }
   if (shape.score === "required") {
     properties.score = { type: "number", minimum: 0, maximum: 1 }
     required.push("score")
   }
-  if (shape.negated === "conditional-on-option" && cat === "option") {
-    properties.negated = { type: "boolean" }
-    required.push("negated")
+  if (shape.feedback === "optional") {
+    properties.feedback = feedbackRef
   }
   return {
     type: "object",
@@ -72,6 +90,30 @@ function mkMatchSchema(
   }
 }
 
+/** `$defs` block: shared fragments referenced from per-category match branches. */
+function mkDefs(shape: MatchShape): Readonly<Record<string, unknown>> {
+  const defs: Record<string, unknown> = {
+    IdString: { type: "string", minLength: 1 },
+  }
+  for (const cat of docCategories) {
+    const subEnum = subKindEnums[cat]
+    if (subEnum !== undefined) {
+      defs[`SubKind.${cat}`] = { enum: [...subEnum] }
+    }
+  }
+  if (shape.feedback === "optional") {
+    defs.Feedback = {
+      oneOf: resolverFeedbackKinds.map(kind => ({
+        type: "object",
+        additionalProperties: false,
+        required: ["kind"],
+        properties: { kind: { const: kind } },
+      })),
+    }
+  }
+  return defs
+}
+
 /** Envelope schema; `matches.items` is the per-category `oneOf` shape. */
 export function mkOutputSchema(shape: MatchShape): ToolInputSchema {
   return {
@@ -79,6 +121,7 @@ export function mkOutputSchema(shape: MatchShape): ToolInputSchema {
     type: "object",
     additionalProperties: false,
     required: ["matches", "matchesReturned", "matchesTotal"],
+    $defs: mkDefs(shape),
     properties: {
       matches: {
         type: "array",

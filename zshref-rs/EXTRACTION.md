@@ -63,7 +63,7 @@ Companion-repo URLs and the project name are already post-extraction form (AGENT
 
 ### Cross-repo drift guards
 
-- The `#[cfg(test)]` tests in `src/corpus.rs` compare hard-coded Rust constants against the canonical lists in the embedded `index.json`. They still work post-extraction as long as the vendored `index.json` ships with the crate. No change required.
+- Taxonomy order and category→file mapping load directly from the embedded `index.json`; there is no Rust-side category-table mirror to drift. The hand-maintained filename→`include_bytes!` inventory still has to cover every indexed artifact. The `#[cfg(test)]` tests in `src/corpus.rs` cover record-shape sanity (id/display ASCII, `record_id` returns non-empty per category) and stay unchanged post-extraction as long as the vendored `index.json` ships with the crate.
 
 ### Scope fence
 

@@ -1,6 +1,6 @@
 ## Overview
 
-Four workspace packages plus one Rust crate:
+Workspace shape (pnpm packages plus one Rust crate):
 - **`@carlwr/zsh-core`** — standalone package of structured zsh knowledge. Not merely extension support; exposes useful surface beyond current consumers. Ships API Extractor rollups and an `llms.txt` docs-site artifact.
 - **`@carlwr/zsh-core-tooldef`** — framework-neutral tool definitions over zsh-core: pure `(DocCorpus, input) → output` impls plus shared `ToolDef` metadata.
 - **`@carlwr/zshref-mcp`** — Node MCP server exposing the shared tool surface as `zsh_*` tools; published to npm and JSR.
@@ -25,7 +25,7 @@ Keep docs non-redundant; audience decides placement.
 - **Code comments** — maintainer facing. Local rationale, invariants, workarounds, "why not the obvious alternative."
 - **File-header comments** — first few lines of any Makefile/config/source file. Keep locally essential. Do NOT: (a) claim global state about other files/packages ("everything else stays pnpm-driven"); (b) restate what filename, location, or structure already expresses; (c) restate design decisions whose home is elsewhere. When implementing from a plan, treat plan prose as intent — re-derive header text from the destination file's own purpose.
 - **`PRINCIPLES.md`** — cross-cutting design principles. Read before designing a feature or doc category; edit when a tradeoff genuinely shifts.
-- **`DESIGN.md`** — subsystem-specific rationale. Refer to identifiers by name; avoid signatures, paths, counts, and other drift-prone specifics.
+- **`DESIGN.md`** — subsystem-specific rationale. Name load-bearing types and APIs (`Documented`, `Observed`, `resolve`, category keys where the point is taxonomy); use concrete zsh syntax for examples. Avoid volatile inventories: long parallel lists of record-type names, deep file paths, test filenames, version pins, and counts—prefer directory references, "see JSDoc", or a single representative example. When a point is already a cross-cutting principle in `PRINCIPLES.md`, reference it there instead of restating (e.g. resolver identity vs feedback — PRINCIPLES owns the contract; DESIGN keeps adapter- or zsh-core-specific "why").
 - **`DEVELOPMENT.md`** — repo- or package-local operational notes: package-specific invariants, build/test/release mechanics, pointers to truth. Don't repeat repo-wide policy (`AGENTS.md`), principles (`PRINCIPLES.md`), or subsystem rationale (`DESIGN.md`).
 - **`AGENTS.md`** — contributor conventions: style, testing, packaging, workflow.
 
@@ -39,7 +39,7 @@ Three orthogonal domains; details in `DESIGN.md`.
 - **B — Fact Extraction** (`src/analysis/`) — coarse annotations about user code. Facts may carry `Observed<K>`, never `Documented<K>`.
 - **C — Markdown Rendering** (`src/render/`) — doc records → markdown. Depends on A; orthogonal to B.
 
-Consumers plumb A+B→C procedurally. No combined "candidate in, markdown out" API. Sanctioned brand crossing: `resolve(corpus, cat, raw)`; markdown: `renderDoc(corpus, pieceId)`.
+Consumers compose only the domains they need: editor paths map facts to docs to markdown; tool adapters resolve raw input and render records. No combined "candidate in, markdown out" API. Sanctioned brand crossing: `resolve(corpus, cat, raw)`; markdown: `renderDoc(corpus, pieceId)`.
 
 ### Layout rules
 
@@ -53,13 +53,10 @@ Tool layer is shared; adapters stay thin.
 
 `packages/zsh-core-tooldef/`:
 - `index.ts` — public surface: pure tool impls plus metadata.
-- `src/tools/` — one file per tool. Pure `(DocCorpus, input) → output`; no IO, env, or `vscode`.
+- `src/tools/` — tool impls plus shared pure helpers. Pure `(DocCorpus, input) → output`; no IO, env, or `vscode`.
 - `src/tool-defs.ts` — aggregate `toolDefs` list; adapters walk this uniformly.
 
-Primary adapters:
-- `packages/zshref-mcp/` — MCP adapter.
-- `zshref-rs/` — Rust+clap CLI adapter; consumes the tool-def JSON baked into the binary at build time.
-- `packages/vscode-better-zsh/src/zsh-ref-tools.ts` — VS Code LM tool adapter.
+Checked-in adapters cover MCP, Rust+clap, and VS Code LM hosts; each walks `toolDefs` or the exported JSON uniformly.
 
 Principle: tooldef consumes zsh-core; adapters consume tooldef. Do not add zsh-core query APIs just to support an adapter.
 
@@ -148,6 +145,8 @@ Hand-written category lists drift.
 - Runtime strings interpolate from zsh-core exports — never hand-type category names or ordering.
 - JSON Schema `enum` values mirroring closed zsh-core unions interpolate from canonical exports, not hand-typed.
 - Category-indexed tables belong in zsh-core with structural completeness guards; consumers import them.
+
+The same posture extends to other closed zsh-core unions (e.g. `ResolverFeedback` kinds): interpolate from canonical exports, never hand-enumerate.
 
 Rationale: `DESIGN.md` §"Category-indexed artifacts belong in zsh-core"; `PRINCIPLES.md` §"Category inflation cost".
 
@@ -247,15 +246,15 @@ If you touch tests, look for conciseness wins unless that would hide intent.
 
 ### Container-only integration tests
 
-`testINTERACTIVE:electron-zsh-path` is CI/Docker-only. On macOS, VS Code's shell-env resolution defeats the test's env isolation before extension activation.
+The zsh-path matrix integration harness is CI/Docker-only. On macOS, VS Code's shell-env resolution defeats the test's env isolation before extension activation.
 
 ## Packaging
 
 ### npm + JSR dual publish
 
-`zsh-core`, `@carlwr/zsh-core-tooldef`, and `@carlwr/zshref-mcp` publish to npm and JSR. The Rust CLI in `zshref-rs/` publishes via cargo/crates.io; see `zshref-rs/` for its release conventions.
+`@carlwr/zsh-core`, `@carlwr/zsh-core-tooldef`, and `@carlwr/zshref-mcp` publish to npm and JSR. The Rust CLI in `zshref-rs/` publishes via cargo/crates.io; see `zshref-rs/` for its release conventions.
 
-- No runtime `package.json` reads in library code; JSR consumers receive `.ts` sources only.
+- No runtime `package.json` reads in library code; JSR consumers receive source-form packages plus declared data/assets, not npm `dist`.
 - Package identity lives in `src/pkg-info.ts`; runtime and build code import from there.
 - `pkg-info.test.ts` guards manifest drift.
 - Shared subpath exports must stay aligned across `package.json` and `deno.json`.
@@ -267,7 +266,7 @@ Always use `--no-dependencies`. The extension is bundled, and `vsce`'s internal 
 
 ### Linguist hints (deferred)
 
-`.gitattributes` (`linguist-generated`, `linguist-vendored`, `linguist-documentation`) can steer GitHub's Linguist to keep the language-bar honest and collapse generated diffs. Nothing committed today warrants it. Revisit if (a) `zshref-rs/data/` gets committed post-extraction (mark `linguist-generated`), or (b) upstream `.yo` Yodl sources start being vendored.
+`.gitattributes` (`linguist-generated`, `linguist-vendored`, `linguist-documentation`) can steer GitHub's Linguist to keep the language-bar honest and collapse generated diffs. Yodl sources are vendored; decide separately whether Linguist noise warrants marking them.
 
 ### `BZ_SKIP_UPSTREAM`
 
@@ -295,7 +294,7 @@ This repo is worked on from multiple agent tools. Contributor docs and skills mu
 - `DEVELOPMENT.md` keeps scope local: package-local stays package-local; repo-wide policy in root docs.
 - This repo is public. Treat checked-in docs, skills, handoffs, and workflow comments as public: no secrets, tokens, recovery codes, session material. Secret names and high-level auth posture are fine when operationally necessary.
 - Snapshot/handoff docs declare their staleness posture near the top and stay short. Orientation notes, not specs or runbooks, unless written as one.
-- If a detail is cheaply derivable from manifests, workflows, scripts, or tests, point to that source of truth and summarize the invariant rather than copying the inventory.
+- If a detail is cheaply derivable from manifests, workflows, scripts, or tests, point to that source of truth and summarize the invariant rather than copying the inventory. When a copy is needed, add a drift guard. Renaming or deleting a symbol or file counts as "a copy" across the repo—see §"Renames, removals, and behavior changes".
 - Agents may not edit `SECURITY.md`; tell the user and suggest updates. Likely triggers: changes to extension zsh execution, `source`/`.` link resolution, or extension settings.
 
 ### Post-extraction repo URLs in user-facing docs
@@ -330,6 +329,10 @@ For ordinary code-change tasks, do one broad pass for simplification, refactorin
 
 After introducing shared infrastructure or parametric types, revisit consumer call sites once — ROI often appears there. Consumer-side composition helpers belong in the consumer, not in zsh-core's public API.
 
+### Renames, removals, and behavior changes
+
+When you **rename or remove** a function, type, variable, file, tool, setting key, or JSON/schema field—or **change what it does** in a way callers could notice—run a **deliberate full-repo search** (e.g. `rg` on the old and new strings, and on related prose) in addition to letting the typechecker and refactors update call sites. Refactoring and `pnpm check` alone are not sufficient: identifiers and behavior are also referenced in markdown, JSDoc, comments, manifests, JSON Schema, copy-pasted examples, test titles, and string literals. Missed prose references become silent drift.
+
 ### Research-agent proposals
 
 Treat explore/survey proposals as hypotheses. Verify by reading the file before editing. Reject suggestions justified only by LOC reduction, architectural drift, or deletion of deliberate duplication. In conciseness passes, rejecting a meaningful fraction is normal.
@@ -359,7 +362,7 @@ Follow patterns when they model the domain. See `PRINCIPLES.md` §"Category type
 If making commits:
 - pre-release commits need not be perfectly atomic;
 - subject line max 55 chars;
-- subject line only by default. A commit body is justified only when the subject genuinely can't carry the essential information; most commits don't meet that bar. When tempted to add a body, first try a better subject.
+- **subject line only** - **commit bodies are FORBIDDEN**
 
 ## References & sources
 

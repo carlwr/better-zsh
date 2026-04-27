@@ -43,7 +43,8 @@ fn doc_categories() -> &'static [String] {
 
 /// Options known to exist in the bundled corpus, used to probe `NO_*` toggle
 /// symmetry. Each form must lookup to a stable canonical id across the
-/// bare / `NO_` variants, flipping only the `negated` flag.
+/// bare / `NO_` variants; the `NO_` form additionally carries
+/// `feedback: { kind: "input-negated" }`.
 const KNOWN_OPTIONS: &[&str] = &["AUTOCD", "AUTO_CD", "NOTIFY", "PROMPT_CR", "CORRECT"];
 
 fn run_raw(args: &[&str]) -> std::process::Output {
@@ -206,7 +207,9 @@ proptest! {
 
     /// NO_-prefix toggle symmetry: for a curated known-option name, both
     /// `X` and `NO_X` must resolve via `docs --category=option` to the same
-    /// canonical `id`, with `negated` flipping between the two forms.
+    /// canonical `id`. The `NO_` form additionally carries
+    /// `feedback: { kind: "input-negated" }`; the bare form carries no
+    /// `feedback` at all.
     #[test]
     fn docs_option_no_toggle_symmetry(idx in 0usize..KNOWN_OPTIONS.len()) {
         let name = KNOWN_OPTIONS[idx];
@@ -227,10 +230,19 @@ proptest! {
             "canonical id differs: {:?} vs {:?}", bare_id, no_id
         );
 
-        let bare_neg = bm[0].get("negated").and_then(Value::as_bool);
-        let no_neg = nm[0].get("negated").and_then(Value::as_bool);
-        prop_assert_eq!(bare_neg, Some(false), "bare `{}` should be negated=false", name);
-        prop_assert_eq!(no_neg, Some(true), "`NO_{}` should be negated=true", name);
+        let bare_kind = bm[0]
+            .get("feedback")
+            .and_then(|v| v.get("kind"))
+            .and_then(Value::as_str);
+        let no_kind = nm[0]
+            .get("feedback")
+            .and_then(|v| v.get("kind"))
+            .and_then(Value::as_str);
+        prop_assert_eq!(bare_kind, None, "bare `{}` must carry no feedback", name);
+        prop_assert_eq!(
+            no_kind, Some("input-negated"),
+            "`NO_{}` must carry feedback.kind = input-negated", name
+        );
     }
 
     /// Byte-level determinism: two successive `docs` spawns with the

@@ -12,7 +12,7 @@ Improved zsh shellscript editing for VS Code. Layers structured zsh knowledge �
 - **Go-to-definition, references, rename, document/workspace symbols** for user-defined functions in the workspace.
 - **Optional diagnostics** via `zsh -n` (syntax check). Disabled per-document if the file reports as a non-zsh shell.
 - **Snippets** for common zsh patterns.
-- **Language Model tools** — three zsh-reference tools (`zshDocs`, `zshSearch`, `zshList`) registered with VS Code's Language Model API. The same tool surface is shipped as an [MCP server](https://github.com/carlwr/better-zsh/tree/main/packages/zshref-mcp) and as a [single-binary CLI](https://github.com/carlwr/better-zsh/tree/main/zshref-rs).
+- **Language Model tools** — three zsh-reference tools (`zshDocs`, `zshSearch`, `zshList`) registered with VS Code's Language Model API. The same tool surface is shipped as an [MCP server](https://github.com/carlwr/zshref-mcp) and as a [single-binary CLI](https://github.com/carlwr/zshref).
 
 File associations: `.zsh`, `.zshrc`, `.zshenv`, `.zprofile`, `.zlogin`, `.zlogout`, `.zsh-theme`, plus the bare `zshrc` / `zshenv` / `zlogin` / `zprofile` / `zlogout` filenames.
 
@@ -39,8 +39,8 @@ Pre-release alphas are not yet listed on either registry.
 ## See also
 
 - [`@carlwr/zsh-core`](https://github.com/carlwr/better-zsh/tree/main/packages/zsh-core) — the structured-reference library the extension consumes.
-- [`@carlwr/zshref-mcp`](https://github.com/carlwr/better-zsh/tree/main/packages/zshref-mcp) — the same tool surface as a Model Context Protocol server.
-- [`zshref`](https://github.com/carlwr/better-zsh/tree/main/zshref-rs) — single-binary Rust CLI over the same corpus.
+- [`@carlwr/zshref-mcp`](https://github.com/carlwr/zshref-mcp) — the same tool surface as a Model Context Protocol server.
+- [`zshref`](https://github.com/carlwr/zshref) — single-binary Rust CLI over the same corpus.
 - [Better Zsh on GitHub](https://github.com/carlwr/better-zsh) — source, issues, companion packages.
 
 ## License

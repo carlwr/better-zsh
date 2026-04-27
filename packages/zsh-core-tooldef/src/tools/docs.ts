@@ -4,11 +4,12 @@ import {
   type DocCorpus,
   type DocPieceId,
   type DocRecordMap,
-  docSubKind,
   type Documented,
+  docSubKind,
   mkPieceId,
+  type ResolverFeedback,
   resolve,
-  resolveOption,
+  resolverFeedback,
   ZSH_UPSTREAM,
 } from "@carlwr/zsh-core"
 import { renderDoc } from "@carlwr/zsh-core/render"
@@ -26,11 +27,11 @@ export interface DocsMatch {
   readonly category: DocCategory
   readonly id: string
   readonly display: string
-  readonly markdown: string
+  readonly mdBody: string
   /** Typed sub-facet of the record (e.g. history `kind`, glob_op `kind`, reserved_word `pos`). Absent when the category has no meaningful subKind. */
   readonly subKind?: string
-  /** Present on every option-category match; reflects whether the input was a `NO_*` form. */
-  readonly negated?: boolean
+  /** Lossy-resolution feedback emitted by the per-category resolver. Today: `{ kind: "input-negated" }` for option inputs reached via `NO_`-stripping. Absent when the resolver had no feedback to emit. */
+  readonly feedback?: ResolverFeedback
 }
 
 export interface DocsResult {
@@ -83,27 +84,22 @@ function formatMatch(
     | undefined
   if (!rec) {
     throw new Error(
-      `docs: corpus lookup miss for ${pid.category}:${pid.id} — resolver returned a brand that isn't in the corpus map; see zsh-core's docs/corpus.ts resolver table.`,
+      `docs: corpus lookup miss for ${pid.category}:${pid.id} — resolver returned a brand that isn't in the corpus map; see zsh-core's docs/resolvers.ts resolver table.`,
     )
   }
   const getSubKind = docSubKind[pid.category] as (
     d: DocRecordMap[typeof pid.category],
   ) => string | undefined
   const subKind = getSubKind(rec)
-  const base: DocsMatch = {
+  const fb = resolverFeedback(corpus, pid.category, raw)
+  return {
     category: pid.category,
     id: pid.id as string,
     display: display(pid.category, rec),
-    markdown: renderDoc(corpus, pid),
+    mdBody: renderDoc(corpus, pid),
     ...(subKind !== undefined ? { subKind } : {}),
+    ...(fb !== undefined ? { feedback: fb } : {}),
   }
-  if (pid.category !== "option") return base
-  // Surface `negated` on every option match. Direct hits land on canonical
-  // ids (e.g. `autocd`), which carry no NO_ connotation and are always
-  // negated:false; only the resolver's `NO_*`-stripping branch sets it
-  // true. `resolveOption` reproduces that classification uniformly.
-  const opt = resolveOption(corpus, raw)
-  return { ...base, negated: opt?.negated ?? false }
 }
 
 /**
@@ -130,9 +126,15 @@ export function docs(corpus: DocCorpus, input: DocsInput): DocsResult {
   const matches: DocsMatch[] = []
   for (const cat of classifyOrder) {
     const pid = lookupOne(corpus, cat, raw)
+    if (pid?.category === "history" && !isHistoryEvent(corpus, pid)) continue
     if (pid) matches.push(formatMatch(corpus, pid, raw))
   }
   return mkEnvelope(matches)
+}
+
+function isHistoryEvent(corpus: DocCorpus, pid: DocPieceId): boolean {
+  const rec = corpus.history.get(pid.id as Documented<"history">)
+  return rec?.kind === "event-designator"
 }
 
 const categoryList = humanCategoryList(classifyOrder)
@@ -145,13 +147,13 @@ Look up the docs for a raw zsh token in the bundled static ${ZSH_UPSTREAM.tag} r
 
 Returns one match per category that resolves the input, each with the rendered markdown body.
 
-Categories searched (in classify-walk order):
+Categories searched (in resolver-walk order):
 
 ${categoryList}
 
 Set \`category\` to constrain the search to one category; otherwise every category is tried and the response may carry more than one match. Some inputs name elements in more than one category (e.g. \`for\`, \`[[\`, \`function\`, \`nocorrect\`); without \`category\` those return multiple matches.
 
-Each match is \`{ category, id, display, markdown, subKind? }\`. \`subKind\` is surfaced when the category has a meaningful sub-facet (e.g. history \`kind\`, glob_op \`kind\`, reserved_word \`pos\`). Option matches additionally carry \`negated: true|false\` so agents can distinguish \`setopt AUTO_CD\` from \`setopt NO_AUTO_CD\` (handles the NOTIFY / NO_NOTIFY edge case).
+Each match is \`{ category, id, display, mdBody, subKind?, feedback? }\`. \`subKind\` is surfaced when the category has a meaningful sub-facet (e.g. history \`kind\`, glob_op \`kind\`, reserved_word \`pos\`). \`feedback\` is emitted when the per-category resolver had a lossy-normalization signal worth surfacing — today, \`{ kind: "input-negated" }\` on option inputs reached via \`NO_\`-stripping, so agents can distinguish \`setopt AUTO_CD\` from \`setopt NO_AUTO_CD\` (handles the \`NOTIFY\` / \`NO_NOTIFY\` edge case).
 
 Resolution is corpus-aware: case-insensitive option matching, underscore stripping, redirection group-op + tail decomposition, history event-designators, and the option \`NO_*\` negation convention. Canonical record ids (e.g. \`autocd\`) round-trip exactly.
 
@@ -164,7 +166,7 @@ No shell execution, no environment access.`,
       raw: {
         type: "string",
         description:
-          'The raw token as it might appear in zsh source — e.g. "AUTO_CD", "echo", "[[", "<<<", "!$", "%1", "NO_NOTIFY", or a canonical id from a prior `zsh_search` such as "autocd". Case and underscores are normalized per category.',
+          'The raw token as it might appear in zsh source — e.g. "AUTO_CD", "echo", "[[", "<<<", "!42", "%1", "NO_NOTIFY", or a canonical id from a prior `zsh_search` such as "autocd". Case and underscores are normalized per category.',
       },
       category: {
         type: "string",
@@ -175,8 +177,8 @@ No shell execution, no environment access.`,
     additionalProperties: false,
   },
   outputSchema: mkOutputSchema({
-    markdown: "required",
-    negated: "conditional-on-option",
+    mdBody: "required",
+    feedback: "optional",
   }),
   flagBriefs: {
     raw: "Raw zsh token to look up (e.g. AUTO_CD, echo, [[, %1).",

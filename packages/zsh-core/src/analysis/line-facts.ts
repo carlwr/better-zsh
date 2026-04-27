@@ -30,9 +30,9 @@ const TRANSPARENT: ReadonlySet<string> = new Set([
 // Deliberately *not* the same as `corpus.reserved_word` (the zsh manual's
 // reserved-word list). Two intentional differences:
 //
-//   - Adds `in`, `]]`. They are not zsh-manual reserved words but appear
-//     in zsh syntax in defensive positions; including them here keeps the
-//     analyzer robust if they ever appear in command position.
+//   - Adds `]]` and includes `in` for defensive positions. `in` is also in
+//     `corpus.reserved_word`; `]]` is analyzer-only. Including them here keeps
+//     the analyzer robust if they ever appear in command position.
 //   - Omits `declare`/`typeset`/`local`/`export`/`integer`/`float`/
 //     `readonly`/`foreach`/`repeat`/`end`/`nocorrect`. The manual lists
 //     these as reserved, but the analyzer treats them as ordinary command

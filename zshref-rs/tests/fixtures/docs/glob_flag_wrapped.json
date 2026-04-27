@@ -1,0 +1,26 @@
+{
+  "tool": "zsh_docs",
+  "input": {
+    "raw": "(#i)",
+    "category": "glob_flag"
+  },
+  "argv": [
+    "docs",
+    "--raw",
+    "(#i)",
+    "--category",
+    "glob_flag"
+  ],
+  "expectedOutput": {
+    "matches": [
+      {
+        "category": "glob_flag",
+        "id": "i",
+        "display": "i",
+        "mdBody": "`i`\n\nCase insensitive: upper or lower case characters in the pattern match upper or lower case characters.\n\n_Role:_ glob flag"
+      }
+    ],
+    "matchesReturned": 1,
+    "matchesTotal": 1
+  }
+}

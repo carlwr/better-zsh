@@ -11,7 +11,7 @@ export function normalizeOptName(raw: string): string {
 // Note: `option` normalizes case and strips underscores, but does NOT strip
 // `no_` prefixes. Negation is a corpus-aware parse concern (the "NOTIFY" vs
 // "NO_NOTIFY" ambiguity can only be resolved against the actual corpus) and
-// lives in `resolveOption` / `resolvers.option`, not here.
+// lives in the option resolver / `resolverFeedback`, not here.
 const norm: { [K in DocCategory]: (s: string) => string } = {
   option: s => normalizeOptName(s.trim()),
   cond_op: s => s.trim(),
@@ -56,8 +56,8 @@ export const mkDocumented = <K extends DocCategory>(
  * category and casts to `Observed<K>`. Used by fact extraction.
  *
  * This does NOT perform corpus-aware parsing; for that, call the resolver
- * layer (`resolve(corpus, cat, raw)` or a category-specific resolver like
- * `resolveOption`).
+ * layer (`resolve(corpus, cat, raw)`); for lossy-resolution feedback (e.g.
+ * option negation), call `resolverFeedback`.
  */
 export const mkObserved = <K extends DocCategory>(
   cat: K,

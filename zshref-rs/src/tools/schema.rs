@@ -20,10 +20,6 @@ use anyhow::Result;
 use serde_json::{json, Value};
 use std::sync::OnceLock;
 
-/// Bundle envelope version. Mirrors the `version: 1` envelope on the
-/// embedded `tooldef.json`; bump in lock-step with format changes.
-const BUNDLE_VERSION: u32 = 1;
-
 pub fn run(tool_defs: &ToolDefs) -> Result<Value> {
     Ok(build_bundle(tool_defs))
 }
@@ -39,8 +35,10 @@ fn build_bundle(tool_defs: &ToolDefs) -> Value {
             })
         })
         .collect();
+    // `version` is sourced from `tooldef.json`'s envelope field — no
+    // Rust-side constant to keep in sync.
     json!({
-        "version": BUNDLE_VERSION,
+        "version": tool_defs.version,
         "tools": tools,
     })
 }

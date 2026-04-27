@@ -60,7 +60,7 @@ describe("toolDefs metadata", () => {
   test("execute wires corpus through", () => {
     const d = docsToolDef.execute(corpus, { raw: "echo" }) as DocsResult
     expect(d.matches[0]?.category).toBe("builtin")
-    expect(d.matches[0]?.markdown.length).toBeGreaterThan(0)
+    expect(d.matches[0]?.mdBody.length).toBeGreaterThan(0)
 
     const s = searchToolDef.execute(corpus, {
       query: "echo",

@@ -12,6 +12,8 @@ const apiDir = join(distDir, "api")
 const dataDir = join(distDir, "json")
 
 const pkg = JSON.parse(readFileSync(join(pkgDir, "package.json"), "utf8"))
+const index = JSON.parse(readFileSync(join(dataDir, "index.json"), "utf8"))
+const dataFiles = ["index.json", ...(index.files ?? [])]
 
 const llms = [
   `# ${pkg.name}`,
@@ -31,20 +33,7 @@ const llms = [
   "- ./assets",
   "",
   "Structured data files:",
-  "- ./data/index.json",
-  "- ./data/options.json",
-  "- ./data/cond-ops.json",
-  "- ./data/builtins.json",
-  "- ./data/shell-params.json",
-  "- ./data/precmds.json",
-  "- ./data/redirections.json",
-  "- ./data/reserved-words.json",
-  "- ./data/subscript-flags.json",
-  "- ./data/param-flags.json",
-  "- ./data/history.json",
-  "- ./data/glob-operators.json",
-  "- ./data/glob-flags.json",
-  "- ./data/process-substs.json",
+  ...dataFiles.map(file => `- ./data/${file}`),
   "",
 ].join("\n")
 

@@ -15,8 +15,8 @@ changes, new record fields, resolver behaviour, schema edits — is a
 cross-language change.
 
 Pre-extraction, the monorepo rebuild chain catches drift automatically
-(`make cli` runs the TS build first; Rust-side `#[cfg(test)]` drift
-guards fail loudly).
+(`make cli` runs the TS build first; integration tests fail loudly on
+drift).
 
 Post-extraction, propagation is explicit and manual: see
 `zshref-rs/DATA-SYNC.md` for how the vendored data snapshot is updated.

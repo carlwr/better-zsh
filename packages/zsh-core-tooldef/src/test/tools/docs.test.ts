@@ -22,7 +22,7 @@ describe("docs — single-category lookups (no `category` set)", () => {
     expect(m).toBeDefined()
     expect(m?.category).toBe(category)
     expect(m?.id).toBe(id)
-    expect(m?.markdown.length).toBeGreaterThan(0)
+    expect(m?.mdBody.length).toBeGreaterThan(0)
     expect(m?.display.length).toBeGreaterThan(0)
   })
 
@@ -53,7 +53,7 @@ describe("docs — multi-match (no `category`)", () => {
     expect(r.matchesTotal).toBe(r.matches.length)
   })
 
-  test("matches[] follows classify-walk order (complex_command before reserved_word)", () => {
+  test("matches[] follows resolver-walk order (complex_command before reserved_word)", () => {
     const r = docs(corpus, { raw: "for" })
     const ic = r.matches.findIndex(m => m.category === "complex_command")
     const ir = r.matches.findIndex(m => m.category === "reserved_word")
@@ -65,6 +65,14 @@ describe("docs — multi-match (no `category`)", () => {
     const cats = r.matches.map(m => m.category)
     expect(cats).toContain("precmd")
     expect(cats).toContain("option")
+  })
+
+  test.each([
+    "0",
+    "a",
+  ])("bare history component `%s` is not a history match", raw => {
+    const r = docs(corpus, { raw })
+    expect(r.matches.map(m => m.category)).not.toContain("history")
   })
 })
 
@@ -127,26 +135,36 @@ describe("docs — direct ∥ resolver, direct preferred (template-key categorie
   })
 })
 
-describe("docs — option matches always carry `negated`", () => {
+describe("docs — option matches reached via NO_-stripping carry input-negated feedback", () => {
   test.each([
-    { raw: "AUTO_CD", id: "autocd", negated: false },
-    { raw: "autocd", id: "autocd", negated: false },
-    { raw: "NO_AUTO_CD", id: "autocd", negated: true },
-    { raw: "NOTIFY", id: "notify", negated: false },
-    { raw: "NO_NOTIFY", id: "notify", negated: true },
-  ])("$raw → option:$id (negated=$negated)", ({ raw, id, negated }) => {
+    { raw: "NO_AUTO_CD", id: "autocd" },
+    { raw: "noautocd", id: "autocd" },
+    { raw: "NO_NOTIFY", id: "notify" },
+  ])("$raw → option:$id with feedback", ({ raw, id }) => {
     const r = docs(corpus, { raw, category: "option" })
     const m = r.matches[0]
     expect(m).toBeDefined()
     expect(m?.id).toBe(id)
-    expect(m?.negated).toBe(negated)
+    expect(m?.feedback).toEqual({ kind: "input-negated" })
   })
 
-  test("non-option matches do NOT carry `negated` (key absent)", () => {
+  test.each([
+    { raw: "AUTO_CD", id: "autocd" },
+    { raw: "autocd", id: "autocd" },
+    { raw: "NOTIFY", id: "notify" },
+  ])("$raw → option:$id without feedback", ({ raw, id }) => {
+    const r = docs(corpus, { raw, category: "option" })
+    const m = r.matches[0]
+    expect(m).toBeDefined()
+    expect(m?.id).toBe(id)
+    expect(m).not.toHaveProperty("feedback")
+  })
+
+  test("non-option matches never carry `feedback` (key absent)", () => {
     const r = docs(corpus, { raw: "echo" })
     const m = r.matches[0]
     expect(m).toBeDefined()
-    expect(m).not.toHaveProperty("negated")
+    expect(m).not.toHaveProperty("feedback")
   })
 })
 

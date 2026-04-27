@@ -9,11 +9,10 @@ use anyhow::Result;
 use clap::ArgMatches;
 use serde_json::Value;
 
-pub const DEFAULT_LIMIT: u32 = 20;
-
 pub fn run(matches: &ArgMatches, corpus: &Corpus) -> Result<Value> {
     let category = matches.get_one::<String>("category").cloned();
-    let limit = *matches.get_one::<u32>("limit").unwrap_or(&DEFAULT_LIMIT) as usize;
+    // Default is baked into the clap arg from inputSchema.properties.limit.default.
+    let limit = *matches.get_one::<u32>("limit").unwrap_or(&0) as usize;
 
     let pool = entries(corpus, category.as_deref());
     let total = pool.len();

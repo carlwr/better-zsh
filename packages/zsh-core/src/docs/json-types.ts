@@ -38,13 +38,16 @@ type JsonParamExpnDoc = Omit<Unbrand<ParamExpnDoc>, "groupSigs"> & {
 }
 
 /**
- * Rendered markdown body attached to every JSON record at build time. The
- * in-memory corpus does not carry this field — it is computed by
- * `renderDoc` during JSON emission for out-of-process consumers (notably
- * the Rust CLI) that cannot call the renderer themselves. Categories
- * whose renderer is a stub emit `"TBD"`.
+ * Generated fields attached to every JSON record at build time. The
+ * in-memory corpus does not carry these fields — they are projected during
+ * JSON emission for out-of-process consumers.
  */
-type WithMarkdown<T> = T & { readonly markdown: string }
+type WithMarkdown<T> = T & {
+  readonly mdBody: string
+  readonly _id: string
+  readonly _display: string
+  readonly _subKind?: string
+}
 
 export type JsonRecordMap = {
   [K in Exclude<
@@ -98,6 +101,10 @@ export interface JsonIndex {
   readonly counts: JsonCounts
   /** Canonical list of `DocCategory` values, in primary ordering. */
   readonly docCategories: readonly string[]
-  /** Classify-walk order (first-match resolver iteration). */
+  /** Resolver-walk order for raw-token lookup. */
   readonly classifyOrder: readonly string[]
+  /** Per-category JSON filename — pairs each `docCategories` entry with the file holding its records. */
+  readonly categoryFiles: { readonly [K in DocCategory]: JsonDataFile }
+  /** Hook base names used by the special-function resolver. */
+  readonly hookNames: readonly string[]
 }

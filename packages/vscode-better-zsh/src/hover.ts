@@ -15,7 +15,6 @@ import {
   mkOptFlag,
   mkPieceId,
   resolve,
-  resolveOption,
   syntacticContext,
 } from "@carlwr/zsh-core"
 import { renderDoc } from "@carlwr/zsh-core/render"
@@ -23,9 +22,10 @@ import * as vscode from "vscode"
 import { activeWordRangeAt, commentStart, funcDocs } from "./funcs"
 
 // NOTE: Hovering `setopt NO_AUTO_CD` currently shows the same markdown as
-// `setopt AUTO_CD` — the "negated" flag from `resolveOption` is discarded
-// here. A potential improvement would be to distinguish the two at the UX
-// level (e.g. "AUTO_CD is being turned OFF").
+// `setopt AUTO_CD` — the option resolver's `input-negated` feedback is
+// discarded here. A potential improvement would be to distinguish the two
+// at the UX level (e.g. "AUTO_CD is being turned OFF") using
+// `resolverFeedback(corpus, "option", token)?.kind === "input-negated"`.
 
 interface OptFlagHit {
   readonly opt: ZshOption
@@ -144,7 +144,7 @@ export class HoverProvider implements vscode.HoverProvider {
       // Heads like `for`, `while`, `[[` are both reserved words and complex
       // commands; prefer the structured complex_command record (synopsis +
       // alternateForms) when the token resolves there — mirrors the
-      // classify-order priority.
+      // `classifyOrder` priority.
       const onCc = this.hoverFor("complex_command", rw.text, tokenRange)
       if (onCc) return onCc
       const onRw = this.hoverFor("reserved_word", rw.text, tokenRange)
@@ -167,11 +167,12 @@ export class HoverProvider implements vscode.HoverProvider {
   }
 
   private optionAt(token: string): DocPieceId | undefined {
-    // Direct form — `resolveOption` handles `no_` negation and the `NOTIFY` /
-    // `NO_NOTIFY` ambiguity corpus-aware. Negation is discarded here;
-    // see the top-of-file note on hover UX for negated options.
-    const direct = resolveOption(this.corpus, token)
-    if (direct) return mkPieceId("option", direct.id)
+    // Direct form — `resolve` handles `no_` negation and the `NOTIFY` /
+    // `NO_NOTIFY` ambiguity corpus-aware. The lossy-normalization signal is
+    // discarded here; see the top-of-file note on hover UX for negated
+    // options.
+    const direct = resolve(this.corpus, "option", token)
+    if (direct) return direct
 
     // Short-flag form: `-J` / `+J` look up the aliased option via the
     // local flagMap secondary index (extension UX, not corpus identity).

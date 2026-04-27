@@ -48,9 +48,9 @@ describe("list", () => {
     expect(r.matchesTotal).toBe(0)
   })
 
-  test("matches omit markdown body (size containment)", () => {
+  test("matches omit mdBody (size containment)", () => {
     const r = list(corpus, { limit: 5 })
-    for (const m of r.matches) expect(m).not.toHaveProperty("markdown")
+    for (const m of r.matches) expect(m).not.toHaveProperty("mdBody")
   })
 
   test("history match surfaces subKind", () => {

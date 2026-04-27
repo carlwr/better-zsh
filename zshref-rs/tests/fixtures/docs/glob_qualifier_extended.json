@@ -1,0 +1,26 @@
+{
+  "tool": "zsh_docs",
+  "input": {
+    "raw": "(#q@)",
+    "category": "glob_qualifier"
+  },
+  "argv": [
+    "docs",
+    "--raw",
+    "(#q@)",
+    "--category",
+    "glob_qualifier"
+  ],
+  "expectedOutput": {
+    "matches": [
+      {
+        "category": "glob_qualifier",
+        "id": "@",
+        "display": "@",
+        "mdBody": "`@`\n\nsymbolic links\n\n_Role:_ glob qualifier"
+      }
+    ],
+    "matchesReturned": 1,
+    "matchesTotal": 1
+  }
+}

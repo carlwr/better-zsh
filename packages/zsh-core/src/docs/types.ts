@@ -39,7 +39,7 @@ export const mkRedirOp = (raw: string): RedirOp => raw.trim() as RedirOp
 // Corpus-aware parse concerns (e.g. `setopt NO_AUTO_CD` referring to the same
 // option as `setopt AUTO_CD`, or a redirection token like `1>&2` decomposing
 // into a group operator + tail) do NOT live in the smart constructors here —
-// they live in the per-category resolver table in `corpus.ts`. See DESIGN.md,
+// they live in the per-category resolver layer. See DESIGN.md,
 // "Three phases: raw / observed / documented".
 
 /**
@@ -47,8 +47,10 @@ export const mkRedirOp = (raw: string): RedirOp => raw.trim() as RedirOp
  * Holding a `Documented<K>` expresses the *claim* "this string is a key in
  * `corpus[K]`." Two ways to obtain one honestly:
  *
- * 1. The resolver layer (`resolve`, `resolveOption`) — **checked**: membership
- *    is verified against the corpus. This is the path for untrusted input.
+ * 1. The resolver layer (`resolve`) — **checked**: membership is verified
+ *    against the corpus. This is the path for untrusted input. Lossy bits
+ *    (e.g. option negation reached via `NO_`-stripping) surface separately
+ *    via `resolverFeedback`.
  * 2. `mkDocumented(cat, raw)` — **trusted**: no corpus check. Intended for
  *    corpus construction (Yodl extractors) and test-corpus builders, where the
  *    caller vouches for membership. Misuse is detectable only indirectly
@@ -255,7 +257,7 @@ export interface AlternateForm {
  *
  * Overlap with `reserved_word` on head keywords (`for`, `if`, `while`, ...)
  * and `[[`, `{`, `time` is deliberate. `classifyOrder` places
- * `complex_command` before `reserved_word`: a raw `for` classifies as the
+ * `complex_command` before `reserved_word`: a raw `for` resolves to the
  * structured doc, not the reserved-word boilerplate. See PRINCIPLES.md
  * §"Overlap between categories is accepted".
  */

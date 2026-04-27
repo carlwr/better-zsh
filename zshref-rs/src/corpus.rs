@@ -2,12 +2,19 @@
 //!
 //! Record shapes are intentionally loose (`serde_json::Value` for per-category
 //! bodies) — the CLI only needs a handful of well-known fields (`name`,
-//! `display`, `id`, `markdown`, …) and benefits from forward-compatibility
-//! with schema additions.
+//! `display`, `id`, `mdBody`, …) and benefits from forward-compatibility with
+//! schema additions.
+//!
+//! Taxonomy lists (`docCategories`, `classifyOrder`, `categoryFiles`) come
+//! from the embedded `index.json` (the TS source of truth). The only Rust-side
+//! filename inventory is the `include_bytes!` table below; `load_corpus`
+//! checks that every indexed file has embedded bytes.
 
 use anyhow::{Context, Result};
 use serde::Deserialize;
 use serde_json::{Map, Value};
+use std::collections::BTreeMap;
+use std::sync::LazyLock;
 
 // Data-source paths are cfg-gated: `build.rs` picks `vendored` (data/*.json
 // shipped inside the crate) or `monorepo` (JSONs read from the sibling TS
@@ -41,72 +48,134 @@ const TOOLDEF_JSON: &[u8] = include_bytes!(tooldef_path!("tooldef.json"));
 
 const INDEX_JSON: &[u8] = include_bytes!(corpus_path!("index.json"));
 
-// One per DocCategory. Keep this list in lock-step with `docCategories` in
-// `packages/zsh-core/src/docs/taxonomy.ts`. Order matters for `list` (and
-// `search`'s candidate pool), which iterate in this order. `docs` walks
-// `CLASSIFY_ORDER` instead — see `tools/docs.rs`.
-macro_rules! include_category {
-    ($cat:literal, $file:literal) => {
-        ($cat, include_bytes!(corpus_path!($file)) as &[u8])
-    };
+// Filename → embedded bytes. `include_bytes!` requires literal compile-time
+// paths, so this list is hand-maintained in alphabetical order matching
+// `index.json.files`. The pairing of category name → file → bytes is then
+// driven entirely by the runtime `index.json.categoryFiles` map below.
+const FILE_BYTES: &[(&str, &[u8])] = &[
+    (
+        "arith-ops.json",
+        include_bytes!(corpus_path!("arith-ops.json")),
+    ),
+    (
+        "builtins.json",
+        include_bytes!(corpus_path!("builtins.json")),
+    ),
+    (
+        "complex-commands.json",
+        include_bytes!(corpus_path!("complex-commands.json")),
+    ),
+    (
+        "cond-ops.json",
+        include_bytes!(corpus_path!("cond-ops.json")),
+    ),
+    (
+        "glob-flags.json",
+        include_bytes!(corpus_path!("glob-flags.json")),
+    ),
+    (
+        "glob-operators.json",
+        include_bytes!(corpus_path!("glob-operators.json")),
+    ),
+    (
+        "glob-qualifiers.json",
+        include_bytes!(corpus_path!("glob-qualifiers.json")),
+    ),
+    ("history.json", include_bytes!(corpus_path!("history.json"))),
+    (
+        "job-specs.json",
+        include_bytes!(corpus_path!("job-specs.json")),
+    ),
+    ("keymaps.json", include_bytes!(corpus_path!("keymaps.json"))),
+    ("options.json", include_bytes!(corpus_path!("options.json"))),
+    (
+        "param-expns.json",
+        include_bytes!(corpus_path!("param-expns.json")),
+    ),
+    (
+        "param-flags.json",
+        include_bytes!(corpus_path!("param-flags.json")),
+    ),
+    ("precmds.json", include_bytes!(corpus_path!("precmds.json"))),
+    (
+        "process-substs.json",
+        include_bytes!(corpus_path!("process-substs.json")),
+    ),
+    (
+        "prompt-escapes.json",
+        include_bytes!(corpus_path!("prompt-escapes.json")),
+    ),
+    (
+        "redirections.json",
+        include_bytes!(corpus_path!("redirections.json")),
+    ),
+    (
+        "reserved-words.json",
+        include_bytes!(corpus_path!("reserved-words.json")),
+    ),
+    (
+        "shell-params.json",
+        include_bytes!(corpus_path!("shell-params.json")),
+    ),
+    (
+        "special-functions.json",
+        include_bytes!(corpus_path!("special-functions.json")),
+    ),
+    (
+        "subscript-flags.json",
+        include_bytes!(corpus_path!("subscript-flags.json")),
+    ),
+    (
+        "zle-widgets.json",
+        include_bytes!(corpus_path!("zle-widgets.json")),
+    ),
+];
+
+fn file_bytes(name: &str) -> Option<&'static [u8]> {
+    FILE_BYTES
+        .iter()
+        .find_map(|(n, b)| (*n == name).then_some(*b))
 }
 
-const CATEGORY_FILES: &[(&str, &[u8])] = &[
-    include_category!("option", "options.json"),
-    include_category!("cond_op", "cond-ops.json"),
-    include_category!("builtin", "builtins.json"),
-    include_category!("precmd", "precmds.json"),
-    include_category!("shell_param", "shell-params.json"),
-    include_category!("complex_command", "complex-commands.json"),
-    include_category!("reserved_word", "reserved-words.json"),
-    include_category!("redir", "redirections.json"),
-    include_category!("process_subst", "process-substs.json"),
-    include_category!("param_expn", "param-expns.json"),
-    include_category!("subscript_flag", "subscript-flags.json"),
-    include_category!("param_flag", "param-flags.json"),
-    include_category!("history", "history.json"),
-    include_category!("glob_op", "glob-operators.json"),
-    include_category!("glob_flag", "glob-flags.json"),
-    include_category!("glob_qualifier", "glob-qualifiers.json"),
-    include_category!("prompt_escape", "prompt-escapes.json"),
-    include_category!("zle_widget", "zle-widgets.json"),
-    include_category!("keymap", "keymaps.json"),
-    include_category!("job_spec", "job-specs.json"),
-    include_category!("arith_op", "arith-ops.json"),
-    include_category!("special_function", "special-functions.json"),
-];
+/// Parsed `index.json`. Lazy-decoded once at first access; subsequent
+/// taxonomy lookups (`DOC_CATEGORIES`, `CLASSIFY_ORDER`) project from this
+/// value.
+static INDEX: LazyLock<Index> =
+    LazyLock::new(|| serde_json::from_slice(INDEX_JSON).expect("embedded index.json must parse"));
 
-/// Classify-walk order. Mirrors `classifyOrder` in
-/// `packages/zsh-core/src/docs/taxonomy.ts`. The first category whose
-/// resolver matches wins.
-pub const CLASSIFY_ORDER: &[&str] = &[
-    "complex_command",
-    "reserved_word",
-    "precmd",
-    "builtin",
-    "cond_op",
-    "special_function",
-    "shell_param",
-    "process_subst",
-    "param_expn",
-    "param_flag",
-    "subscript_flag",
-    "glob_flag",
-    "glob_qualifier",
-    "glob_op",
-    "history",
-    "prompt_escape",
-    "job_spec",
-    "zle_widget",
-    "keymap",
-    "arith_op",
-    "option",
-    "redir",
-];
+/// Closed list of `DocCategory` values, in primary ordering. Sourced from
+/// `index.json.docCategories` and leaked to `'static` once at startup so
+/// clap's `PossibleValues` (which wants `&'static str`) can consume it
+/// without per-call allocation.
+pub static DOC_CATEGORIES: LazyLock<Vec<&'static str>> = LazyLock::new(|| {
+    INDEX
+        .doc_categories
+        .iter()
+        .map(|s| Box::leak(s.clone().into_boxed_str()) as &'static str)
+        .collect()
+});
+
+/// Resolver-walk order. Sourced from `index.json.classifyOrder`.
+pub static CLASSIFY_ORDER: LazyLock<Vec<&'static str>> = LazyLock::new(|| {
+    INDEX
+        .classify_order
+        .iter()
+        .map(|s| Box::leak(s.clone().into_boxed_str()) as &'static str)
+        .collect()
+});
+
+/// Hook base names for the special_function resolver. Sourced from
+/// `index.json.hookNames` (canonical list in `packages/zsh-core/src/docs/resolvers.ts`).
+pub static HOOK_NAMES: LazyLock<Vec<&'static str>> = LazyLock::new(|| {
+    INDEX
+        .hook_names
+        .iter()
+        .map(|s| Box::leak(s.clone().into_boxed_str()) as &'static str)
+        .collect()
+});
 
 #[derive(Debug, Deserialize)]
 pub struct ToolDefs {
-    #[allow(dead_code)]
     pub version: u32,
     pub tools: Vec<ToolDef>,
     /// Suite-level intent→tool cheat-sheet. Rendered into `zshref --help`
@@ -123,7 +192,7 @@ pub struct ToolDef {
     pub brief: String,
     pub description: String,
     #[serde(rename = "flagBriefs")]
-    pub flag_briefs: std::collections::BTreeMap<String, String>,
+    pub flag_briefs: BTreeMap<String, String>,
     #[serde(rename = "inputSchema")]
     pub input_schema: Value,
     // Consumed by `tools::schema::run` (`zshref schema` bundles every
@@ -139,11 +208,9 @@ pub fn load_tool_defs() -> Result<ToolDefs> {
 
 /// Metadata fields on the corpus index. `package_version` and `zsh_upstream`
 /// back the enriched `--version` output and the `zshref info` subcommand.
-/// `doc_categories` and `classify_order` are the canonical taxonomy lists
-/// from the TS source of truth; the drift-guard tests in this module
-/// cross-check them against the Rust-side hard-coded constants. `version`
-/// (schema version) is still unused on the read side; kept for future
-/// compatibility gating.
+/// `doc_categories`, `classify_order`, and `category_files` are the
+/// canonical taxonomy lists from the TS source of truth — consumed directly
+/// (no Rust-side mirror).
 #[derive(Debug, Deserialize)]
 pub struct Index {
     #[allow(dead_code)]
@@ -152,17 +219,16 @@ pub struct Index {
     pub package_version: String,
     #[serde(rename = "zshUpstream")]
     pub zsh_upstream: ZshUpstream,
-    // `doc_categories` / `classify_order` are only read by the drift-guard
-    // tests in this module; production code uses the Rust-side hard-coded
-    // `CATEGORY_FILES` / `CLASSIFY_ORDER` constants. Silence dead_code for
-    // non-test builds without removing the fields — the tests are their
-    // entire reason to exist.
-    #[cfg_attr(not(test), allow(dead_code))]
-    #[serde(rename = "docCategories", default)]
+    #[serde(rename = "docCategories")]
     pub doc_categories: Vec<String>,
-    #[cfg_attr(not(test), allow(dead_code))]
-    #[serde(rename = "classifyOrder", default)]
+    #[serde(rename = "classifyOrder")]
     pub classify_order: Vec<String>,
+    #[serde(rename = "categoryFiles")]
+    pub category_files: BTreeMap<String, String>,
+    /// Hook base names for the special_function resolver (`*_functions` suffix
+    /// pattern). Sourced from `packages/zsh-core/src/docs/resolvers.ts`.
+    #[serde(rename = "hookNames")]
+    pub hook_names: Vec<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -173,12 +239,12 @@ pub struct ZshUpstream {
 }
 
 pub struct Corpus {
-    pub index: Index,
-    /// One vec of records per category, in `CATEGORY_FILES` order
-    /// (== TS `docCategories`; drives `list` and `search` iteration).
-    /// `docs` walks `CLASSIFY_ORDER` instead. Each record is a JSON
-    /// object; the CLI only pulls out `markdown` plus the category-specific
-    /// id/display fields at point-of-use.
+    pub index: &'static Index,
+    /// One vec of records per category, in `index.docCategories` order
+    /// (drives `list` and `search` iteration). `docs` walks
+    /// `CLASSIFY_ORDER` instead. Each record is a JSON object; the CLI only
+    /// pulls out `mdBody` plus the category-specific id/display fields at
+    /// point-of-use.
     pub categories: Vec<Category>,
 }
 
@@ -188,12 +254,25 @@ pub struct Category {
 }
 
 pub fn load_corpus() -> Result<Corpus> {
-    let index: Index = serde_json::from_slice(INDEX_JSON).context("parsing embedded index.json")?;
-    let mut categories = Vec::with_capacity(CATEGORY_FILES.len());
-    for (name, bytes) in CATEGORY_FILES {
-        let records: Vec<Map<String, Value>> = serde_json::from_slice(bytes)
-            .with_context(|| format!("parsing embedded {name} JSON"))?;
-        categories.push(Category { name, records });
+    let index: &'static Index = &INDEX;
+    let mut categories = Vec::with_capacity(index.doc_categories.len());
+    for (i, cat_name) in index.doc_categories.iter().enumerate() {
+        let file = index
+            .category_files
+            .get(cat_name)
+            .with_context(|| format!("index.json.categoryFiles missing entry for {cat_name}"))?;
+        let bytes = file_bytes(file).with_context(|| {
+            format!("no embedded bytes for {file} (referenced by category {cat_name})")
+        })?;
+        let records: Vec<Map<String, Value>> =
+            serde_json::from_slice(bytes).with_context(|| format!("parsing embedded {file}"))?;
+        // SAFETY: cat_name comes from index.doc_categories, owned by the
+        // 'static INDEX. Promote &str to &'static str via the static ref.
+        let static_name: &'static str = DOC_CATEGORIES[i];
+        categories.push(Category {
+            name: static_name,
+            records,
+        });
     }
     Ok(Corpus { index, categories })
 }
@@ -206,75 +285,16 @@ impl Corpus {
 
 #[cfg(test)]
 mod tests {
-    //! Drift guards. The Rust source holds three hard-coded taxonomy lists —
-    //! `CATEGORY_FILES` (and its derived `categories` order), `CLASSIFY_ORDER`,
-    //! and `cli::DOC_CATEGORIES` — that must stay in sync with the TS source
-    //! (`packages/zsh-core/src/docs/taxonomy.ts`). We cross-check them here
-    //! against the canonical lists emitted into `index.json`. If the TS side
-    //! adds or reorders a category, this test fails, prompting the matching
-    //! Rust-side edit.
-    //!
-    //! Also verifies that `tools::shared::record_id`'s per-category key
-    //! lookup returns a non-empty string for at least one record in each
-    //! category — catches drift where a category's record shape gains a new
-    //! `id` field but `record_id` still points at the old one.
+    //! Sanity guards on consumed JSON. The taxonomy lists themselves no
+    //! longer have Rust-side duplicates to drift against — `DOC_CATEGORIES`
+    //! and `CLASSIFY_ORDER` project directly from the embedded
+    //! `index.json`, so the only drift surface remaining is the per-record
+    //! field shape consumed by `tools::shared::record_id`.
     use super::*;
 
     #[test]
-    fn category_files_matches_ts_doc_categories() {
-        let corpus = load_corpus().expect("load_corpus");
-        let rust_names: Vec<&str> = CATEGORY_FILES.iter().map(|(n, _)| *n).collect();
-        let ts_names: Vec<&str> = corpus
-            .index
-            .doc_categories
-            .iter()
-            .map(String::as_str)
-            .collect();
-        assert_eq!(
-            rust_names, ts_names,
-            "CATEGORY_FILES drifted from index.docCategories — sync with \
-             packages/zsh-core/src/docs/taxonomy.ts::docCategories"
-        );
-    }
-
-    #[test]
-    fn classify_order_matches_ts_classify_order() {
-        let corpus = load_corpus().expect("load_corpus");
-        let ts_names: Vec<&str> = corpus
-            .index
-            .classify_order
-            .iter()
-            .map(String::as_str)
-            .collect();
-        assert_eq!(
-            CLASSIFY_ORDER,
-            ts_names.as_slice(),
-            "CLASSIFY_ORDER drifted from index.classifyOrder — sync with \
-             packages/zsh-core/src/docs/taxonomy.ts::classifyOrder"
-        );
-    }
-
-    #[test]
-    fn doc_categories_constant_matches_ts_doc_categories() {
-        // `cli::DOC_CATEGORIES` duplicates the category list for `--category`
-        // PossibleValues. Make sure it stays equal to the canonical set.
-        let corpus = load_corpus().expect("load_corpus");
-        let ts_names: Vec<&str> = corpus
-            .index
-            .doc_categories
-            .iter()
-            .map(String::as_str)
-            .collect();
-        assert_eq!(
-            crate::cli::DOC_CATEGORIES,
-            ts_names.as_slice(),
-            "cli::DOC_CATEGORIES drifted from index.docCategories"
-        );
-    }
-
-    #[test]
     fn corpus_id_and_display_are_ascii() {
-        // `crate::fuzzy::score` is ASCII-only — non-ASCII `id` or `display`
+        // `crate::fuzzy::score` is ASCII-only — non-ASCII `_id` or `_display`
         // values silently fall through to "no fuzzy match" for those
         // records. Fail loud here so upstream drift (a non-ASCII identifier
         // sneaking into the corpus) forces a conscious decision before the
@@ -286,26 +306,25 @@ mod tests {
                 let id = crate::tools::shared::record_id(cat.name, rec);
                 let display = crate::tools::shared::record_display(cat.name, rec);
                 if !id.is_ascii() {
-                    violations.push(format!("category {}: id {:?}", cat.name, id));
+                    violations.push(format!("category {}: _id {:?}", cat.name, id));
                 }
                 if !display.is_ascii() {
-                    violations.push(format!("category {}: display {:?}", cat.name, display));
+                    violations.push(format!("category {}: _display {:?}", cat.name, display));
                 }
             }
         }
         assert!(
             violations.is_empty(),
-            "non-ASCII id/display in corpus — src/fuzzy.rs assumes ASCII:\n  {}",
+            "non-ASCII _id/_display in corpus — src/fuzzy.rs assumes ASCII:\n  {}",
             violations.join("\n  ")
         );
     }
 
     #[test]
     fn record_id_key_populated_for_every_category() {
-        // `tools::shared::record_id` dispatches per category to a specific
-        // record field. If the TS record shape for a category changes and
-        // the id key moves, Rust would silently read empty strings. This
-        // guards it.
+        // Verifies that the baked `_id` field is present and non-empty in
+        // every category's first record. If the TS build stopped emitting
+        // `_id`, Rust would silently read empty strings everywhere.
         let corpus = load_corpus().expect("load_corpus");
         for cat in &corpus.categories {
             let first = cat
@@ -315,8 +334,8 @@ mod tests {
             let id = crate::tools::shared::record_id(cat.name, first);
             assert!(
                 !id.is_empty(),
-                "record_id returned empty string for category {} — the \
-                 category→field map in tools::shared::record_id is stale",
+                "baked `_id` field is absent or empty for category {} — \
+                 packages/zsh-core/build.ts must emit `_id` on every record",
                 cat.name
             );
         }

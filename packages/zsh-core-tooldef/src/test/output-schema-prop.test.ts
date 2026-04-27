@@ -122,7 +122,7 @@ function assertEnvelopeInvariants(
   }
   // Dedup invariant: no two matches share `(category, id)`. Owned by
   // search's seen-set walk (see `tools/search.ts`); other tools couldn't
-  // produce duplicates either, so assert across all three uniformly.
+  // produce duplicates either, so assert across tools uniformly.
   const keys = env.matches.map(m => `${String(m.category)}\0${String(m.id)}`)
   if (new Set(keys).size !== keys.length) {
     throw new Error(

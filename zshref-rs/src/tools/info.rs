@@ -67,9 +67,8 @@ mod tests {
 
     #[test]
     fn info_categories_match_corpus_order() {
-        // `categories` must mirror `docCategories` order (== `CATEGORY_FILES`
-        // order in corpus.rs). Guards against future refactors reordering
-        // either side.
+        // `categories` must mirror embedded `index.json.docCategories` order.
+        // Guards against future refactors reordering the loaded corpus.
         let corpus = load_corpus().expect("load_corpus");
         let v = run(&corpus).expect("info::run");
         let listed: Vec<&str> = v["categories"]

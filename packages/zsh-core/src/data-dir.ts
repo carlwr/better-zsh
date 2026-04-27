@@ -1,6 +1,7 @@
 import { cpSync, existsSync } from "node:fs"
 import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
+import { corpusYodlFiles } from "./docs/source-files.ts"
 
 // Directory containing this module file — resolved for CJS (__dirname) and ESM (import.meta.url).
 const thisDir: string =
@@ -12,18 +13,7 @@ const thisDir: string =
 export const runtimeZshDataDir = "zsh-core-data"
 
 /** Vendored zsh Yodl payload required by runtime loaders and packaging checks. */
-export const vendoredZshDocFiles = [
-  "SOURCE.md",
-  "builtins.yo",
-  "cond.yo",
-  "expn.yo",
-  "grammar.yo",
-  "options.yo",
-  "params.yo",
-  "prompt.yo",
-  "redirect.yo",
-  "zle.yo",
-] as const
+export const vendoredZshDocFiles = ["SOURCE.md", ...corpusYodlFiles] as const
 
 // Three candidate layouts:
 //   dev:     <thisDir>/data/zsh-docs         (source tree, running from src/)

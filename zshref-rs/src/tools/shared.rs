@@ -1,10 +1,8 @@
 //! Shared record-shape + arg helpers used by every tool module.
 //!
-//! Mirrors the field-projection tables (`docId`, `docDisplay`) in the TS
-//! `packages/zsh-core/src/docs/taxonomy.ts`. Kept Rust-side rather than
-//! parsed from a JSON manifest because the projections are stable
-//! enumerations of static literal strings; a drift guard in `corpus.rs`
-//! cross-checks the category list itself against `index.json`.
+//! Identity fields (`_id`, `_display`, `_subKind`) are baked into the
+//! per-category JSON at TS build time — no per-category dispatch needed here.
+//! See `augmentWithMarkdown` in `packages/zsh-core/build.ts`.
 
 use crate::corpus::Corpus;
 use clap::ArgMatches;
@@ -64,68 +62,24 @@ pub fn str_arg<'a>(matches: &'a ArgMatches, name: &str) -> &'a str {
         .unwrap_or("")
 }
 
-/// Canonical id field per category — the TS `mkDocumented` brands.
-pub fn record_id(cat_name: &str, rec: &Rec) -> String {
-    let key = match cat_name {
-        "option" | "shell_param" | "builtin" | "precmd" | "reserved_word" | "complex_command"
-        | "zle_widget" | "keymap" | "special_function" => "name",
-        "cond_op" | "glob_op" | "process_subst" | "arith_op" => "op",
-        "redir" | "param_expn" => "sig",
-        "subscript_flag" | "param_flag" | "glob_flag" | "glob_qualifier" => "flag",
-        "history" | "prompt_escape" | "job_spec" => "key",
-        _ => "name",
-    };
-    str_field(rec, key).to_string()
+/// Canonical id for a record — reads the baked `_id` field emitted by the
+/// TS build. Falls back to `""` when absent (corpus drift guard in
+/// `corpus.rs` will catch this before production).
+pub fn record_id(_cat_name: &str, rec: &Rec) -> String {
+    str_field(rec, "_id").to_string()
 }
 
-/// Display form per category. `option` carries a separate `display` field;
-/// all others render as their id.
-pub fn record_display(cat_name: &str, rec: &Rec) -> String {
-    if cat_name == "option" {
-        let d = str_field(rec, "display");
-        if !d.is_empty() {
-            return d.to_string();
-        }
-    }
-    record_id(cat_name, rec)
+/// Display form for a record — reads the baked `_display` field emitted by
+/// the TS build.
+pub fn record_display(_cat_name: &str, rec: &Rec) -> String {
+    str_field(rec, "_display").to_string()
 }
 
-/// Per-category typed sub-facet. Mirror of `docSubKind` in
-/// `packages/zsh-core/src/docs/taxonomy.ts`. Categories with no
-/// meaningful subKind return `None`; absent-or-empty fields also return
-/// `None` so the JSON omits the key (matches TS `undefined`-drop).
-///
-/// `zle_widget` deliberately composites `kind:section` (matching TS),
-/// surfacing both axes in one field. The schema's `subKind` enum is
-/// derived from TS's `docSubKind` outputs, so any drift here surfaces as
-/// a schema validation failure in `tests/fuzz.rs`.
-pub fn record_sub_kind(cat_name: &str, rec: &Rec) -> Option<String> {
-    if cat_name == "zle_widget" {
-        let kind = str_field(rec, "kind");
-        let section = str_field(rec, "section");
-        if kind.is_empty() && section.is_empty() {
-            return None;
-        }
-        return Some(format!("{kind}:{section}"));
-    }
-    if cat_name == "keymap" {
-        // `d.isSpecial ? "special" : "regular"` in TS. Field is bool;
-        // missing or non-bool falls back to `false` → `"regular"`.
-        let is_special = rec
-            .get("isSpecial")
-            .and_then(Value::as_bool)
-            .unwrap_or(false);
-        return Some(if is_special { "special" } else { "regular" }.to_string());
-    }
-    let key = match cat_name {
-        "cond_op" | "arith_op" => "arity",
-        "reserved_word" => "pos",
-        "param_expn" => "subKind",
-        "history" | "glob_op" | "job_spec" | "special_function" => "kind",
-        "shell_param" | "prompt_escape" => "section",
-        _ => return None,
-    };
-    let s = str_field(rec, key);
+/// Per-category typed sub-facet — reads the baked `_subKind` field emitted
+/// by the TS build. Returns `None` for categories whose `docSubKind` returns
+/// `undefined` (field is absent in the JSON).
+pub fn record_sub_kind(_cat_name: &str, rec: &Rec) -> Option<String> {
+    let s = str_field(rec, "_subKind");
     (!s.is_empty()).then(|| s.to_string())
 }
 
@@ -149,18 +103,38 @@ pub fn normalize_option(raw: &str) -> String {
         .collect()
 }
 
+/// Lossy-resolution feedback emitted by a per-category resolver. Mirrors
+/// the TS `ResolverFeedback` closed kind-tagged union in
+/// `packages/zsh-core/src/docs/resolvers.ts`. Today the option resolver is
+/// the only emitter (`InputNegated` when reached via `NO_`-stripping); other
+/// categories never carry feedback.
+#[derive(Clone, Copy, Debug)]
+pub enum ResolverFeedback {
+    InputNegated,
+}
+
+impl ResolverFeedback {
+    /// JSON `kind` discriminator string. Must match the TS literal in
+    /// `ResolverFeedback["kind"]`.
+    pub fn kind(self) -> &'static str {
+        match self {
+            ResolverFeedback::InputNegated => "input-negated",
+        }
+    }
+}
+
 /// A resolved corpus hit — the result of "direct ∥ resolver, direct
 /// preferred" dispatch for one category. Carries enough to project either
-/// docs' `{markdown, negated?}` shape or search's `(category, id)`
-/// dedup-key + `Entry` lookup.
+/// docs' `{mdBody, feedback?}` shape or search's `(category, id)` dedup-key
+/// + `Entry` lookup.
 pub struct ResolvedHit<'c> {
     pub category: &'static str,
     pub id: String,
     pub display: String,
     pub rec: &'c Rec,
-    /// `Some(bool)` only on `option`-category hits (mirrors TS `negated`
-    /// on the `DocsMatch` shape).
-    pub negated: Option<bool>,
+    /// Lossy-normalization feedback emitted by the resolver. `None` for
+    /// loss-free or non-emitting paths.
+    pub feedback: Option<ResolverFeedback>,
 }
 
 /// Per-category resolver dispatch, "direct ∥ resolver, direct preferred":
@@ -176,7 +150,7 @@ pub struct ResolvedHit<'c> {
 ///
 /// Used by `docs` (single-category, walks `CLASSIFY_ORDER`) and `search`
 /// (resolver tier between exact and prefix). Mirrors the TS resolver
-/// table in `packages/zsh-core/src/docs/corpus.ts`.
+/// table in `packages/zsh-core/src/docs/resolvers.ts`.
 pub fn resolve_in<'c>(corpus: &'c Corpus, cat_name: &str, raw: &str) -> Option<ResolvedHit<'c>> {
     if let Some(h) = direct_lookup(corpus, cat_name, raw) {
         return Some(h);
@@ -184,6 +158,10 @@ pub fn resolve_in<'c>(corpus: &'c Corpus, cat_name: &str, raw: &str) -> Option<R
     match cat_name {
         "option" => resolve_option_via_resolver(corpus, raw),
         "redir" => resolve_redir(corpus, raw),
+        "history" => resolve_history(corpus, raw),
+        "subscript_flag" | "param_flag" | "glob_flag" | "glob_qualifier" => {
+            resolve_parens_agnostic_flag(corpus, cat_name, raw)
+        }
         "job_spec" => resolve_job_spec(corpus, raw),
         "special_function" => resolve_special_function(corpus, raw),
         _ => resolve_literal(corpus, cat_name, raw),
@@ -194,7 +172,7 @@ fn make_hit<'c>(
     cat: &'c crate::corpus::Category,
     rec: &'c Rec,
     id_override: Option<String>,
-    negated: Option<bool>,
+    feedback: Option<ResolverFeedback>,
 ) -> ResolvedHit<'c> {
     let id = id_override.unwrap_or_else(|| record_id(cat.name, rec));
     let display = record_display(cat.name, rec);
@@ -203,7 +181,7 @@ fn make_hit<'c>(
         id,
         display,
         rec,
-        negated,
+        feedback,
     }
 }
 
@@ -211,20 +189,20 @@ fn find_by<'c>(
     corpus: &'c Corpus,
     cat_name: &str,
     pred: impl Fn(&Rec) -> bool,
-    negated: Option<bool>,
+    feedback: Option<ResolverFeedback>,
 ) -> Option<ResolvedHit<'c>> {
     let cat = corpus.category(cat_name)?;
     let rec = cat.records.iter().find(|r| pred(r))?;
-    Some(make_hit(cat, rec, None, negated))
+    Some(make_hit(cat, rec, None, feedback))
 }
 
 fn find_by_id<'c>(
     corpus: &'c Corpus,
     cat_name: &str,
     id: &str,
-    negated: Option<bool>,
+    feedback: Option<ResolverFeedback>,
 ) -> Option<ResolvedHit<'c>> {
-    find_by(corpus, cat_name, |r| record_id(cat_name, r) == id, negated)
+    find_by(corpus, cat_name, |r| record_id(cat_name, r) == id, feedback)
 }
 
 fn direct_lookup<'c>(corpus: &'c Corpus, cat_name: &str, raw: &str) -> Option<ResolvedHit<'c>> {
@@ -232,18 +210,8 @@ fn direct_lookup<'c>(corpus: &'c Corpus, cat_name: &str, raw: &str) -> Option<Re
     if trimmed.is_empty() {
         return None;
     }
-    let negated = (cat_name == "option").then_some(false);
-    find_by_id(corpus, cat_name, trimmed, negated)
+    find_by_id(corpus, cat_name, trimmed, None)
 }
-
-const HOOK_NAMES: &[&str] = &[
-    "chpwd",
-    "periodic",
-    "precmd",
-    "preexec",
-    "zshaddhistory",
-    "zshexit",
-];
 
 fn resolve_job_spec<'c>(corpus: &'c Corpus, raw: &str) -> Option<ResolvedHit<'c>> {
     let t = raw.trim();
@@ -279,7 +247,7 @@ fn resolve_special_function<'c>(corpus: &'c Corpus, raw: &str) -> Option<Resolve
         return None;
     }
     if let Some(stripped) = t.strip_suffix("_functions") {
-        if HOOK_NAMES.contains(&stripped) {
+        if crate::corpus::HOOK_NAMES.contains(&stripped) {
             if let Some(h) = find_by_id(corpus, "special_function", stripped, None) {
                 return Some(h);
             }
@@ -308,11 +276,96 @@ fn resolve_literal<'c>(corpus: &'c Corpus, cat_name: &str, raw: &str) -> Option<
 
 fn resolve_option_via_resolver<'c>(corpus: &'c Corpus, raw: &str) -> Option<ResolvedHit<'c>> {
     let norm = normalize_option(raw);
-    find_by_id(corpus, "option", &norm, Some(false)).or_else(|| {
+    find_by_id(corpus, "option", &norm, None).or_else(|| {
         let stripped = strip_no_prefix(raw)?;
         let norm2 = normalize_option(&stripped);
-        find_by_id(corpus, "option", &norm2, Some(true))
+        find_by_id(
+            corpus,
+            "option",
+            &norm2,
+            Some(ResolverFeedback::InputNegated),
+        )
     })
+}
+
+fn resolve_history<'c>(corpus: &'c Corpus, raw: &str) -> Option<ResolvedHit<'c>> {
+    let key = history_key(raw.trim())?;
+    find_by_id(corpus, "history", key, None)
+}
+
+fn history_key(t: &str) -> Option<&'static str> {
+    if t == "!!" {
+        return Some("!!");
+    }
+    if t == "!#" {
+        return Some("!#");
+    }
+    if t.starts_with("!{") && t.ends_with('}') && t.len() > 3 {
+        return Some("!{...}");
+    }
+
+    if let Some(rest) = t.strip_prefix("!?") {
+        if rest.is_empty() {
+            return None;
+        }
+        let body = rest.strip_suffix('?').unwrap_or(rest);
+        return (!body.is_empty()).then_some("!?str[?]");
+    }
+
+    if let Some(rest) = t.strip_prefix("!-") {
+        return (!rest.is_empty() && rest.chars().all(|c| c.is_ascii_digit())).then_some("!-n");
+    }
+
+    if let Some(rest) = t.strip_prefix('!') {
+        if rest.is_empty() {
+            return None;
+        }
+        if rest.chars().all(|c| c.is_ascii_digit()) {
+            return Some("!n");
+        }
+        if matches!(rest, "$" | "^" | "%" | "*") {
+            return None;
+        }
+        return rest
+            .chars()
+            .all(|c| c != '!' && !c.is_whitespace())
+            .then_some("!str");
+    }
+
+    if let Some(rest) = t.strip_prefix('^') {
+        let second = rest.find('^')?;
+        if second == 0 {
+            return None;
+        }
+        return (!rest[second + 1..].is_empty()).then_some("!!");
+    }
+
+    None
+}
+
+fn resolve_parens_agnostic_flag<'c>(
+    corpus: &'c Corpus,
+    cat_name: &str,
+    raw: &str,
+) -> Option<ResolvedHit<'c>> {
+    let t = raw.trim();
+    if let Some(h) = find_by_id(corpus, cat_name, t, None) {
+        return Some(h);
+    }
+    if !(t.starts_with('(') && t.ends_with(')') && t.len() >= 2) {
+        return None;
+    }
+
+    let inner = &t[1..t.len() - 1];
+    let stripped = match cat_name {
+        "glob_flag" => inner.strip_prefix('#').unwrap_or(inner),
+        "glob_qualifier" => inner.strip_prefix("#q").unwrap_or(inner),
+        _ => inner,
+    };
+    if stripped.is_empty() {
+        return None;
+    }
+    find_by_id(corpus, cat_name, stripped, None)
 }
 
 fn resolve_redir<'c>(corpus: &'c Corpus, raw: &str) -> Option<ResolvedHit<'c>> {
@@ -320,6 +373,19 @@ fn resolve_redir<'c>(corpus: &'c Corpus, raw: &str) -> Option<ResolvedHit<'c>> {
     let text = raw.trim().trim_start_matches(|c: char| c.is_ascii_digit());
     if text.is_empty() {
         return None;
+    }
+    if text == "<<" || text == "<<-" {
+        return None;
+    }
+    if let Some(delim) = text.strip_prefix("<<-") {
+        if !delim.is_empty() {
+            return find_by_id(corpus, "redir", "<<[-] word", None);
+        }
+    } else if text.starts_with("<<") && !text.starts_with("<<<") {
+        let delim = &text[2..];
+        if !delim.is_empty() {
+            return find_by_id(corpus, "redir", "<<[-] word", None);
+        }
     }
 
     let docs: Vec<(&str, &str, &Rec)> = cat

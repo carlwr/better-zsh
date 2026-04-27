@@ -10,7 +10,7 @@ import { makeToolDef, type ToolDef } from "../tool-defs.ts"
 import { type Entry, entries } from "./entries.ts"
 import { clampLimit, DEFAULT_LIMIT, MAX_LIMIT } from "./limits.ts"
 import { mkOutputSchema } from "./output-schema.ts"
-import { brandedCategoryList, mkEnvelope } from "./result.ts"
+import { brandedCategoryList, isValidCategory, mkEnvelope } from "./result.ts"
 
 export interface SearchInput {
   readonly query: string
@@ -48,6 +48,9 @@ export interface SearchResult {
  * Pure; no IO.
  */
 export function search(corpus: DocCorpus, input: SearchInput): SearchResult {
+  if (input.category !== undefined && !isValidCategory(input.category))
+    return mkEnvelope<SearchMatch>([])
+
   const limit = clampLimit(input.limit)
   const pool = entries(corpus, input.category)
   const q = input.query.trim()
@@ -177,6 +180,7 @@ No shell execution, no environment access.`,
         type: "integer",
         minimum: 0,
         maximum: MAX_LIMIT,
+        default: DEFAULT_LIMIT,
         description: `Maximum matches to return. Default ${DEFAULT_LIMIT}, hard max ${MAX_LIMIT} (entire corpus). \`limit=0\` returns metadata only.\n\nThe response carries \`matchesReturned\` (== \`matches.length\`) and \`matchesTotal\` (pre-truncation total); \`matchesReturned < matchesTotal\` signals truncation — raise \`limit\` or narrow \`category\`/\`query\`.`,
       },
     },

@@ -52,6 +52,7 @@ export interface PropertySpec {
   readonly description?: string
   readonly minimum?: number
   readonly maximum?: number
+  readonly default?: number | string | boolean
 }
 
 /**

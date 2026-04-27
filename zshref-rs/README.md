@@ -15,8 +15,8 @@ Built for agents, acceptable for humans. One of three adapters over the same par
 What it shares with the other adapters — and, for most users, the reason to pick any of them over `man zshall | grep`:
 
 - **Structured, not textual.** Parsed from upstream Yodl source into typed per-category records, not regex-scraped from `man`. Every record carries its own shape; every category carries its own resolver.
-- **Non-trivial resolvers.** Corpus-aware `NO_*` negation (including the `NOTIFY` / `TIFY` edge case), redirection decomposition into `groupOp` + tail, parameter-expansion sig matching. The real value-add.
-- **Token-efficient.** `search` and `list` return identity-only rows (no markdown body); only `docs` returns rendered markdown. The closed category enum surfaces as shell-completion values and clap `PossibleValues`, not prose — callers don't burn tokens recalling category names.
+- **Non-trivial resolvers.** Corpus-aware `NO_*` negation (including the `NOTIFY` / `NO_NOTIFY` edge case), redirection decomposition into `groupOp` + tail, parameter-expansion sig matching. The real value-add.
+- **Token-efficient.** `search` and `list` return identity-only rows (no `mdBody`); only `docs` returns the rendered markdown body. The closed category enum surfaces as shell-completion values and clap `PossibleValues`, not prose — callers don't burn tokens recalling category names.
 - **No trust surface.** No shell execution, no subprocess, no network, no filesystem writes, no logs, no caches, no config files, no telemetry, no environment-variable reads beyond the `NO_COLOR` / `CLICOLOR_FORCE` color gates. Structurally enforced by a scope-fence test, not policy.
 
 Primary audience: agent pipelines (Claude Code, Codex CLI, Cursor, shell-wrapped LLM flows). Humans aren't locked out, but every design trade-off picks the agent-first answer.
@@ -43,12 +43,12 @@ zshref docs --raw AUTO_CD | jq '.matches[0] | {category, display}'
 zshref search --query autoc --limit 1 \
   | jq -r '.matches[0] | "--category \(.category) --raw \(.id)"' \
   | xargs zshref docs \
-  | jq -r '.matches[0].markdown' \
+  | jq -r '.matches[0].mdBody' \
   | head -3
 
-# NO_* negation resolves to the base option; `negated` tells you the state.
-zshref docs --raw NO_AUTO_CD --category option | jq '.matches[0] | {display, negated}'
-# → { "display": "AUTO_CD", "negated": true }
+# NO_* negation resolves to the base option; `feedback` tells you which path was taken.
+zshref docs --raw NO_AUTO_CD --category option | jq '.matches[0] | {display, feedback}'
+# → { "display": "AUTO_CD", "feedback": { "kind": "input-negated" } }
 ```
 
 ## Install
@@ -84,13 +84,13 @@ zshref docs --raw '<<<'
 # not as a reserved word).
 zshref docs --raw for --category complex_command
 
-# `NO_*` option negation: same canonical id, `negated: true`.
+# `NO_*` option negation: same canonical id, plus `feedback: { kind: "input-negated" }`.
 zshref docs --raw NO_AUTO_CD --category option
 
 # Fuzzy search; optionally narrow by category. Pair with `docs` for the body.
 zshref search --query echo --category builtin --limit 5
 
-# Enumerate records in a category — id-only, no markdown body.
+# Enumerate records in a category — id-only, no `mdBody`.
 zshref list --category option --limit 200
 
 # Emit corpus + upstream metadata.

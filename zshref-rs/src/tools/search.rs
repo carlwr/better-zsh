@@ -18,8 +18,6 @@ use anyhow::Result;
 use clap::ArgMatches;
 use serde_json::Value;
 
-pub const DEFAULT_LIMIT: u32 = 20;
-
 struct Entry<'c> {
     category: &'c str,
     id: String,
@@ -36,7 +34,8 @@ pub fn run(matches: &ArgMatches, corpus: &Corpus) -> Result<Value> {
         .unwrap_or("")
         .trim();
     let category = matches.get_one::<String>("category").cloned();
-    let limit = *matches.get_one::<u32>("limit").unwrap_or(&DEFAULT_LIMIT) as usize;
+    // Default is baked into the clap arg from inputSchema.properties.limit.default.
+    let limit = *matches.get_one::<u32>("limit").unwrap_or(&0) as usize;
 
     if query.is_empty() {
         return Ok(mk_envelope(Vec::new(), 0));

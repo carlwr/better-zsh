@@ -1,5 +1,5 @@
 import type { DocCorpus } from "../docs/corpus.ts"
-import { resolve } from "../docs/corpus.ts"
+import { resolve } from "../docs/resolvers.ts"
 import type { DocCategory, DocPieceId, DocRecordMap } from "../docs/taxonomy.ts"
 import type {
   ArithOpDoc,
@@ -427,7 +427,6 @@ export const mdRenderer: {
  * Render the markdown doc block for a proven documented element.
  * `id` must come from `resolve()` or from corpus iteration; the lookup is
  * guaranteed by the static corpus, so the return type is `string`.
- * Categories with TBD rendering return `"TBD"`.
  *
  * Upgrade path: if multiple categories gain meaningful compact/signature
  * forms, add an options bag with a `level: "full" | "sig"` axis and a

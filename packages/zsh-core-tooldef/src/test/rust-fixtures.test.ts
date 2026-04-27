@@ -75,6 +75,28 @@ const cases: readonly Case[] = [
     name: "not_an_option",
     input: { raw: "not-an-option" },
   },
+  // Rust resolver parity: category-specific resolver forms that are not
+  // literal corpus ids.
+  {
+    tool: "zsh_docs",
+    name: "history_bang_number",
+    input: { raw: "!42", category: "history" },
+  },
+  {
+    tool: "zsh_docs",
+    name: "history_search",
+    input: { raw: "!?zsh", category: "history" },
+  },
+  {
+    tool: "zsh_docs",
+    name: "glob_flag_wrapped",
+    input: { raw: "(#i)", category: "glob_flag" },
+  },
+  {
+    tool: "zsh_docs",
+    name: "glob_qualifier_extended",
+    input: { raw: "(#q@)", category: "glob_qualifier" },
+  },
 
   // search
   { tool: "zsh_search", name: "query_printf", input: { query: "printf" } },
@@ -95,6 +117,16 @@ const cases: readonly Case[] = [
     tool: "zsh_search",
     name: "limit_zero",
     input: { query: "echo", category: "builtin", limit: 0 },
+  },
+  {
+    tool: "zsh_search",
+    name: "history_bang_number",
+    input: { query: "!42", category: "history", limit: 3 },
+  },
+  {
+    tool: "zsh_search",
+    name: "glob_flag_wrapped",
+    input: { query: "(#i)", category: "glob_flag", limit: 3 },
   },
 
   // list

@@ -14,7 +14,7 @@ Static zsh knowledge is the product. We parse vendored Yodl into typed records d
 
 - **Zsh-aware, not environment-aware.** Bundled static knowledge over host-shell probing. Environment-dependent data (`$commands`, `$aliases`, `$fpath` beyond system defaults) varies by machine and launch method — out of scope.
 - **Mental model:** "if we could bundle a zsh binary and run it in an isolated container, we would." System zsh is invoked only where shell execution is intrinsically required (diagnostics, completion enrichment); otherwise bundled/static.
-- **Low-hanging fruit:** what line-local, corpus-aware logic can recognize. Everything else is silence.
+- analysis/: **Low-hanging fruit:** what line-local, corpus-aware logic can recognize. Everything else is silence.
 
 ### Resolver scope balance
 
@@ -24,6 +24,31 @@ Per-category resolvers bridge raw user text to documented identity. Corpus-aware
 - **Out:** extracting individual flags from an in-context parameter-expansion arg list like `(@rs:/:j[\])`. User-code parsing — a different problem class.
 
 In-context tokenization, if it belongs anywhere, belongs in `src/analysis/`. Resolvers stop at "is this raw string a documented thing?".
+
+### Resolver feedback (lossy normalization)
+
+Resolution can be lossy: `setopt NO_AUTO_CD` resolves to `autocd`, discarding the `NO_` prefix that carries semantic meaning. The brand machinery keeps `Documented<K>` pure (corpus identity, nothing else); lossy bits surface via a separate parametric `resolverFeedback(corpus, cat, raw)` channel.
+
+- **`resolve` and `Documented<K>` carry only identity.** No optional side-channels; no hidden state.
+- **Per-category dispatch lives in zsh-core**, not in consumers. Tooldef stays parametric over `DocCategory` — no `if (cat === "option")` branches.
+- **Structured, not prose.** `ResolverFeedback` is a closed `kind`-tagged union; consumers route programmatically and wording isn't API surface.
+
+Current example: option inputs reached via `NO_`-stripping emit an `input-negated` kind. Future lossy resolvers extend the zsh-core union and tooldef + schema pick them up locally.
+
+See DESIGN.md §"Resolver feedback channel".
+
+---
+
+## Facts and docs: asymmetric, not parallel
+
+`src/docs/` (closed taxonomy, exhaustive over the corpus, parametric tables) and `src/analysis/` (line-local, best-effort, flat discriminated union of `Fact` kinds) are intentionally asymmetric:
+
+- **`docs/` is exhaustive over a closed `DocCategory` taxonomy** with `DocCorpus`-keyed tables. Adding a category is a structural change with type-checked completeness everywhere.
+- **`analysis/` is line-local and partial.** `Fact` kinds (`cmd-head`, `redir`, `func-decl`, …) overlap `DocCategory` only incidentally and don't share its parametric machinery.
+
+The shapes serve different jobs — documentation is a closed corpus we enumerate; what user code asserts is open-ended and best-effort. Don't introduce parallel scaffolding.
+
+Brand types `Observed<K>` and `Documented<K>` are the load-bearing connection: facts may carry `Observed<K>`; `Documented<K>` carries doc identity; the resolver layer bridges raw user text to documented identity. That's the only structural coupling the two domains need.
 
 ---
 
@@ -41,7 +66,7 @@ More categories mean more iterations for agents that list or walk — context to
 
 ### Overlap between categories is accepted
 
-zsh-core exposes every category uniformly. `reserved_word` overlaps `complex_command` on `for`/`if`/`while`; it overlaps `builtin` on the `typeset` family. Consumer-layer ordering resolves these — `classifyOrder` in tooldef, fallback chains in extension hover. Resist restructuring the taxonomy to eliminate overlap; the classification walk is where overlap cost belongs.
+zsh-core exposes every category uniformly. `reserved_word` overlaps `complex_command` on `for`/`if`/`while`; it overlaps `builtin` on the `typeset` family. Consumer-layer ordering resolves these — `classifyOrder` in zsh-core, consumed by tooldef, and fallback chains in extension hover. Resist restructuring the taxonomy to eliminate overlap; the resolver walk is where overlap cost belongs.
 
 ### Category roles: documentation-primary vs enumeration-primary
 
@@ -50,7 +75,7 @@ Doc categories serve one of two primary roles, and the distinction matters when 
 - **Documentation-primary** (the majority): each record is the canonical source of prose for its token. The category exists *because* that token type has documentation worth modelling structurally. The list is incidental — emitted for completeness, but the per-record markdown is the load-bearing artifact.
 - **Enumeration-primary**: the *list itself* is the load-bearing artifact. Consumers iterate the corpus map to populate completions, syntactic-class checks, or enumeration-style tools; per-record prose is supplementary, often deliberately omitted when richer prose lives in a documentation-primary category that overlaps.
 
-`reserved_word` is currently the only enumeration-primary category. `classifyOrder` places documentation-primary categories before enumeration-primary ones for overlapping tokens, so consumers walking the corpus reach the richer record first.
+`reserved_word` is currently the only enumeration-primary category. `classifyOrder` encodes resolver-shadowing and product ordering; in important overlaps such as complex commands before reserved words, consumers walking the corpus reach the richer record first.
 
 Not a separate type or interface — both roles use the same `DocCategory` machinery and `DocCorpus` map. It is design vocabulary: when adding a category, name the role explicitly and justify it against existing precedent.
 
@@ -80,7 +105,7 @@ Prefer typed structural fields (subKind, kind, requires, args) over encoding sig
 
 ### Judge changes by extrapolation to unknown consumers
 
-Tooldef is a library. Current consumers: MCP server, Rust CLI, VS Code extension; unknown third parties may arrive. Evaluate changes by reasoning through what each consumer — current and future — would see. The asymmetric field budget (`brief`, `description`, `flagBriefs`, `inputSchema.properties[*].description`) exists because adapter surface budgets differ.
+Tooldef is a library. Evaluate changes across host adapters and unknown third-party consumers. The asymmetric field budget (`brief`, `description`, `flagBriefs`, `inputSchema.properties[*].description`) exists because adapter surface budgets differ.
 
 ### Push decisions downstream
 
