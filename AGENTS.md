@@ -264,6 +264,10 @@ The zsh-path matrix integration harness is CI/Docker-only. On macOS, VS Code's s
 
 Always use `--no-dependencies`. The extension is bundled, and `vsce`'s internal `npm list` is incompatible with pnpm's layout.
 
+### Generated `contributes.languageModelTools`
+
+Generated from `toolDefs` by `src/build/lm-tools-manifest.ts`; committed because VSIX needs it inline. Don't hand-edit. Rebuild after tooldef edits — drift test catches stale manifests.
+
 ### Linguist hints (deferred)
 
 `.gitattributes` (`linguist-generated`, `linguist-vendored`, `linguist-documentation`) can steer GitHub's Linguist to keep the language-bar honest and collapse generated diffs. Yodl sources are vendored; decide separately whether Linguist noise warrants marking them.

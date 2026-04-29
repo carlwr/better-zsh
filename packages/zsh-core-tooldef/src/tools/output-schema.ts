@@ -15,14 +15,13 @@
  * `subKind` is always-or-never per category: when `subKindEnums[cat]` is
  * non-undefined the branch declares `subKind` with the closed enum AND
  * requires it; when undefined the branch omits the property and
- * `additionalProperties: false` forbids it. See DESIGN.md §"`subKind` is
- * always-or-never per category".
+ * `additionalProperties: false` forbids it. See `DESIGN.md` (subKind
+ * always-or-never rule).
  *
- * Per AGENTS.md §"Never enumerate or count `DocCategory`" (extended to closed
- * zsh-core unions), category names, subKind values, and feedback kinds are
- * interpolated from canonical zsh-core tables — never hand-typed.
+ * Per `AGENTS.md`, category names, subKind values, and feedback kinds are
+ * interpolated from zsh-core tables — never hand-typed literals.
  *
- * See DESIGN.md §"Output schemas (tooldef-owned)" for rationale.
+ * Rationale for owning schemas here: `DESIGN.md` (output schemas).
  */
 
 import {
@@ -38,7 +37,10 @@ import { MAX_LIMIT } from "./limits.ts"
 export interface MatchShape {
   readonly score?: "required" | "absent"
   readonly mdBody?: "required" | "absent"
-  /** When `"optional"`, every category branch declares an optional `feedback` slot referencing `$defs/Feedback`. */
+  /**
+   * `"optional"`: each category branch may declare optional `feedback`
+   * (`#/$defs/Feedback`). `"absent"`: branches omit `feedback`.
+   */
   readonly feedback?: "optional" | "absent"
 }
 

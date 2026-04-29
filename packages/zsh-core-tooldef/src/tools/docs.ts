@@ -15,32 +15,27 @@ import {
 import { renderDoc } from "@carlwr/zsh-core/render"
 import { makeToolDef, type ToolDef } from "../tool-defs.ts"
 import { display } from "./doc-display.ts"
+import type { BaseMatch } from "./entries.ts"
 import { mkOutputSchema } from "./output-schema.ts"
-import { humanCategoryList, isValidCategory, mkEnvelope } from "./result.ts"
+import {
+  categoryList,
+  type Envelope,
+  isValidCategory,
+  mkEnvelope,
+} from "./result.ts"
 
 export interface DocsInput {
   readonly raw: string
   readonly category?: DocCategory
 }
 
-export interface DocsMatch {
-  readonly category: DocCategory
-  readonly id: string
-  readonly display: string
+export interface DocsMatch extends BaseMatch {
   readonly mdBody: string
-  /** Typed sub-facet of the record (e.g. history `kind`, glob_op `kind`, reserved_word `pos`). Absent when the category has no meaningful subKind. */
-  readonly subKind?: string
-  /** Lossy-resolution feedback emitted by the per-category resolver. Today: `{ kind: "input-negated" }` for option inputs reached via `NO_`-stripping. Absent when the resolver had no feedback to emit. */
+  /** Optional per-category resolver feedback (e.g. `{ kind: "input-negated" }` when an option was reached via `NO_`-stripping). Absent when there is nothing to surface. */
   readonly feedback?: ResolverFeedback
 }
 
-export interface DocsResult {
-  readonly matches: readonly DocsMatch[]
-  /** Always equals `matches.length`; emitted for envelope uniformity with `search` / `list`. */
-  readonly matchesReturned: number
-  /** No truncation in `docs`; always equals `matches.length`. Emitted for envelope uniformity. */
-  readonly matchesTotal: number
-}
+export type DocsResult = Envelope<DocsMatch>
 
 /**
  * Resolve `raw` against one category using the "direct ∥ resolver, direct
@@ -56,7 +51,7 @@ export interface DocsResult {
  * categories don't care: direct misses on `AUTO_CD`, falls to the
  * resolver, which lowercases/strips underscores → `autocd`.
  *
- * See DESIGN.md §"docs: direct ∥ resolver".
+ * See `DESIGN.md` (docs resolution: direct vs resolver).
  */
 function lookupOne(
   corpus: DocCorpus,
@@ -84,7 +79,7 @@ function formatMatch(
     | undefined
   if (!rec) {
     throw new Error(
-      `docs: corpus lookup miss for ${pid.category}:${pid.id} — resolver returned a brand that isn't in the corpus map; see zsh-core's docs/resolvers.ts resolver table.`,
+      `docs: corpus lookup miss for ${pid.category}:${pid.id} — resolver returned an id not present in the corpus map.`,
     )
   }
   const getSubKind = docSubKind[pid.category] as (
@@ -103,11 +98,10 @@ function formatMatch(
 }
 
 /**
- * Look up the docs for a raw zsh token. With `--category`, restricts to
- * that one category (0 or 1 matches). Without, walks `classifyOrder` and
- * returns one match per resolving category — typically 0 or 1, occasionally
- * 2 when overlap categories both resolve (`for` → complex_command +
- * reserved_word; `nocorrect` → precmd + option).
+ * Look up docs for a raw zsh token. With `category`, one category (0–1
+ * matches). Without, walks `classifyOrder` and returns one match per
+ * resolving category — usually 0–1, sometimes 2 when overlap categories
+ * both resolve (`for`, `nocorrect`, etc.).
  *
  * Resolution is "direct ∥ resolver, direct preferred"; see `lookupOne`.
  * Pure; no IO.
@@ -137,7 +131,7 @@ function isHistoryEvent(corpus: DocCorpus, pid: DocPieceId): boolean {
   return rec?.kind === "event-designator"
 }
 
-const categoryList = humanCategoryList(classifyOrder)
+const catList = categoryList(classifyOrder, { withLabel: true })
 
 export const docsToolDef: ToolDef = makeToolDef<"raw" | "category">({
   name: "zsh_docs",
@@ -149,7 +143,7 @@ Returns one match per category that resolves the input, each with the rendered m
 
 Categories searched (in resolver-walk order):
 
-${categoryList}
+${catList}
 
 Set \`category\` to constrain the search to one category; otherwise every category is tried and the response may carry more than one match. Some inputs name elements in more than one category (e.g. \`for\`, \`[[\`, \`function\`, \`nocorrect\`); without \`category\` those return multiple matches.
 
@@ -170,7 +164,7 @@ No shell execution, no environment access.`,
       },
       category: {
         type: "string",
-        description: `Optional: constrain the lookup to one category. When omitted, every category is tried and the response may carry more than one match. Unknown values yield an empty match set.\n\nValid values:\n\n${categoryList}`,
+        description: `Optional: constrain the lookup to one category. When omitted, every category is tried and the response may carry more than one match. Unknown values yield an empty match set.\n\nValid values:\n\n${catList}`,
       },
     },
     required: ["raw"],

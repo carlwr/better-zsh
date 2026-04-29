@@ -88,11 +88,9 @@ describe("search", () => {
     expect(r.matches[0]?.score).toBe(1.0)
   })
 
-  test("AUTO_CD: exact-tier hit, not duplicated by resolver", () => {
+  test("AUTO_CD: exact tier only (no resolver duplicate)", () => {
     const r = search(corpus, { query: "AUTO_CD", limit: 5 })
-    // option's display is `AUTO_CD`, id is `autocd`; exact tier hits
-    // case-insensitively. Resolver would also resolve `AUTO_CD` →
-    // `autocd`, but the seen-set must keep it from doubling up.
+    // Display matches `AUTO_CD`; id is `autocd`. Resolver would hit the same id.
     const optHits = r.matches.filter(
       m => m.category === "option" && m.id === "autocd",
     )
@@ -101,8 +99,7 @@ describe("search", () => {
   })
 
   test("dedup invariant: no two matches share (category, id)", () => {
-    // Focused regression test for the seen-set tracked across
-    // exact/resolver/prefix/fuzzy.
+    // Regression: seen-set spans exact/resolver/prefix/fuzzy.
     const queries = [
       "AUTO_CD",
       "au_to_cd",

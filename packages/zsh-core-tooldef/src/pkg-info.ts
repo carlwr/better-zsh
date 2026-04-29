@@ -1,8 +1,7 @@
 /**
- * Single source of truth for package identity strings.
- * In `.ts` (not read from `package.json` at runtime) since the JSR
- * surface has no `package.json`. `src/test/pkg-info.test.ts` enforces
- * sync with `package.json` and `deno.json`.
+ * Package identity strings (not read from `package.json` at runtime —
+ * JSR has no `package.json`). Tests keep these in sync with the published
+ * manifests.
  */
 
 export const PKG_NAME = "@carlwr/zsh-core-tooldef"

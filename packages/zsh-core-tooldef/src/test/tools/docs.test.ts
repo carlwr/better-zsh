@@ -101,8 +101,7 @@ describe("docs — `category` constrains the lookup", () => {
   })
 
   test("with category=option, NO_-prefixed input still resolves (not strict)", () => {
-    // `category` constrains the search to one category; per-category
-    // resolver semantics still apply. So `NO_AUTO_CD` resolves to autocd.
+    // Resolver semantics still apply inside the chosen category.
     const r = docs(corpus, { raw: "NO_AUTO_CD", category: "option" })
     expect(r.matches[0]?.id).toBe("autocd")
   })

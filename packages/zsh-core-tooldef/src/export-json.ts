@@ -3,10 +3,9 @@ import { join } from "node:path"
 import type { ToolDef } from "./tool-defs.ts"
 
 /**
- * Metadata-only projection of a `ToolDef` — the `execute` function is
- * intentionally dropped (it is not serialisable). Descriptions are already
- * flow prose in `tool-defs.ts` and pass through unchanged; clap handles
- * terminal-width wrapping at render time.
+ * Metadata-only projection of a `ToolDef` — `execute` is omitted (not
+ * serialisable). Descriptions pass through unchanged; the Rust CLI wraps
+ * help text at render time.
  */
 export interface ToolDefJson {
   readonly name: string
@@ -21,10 +20,9 @@ export interface ToolDefsJson {
   readonly version: 1
   readonly tools: readonly ToolDefJson[]
   /**
-   * Suite-level intent→tool cheat-sheet. The Rust CLI renders this into
-   * `zshref --help` after tool-name rewriting; the MCP adapter passes it
-   * as server `instructions`. See `TOOL_SUITE_PREAMBLE` in
-   * `src/tool-defs.ts` for the drift warning that governs edits.
+   * Suite-level intent→tool cheat-sheet. The Rust CLI renders this after
+   * tool-name rewriting; MCP passes it as server `instructions`. Editing
+   * constraints match `TOOL_SUITE_PREAMBLE` in `tool-defs.ts`.
    */
   readonly preamble: string
 }
@@ -45,12 +43,11 @@ function fmtJson(data: unknown): string {
 }
 
 /**
- * Write `tooldef.json` + `tooldef.schema.json` under `outDir`. Intended to
- * be invoked from `build.ts` after `tsup` has produced the JS bundle.
+ * Write `tooldef.json` + `tooldef.schema.json` under `outDir`. Invoked from
+ * `build.ts` after `tsup` emits the bundle.
  *
- * Consumer: the Rust CLI (`zshref-rs`) which bundles this file via
- * `include_bytes!`. TS consumers (MCP, vscode) keep reading the `toolDefs`
- * const in-process and never touch this artifact.
+ * The Rust CLI embeds `tooldef.json`; TypeScript adapters use in-memory
+ * `toolDefs` and normally skip this artifact.
  */
 export function writeToolDefsJson(
   toolDefs: readonly ToolDef[],
@@ -74,8 +71,7 @@ export function writeToolDefsJson(
 /**
  * Hand-written JSON Schema for `tooldef.json`. The shape is small and
  * stable; a generator round-trip would add a devDep and a build step for
- * no observable benefit here. When the Rust-side `serde` struct is the
- * real source of truth, this schema stays as a human-facing reference.
+ * little gain.
  */
 const toolDefsJsonSchema = {
   $schema: "https://json-schema.org/draft/2020-12/schema",

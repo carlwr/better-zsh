@@ -4,13 +4,8 @@ import { fileURLToPath } from "node:url"
 import { describe, expect, test } from "vitest"
 
 /**
- * Structural scope fence: the "no execution, no environment access" promise
- * is a product feature of every adapter that walks `toolDefs` (MCP server,
- * CLI, VS Code extension), so enforce it at the source — no tool file may
- * reach for `child_process`, process spawn primitives, networking APIs,
- * `process.env`, `vscode`, or arbitrary `fs`. Adapters (bin entries,
- * server modules) are free to handle transport and stderr; tool files
- * are not.
+ * Scope fence: tool modules under `src/tools/` must not import execution,
+ * networking, `process.env`, `vscode`, or arbitrary `fs`. Adapters handle IO.
  */
 
 const here = dirname(fileURLToPath(import.meta.url))

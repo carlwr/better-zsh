@@ -11,32 +11,26 @@ export function isValidCategory(cat: unknown): cat is DocCategory {
   return typeof cat === "string" && VALID_CATEGORIES.has(cat)
 }
 
-/**
- * Build the `{ matches, matchesReturned, matchesTotal }` envelope every tool
- * returns. `matchesReturned` is always `matches.length`; `total` is the
- * pre-truncation count — for tools that don't truncate (`docs`), omit
- * (defaults to `matches.length`). Mirror of `mk_envelope` in
- * `zshref-rs/src/tools/shared.rs`.
- */
-export function mkEnvelope<T>(
-  matches: readonly T[],
-  total: number = matches.length,
-): {
-  readonly matches: readonly T[]
+/** Result envelope: match list + returned/total counts. Rust CLI emits the same shape. */
+export interface Envelope<M> {
+  readonly matches: readonly M[]
   readonly matchesReturned: number
   readonly matchesTotal: number
-} {
+}
+
+export function mkEnvelope<M>(
+  matches: readonly M[],
+  total: number = matches.length,
+): Envelope<M> {
   return { matches, matchesReturned: matches.length, matchesTotal: total }
 }
 
-/** `  - 'name'` lines, one per category. Order = caller-supplied. */
-export function brandedCategoryList(
+export function categoryList(
   cats: readonly DocCategory[] = docCategories,
+  opts: { readonly withLabel?: boolean } = {},
 ): string {
-  return cats.map(c => `  - '${c}'`).join("\n")
-}
-
-/** `  - 'name'  (Label)` lines, one per category. Order = caller-supplied. */
-export function humanCategoryList(cats: readonly DocCategory[]): string {
-  return cats.map(c => `  - '${c}'  (${docCategoryLabels[c]})`).join("\n")
+  const fmt = opts.withLabel
+    ? (c: DocCategory) => `  - '${c}'  (${docCategoryLabels[c]})`
+    : (c: DocCategory) => `  - '${c}'`
+  return cats.map(fmt).join("\n")
 }

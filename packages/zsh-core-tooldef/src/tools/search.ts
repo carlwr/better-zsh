@@ -7,10 +7,15 @@ import {
 } from "@carlwr/zsh-core"
 import fuzzysort from "fuzzysort"
 import { makeToolDef, type ToolDef } from "../tool-defs.ts"
-import { type Entry, entries } from "./entries.ts"
+import { type BaseMatch, entries } from "./entries.ts"
 import { clampLimit, DEFAULT_LIMIT, MAX_LIMIT } from "./limits.ts"
 import { mkOutputSchema } from "./output-schema.ts"
-import { brandedCategoryList, isValidCategory, mkEnvelope } from "./result.ts"
+import {
+  categoryList,
+  type Envelope,
+  isValidCategory,
+  mkEnvelope,
+} from "./result.ts"
 
 export interface SearchInput {
   readonly query: string
@@ -18,34 +23,19 @@ export interface SearchInput {
   readonly limit?: number
 }
 
-export interface SearchMatch {
-  readonly category: DocCategory
-  readonly id: string
-  readonly display: string
-  /** Typed sub-facet of the record (e.g. history `kind`, glob_op `kind`). Absent when the category has no meaningful subKind. */
-  readonly subKind?: string
+export interface SearchMatch extends BaseMatch {
   /**
-   * Match score. Always `1.0` for exact / resolver / prefix tier matches;
-   * a fuzzy-tier match carries fuzzysort's normalized score in `(0, 1)`.
-   * Schema-bounded to `[0, 1]` (see `mkOutputSchema`).
+   * Score in `[0, 1]`. `1.0` for exact / resolver / prefix tiers; fuzzy
+   * tier uses fuzzysort's normalized score in `(0, 1)`.
    */
   readonly score: number
 }
 
-export interface SearchResult {
-  readonly matches: readonly SearchMatch[]
-  /** Always equals `matches.length`; surfaced explicitly so JSON consumers don't have to count. */
-  readonly matchesReturned: number
-  /** Total matches before `limit` truncation. `matchesReturned < matchesTotal` iff the response was truncated. */
-  readonly matchesTotal: number
-}
+export type SearchResult = Envelope<SearchMatch>
 
 /**
- * Search the static zsh reference. Ranking: exact id/display > resolver
- * (close-variant normalization, e.g. `au_to_cd` → `autocd`) > prefix >
- * fuzzy. Empty/whitespace query returns an empty match set (use
- * `zsh_list` to enumerate). `limit=0` returns metadata only.
- * Pure; no IO.
+ * Ranked search: exact / resolver / prefix, then fuzzy. Empty query → empty
+ * set (use `zsh_list` to enumerate). `limit=0` → metadata only. Pure; no IO.
  */
 export function search(corpus: DocCorpus, input: SearchInput): SearchResult {
   if (input.category !== undefined && !isValidCategory(input.category))
@@ -57,12 +47,11 @@ export function search(corpus: DocCorpus, input: SearchInput): SearchResult {
   if (!q) return mkEnvelope<SearchMatch>([])
 
   const qLow = q.toLowerCase()
-  const exact: Entry[] = []
-  const prefix: Entry[] = []
-  const rest: Entry[] = []
+  const exact: BaseMatch[] = []
+  const prefix: BaseMatch[] = []
+  const rest: BaseMatch[] = []
   // Dedup invariant: no two matches share `(category, id)`. The seen-set
-  // is maintained across all four tiers; regression coverage in
-  // `tools/search.test.ts`.
+  // spans all tiers; covered by search tool tests.
   const seen = new Set<string>()
   const seenKey = (cat: DocCategory, id: string): string => `${cat}\0${id}`
   for (const e of pool) {
@@ -84,12 +73,12 @@ export function search(corpus: DocCorpus, input: SearchInput): SearchResult {
   // history event-designators, etc.). Hits not already bucketed by the
   // exact/prefix pass surface here. Walks `classifyOrder` when the caller
   // didn't pin a category; otherwise just the one.
-  const resolverHits: Entry[] = []
+  const resolverHits: BaseMatch[] = []
   const resolverCats: readonly DocCategory[] =
     input.category !== undefined ? [input.category] : classifyOrder
-  // `(category, id)` → Entry so resolver hits can be matched without
+  // `(category, id)` → BaseMatch so resolver hits can be matched without
   // re-walking the pool.
-  const byKey = new Map<string, Entry>()
+  const byKey = new Map<string, BaseMatch>()
   for (const e of pool) byKey.set(seenKey(e.category, e.id), e)
   for (const cat of resolverCats) {
     const pid = resolve(corpus, cat, q)
@@ -113,7 +102,7 @@ export function search(corpus: DocCorpus, input: SearchInput): SearchResult {
     exact.length + resolverHits.length + prefix.length + fuzzyAll.length
 
   const matches: SearchMatch[] = []
-  const pushTier = (es: readonly Entry[]) => {
+  const pushTier = (es: readonly BaseMatch[]) => {
     for (const e of es) {
       if (matches.length >= limit) return
       matches.push(toMatch(e, 1.0))
@@ -131,7 +120,7 @@ export function search(corpus: DocCorpus, input: SearchInput): SearchResult {
   return mkEnvelope(matches, matchesTotal)
 }
 
-function toMatch(e: Entry, score: number): SearchMatch {
+function toMatch(e: BaseMatch, score: number): SearchMatch {
   return {
     category: e.category,
     id: e.id,
@@ -141,7 +130,7 @@ function toMatch(e: Entry, score: number): SearchMatch {
   }
 }
 
-const categoryList = brandedCategoryList()
+const catList = categoryList()
 
 export const searchToolDef: ToolDef = makeToolDef<
   "query" | "category" | "limit"
@@ -161,7 +150,7 @@ To enumerate without a query, use \`zsh_list\`.
 
 Valid \`category\` values:
 
-${categoryList}
+${catList}
 
 No shell execution, no environment access.`,
   inputSchema: {
@@ -174,7 +163,7 @@ No shell execution, no environment access.`,
       },
       category: {
         type: "string",
-        description: `Optional filter to a single doc category. Unknown categories yield an empty match set.\n\nValid values:\n\n${categoryList}`,
+        description: `Optional filter to a single doc category. Unknown categories yield an empty match set.\n\nValid values:\n\n${catList}`,
       },
       limit: {
         type: "integer",

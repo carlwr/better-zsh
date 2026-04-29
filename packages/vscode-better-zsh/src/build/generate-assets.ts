@@ -2,6 +2,7 @@ import { mkdirSync, writeFileSync } from "node:fs"
 import { copyRuntimeZshData } from "@carlwr/zsh-core/assets"
 import { buildChatInstructions } from "./chat-instructions"
 import { langConfig } from "./lang-config"
+import { writeLanguageModelTools } from "./lm-tools-manifest"
 import { outDir } from "./paths"
 import { buildSnippetJson, readSnippets } from "./snippets"
 
@@ -24,4 +25,5 @@ export async function generateAssets() {
     buildChatInstructions(snippets),
   )
   copyRuntimeZshData(outDir)
+  writeLanguageModelTools()
 }

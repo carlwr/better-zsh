@@ -8,7 +8,7 @@ import {
 import { display } from "./doc-display.ts"
 import { isValidCategory } from "./result.ts"
 
-export interface Entry {
+export interface BaseMatch {
   readonly category: DocCategory
   readonly id: string
   readonly display: string
@@ -16,14 +16,13 @@ export interface Entry {
 }
 
 /**
- * Flat list of candidate entries from the corpus. Cheap: iterates
- * `corpus[cat].keys()` + `docDisplay(cat, rec)`; no markdown rendering.
- * Shared by `search` and `list`.
+ * Flat list of corpus entries (display strings; no markdown). Shared by
+ * `search` and `list`.
  */
-export function entries(corpus: DocCorpus, cat?: DocCategory): Entry[] {
+export function entries(corpus: DocCorpus, cat?: DocCategory): BaseMatch[] {
   if (cat !== undefined && !isValidCategory(cat)) return []
   const cats = cat ? [cat] : docCategories
-  const out: Entry[] = []
+  const out: BaseMatch[] = []
   for (const c of cats) {
     const map = corpus[c] as ReadonlyMap<string, DocRecordMap[DocCategory]>
     const getSubKind = docSubKind[c] as (

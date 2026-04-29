@@ -1,4 +1,6 @@
 export * from "./docs.ts"
+export type { BaseMatch } from "./entries.ts"
 export * from "./limits.ts"
 export * from "./list.ts"
+export type { Envelope } from "./result.ts"
 export * from "./search.ts"

@@ -1,23 +1,18 @@
 /**
- * Shared-fixture bridge between TS `execute()` and the Rust CLI.
+ * Bridge TS `execute()` output to the Rust CLI via checked-in fixtures.
  *
- * Each fixture file under `zshref-rs/tests/fixtures/<tool>/<case>.json`
- * holds `{ tool, input, argv, expectedOutput }`:
- *   - `input` is what the TS `execute(corpus, input)` sees.
+ * Each case file holds `{ tool, input, argv, expectedOutput }`:
+ *   - `input` is what TS `execute(corpus, input)` sees.
  *   - `argv` is what the Rust CLI receives on the command line.
  *   - `expectedOutput` is the JSON both must produce (score fields
- *     stripped — TS fuzzysort and the Rust in-tree ASCII subsequence
- *     scorer use different scales, so numeric scores aren't compared).
+ *     stripped — TS fuzzysort and the Rust ASCII scorer use different
+ *     scales, so numeric scores aren't compared).
  *
  * Modes:
- *   - Write (env `BZ_WRITE_RUST_FIXTURES=1`): regenerate fixtures from
- *     current `execute()` output. Run this whenever intended behaviour
- *     changes; review the resulting diff before committing.
- *   - Default (assert): load fixtures and verify current `execute()`
- *     still matches. Catches silent TS-side drift in `pnpm test`.
- *
- * The Rust-side integration test (`zshref-rs/tests/integration.rs`)
- * reads the same files.
+ *   - Write (`BZ_WRITE_RUST_FIXTURES=1`): regenerate from current
+ *     `execute()`; review diffs before commit.
+ *   - Default: load fixtures and assert parity (catches TS drift). The
+ *     Rust crate's integration tests read the same tree.
  */
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
@@ -162,12 +157,10 @@ function toArgv(toolName: string, input: Record<string, unknown>): string[] {
 }
 
 /**
- * Strip fields that are known not to match across the TS/Rust sides:
+ * Strip fields that are known not to match across TS vs Rust:
  *
- * - `score`: TS fuzzysort and Rust's in-tree ASCII subsequence scorer
- *   (`zshref-rs/src/fuzzy.rs`) use different scales; exact numeric
- *   equality is not meaningful. Ranking order is what both sides are
- *   written to produce identically.
+ * - `score`: TS fuzzysort vs the Rust fuzzy scorer use different scales;
+ *   ranking order is what both sides align on.
  */
 const DROPPED_KEYS = new Set(["score"])
 
@@ -215,9 +208,7 @@ describe.runIf(writeMode)("rust fixtures — write mode", () => {
   test.each(
     cases.map(c => [`${c.tool}/${c.name}`, c] as const),
   )("write %s", (_n, c) => {
-    // Fixtures retain `score` so the file documents the full shape;
-    // cross-adapter comparison still strips it at assert time (see
-    // `stripScores` / `DROPPED_KEYS`).
+    // Fixtures keep `score` for shape documentation; asserts strip it.
     const payload = {
       tool: c.tool,
       input: c.input,

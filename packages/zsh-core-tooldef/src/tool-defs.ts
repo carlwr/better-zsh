@@ -5,20 +5,17 @@ import { docsToolDef, listToolDef, searchToolDef } from "./tools/index.ts"
 export type ToolInputSchema = Readonly<Record<string, unknown>>
 
 /**
- * Metadata + runtime for one MCP/LM tool. `execute` receives a JSON input
- * already validated against `inputSchema` by the adapter layer.
+ * Metadata + runtime for one MCP/LM tool. `execute` receives JSON input
+ * already validated against `inputSchema` by the adapter.
  *
- * `brief` is a ≤50-char one-line summary for narrow rendering contexts
- * (CLI help commands-column, UI list rows); `description` is the long-form
- * prose shown in LLM tool selection / full help blocks. Consumers that
- * don't need a short form (MCP, LM) ignore `brief`.
+ * `brief` is a ≤50-char line for narrow UIs (CLI commands column, list rows);
+ * `description` is long-form for LLM selection and full help. Hosts that only
+ * need long form ignore `brief`.
  *
- * `flagBriefs` mirrors `brief` at the per-flag level: a ≤60-char one-line
- * phrase per `inputSchema.properties` key, for CLI flag-column rendering.
- * Consumers that don't need short forms (MCP, LM) ignore `flagBriefs` and
- * read `inputSchema.properties[key].description` instead — the long form
- * is the source of truth for LLM-facing docs. Keys must match the
- * schema's property keys exactly.
+ * `flagBriefs` is a ≤60-char line per `inputSchema.properties` key for CLI
+ * flag columns. Hosts that only need long form use
+ * `inputSchema.properties[key].description`. Keys must match the schema
+ * property keys exactly.
  */
 export interface ToolDef {
   readonly name: string
@@ -27,9 +24,8 @@ export interface ToolDef {
   readonly inputSchema: ToolInputSchema
   /**
    * JSON Schema for this tool's `execute` return value. Co-located with
-   * `inputSchema`; consumed by adapters (MCP `outputSchema` /
-   * `structuredContent`, CLI `zshref schema`) and by drift-guarding
-   * tests. See DESIGN.md §"Output schemas (tooldef-owned)" for rationale.
+   * `inputSchema` for adapters (MCP output, CLI schema) and drift tests.
+   * Rationale: `DESIGN.md` (tooldef-owned output schemas).
    */
   readonly outputSchema: ToolInputSchema
   readonly flagBriefs: Readonly<Record<string, string>>
@@ -43,9 +39,8 @@ export const BRIEF_MAX_LEN = 50
 export const FLAG_BRIEF_MAX_LEN = 60
 
 /**
- * JSON-Schema property spec accepted by tool schemas. Keeps the type
- * narrow enough for the builder below to infer property keys while
- * allowing the usual JSON Schema metadata fields on each property.
+ * JSON Schema property fragment for tool `inputSchema` definitions — wide
+ * enough for usual metadata, narrow enough for the builder to infer keys.
  */
 export interface PropertySpec {
   readonly type?: "string" | "integer" | "number" | "boolean"
@@ -56,9 +51,8 @@ export interface PropertySpec {
 }
 
 /**
- * Shape of an `inputSchema` parameterized by its property key union `K`.
- * Used by `makeToolDef` to propagate key identities into `flagBriefs`
- * and the `required` list so TypeScript can check them at compile time.
+ * `inputSchema` shape keyed by property union `K`. Lets `makeToolDef` type
+ * `flagBriefs` and `required` against those keys at compile time.
  */
 export interface SchemaFor<K extends string> {
   readonly type: "object"
@@ -88,10 +82,8 @@ export interface MakeToolDefArgs<K extends string> {
  *   - `required: ["bogus"]` where "bogus" is not a schema property → TS
  *     error (the `readonly K[]` bound forbids non-K strings).
  *
- * This replaces a runtime shape test that used to enforce the same
- * invariants. Adapters still see the erased `ToolDef` (the `K` type
- * parameter is intentionally not exposed — adapters walk `toolDefs`
- * without knowing per-tool key unions).
+ * Adapters see the erased `ToolDef`; `K` stays internal so they can walk
+ * `toolDefs` without per-tool key unions.
  */
 export function makeToolDef<K extends string>(
   args: MakeToolDefArgs<K>,
@@ -104,33 +96,26 @@ export function makeToolDef<K extends string>(
 
 export { docsToolDef, listToolDef, searchToolDef }
 
-/** Aggregate list used by adapters to walk all tools uniformly. */
+/** All tools in declaration order for adapter registration. */
 export const toolDefs: readonly ToolDef[] = [
   docsToolDef,
   searchToolDef,
   listToolDef,
 ]
 
-// Corpus-tag naming convention: the two entry-point tools (`zsh_docs`,
-// `zsh_search`) name the vendored upstream tag (`ZSH_UPSTREAM.tag`) in
-// their description so an agent learns which zsh the answers describe.
-// The follow-up tool `zsh_list` deliberately does NOT — its job is
-// enumeration of the same corpus already named upstream by the entry-
-// point tools, so repeating the tag there only dilutes per-turn
-// context. Keep it asymmetric.
+// Corpus-tag convention: `zsh_docs` and `zsh_search` name `ZSH_UPSTREAM.tag`
+// in their descriptions so agents know which zsh the corpus is. `zsh_list`
+// does not repeat the tag (enumeration only; entry tools already set context).
 
 /**
- * Suite-level intent→tool cheat-sheet consumed by adapters that have a
- * place to surface suite-level framing:
- *   - MCP (`@carlwr/zshref-mcp`) — passed as `Server` `instructions` at
- *     handshake; clients typically inject it as system context for the
- *     LLM.
- *   - Rust CLI (`zshref-rs`) — inlined into `zshref --help`'s
- *     `ROOT_AFTER_HELP` after `cli_prose()` rewrites `zsh_*` tool names
- *     to `zshref *` subcommand names.
+ * Suite-level intent→tool cheat-sheet for hosts that surface suite framing:
+ *   - MCP — `instructions` at handshake; often injected as system context.
+ *   - Rust `zshref` CLI — concatenated after `cli_prose(preamble)` with
+ *     `ROOT_AFTER_HELP_TAIL` into the root `--help` tail (tool names rewritten
+ *     to subcommands first).
  *
- * The VS Code LM adapter has no server-level slot and does not consume
- * this field; per-tool descriptions already route between tools there.
+ * The VS Code LM adapter has no server-level slot; per-tool descriptions
+ * suffice there.
  *
  * WARNING — DRIFT-PRONE: this string is rendered VERBATIM (modulo the
  * tool-name rewrite) into BOTH an LLM prompt and a terminal user's
@@ -146,9 +131,8 @@ export const toolDefs: readonly ToolDef[] = [
  *   - keep it short (terminal users scan; LLM context windows are
  *     finite). Aim for under ~10 lines.
  *
- * The drift-guard test in `tool-defs.test.ts` asserts that every
- * `zsh_*` name mentioned here exists in `toolDefs`; it does NOT catch
- * tone, length, or formatting drift — those are on reviewer eyes.
+ * Drift-guard tests assert every `zsh_*` name here exists in `toolDefs`;
+ * they do not catch tone, length, or formatting — reviewers do.
  */
 export const TOOL_SUITE_PREAMBLE: string = `\
 Intent → tool:

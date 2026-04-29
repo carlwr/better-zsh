@@ -79,11 +79,9 @@ describe("toolDefs metadata", () => {
   })
 })
 
-// `flagBriefs` are one-line CLI FLAGS-column entries. Compile-time
-// checks via `makeToolDef<K>` enforce that keys match the schema's
-// property keys exactly — no runtime key-match test needed. We still
-// runtime-check the length cap and single-line shape, since those are
-// string-content invariants the builder type can't express.
+// `flagBriefs` are one-line CLI flag-column entries. Compile-time checks on
+// `makeToolDef` enforce keys against the schema — no runtime key-match test.
+// Length cap and single-line shape are still asserted at runtime.
 describe("toolDefs flagBriefs shape", () => {
   eachTool(
     "%s.flagBriefs values are non-empty one-liners within the cap",
@@ -173,8 +171,7 @@ describe("toolDefs description shape", () => {
     for (const cat of classifyOrder) expect(d).toContain(docCategoryLabels[cat])
   })
 
-  // See the "Corpus-tag naming convention" comment in `tool-defs.ts`:
-  // entry-point tools name the tag; follow-ups don't.
+  // Entry-point tools name the vendored zsh tag; follow-ups do not.
   test("entry-point tools name the vendored zsh tag", () => {
     expect(docsToolDef.description).toContain(ZSH_UPSTREAM.tag)
     expect(searchToolDef.description).toContain(ZSH_UPSTREAM.tag)

@@ -1,36 +1,21 @@
 import type { DocCategory, DocCorpus } from "@carlwr/zsh-core"
 import { makeToolDef, type ToolDef } from "../tool-defs.ts"
-import { entries } from "./entries.ts"
+import { type BaseMatch, entries } from "./entries.ts"
 import { clampLimit, DEFAULT_LIMIT, MAX_LIMIT } from "./limits.ts"
 import { mkOutputSchema } from "./output-schema.ts"
-import { brandedCategoryList, mkEnvelope } from "./result.ts"
+import { categoryList, type Envelope, mkEnvelope } from "./result.ts"
 
 export interface ListInput {
   readonly category?: DocCategory
   readonly limit?: number
 }
 
-export interface ListMatch {
-  readonly category: DocCategory
-  readonly id: string
-  readonly display: string
-  /** Typed sub-facet of the record (e.g. history `kind`, glob_op `kind`). Absent when the category has no meaningful subKind. */
-  readonly subKind?: string
-}
-
-export interface ListResult {
-  readonly matches: readonly ListMatch[]
-  /** Always equals `matches.length`; surfaced explicitly so JSON consumers don't have to count. */
-  readonly matchesReturned: number
-  /** Total matches before `limit` truncation. `matchesReturned < matchesTotal` iff the response was truncated. */
-  readonly matchesTotal: number
-}
+export type ListMatch = BaseMatch
+export type ListResult = Envelope<ListMatch>
 
 /**
- * Enumerate records, optionally filtered to one category. Returns
- * `{ category, id, display, subKind? }` per match — no rendered markdown.
- * `limit=0` returns metadata only (`matches: []`, `matchesTotal=N`).
- * Pure; no IO.
+ * Enumerate corpus records (optional category filter). Id/display only — no
+ * markdown. `limit=0` → metadata only. Pure; no IO.
  */
 export function list(corpus: DocCorpus, input: ListInput): ListResult {
   const limit = clampLimit(input.limit)
@@ -38,7 +23,7 @@ export function list(corpus: DocCorpus, input: ListInput): ListResult {
   return mkEnvelope(pool.slice(0, limit), pool.length)
 }
 
-const categoryList = brandedCategoryList()
+const catList = categoryList()
 
 export const listToolDef: ToolDef = makeToolDef({
   name: "zsh_list",
@@ -54,7 +39,7 @@ Each match is \`{ category, id, display, subKind? }\`. \`subKind\` is surfaced w
 
 Valid \`category\` values:
 
-${categoryList}
+${catList}
 
 Unknown \`category\` yields an empty match set.
 
@@ -64,7 +49,7 @@ No shell execution, no environment access.`,
     properties: {
       category: {
         type: "string",
-        description: `Optional filter to a single doc category. Unknown categories yield an empty match set.\n\nValid values:\n\n${categoryList}`,
+        description: `Optional filter to a single doc category. Unknown categories yield an empty match set.\n\nValid values:\n\n${catList}`,
       },
       limit: {
         type: "integer",

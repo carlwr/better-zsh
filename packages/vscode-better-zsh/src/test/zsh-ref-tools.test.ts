@@ -23,46 +23,23 @@ vi.mock("vscode", () => {
 })
 
 import * as vscodeMock from "vscode"
+import { buildLmTools } from "../build/lm-tools-manifest"
 import { registerZshRefTools } from "../zsh-ref-tools"
 
-// vitest is invoked from the extension package root, so relative paths from
-// `process.cwd()` resolve to the package.
-const pkgRoot = process.cwd()
-
-interface ManifestTool {
-  readonly name: string
-  readonly modelDescription: string
-  readonly inputSchema: unknown
-}
-
-function readManifestTools(): readonly ManifestTool[] {
+function readManifestTools(): readonly unknown[] {
   const pkg = JSON.parse(
-    readFileSync(join(pkgRoot, "package.json"), "utf8"),
-  ) as {
-    contributes?: {
-      languageModelTools?: readonly ManifestTool[]
-    }
-  }
+    readFileSync(join(process.cwd(), "package.json"), "utf8"),
+  ) as { contributes?: { languageModelTools?: readonly unknown[] } }
   return pkg.contributes?.languageModelTools ?? []
 }
 
-describe("contributes.languageModelTools stays in sync with toolDefs", () => {
-  test("names match one-to-one (order-insensitive)", () => {
-    const manifestNames = readManifestTools()
-      .map(t => t.name)
-      .sort()
-    const defNames = toolDefs.map(d => d.name).sort()
-    expect(manifestNames).toEqual(defNames)
-  })
-
-  test("each manifest tool mirrors toolDef description + inputSchema", () => {
-    const manifest = new Map(readManifestTools().map(t => [t.name, t]))
-    for (const def of toolDefs) {
-      const entry = manifest.get(def.name)
-      expect(entry).toBeDefined()
-      expect(entry?.modelDescription).toEqual(def.description)
-      expect(entry?.inputSchema).toEqual(def.inputSchema)
-    }
+// Guards that `contributes.languageModelTools` (a checked-in generated
+// artifact) matches what the build would produce now. Catches stale
+// commits when a tooldef edit lands without a rebuild. See
+// `src/build/lm-tools-manifest.ts` for the contract.
+describe("contributes.languageModelTools is up-to-date", () => {
+  test("committed manifest equals buildLmTools(toolDefs)", () => {
+    expect(readManifestTools()).toEqual(buildLmTools(toolDefs))
   })
 })
 

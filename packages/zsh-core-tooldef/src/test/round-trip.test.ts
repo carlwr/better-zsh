@@ -9,8 +9,7 @@
  * param_expn literal sigs) would not round-trip through their resolver
  * fallback.
  *
- * Property-test coverage of resolver fallbacks (synthesized non-key inputs)
- * is deferred (see plan §"Deferred follow-ups").
+ * Synthesized-input property tests for resolver fallbacks are future work.
  */
 
 import { type DocCategory, docCategories, loadCorpus } from "@carlwr/zsh-core"

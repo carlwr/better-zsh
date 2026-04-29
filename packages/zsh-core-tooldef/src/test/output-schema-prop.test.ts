@@ -7,8 +7,8 @@
  * `raw`/`query` are biased toward real corpus keys (exercise hit paths)
  * with a minority of random strings (miss / fuzzy paths).
  *
- * Fast-check seed pinned globally in `setup-fast-check.ts` per AGENTS.md
- * §"Reproducibility matters".
+ * Fast-check seed is pinned globally in `setup-fast-check.ts` (see
+ * `AGENTS.md` on reproducibility).
  */
 
 import { loadCorpus } from "@carlwr/zsh-core"
@@ -120,9 +120,8 @@ function assertEnvelopeInvariants(
       `${toolName}: matchesTotal=${env.matchesTotal} < matchesReturned=${env.matchesReturned} for input=${JSON.stringify(input)}`,
     )
   }
-  // Dedup invariant: no two matches share `(category, id)`. Owned by
-  // search's seen-set walk (see `tools/search.ts`); other tools couldn't
-  // produce duplicates either, so assert across tools uniformly.
+  // Dedup invariant: no two matches share `(category, id)`. Enforced in
+  // `zsh_search`'s tier walk; asserted for every tool here.
   const keys = env.matches.map(m => `${String(m.category)}\0${String(m.id)}`)
   if (new Set(keys).size !== keys.length) {
     throw new Error(
