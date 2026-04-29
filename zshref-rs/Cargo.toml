@@ -24,8 +24,8 @@ rust-version = "1.82"                   # Option::is_none_or stabilized 1.82
 include = [
     "src/**/*.rs",
     "build.rs",
+    "build-inputs.txt",
     "tests/**/*.rs",
-    "tests/fixtures/**/*.json",
     "Cargo.toml",
     "Cargo.lock",
     "README.md",
@@ -48,6 +48,9 @@ anyhow = "1"
 [dev-dependencies]
 proptest = "1"
 jsonschema = { version = "0.18", default-features = false, features = ["draft202012"] }
+
+[build-dependencies]
+sha2 = "0.10"
 
 [profile.release]
 lto = "thin"

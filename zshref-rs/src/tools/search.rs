@@ -1,21 +1,14 @@
-//! `zsh_search` — port of
-//! `packages/zsh-core-tooldef/src/tools/search.ts`.
+//! `zsh_search` — four-tier ranking: exact > resolver > prefix > fuzzy.
 //!
-//! Ranking: exact id/display > resolver (corpus-aware close-variant
-//! match, e.g. `au_to_cd` → `autocd`) > prefix > fuzzy. The fuzzy tier
-//! composes `crate::fuzzy::score` (in-tree ASCII matcher — no third-party
-//! fuzzy dep). Exact / resolver / prefix matches all carry `score: 1.0`;
-//! fuzzy matches carry the in-tree scalar mapped into `(0, 1)` (capped
-//! strictly below `1.0` so the tier is recoverable from the score alone).
-//! `matchesTotal` is reported pre-truncation so callers can detect
-//! whether the result was limited. `query` is required (clap-side).
+//! Exact/resolver/prefix → `score: 1.0`. Fuzzy tier uses `crate::fuzzy::score`
+//! (in-tree ASCII matcher) mapped into `(0, 1)` — strictly below 1.0 so the
+//! tier is recoverable from the score. `matchesTotal` is pre-truncation.
 
 use crate::corpus::Corpus;
 use crate::tools::shared::{
     mk_entry, mk_envelope, record_display, record_id, record_sub_kind, resolve_in,
 };
 use anyhow::Result;
-use clap::ArgMatches;
 use serde_json::Value;
 
 struct Entry<'c> {
@@ -25,28 +18,25 @@ struct Entry<'c> {
     sub_kind: Option<String>,
 }
 
-pub fn run(matches: &ArgMatches, corpus: &Corpus) -> Result<Value> {
-    // `query` is required at the clap layer, but treat empty/whitespace
-    // here as an empty match set (matches the TS tooldef behavior).
-    let query = matches
-        .get_one::<String>("query")
-        .map(String::as_str)
+pub fn run(input: &Value, corpus: &Corpus) -> Result<Value> {
+    // `query` is required upstream; empty/whitespace → empty matches (matches TS).
+    let query = input
+        .get("query")
+        .and_then(Value::as_str)
         .unwrap_or("")
         .trim();
-    let category = matches.get_one::<String>("category").cloned();
+    let category = input.get("category").and_then(Value::as_str);
     // Default is baked into the clap arg from inputSchema.properties.limit.default.
-    let limit = *matches.get_one::<u32>("limit").unwrap_or(&0) as usize;
+    let limit = input.get("limit").and_then(Value::as_u64).unwrap_or(0) as usize;
 
     if query.is_empty() {
         return Ok(mk_envelope(Vec::new(), 0));
     }
 
-    let pool = entries(corpus, category.as_deref());
+    let pool = entries(corpus, category);
     let q_low = query.to_ascii_lowercase();
 
-    // Dedup invariant: no two matches share `(category, id)`. The
-    // seen-set is maintained across all four tiers (exact / resolver /
-    // prefix / fuzzy). Mirrors the TS tooldef.
+    // Dedup: seen-set across all four tiers; mirrors the TS tooldef.
     let mut seen: std::collections::HashSet<(String, String)> = std::collections::HashSet::new();
     let key = |e: &Entry| -> (String, String) { (e.category.to_string(), e.id.clone()) };
 
@@ -66,17 +56,12 @@ pub fn run(matches: &ArgMatches, corpus: &Corpus) -> Result<Value> {
         }
     }
 
-    // Resolver tier: route the query through each category's resolver
-    // (option NO_-stripping, redir group-op + tail decomposition,
-    // history event-designators, ...). Hits not already bucketed by the
-    // exact/prefix pass surface here. Walks `CLASSIFY_ORDER` when the
-    // caller didn't pin a category; otherwise just the one.
-    let resolver_cats: Vec<&str> = match category.as_deref() {
+    // Resolver tier: per-category resolver (NO_-strip, redir decomp, history, …).
+    // Hits not yet bucketed by exact/prefix. Walks `CLASSIFY_ORDER` unless pinned.
+    let resolver_cats: Vec<&str> = match category {
         Some(c) => vec![c],
         None => crate::corpus::CLASSIFY_ORDER.to_vec(),
     };
-    // `(category, id)` → Entry so resolver hits can be matched without
-    // re-walking the pool.
     let by_key: std::collections::HashMap<(String, String), &Entry> = pool
         .iter()
         .map(|e| ((e.category.to_string(), e.id.clone()), e))
@@ -95,10 +80,8 @@ pub fn run(matches: &ArgMatches, corpus: &Corpus) -> Result<Value> {
         }
     }
 
-    // Fuzzy tier: score id and display, keep the max (matches TS
-    // fuzzysort's `keys: ["id","display"]`). Non-ASCII queries score
-    // `None` → no match; pool is ASCII-only per the corpus drift guard.
-    // Skip entries already bucketed by earlier tiers.
+    // Fuzzy tier: max(score(id), score(display)), mirrors fuzzysort `keys`.
+    // Non-ASCII queries score None; pool is ASCII-only per drift guard.
     let mut fuzzy: Vec<(&Entry, u32)> = rest
         .iter()
         .filter(|e| !seen.contains(&key(e)))
@@ -118,10 +101,8 @@ pub fn run(matches: &ArgMatches, corpus: &Corpus) -> Result<Value> {
         .chain(prefix.iter())
         .map(|e| entry_json(e, 1.0))
         .chain(fuzzy.iter().map(|(e, s)| {
-            // Map our scalar score into `(0, 1)` for JSON parity with
-            // fuzzysort. Exclusive at 1.0 so fuzzy stays distinguishable
-            // from the `1.0` exact/resolver/prefix tiers; consumers rely
-            // on ranking order, not the absolute value.
+            // Map into (0, 1) — exclusive at 1.0 so fuzzy is distinguishable
+            // from exact/resolver/prefix tiers in JSON output.
             let mapped = (*s as f64 / 1000.0).min(0.999_999);
             entry_json(e, mapped)
         }));

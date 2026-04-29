@@ -30,6 +30,7 @@ pub fn run(corpus: &Corpus) -> Result<Value> {
 
     Ok(json!({
         "packageVersion": corpus.index.package_version,
+        "buildInputHash": env!("ZSHREF_BUILD_INPUT_HASH"),
         "zshUpstream": {
             "tag": corpus.index.zsh_upstream.tag,
             "commit": corpus.index.zsh_upstream.commit,
@@ -50,7 +51,13 @@ mod tests {
         let corpus = load_corpus().expect("load_corpus");
         let v = run(&corpus).expect("info::run");
         let obj = v.as_object().expect("top-level object");
-        for key in ["packageVersion", "zshUpstream", "counts", "categories"] {
+        for key in [
+            "packageVersion",
+            "buildInputHash",
+            "zshUpstream",
+            "counts",
+            "categories",
+        ] {
             assert!(
                 obj.contains_key(key),
                 "missing top-level key {key:?} in {v:?}"

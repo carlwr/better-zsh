@@ -19,6 +19,10 @@ Categories covered:
 - **prompt escapes** (`%n`, `%~`, `%F{…}`, …)
 - **ZLE widgets** (standard + special)
 
+<!-- **don't remove the above list** - it is, and should be, a manual enumeration of the doc categories -->
+
+<!-- TODO: the above list probably needs to be updated -->
+
 ## Why zshref-mcp?
 
 Built for agents, acceptable for humans. One of three adapters over the same parsed zsh reference (alongside the [single-binary CLI `zshref`](https://github.com/carlwr/zshref) and the [VS Code extension](https://github.com/carlwr/better-zsh/tree/main/packages/vscode-better-zsh)). What the MCP server adds:
@@ -30,7 +34,7 @@ What it shares with the other adapters — and, for most users, the reason to pi
 
 - **Structured, not textual.** Parsed from upstream Yodl source into typed per-category records, not regex-scraped from `man`. Every record carries its own shape; every category carries its own resolver.
 - **Non-trivial resolvers.** Corpus-aware `NO_*` negation (including the `NOTIFY` / `NO_NOTIFY` edge case), redirection decomposition into `groupOp` + tail, parameter-expansion sig matching. The real value-add.
-- **Token-efficient.** `zsh_search` and `zsh_list` return identity-only rows (no markdown body); only `zsh_docs` returns rendered markdown. Tool `modelDescription` strings enumerate the closed category set so agents don't burn tokens guessing.
+- **Token-efficient.** `zsh_search` and `zsh_list` return identity-only rows (no markdown body); only `zsh_docs` returns rendered markdown. Input schemas expose the generated category set so agents don't burn tokens guessing.
 - **No trust surface.** No shell execution, no subprocess, no network, no filesystem writes, no logs, no environment reads, no telemetry. Structurally enforced by a scope-fence test in the shared tool layer, not policy.
 
 Runtime introspection is deliberately out of scope: no `setopt` listing, no process environment, no filesystem, no shell invocation. If you need live-shell introspection, that is a different tool.

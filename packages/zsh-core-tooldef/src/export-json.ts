@@ -42,6 +42,24 @@ function fmtJson(data: unknown): string {
   return `${JSON.stringify(data, null, 2)}\n`
 }
 
+export function toolDefsJsonPayload(
+  toolDefs: readonly ToolDef[],
+  preamble: string,
+): ToolDefsJson {
+  return {
+    version: 1,
+    tools: toolDefs.map(projectToolDef),
+    preamble,
+  }
+}
+
+export function fmtToolDefsJson(
+  toolDefs: readonly ToolDef[],
+  preamble: string,
+): string {
+  return fmtJson(toolDefsJsonPayload(toolDefs, preamble))
+}
+
 /**
  * Write `tooldef.json` + `tooldef.schema.json` under `outDir`. Invoked from
  * `build.ts` after `tsup` emits the bundle.
@@ -55,12 +73,11 @@ export function writeToolDefsJson(
   outDir: string,
 ): void {
   mkdirSync(outDir, { recursive: true })
-  const payload: ToolDefsJson = {
-    version: 1,
-    tools: toolDefs.map(projectToolDef),
-    preamble,
-  }
-  writeFileSync(join(outDir, "tooldef.json"), fmtJson(payload), "utf8")
+  writeFileSync(
+    join(outDir, "tooldef.json"),
+    fmtToolDefsJson(toolDefs, preamble),
+    "utf8",
+  )
   writeFileSync(
     join(outDir, "tooldef.schema.json"),
     fmtJson(toolDefsJsonSchema),

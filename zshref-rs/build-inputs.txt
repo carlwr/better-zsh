@@ -1,0 +1,7 @@
+# Build fingerprint inputs. Paths are relative to zshref-rs.
+file build-inputs.txt
+file build.rs
+file Cargo.toml
+file Cargo.lock
+rust-src src
+json-data

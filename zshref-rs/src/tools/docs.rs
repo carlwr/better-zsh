@@ -1,22 +1,19 @@
-//! `zsh_docs` — port of `packages/zsh-core-tooldef/src/tools/docs.ts`.
+//! `zsh_docs` — raw token → per-category resolved matches.
 //!
-//! Resolves a raw token via per-category dispatch. Without `--category`
-//! walks `crate::corpus::CLASSIFY_ORDER` and returns one match per
-//! resolving category. Surfaces lossy-resolution feedback (today: option
-//! `NO_`-stripping → `{ kind: "input-negated" }`) on any category whose
-//! per-category resolver emits it.
+//! Without `--category`, walks `CLASSIFY_ORDER` and returns one match per
+//! resolving category. Feedback (e.g. `NO_`-stripping → `input-negated`)
+//! is forwarded from the per-category resolver.
 
 use crate::corpus::{Corpus, CLASSIFY_ORDER};
 use crate::tools::shared::{
-    mk_envelope, record_sub_kind, resolve_in, str_arg, str_field, ResolvedHit,
+    mk_envelope, record_sub_kind, resolve_in, str_field, str_input, ResolvedHit,
 };
 use anyhow::Result;
-use clap::ArgMatches;
 use serde_json::{json, Map, Value};
 
-pub fn run(matches: &ArgMatches, corpus: &Corpus) -> Result<Value> {
-    let raw = str_arg(matches, "raw");
-    let category = matches.get_one::<String>("category").map(String::as_str);
+pub fn run(input: &Value, corpus: &Corpus) -> Result<Value> {
+    let raw = str_input(input, "raw");
+    let category = input.get("category").and_then(Value::as_str);
 
     let matches_vec: Vec<Value> = if raw.trim().is_empty() {
         Vec::new()

@@ -5,7 +5,7 @@ description: Orient quickly in the better-zsh monorepo. Use at the start of any 
 
 # META: ABOUT THIS SKILL
 
-> Source of truth lives under `$REPO_ROOT/skills/orient/`. For discoverability from different agent tools, symlinks point into this directory from tool-specific locations. The concrete paths today are:
+> Source of truth lives under `$REPO_ROOT/skills/orient/`. For discoverability from different agent tools, symlinks point into this directory from tool-specific roots. Those roots today are:
 >
 > ```
 > $REPO_ROOT/.agents/
@@ -35,14 +35,14 @@ Rather than listing files that may become stale, the skill provides executable s
 
 | Script | What it shows |
 |--------|--------------|
-| `bash ./scripts/overview.sh` | All source and test files with line counts, plus API rollup status |
+| `bash ./scripts/overview.sh` | TypeScript package source/test files, Rust CLI source/tests, plus API rollup status |
 | `bash ./scripts/exports.sh zsh-core` | All public exports from zsh-core source |
 | `bash ./scripts/exports.sh tooldef` | All public exports from the zsh-core-tooldef source |
 | `bash ./scripts/exports.sh mcp` | All public exports from the zshref-mcp source |
 | `bash ./scripts/exports.sh ext` | All public exports from extension source |
 | `bash ./scripts/providers.sh` | Extension provider registrations, classes, and semantic token scope config |
 
-The `zshref` CLI now lives under `zshref-rs/` as a Rust crate and is built via `make cli`. It is out of scope for the TypeScript-oriented discovery scripts above.
+The `zshref` CLI lives under `zshref-rs/` as a Rust crate and is built via `make cli`. `overview.sh` includes its Rust source/tests; `exports.sh` and `providers.sh` stay TypeScript-oriented.
 
 These are the **primary navigation entry point**. Start here, then read specific files as needed.
 
@@ -97,8 +97,10 @@ These describe **which directories** to look in, not specific files. Use the dis
 - No tool implementations live here; they live in tooldef.
 
 ### zshref-rs: Rust CLI adapter
-- `zshref-rs/` — Rust+clap crate; `zshref` bin emitting JSON on stdout. Not a pnpm workspace package.
-- Built via `make cli` (release) / `make cli-debug` / `make cli-test`. The `artifacts` prerequisite ensures the zsh-core corpus and tool-def JSON are fresh before cargo runs; both are baked into the binary via `include_bytes!`.
+- `zshref-rs/` — Rust+clap crate; `zshref` bin over the baked-in corpus + tool-def JSON. Not a pnpm workspace package.
+- Built via `make cli` (release) / `make cli-debug` / `make cli-test`. These force monorepo data mode; vendored/package smoke paths use `make cli-vendored`, `make cli-vendored-test`, and `make cli-package`.
+- Tool subcommands emit compact JSON on stdout; `--pretty` is human-facing. `batch` is JSONL stdin/stdout for IPC and TS/Rust parity.
+- Tests: `zshref-rs/tests/` for Rust-side behavior; cross-language parity lives in the tooldef tests and requires a fresh release binary (`make cli`) unless explicitly allowed to skip.
 - Exit codes: 0 well-formed (incl. empty match), 1 internal error, 2 bad input.
 
 ## Symbol navigation

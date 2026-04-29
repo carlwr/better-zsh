@@ -14,15 +14,13 @@ This is visual QA for zsh-core's rendered reference corpus, including the subset
 changes, new record fields, resolver behaviour, schema edits — is a
 cross-language change.
 
-Pre-extraction, the monorepo rebuild chain catches drift automatically
-(`make cli` runs the TS build first; integration tests fail loudly on
-drift).
+Pre-extraction, `make cli` / `make cli-test` rebuild TS artifacts before
+Rust runs. CI also runs TS/Rust parity with `BZ_REQUIRE_PARITY=1`, so
+stale or divergent CLI artifacts fail there.
 
 Post-extraction, propagation is explicit and manual: see
 `zshref-rs/DATA-SYNC.md` for how the vendored data snapshot is updated.
-No polling or bot loop — it is the maintainer's job to run
-`make vendor` (or its post-extraction equivalent) when the TS side
-changes in a way that should reach CLI users.
+The exact sync trigger is an extraction-day decision.
 
 ## zsh-core API docs
 

@@ -1,7 +1,8 @@
 # Test status — snapshot
 
 Snapshot for cross-session continuity, taken against `main` on 2026-04-21.
-Stale after the next code change.
+Stale: do not use as current test status. Revalidate before relying on any
+green/red claim below.
 
 ## Confirmed green at this snapshot
 

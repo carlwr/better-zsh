@@ -13,7 +13,7 @@ Strengths:
 
 - **MUST**: reserve `stdout` for machine-parseable output. A successful invocation writes only that.
 - **MUST**: send human output to `stderr`: `--help`, `--version`, errors, warnings, progress. Keeps `prog | jq` clean; paged help remains `{ prog --help 2>&1; } | less`.
-- **SHOULD**: pretty-print JSON on `stdout`: indented, newline-terminated. Use compact JSON only for a measured bandwidth reason.
+- **SHOULD**: choose JSON whitespace deliberately. Compact newline-terminated JSON is preferred for agent/JSONL pipelines; pretty-print when human inspection is primary or via an explicit flag.
 - **MUST**: auto-disable ANSI color when the destination stream is not a tty (`isTTY` or equivalent).
 - **MUST**: if `NO_COLOR` is set and non-empty, disable ANSI unconditionally, per <https://no-color.org>.
 - **SHOULD**: honor `CLICOLOR_FORCE` (non-empty) as the opposite override — force ANSI on even without a tty. Enables testable styled-help assertions without spawning a PTY.
@@ -91,7 +91,7 @@ NOTE: line length refers to number of characters _after ANSI stripping_ (since A
 - **MUST**: in top-level `--help`, state the I/O contract: what `stdout` carries, where human output goes, and the exit-code map.
 - **MUST**: add an `Examples:` section (for the top-level `prog --help`) with a small set of common invocations; often the fastest onboarding surface.
 - **SHOULD**: keep each subcommand `Description` non-empty: say what it does and returns.
-- **MUST**: any user-facing shell code, e.g. for examples, that need to _pipe from stderr_ use the exact form `{ PRODUCER 2>&1; } | CONSUMER`
+- **MUST**: any user-facing shell code, e.g. examples, that needs to _pipe from stderr_ must use the exact form `{ PRODUCER 2>&1; } | CONSUMER`
   - because: that form gives the desired behaviour for all of: bash, zsh with MULTIOS, and zsh without MULTIOS.
 
 ## option-arguments (`--option=OPTION-ARG` etc.)

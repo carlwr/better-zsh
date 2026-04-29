@@ -1,19 +1,8 @@
-//! `zshref schema` — emit JSON bundle of every tool's `outputSchema`.
+//! `zshref schema` — emit `{ version, tools: [{name, inputSchema, outputSchema}] }`.
 //!
-//! Intended for codegen / programmatic validation, not human reading. The
-//! `--help` long-about advertises the size so agents don't pipe the bundle
-//! into their context unintentionally; for documentation use the
-//! tool-specific `--help` and shell completions instead.
-//!
-//! Bundle shape (camelCase to match every other JSON the CLI emits):
-//! ```json
-//! { "version": 1,
-//!   "tools": [ { "name": "zsh_docs",   "outputSchema": <…> },
-//!              { "name": "zsh_search", "outputSchema": <…> },
-//!              { "name": "zsh_list",   "outputSchema": <…> } ] }
-//! ```
-//! `version` mirrors `tooldef.json`'s envelope versioning so consumers can
-//! detect schema-format changes.
+//! For codegen / programmatic validation; not for human reading.
+//! Input schemas also define the wire contract for `zshref batch`.
+//! `--help` long-about advertises size to discourage piping into agent context.
 
 use crate::corpus::ToolDefs;
 use anyhow::Result;
@@ -31,20 +20,20 @@ fn build_bundle(tool_defs: &ToolDefs) -> Value {
         .map(|td| {
             json!({
                 "name": td.name,
+                "inputSchema": td.input_schema,
                 "outputSchema": td.output_schema,
             })
         })
         .collect();
-    // `version` is sourced from `tooldef.json`'s envelope field — no
-    // Rust-side constant to keep in sync.
+    // `version` from `tooldef.json` envelope — no Rust-side constant to drift.
     json!({
         "version": tool_defs.version,
         "tools": tools,
     })
 }
 
-/// Word + leaf counts for the bundle, lazily computed. Word count is over
-/// the pretty-printed form (what `output::emit` writes to stdout).
+/// Word + leaf counts (lazily computed). Word count over pretty-printed form
+/// — upper bound for `--pretty`, slight over-estimate for compact default.
 pub fn size_hint(tool_defs: &ToolDefs) -> (usize, usize) {
     static CACHE: OnceLock<(usize, usize)> = OnceLock::new();
     *CACHE.get_or_init(|| {
@@ -57,7 +46,7 @@ pub fn size_hint(tool_defs: &ToolDefs) -> (usize, usize) {
     })
 }
 
-/// Count non-container nodes (object keys aren't counted, only values).
+/// Non-container node count (object values only, not keys).
 fn count_leaves(v: &Value) -> usize {
     match v {
         Value::Object(map) => map.values().map(count_leaves).sum(),
@@ -81,7 +70,7 @@ mod tests {
     }
 
     #[test]
-    fn bundle_lists_three_tools_with_outputschema() {
+    fn bundle_lists_three_tools_with_input_and_output_schema() {
         let defs = load_tool_defs().expect("load_tool_defs");
         let v = run(&defs).expect("schema::run");
         let tools = v["tools"].as_array().expect("tools array");
@@ -89,12 +78,16 @@ mod tests {
         for entry in tools {
             let entry = entry.as_object().expect("tool entry object");
             assert!(entry.contains_key("name"));
-            let schema = entry.get("outputSchema").expect("outputSchema");
-            assert!(schema.is_object(), "outputSchema must be a JSON object");
-            assert!(
-                !schema.as_object().unwrap().is_empty(),
-                "outputSchema must not be empty"
-            );
+            for key in ["inputSchema", "outputSchema"] {
+                let schema = entry
+                    .get(key)
+                    .unwrap_or_else(|| panic!("missing {key} on tool entry"));
+                assert!(schema.is_object(), "{key} must be a JSON object");
+                assert!(
+                    !schema.as_object().unwrap().is_empty(),
+                    "{key} must not be empty"
+                );
+            }
         }
     }
 

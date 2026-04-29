@@ -14,4 +14,10 @@ rg 'class \w+Provider' --type ts packages/vscode-better-zsh/src/ 2>/dev/null || 
 
 echo ""
 echo "=== semanticTokenScopes in package.json ==="
-rg -A2 'semanticTokenScopes' packages/vscode-better-zsh/package.json 2>/dev/null | head -30
+node - <<'NODE'
+const { readFileSync } = require("node:fs")
+const pkg = JSON.parse(
+  readFileSync("packages/vscode-better-zsh/package.json", "utf8"),
+)
+console.log(JSON.stringify(pkg.contributes?.semanticTokenScopes ?? [], null, 2))
+NODE

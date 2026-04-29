@@ -1,14 +1,14 @@
 # zshref
 
-A command-line reference for zsh syntax. Ask what a token is, search the manual, or print the docs for a known element — from a terminal, a script, or an agent pipeline. Tool subcommands emit one JSON object on stdout per invocation — pipe into `jq` for human reading. `zshref info` does likewise; `zshref completions` emits its shell script on stdout instead.
+A command-line reference for zsh syntax. Ask what a token is, search the manual, or print the docs for a known element — from a terminal, a script, or an agent pipeline. Tool subcommands emit one compact JSON line on stdout per invocation (pass `--pretty` for indented multi-line) — pipe into `jq` for projection. `zshref info` does likewise; `zshref completions` emits its shell script on stdout instead.
 
-> **Status: pre-release (alpha).** This crate is developed inside the [`better-zsh`](https://github.com/carlwr/better-zsh) monorepo and will be extracted to its own repository on first stable release. Until then, the install path below requires a full monorepo checkout (the bundled JSON corpus is generated from the TypeScript side of the repo). The `cargo install zshref` entry point from crates.io is not yet live.
+> **Status: pre-release (alpha).** This crate is developed inside the [`better-zsh`](https://github.com/carlwr/better-zsh) monorepo and will be extracted to its own repository on first stable release. Stable install docs are not live yet; alpha crates.io packages exist for packaging validation.
 
 ## Why zshref?
 
 Built for agents, acceptable for humans. One of three adapters over the same parsed zsh reference (alongside the [MCP server](https://github.com/carlwr/zshref-mcp) and the [VS Code extension](https://github.com/carlwr/better-zsh/tree/main/packages/vscode-better-zsh)). What the CLI adds on top of the shared corpus:
 
-- **Single statically-linked binary** — no Node, Python, or zsh at runtime; drops into containers, air-gapped CI, and minimal base images.
+- **Single native binary** — no Node, Python, or zsh at runtime; drops into containers, air-gapped CI, and minimal base images.
 - **Pipes and scripts.** JSON on stdout, human prose on stderr, stable exit-code contract. `zshref docs --raw AUTO_CD | jq ...` is the intended shape, including for LLM agents composing through `sh`.
 - **Protocol-independent.** MCP is young; POSIX CLIs have fifty years of backward-compat. Insurance against whichever agent protocol comes next.
 
@@ -23,7 +23,7 @@ Primary audience: agent pipelines (Claude Code, Codex CLI, Cursor, shell-wrapped
 
 ## What it covers
 
-Builtins, precommand modifiers, reserved words, shell options (with zsh's case / underscore / `NO_*` quirks resolved), special parameters, redirections, conditional operators, process substitutions, parameter / glob / history / subscript flags, prompt escapes, and ZLE widgets.
+Documented zsh syntax such as options, builtins, redirections, parameter expansion, prompt escapes, and ZLE widgets. Use `zshref list`, `zshref search`, completions, or `zshref schema` to discover the current category surface.
 
 If you need to introspect a live shell (`setopt` output, `$commands`, aliases), that is a different tool.
 
@@ -35,7 +35,7 @@ If you need to introspect a live shell (`setopt` output, `$commands`, aliases), 
      acceptable dev-time dep. -->
 
 ```sh
-# One-shot lookup. Pick the interesting fields with jq.
+# One compact JSON line by default. Pick fields with jq, or pass --pretty for indented output.
 zshref docs --raw AUTO_CD | jq '.matches[0] | {category, display}'
 # → { "category": "option", "display": "AUTO_CD" }
 
@@ -46,7 +46,7 @@ zshref search --query autoc --limit 1 \
   | jq -r '.matches[0].mdBody' \
   | head -3
 
-# NO_* negation resolves to the base option; `feedback` tells you which path was taken.
+# NO_* negation resolves to the base option; `feedback` records the path taken.
 zshref docs --raw NO_AUTO_CD --category option | jq '.matches[0] | {display, feedback}'
 # → { "display": "AUTO_CD", "feedback": { "kind": "input-negated" } }
 ```
@@ -58,10 +58,16 @@ Build from source. Requires a stable Rust toolchain **and** the full monorepo ch
 ```sh
 git clone https://github.com/carlwr/better-zsh
 cd better-zsh
+corepack enable
+pnpm install --frozen-lockfile
 make cli            # release binary at zshref-rs/target/release/zshref
 ```
 
-A `cargo install zshref` entry point (via crates.io) is planned for the first stable release.
+For alpha package testing only:
+
+```sh
+cargo install zshref --version 0.1.0-alpha.0
+```
 
 Homebrew distribution is also planned; the formula under [`Formula/zshref.rb`](./Formula/zshref.rb) is a pre-release scaffold. Once released, install via:
 
@@ -76,8 +82,10 @@ brew install zshref
 zshref --help
 zshref --version
 
-# Look up the docs for a raw token across every category.
+# Look up the docs for a raw token across every category. Default output
+# is one compact JSON line; pass `--pretty` for indented multi-line.
 zshref docs --raw AUTO_CD
+zshref docs --raw AUTO_CD --pretty
 zshref docs --raw '<<<'
 
 # Constrain to one category (e.g. resolve `for` as a complex command,
@@ -93,12 +101,17 @@ zshref search --query echo --category builtin --limit 5
 # Enumerate records in a category — id-only, no `mdBody`.
 zshref list --category option --limit 200
 
-# Emit corpus + upstream metadata.
+# Emit corpus + upstream/build metadata.
 zshref info
 
-# Emit JSON Schema for tool outputs (codegen / programmatic validation
-# only — not for human or agent reading; large, see `zshref schema --help`).
+# Emit JSON Schema for tool inputs + outputs (codegen / programmatic
+# validation only — not for human or agent reading; large, see
+# `zshref schema --help`).
 zshref schema
+
+# Streaming JSONL mode for cross-language tests / IPC: one request per
+# stdin line, one compact-JSON response per stdout line.
+printf '%s\n' '{"tool":"zsh_docs","input":{"raw":"AUTO_CD"}}' | zshref batch
 ```
 
 ## Exit codes
@@ -108,6 +121,9 @@ zshref schema
 | 0 | Well-formed invocation (including empty matches). |
 | 1 | Unexpected internal error. |
 | 2 | Bad input (unknown flag, bad `--category` value, type mismatch, missing required). |
+
+`batch` reports per-request validation errors in-band as `{ "ok": false, ... }`
+and exits 0 unless stream I/O fails.
 
 ## Shell completions
 

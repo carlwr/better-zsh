@@ -239,7 +239,7 @@ The subsections below use MCP as the main example; the same composition rules ap
 
 Each `ToolDef` has `outputSchema` (JSON Schema 2020-12) next to its result type. Closed unions (`category`, per-category `subKind`, `ResolverFeedback` kinds) **interpolate from zsh-core exports**, never hand-typed (`AGENTS.md` §"Never enumerate or count `DocCategory`"). Match shapes mark fields required vs absent; `additionalProperties: false`; parametric `feedback?: ResolverFeedback` where tools surface resolver feedback. Rationale: PRINCIPLES.md §"Schema precision when schemas are co-released".
 
-Shared fragments use `$defs` / `$ref`; a small builder handles per-tool variation. Drift: Ajv on fixtures + a property test (fast-check + Ajv) over `execute()` vs `outputSchema`. Hand-authored today; migrating to zod-derived schemas is a documented escape hatch if burden grows.
+Shared fragments use `$defs` / `$ref`; a small builder handles per-tool variation. Drift: a property test (fast-check + Ajv) over `execute()` vs `outputSchema`, plus a cross-language parity test (`parity.test.ts`) that drives the same generated inputs into TS and the Rust `zshref batch` session. Hand-authored today; migrating to zod-derived schemas is a documented escape hatch if burden grows.
 
 Per MCP spec (SDK 1.29+), tools register `outputSchema`; responses include `structuredContent` for schema-aware clients while legacy clients still get JSON in `content[0].text`.
 
@@ -289,7 +289,7 @@ Tooldef keeps the marginal cost low: dynamic `clap::Command` assembly from bundl
 
 **Maintenance posture** — Baked corpus via `include_bytes!`, dual-mode build (`zshref-rs/DATA-SYNC.md`), `make cli-package` in CI, no runtime plugins. Intended for re-vendor cadence measured in years.
 
-**`zshref schema`** — Emits all `outputSchema`s as one JSON bundle for codegen/validation; `--help` warns on size. Cherry-pick with `jq`; no per-tool subcommand (would fight clap conventions).
+**`zshref schema`** — Emits both `inputSchema` and `outputSchema` per tool as one JSON bundle for codegen/validation; `--help` warns on size. Cherry-pick with `jq`; no per-tool subcommand (would fight clap conventions).
 
 **`zshref info` / fuzzy scores** — Corpus metadata JSON lives here (MCP has overlapping data in `initialize`). CLI fuzzy uses an in-tree ASCII scorer vs MCP's `fuzzysort` — scores are not comparable cross-adapter; shared tests compare rank/identity only.
 

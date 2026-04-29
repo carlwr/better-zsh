@@ -1,10 +1,10 @@
 //! `zshref` — Rust CLI for the bundled static zsh reference.
 //!
-//! Loads the TS-emitted corpus JSON + tool-def JSON at compile time via
-//! `include_bytes!`, deserialises them, builds the `clap` command tree
-//! from `tool-def.json`, and dispatches to the four tool impls under
-//! `tools/`. See the repo plan for architecture.
+//! Loads TS-emitted corpus + tool-def JSON at compile time via `include_bytes!`,
+//! builds the `clap` command tree from `tooldef.json`, and dispatches to
+//! tool impls under `tools/`. See DEVELOPMENT.md for the src layout.
 
+mod batch;
 mod cli;
 mod corpus;
 mod fuzzy;

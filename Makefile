@@ -5,15 +5,15 @@ artifacts:
 
 .PHONY: cli
 cli: artifacts
-	cd zshref-rs && cargo build --release
+	cd zshref-rs && ZSHREF_DATA_SOURCE=monorepo cargo build --release
 
 .PHONY: cli-debug
 cli-debug: artifacts
-	cd zshref-rs && cargo build
+	cd zshref-rs && ZSHREF_DATA_SOURCE=monorepo cargo build
 
 .PHONY: cli-test
 cli-test: artifacts
-	cd zshref-rs && cargo test
+	cd zshref-rs && ZSHREF_DATA_SOURCE=monorepo cargo test
 
 .PHONY: cli-clean
 cli-clean:
@@ -29,7 +29,7 @@ cli-fmt-check:
 
 .PHONY: cli-clippy
 cli-clippy: artifacts
-	cd zshref-rs && cargo clippy --all-targets -- -D warnings
+	cd zshref-rs && ZSHREF_DATA_SOURCE=monorepo cargo clippy --all-targets -- -D warnings
 
 .PHONY: cli-check
 cli-check: cli-fmt-check cli-clippy
@@ -46,12 +46,12 @@ vendor-clean:
 
 .PHONY: cli-vendored
 cli-vendored: vendor
-	cd zshref-rs && cargo build --release
+	cd zshref-rs && ZSHREF_DATA_SOURCE=vendored cargo build --release
 
 .PHONY: cli-vendored-test
 cli-vendored-test: vendor
-	cd zshref-rs && cargo test
+	cd zshref-rs && ZSHREF_DATA_SOURCE=vendored cargo test
 
 .PHONY: cli-package
 cli-package: vendor
-	cd zshref-rs && cargo package --allow-dirty
+	cd zshref-rs && ZSHREF_DATA_SOURCE=vendored cargo package --allow-dirty

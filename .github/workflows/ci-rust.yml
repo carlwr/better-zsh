@@ -63,6 +63,11 @@ jobs:
       - name: Tests (fixture parity + drift-guards + fuzz)
         run: make cli-test
 
+      - name: TS/Rust tool parity
+        run: |
+          make cli
+          BZ_REQUIRE_PARITY=1 pnpm --filter @carlwr/zsh-core-tooldef test parity
+
       # Vendored-mode smoke: proves the published `.crate` is self-contained.
       # `cargo package` builds the tarball with the same include rules as
       # `cargo publish` and verifies it compiles standalone. See DATA-SYNC.md.

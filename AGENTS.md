@@ -179,6 +179,8 @@ When adding or changing parsing/rendering, dump the full rendered corpus and ins
 
 ### Validation before returning
 
+After edits, `pnpm format && pnpm test ...` is a useful quick pass before the fuller validation chain.
+
 Only if you edited code, run:
 
 `pnpm format && pnpm check && pnpm test && pnpm test:smoke && pnpm vsix && pnpm test:integration &>/dev/null`
@@ -367,6 +369,8 @@ If making commits:
 - pre-release commits need not be perfectly atomic;
 - subject line max 55 chars;
 - **subject line only** - **commit bodies are FORBIDDEN**
+
+_Any SUBAGENTS that may commit **must** be given the above instructions._
 
 ## References & sources
 

@@ -1,15 +1,12 @@
-//! Shared helpers for integration-style tests.
+//! Shared helpers for the `fuzz.rs` proptest crate.
 //!
 //! Resolves the bundled `tooldef.json` (mirrors `build.rs`'s auto-detect:
-//! vendored first, else the monorepo `dist/json/` sibling), compiles each
-//! tool's `outputSchema` once, and offers a uniform validate-or-panic
-//! entry point reused across `integration.rs` and `fuzz.rs`. Sharing here
-//! is structural — both tests assert the same contract and the cost of
-//! drifting validators across test files is silent coverage holes.
+//! vendored first, else the monorepo `dist/json/` sibling) and compiles
+//! each tool's `outputSchema` once for validate-or-panic.
 //!
 //! `#[allow(dead_code)]` because Rust compiles each `tests/*.rs` as a
-//! separate crate with its own copy of this module — not every test crate
-//! exercises every helper, but they may in the future.
+//! separate crate with its own copy of this module — only `fuzz.rs`
+//! exercises these helpers today.
 
 #![allow(dead_code)]
 

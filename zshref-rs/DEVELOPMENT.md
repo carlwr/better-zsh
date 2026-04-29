@@ -11,7 +11,7 @@ Rust CLI that bundles two TS-generated artifacts via `include_bytes!`:
 - **Corpus JSONs** — `packages/zsh-core/dist/json/*.json` (built by `pnpm --filter @carlwr/zsh-core build`)
 - **Tool-def JSON** — `packages/zsh-core-tooldef/dist/json/tooldef.json` (built by `pnpm --filter @carlwr/zsh-core-tooldef build`)
 
-Because data is embedded at compile time, a stale artifact means a stale binary. Know when to rebuild.
+Because data is embedded at compile time, rebuild after Rust or artifact changes.
 
 The `build.rs` auto-detects two data sources (monorepo paths vs. vendored `data/`) — see `DATA-SYNC.md` for the design. Pre-extraction the monorepo path is what you'll hit during normal dev; vendored mode exists for `cargo publish` validation.
 
@@ -22,7 +22,6 @@ The `build.rs` auto-detects two data sources (monorepo paths vs. vendored `data/
 | Pure Rust only | `cargo build` |
 | Tool-def (flag name, description, input/output schema) | `make cli-debug` (runs TS build first) |
 | Corpus (zsh-core docs/types) | `make cli-debug` (runs TS build first) |
-| Test fixtures | regenerate (see Testing), then `cargo test` |
 
 `make cli-debug` depends on `make artifacts`, which runs the `pnpm --filter` steps for both TS packages. For vendored-mode dev (e.g. verifying what `cargo publish` will see), use `make cli-vendored` / `make cli-vendored-test` instead.
 
@@ -53,17 +52,23 @@ Optional alias: `alias zshref-dev=./zshref-rs/target/debug/zshref`
 ## Testing
 
 ```sh
-cargo test          # fixture parity tests (spawns the built binary per fixture)
+cargo test          # Rust-only proptests + schema/help smoke
 ```
 
-Fixtures live at `zshref-rs/tests/fixtures/<tool>/<case>.json`.
-
-On a TS behavior change: regenerate fixtures, commit, re-run `cargo test`:
+Cross-language parity (TS `tool.execute()` vs the Rust binary) lives in
+`packages/zsh-core-tooldef/src/test/parity.test.ts`. It drives a single
+long-lived `zshref batch` session per test file via JSONL on
+stdin/stdout. Build the release binary first, then run vitest:
 
 ```sh
-BZ_WRITE_RUST_FIXTURES=1 pnpm --filter @carlwr/zsh-core-tooldef test rust-fixtures
-# review the diff before committing
+make cli
+pnpm --filter @carlwr/zsh-core-tooldef test parity
+# tune fast-check budget: BZ_PARITY_RUNS=2000 pnpm ... test parity
 ```
+
+The suite compares the binary's embedded `buildInputHash` against current
+Rust inputs + generated JSON artifacts. Missing/stale binaries skip with a
+banner; set `BZ_REQUIRE_PARITY=1` to fail instead. No auto-build.
 
 ## Debugging help output
 
@@ -75,21 +80,10 @@ zshref --help 2>&1 | less
 
 ## Formatting / lint
 
-`cargo fmt`, `cargo clippy` — not yet enforced by CI but run them before PRs.
+CI enforces `make cli-check`; run it before PRs.
 
-## src/ map
+## Code shape
 
-| File | Role |
-|---|---|
-| `main.rs` | entry point |
-| `cli.rs` | clap `Command` builder driven by `tooldef.json`; dispatches built-in subcommands (`completions`, `info`, `schema`) |
-| `corpus.rs` | loads embedded corpus JSON; data paths gated by `cfg(data_source = …)` from `build.rs` |
-| `fuzzy.rs` | ASCII subsequence scorer used by `search`'s bottom-tier ranking |
-| `tools/mod.rs` | tools module surface + dispatch |
-| `tools/docs.rs` | `docs` subcommand (raw token → matches with rendered markdown) |
-| `tools/search.rs` | `search` subcommand (fuzzy id-only; four-tier walk shared with the TS tooldef) |
-| `tools/list.rs` | `list` subcommand (id-only enumeration) |
-| `tools/shared.rs` | per-category record-id / display / subKind helpers + the `resolve_in` dispatcher shared by `docs` and `search` |
-| `tools/info.rs` | `info` subcommand |
-| `tools/schema.rs` | `schema` subcommand (emits the bundled `outputSchema` JSON for codegen / programmatic validation) |
-| `output.rs` | JSON-on-stdout / help-on-stderr routing; `NO_COLOR` + `CLICOLOR_FORCE` handling |
+`src/` contains CLI assembly, batch JSONL handling, output routing, embedded
+corpus loading, fuzzy scoring, and tool dispatch. `src/tools/` contains the
+tool subcommands plus shared resolver/record helpers.

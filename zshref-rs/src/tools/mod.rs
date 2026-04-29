@@ -1,5 +1,4 @@
-//! Tool-impl dispatch. Each module ports the corresponding TS tool from
-//! `packages/zsh-core-tooldef/src/tools/<name>.ts`.
+//! Tool-impl dispatch. Modules port the corresponding TS tools.
 
 pub mod docs;
 pub mod info;
@@ -10,14 +9,14 @@ pub mod shared;
 
 use crate::corpus::{Corpus, ToolDef};
 use anyhow::{anyhow, Result};
-use clap::ArgMatches;
 use serde_json::Value;
 
-pub fn dispatch(td: &ToolDef, matches: &ArgMatches, corpus: &Corpus) -> Result<Value> {
+/// Dispatch over a JSON `input` object. Both CLI and batch adapters funnel here.
+pub fn dispatch(td: &ToolDef, input: &Value, corpus: &Corpus) -> Result<Value> {
     match td.name.as_str() {
-        "zsh_docs" => docs::run(matches, corpus),
-        "zsh_search" => search::run(matches, corpus),
-        "zsh_list" => list::run(matches, corpus),
+        "zsh_docs" => docs::run(input, corpus),
+        "zsh_search" => search::run(input, corpus),
+        "zsh_list" => list::run(input, corpus),
         other => Err(anyhow!("unknown tool {other}")),
     }
 }

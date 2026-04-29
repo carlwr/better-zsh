@@ -11,21 +11,23 @@ use clap::Command;
 use serde_json::Value;
 use std::io::{IsTerminal, Write};
 
-/// Write `value` as pretty JSON to stdout (2-space indent, trailing newline).
-pub fn emit(value: &Value) {
-    let s = serde_json::to_string_pretty(value).unwrap_or_else(|_| "null".to_string());
+/// Compact JSON (single line + `\n`) by default; `--pretty` → indented.
+/// `batch` never calls this — it writes its own compact lines per request.
+pub fn emit(value: &Value, pretty: bool) {
+    let s = if pretty {
+        serde_json::to_string_pretty(value)
+    } else {
+        serde_json::to_string(value)
+    }
+    .unwrap_or_else(|_| "null".to_string());
     println!("{s}");
 }
 
-/// Translate a clap error into an exit code and route output to the correct
-/// stream. `DisplayHelp` / `DisplayVersion` are exit-0 informational; user
-/// errors map to 2; everything else maps to 1.
-///
-/// Stream routing: clap sends `DisplayHelp` / `DisplayVersion` to stdout by
-/// default. CLI-VISUAL-POLICY.md reserves stdout for JSON results, so we
-/// render those variants to stderr ourselves — preserving ANSI via
-/// `StyledStr::ansi()` when color is wanted (clap's own `Display` strips
-/// ANSI, so `"{err}"` loses all styling).
+/// Translate a clap error to an exit code, routing output to the right stream.
+/// `DisplayHelp`/`DisplayVersion` → stderr (stdout is reserved for JSON per
+/// CLI-VISUAL-POLICY.md), rendered with ANSI via `StyledStr::ansi()` so
+/// styling isn't lost (clap's `Display` strips ANSI). User errors → 2;
+/// internal errors → 1.
 pub fn handle_clap_error(err: clap::Error, _cmd: &mut Command) -> i32 {
     match err.kind() {
         ErrorKind::DisplayHelp | ErrorKind::DisplayVersion => {
@@ -47,9 +49,8 @@ pub fn handle_clap_error(err: clap::Error, _cmd: &mut Command) -> i32 {
         | ErrorKind::ArgumentConflict
         | ErrorKind::MissingRequiredArgument
         | ErrorKind::MissingSubcommand => {
-            // For non-help errors, clap's own `err.print()` goes to stderr
-            // through `anstream::AutoStream` — already gated correctly on
-            // NO_COLOR / CLICOLOR_FORCE / TTY.
+            // `err.print()` routes through `anstream::AutoStream` — color
+            // gating on NO_COLOR / CLICOLOR_FORCE / TTY is already correct.
             let _ = err.print();
             2
         }

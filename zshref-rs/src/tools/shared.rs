@@ -5,15 +5,12 @@
 //! See `augmentWithMarkdown` in `packages/zsh-core/build.ts`.
 
 use crate::corpus::Corpus;
-use clap::ArgMatches;
 use serde_json::{json, Map, Value};
 
 pub type Rec = Map<String, Value>;
 
-/// Uniform `{ matches, matchesReturned, matchesTotal }` envelope returned
-/// by every tool. `matchesReturned` is always `matches.len()`; `total` is
-/// caller-supplied (pre-truncation count) — for tools that don't truncate
-/// (`docs`), pass `matches.len()` again.
+/// Standard `{ matches, matchesReturned, matchesTotal }` envelope.
+/// `total` is pre-truncation; for non-truncating tools (`docs`) pass `matches.len()`.
 pub fn mk_envelope(matches: Vec<Value>, total: usize) -> Value {
     let returned = matches.len();
     json!({
@@ -23,9 +20,8 @@ pub fn mk_envelope(matches: Vec<Value>, total: usize) -> Value {
     })
 }
 
-/// Build a `{category, id, display, subKind?, score?}` entry — shape shared
-/// by `zsh_list` and `zsh_search`. Field order matches the TS adapter for
-/// byte-equal JSON.
+/// `{category, id, display, subKind?, score?}` entry for `list`/`search`.
+/// Field insertion order matches the TS adapter (→ byte-equal JSON).
 pub fn mk_entry(
     category: &str,
     id: String,
@@ -54,30 +50,22 @@ pub fn str_field<'r>(rec: &'r Rec, key: &str) -> &'r str {
     rec.get(key).and_then(Value::as_str).unwrap_or("")
 }
 
-/// String CLI arg accessor: returns the captured value or `""`.
-pub fn str_arg<'a>(matches: &'a ArgMatches, name: &str) -> &'a str {
-    matches
-        .get_one::<String>(name)
-        .map(String::as_str)
-        .unwrap_or("")
+/// String input-field accessor: returns the value or `""` when missing.
+pub fn str_input<'a>(input: &'a Value, name: &str) -> &'a str {
+    input.get(name).and_then(Value::as_str).unwrap_or("")
 }
 
-/// Canonical id for a record — reads the baked `_id` field emitted by the
-/// TS build. Falls back to `""` when absent (corpus drift guard in
-/// `corpus.rs` will catch this before production).
+/// Reads the baked `_id` field; falls back to `""` (drift caught by `corpus.rs` tests).
 pub fn record_id(_cat_name: &str, rec: &Rec) -> String {
     str_field(rec, "_id").to_string()
 }
 
-/// Display form for a record — reads the baked `_display` field emitted by
-/// the TS build.
+/// Reads the baked `_display` field; falls back to `""`.
 pub fn record_display(_cat_name: &str, rec: &Rec) -> String {
     str_field(rec, "_display").to_string()
 }
 
-/// Per-category typed sub-facet — reads the baked `_subKind` field emitted
-/// by the TS build. Returns `None` for categories whose `docSubKind` returns
-/// `undefined` (field is absent in the JSON).
+/// Reads the baked `_subKind` field. `None` for categories where `docSubKind` is undefined.
 pub fn record_sub_kind(_cat_name: &str, rec: &Rec) -> Option<String> {
     let s = str_field(rec, "_subKind");
     (!s.is_empty()).then(|| s.to_string())
@@ -93,8 +81,7 @@ pub fn strip_no_prefix(raw: &str) -> Option<String> {
         .map(str::to_string)
 }
 
-/// Option normalization: lowercase, strip underscores. Mirrors
-/// `normalizeOptName` in `packages/zsh-core/src/docs/brands.ts`.
+/// Lowercase + strip underscores. Mirrors `normalizeOptName` in `brands.ts`.
 pub fn normalize_option(raw: &str) -> String {
     raw.trim()
         .chars()
@@ -103,19 +90,16 @@ pub fn normalize_option(raw: &str) -> String {
         .collect()
 }
 
-/// Lossy-resolution feedback emitted by a per-category resolver. Mirrors
-/// the TS `ResolverFeedback` closed kind-tagged union in
-/// `packages/zsh-core/src/docs/resolvers.ts`. Today the option resolver is
-/// the only emitter (`InputNegated` when reached via `NO_`-stripping); other
-/// categories never carry feedback.
+/// Lossy-resolution feedback from a per-category resolver. Mirrors the TS
+/// `ResolverFeedback` union in `resolvers.ts`. Only the option resolver emits
+/// today (`InputNegated` via `NO_`-stripping).
 #[derive(Clone, Copy, Debug)]
 pub enum ResolverFeedback {
     InputNegated,
 }
 
 impl ResolverFeedback {
-    /// JSON `kind` discriminator string. Must match the TS literal in
-    /// `ResolverFeedback["kind"]`.
+    /// Must match the TS literal in `ResolverFeedback["kind"]`.
     pub fn kind(self) -> &'static str {
         match self {
             ResolverFeedback::InputNegated => "input-negated",
@@ -123,34 +107,27 @@ impl ResolverFeedback {
     }
 }
 
-/// A resolved corpus hit — the result of "direct ∥ resolver, direct
-/// preferred" dispatch for one category. Carries enough to project either
-/// docs' `{mdBody, feedback?}` shape or search's `(category, id)` dedup-key
-/// + `Entry` lookup.
+/// Resolved corpus hit from "direct ∥ resolver, direct preferred" dispatch.
+/// Carries enough for both docs' `{mdBody, feedback?}` and search's dedup-key + entry.
 pub struct ResolvedHit<'c> {
     pub category: &'static str,
     pub id: String,
     pub display: String,
     pub rec: &'c Rec,
-    /// Lossy-normalization feedback emitted by the resolver. `None` for
-    /// loss-free or non-emitting paths.
+    /// `None` for loss-free paths or non-emitting categories.
     pub feedback: Option<ResolverFeedback>,
 }
 
-/// Per-category resolver dispatch, "direct ∥ resolver, direct preferred":
-///
-///   1. Try `corpus[cat]` direct lookup (trimmed raw vs literal id).
-///   2. On miss, fall back to the per-category resolver.
+/// "Direct ∥ resolver, direct preferred" per-category dispatch:
+/// 1. Direct id lookup (trimmed raw vs literal).
+/// 2. On miss, per-category resolver.
 ///
 /// Direct precedence is load-bearing for template-key categories
-/// (`job_spec`'s `%number` literal vs the `%string` template fallback;
-/// `history`'s `!n` literal vs the digit template). See DESIGN.md §"docs:
-/// direct ∥ resolver" and the matching comment in
-/// `packages/zsh-core-tooldef/src/tools/docs.ts`.
+/// (`job_spec`'s `%number` literal vs `%string`; `history`'s `!n` vs digit template).
+/// See DESIGN.md §"docs: direct ∥ resolver" and `docs.ts`.
 ///
-/// Used by `docs` (single-category, walks `CLASSIFY_ORDER`) and `search`
-/// (resolver tier between exact and prefix). Mirrors the TS resolver
-/// table in `packages/zsh-core/src/docs/resolvers.ts`.
+/// Used by `docs` (walks `CLASSIFY_ORDER`) and `search` (resolver tier).
+/// Mirrors the TS resolver table in `resolvers.ts`.
 pub fn resolve_in<'c>(corpus: &'c Corpus, cat_name: &str, raw: &str) -> Option<ResolvedHit<'c>> {
     if let Some(h) = direct_lookup(corpus, cat_name, raw) {
         return Some(h);

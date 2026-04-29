@@ -1,14 +1,10 @@
 //! Corpus + tool-def JSON decoding.
 //!
-//! Record shapes are intentionally loose (`serde_json::Value` for per-category
-//! bodies) — the CLI only needs a handful of well-known fields (`name`,
-//! `display`, `id`, `mdBody`, …) and benefits from forward-compatibility with
-//! schema additions.
-//!
-//! Taxonomy lists (`docCategories`, `classifyOrder`, `categoryFiles`) come
-//! from the embedded `index.json` (the TS source of truth). The only Rust-side
-//! filename inventory is the `include_bytes!` table below; `load_corpus`
-//! checks that every indexed file has embedded bytes.
+//! Record shapes are loose (`serde_json::Value`) — forward-compatible with
+//! schema additions; the CLI only reads a handful of well-known fields.
+//! Taxonomy lists come from the embedded `index.json` (TS source of truth).
+//! The only Rust-side filename inventory is the `include_bytes!` table below;
+//! `load_corpus` asserts every indexed file has embedded bytes.
 
 use anyhow::{Context, Result};
 use serde::Deserialize;
@@ -48,10 +44,9 @@ const TOOLDEF_JSON: &[u8] = include_bytes!(tooldef_path!("tooldef.json"));
 
 const INDEX_JSON: &[u8] = include_bytes!(corpus_path!("index.json"));
 
-// Filename → embedded bytes. `include_bytes!` requires literal compile-time
-// paths, so this list is hand-maintained in alphabetical order matching
-// `index.json.files`. The pairing of category name → file → bytes is then
-// driven entirely by the runtime `index.json.categoryFiles` map below.
+// `include_bytes!` requires literal compile-time paths → hand-maintained in
+// alphabetical order matching `index.json.files`. Category→file→bytes mapping
+// is driven at runtime by `index.json.categoryFiles`.
 const FILE_BYTES: &[(&str, &[u8])] = &[
     (
         "arith-ops.json",
@@ -137,16 +132,12 @@ fn file_bytes(name: &str) -> Option<&'static [u8]> {
         .find_map(|(n, b)| (*n == name).then_some(*b))
 }
 
-/// Parsed `index.json`. Lazy-decoded once at first access; subsequent
-/// taxonomy lookups (`DOC_CATEGORIES`, `CLASSIFY_ORDER`) project from this
-/// value.
+/// Parsed `index.json`. Lazy-decoded once; taxonomy statics project from it.
 static INDEX: LazyLock<Index> =
     LazyLock::new(|| serde_json::from_slice(INDEX_JSON).expect("embedded index.json must parse"));
 
-/// Closed list of `DocCategory` values, in primary ordering. Sourced from
-/// `index.json.docCategories` and leaked to `'static` once at startup so
-/// clap's `PossibleValues` (which wants `&'static str`) can consume it
-/// without per-call allocation.
+/// Closed `DocCategory` list in primary ordering. Leaked to `'static` so
+/// clap's `PossibleValues` can hold `&'static str` without per-call alloc.
 pub static DOC_CATEGORIES: LazyLock<Vec<&'static str>> = LazyLock::new(|| {
     INDEX
         .doc_categories
@@ -164,8 +155,7 @@ pub static CLASSIFY_ORDER: LazyLock<Vec<&'static str>> = LazyLock::new(|| {
         .collect()
 });
 
-/// Hook base names for the special_function resolver. Sourced from
-/// `index.json.hookNames` (canonical list in `packages/zsh-core/src/docs/resolvers.ts`).
+/// Hook base names for the special_function resolver (`index.json.hookNames`).
 pub static HOOK_NAMES: LazyLock<Vec<&'static str>> = LazyLock::new(|| {
     INDEX
         .hook_names
@@ -178,11 +168,8 @@ pub static HOOK_NAMES: LazyLock<Vec<&'static str>> = LazyLock::new(|| {
 pub struct ToolDefs {
     pub version: u32,
     pub tools: Vec<ToolDef>,
-    /// Suite-level intent→tool cheat-sheet. Rendered into `zshref --help`
-    /// after `cli::cli_prose()` rewrites `zsh_*` tool names to `zshref *`.
-    /// Source of truth is `TOOL_SUITE_PREAMBLE` in
-    /// `packages/zsh-core-tooldef/src/tool-defs.ts`; the drift warning
-    /// there also applies here.
+    /// Suite-level intent→tool cheat-sheet, rendered into `zshref --help`.
+    /// Source: `TOOL_SUITE_PREAMBLE` in `packages/zsh-core-tooldef/src/tool-defs.ts`.
     pub preamble: String,
 }
 
@@ -195,9 +182,7 @@ pub struct ToolDef {
     pub flag_briefs: BTreeMap<String, String>,
     #[serde(rename = "inputSchema")]
     pub input_schema: Value,
-    // Consumed by `tools::schema::run` (`zshref schema` bundles every
-    // tool's `outputSchema`) and by `tests/integration.rs` (validates
-    // CLI output against the bundled schema, reading the JSON directly).
+    // Bundled into `zshref schema` and used by schema-validation tests.
     #[serde(rename = "outputSchema")]
     pub output_schema: Value,
 }
@@ -206,11 +191,8 @@ pub fn load_tool_defs() -> Result<ToolDefs> {
     serde_json::from_slice(TOOLDEF_JSON).context("parsing embedded tooldef.json")
 }
 
-/// Metadata fields on the corpus index. `package_version` and `zsh_upstream`
-/// back the enriched `--version` output and the `zshref info` subcommand.
-/// `doc_categories`, `classify_order`, and `category_files` are the
-/// canonical taxonomy lists from the TS source of truth — consumed directly
-/// (no Rust-side mirror).
+/// Decoded `index.json`. Taxonomy lists (`doc_categories`, `classify_order`,
+/// `category_files`) come directly from the TS source of truth — no Rust-side mirror.
 #[derive(Debug, Deserialize)]
 pub struct Index {
     #[allow(dead_code)]
@@ -240,11 +222,8 @@ pub struct ZshUpstream {
 
 pub struct Corpus {
     pub index: &'static Index,
-    /// One vec of records per category, in `index.docCategories` order
-    /// (drives `list` and `search` iteration). `docs` walks
-    /// `CLASSIFY_ORDER` instead. Each record is a JSON object; the CLI only
-    /// pulls out `mdBody` plus the category-specific id/display fields at
-    /// point-of-use.
+    /// One vec per category in `index.docCategories` order (used by `list`/`search`).
+    /// `docs` walks `CLASSIFY_ORDER` instead.
     pub categories: Vec<Category>,
 }
 
@@ -294,11 +273,8 @@ mod tests {
 
     #[test]
     fn corpus_id_and_display_are_ascii() {
-        // `crate::fuzzy::score` is ASCII-only — non-ASCII `_id` or `_display`
-        // values silently fall through to "no fuzzy match" for those
-        // records. Fail loud here so upstream drift (a non-ASCII identifier
-        // sneaking into the corpus) forces a conscious decision before the
-        // search tier degrades in production.
+        // `fuzzy::score` is ASCII-only; non-ASCII ids silently score 0.
+        // Fail here so corpus drift forces a conscious decision.
         let corpus = load_corpus().expect("load_corpus");
         let mut violations: Vec<String> = Vec::new();
         for cat in &corpus.categories {
@@ -322,9 +298,7 @@ mod tests {
 
     #[test]
     fn record_id_key_populated_for_every_category() {
-        // Verifies that the baked `_id` field is present and non-empty in
-        // every category's first record. If the TS build stopped emitting
-        // `_id`, Rust would silently read empty strings everywhere.
+        // If TS stopped emitting `_id`, Rust would silently read "" everywhere.
         let corpus = load_corpus().expect("load_corpus");
         for cat in &corpus.categories {
             let first = cat

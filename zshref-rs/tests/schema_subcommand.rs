@@ -49,15 +49,17 @@ fn schema_subcommand_emits_expected_bundle_shape() {
             .get("name")
             .and_then(Value::as_str)
             .expect("tool entry must carry a string `name`");
-        let schema = entry
-            .get("outputSchema")
-            .expect("tool entry must carry `outputSchema`");
-        let schema_obj = schema
-            .as_object()
-            .unwrap_or_else(|| panic!("outputSchema for {name} must be a JSON object"));
-        assert!(
-            !schema_obj.is_empty(),
-            "outputSchema for {name} must be a non-empty object"
-        );
+        for key in ["inputSchema", "outputSchema"] {
+            let schema = entry
+                .get(key)
+                .unwrap_or_else(|| panic!("tool entry must carry `{key}`"));
+            let schema_obj = schema
+                .as_object()
+                .unwrap_or_else(|| panic!("{key} for {name} must be a JSON object"));
+            assert!(
+                !schema_obj.is_empty(),
+                "{key} for {name} must be a non-empty object"
+            );
+        }
     }
 }

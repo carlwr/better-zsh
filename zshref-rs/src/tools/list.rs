@@ -1,20 +1,17 @@
-//! `zsh_list` — port of `packages/zsh-core-tooldef/src/tools/list.ts`.
-//!
-//! Enumerate corpus records, optionally filtered to one category, no
-//! markdown body. `limit=0` returns metadata only.
+//! `zsh_list` — enumerate corpus records (no `mdBody`), optional category filter.
+//! `limit=0` → metadata only (`matchesTotal` nonzero, `matches` empty).
 
 use crate::corpus::Corpus;
 use crate::tools::shared::{mk_entry, mk_envelope, record_display, record_id, record_sub_kind};
 use anyhow::Result;
-use clap::ArgMatches;
 use serde_json::Value;
 
-pub fn run(matches: &ArgMatches, corpus: &Corpus) -> Result<Value> {
-    let category = matches.get_one::<String>("category").cloned();
+pub fn run(input: &Value, corpus: &Corpus) -> Result<Value> {
+    let category = input.get("category").and_then(Value::as_str);
     // Default is baked into the clap arg from inputSchema.properties.limit.default.
-    let limit = *matches.get_one::<u32>("limit").unwrap_or(&0) as usize;
+    let limit = input.get("limit").and_then(Value::as_u64).unwrap_or(0) as usize;
 
-    let pool = entries(corpus, category.as_deref());
+    let pool = entries(corpus, category);
     let total = pool.len();
     let matches: Vec<Value> = pool.into_iter().take(limit).collect();
     Ok(mk_envelope(matches, total))

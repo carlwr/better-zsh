@@ -145,7 +145,7 @@ Post-extraction, the monorepo branch of the auto-detection is unused;
   No network at build time. Post-extraction requires only trivial
   cleanup.
 - **Cons.** Two code paths in `build.rs` / `corpus.rs` during the
-  monorepo phase. Cost: ~30 lines of conditional compilation.
+  monorepo phase, plus explicit checks to keep those paths honest.
   Entirely manageable; the benefit — testable end-to-end publish path
   *before* we ever extract — is large.
 
@@ -172,125 +172,23 @@ Post-extraction, the monorepo branch of the auto-detection is unused;
 
 ### How it works
 
-**`zshref-rs/build.rs`** (new):
+The current implementation is intentionally compact; read the executable
+sources for exact mechanics. The invariants are:
 
-```rust
-use std::{env, path::Path};
+- `build.rs` picks `vendored` or `monorepo`, with `ZSHREF_DATA_SOURCE`
+  available as an explicit override for CI and Make targets.
+- `build.rs` emits both `cfg(data_source = "...")` and a semantic
+  `buildInputHash` over Rust inputs plus generated JSON, using
+  `build-inputs.txt` as the manifest.
+- `src/corpus.rs` embeds JSON via `cfg`-gated path macros, so the final
+  binary contains bytes from exactly one data source.
+- `vendor` refreshes `zshref-rs/data/` from TS output; vendored-mode
+  targets force `ZSHREF_DATA_SOURCE=vendored`.
+- `cli-package` runs `cargo package --allow-dirty`, proving the
+  publishable tarball builds standalone with no monorepo visible.
 
-fn main() {
-    let manifest = env::var("CARGO_MANIFEST_DIR").unwrap();
-    let manifest = Path::new(&manifest);
-
-    let vendored = manifest.join("data/index.json").exists();
-    let monorepo = manifest
-        .join("../packages/zsh-core/dist/json/index.json")
-        .exists();
-
-    let source = match (vendored, monorepo) {
-        (true, _)     => "vendored",
-        (false, true) => "monorepo",
-        (false, false) => panic!(
-            "No data source found. Expected either:\n\
-             - {manifest}/data/*.json   (vendored mode; run `make vendor`)\n\
-             - ../packages/.../dist/json/*.json (monorepo mode; run `make cli` from repo root)\n",
-            manifest = manifest.display()
-        ),
-    };
-
-    println!("cargo:rustc-check-cfg=cfg(data_source, values(\"vendored\", \"monorepo\"))");
-    println!("cargo:rustc-cfg=data_source=\"{source}\"");
-
-    println!("cargo:rerun-if-changed=data");
-    println!("cargo:rerun-if-changed=../packages/zsh-core/dist/json");
-    println!("cargo:rerun-if-changed=../packages/zsh-core-tooldef/dist/json");
-}
-```
-
-**`zshref-rs/src/corpus.rs`** (replace the three `include_bytes!`
-blocks with path macros):
-
-```rust
-#[cfg(data_source = "vendored")]
-macro_rules! corpus_path  { ($f:literal) => { concat!("../data/", $f) }; }
-#[cfg(data_source = "vendored")]
-macro_rules! tooldef_path { ($f:literal) => { concat!("../data/", $f) }; }
-
-#[cfg(data_source = "monorepo")]
-macro_rules! corpus_path  { ($f:literal) => { concat!("../../packages/zsh-core/dist/json/", $f) }; }
-#[cfg(data_source = "monorepo")]
-macro_rules! tooldef_path { ($f:literal) => { concat!("../../packages/zsh-core-tooldef/dist/json/", $f) }; }
-
-const TOOLDEF_JSON: &[u8] = include_bytes!(tooldef_path!("tooldef.json"));
-const INDEX_JSON:   &[u8] = include_bytes!(corpus_path!("index.json"));
-
-macro_rules! include_category {
-    ($cat:literal, $file:literal) => {
-        ($cat, include_bytes!(corpus_path!($file)) as &[u8])
-    };
-}
-```
-
-**Repo-root `.gitignore`** (one line):
-
-```
-zshref-rs/data/
-```
-
-(A dedicated `zshref-rs/.gitignore` isn't created — the root file covers it pre-extraction. Post-extraction, when `data/` is committed, the entry comes out.)
-
-**Root `Makefile`** adds:
-
-```make
-.PHONY: vendor vendor-clean cli-vendored cli-vendored-test
-
-vendor: artifacts
-	@mkdir -p zshref-rs/data
-	@cp packages/zsh-core/dist/json/*.json zshref-rs/data/
-	@cp packages/zsh-core-tooldef/dist/json/tooldef.json zshref-rs/data/
-	@echo "vendored → zshref-rs/data/"
-
-vendor-clean:
-	rm -rf zshref-rs/data
-
-cli-vendored: vendor-clean vendor
-	cd zshref-rs && cargo build --release
-
-cli-vendored-test: vendor-clean vendor
-	cd zshref-rs && cargo test
-```
-
-`vendor-clean` runs first so a stale `data/` never satisfies the
-auto-detection incorrectly.
-
-**`zshref-rs/Cargo.toml`** — add (for when `publish = true`):
-
-```toml
-include = [
-    "src/**/*.rs",
-    "build.rs",
-    "Cargo.toml",
-    "Cargo.lock",
-    "README.md",
-    "LICENSE",
-    "THIRD_PARTY_NOTICES.md",
-    "data/*.json",
-]
-```
-
-Gitignored `data/` gets *included* in the published `.crate` because
-`include` overrides `.gitignore` for the tarball. That's the whole
-trick.
-
-**`.github/workflows/ci-rust.yml`** — the existing `rust` job gained one extra step after the monorepo-mode fmt+clippy+test run:
-
-```yaml
-- name: Vendored-mode test + package dry-run
-  run: |
-    make cli-vendored-test
-    make cli-package
-```
-
-`make cli-package` runs `cargo package --allow-dirty`, which builds the publishable tarball and verifies it compiles standalone. That's the real prize: it proves the published crate **would build standalone** with zero outside deps beyond rustc. If this step is green today, it's green on any `cargo publish`.
+Gitignored `data/` gets included in the published `.crate` because
+`Cargo.toml`'s `include` list overrides `.gitignore` for packaging.
 
 ### Why the auto-detection, not a feature flag?
 
@@ -300,21 +198,21 @@ problem: `cargo install` defaults. The published crate would need
 need someone to remember `--no-default-features`. Too easy to get
 wrong.
 
-`build.rs` detection is zero-overhead and invisible: whichever data is
-present wins. The mode is logged (`println!` via `cargo:warning=…`
-if we want it loud); no one has to remember a flag.
+`build.rs` detection keeps plain `cargo build` invisible: whichever data is
+present wins. Make targets set `ZSHREF_DATA_SOURCE` explicitly so monorepo and
+vendored checks cannot accidentally pick the other path.
 
 ### What flips at extraction
 
 - Delete the `monorepo` branch in `build.rs` and the corresponding
-  macro arm in `corpus.rs`. (Three-line change.)
+  macro arm in `corpus.rs`.
 - Commit `data/` (remove the `/data/` line from `.gitignore`).
 - The Makefile shrinks: `artifacts` target goes away; `vendor` becomes
   a sync script that clones the TS repo at a pinned commit (stored in
   a `DATA_COMMIT` file or similar) and runs its build.
 - The monorepo-only CI job disappears.
 
-Roughly 50 lines of cleanup on extraction day.
+Small cleanup on extraction day; the build fingerprint remains useful.
 
 ## Testability matrix
 
@@ -341,15 +239,16 @@ Two kinds of drift to worry about:
   Rust CI vendored-mode step runs `make cli-vendored-test` and
   `make cli-package`. Drift from stale vendored data surfaces as
   Rust-side test failures against the embedded JSON (record-shape
-  sanity in `corpus.rs::tests`, fixtures and property tests) or as a
-  package build failure.
+  sanity in `corpus.rs::tests`, the `fuzz.rs` proptests, and the
+  TS-side `parity.test.ts` against the built binary) or as a package
+  build failure.
 - **Schema drift (Rust structs vs. TS JSON shape).** Taxonomy order and
   category→file mapping load directly from `index.json`, so those
   tables have no Rust-side mirror to drift. The compile-time
   `include_bytes!` filename table still must cover every indexed file;
   `load_corpus` and Rust-side tests fail if it does not. Per-record
   field-shape drift is covered by the `record_id_key_populated_for_every_category`
-  test in `corpus.rs::tests` and by per-tool fixture tests.
+  test in `corpus.rs::tests` and by the cross-language parity test.
 
 ## Source dep vs artifact dep, reconciled
 
