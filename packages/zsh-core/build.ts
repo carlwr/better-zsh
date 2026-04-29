@@ -98,12 +98,41 @@ function writeJsonArtifacts() {
   }
 
   for (const cat of docCategories) {
-    writeJson(
-      join(jsonDir, jsonArtifact[cat].file),
-      augmentWithMarkdown(corpus, cat),
-    )
+    const augmented = augmentWithMarkdown(corpus, cat)
+    assertAsciiIdentity(cat, augmented)
+    writeJson(join(jsonDir, jsonArtifact[cat].file), augmented)
   }
   writeJson(join(jsonDir, "index.json"), index)
+}
+
+/**
+ * Strong gate: `_id`/`_display` must be ASCII. The Rust CLI's fuzzy scorer
+ * is ASCII-only — non-ASCII would silently degrade search for the
+ * affected records. Mirrors the corpus-load test on the Rust side.
+ */
+function assertAsciiIdentity(
+  cat: DocCategory,
+  records: readonly { readonly _id: string; readonly _display: string }[],
+): void {
+  const violations: string[] = []
+  for (const rec of records) {
+    if (!isAscii(rec._id))
+      violations.push(`${cat}: _id ${JSON.stringify(rec._id)}`)
+    if (!isAscii(rec._display))
+      violations.push(`${cat}: _display ${JSON.stringify(rec._display)}`)
+  }
+  if (violations.length > 0) {
+    throw new Error(
+      `non-ASCII _id/_display in corpus (Rust fuzzy scorer is ASCII-only):\n  ${violations.join("\n  ")}`,
+    )
+  }
+}
+
+function isAscii(s: string): boolean {
+  for (let i = 0; i < s.length; i++) {
+    if (s.charCodeAt(i) > 0x7f) return false
+  }
+  return true
 }
 
 ;(async () => {
