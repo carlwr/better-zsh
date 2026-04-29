@@ -34,5 +34,5 @@ Registry verification in downstream packages stays red until the next publish ch
 ## Followups still open
 
 - When `plan-json-artifacts.md` lands, retire the remaining JSON subpath exports that only exist for packaged data delivery.
-- After the next alpha that includes the current `param_expn` work, do one MCP sanity pass on `zsh_describe` and `zsh_search` for that category.
+- After the next alpha that includes the current `param_expn` work, do one MCP sanity pass on `zsh_docs` and `zsh_search` for that category.
 - Report the two upstream zsh doc typos that are currently patched locally in the Yodl extractors, then retire those fixups on the next vendoring update.

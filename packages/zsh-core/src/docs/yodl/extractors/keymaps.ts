@@ -6,7 +6,7 @@ import {
   extractSitemList,
 } from "../core/doc.ts"
 import type { YNodeSeq } from "../core/nodes.ts"
-import { extractTokens, normalizeBody } from "../core/text.ts"
+import { firstTt, normalizeBody } from "../core/text.ts"
 
 const SECTION = "Keymaps"
 
@@ -27,9 +27,8 @@ export function parseKeymaps(yo: string | YNodeSeq): readonly KeymapDoc[] {
   const out: KeymapDoc[] = []
   for (const item of extractSitemList(list)) {
     if (!item.body) continue
-    const tok = extractTokens(item.header).find(t => t.kind === "tt")?.text
-    if (!tok) continue
-    const name = tok.trim()
+    const name = firstTt(item.header)?.trim()
+    if (!name) continue
     const isSpecial = name === ".safe"
     const linkedFrom = name === "emacs" ? ["main"] : []
     out.push({

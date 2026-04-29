@@ -6,6 +6,7 @@ import {
   extractSectionBody,
   extractSitemList,
   flattenAliasedEntries,
+  withBody,
 } from "../core/doc.ts"
 import type { YNodeSeq } from "../core/nodes.ts"
 import { normalizeBody, normalizeHeader } from "../core/text.ts"
@@ -43,17 +44,14 @@ function parseWordDesignators(yo: string | YNodeSeq): HistoryDoc[] {
   const body = extractSectionBody(yo, "Word Designators")
   const list = extractFirstList(body, "sitem")
   if (!list) return []
-  return extractSitemList(list).flatMap(item => {
-    if (!item.body) return []
+  return withBody(extractSitemList(list)).map(item => {
     const sig = normalizeHeader(item.header)
-    return [
-      {
-        kind: "word-designator",
-        key: mkDocumented("history", sig),
-        sig,
-        desc: normalizeBody(item.body),
-        section: "Word Designators",
-      } satisfies HistoryDoc,
-    ]
+    return {
+      kind: "word-designator",
+      key: mkDocumented("history", sig),
+      sig,
+      desc: normalizeBody(item.body),
+      section: "Word Designators",
+    } satisfies HistoryDoc
   })
 }

@@ -18,7 +18,7 @@ const ROOT_BRIEF: &str = "Query a bundled static zsh reference from the command 
 
 const ROOT_AFTER_HELP_TAIL: &str = concat!(
     "Exit codes:\n",
-    "  0  success (also for {match:null} / empty matches)\n",
+    "  0  success (also for empty matches)\n",
     "  1  unexpected internal error\n",
     "  2  invalid input (bad flag, enum, or subcommand)\n",
     "\n",
@@ -27,11 +27,26 @@ const ROOT_AFTER_HELP_TAIL: &str = concat!(
     "  CLICOLOR_FORCE    present + non-empty forces ANSI colors on (even off a TTY)\n",
     "\n",
     "Examples:\n",
-    "  zshref classify --raw AUTO_CD\n",
+    "  zshref docs --raw AUTO_CD\n",
+    "  zshref docs --raw NO_AUTO_CD                  # surfaces negated:true\n",
+    "  zshref docs --raw for                         # multi-match without --category\n",
     "  zshref search --query printf --limit 5\n",
-    "  zshref search --category option --limit 500   # list every record in a category\n",
-    "  zshref describe --category builtin --id echo\n",
-    "  zshref lookup_option --raw NO_AUTO_CD\n",
+    "  zshref list --category option --limit 200\n",
+    "  zshref list                                   # first 20 records of every category\n",
+);
+
+/// Multi-line `Usage:` block for the root `--help`. Hand-aligned so the
+/// three tool subcommands line up across columns; `info`/`completions`/
+/// `help` follow as a separate block. Hard-coded literal — clap's default
+/// single-line usage doesn't make the surface readable.
+const ROOT_USAGE: &str = concat!(
+    "zshref docs    --raw=R   [--category=C]\n",
+    "  zshref search  --query=W [--category=C] [--limit=L]\n",
+    "  zshref list              [--category=C] [--limit=L]\n",
+    "\n",
+    "  zshref info\n",
+    "  zshref completions <SHELL>\n",
+    "  zshref help [COMMAND]",
 );
 
 pub fn subcommand_name(tool_name: &str) -> &str {
@@ -56,12 +71,15 @@ pub fn build_cli(tool_defs: &ToolDefs, corpus: &Corpus) -> Command {
         .about(ROOT_BRIEF)
         .long_about(concat!(
             "Query a bundled static zsh reference from the command line.\n\n",
-            "Tool subcommands (classify, search, describe, lookup_option) and ",
-            "`info` emit pretty JSON on stdout — pipe to `jq`. `completions` ",
-            "emits the requested shell script on stdout instead. Help, version, ",
-            "errors, and warnings go to stderr. ",
+            "Tool subcommands (docs, search, list) and `info` emit pretty JSON ",
+            "on stdout — pipe to `jq`. `docs` returns rendered markdown bodies; ",
+            "`search` and `list` return identifiers only — pair `search`/`list` ",
+            "results with `docs` for the full body. `completions` emits the ",
+            "requested shell script on stdout instead. Help, version, errors, ",
+            "and warnings go to stderr. ",
             "ANSI colors in help output are auto-disabled when stderr is not a TTY.",
         ))
+        .override_usage(ROOT_USAGE)
         .after_help(root_after_help)
         .arg_required_else_help(true)
         .subcommand_required(true)
@@ -198,17 +216,12 @@ fn build_arg(key: &str, spec: &Value, required: bool, help: &str, long_help: &st
 }
 
 /// Rewrite tool descriptions (which are MCP-primary, naming tools as
-/// `zsh_describe` / `zsh_classify` / etc.) into CLI-appropriate form
-/// (`zshref describe` / `zshref classify` / ...). One line of text rewrite
-/// here saves duplicating the descriptions on two sides of the seam.
+/// `zsh_docs` / `zsh_search` / etc.) into CLI-appropriate form
+/// (`zshref docs` / `zshref search` / ...). One line of text rewrite here
+/// saves duplicating the descriptions on two sides of the seam.
 fn cli_prose(s: &str) -> String {
     let mut out = s.to_string();
-    for tool in [
-        "zsh_classify",
-        "zsh_search",
-        "zsh_describe",
-        "zsh_lookup_option",
-    ] {
+    for tool in ["zsh_docs", "zsh_search", "zsh_list"] {
         let sub = subcommand_name(tool);
         out = out.replace(tool, &format!("zshref {sub}"));
     }

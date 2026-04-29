@@ -229,6 +229,27 @@ function simpleResolver<K extends DocCategory>(cat: K): Resolver<K> {
 }
 
 /**
+ * Common envelope for resolvers whose raw-to-key step is a pure string
+ * projection: trim → match → corpus lookup. `matchKey` returns `undefined`
+ * to opt out (e.g. category-specific shape rejection).
+ */
+function resolveByKey<K extends DocCategory>(
+  c: DocCorpus,
+  cat: K,
+  raw: string,
+  matchKey: (t: string) => string | undefined,
+): Documented<K> | undefined {
+  const t = raw.trim()
+  if (!t) return undefined
+  const key = matchKey(t)
+  if (!key) return undefined
+  const id = mkDocumented(cat, key)
+  return (c[cat] as ReadonlyMap<string, unknown>).has(id as string)
+    ? id
+    : undefined
+}
+
+/**
  * Redirection resolver. Decomposes a raw token (e.g. `"1>&2"`) into a
  * group-op prefix and a tail; disambiguates docs that share the same group-op
  * by matching the user-input tail shape against the doc's literal tail word.
@@ -297,14 +318,7 @@ function resolveHistory(
   c: DocCorpus,
   raw: string,
 ): Documented<"history"> | undefined {
-  const t = raw.trim()
-  if (!t) return undefined
-
-  const key = matchHistoryKey(t)
-  if (!key) return undefined
-
-  const id = mkDocumented("history", key)
-  return c.history.has(id) ? id : undefined
+  return resolveByKey(c, "history", raw, matchHistoryKey)
 }
 
 function matchHistoryKey(t: string): string | undefined {
@@ -403,12 +417,9 @@ function resolveJobSpec(
   c: DocCorpus,
   raw: string,
 ): Documented<"job_spec"> | undefined {
-  const t = raw.trim()
-  if (!t.startsWith("%")) return undefined
-  const key = jobSpecKey(t)
-  if (!key) return undefined
-  const id = mkDocumented("job_spec", key)
-  return c.job_spec.has(id) ? id : undefined
+  return resolveByKey(c, "job_spec", raw, t =>
+    t.startsWith("%") ? jobSpecKey(t) : undefined,
+  )
 }
 
 function jobSpecKey(t: string): string | undefined {

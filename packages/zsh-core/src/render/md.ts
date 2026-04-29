@@ -122,8 +122,11 @@ export function mdShellParam(doc: ShellParamDoc): string {
 
 /** Render one parameter-expansion flag doc block as markdown. */
 export function mdParamFlag(doc: ParamFlagDoc, corpus: DocCorpus): string {
-  const role = `_Role:_ parameter-expansion flag${argsSuffix(doc.args)}`
-  return docBlock(mdFmt.code(doc.sig), fmtOptRefsInMd(doc.desc, corpus), role)
+  return sigBlock(
+    doc,
+    corpus,
+    `parameter-expansion flag${argsSuffix(doc.args)}`,
+  )
 }
 
 /** Render one subscript flag doc block as markdown. */
@@ -131,32 +134,22 @@ export function mdSubscriptFlag(
   doc: SubscriptFlagDoc,
   corpus: DocCorpus,
 ): string {
-  const role = `_Role:_ subscript flag${argsSuffix(doc.args)}`
-  return docBlock(mdFmt.code(doc.sig), fmtOptRefsInMd(doc.desc, corpus), role)
+  return sigBlock(doc, corpus, `subscript flag${argsSuffix(doc.args)}`)
 }
 
 /** Render one history-expansion doc block as markdown. */
 export function mdHistory(doc: HistoryDoc, corpus: DocCorpus): string {
-  return docBlock(
-    mdFmt.code(doc.sig),
-    fmtOptRefsInMd(doc.desc, corpus),
-    `_Role:_ history ${doc.kind.replace("-", " ")}`,
-  )
+  return sigBlock(doc, corpus, `history ${doc.kind.replace("-", " ")}`)
 }
 
 /** Render one globbing-operator doc block as markdown. */
 export function mdGlobOp(doc: GlobOpDoc, corpus: DocCorpus): string {
-  return docBlock(
-    mdFmt.code(doc.sig),
-    fmtOptRefsInMd(doc.desc, corpus),
-    `_Role:_ glob operator (${doc.kind})`,
-  )
+  return sigBlock(doc, corpus, `glob operator (${doc.kind})`)
 }
 
 /** Render one glob-flag doc block as markdown. */
 export function mdGlobFlag(doc: GlobFlagDoc, corpus: DocCorpus): string {
-  const role = `_Role:_ glob flag${argsSuffix(doc.args)}`
-  return docBlock(mdFmt.code(doc.sig), fmtOptRefsInMd(doc.desc, corpus), role)
+  return sigBlock(doc, corpus, `glob flag${argsSuffix(doc.args)}`)
 }
 
 /** Render one glob-qualifier doc block as markdown. */
@@ -164,8 +157,19 @@ export function mdGlobQualifier(
   doc: GlobQualifierDoc,
   corpus: DocCorpus,
 ): string {
-  const role = `_Role:_ glob qualifier${argsSuffix(doc.args)}`
-  return docBlock(mdFmt.code(doc.sig), fmtOptRefsInMd(doc.desc, corpus), role)
+  return sigBlock(doc, corpus, `glob qualifier${argsSuffix(doc.args)}`)
+}
+
+function sigBlock(
+  doc: { readonly sig: string; readonly desc: string },
+  corpus: DocCorpus,
+  role: string,
+): string {
+  return docBlock(
+    mdFmt.code(doc.sig),
+    fmtOptRefsInMd(doc.desc, corpus),
+    `_Role:_ ${role}`,
+  )
 }
 
 function argsSuffix(args: readonly string[]): string {

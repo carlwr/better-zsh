@@ -86,9 +86,9 @@ zshref --help 2>&1 | less
 | `corpus.rs` | loads embedded corpus JSON; data paths gated by `cfg(data_source = …)` from `build.rs` |
 | `fuzzy.rs` | ASCII subsequence scorer used by `search`'s bottom-tier ranking |
 | `tools/mod.rs` | tools module surface + dispatch |
-| `tools/classify.rs` | `classify` subcommand |
-| `tools/search.rs` | `search` subcommand |
-| `tools/describe.rs` | `describe` subcommand |
-| `tools/lookup_option.rs` | `lookup_option` subcommand |
+| `tools/docs.rs` | `docs` subcommand (raw token → matches with rendered markdown) |
+| `tools/search.rs` | `search` subcommand (fuzzy id-only) |
+| `tools/list.rs` | `list` subcommand (id-only enumeration) |
+| `tools/shared.rs` | per-category record-id / display / subKind helpers shared by the tool modules |
 | `tools/info.rs` | `info` subcommand |
 | `output.rs` | JSON-on-stdout / help-on-stderr routing; `NO_COLOR` + `CLICOLOR_FORCE` handling |

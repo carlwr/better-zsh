@@ -30,7 +30,7 @@ What it shares with the other adapters — and, for most users, the reason to pi
 
 - **Structured, not textual.** Parsed from upstream Yodl source into typed per-category records, not regex-scraped from `man`. Every record carries its own shape; every category carries its own resolver.
 - **Non-trivial resolvers.** Corpus-aware `NO_*` negation (including the `NOTIFY` / `TIFY` edge case), redirection decomposition into `groupOp` + tail, parameter-expansion sig matching. The real value-add.
-- **Token-efficient.** `zsh_search` returns identity-only rows (no markdown body); `zsh_classify` / `zsh_describe` / `zsh_lookup_option` are single-match direct lookups. Tool `modelDescription` strings enumerate the closed category set so agents don't burn tokens guessing.
+- **Token-efficient.** `zsh_search` and `zsh_list` return identity-only rows (no markdown body); only `zsh_docs` returns rendered markdown. Tool `modelDescription` strings enumerate the closed category set so agents don't burn tokens guessing.
 - **No trust surface.** No shell execution, no subprocess, no network, no filesystem writes, no logs, no environment reads, no telemetry. Structurally enforced by a scope-fence test in the shared tool layer, not policy.
 
 Runtime introspection is deliberately out of scope: no `setopt` listing, no process environment, no filesystem, no shell invocation. If you need live-shell introspection, that is a different tool.
@@ -136,15 +136,68 @@ The server communicates via standard MCP JSON-RPC on stdin/stdout; no protocol f
 
 ## Tools
 
-There are two main entry paths:
-- Generic reference lookup: `zsh_search` to discover candidates, then `zsh_describe` to fetch the exact `{ category, id }` you want.
-- Direct token lookup: `zsh_classify` for an arbitrary raw token, or `zsh_lookup_option` when you already know it is a shell option.
+Three tools, one intent axis each. All three return the same envelope: `{ matches, matchesReturned, matchesTotal }`. Only `zsh_docs` carries the rendered markdown body — pair `zsh_search` / `zsh_list` results with `zsh_docs` for the full doc.
+
+- **`zsh_docs`** — look up the docs for a raw token (handles `NO_*` option negation; returns markdown).
+- **`zsh_search`** — fuzzy discovery by name (id-only).
+- **`zsh_list`** — enumerate records in the corpus (id-only).
+
+### `zsh_docs`
+
+Look up a raw zsh token against the bundled reference. With `category` set, the lookup is restricted to that category (0 or 1 matches). With `category` omitted, every category is tried in classify-walk order — most inputs resolve in 0 or 1 categories, but a few overlap (`for`, `[[`, `function`, `nocorrect`) and return more than one match.
+
+Resolution is corpus-aware: case-insensitive option matching, underscore stripping, redirection group-op + tail decomposition, history event-designators, and the `NO_*` option-negation convention (including the `NOTIFY` / `NO_NOTIFY` edge case). Canonical record ids (e.g. `autocd`) round-trip exactly. Each option-category match additionally carries `negated: true|false`.
+
+**Input**
+
+```json
+{ "raw": "NO_AUTO_CD" }
+```
+
+**Output** (match)
+
+```json
+{
+  "matches": [
+    {
+      "category": "option",
+      "id": "autocd",
+      "display": "AUTO_CD",
+      "markdown": "### AUTO_CD ...",
+      "negated": true
+    }
+  ],
+  "matchesReturned": 1,
+  "matchesTotal": 1
+}
+```
+
+**Output** (multi-match)
+
+```json
+{
+  "matches": [
+    { "category": "complex_command", "id": "for", "display": "for", "markdown": "..." },
+    { "category": "reserved_word",   "id": "for", "display": "for", "markdown": "..." }
+  ],
+  "matchesReturned": 2,
+  "matchesTotal": 2
+}
+```
+
+**Output** (no match)
+
+```json
+{ "matches": [], "matchesReturned": 0, "matchesTotal": 0 }
+```
+
+For options, `id` is the normalized lookup key (lowercase, underscores stripped) while `display` is the human-friendly form. Categories with literal identities (builtins, reserved words, etc.) have `id === display`.
+
+Other example inputs: `"echo"`, `"[["`, `"<<<"`, `"!$"`, `"%1"`, `"nocorrect"`, `{"raw": "for", "category": "reserved_word"}`.
 
 ### `zsh_search`
 
-Fuzzy discovery across the bundled reference. Matches the query against record ids and human display headings; optionally filtered to a single `category`. Ranking: exact id/display > prefix > fuzzy score. Results carry `{ category, id, display, subKind?, score? }` but **not** the rendered markdown body — compose with `zsh_describe` (exact `{category, id}`) or `zsh_classify` (raw token) when you need the full doc. `subKind` is populated for categories with a meaningful sub-facet (e.g. history `kind`, glob_op `kind`, reserved_word `pos`) and omitted otherwise. The response also carries `matchesReturned` (== `matches.length`) and `matchesTotal` (pre-truncation total); `matchesReturned < matchesTotal` signals the `limit` truncated the result — raise `limit` or narrow `category` / `query` to see the rest.
-
-**Listing mode.** Omit `query` to enumerate records instead of ranking them. Set `category` and leave `query` empty to list every record in a category; raise `limit` up to its hard max to see them all in one response. This is the canonical way to answer "what options (builtins, reserved words, …) exist?" without composing multiple calls.
+Fuzzy discovery across the bundled reference. Matches the query against record ids and human display headings; optionally filtered to a single `category`. Ranking: exact id/display > prefix > fuzzy score. Results carry `{ category, id, display, subKind?, score? }` but **not** the rendered markdown body — compose with `zsh_docs` when you need the full doc. `subKind` is populated for categories with a meaningful sub-facet (e.g. history `kind`, glob_op `kind`, reserved_word `pos`) and omitted otherwise. The response also carries `matchesReturned` (== `matches.length`) and `matchesTotal` (pre-truncation total); `matchesReturned < matchesTotal` signals the `limit` truncated the result — raise `limit` or narrow `category` / `query` to see the rest. `limit=0` returns metadata only.
 
 **Input**
 
@@ -172,102 +225,32 @@ Fuzzy discovery across the bundled reference. Matches the query against record i
 { "matches": [], "matchesReturned": 0, "matchesTotal": 0 }
 ```
 
-Other example inputs: `{"category": "option"}` (list all options, capped by `limit`), `{"query": "autocd"}`, `{"query": "redir", "limit": 50}`.
+Other example inputs: `{"query": "autocd"}`, `{"query": "redir", "limit": 50}`.
 
-### `zsh_describe`
+### `zsh_list`
 
-Exact fetch for a known `{ category, id }`. Unlike `zsh_classify` / `zsh_lookup_option`, this tool does **not** apply per-category normalization (no case folding, no underscore stripping, no `NO_*` handling) — `id` must be an exact corpus key. Canonical ids usually come from a prior `zsh_search` response.
-
-**Input**
-
-```json
-{ "category": "option", "id": "autocd" }
-```
-
-**Output** (match)
-
-```json
-{
-  "match": {
-    "category": "option",
-    "id": "autocd",
-    "display": "AUTO_CD",
-    "markdown": "### AUTO_CD ..."
-  }
-}
-```
-
-**Output** (no match)
-
-```json
-{ "match": null }
-```
-
-Other example inputs: `{"category": "builtin", "id": "echo"}`, `{"category": "reserved_word", "id": "[["}`.
-
-### `zsh_classify`
-
-Classify a raw zsh token against the bundled reference. Returns the first match across every documented category (e.g. option, builtin, reserved word — see the "exposed structured knowledge" list above for the full set). Handles case-insensitive matching, underscore stripping, and the `NO_*` option-negation convention (including the `NOTIFY` / `NO_NOTIFY` edge case).
+Enumerate records, optionally filtered to one category. Same envelope as `zsh_search`; same identity-only payload (no markdown body — pair with `zsh_docs` for the full doc). Use this to answer "what options (builtins, reserved words, …) exist?" without burning tokens on a fuzzy query.
 
 **Input**
 
 ```json
-{ "raw": "AUTO_CD" }
+{ "category": "precmd", "limit": 100 }
 ```
 
-**Output** (match)
+**Output**
 
 ```json
 {
-  "match": {
-    "category": "option",
-    "id": "autocd",
-    "display": "AUTO_CD",
-    "markdown": "### AUTO_CD ..."
-  }
+  "matches": [
+    { "category": "precmd", "id": "noglob", "display": "noglob" },
+    { "category": "precmd", "id": "nocorrect", "display": "nocorrect" }
+  ],
+  "matchesReturned": 2,
+  "matchesTotal": 2
 }
 ```
 
-For options, `id` is the normalized lookup key (lowercase, underscores stripped) while `display` is the human-friendly form. Categories with literal identities (builtins, reserved words, etc.) have `id === display`.
-
-**Output** (no match)
-
-```json
-{ "match": null }
-```
-
-Other example inputs: `"echo"`, `"[["`, `"<<<"`, `"!$"`, `"<(...)"`, `"NO_NOTIFY"`, `"nocorrect"`.
-
-### `zsh_lookup_option`
-
-Look up a zsh shell option (the names used with `setopt` / `unsetopt`). Matching is case-insensitive and ignores underscores. Surfaces `negated: true` when the input was a `NO_*` form so agents can reason about the state being set, not just the option's identity.
-
-**Input**
-
-```json
-{ "raw": "NO_AUTO_CD" }
-```
-
-**Output** (match)
-
-```json
-{
-  "match": {
-    "id": "autocd",
-    "display": "AUTO_CD",
-    "negated": true,
-    "markdown": "### AUTO_CD ..."
-  }
-}
-```
-
-**Output** (no match)
-
-```json
-{ "match": null }
-```
-
-Other example inputs: `"AUTO_CD"`, `"autocd"`, `"NOTIFY"`, `"NO_NOTIFY"`.
+Other example inputs: `{}` (first 20 records of every category, with `matchesTotal` = entire corpus), `{"category": "option", "limit": 0}` (metadata only — counts without payload), `{"category": "history"}`.
 
 ## Privacy & side effects
 

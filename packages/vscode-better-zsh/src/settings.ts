@@ -36,15 +36,16 @@ export function parseZshPath(raw: string): ZshPathConfig {
 
 // ── VS Code readers ──
 
-export function readZshPathConfig(): ZshPathConfig {
-  const raw: string = vscode.workspace
+function getConfig<T>(key: string, defaultVal: T): T {
+  return vscode.workspace
     .getConfiguration(BETTER_ZSH_CONFIG)
-    .get("zshPath", "")
-  return parseZshPath(raw)
+    .get(key, defaultVal)
+}
+
+export function readZshPathConfig(): ZshPathConfig {
+  return parseZshPath(getConfig<string>("zshPath", ""))
 }
 
 export function readDiagnosticsEnabled(): boolean {
-  return vscode.workspace
-    .getConfiguration(BETTER_ZSH_CONFIG)
-    .get("diagnostics.enabled", true)
+  return getConfig("diagnostics.enabled", true)
 }

@@ -15,9 +15,16 @@ import {
   extractSectionBody,
   extractSitemList,
   parseClosedUnion,
+  withBody,
 } from "../core/doc.ts"
 import { parseNodes, type YNodeSeq } from "../core/nodes.ts"
-import { extractTokens, normalizeBody, stripYodl } from "../core/text.ts"
+import {
+  type extractTokens,
+  firstTt,
+  normalizeBody,
+  stripYodl,
+  ttTexts,
+} from "../core/text.ts"
 
 const DEFAULT_RE = /<([DKSCZ])>/g
 const HEADER_FLAG_RE = /^[+-][A-Za-z0-9]$/
@@ -54,10 +61,8 @@ export function fixupOptionsYo(yo: string): string {
 /** Parse options.yo → ZshOption[] */
 export function parseOptions(yo: string | YNodeSeq): readonly ZshOption[] {
   const nodes = typeof yo === "string" ? parseNodes(fixupOptionsYo(yo)) : yo
-  const items = extractItems(nodes)
   const flagMap = parseDefaultFlagAliases(nodes)
-  return items.flatMap(item => {
-    if (!item.body) return []
+  return withBody(extractItems(nodes)).flatMap(item => {
     const parsed = parseOptHeader(item.header)
     if (!parsed) return []
     const category = parseOptionCategory(item.section)
@@ -84,8 +89,7 @@ export function parseOptions(yo: string | YNodeSeq): readonly ZshOption[] {
 function parseAliasTarget(
   body: Parameters<typeof extractTokens>[0],
 ): ZshOption["aliasOf"] {
-  const [targetTok] = extractTokens(body).filter(t => t.kind === "tt")
-  const target = targetTok?.text.trim()
+  const target = firstTt(body)?.trim()
   if (!target) return undefined
   const negated = /\bNO_/.test(stripYodl(body))
   return {
@@ -105,7 +109,7 @@ function parseOptHeader(header: Parameters<typeof extractTokens>[0]):
       flags: OptFlagAlias[]
     }
   | undefined {
-  const [display, ...parts] = ttTexts(header)
+  const [display, ...parts] = trimmedTtTexts(header)
   if (!display || !/^[A-Z_]+$/.test(display)) return undefined
   return {
     name: mkDocumented("option", display),
@@ -122,7 +126,7 @@ function parseDefaultFlagAliases(
   const out = new Map<string, readonly OptFlagAlias[]>()
   if (!list) return out
   for (const item of extractSitemList(list)) {
-    const flag = ttTexts(item.header)[0]
+    const flag = trimmedTtTexts(item.header)[0]
     const target = stripYodl(item.body ?? "").trim()
     if (!flag || !target) continue
     const alias = aliasFrom(flag, target)
@@ -133,10 +137,9 @@ function parseDefaultFlagAliases(
   return out
 }
 
-function ttTexts(raw: Parameters<typeof extractTokens>[0]): string[] {
-  return extractTokens(raw)
-    .filter(tok => tok.kind === "tt")
-    .map(tok => tok.text.trim())
+function trimmedTtTexts(raw: Parameters<typeof extractTokens>[0]): string[] {
+  return ttTexts(raw)
+    .map(t => t.trim())
     .filter(Boolean)
 }
 

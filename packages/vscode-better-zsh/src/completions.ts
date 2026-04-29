@@ -72,8 +72,7 @@ export class CompletionProvider implements vscode.CompletionItemProvider {
     pos: vscode.Position,
   ) {
     const ids = await getIds(doc)
-    const curRange = doc.getWordRangeAtPosition(pos, WORD)
-    const cur = curRange ? doc.getText(curRange) : ""
+    const cur = wordTextAt(doc, pos)
     const items = ids
       .filter(id => id !== cur)
       .map(id => new vscode.CompletionItem(id, vscode.CompletionItemKind.Text))
@@ -81,8 +80,7 @@ export class CompletionProvider implements vscode.CompletionItemProvider {
   }
 
   private optionCompletions(doc: vscode.TextDocument, pos: vscode.Position) {
-    const curRange = doc.getWordRangeAtPosition(pos, WORD)
-    const typed = curRange ? doc.getText(curRange) : ""
+    const typed = wordTextAt(doc, pos)
     const matches = matchOptions(this.options, typed)
     const items = matches.map(m => {
       const item = new vscode.CompletionItem(
@@ -119,6 +117,11 @@ function condSig(cop: CondOpDoc): string {
 
 function isWordName<T extends { name: string }>(doc: T): boolean {
   return WORD_EXACT.test(doc.name)
+}
+
+function wordTextAt(doc: vscode.TextDocument, pos: vscode.Position): string {
+  const range = doc.getWordRangeAtPosition(pos, WORD)
+  return range ? doc.getText(range) : ""
 }
 
 function mkCompletionItem<T extends { name: string; desc?: string }>(

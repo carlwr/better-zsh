@@ -23,6 +23,12 @@ describeIfBuilt("MCP stdio integration", () => {
   let client: Client
   let transport: StdioClientTransport
 
+  const callTool = (name: string, args: Record<string, unknown> = {}) =>
+    client.request(
+      { method: "tools/call", params: { name, arguments: args } },
+      CallToolResultSchema,
+    )
+
   beforeAll(async () => {
     transport = new StdioClientTransport({
       command: process.execPath,
@@ -42,74 +48,55 @@ describeIfBuilt("MCP stdio integration", () => {
   test("server instructions surface the suite preamble", () => {
     const instructions = client.getInstructions()
     expect(instructions).toBeDefined()
+    expect(instructions).toMatch(/zsh_docs/)
     expect(instructions).toMatch(/zsh_search/)
-    expect(instructions).toMatch(/category/i)
   })
 
-  test("tools/list advertises all four tools", async () => {
+  test("tools/list advertises the three tools", async () => {
     const result = await client.request(
       { method: "tools/list" },
       ListToolsResultSchema,
     )
     const names = result.tools.map(t => t.name).sort()
-    expect(names).toEqual([
-      "zsh_classify",
-      "zsh_describe",
-      "zsh_lookup_option",
-      "zsh_search",
-    ])
+    expect(names).toEqual(["zsh_docs", "zsh_list", "zsh_search"])
     for (const tool of result.tools) {
       expect((tool.description ?? "").length).toBeGreaterThan(40)
       expect(tool.inputSchema).toMatchObject({ type: "object" })
     }
   })
 
-  test("zsh_classify returns a match for a builtin", async () => {
-    const result = await client.request(
-      {
-        method: "tools/call",
-        params: { name: "zsh_classify", arguments: { raw: "echo" } },
-      },
-      CallToolResultSchema,
-    )
+  test("zsh_docs returns a match for a builtin", async () => {
+    const result = await callTool("zsh_docs", { raw: "echo" })
     expect(result.isError).toBeFalsy()
     const parsed = parseText(result) as {
-      match: { category: string; id: string; markdown: string } | null
+      matches: Array<{ category: string; id: string; markdown: string }>
+      matchesReturned: number
+      matchesTotal: number
     }
-    expect(parsed.match?.category).toBe("builtin")
-    expect(parsed.match?.id).toBe("echo")
-    expect(parsed.match?.markdown).toMatch(/echo/i)
+    expect(parsed.matches[0]?.category).toBe("builtin")
+    expect(parsed.matches[0]?.id).toBe("echo")
+    expect(parsed.matches[0]?.markdown).toMatch(/echo/i)
+    expect(parsed.matchesReturned).toBe(parsed.matchesTotal)
   })
 
-  test("zsh_lookup_option surfaces negation", async () => {
-    const result = await client.request(
-      {
-        method: "tools/call",
-        params: {
-          name: "zsh_lookup_option",
-          arguments: { raw: "NO_AUTO_CD" },
-        },
-      },
-      CallToolResultSchema,
-    )
+  test("zsh_docs surfaces NO_* option negation", async () => {
+    const result = await callTool("zsh_docs", {
+      raw: "NO_AUTO_CD",
+      category: "option",
+    })
     const parsed = parseText(result) as {
-      match: { id: string; negated: boolean } | null
+      matches: Array<{ id: string; negated: boolean }>
     }
-    expect(parsed.match?.id).toBe("autocd")
-    expect(parsed.match?.negated).toBe(true)
+    expect(parsed.matches[0]?.id).toBe("autocd")
+    expect(parsed.matches[0]?.negated).toBe(true)
   })
 
   test("zsh_search returns matches without markdown bodies", async () => {
-    const result = await client.request(
-      {
-        method: "tools/call",
-        params: {
-          name: "zsh_search",
-          arguments: { query: "echo", category: "builtin", limit: 5 },
-        },
-      },
-      CallToolResultSchema,
-    )
+    const result = await callTool("zsh_search", {
+      query: "echo",
+      category: "builtin",
+      limit: 5,
+    })
     expect(result.isError).toBeFalsy()
     const parsed = parseText(result) as {
       matches: Array<{
@@ -124,67 +111,43 @@ describeIfBuilt("MCP stdio integration", () => {
     for (const m of parsed.matches) expect(m.markdown).toBeUndefined()
   })
 
-  test("zsh_describe returns full markdown for a known id", async () => {
-    const result = await client.request(
-      {
-        method: "tools/call",
-        params: {
-          name: "zsh_describe",
-          arguments: { category: "builtin", id: "echo" },
-        },
-      },
-      CallToolResultSchema,
-    )
+  test("zsh_list enumerates a category", async () => {
+    const result = await callTool("zsh_list", {
+      category: "precmd",
+      limit: 100,
+    })
     expect(result.isError).toBeFalsy()
     const parsed = parseText(result) as {
-      match: { id: string; markdown: string } | null
+      matches: Array<{ category: string; id: string; markdown?: string }>
+      matchesTotal: number
     }
-    expect(parsed.match?.id).toBe("echo")
-    expect(parsed.match?.markdown).toMatch(/echo/i)
+    expect(parsed.matches.length).toBeGreaterThan(0)
+    for (const m of parsed.matches) {
+      expect(m.category).toBe("precmd")
+      expect(m.markdown).toBeUndefined()
+    }
   })
 
-  test("zsh_describe rejects unknown id without crashing", async () => {
-    const result = await client.request(
-      {
-        method: "tools/call",
-        params: {
-          name: "zsh_describe",
-          arguments: { category: "builtin", id: "not_a_thing_qq" },
-        },
-      },
-      CallToolResultSchema,
-    )
+  test("zsh_docs rejects unknown raw without crashing", async () => {
+    const result = await callTool("zsh_docs", { raw: "not_a_thing_qq" })
     expect(result.isError).toBeFalsy()
-    expect(parseText(result)).toEqual({ match: null })
+    expect(parseText(result)).toEqual({
+      matches: [],
+      matchesReturned: 0,
+      matchesTotal: 0,
+    })
   })
 
   test("unknown tool returns isError", async () => {
-    const result = await client.request(
-      {
-        method: "tools/call",
-        params: { name: "does_not_exist", arguments: {} },
-      },
-      CallToolResultSchema,
-    )
+    const result = await callTool("does_not_exist")
     expect(result.isError).toBe(true)
   })
 
   test("both calls in one spawn (latency sanity)", async () => {
-    const a = client.request(
-      {
-        method: "tools/call",
-        params: { name: "zsh_classify", arguments: { raw: "if" } },
-      },
-      CallToolResultSchema,
-    )
-    const b = client.request(
-      {
-        method: "tools/call",
-        params: { name: "zsh_classify", arguments: { raw: "AUTO_CD" } },
-      },
-      CallToolResultSchema,
-    )
-    const [ra, rb] = await Promise.all([a, b])
+    const [ra, rb] = await Promise.all([
+      callTool("zsh_docs", { raw: "if" }),
+      callTool("zsh_docs", { raw: "AUTO_CD" }),
+    ])
     expect(ra.isError).toBeFalsy()
     expect(rb.isError).toBeFalsy()
   })

@@ -4,15 +4,11 @@ import {
   extractFirstList,
   extractItemList,
   extractSectionBody,
-  type YodlEntry,
+  withBody,
 } from "../core/doc.ts"
 import type { YNodeSeq } from "../core/nodes.ts"
-import { extractTokens, normalizeBody } from "../core/text.ts"
+import { normalizeBody, ttTexts, varTexts } from "../core/text.ts"
 import { flagSigText } from "./flag-section.ts"
-
-function bodyDoc(item: YodlEntry): string | undefined {
-  return item.body ? normalizeBody(item.body) : undefined
-}
 
 export function parseGlobFlags(yo: string | YNodeSeq): readonly GlobFlagDoc[] {
   const section = "Globbing Flags"
@@ -20,13 +16,10 @@ export function parseGlobFlags(yo: string | YNodeSeq): readonly GlobFlagDoc[] {
   const list = extractFirstList(sec, "item")
   if (!list) return []
 
-  return extractItemList(list).flatMap(item => {
-    const desc = bodyDoc(item)
-    if (!desc) return []
-
-    const toks = extractTokens(item.header)
-    const tt = toks.filter(tok => tok.kind === "tt").map(tok => tok.text)
-    const vars = toks.filter(tok => tok.kind === "var").map(tok => tok.text)
+  return withBody(extractItemList(list)).flatMap(item => {
+    const desc = normalizeBody(item.body)
+    const tt = ttTexts(item.header)
+    const vars = varTexts(item.header)
     const sig = flagSigText(item.header)
 
     if (vars.length === 0 && tt.length > 1) {

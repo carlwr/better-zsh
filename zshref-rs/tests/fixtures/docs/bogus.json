@@ -1,14 +1,16 @@
 {
-  "tool": "zsh_classify",
+  "tool": "zsh_docs",
   "input": {
     "raw": "not-a-real-token"
   },
   "argv": [
-    "classify",
+    "docs",
     "--raw",
     "not-a-real-token"
   ],
   "expectedOutput": {
-    "match": null
+    "matches": [],
+    "matchesReturned": 0,
+    "matchesTotal": 0
   }
 }

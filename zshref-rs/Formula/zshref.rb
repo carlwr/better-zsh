@@ -28,8 +28,8 @@ class Zshref < Formula
     output = shell_output("#{bin}/zshref --version")
     assert_match "zshref", output
 
-    # End-to-end sanity: classify a known option.
-    classify = shell_output("#{bin}/zshref classify --raw AUTO_CD")
-    assert_match(/"category"\s*:\s*"option"/, classify)
+    # End-to-end sanity: look up the docs for a known option.
+    docs = shell_output("#{bin}/zshref docs --raw AUTO_CD")
+    assert_match(/"category"\s*:\s*"option"/, docs)
   end
 end

@@ -51,6 +51,15 @@ export function extractItems(
   return extractEntries(asNodes(src), ["xitem", "item"], depth)
 }
 
+/** Narrow a list of entries to those carrying a body. Type-guarded. */
+export function withBody(
+  entries: readonly YodlEntry[],
+): (YodlEntry & { body: YNodeSeq })[] {
+  return entries.filter(
+    (e): e is YodlEntry & { body: YNodeSeq } => e.body !== undefined,
+  )
+}
+
 export function extractItemList(src: string | YNodeSeq): YodlEntry[] {
   return extractEntries(asNodes(src), ["xitem", "item"], 1)
 }

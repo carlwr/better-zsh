@@ -1,8 +1,8 @@
 import { mkDocumented } from "../../brands.ts"
 import type { ArithOpArity, ArithOpDoc } from "../../types.ts"
-import { extractFirstList, extractSitemList } from "../core/doc.ts"
+import { extractFirstList, extractSitemList, withBody } from "../core/doc.ts"
 import type { YNodeSeq } from "../core/nodes.ts"
-import { extractTokens, normalizeBody } from "../core/text.ts"
+import { type extractTokens, firstTt, normalizeBody } from "../core/text.ts"
 
 const SECTION = "Arithmetic Evaluation"
 
@@ -27,8 +27,7 @@ export function parseArithOps(yo: string | YNodeSeq): readonly ArithOpDoc[] {
   const list = extractFirstList(yo, "sitem")
   if (!list) return []
 
-  const rows = extractSitemList(list).flatMap(item => {
-    if (!item.body) return []
+  const rows = withBody(extractSitemList(list)).flatMap(item => {
     const ops = opsInHeader(item.header)
     if (ops.length === 0) return []
     return [{ ops, desc: normalizeBody(item.body), arity: rowArity(item.body) }]
@@ -61,9 +60,8 @@ export function parseArithOps(yo: string | YNodeSeq): readonly ArithOpDoc[] {
 }
 
 function opsInHeader(header: Parameters<typeof extractTokens>[0]): string[] {
-  const tt = extractTokens(header).find(t => t.kind === "tt")
-  if (!tt) return []
-  return tt.text.split(/\s+/).filter(Boolean)
+  const tt = firstTt(header)
+  return tt ? tt.split(/\s+/).filter(Boolean) : []
 }
 
 function rowArity(body: Parameters<typeof extractTokens>[0]): ArithOpArity {

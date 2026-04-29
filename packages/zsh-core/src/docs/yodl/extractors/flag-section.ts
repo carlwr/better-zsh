@@ -1,6 +1,6 @@
 import { mkDocumented } from "../../brands.ts"
 import type { ParamFlagDoc, SubscriptFlagDoc } from "../../types.ts"
-import { extractItems, extractSectionBody } from "../core/doc.ts"
+import { extractItems, extractSectionBody, withBody } from "../core/doc.ts"
 import type { YNodeSeq } from "../core/nodes.ts"
 import { normalizeBody, normalizeHeader } from "../core/text.ts"
 
@@ -50,18 +50,17 @@ function parseFlagSection<T>(
   readonly desc: string
   readonly section: string
 }[] {
-  return extractItems(extractSectionBody(yo, section), 1).flatMap(item => {
-    if (!item.body) return []
-    const sig = normalizeHeader(item.header)
-    const { args } = splitFlagSig(sig)
-    return [
-      {
+  return withBody(extractItems(extractSectionBody(yo, section), 1)).map(
+    item => {
+      const sig = normalizeHeader(item.header)
+      const { args } = splitFlagSig(sig)
+      return {
         flag: mkFlag(sig),
         args,
         sig,
         desc: normalizeBody(item.body),
         section,
-      },
-    ]
-  })
+      }
+    },
+  )
 }

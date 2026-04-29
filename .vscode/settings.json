@@ -2,10 +2,11 @@
   "[typescript]": {
     "editor.codeActionsOnSave": {
       "source.organizeImports": "explicit"
-      //      "source.removeUnusedImports": "never",
-      //      "source.organizeImports.biome": "explicit",
     },
     "editor.defaultFormatter": "biomejs.biome",
+    "editor.formatOnSave": true
+  },
+  "[rust]": {
     "editor.formatOnSave": true
   }
 }

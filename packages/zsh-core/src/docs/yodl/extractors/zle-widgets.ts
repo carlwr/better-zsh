@@ -13,7 +13,7 @@ import {
   parseClosedUnion,
 } from "../core/doc.ts"
 import type { YNodeSeq } from "../core/nodes.ts"
-import { extractTokens, normalizeHeader } from "../core/text.ts"
+import { firstTt, normalizeHeader } from "../core/text.ts"
 
 const WIDGET_SUBSECTION_SET: ReadonlySet<string> = new Set(zleWidgetSubsections)
 
@@ -69,9 +69,4 @@ function parseWidgetSection(
 
 function parseSubsection(raw: string): ZleWidgetSubsection {
   return parseClosedUnion(raw, WIDGET_SUBSECTION_SET, "ZLE widget subsection")
-}
-
-/** Take the first `tt(...)` token text from a Yodl node sequence. */
-function firstTt(header: Parameters<typeof extractTokens>[0]): string {
-  return extractTokens(header).find(tok => tok.kind === "tt")?.text ?? ""
 }

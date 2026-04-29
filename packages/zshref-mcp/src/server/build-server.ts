@@ -45,6 +45,14 @@ export function buildServer(opts: BuildServerOpts): Server {
     toolDefs.map(def => [def.name, def]),
   )
 
+  const txtErr = (msg: string) => ({
+    isError: true,
+    content: [{ type: "text" as const, text: msg }],
+  })
+  const txtOk = (json: unknown) => ({
+    content: [{ type: "text" as const, text: JSON.stringify(json, null, 2) }],
+  })
+
   server.setRequestHandler(ListToolsRequestSchema, () => ({
     tools: toolDefs.map(def => ({
       name: def.name,
@@ -55,21 +63,12 @@ export function buildServer(opts: BuildServerOpts): Server {
 
   server.setRequestHandler(CallToolRequestSchema, (req: CallToolRequest) => {
     const def = defByName.get(req.params.name)
-    if (!def) {
-      return {
-        isError: true,
-        content: [{ type: "text", text: `unknown tool: ${req.params.name}` }],
-      }
-    }
+    if (!def) return txtErr(`unknown tool: ${req.params.name}`)
     try {
       const input = (req.params.arguments ?? {}) as ToolInputSchema
-      const result = def.execute(opts.corpus, input)
-      return {
-        content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
-      }
+      return txtOk(def.execute(opts.corpus, input))
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err)
-      return { isError: true, content: [{ type: "text", text: msg }] }
+      return txtErr(err instanceof Error ? err.message : String(err))
     }
   })
 

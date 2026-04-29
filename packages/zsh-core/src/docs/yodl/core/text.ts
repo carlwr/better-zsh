@@ -84,6 +84,25 @@ export function extractTokens(src: string | YNodeSeq): YodlToken[] {
   return out
 }
 
+/** First `tt(...)` token's raw text, or `undefined` if absent. */
+export function firstTt(src: string | YNodeSeq): string | undefined {
+  return extractTokens(src).find(tok => tok.kind === "tt")?.text
+}
+
+/** All `tt(...)` token texts, in order. */
+export function ttTexts(src: string | YNodeSeq): string[] {
+  return extractTokens(src)
+    .filter(tok => tok.kind === "tt")
+    .map(tok => tok.text)
+}
+
+/** All `var(...)` token texts, in order. */
+export function varTexts(src: string | YNodeSeq): string[] {
+  return extractTokens(src)
+    .filter(tok => tok.kind === "var")
+    .map(tok => tok.text)
+}
+
 function asNodes(src: string | YNodeSeq): YNodeSeq {
   return typeof src === "string" ? parseNodes(src) : src
 }

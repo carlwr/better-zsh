@@ -154,7 +154,7 @@ The `history` category looks superficially like other short-key categories (sing
 
 `param_expn` identity is the full sig (e.g. `${name:-word}`), not a leading operator — same precedent as redirections. `${name:-word}` and `${name-word}` are separate records, not sub-variants of a `:-` operator. This keeps identity mechanical: two sigs are equal iff the literal templates match.
 
-- **`simpleResolver` kept for totality, not utility.** Sigs are literal doc templates; no user-code token will ever match them. The category is reached through search + describe rather than raw-token classification. Keeping a resolver in the per-category table preserves the closed-union completeness guards across `docs/corpus.ts`.
+- **`simpleResolver` kept for totality, not utility.** Sigs are literal doc templates; no user-code token will ever match them. The category is reached through `zsh_search` + `zsh_docs` (with `category` set) rather than raw-token classification. Keeping a resolver in the per-category table preserves the closed-union completeness guards across `docs/corpus.ts`.
 - **`subKind` is a fixed closed union, not a computed label.** Literal values; extending the union is a deliberate, single-point change that the type system propagates.
 - **Placeholders are extracted via an exact-string table, not a regex.** The table is the single source of truth for both `subKind` and operand-slot names (`name`, `word`, `pattern`, `repl`, `spec`, `arrayname`, `offset`, `length`). Silent upstream renames trip an "unknown sig" throw on the next build — drift fails loudly at extraction time rather than rendering as garbage.
 - **No raw-text resolver.** Considered and dropped: the added testing burden outweighed the zero practical value, given that sigs are template-shaped and won't appear in user code.
@@ -167,7 +167,7 @@ The `history` category looks superficially like other short-key categories (sing
 
 - **Head-keyword identity.** Records are keyed by a closed `HeadKey` set — `if`, `for`, `for-arith`, `while`, `until`, `repeat`, `case`, `select`, `function`, `time`, `(`, `{`, `{try}always`, `[[`. Two `for` entries (`for name ... in ... do ... done` and `for (( ; ; )) do ... done`) are deliberate: the arithmetic form is structurally distinct enough that collapsing would cost clarity.
 - **Array fields precedent.** `alternateForms: readonly AlternateForm[]` follows `ZshOption.flags` and `ParamExpnDoc.groupSigs` — variable-length composite data on a doc record. Each alternate carries its own `template` + `keywords` so renderers can present forms uniformly.
-- **Classify-order placement: before `reserved_word`.** `classify("for")` returns the structured `complex_command` record, not the reserved-word boilerplate. `for`/`while`/`[[`/… overlap with `reserved_word` by design; the walk-order lets consumer layers absorb the ambiguity without restructuring the taxonomy. See `PRINCIPLES.md` §"Overlap between categories is accepted".
+- **Classify-order placement: before `reserved_word`.** `zsh_docs --raw=for` (no `category`) lists the structured `complex_command` record before the reserved-word boilerplate. `for`/`while`/`[[`/… overlap with `reserved_word` by design; the walk-order lets consumer layers absorb the ambiguity without restructuring the taxonomy. See `PRINCIPLES.md` §"Overlap between categories is accepted".
 
 ## Glob qualifiers vs glob flags vs glob operators
 
@@ -256,13 +256,29 @@ Rationale:
 
 ### Tool surface shape: not a mega-tool
 
-`classify(raw)` is the universal entry point — the agent asks "what is this token?" and gets the first matching category. Per-category richer tools (currently `lookup_option`; future candidates) surface extra fields that don't fit a uniform classify response (e.g. option negation). This avoids the "one mega-tool with a `kind` enum" anti-pattern that some LM agents handle poorly, while also staying well clear of a per-category-tool sprawl. New tools should justify themselves against both extremes.
+Three tools, one intent axis each:
 
-"List every record in a category" is deliberately a *mode* of `zsh_search` (empty `query` + `category` filter), not a dedicated `zsh_list` tool. The existing code path already returns the right shape (`{matches, matchesReturned, matchesTotal}`) and a corpus-margin test guarantees every category fits in one `MAX_LIMIT` response. A dedicated tool would duplicate the surface without adding capability; discoverability is addressed by promoting the mode in `searchToolDef.description` and by the suite-level `TOOL_SUITE_PREAMBLE` (rendered into MCP `instructions` and `zshref --help`).
+- **`zsh_docs`** — look up a raw token; returns markdown. Universal entry point.
+- **`zsh_search`** — fuzzy discovery by name; identifiers only.
+- **`zsh_list`** — enumerate corpus records; identifiers only.
 
-### Tie-break in classify
+`zsh_docs` returns one match per resolving category — 0 or 1 with `category` set; otherwise a `classifyOrder` walk that may surface multiple matches on category overlap (`for` → `complex_command` + `reserved_word`). Option matches always carry `negated: true|false`. This collapses the previous `zsh_classify` + `zsh_lookup_option` + `zsh_describe` triad: per-category richer fields fold into the unified shape, not a separate tool. The mega-tool anti-pattern (one tool with a `kind` enum) is avoided by separating intent axes (lookup / search / list); per-category-tool sprawl is avoided by keeping per-category specifics in the resolver layer.
 
-`classify` walks `classifyOrder` (in zsh-core), which puts closed-identity resolvers before `option`'s `no_`-stripping and `redir`'s loose tail matching — otherwise `nocorrect` would shadow-resolve as "NO_CORRECT" with negation instead of the precmd/reserved-word it is. The ordering encodes resolver-shadowing facts, which are zsh-core knowledge; `classify` is a uniform walk.
+`zsh_search` and `zsh_list` are deliberately separate, despite identical envelopes. Earlier listing was a mode of `zsh_search` (empty query + optional `category`); calling a fuzzy-search tool with no query to enumerate is a footgun. The split makes the no-query form of `search` a clap-side requirement violation and gives enumeration its own intent-matching tool. New tools should justify themselves against both extremes (mega-tool vs per-category sprawl).
+
+Output envelope is uniform across all three tools — `{matches, matchesReturned, matchesTotal}`, even when `docs` cannot truncate. One shape removes per-tool branching in adapters and lets `matchesReturned < matchesTotal` carry the truncation signal without `matches.length` counting at the call site.
+
+### docs: direct ∥ resolver, direct preferred
+
+Per-category lookup follows a single rule — **direct ∥ resolver, direct preferred:** try `corpus[cat].get(trim(raw))`; if it hits, use it; else fall back to the per-category resolver. Never both.
+
+Load-bearing for template-key categories. `job_spec` has literal corpus keys `%number`, `%string`, `%?string`, `%%`, `%+`, `%-`; the resolver maps non-literal forms (`%5`, `%vim`) onto them. Without direct precedence, `{raw: "%number", category: "job_spec"}` would route through the resolver, which inspects the `%5`-shape body and returns the wrong template (`%string` for non-digit body) — breaking round-trip. Same shape in `history` (`!n` vs `!42`), `param_expn`, and `special_function` (`TRAPZERR` vs `TRAPNAL`). Non-template categories don't care: `corpus.option.get("AUTO_CD")` misses (canonical id is `autocd`), so the resolver runs and normalizes.
+
+Enforced exhaustively by the round-trip invariant test: for every literal corpus key `(cat, key)`, `docs(corpus, {raw: key, category: cat})` must return a single match with `id == key`.
+
+### Tie-break in docs
+
+When `category` is omitted, `zsh_docs` walks `classifyOrder` (in zsh-core), which puts closed-identity resolvers ahead of `option`'s `no_`-stripping and `redir`'s loose tail matching — otherwise `nocorrect` would shadow-resolve as "NO_CORRECT" with negation, not the precmd/reserved-word it is. The ordering encodes resolver-shadowing facts owned by zsh-core; `docs` itself is a uniform walk.
 
 ### Fuzzy search rationale
 
@@ -272,7 +288,7 @@ Rationale:
 - Option names have no universal canonical form (`no_errreturn` vs `NOERRRETURN` — both plausible, neither "right"). The option resolver handles this per-option; fuzzy generalizes the same forgiveness across categories without corpus-aware resolvers.
 - Exact + prefix tiers stay precise: literal id/display hits win outright; fuzzy only fires when earlier tiers miss.
 
-Rendered markdown is withheld from search results to keep responses small and encourage composition with the describe/classify tools.
+Rendered markdown is withheld from `search` and `list` results to keep responses small and encourage composition with `zsh_docs` for the body.
 
 ---
 

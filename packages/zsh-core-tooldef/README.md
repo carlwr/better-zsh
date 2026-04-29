@@ -11,7 +11,7 @@ The tool layer: pure `(DocCorpus, input) → output` implementations plus shared
 - **`toolDefs`** — the aggregate list adapters iterate over.
 - **`ToolDef`** — one metadata record per tool; see `src/tool-defs.ts` for the exact shape.
 - **`makeToolDef`** — type-safe builder that compile-time-checks `flagBriefs` vs. schema properties and `required` vs. property keys.
-- **Pure tool implementations** — `classify`, `search`, `describe`, `lookup_option`. No IO, no subprocess, no network, no filesystem, no `process.env`, no `vscode`. Structurally enforced by `src/test/scope.test.ts`.
+- **Pure tool implementations** — `docs`, `search`, `list`. No IO, no subprocess, no network, no filesystem, no `process.env`, no `vscode`. Structurally enforced by `src/test/scope.test.ts`.
 
 The package knows about `zsh-core` only. It has no knowledge of MCP, clap, or VS Code.
 

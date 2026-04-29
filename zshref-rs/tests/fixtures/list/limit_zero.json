@@ -1,0 +1,16 @@
+{
+  "tool": "zsh_list",
+  "input": {
+    "limit": 0
+  },
+  "argv": [
+    "list",
+    "--limit",
+    "0"
+  ],
+  "expectedOutput": {
+    "matches": [],
+    "matchesReturned": 0,
+    "matchesTotal": 1128
+  }
+}

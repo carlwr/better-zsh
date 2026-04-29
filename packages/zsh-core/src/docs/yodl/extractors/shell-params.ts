@@ -7,7 +7,12 @@ import {
   extractSectionBody,
 } from "../core/doc.ts"
 import type { YNodeSeq } from "../core/nodes.ts"
-import { extractTokens, normalizeBody, stripYodl } from "../core/text.ts"
+import {
+  type extractTokens,
+  normalizeBody,
+  stripYodl,
+  ttTexts,
+} from "../core/text.ts"
 
 // Upstream section name → typed short form. Short form is what record consumers
 // read; long form is only used to find the section in the Yodl.
@@ -98,9 +103,8 @@ function parseHeads(
   header: Parameters<typeof extractTokens>[0],
   allowTied: boolean,
 ): ParamHead[] {
-  const names = extractTokens(header)
-    .filter(tok => tok.kind === "tt")
-    .map(tok => tok.text.trim())
+  const names = ttTexts(header)
+    .map(t => t.trim())
     .filter(Boolean)
 
   const [name, tied] = names

@@ -4,9 +4,15 @@ import {
   extractFirstList,
   extractItemList,
   extractSectionBody,
+  withBody,
 } from "../core/doc.ts"
 import type { YNodeSeq } from "../core/nodes.ts"
-import { extractTokens, normalizeBody, normalizeHeader } from "../core/text.ts"
+import {
+  extractTokens,
+  firstTt,
+  normalizeBody,
+  normalizeHeader,
+} from "../core/text.ts"
 
 // `func.yo` §"Special Functions" has two subsections; items live in each.
 const HOOK_SECTION = "Hook Functions"
@@ -31,9 +37,8 @@ export function parseSpecialFunctions(
 function parseHooks(yo: string | YNodeSeq): SpecialFunctionDoc[] {
   const list = extractFirstList(extractSectionBody(yo, HOOK_SECTION), "item")
   if (!list) return []
-  return extractItemList(list).flatMap(item => {
-    if (!item.body) return []
-    const name = firstTt(item.header)
+  return withBody(extractItemList(list)).flatMap(item => {
+    const name = firstTt(item.header)?.trim()
     if (!name) return []
     return [
       {
@@ -51,8 +56,7 @@ function parseHooks(yo: string | YNodeSeq): SpecialFunctionDoc[] {
 function parseTraps(yo: string | YNodeSeq): SpecialFunctionDoc[] {
   const list = extractFirstList(extractSectionBody(yo, TRAP_SECTION), "item")
   if (!list) return []
-  return extractItemList(list).flatMap(item => {
-    if (!item.body) return []
+  return withBody(extractItemList(list)).flatMap(item => {
     const sig = normalizeHeader(item.header)
     const { name, kind } = trapIdentity(item.header, sig)
     if (!name) return []
@@ -84,12 +88,4 @@ function trapIdentity(
   // non-word cruft.
   const literal = sig.trim().match(/^TRAP[A-Z0-9]+/)?.[0] ?? tt
   return { name: literal, kind: "trap-literal" }
-}
-
-function firstTt(header: Parameters<typeof extractTokens>[0]): string {
-  return (
-    extractTokens(header)
-      .find(t => t.kind === "tt")
-      ?.text.trim() ?? ""
-  )
 }

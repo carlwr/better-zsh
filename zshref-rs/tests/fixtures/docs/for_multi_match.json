@@ -1,0 +1,29 @@
+{
+  "tool": "zsh_docs",
+  "input": {
+    "raw": "for"
+  },
+  "argv": [
+    "docs",
+    "--raw",
+    "for"
+  ],
+  "expectedOutput": {
+    "matches": [
+      {
+        "category": "complex_command",
+        "id": "for",
+        "display": "for",
+        "markdown": "`for`\n\n```zsh\nfor name ... [ in word ... ] term do list done\n```\n\nExpand the list of words, and set the parameter name to each of them in turn, executing list each time. If the `in word` is omitted, use the positional parameters instead of the words.\n\nThe term consists of one or more newline or; which terminate the words, and are optional when the `in word` is omitted.\n\nMore than one parameter name can appear before the list of words. If N names are given, then on each execution of the loop the next N words are assigned to the corresponding parameters. If there are more names than remaining words, the remaining parameters are each set to the empty string. Execution of the loop ends when there is no remaining word to assign to the first name. It is only possible for in to appear as the first name in the list, else it will be treated as marking the end of the list.\n\n_Alternate forms:_\n\n```zsh\nfor name ... ( word ... ) sublist\nfor name ... [ in word ... ] term sublist\nforeach name ... ( word ... ) list end\n```\n\n_Body keywords:_ `in` `do` `done`\n\n_Role:_ complex command"
+      },
+      {
+        "category": "reserved_word",
+        "id": "for",
+        "display": "for",
+        "markdown": "`for`\n\n_Role:_ reserved word (command position)"
+      }
+    ],
+    "matchesReturned": 2,
+    "matchesTotal": 2
+  }
+}

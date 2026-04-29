@@ -2,7 +2,7 @@ import { mkDocumented } from "../../brands.ts"
 import type { ReservedWordDoc } from "../../types.ts"
 import { extractSectionBody } from "../core/doc.ts"
 import type { YNodeSeq } from "../core/nodes.ts"
-import { extractTokens } from "../core/text.ts"
+import { ttTexts } from "../core/text.ts"
 
 // Heads handled by `complex_command`; their `ReservedWordDoc.desc` is left
 // absent. See `ReservedWordDoc`'s comment for rationale.
@@ -68,10 +68,9 @@ function descFor(name: string): string | undefined {
 export function parseReswords(
   yo: string | YNodeSeq,
 ): readonly ReservedWordDoc[] {
-  const words = extractTokens(extractSectionBody(yo, "Reserved Words"))
-    .filter(tok => tok.kind === "tt")
-    .map(tok => tok.text)
-    .find(text => /\bdo\b/.test(text) && /\btypeset\b/.test(text))
+  const words = ttTexts(extractSectionBody(yo, "Reserved Words")).find(
+    text => /\bdo\b/.test(text) && /\btypeset\b/.test(text),
+  )
   if (!words) return []
 
   const cmdEntries: ReservedWordDoc[] = words
