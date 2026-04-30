@@ -79,11 +79,12 @@ find packages/vscode-better-zsh/src/test -type f -name '*.ts' \
   | while read -r f; do printf '  %4d  %s\n' "$(wc -l < "$f")" "$f"; done
 
 echo ""
-echo "=== zsh-core public API (dist/types/*.d.ts) ==="
-if [ -d packages/zsh-core/dist/types ]; then
-  for f in packages/zsh-core/dist/types/*.d.ts; do
+echo "=== API rollups (dist/types/*.d.ts) ==="
+rollups="$(find packages -maxdepth 4 -path '*/dist/types/*.d.ts' -type f 2>/dev/null | sort)"
+if [ -n "$rollups" ]; then
+  while read -r f; do
     printf '  %4d  %s\n' "$(wc -l < "$f")" "$f"
-  done
+  done <<< "$rollups"
 else
-  echo "  (not built — run: pnpm --filter @carlwr/zsh-core build)"
+  echo "  (not built — run the relevant package build)"
 fi

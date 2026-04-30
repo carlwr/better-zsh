@@ -1,7 +1,7 @@
 /**
  * @packageDocumentation
- * Heuristic analysis of zsh code (producing "facts" about syntax structure)
- * and structured doc records for zsh language elements, parsed from upstream Yodl sources.
+ * Structured zsh reference records parsed from vendored upstream Yodl, plus
+ * corpus resolution and small line-local analysis helpers.
  */
 
 export * from "./src/analysis/cmd-position.ts"

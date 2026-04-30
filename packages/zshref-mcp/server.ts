@@ -3,16 +3,9 @@
 /**
  * @packageDocumentation
  *
- * Stdio MCP server entry. This is the binary installed as `zshref-mcp`
- * via the `bin` field in `package.json`. Reads JSON-RPC frames on stdin,
- * writes frames on stdout, exits on stream close.
- *
- * The server advertises and serves the tools defined in
- * `@carlwr/zsh-core-tooldef`, backed by a loaded `zsh-core` corpus held
- * in-process.
- *
- * Also handles `--help` / `--version` and a TTY hint for humans who
- * invoke the bin directly; see `./src/cli.ts`.
+ * Stdio executable entrypoint for `zshref-mcp`. Handles `--help`,
+ * `--version`, and TTY hints; otherwise loads the bundled corpus and serves
+ * the shared zshref tools over MCP stdio.
  */
 
 import process from "node:process"

@@ -1,6 +1,6 @@
 /**
  * @packageDocumentation
- * Markdown rendering helpers and rendered-reference dump utilities.
+ * Markdown rendering and reference-dump helpers for zsh-core doc records.
  */
 
 export type { DocCorpus } from "./src/docs/corpus.ts"

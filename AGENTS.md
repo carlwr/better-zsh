@@ -11,7 +11,7 @@ Pre-1.0; libraries still free to move.
 
 ## See also
 
-- **`packages/zsh-core/dist/types/*.d.ts`** — rolled-up public API with JSDoc.
+- Package `dist/types/*.d.ts` — rolled-up public APIs with JSDoc.
 - **`skills/orient/`** — discovery scripts and reading paths.
 - **[`plan-json-artifacts.md`](./plan-json-artifacts.md)** — deferred plan for release-hosted JSON artifacts.
 
