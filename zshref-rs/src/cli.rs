@@ -68,8 +68,9 @@ pub fn build_cli(tool_defs: &ToolDefs, corpus: &Corpus) -> Command {
         .about(ROOT_BRIEF)
         .long_about(concat!(
             "Query a bundled static zsh reference from the command line.\n\n",
-            "Tool subcommands (docs, search, list) and `info` emit one compact ",
-            "JSON line on stdout (pass `--pretty` for indented multi-line). ",
+            "Tool subcommands (docs, search, list) emit one compact JSON line ",
+            "on stdout (pass `--pretty` for indented multi-line). `info` ",
+            "always emits indented multi-line JSON. ",
             "`docs` returns rendered markdown bodies; `search` and `list` return ",
             "identifiers only — pair `search`/`list` results with `docs` for the ",
             "full body. `completions` emits the requested shell script on stdout ",
@@ -108,7 +109,7 @@ pub fn build_cli(tool_defs: &ToolDefs, corpus: &Corpus) -> Command {
     );
 
     root = root.subcommand(
-        Command::new("info").about("emit corpus + upstream metadata as JSON (no flags)"),
+        Command::new("info").about("emit corpus + upstream metadata as pretty-printed JSON"),
     );
 
     // Size hint on `about` warns agents off bulk-piping into context.
@@ -313,7 +314,7 @@ pub fn dispatch(cmd: Command, tool_defs: &ToolDefs, corpus: &Corpus) -> Result<i
 
     if sub_name == "info" {
         let result = tools::info::run(corpus)?;
-        output::emit(&result, pretty);
+        output::emit_pretty(&result);
         return Ok(0);
     }
 

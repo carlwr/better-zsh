@@ -23,6 +23,12 @@ pub fn emit(value: &Value, pretty: bool) {
     println!("{s}");
 }
 
+/// Always emit indented JSON.
+pub fn emit_pretty(value: &Value) {
+    let s = serde_json::to_string_pretty(value).unwrap_or_else(|_| "null".to_string());
+    println!("{s}");
+}
+
 /// Translate a clap error to an exit code, routing output to the right stream.
 /// `DisplayHelp`/`DisplayVersion` → stderr (stdout is reserved for JSON per
 /// CLI-VISUAL-POLICY.md), rendered with ANSI via `StyledStr::ansi()` so
