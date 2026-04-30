@@ -1,0 +1,6 @@
+{
+  // OpenCode project config for Deno LSP in `packages/zsh-core`, not TS LSP.
+  // Verify: `opencode debug config` (differs without this file).
+  "$schema": "https://opencode.ai/config.json",
+  "lsp": {}
+}

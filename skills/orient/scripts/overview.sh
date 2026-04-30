@@ -1,90 +1,64 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 # Emit a compact, always-fresh structural overview of the monorepo.
 # Intended to be run by an agent at the start of a work session.
-set -euo pipefail
-cd "$(git -C "$(dirname "$0")" rev-parse --show-toplevel)"
 
-echo "=== packages/zsh-core/src ==="
-find packages/zsh-core/src -type f -name '*.ts' \
-  | grep -v '/test/' \
-  | sort \
-  | while read -r f; do printf '  %4d  %s\n' "$(wc -l < "$f")" "$f"; done
+emulate -LR zsh
+set -eu -o pipefail
 
-echo ""
-echo "=== packages/zsh-core/src/test ==="
-find packages/zsh-core/src/test -type f -name '*.ts' \
-  | sort \
-  | while read -r f; do printf '  %4d  %s\n' "$(wc -l < "$f")" "$f"; done
+cd "$(git -C ${0:A:h} rev-parse --show-toplevel)"
 
-echo ""
-echo "=== packages/zsh-core-tooldef ==="
-find packages/zsh-core-tooldef \
-  -maxdepth 1 -type f -name '*.ts' 2>/dev/null \
-  | sort \
-  | while read -r f; do printf '  %4d  %s\n' "$(wc -l < "$f")" "$f"; done
-find packages/zsh-core-tooldef/src -type f -name '*.ts' 2>/dev/null \
-  | grep -v '/test/' \
-  | sort \
-  | while read -r f; do printf '  %4d  %s\n' "$(wc -l < "$f")" "$f"; done
+section() {
+  print "\n=== $1 ==="
+  }
 
-echo ""
-echo "=== packages/zsh-core-tooldef/src/test ==="
-find packages/zsh-core-tooldef/src/test -type f -name '*.ts' 2>/dev/null \
-  | sort \
-  | while read -r f; do printf '  %4d  %s\n' "$(wc -l < "$f")" "$f"; done
+list() {
+  local fs=( $(find "$@" -type f 2>/dev/null | sort) )
+  (( $#fs )) || return 1
+  local f
+  for f in $fs
+  do printf '  %4d\t%s\n' "$(wc -l < $f)" $f
+  done
+}
 
-echo ""
-echo "=== packages/zshref-mcp ==="
-find packages/zshref-mcp \
-  -maxdepth 1 -type f -name '*.ts' \
-  | sort \
-  | while read -r f; do printf '  %4d  %s\n' "$(wc -l < "$f")" "$f"; done
-find packages/zshref-mcp/src -type f -name '*.ts' 2>/dev/null \
-  | grep -v '/test/' \
-  | sort \
-  | while read -r f; do printf '  %4d  %s\n' "$(wc -l < "$f")" "$f"; done
 
-echo ""
-echo "=== packages/zshref-mcp/src/test ==="
-find packages/zshref-mcp/src/test -type f -name '*.ts' 2>/dev/null \
-  | sort \
-  | while read -r f; do printf '  %4d  %s\n' "$(wc -l < "$f")" "$f"; done
+# --- preamble ---
 
-echo ""
-echo "=== zshref-rs ==="
-find zshref-rs -maxdepth 1 -type f -name '*.rs' 2>/dev/null \
-  | sort \
-  | while read -r f; do printf '  %4d  %s\n' "$(wc -l < "$f")" "$f"; done
-find zshref-rs/src -type f -name '*.rs' 2>/dev/null \
-  | sort \
-  | while read -r f; do printf '  %4d  %s\n' "$(wc -l < "$f")" "$f"; done
+print 'source files; test/* under separate heading'
+print
+print 'form (N == #lines):'
+printf '  %s\t%s\n' '<N>' '<file>'
+print
 
-echo ""
-echo "=== zshref-rs/tests ==="
-find zshref-rs/tests -type f -name '*.rs' 2>/dev/null \
-  | sort \
-  | while read -r f; do printf '  %4d  %s\n' "$(wc -l < "$f")" "$f"; done
 
-echo ""
-echo "=== packages/vscode-better-zsh/src ==="
-find packages/vscode-better-zsh/src -type f -name '*.ts' \
-  | grep -v '/test/' \
-  | sort \
-  | while read -r f; do printf '  %4d  %s\n' "$(wc -l < "$f")" "$f"; done
+# --- packages ---
 
-echo ""
-echo "=== packages/vscode-better-zsh/src/test ==="
-find packages/vscode-better-zsh/src/test -type f -name '*.ts' \
-  | sort \
-  | while read -r f; do printf '  %4d  %s\n' "$(wc -l < "$f")" "$f"; done
+cre=packages/zsh-core
+def=packages/zsh-core-tooldef
+mcp=packages/zshref-mcp
+vsc=packages/vscode-better-zsh
+ref=zshref-rs
 
-echo ""
-echo "=== API rollups (dist/types/*.d.ts) ==="
-rollups="$(find packages -maxdepth 4 -path '*/dist/types/*.d.ts' -type f 2>/dev/null | sort)"
-if [ -n "$rollups" ]; then
-  while read -r f; do
-    printf '  %4d  %s\n' "$(wc -l < "$f")" "$f"
-  done <<< "$rollups"
-else
-  echo "  (not built — run the relevant package build)"
-fi
+section  $cre/src      && list $cre/src      -name '*.ts' ! -path '*/test/*'
+section  $cre/src/test && list $cre/src/test -name '*.ts'
+
+section "$def (root)"  && list $def          -name '*.ts' -maxdepth 1
+section  $def/src      && list $def/src      -name '*.ts' ! -path '*/test/*'
+section  $def/src/test && list $def/src/test -name '*.ts'
+
+section "$mcp (root)"  && list $mcp          -name '*.ts' -maxdepth 1
+section  $mcp/src      && list $mcp/src      -name '*.ts' ! -path '*/test/*'
+section  $mcp/src/test && list $mcp/src/test -name '*.ts'
+
+section  $vsc/src      && list $vsc/src      -name '*.ts' ! -path '*/test/*'
+section  $vsc/src/test && list $vsc/src/test -name '*.ts'
+
+section "$ref (root)"  && list $ref          -name '*.rs' -maxdepth 1
+section  $ref/src      && list $ref/src      -name '*.rs'
+section  $ref/tests    && list $ref/tests    -name '*.rs'
+
+
+# --- API rollups ---
+
+section 'API rollups (dist/types/*.d.ts)'
+list packages -maxdepth 4 -path '*/dist/types/*.d.ts' \
+|| print '(not built — run the relevant package build)'
