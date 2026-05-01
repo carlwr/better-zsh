@@ -120,7 +120,7 @@ NOTE: line length refers to number of characters _after ANSI stripping_ (since A
 
 - **MUST**: IF some help contents requires a subcommand-specific `--help` invocation (`prog sub --help`), THEN clear information about these `--help` forms must be provided in the top-level `--help`
 - **SHOULD**: in top-level `--help`, list subcommands with one-line briefs. Aim for `~50` chars to avoid wrapping the `Commands` column.
-- **SHOULD**: write briefs as phrases, not sentences: lowercase first letter, no trailing period. `look up docs for a raw zsh token`, not `Look up docs for a raw zsh token.`
+- **SHOULD**: write briefs as phrases, not sentences: lowercase first letter, no trailing period. `look up docs for a zsh key`, not `Look up docs for a zsh key.`
 - **SHOULD**: in subcommand `--help`, show `brief`, blank line, expanded description. If the framework uses the first description line as the top-level brief, format it as `brief\n\nexpanded` instead of plumbing a separate `brief` field.
 - **SHOULD**: omit redundant `Version:` lines from subcommand `--help`; the root program already shows the version.
 - **MAY**: skip subcommand `Examples:` when `Usage:` is already clear; root-level examples are usually more useful.

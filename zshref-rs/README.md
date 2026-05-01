@@ -9,7 +9,7 @@ A command-line reference for zsh syntax. Ask what a token is, search the manual,
 Built for agents, acceptable for humans. One of three adapters over the same parsed zsh reference (alongside the [MCP server](https://github.com/carlwr/zshref-mcp) and the [VS Code extension](https://github.com/carlwr/better-zsh/tree/main/packages/vscode-better-zsh)). What the CLI adds on top of the shared corpus:
 
 - **Single native binary** — no Node, Python, or zsh at runtime; drops into containers, air-gapped CI, and minimal base images.
-- **Pipes and scripts.** JSON on stdout, human prose on stderr, stable exit-code contract. `zshref docs --raw AUTO_CD | jq ...` is the intended shape, including for LLM agents composing through `sh`.
+- **Pipes and scripts.** JSON on stdout, human prose on stderr, stable exit-code contract. `zshref docs --key AUTO_CD | jq ...` is the intended shape, including for LLM agents composing through `sh`.
 - **Protocol-independent.** MCP is young; POSIX CLIs have fifty years of backward-compat. Insurance against whichever agent protocol comes next.
 
 What it shares with the other adapters — and, for most users, the reason to pick any of them over `man zshall | grep`:
@@ -36,18 +36,18 @@ If you need to introspect a live shell (`setopt` output, `$commands`, aliases), 
 
 ```sh
 # One compact JSON line by default. Pick fields with jq, or pass --pretty for indented output.
-zshref docs --raw AUTO_CD | jq '.matches[0] | {category, display}'
+zshref docs --key AUTO_CD | jq '.matches[0] | {category, display}'
 # → { "category": "option", "display": "AUTO_CD" }
 
 # Fuzzy search + docs, piped as an agent would.
 zshref search --query autoc --limit 1 \
-  | jq -r '.matches[0] | "--category \(.category) --raw \(.id)"' \
+  | jq -r '.matches[0] | "--category \(.category) --key \(.id)"' \
   | xargs zshref docs \
   | jq -r '.matches[0].mdBody' \
   | head -3
 
 # NO_* negation resolves to the base option; `feedback` records the path taken.
-zshref docs --raw NO_AUTO_CD --category option | jq '.matches[0] | {display, feedback}'
+zshref docs --key NO_AUTO_CD --category option | jq '.matches[0] | {display, feedback}'
 # → { "display": "AUTO_CD", "feedback": { "kind": "input-negated" } }
 ```
 
@@ -82,18 +82,18 @@ brew install zshref
 zshref --help
 zshref --version
 
-# Look up the docs for a raw token across every category. Default output
+# Look up the docs for a zsh key across every category. Default output
 # is one compact JSON line; pass `--pretty` for indented multi-line.
-zshref docs --raw AUTO_CD
-zshref docs --raw AUTO_CD --pretty
-zshref docs --raw '<<<'
+zshref docs --key AUTO_CD
+zshref docs --key AUTO_CD --pretty
+zshref docs --key '<<<'
 
 # Constrain to one category (e.g. resolve `for` as a complex command,
 # not as a reserved word).
-zshref docs --raw for --category complex_command
+zshref docs --key for --category complex_command
 
 # `NO_*` option negation: same canonical id, plus `feedback: { kind: "input-negated" }`.
-zshref docs --raw NO_AUTO_CD --category option
+zshref docs --key NO_AUTO_CD --category option
 
 # Fuzzy search; optionally narrow by category. Pair with `docs` for the body.
 zshref search --query echo --category builtin --limit 5
@@ -111,7 +111,7 @@ zshref schema
 
 # Streaming JSONL mode for cross-language tests / IPC: one request per
 # stdin line, one compact-JSON response per stdout line.
-printf '%s\n' '{"tool":"zsh_docs","input":{"raw":"AUTO_CD"}}' | zshref batch
+printf '%s\n' '{"tool":"zsh_docs","input":{"key":"AUTO_CD"}}' | zshref batch
 ```
 
 ## Exit codes

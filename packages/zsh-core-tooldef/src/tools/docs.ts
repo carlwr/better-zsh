@@ -28,7 +28,7 @@ import {
 } from "./result.ts"
 
 export interface DocsInput {
-  readonly raw: string
+  readonly key: string
   readonly category?: DocCategory
 }
 
@@ -43,7 +43,7 @@ export type DocsResult = Envelope<DocsMatch>
 function formatMatch(
   corpus: DocCorpus,
   pid: DocPieceId,
-  raw: string,
+  key: string,
 ): DocsMatch {
   const rec = corpus[pid.category].get(pid.id as never) as
     | DocRecordMap[typeof pid.category]
@@ -57,7 +57,7 @@ function formatMatch(
     d: DocRecordMap[typeof pid.category],
   ) => string | undefined
   const subKind = getSubKind(rec)
-  const fb = resolverFeedback(corpus, pid.category, raw)
+  const fb = resolverFeedback(corpus, pid.category, key)
   return {
     category: pid.category,
     id: pid.id as string,
@@ -69,7 +69,7 @@ function formatMatch(
 }
 
 /**
- * Look up docs for a raw zsh token. With `category`, one category (0–1
+ * Look up docs for a zsh key. With `category`, one category (0–1
  * matches). Without, walks `classifyOrder` and returns one match per
  * resolving category — usually 0–1, sometimes 2 when overlap categories
  * both resolve (`for`, `nocorrect`, etc.).
@@ -77,21 +77,21 @@ function formatMatch(
  * Resolution is `lookupRaw` (direct ∥ resolver, direct preferred). Pure; no IO.
  */
 export function docs(corpus: DocCorpus, input: DocsInput): DocsResult {
-  const raw = input.raw
-  if (raw.trim().length === 0) return mkEnvelope<DocsMatch>([])
+  const key = input.key
+  if (key.trim().length === 0) return mkEnvelope<DocsMatch>([])
 
   if (input.category !== undefined) {
     if (!isValidCategory(input.category)) return mkEnvelope<DocsMatch>([])
-    const pid = lookupRaw(corpus, input.category, raw)
+    const pid = lookupRaw(corpus, input.category, key)
     if (!pid) return mkEnvelope<DocsMatch>([])
-    return mkEnvelope([formatMatch(corpus, pid, raw)])
+    return mkEnvelope([formatMatch(corpus, pid, key)])
   }
 
   const matches: DocsMatch[] = []
   for (const cat of classifyOrder) {
-    const pid = lookupRaw(corpus, cat, raw)
+    const pid = lookupRaw(corpus, cat, key)
     if (pid?.category === "history" && !isHistoryEvent(corpus, pid)) continue
-    if (pid) matches.push(formatMatch(corpus, pid, raw))
+    if (pid) matches.push(formatMatch(corpus, pid, key))
   }
   return mkEnvelope(matches)
 }
@@ -103,11 +103,11 @@ function isHistoryEvent(corpus: DocCorpus, pid: DocPieceId): boolean {
 
 const catList = categoryList(classifyOrder, { withLabel: true })
 
-export const docsToolDef: ToolDef = makeToolDef<"raw" | "category">({
+export const docsToolDef: ToolDef = makeToolDef<"key" | "category">({
   name: "zsh_docs",
-  brief: "look up docs for a raw zsh token (markdown body)",
+  brief: "look up docs for a zsh key (markdown body)",
   description: `\
-Look up the docs for a raw zsh token in the bundled static ${ZSH_UPSTREAM.tag} reference.
+Look up the docs for a zsh key in the bundled static ${ZSH_UPSTREAM.tag} reference.
 
 Returns one match per category that resolves the input, each with the rendered markdown body.
 
@@ -127,17 +127,17 @@ No shell execution, no environment access.`,
   inputSchema: {
     type: "object",
     properties: {
-      raw: {
+      key: {
         type: "string",
         description:
-          'The raw token as it might appear in zsh source — e.g. "AUTO_CD", "echo", "[[", "<<<", "!42", "%1", "NO_NOTIFY", or a canonical id from a prior `zsh_search` such as "autocd". Case and underscores are normalized per category.',
+          'The zsh token or canonical key to look up — e.g. "AUTO_CD", "echo", "[[", "<<<", "!42", "%1", "NO_NOTIFY", or a canonical id from a prior `zsh_search` such as "autocd". Case and underscores are normalized per category.',
       },
       category: {
         type: "string",
         description: `Optional: constrain the lookup to one category. When omitted, every category is tried and the response may carry more than one match. Unknown values yield an empty match set.\n\nValid values:\n\n${catList}`,
       },
     },
-    required: ["raw"],
+    required: ["key"],
     additionalProperties: false,
   },
   outputSchema: mkOutputSchema({
@@ -145,7 +145,7 @@ No shell execution, no environment access.`,
     feedback: "optional",
   }),
   flagBriefs: {
-    raw: "Raw zsh token to look up (e.g. AUTO_CD, echo, [[, %1).",
+    key: "Zsh token or canonical key to look up.",
     category: "Optional: constrain to one doc category.",
   },
   execute: (corpus, input): DocsResult =>

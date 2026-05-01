@@ -6,18 +6,18 @@ const corpus = loadCorpus()
 
 describe("docs — single-category lookups (no `category` set)", () => {
   test.each([
-    { raw: "AUTO_CD", category: "option", id: "autocd" },
-    { raw: "autocd", category: "option", id: "autocd" },
-    { raw: "echo", category: "builtin", id: "echo" },
-    { raw: "errRET_urn", category: "option", id: "errreturn" },
-    { raw: "%n", category: "prompt_escape", id: "%n" },
+    { key: "AUTO_CD", category: "option", id: "autocd" },
+    { key: "autocd", category: "option", id: "autocd" },
+    { key: "echo", category: "builtin", id: "echo" },
+    { key: "errRET_urn", category: "option", id: "errreturn" },
+    { key: "%n", category: "prompt_escape", id: "%n" },
     {
-      raw: "backward-kill-word",
+      key: "backward-kill-word",
       category: "zle_widget",
       id: "backward-kill-word",
     },
-  ])("$raw → $category:$id", ({ raw, category, id }) => {
-    const r = docs(corpus, { raw })
+  ])("$key → $category:$id", ({ key, category, id }) => {
+    const r = docs(corpus, { key })
     const m = r.matches[0]
     expect(m).toBeDefined()
     expect(m?.category).toBe(category)
@@ -27,25 +27,25 @@ describe("docs — single-category lookups (no `category` set)", () => {
   })
 
   test("display preserves option human form", () => {
-    expect(docs(corpus, { raw: "auto_cd" }).matches[0]?.display).toBe("AUTO_CD")
+    expect(docs(corpus, { key: "auto_cd" }).matches[0]?.display).toBe("AUTO_CD")
   })
 
   test("no match returns empty matches[]", () => {
-    const r = docs(corpus, { raw: "definitely_not_a_zsh_thing_qq" })
+    const r = docs(corpus, { key: "definitely_not_a_zsh_thing_qq" })
     expect(r.matches).toEqual([])
     expect(r.matchesReturned).toBe(0)
     expect(r.matchesTotal).toBe(0)
   })
 
-  test("empty/whitespace raw returns empty matches[]", () => {
-    expect(docs(corpus, { raw: "" }).matches).toEqual([])
-    expect(docs(corpus, { raw: "   " }).matches).toEqual([])
+  test("empty/whitespace key returns empty matches[]", () => {
+    expect(docs(corpus, { key: "" }).matches).toEqual([])
+    expect(docs(corpus, { key: "   " }).matches).toEqual([])
   })
 })
 
 describe("docs — multi-match (no `category`)", () => {
   test("`for` resolves in both complex_command and reserved_word", () => {
-    const r = docs(corpus, { raw: "for" })
+    const r = docs(corpus, { key: "for" })
     const cats = r.matches.map(m => m.category)
     expect(cats).toContain("complex_command")
     expect(cats).toContain("reserved_word")
@@ -54,14 +54,14 @@ describe("docs — multi-match (no `category`)", () => {
   })
 
   test("matches[] follows resolver-walk order (complex_command before reserved_word)", () => {
-    const r = docs(corpus, { raw: "for" })
+    const r = docs(corpus, { key: "for" })
     const ic = r.matches.findIndex(m => m.category === "complex_command")
     const ir = r.matches.findIndex(m => m.category === "reserved_word")
     expect(ic).toBeLessThan(ir)
   })
 
   test("`nocorrect` resolves in both precmd and option", () => {
-    const r = docs(corpus, { raw: "nocorrect" })
+    const r = docs(corpus, { key: "nocorrect" })
     const cats = r.matches.map(m => m.category)
     expect(cats).toContain("precmd")
     expect(cats).toContain("option")
@@ -70,77 +70,77 @@ describe("docs — multi-match (no `category`)", () => {
   test.each([
     "0",
     "a",
-  ])("bare history component `%s` is not a history match", raw => {
-    const r = docs(corpus, { raw })
+  ])("bare history component `%s` is not a history match", key => {
+    const r = docs(corpus, { key })
     expect(r.matches.map(m => m.category)).not.toContain("history")
   })
 })
 
 describe("docs — `category` constrains the lookup", () => {
-  test("category=builtin, raw=echo → builtin:echo only", () => {
-    const r = docs(corpus, { raw: "echo", category: "builtin" })
+  test("category=builtin, key=echo → builtin:echo only", () => {
+    const r = docs(corpus, { key: "echo", category: "builtin" })
     expect(r.matches.length).toBe(1)
     expect(r.matches[0]?.category).toBe("builtin")
     expect(r.matches[0]?.id).toBe("echo")
   })
 
-  test("category=reserved_word, raw=for → only reserved_word match", () => {
-    const r = docs(corpus, { raw: "for", category: "reserved_word" })
+  test("category=reserved_word, key=for → only reserved_word match", () => {
+    const r = docs(corpus, { key: "for", category: "reserved_word" })
     expect(r.matches.length).toBe(1)
     expect(r.matches[0]?.category).toBe("reserved_word")
   })
 
   test("unknown category returns empty (untrusted input)", () => {
-    const r = docs(corpus, { raw: "echo", category: "bogus" as never })
+    const r = docs(corpus, { key: "echo", category: "bogus" as never })
     expect(r.matches).toEqual([])
   })
 
   test("known category, no resolution → empty", () => {
-    const r = docs(corpus, { raw: "not_a_builtin_qq", category: "builtin" })
+    const r = docs(corpus, { key: "not_a_builtin_qq", category: "builtin" })
     expect(r.matches).toEqual([])
   })
 
   test("with category=option, NO_-prefixed input still resolves (not strict)", () => {
     // Resolver semantics still apply inside the chosen category.
-    const r = docs(corpus, { raw: "NO_AUTO_CD", category: "option" })
+    const r = docs(corpus, { key: "NO_AUTO_CD", category: "option" })
     expect(r.matches[0]?.id).toBe("autocd")
   })
 })
 
 describe("docs — direct ∥ resolver, direct preferred (template-key categories)", () => {
   test("job_spec: direct hit on `%number` does NOT round-trip through `%string` resolver fallback", () => {
-    const r = docs(corpus, { raw: "%number", category: "job_spec" })
+    const r = docs(corpus, { key: "%number", category: "job_spec" })
     expect(r.matches[0]?.id).toBe("%number")
   })
 
   test("job_spec: direct hit on `%string`", () => {
-    const r = docs(corpus, { raw: "%string", category: "job_spec" })
+    const r = docs(corpus, { key: "%string", category: "job_spec" })
     expect(r.matches[0]?.id).toBe("%string")
   })
 
   test("job_spec: resolver fallback handles literal `%5`", () => {
-    const r = docs(corpus, { raw: "%5", category: "job_spec" })
+    const r = docs(corpus, { key: "%5", category: "job_spec" })
     expect(r.matches[0]?.id).toBe("%number")
   })
 
   test("history: direct hit on `!n` does NOT fall through to resolver", () => {
-    const r = docs(corpus, { raw: "!n", category: "history" })
+    const r = docs(corpus, { key: "!n", category: "history" })
     expect(r.matches[0]?.id).toBe("!n")
   })
 
   test("history: resolver fallback handles literal `!42`", () => {
-    const r = docs(corpus, { raw: "!42", category: "history" })
+    const r = docs(corpus, { key: "!42", category: "history" })
     expect(r.matches[0]?.id).toBe("!n")
   })
 })
 
 describe("docs — option matches reached via NO_-stripping carry input-negated feedback", () => {
   test.each([
-    { raw: "NO_AUTO_CD", id: "autocd" },
-    { raw: "noautocd", id: "autocd" },
-    { raw: "NO_NOTIFY", id: "notify" },
-  ])("$raw → option:$id with feedback", ({ raw, id }) => {
-    const r = docs(corpus, { raw, category: "option" })
+    { key: "NO_AUTO_CD", id: "autocd" },
+    { key: "noautocd", id: "autocd" },
+    { key: "NO_NOTIFY", id: "notify" },
+  ])("$key → option:$id with feedback", ({ key, id }) => {
+    const r = docs(corpus, { key, category: "option" })
     const m = r.matches[0]
     expect(m).toBeDefined()
     expect(m?.id).toBe(id)
@@ -148,11 +148,11 @@ describe("docs — option matches reached via NO_-stripping carry input-negated 
   })
 
   test.each([
-    { raw: "AUTO_CD", id: "autocd" },
-    { raw: "autocd", id: "autocd" },
-    { raw: "NOTIFY", id: "notify" },
-  ])("$raw → option:$id without feedback", ({ raw, id }) => {
-    const r = docs(corpus, { raw, category: "option" })
+    { key: "AUTO_CD", id: "autocd" },
+    { key: "autocd", id: "autocd" },
+    { key: "NOTIFY", id: "notify" },
+  ])("$key → option:$id without feedback", ({ key, id }) => {
+    const r = docs(corpus, { key, category: "option" })
     const m = r.matches[0]
     expect(m).toBeDefined()
     expect(m?.id).toBe(id)
@@ -160,7 +160,7 @@ describe("docs — option matches reached via NO_-stripping carry input-negated 
   })
 
   test("non-option matches never carry `feedback` (key absent)", () => {
-    const r = docs(corpus, { raw: "echo" })
+    const r = docs(corpus, { key: "echo" })
     const m = r.matches[0]
     expect(m).toBeDefined()
     expect(m).not.toHaveProperty("feedback")
@@ -169,21 +169,21 @@ describe("docs — option matches reached via NO_-stripping carry input-negated 
 
 describe("docs — subKind on category branches", () => {
   test("reserved_word match carries `subKind` reflecting `pos`", () => {
-    const r = docs(corpus, { raw: "do", category: "reserved_word" })
+    const r = docs(corpus, { key: "do", category: "reserved_word" })
     const m = r.matches[0]
     expect(m).toBeDefined()
     expect(m?.subKind).toBe("command")
   })
 
   test("job_spec match carries `subKind` reflecting `kind`", () => {
-    const r = docs(corpus, { raw: "%number", category: "job_spec" })
+    const r = docs(corpus, { key: "%number", category: "job_spec" })
     const m = r.matches[0]
     expect(m).toBeDefined()
     expect(m?.subKind).toBe("number")
   })
 
   test("multi-match: reserved_word branch carries subKind, complex_command branch does not", () => {
-    const r = docs(corpus, { raw: "for" })
+    const r = docs(corpus, { key: "for" })
     const cc = r.matches.find(m => m.category === "complex_command")
     const rw = r.matches.find(m => m.category === "reserved_word")
     expect(cc).toBeDefined()
@@ -193,7 +193,7 @@ describe("docs — subKind on category branches", () => {
   })
 
   test("option match has no subKind key (option category has no sub-facet)", () => {
-    const r = docs(corpus, { raw: "AUTO_CD", category: "option" })
+    const r = docs(corpus, { key: "AUTO_CD", category: "option" })
     const m = r.matches[0]
     expect(m).toBeDefined()
     expect(m).not.toHaveProperty("subKind")
@@ -202,7 +202,7 @@ describe("docs — subKind on category branches", () => {
 
 describe("docs — output envelope shape", () => {
   test("envelope fields are present even on empty result", () => {
-    const r = docs(corpus, { raw: "totally_not_real_qq" })
+    const r = docs(corpus, { key: "totally_not_real_qq" })
     expect(r).toMatchObject({
       matches: [],
       matchesReturned: 0,
@@ -211,7 +211,7 @@ describe("docs — output envelope shape", () => {
   })
 
   test("matchesReturned == matchesTotal (no truncation in docs)", () => {
-    const r = docs(corpus, { raw: "for" })
+    const r = docs(corpus, { key: "for" })
     expect(r.matchesReturned).toBe(r.matchesTotal)
   })
 })

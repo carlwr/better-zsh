@@ -107,7 +107,7 @@
         "name": "zsh_docs",
         "toolReferenceName": "zshDocs",
         "displayName": "zsh docs lookup",
-        "modelDescription": "Look up the docs for a raw zsh token in the bundled static zsh-5.9 reference.\n\nReturns one match per category that resolves the input, each with the rendered markdown body.\n\nCategories searched (in resolver-walk order):\n\n  - 'complex_command'  (complex command)\n  - 'reserved_word'  (reserved word)\n  - 'precmd'  (precommand modifier)\n  - 'builtin'  (builtin)\n  - 'cond_op'  (conditional operator)\n  - 'special_function'  (special function)\n  - 'shell_param'  (shell parameter)\n  - 'process_subst'  (process substitution)\n  - 'param_expn'  (parameter-expansion form)\n  - 'param_flag'  (parameter-expansion flag)\n  - 'subscript_flag'  (subscript flag)\n  - 'glob_flag'  (glob flag)\n  - 'glob_qualifier'  (glob qualifier)\n  - 'glob_op'  (glob operator)\n  - 'history'  (history designator)\n  - 'prompt_escape'  (prompt escape)\n  - 'job_spec'  (job spec)\n  - 'zle_widget'  (ZLE widget)\n  - 'keymap'  (ZLE keymap)\n  - 'arith_op'  (arithmetic operator)\n  - 'option'  (option)\n  - 'redir'  (redirection)\n\nSet `category` to constrain the search to one category; otherwise every category is tried and the response may carry more than one match. Some inputs name elements in more than one category (e.g. `for`, `[[`, `function`, `nocorrect`); without `category` those return multiple matches.\n\nEach match is `{ category, id, display, mdBody, subKind?, feedback? }`. `subKind` is surfaced when the category has a meaningful sub-facet (e.g. history `kind`, glob_op `kind`, reserved_word `pos`). `feedback` is emitted when the per-category resolver had a lossy-normalization signal worth surfacing — today, `{ kind: \"input-negated\" }` on option inputs reached via `NO_`-stripping, so agents can distinguish `setopt AUTO_CD` from `setopt NO_AUTO_CD` (handles the `NOTIFY` / `NO_NOTIFY` edge case).\n\nResolution is corpus-aware: case-insensitive option matching, underscore stripping, redirection group-op + tail decomposition, history event-designators, and the option `NO_*` negation convention. Canonical record ids (e.g. `autocd`) round-trip exactly.\n\nReturns `{ matches: [], matchesReturned: 0, matchesTotal: 0 }` when nothing resolves. `matchesReturned` and `matchesTotal` are emitted for envelope uniformity with `zsh_search` / `zsh_list`; `docs` never truncates, so they always equal `matches.length`.\n\nNo shell execution, no environment access.",
+        "modelDescription": "Look up the docs for a zsh key in the bundled static zsh-5.9 reference.\n\nReturns one match per category that resolves the input, each with the rendered markdown body.\n\nCategories searched (in resolver-walk order):\n\n  - 'complex_command'  (complex command)\n  - 'reserved_word'  (reserved word)\n  - 'precmd'  (precommand modifier)\n  - 'builtin'  (builtin)\n  - 'cond_op'  (conditional operator)\n  - 'special_function'  (special function)\n  - 'shell_param'  (shell parameter)\n  - 'process_subst'  (process substitution)\n  - 'param_expn'  (parameter-expansion form)\n  - 'param_flag'  (parameter-expansion flag)\n  - 'subscript_flag'  (subscript flag)\n  - 'glob_flag'  (glob flag)\n  - 'glob_qualifier'  (glob qualifier)\n  - 'glob_op'  (glob operator)\n  - 'history'  (history designator)\n  - 'prompt_escape'  (prompt escape)\n  - 'job_spec'  (job spec)\n  - 'zle_widget'  (ZLE widget)\n  - 'keymap'  (ZLE keymap)\n  - 'arith_op'  (arithmetic operator)\n  - 'option'  (option)\n  - 'redir'  (redirection)\n\nSet `category` to constrain the search to one category; otherwise every category is tried and the response may carry more than one match. Some inputs name elements in more than one category (e.g. `for`, `[[`, `function`, `nocorrect`); without `category` those return multiple matches.\n\nEach match is `{ category, id, display, mdBody, subKind?, feedback? }`. `subKind` is surfaced when the category has a meaningful sub-facet (e.g. history `kind`, glob_op `kind`, reserved_word `pos`). `feedback` is emitted when the per-category resolver had a lossy-normalization signal worth surfacing — today, `{ kind: \"input-negated\" }` on option inputs reached via `NO_`-stripping, so agents can distinguish `setopt AUTO_CD` from `setopt NO_AUTO_CD` (handles the `NOTIFY` / `NO_NOTIFY` edge case).\n\nResolution is corpus-aware: case-insensitive option matching, underscore stripping, redirection group-op + tail decomposition, history event-designators, and the option `NO_*` negation convention. Canonical record ids (e.g. `autocd`) round-trip exactly.\n\nReturns `{ matches: [], matchesReturned: 0, matchesTotal: 0 }` when nothing resolves. `matchesReturned` and `matchesTotal` are emitted for envelope uniformity with `zsh_search` / `zsh_list`; `docs` never truncates, so they always equal `matches.length`.\n\nNo shell execution, no environment access.",
         "canBeReferencedInPrompt": true,
         "tags": [
           "zsh"
@@ -115,9 +115,9 @@
         "inputSchema": {
           "type": "object",
           "properties": {
-            "raw": {
+            "key": {
               "type": "string",
-              "description": "The raw token as it might appear in zsh source — e.g. \"AUTO_CD\", \"echo\", \"[[\", \"<<<\", \"!42\", \"%1\", \"NO_NOTIFY\", or a canonical id from a prior `zsh_search` such as \"autocd\". Case and underscores are normalized per category."
+              "description": "The zsh token or canonical key to look up — e.g. \"AUTO_CD\", \"echo\", \"[[\", \"<<<\", \"!42\", \"%1\", \"NO_NOTIFY\", or a canonical id from a prior `zsh_search` such as \"autocd\". Case and underscores are normalized per category."
             },
             "category": {
               "type": "string",
@@ -125,7 +125,7 @@
             }
           },
           "required": [
-            "raw"
+            "key"
           ],
           "additionalProperties": false
         }

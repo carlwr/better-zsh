@@ -75,7 +75,7 @@ describeIfBuilt("MCP stdio integration", () => {
   })
 
   test("zsh_docs returns a match for a builtin", async () => {
-    const result = await callTool("zsh_docs", { raw: "echo" })
+    const result = await callTool("zsh_docs", { key: "echo" })
     expect(result.isError).toBeFalsy()
     const parsed = parseText(result) as {
       matches: Array<{ category: string; id: string; mdBody: string }>
@@ -90,7 +90,7 @@ describeIfBuilt("MCP stdio integration", () => {
 
   test("zsh_docs surfaces NO_* option negation via feedback", async () => {
     const result = await callTool("zsh_docs", {
-      raw: "NO_AUTO_CD",
+      key: "NO_AUTO_CD",
       category: "option",
     })
     const parsed = parseText(result) as {
@@ -137,8 +137,8 @@ describeIfBuilt("MCP stdio integration", () => {
     }
   })
 
-  test("zsh_docs rejects unknown raw without crashing", async () => {
-    const result = await callTool("zsh_docs", { raw: "not_a_thing_qq" })
+  test("zsh_docs rejects unknown key without crashing", async () => {
+    const result = await callTool("zsh_docs", { key: "not_a_thing_qq" })
     expect(result.isError).toBeFalsy()
     expect(parseText(result)).toEqual({
       matches: [],
@@ -154,8 +154,8 @@ describeIfBuilt("MCP stdio integration", () => {
 
   test("both calls in one spawn (latency sanity)", async () => {
     const [ra, rb] = await Promise.all([
-      callTool("zsh_docs", { raw: "if" }),
-      callTool("zsh_docs", { raw: "AUTO_CD" }),
+      callTool("zsh_docs", { key: "if" }),
+      callTool("zsh_docs", { key: "AUTO_CD" }),
     ])
     expect(ra.isError).toBeFalsy()
     expect(rb.isError).toBeFalsy()
@@ -198,7 +198,7 @@ describeIfBuilt("MCP stdio integration", () => {
 
     const cases: Array<{ tool: string; args: Record<string, unknown> }> = [
       { tool: "zsh_search", args: { query: "echo", limit: 5 } },
-      { tool: "zsh_docs", args: { raw: "echo" } },
+      { tool: "zsh_docs", args: { key: "echo" } },
       { tool: "zsh_list", args: { category: "builtin", limit: 5 } },
     ]
     for (const c of cases) {

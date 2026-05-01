@@ -27,9 +27,9 @@ const ROOT_AFTER_HELP_TAIL: &str = concat!(
     "  CLICOLOR_FORCE    present + non-empty forces ANSI colors on (even off a TTY)\n",
     "\n",
     "Examples:\n",
-    "  zshref docs --raw AUTO_CD\n",
-    "  zshref docs --raw NO_AUTO_CD                  # surfaces feedback:input-negated\n",
-    "  zshref docs --raw for                         # multi-match without --category\n",
+    "  zshref docs --key AUTO_CD\n",
+    "  zshref docs --key NO_AUTO_CD                  # surfaces feedback:input-negated\n",
+    "  zshref docs --key for                         # multi-match without --category\n",
     "  zshref search --query printf --limit 5\n",
     "  zshref list --category option --limit 200\n",
     "  zshref list                                   # first 20 records of every category\n",
@@ -38,7 +38,7 @@ const ROOT_AFTER_HELP_TAIL: &str = concat!(
 // Hand-aligned so tool subcommands line up across columns.
 // Clap's default single-line usage loses readability for this surface.
 const ROOT_USAGE: &str = concat!(
-    "zshref [--pretty] docs    --raw=R   [--category=C]\n",
+    "zshref [--pretty] docs    --key=K   [--category=C]\n",
     "  zshref [--pretty] search  --query=W [--category=C] [--limit=L]\n",
     "  zshref [--pretty] list              [--category=C] [--limit=L]\n",
     "\n",
@@ -237,7 +237,7 @@ fn build_arg(
         .required(required)
         .action(ArgAction::Set)
         // zsh tokens include `-`, `-p`, fd prefixes (`2>`), etc.
-        // Without this, `--raw -p` errors; `--raw=VALUE` is the only escape.
+        // Without this, `--key -p` errors; `--key=VALUE` is the only escape.
         .allow_hyphen_values(true);
 
     let ty = spec.get("type").and_then(Value::as_str).unwrap_or("string");

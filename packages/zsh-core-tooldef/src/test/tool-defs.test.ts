@@ -45,7 +45,7 @@ describe("toolDefs metadata", () => {
   })
 
   test.each([
-    ["zsh_docs", docsToolDef, ["raw"]],
+    ["zsh_docs", docsToolDef, ["key"]],
     ["zsh_search", searchToolDef, ["query"]],
   ] as const)("%s declares required=%j", (_n, def, required) => {
     expect(def.inputSchema).toMatchObject({ required })
@@ -58,7 +58,7 @@ describe("toolDefs metadata", () => {
   })
 
   test("execute wires corpus through", () => {
-    const d = docsToolDef.execute(corpus, { raw: "echo" }) as DocsResult
+    const d = docsToolDef.execute(corpus, { key: "echo" }) as DocsResult
     expect(d.matches[0]?.category).toBe("builtin")
     expect(d.matches[0]?.mdBody.length).toBeGreaterThan(0)
 

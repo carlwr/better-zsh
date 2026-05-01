@@ -79,49 +79,49 @@ interface Case {
  *  NO_*, %number, history !?str?, glob_flag wrapping, multi-category, metadata-only. */
 const PINNED_CASES: readonly Case[] = [
   // docs
-  { tool: "zsh_docs", name: "auto_cd", input: { raw: "AUTO_CD" } },
-  { tool: "zsh_docs", name: "no_auto_cd", input: { raw: "NO_AUTO_CD" } },
-  { tool: "zsh_docs", name: "notify", input: { raw: "NOTIFY" } },
-  { tool: "zsh_docs", name: "echo", input: { raw: "echo" } },
-  { tool: "zsh_docs", name: "double_bracket", input: { raw: "[[" } },
-  { tool: "zsh_docs", name: "no_notify", input: { raw: "NO_NOTIFY" } },
-  { tool: "zsh_docs", name: "bogus", input: { raw: "not-a-real-token" } },
-  { tool: "zsh_docs", name: "for_multi_match", input: { raw: "for" } },
+  { tool: "zsh_docs", name: "auto_cd", input: { key: "AUTO_CD" } },
+  { tool: "zsh_docs", name: "no_auto_cd", input: { key: "NO_AUTO_CD" } },
+  { tool: "zsh_docs", name: "notify", input: { key: "NOTIFY" } },
+  { tool: "zsh_docs", name: "echo", input: { key: "echo" } },
+  { tool: "zsh_docs", name: "double_bracket", input: { key: "[[" } },
+  { tool: "zsh_docs", name: "no_notify", input: { key: "NO_NOTIFY" } },
+  { tool: "zsh_docs", name: "bogus", input: { key: "not-a-real-token" } },
+  { tool: "zsh_docs", name: "for_multi_match", input: { key: "for" } },
   {
     tool: "zsh_docs",
     name: "job_spec_template_key",
-    input: { raw: "%number", category: "job_spec" },
+    input: { key: "%number", category: "job_spec" },
   },
   {
     tool: "zsh_docs",
     name: "builtin_echo",
-    input: { raw: "echo", category: "builtin" },
+    input: { key: "echo", category: "builtin" },
   },
   {
     tool: "zsh_docs",
     name: "option_autocd",
-    input: { raw: "autocd", category: "option" },
+    input: { key: "autocd", category: "option" },
   },
-  { tool: "zsh_docs", name: "not_an_option", input: { raw: "not-an-option" } },
+  { tool: "zsh_docs", name: "not_an_option", input: { key: "not-an-option" } },
   {
     tool: "zsh_docs",
     name: "history_bang_number",
-    input: { raw: "!42", category: "history" },
+    input: { key: "!42", category: "history" },
   },
   {
     tool: "zsh_docs",
     name: "history_search",
-    input: { raw: "!?zsh", category: "history" },
+    input: { key: "!?zsh", category: "history" },
   },
   {
     tool: "zsh_docs",
     name: "glob_flag_wrapped",
-    input: { raw: "(#i)", category: "glob_flag" },
+    input: { key: "(#i)", category: "glob_flag" },
   },
   {
     tool: "zsh_docs",
     name: "glob_qualifier_extended",
-    input: { raw: "(#q@)", category: "glob_qualifier" },
+    input: { key: "(#q@)", category: "glob_qualifier" },
   },
 
   // search
@@ -260,8 +260,8 @@ describe.runIf(cliFresh)("parity: TS execute() vs zshref batch", () => {
   for (const td of toolDefs) {
     test(`${td.name}: random inputs match (numRuns=${NUM_RUNS})`, async () => {
       await fc.assert(
-        fc.asyncProperty(inputArbFor(td.name, corpus), async raw => {
-          const input = compact(raw)
+        fc.asyncProperty(inputArbFor(td.name, corpus), async sample => {
+          const input = compact(sample)
           const tsOutput = td.execute(corpus, input)
           const rustOutput = await zsh.call(td.name, input)
           validateOutput(td, tsOutput)

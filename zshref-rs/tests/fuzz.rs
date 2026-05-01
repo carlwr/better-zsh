@@ -75,7 +75,7 @@ fn run_json(args: &[&str]) -> Value {
     v
 }
 
-/// A small strategy producing raw tokens with a high docs hit-rate.
+/// A small strategy producing zsh keys with a high docs hit-rate.
 /// Covers the prompt-listed union (options, builtins, reserved words,
 /// redir sigils). Free fuzzing is covered by the smoke tests below.
 fn known_raw() -> impl Strategy<Value = &'static str> {
@@ -118,8 +118,8 @@ proptest! {
 
     // `\PC` = any printable unicode char; `{0,40}` = 0..=40 chars.
     #[test]
-    fn docs_never_crashes(raw in r"\PC{0,40}") {
-        let v = run_json(&["docs", "--raw", &raw]);
+    fn docs_never_crashes(key in r"\PC{0,40}") {
+        let v = run_json(&["docs", "--key", &key]);
         let (_, returned, total) = assert_envelope(&v);
         prop_assert_eq!(returned, total, "docs never truncates");
     }
@@ -140,26 +140,26 @@ proptest! {
 
     // === Stronger invariants ===
 
-    /// docs round-trip: when `docs --category=C --raw=ID` resolves, the
+    /// docs round-trip: when `docs --category=C --key=ID` resolves, the
     /// returned `id` must equal `ID`. Closed-identity round-trips like
     /// `for` against `complex_command` and `reserved_word` confirm direct-
     /// hit precedence (see DESIGN.md §"docs: direct ∥ resolver"). This
     /// is a property-level companion to the exhaustive
     /// `round-trip.test.ts` in tooldef.
     #[test]
-    fn docs_self_roundtrip(raw in known_raw()) {
-        let v = run_json(&["docs", "--raw", raw]);
+    fn docs_self_roundtrip(key in known_raw()) {
+        let v = run_json(&["docs", "--key", key]);
         let (matches, _, _) = assert_envelope(&v);
         for m in matches {
             let cat = m.get("category").and_then(Value::as_str).expect("category");
             let id = m.get("id").and_then(Value::as_str).expect("id");
             // Re-query with `--category` set to the resolved category;
             // direct lookup of the canonical id must round-trip.
-            let r = run_json(&["docs", "--raw", id, "--category", cat]);
+            let r = run_json(&["docs", "--key", id, "--category", cat]);
             let (rm, _, _) = assert_envelope(&r);
             prop_assert!(
                 !rm.is_empty(),
-                "round-trip docs(raw={id}, cat={cat}) returned empty after first hit"
+                "round-trip docs(key={id}, cat={cat}) returned empty after first hit"
             );
             let rid = rm[0].get("id").and_then(Value::as_str);
             prop_assert_eq!(rid, Some(id), "round-trip id mismatch");
@@ -215,8 +215,8 @@ proptest! {
         let name = KNOWN_OPTIONS[idx];
         let negated_name = format!("NO_{name}");
 
-        let bare = run_json(&["docs", "--raw", name, "--category", "option"]);
-        let no = run_json(&["docs", "--raw", &negated_name, "--category", "option"]);
+        let bare = run_json(&["docs", "--key", name, "--category", "option"]);
+        let no = run_json(&["docs", "--key", &negated_name, "--category", "option"]);
 
         let (bm, _, _) = assert_envelope(&bare);
         let (nm, _, _) = assert_envelope(&no);
@@ -249,13 +249,13 @@ proptest! {
     /// same argv must produce identical stdout. Catches nondeterminism
     /// (hash ordering, time-based fields) that shape-only assertions miss.
     #[test]
-    fn docs_is_deterministic(raw in known_raw()) {
-        let a = run_raw(&["docs", "--raw", raw]);
-        let b = run_raw(&["docs", "--raw", raw]);
+    fn docs_is_deterministic(key in known_raw()) {
+        let a = run_raw(&["docs", "--key", key]);
+        let b = run_raw(&["docs", "--key", key]);
         prop_assert!(a.status.success() && b.status.success());
         prop_assert_eq!(
             &a.stdout, &b.stdout,
-            "docs({:?}) stdout differs between runs", raw
+            "docs({:?}) stdout differs between runs", key
         );
     }
 }

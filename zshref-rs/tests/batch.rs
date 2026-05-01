@@ -39,12 +39,12 @@ fn batch(req: &str) -> Value {
 
 #[test]
 fn rejects_null_required_string() {
-    let resp = batch(r#"{"tool":"zsh_docs","input":{"raw":null}}"#);
+    let resp = batch(r#"{"tool":"zsh_docs","input":{"key":null}}"#);
     assert_eq!(resp.get("ok").and_then(Value::as_bool), Some(false));
     assert!(
         resp.get("error")
             .and_then(Value::as_str)
-            .is_some_and(|e| e.contains("`raw` must be a string")),
+            .is_some_and(|e| e.contains("`key` must be a string")),
         "unexpected response: {resp}",
     );
 }

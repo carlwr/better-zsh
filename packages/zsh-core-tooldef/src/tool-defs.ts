@@ -137,7 +137,7 @@ export const toolDefs: readonly ToolDef[] = [
 export const TOOL_SUITE_PREAMBLE: string = `\
 Intent → tool:
 
-  - look up the docs for a raw zsh token → \`zsh_docs\`
+  - look up the docs for a zsh key → \`zsh_docs\`
   - fuzzy discovery by name → \`zsh_search\` (id-only; pair with \`zsh_docs\` for the body)
   - enumerate records in the corpus → \`zsh_list\` (id-only; pair with \`zsh_docs\` for the body)
 `

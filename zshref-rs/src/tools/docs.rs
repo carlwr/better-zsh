@@ -1,4 +1,4 @@
-//! `zsh_docs` — raw token → per-category resolved matches.
+//! `zsh_docs` — zsh key → per-category resolved matches.
 //!
 //! Without `--category`, walks `CLASSIFY_ORDER` and returns one match per
 //! resolving category. Feedback (e.g. `NO_`-stripping → `input-negated`)
@@ -14,21 +14,21 @@ use anyhow::Result;
 use serde_json::{json, Map, Value};
 
 pub fn run(input: &Value, corpus: &Corpus) -> Result<Value> {
-    let raw = str_input(input, "raw");
+    let key = str_input(input, "key");
     let category = input.get("category").and_then(Value::as_str);
 
-    let matches_vec: Vec<Value> = if raw.trim().is_empty() {
+    let matches_vec: Vec<Value> = if key.trim().is_empty() {
         Vec::new()
     } else {
         match category {
-            Some(cat) => resolve_in(corpus, cat, raw)
+            Some(cat) => resolve_in(corpus, cat, key)
                 .map(|h| hit_to_match(&h))
                 .into_iter()
                 .collect(),
             None => CLASSIFY_ORDER
                 .iter()
                 .filter_map(|cat| {
-                    let h = resolve_in(corpus, cat, raw)?;
+                    let h = resolve_in(corpus, cat, key)?;
                     if h.category == "history"
                         && record_sub_kind(h.category, h.rec).as_deref() != Some("event-designator")
                     {

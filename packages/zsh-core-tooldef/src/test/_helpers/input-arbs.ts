@@ -3,7 +3,7 @@
  * are small and stable; a generic Schema-to-arbitrary derivation isn't
  * worth the complexity.
  *
- * `raw`/`query` are biased toward real corpus keys (exercise hit paths)
+ * `key`/`query` are biased toward real corpus keys (exercise hit paths)
  * with a minority of random strings (miss / fuzzy paths). Optional fields
  * are wrapped in `fc.option(..., { nil: undefined })`; pair the output
  * with `compact()` before passing to `execute(corpus, input)` so
@@ -43,10 +43,10 @@ export function inputArbFor(
     case "zsh_docs":
       return fc.record(
         {
-          raw: stringArb,
+          key: stringArb,
           category: fc.option(categoryArb, { nil: undefined }),
         },
-        { requiredKeys: ["raw"] },
+        { requiredKeys: ["key"] },
       ) as fc.Arbitrary<Record<string, unknown>>
     case "zsh_search":
       return fc.record(

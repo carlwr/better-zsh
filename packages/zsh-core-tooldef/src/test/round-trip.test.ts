@@ -2,7 +2,7 @@
  * Round-trip invariant for `zsh_docs`.
  *
  * For every literal corpus key `(cat, key)`, asserts that
- * `docs(corpus, { raw: key, category: cat })` returns a single match
+ * `docs(corpus, { key, category: cat })` returns a single match
  * whose `id` is `key`. Locks in the "direct ∥ resolver, direct preferred"
  * spec at the value level — without direct precedence, template-key
  * categories (job_spec `%number` vs `%string`, history `!n` vs `!42`,
@@ -30,7 +30,7 @@ describe("docs round-trip: every literal corpus key resolves to itself", () => {
   test.each(
     allCases.map(c => [`${c.cat}:${c.key}`, c] as const),
   )("%s", (_label, { cat, key }) => {
-    const r = docs(corpus, { raw: key, category: cat })
+    const r = docs(corpus, { key, category: cat })
     expect(r.matches.length).toBe(1)
     expect(r.matches[0]?.category).toBe(cat)
     expect(r.matches[0]?.id).toBe(key)

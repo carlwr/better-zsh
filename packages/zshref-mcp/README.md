@@ -142,20 +142,20 @@ The server communicates via standard MCP JSON-RPC on stdin/stdout; no protocol f
 
 Three tools, one intent axis each. All three return the same envelope: `{ matches, matchesReturned, matchesTotal }`. Only `zsh_docs` carries the rendered markdown body — pair `zsh_search` / `zsh_list` results with `zsh_docs` for the full doc.
 
-- **`zsh_docs`** — look up the docs for a raw token (handles `NO_*` option negation; returns the rendered `mdBody`).
+- **`zsh_docs`** — look up the docs for a zsh key (handles `NO_*` option negation; returns the rendered `mdBody`).
 - **`zsh_search`** — fuzzy discovery by name (id-only).
 - **`zsh_list`** — enumerate records in the corpus (id-only).
 
 ### `zsh_docs`
 
-Look up a raw zsh token against the bundled reference. With `category` set, the lookup is restricted to that category (0 or 1 matches). With `category` omitted, every category is tried in resolver-walk order — most inputs resolve in 0 or 1 categories, but a few overlap (`for`, `[[`, `function`, `nocorrect`) and return more than one match.
+Look up a zsh key against the bundled reference. With `category` set, the lookup is restricted to that category (0 or 1 matches). With `category` omitted, every category is tried in resolver-walk order — most inputs resolve in 0 or 1 categories, but a few overlap (`for`, `[[`, `function`, `nocorrect`) and return more than one match.
 
 Resolution is corpus-aware: case-insensitive option matching, underscore stripping, redirection group-op + tail decomposition, history event-designators, and the `NO_*` option-negation convention (including the `NOTIFY` / `NO_NOTIFY` edge case). Canonical record ids (e.g. `autocd`) round-trip exactly. Matches reached through a lossy-normalization pathway carry `feedback` — today, an option resolved via `NO_`-stripping carries `feedback: { kind: "input-negated" }`.
 
 **Input**
 
 ```json
-{ "raw": "NO_AUTO_CD" }
+{ "key": "NO_AUTO_CD" }
 ```
 
 **Output** (match)
@@ -197,7 +197,7 @@ Resolution is corpus-aware: case-insensitive option matching, underscore strippi
 
 For options, `id` is the normalized lookup key (lowercase, underscores stripped) while `display` is the human-friendly form. Categories with literal identities (builtins, reserved words, etc.) have `id === display`.
 
-Other example inputs: `"echo"`, `"[["`, `"<<<"`, `"!$"`, `"%1"`, `"nocorrect"`, `{"raw": "for", "category": "reserved_word"}`.
+Other example inputs: `"echo"`, `"[["`, `"<<<"`, `"!$"`, `"%1"`, `"nocorrect"`, `{"key": "for", "category": "reserved_word"}`.
 
 ### `zsh_search`
 
