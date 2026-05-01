@@ -1,10 +1,9 @@
-import {
-  classifyOrder,
-  type DocCategory,
-  type DocCorpus,
-  resolve,
-  ZSH_UPSTREAM,
-} from "@carlwr/zsh-core"
+// MIRRORED-IN: zshref-rs/src/tools/search.rs
+
+import type { DocCorpus } from "@carlwr/zsh-core"
+import { ZSH_UPSTREAM } from "@carlwr/zsh-core/meta"
+import { resolve } from "@carlwr/zsh-core/resolver"
+import { classifyOrder, type DocCategory } from "@carlwr/zsh-core/taxonomy"
 import fuzzysort from "fuzzysort"
 import { makeToolDef, type ToolDef } from "../tool-defs.ts"
 import { type BaseMatch, entries } from "./entries.ts"

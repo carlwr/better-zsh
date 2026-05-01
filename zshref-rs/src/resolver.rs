@@ -1,75 +1,11 @@
-//! Shared record-shape + arg helpers used by every tool module.
-//!
-//! Identity fields (`_id`, `_display`, `_subKind`) are baked into the
-//! per-category JSON at TS build time — no per-category dispatch needed here.
-//! See `augmentWithMarkdown` in `packages/zsh-core/build.ts`.
+//! Per-category resolver dispatch and lossy-resolution feedback.
+//! See DESIGN.md §"Resolver feedback channel".
+//
+// MIRROR-OF: packages/zsh-core/src/docs/resolver.ts
+// MIRROR-OF: packages/zsh-core/src/docs/brands.ts
 
 use crate::corpus::Corpus;
-use serde_json::{json, Map, Value};
-
-pub type Rec = Map<String, Value>;
-
-/// Standard `{ matches, matchesReturned, matchesTotal }` envelope.
-/// `total` is pre-truncation; for non-truncating tools (`docs`) pass `matches.len()`.
-pub fn mk_envelope(matches: Vec<Value>, total: usize) -> Value {
-    let returned = matches.len();
-    json!({
-        "matches": matches,
-        "matchesReturned": returned,
-        "matchesTotal": total,
-    })
-}
-
-/// `{category, id, display, subKind?, score?}` entry for `list`/`search`.
-/// Field insertion order matches the TS adapter (→ byte-equal JSON).
-pub fn mk_entry(
-    category: &str,
-    id: String,
-    display: String,
-    sub_kind: Option<String>,
-    score: Option<f64>,
-) -> Value {
-    let mut obj = Map::new();
-    obj.insert("category".into(), Value::String(category.to_string()));
-    obj.insert("id".into(), Value::String(id));
-    obj.insert("display".into(), Value::String(display));
-    if let Some(sk) = sub_kind {
-        obj.insert("subKind".into(), Value::String(sk));
-    }
-    if let Some(s) = score {
-        obj.insert(
-            "score".into(),
-            Value::Number(serde_json::Number::from_f64(s).expect("score finite")),
-        );
-    }
-    Value::Object(obj)
-}
-
-/// Lookup a record's string field, returning `""` when absent/non-string.
-pub fn str_field<'r>(rec: &'r Rec, key: &str) -> &'r str {
-    rec.get(key).and_then(Value::as_str).unwrap_or("")
-}
-
-/// String input-field accessor: returns the value or `""` when missing.
-pub fn str_input<'a>(input: &'a Value, name: &str) -> &'a str {
-    input.get(name).and_then(Value::as_str).unwrap_or("")
-}
-
-/// Reads the baked `_id` field; falls back to `""` (drift caught by `corpus.rs` tests).
-pub fn record_id(_cat_name: &str, rec: &Rec) -> String {
-    str_field(rec, "_id").to_string()
-}
-
-/// Reads the baked `_display` field; falls back to `""`.
-pub fn record_display(_cat_name: &str, rec: &Rec) -> String {
-    str_field(rec, "_display").to_string()
-}
-
-/// Reads the baked `_subKind` field. `None` for categories where `docSubKind` is undefined.
-pub fn record_sub_kind(_cat_name: &str, rec: &Rec) -> Option<String> {
-    let s = str_field(rec, "_subKind");
-    (!s.is_empty()).then(|| s.to_string())
-}
+use crate::tools::record_fields::{record_display, record_id, str_field, Rec};
 
 /// Return the non-empty remainder after stripping a case-insensitive `no_`
 /// or `no` prefix from `raw`. `None` if `raw` doesn't begin with either.
@@ -118,16 +54,8 @@ pub struct ResolvedHit<'c> {
     pub feedback: Option<ResolverFeedback>,
 }
 
-/// "Direct ∥ resolver, direct preferred" per-category dispatch:
-/// 1. Direct id lookup (trimmed raw vs literal).
-/// 2. On miss, per-category resolver.
-///
-/// Direct precedence is load-bearing for template-key categories
-/// (`job_spec`'s `%number` literal vs `%string`; `history`'s `!n` vs digit template).
-/// See DESIGN.md §"docs: direct ∥ resolver" and `docs.ts`.
-///
-/// Used by `docs` (walks `CLASSIFY_ORDER`) and `search` (resolver tier).
-/// Mirrors the TS resolver table in `resolvers.ts`.
+/// Per-category resolver dispatch. See DESIGN.md §"docs: direct ∥ resolver"
+/// and `lookupRaw` in zsh-core.
 pub fn resolve_in<'c>(corpus: &'c Corpus, cat_name: &str, raw: &str) -> Option<ResolvedHit<'c>> {
     if let Some(h) = direct_lookup(corpus, cat_name, raw) {
         return Some(h);

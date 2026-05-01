@@ -1,10 +1,10 @@
+import { loadCorpus } from "@carlwr/zsh-core"
+import { ZSH_UPSTREAM } from "@carlwr/zsh-core/meta"
 import {
   classifyOrder,
   docCategories,
   docCategoryLabels,
-  loadCorpus,
-  ZSH_UPSTREAM,
-} from "@carlwr/zsh-core"
+} from "@carlwr/zsh-core/taxonomy"
 import { describe, expect, test } from "vitest"
 import {
   BRIEF_MAX_LEN,

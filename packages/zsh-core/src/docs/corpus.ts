@@ -13,7 +13,7 @@ import {
   cachedUnary,
   type Eq,
 } from "@carlwr/typescript-extra"
-import { resolveZshDataDir } from "../data-dir.ts"
+import { resolveZshDataDir } from "../assets/data-dir.ts"
 import type { CorpusYodlFile } from "./source-files.ts"
 import {
   type DocCategory,

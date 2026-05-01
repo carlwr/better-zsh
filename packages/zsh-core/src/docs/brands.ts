@@ -1,3 +1,5 @@
+// MIRRORED-IN: zshref-rs/src/resolver.rs (normalize_option mirrors normalizeOptName)
+
 import type { DocCategory } from "./taxonomy.ts"
 import type { Documented, Observed } from "./types.ts"
 

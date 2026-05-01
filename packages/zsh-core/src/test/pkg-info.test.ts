@@ -11,8 +11,8 @@ import {
   PKG_NAME_JSR,
   PKG_REPO_URL,
   PKG_VERSION,
-} from "../pkg-info.ts"
-import { ZSH_UPSTREAM } from "../zsh-upstream.ts"
+} from "../meta/pkg-info.ts"
+import { ZSH_UPSTREAM } from "../meta/zsh-upstream.ts"
 
 const pkgDir = join(dirname(fileURLToPath(import.meta.url)), "..", "..")
 const readJson = (file: string) =>
@@ -24,7 +24,17 @@ const deno = readJson("deno.json")
 
 // Shared-surface subpaths: must appear in both manifests.
 // `./data/*`, `./schema/*`, `./internal`, `./package.json` are npm-only.
-const SHARED_EXPORTS = [".", "./render", "./exec", "./assets"] as const
+const SHARED_EXPORTS = [
+  ".",
+  "./analysis",
+  "./render",
+  "./exec",
+  "./assets",
+  "./meta",
+  "./resolver",
+  "./taxonomy",
+  "./types",
+] as const
 
 describe("pkg-info constants stay in sync with manifests", () => {
   test("PKG_NAME matches package.json.name", () => {

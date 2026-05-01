@@ -1,25 +1,7 @@
 /**
  * @packageDocumentation
- * Structured zsh reference records parsed from vendored upstream Yodl, plus
- * corpus resolution and small line-local analysis helpers.
+ * Parsed zsh reference corpus.
  */
 
-export * from "./src/analysis/cmd-position.ts"
-export * from "./src/analysis/context.ts"
-export * from "./src/analysis/facts.ts"
-export * from "./src/analysis/setopt-context.ts"
-export * from "./src/comment.ts"
-export * from "./src/docs/corpus.ts"
-export * from "./src/docs/corpus-meta.ts"
-export {
-  type ResolverFeedback,
-  resolve,
-  resolverFeedback,
-  resolverFeedbackKinds,
-} from "./src/docs/resolvers.ts"
-export * from "./src/option-match.ts"
-export { PKG_VERSION } from "./src/pkg-info.ts"
-export * from "./src/quote-state.ts"
-export * from "./src/word.ts"
-export * from "./src/zsh-upstream.ts"
-export * from "./zsh-types.ts"
+export { type DocCorpus, loadCorpus } from "./src/docs/corpus.ts"
+export { RECORDS_TOTAL } from "./src/docs/corpus-meta.ts"

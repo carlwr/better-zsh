@@ -1,12 +1,7 @@
-import {
-  commentStart,
-  escRe,
-  funcDeclAtLine,
-  WORD,
-  WORD_EXACT,
-} from "@carlwr/zsh-core"
+import { commentStart, funcDeclAtLine } from "@carlwr/zsh-core/analysis"
 import * as vscode from "vscode"
-import { docCache } from "./cache"
+import { docCache } from "../cache"
+import { escRe, WORD, WORD_EXACT } from "./words"
 
 const COMMENT = /^\s*#(.*)$/
 
@@ -68,7 +63,7 @@ export function hasFunc(doc: vscode.TextDocument, name: string) {
   return getData(doc).names.has(name)
 }
 
-export { commentStart } from "@carlwr/zsh-core"
+export { commentStart } from "@carlwr/zsh-core/analysis"
 
 function buildData(doc: vscode.TextDocument): FuncData {
   const docs = new Map<string, string>()

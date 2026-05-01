@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest"
-import { extractSourcePaths } from "../doc-link"
+import { extractSourcePaths } from "../editor/doc-link"
 
 describe("extractSourcePaths", () => {
   test.each([

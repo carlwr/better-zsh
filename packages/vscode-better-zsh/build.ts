@@ -10,7 +10,16 @@ import { outDir } from "./src/build/paths"
     sourcemap: true,
     clean: true,
     external: ["vscode"],
-    noExternal: ["@carlwr/zsh-core", "@carlwr/zsh-core-tooldef"],
+    noExternal: [
+      "@carlwr/zsh-core",
+      "@carlwr/zsh-core/analysis",
+      "@carlwr/zsh-core/meta",
+      "@carlwr/zsh-core/render",
+      "@carlwr/zsh-core/resolver",
+      "@carlwr/zsh-core/taxonomy",
+      "@carlwr/zsh-core/types",
+      "@carlwr/zsh-core-tooldef",
+    ],
     watch: process.argv.includes("--watch"),
     esbuildOptions(options) {
       options.conditions = ["require", "node"]

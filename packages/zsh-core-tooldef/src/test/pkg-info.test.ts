@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { describe, expect, test } from "vitest"
-import { PKG_NAME, PKG_REPO_URL, PKG_VERSION } from "../pkg-info.ts"
+import { PKG_NAME, PKG_REPO_URL, PKG_VERSION } from "../meta/pkg-info.ts"
 
 const pkgDir = join(dirname(fileURLToPath(import.meta.url)), "..", "..")
 const readJson = (file: string) =>

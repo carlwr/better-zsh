@@ -1,23 +1,25 @@
-import type {
-  DocCategory,
-  DocCorpus,
-  DocPieceId,
-  Documented,
-  LineFact,
-  OptFlag,
-  OptFlagAlias,
-  ProcessSubstFact,
-  RedirFact,
-  ZshOption,
-} from "@carlwr/zsh-core"
+import type { DocCorpus } from "@carlwr/zsh-core"
 import {
   cmdHeadFactsOnLine,
-  mkOptFlag,
-  mkPieceId,
-  resolve,
+  type LineFact,
+  type ProcessSubstFact,
+  type RedirFact,
   syntacticContext,
-} from "@carlwr/zsh-core"
+} from "@carlwr/zsh-core/analysis"
 import { renderDoc } from "@carlwr/zsh-core/render"
+import { resolve } from "@carlwr/zsh-core/resolver"
+import {
+  type DocCategory,
+  type DocPieceId,
+  mkPieceId,
+} from "@carlwr/zsh-core/taxonomy"
+import {
+  type Documented,
+  type OptFlag,
+  type OptFlagAlias,
+  type ZshOption,
+  mkOptFlag,
+} from "@carlwr/zsh-core/types"
 import * as vscode from "vscode"
 import { activeWordRangeAt, commentStart, funcDocs } from "./funcs"
 

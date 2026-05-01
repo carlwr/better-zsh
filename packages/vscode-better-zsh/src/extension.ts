@@ -1,26 +1,30 @@
-import { loadCorpus, PKG_VERSION, ZSH_UPSTREAM } from "@carlwr/zsh-core"
+import { loadCorpus } from "@carlwr/zsh-core"
+import { PKG_VERSION, ZSH_UPSTREAM } from "@carlwr/zsh-core/meta"
 import * as vscode from "vscode"
 import { evictDocCaches } from "./cache"
-import { CompletionProvider } from "./completions"
-import { DefinitionProvider } from "./definition"
-import { setupDiagnostics } from "./diagnostics"
-import { DocLinkProvider } from "./doc-link"
-import { HighlightProvider } from "./highlight"
-import { HoverProvider } from "./hover"
+import { CompletionProvider } from "./editor/completions"
+import { DefinitionProvider } from "./editor/definition"
+import { setupDiagnostics } from "./editor/diagnostics"
+import { DocLinkProvider } from "./editor/doc-link"
+import { HighlightProvider } from "./editor/highlight"
+import { HoverProvider } from "./editor/hover"
+import { ReferenceProvider } from "./editor/references"
+import { RenameProvider } from "./editor/rename"
+import {
+  SEMANTIC_LEGEND,
+  SemanticTokensProvider,
+} from "./editor/semantic-tokens"
+import { SymbolProvider } from "./editor/symbols"
+import { WorkspaceSymbolProvider } from "./editor/workspace-symbols"
 import {
   BETTER_ZSH_TEST_GET_LOGS,
   BETTER_ZSH_TEST_GET_SEMANTIC_TOKENS,
   ZSH_LANG_ID,
 } from "./ids"
+import { registerZshRefTools } from "./lm-adapter/zsh-ref-tools"
 import { initLog, log, recentLogs } from "./log"
-import { ReferenceProvider } from "./references"
-import { RenameProvider } from "./rename"
-import { SEMANTIC_LEGEND, SemanticTokensProvider } from "./semantic-tokens"
 import { readZshPathConfig, ZSH_PATH_KEY } from "./settings"
-import { SymbolProvider } from "./symbols"
-import { WorkspaceSymbolProvider } from "./workspace-symbols"
 import { configureZsh } from "./zsh"
-import { registerZshRefTools } from "./zsh-ref-tools"
 
 export async function activate(ctx: vscode.ExtensionContext) {
   ctx.subscriptions.push(initLog())

@@ -18,7 +18,7 @@ vi.mock("vscode", () => ({
   },
 }))
 
-import { commentStart, funcDecls, funcDocs, wordMatches } from "../funcs"
+import { commentStart, funcDecls, funcDocs, wordMatches } from "../editor/funcs"
 import { lineDoc } from "./test-util"
 
 suite("funcs", () => {

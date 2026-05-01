@@ -1,11 +1,12 @@
 //! Tool-impl dispatch. Modules port the corresponding TS tools.
 
 pub mod docs;
+pub mod envelope;
 pub mod info;
 pub mod list;
+pub mod record_fields;
 pub mod schema;
 pub mod search;
-pub mod shared;
 
 use crate::corpus::{Corpus, ToolDef};
 use anyhow::{anyhow, Result};

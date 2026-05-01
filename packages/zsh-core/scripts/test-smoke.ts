@@ -5,10 +5,46 @@ import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 import Ajv, { type AnySchema } from "ajv"
 import { jsonFiles, schemaFile } from "../src/docs/json-artifacts.ts"
+import { corpusYodlFiles } from "../src/docs/source-files.ts"
 
 const pkgDir = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const pnpm = process.platform === "win32" ? "pnpm.cmd" : "pnpm"
 const tmp = mkdtempSync(join(tmpdir(), "better-zsh-zsh-core-pack-"))
+
+const publicEntries = [
+  "analysis",
+  "assets",
+  "exec",
+  "index",
+  "meta",
+  "render",
+  "resolver",
+  "taxonomy",
+  "types",
+] as const
+const vendoredDocs = [
+  "SOURCE.md",
+  "THIRD_PARTY_NOTICES.md",
+  ...corpusYodlFiles,
+] as const
+
+function bundleFiles(entry: string): readonly string[] {
+  return [
+    `dist/${entry}.d.ts`,
+    `dist/${entry}.js`,
+    `dist/${entry}.js.map`,
+    `dist/${entry}.mjs`,
+    `dist/${entry}.mjs.map`,
+  ]
+}
+
+function apiFile(entry: string): string {
+  return `dist/api/${entry}.api.json`
+}
+
+function apiTypesFile(entry: string): string {
+  return `dist/types/${entry}.d.ts`
+}
 
 function readJson<T>(path: string): T {
   return JSON.parse(readFileSync(path, "utf8")) as T
@@ -50,52 +86,21 @@ try {
     "THIRD_PARTY_NOTICES.md",
     "package.json",
     "deno.json",
-    "dist/assets.d.ts",
-    "dist/assets.js",
-    "dist/assets.js.map",
-    "dist/assets.mjs",
-    "dist/assets.mjs.map",
-    "dist/api/assets.api.json",
-    "dist/api/exec.api.json",
-    "dist/api/index.api.json",
-    "dist/api/render.api.json",
-    "dist/exec.d.ts",
-    "dist/exec.js",
-    "dist/exec.js.map",
-    "dist/exec.mjs",
-    "dist/exec.mjs.map",
-    "dist/index.js",
-    "dist/index.js.map",
-    "dist/index.mjs",
-    "dist/index.mjs.map",
+    ...publicEntries.flatMap(bundleFiles),
+    ...publicEntries.map(apiFile),
     ...jsonFiles.map(file => `dist/json/${file}`),
     ...jsonFiles.map(file => `dist/schema/${schemaFile(file)}`),
-    "dist/render.d.ts",
-    "dist/render.js",
-    "dist/render.js.map",
-    "dist/render.mjs",
-    "dist/render.mjs.map",
-    "dist/types/assets.d.ts",
-    "dist/types/exec.d.ts",
-    "dist/types/index.d.ts",
-    "dist/types/render.d.ts",
-    "dist/data/zsh-docs/SOURCE.md",
-    "dist/data/zsh-docs/THIRD_PARTY_NOTICES.md",
-    "dist/data/zsh-docs/builtins.yo",
-    "dist/data/zsh-docs/cond.yo",
-    "dist/data/zsh-docs/expn.yo",
-    "dist/data/zsh-docs/grammar.yo",
-    "dist/data/zsh-docs/options.yo",
-    "dist/data/zsh-docs/params.yo",
-    "dist/data/zsh-docs/prompt.yo",
-    "dist/data/zsh-docs/redirect.yo",
-    "dist/data/zsh-docs/zle.yo",
+    ...publicEntries.map(apiTypesFile),
+    ...vendoredDocs.map(file => `dist/data/zsh-docs/${file}`),
   ]
 
   const forbidden = [
     [/^src\//, "source file"],
     [/^scripts\//, "script file"],
-    [/^(?:assets|build|index)\.ts$/, "top-level TypeScript source"],
+    [
+      /^(?:analysis|assets|build|exec|index|meta|render|resolver|taxonomy|types)\.ts$/,
+      "top-level TypeScript source",
+    ],
     [/\.test\./, "test artifact"],
     [/^dist\/docs\//, "docs-site artifact"],
     [/^node_modules\//, "node_modules content"],

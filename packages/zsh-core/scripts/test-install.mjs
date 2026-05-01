@@ -6,12 +6,12 @@ import { fileURLToPath } from "node:url"
 
 /**
  * End-to-end install smoke: pack zsh-core, npm-install the tarball into a
- * fresh temp dir, and prove a consumer can import from both entrypoints
- * (`.` and `./render`), load the corpus, resolve an option, and render
- * markdown. Catches the class of bug where `exports` declares a subpath
- * that doesn't actually resolve — which `test:smoke` only partially
- * covers (it asserts files are present in the tarball, not that `node`
- * successfully resolves them).
+ * fresh temp dir, and prove a consumer can import the root plus several
+ * focused subpaths, load the corpus, resolve an option, and render markdown.
+ * Catches the class of bug where `exports` declares a subpath that doesn't
+ * actually resolve — which `test:smoke` only partially covers (it asserts
+ * files are present in the tarball, not that `node` successfully resolves
+ * them).
  *
  * Temp dirs live under `os.tmpdir()` — outside the workspace — so npm's
  * upward node_modules walk cannot find the repo's install.
@@ -56,11 +56,15 @@ try {
     stdio: ["ignore", "ignore", "inherit"],
   })
 
-  // Driver: use both entrypoints (`.` and `./render`), exercise the happy
-  // path end-to-end, print a marker on success.
+  // Driver: touch the root and representative focused subpaths, exercise the
+  // happy path end-to-end, print a marker on success.
   const driver = `
-import { loadCorpus, resolve } from "@carlwr/zsh-core"
+import { loadCorpus } from "@carlwr/zsh-core"
+import { commentStart } from "@carlwr/zsh-core/analysis"
+import { ZSH_UPSTREAM } from "@carlwr/zsh-core/meta"
 import { renderDoc } from "@carlwr/zsh-core/render"
+import { resolve } from "@carlwr/zsh-core/resolver"
+import { mkObserved } from "@carlwr/zsh-core/types"
 
 const corpus = loadCorpus()
 const piece = resolve(corpus, "option", "AUTO_CD")
@@ -73,6 +77,15 @@ if (typeof md !== "string" || md.length === 0) {
 }
 if (!/AUTO[_ ]?CD/i.test(md)) {
   throw new Error("renderDoc output missing expected AUTO_CD reference")
+}
+if (commentStart('echo "#" # tail') !== 9) {
+  throw new Error("commentStart returned unexpected index")
+}
+if (mkObserved("option", "AUTO_CD") !== "autocd") {
+  throw new Error("mkObserved did not normalize AUTO_CD")
+}
+if (!/^zsh-/.test(ZSH_UPSTREAM.tag)) {
+  throw new Error("ZSH_UPSTREAM tag missing expected prefix")
 }
 process.stdout.write("ok")
 `

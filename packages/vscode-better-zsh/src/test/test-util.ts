@@ -1,5 +1,5 @@
 import type { DocCorpus } from "@carlwr/zsh-core"
-import { docCategories } from "@carlwr/zsh-core"
+import { docCategories } from "@carlwr/zsh-core/taxonomy"
 
 const WORD = /[\w-]/
 

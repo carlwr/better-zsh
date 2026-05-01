@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs"
 import { dirname, isAbsolute, join } from "node:path"
-import { commentStart } from "@carlwr/zsh-core"
+import { commentStart } from "@carlwr/zsh-core/analysis"
 import * as vscode from "vscode"
 
 // Matches: source <path> or . <path> (at command position)

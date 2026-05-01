@@ -12,7 +12,8 @@
  * Synthesized-input property tests for resolver fallbacks are future work.
  */
 
-import { type DocCategory, docCategories, loadCorpus } from "@carlwr/zsh-core"
+import { loadCorpus } from "@carlwr/zsh-core"
+import { type DocCategory, docCategories } from "@carlwr/zsh-core/taxonomy"
 import { describe, expect, test } from "vitest"
 import { docs } from "../../index.ts"
 

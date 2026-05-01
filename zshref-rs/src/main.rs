@@ -9,6 +9,7 @@ mod cli;
 mod corpus;
 mod fuzzy;
 mod output;
+mod resolver;
 mod tools;
 
 use anyhow::Result;

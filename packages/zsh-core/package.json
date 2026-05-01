@@ -25,11 +25,17 @@
       "require": "./dist/index.js",
       "default": "./dist/index.mjs"
     },
-    "./render": {
-      "types": "./dist/types/render.d.ts",
-      "import": "./dist/render.mjs",
-      "require": "./dist/render.js",
-      "default": "./dist/render.mjs"
+    "./analysis": {
+      "types": "./dist/types/analysis.d.ts",
+      "import": "./dist/analysis.mjs",
+      "require": "./dist/analysis.js",
+      "default": "./dist/analysis.mjs"
+    },
+    "./assets": {
+      "types": "./dist/types/assets.d.ts",
+      "import": "./dist/assets.mjs",
+      "require": "./dist/assets.js",
+      "default": "./dist/assets.mjs"
     },
     "./exec": {
       "types": "./dist/types/exec.d.ts",
@@ -37,11 +43,35 @@
       "require": "./dist/exec.js",
       "default": "./dist/exec.mjs"
     },
-    "./assets": {
-      "types": "./dist/types/assets.d.ts",
-      "import": "./dist/assets.mjs",
-      "require": "./dist/assets.js",
-      "default": "./dist/assets.mjs"
+    "./meta": {
+      "types": "./dist/types/meta.d.ts",
+      "import": "./dist/meta.mjs",
+      "require": "./dist/meta.js",
+      "default": "./dist/meta.mjs"
+    },
+    "./render": {
+      "types": "./dist/types/render.d.ts",
+      "import": "./dist/render.mjs",
+      "require": "./dist/render.js",
+      "default": "./dist/render.mjs"
+    },
+    "./resolver": {
+      "types": "./dist/types/resolver.d.ts",
+      "import": "./dist/resolver.mjs",
+      "require": "./dist/resolver.js",
+      "default": "./dist/resolver.mjs"
+    },
+    "./taxonomy": {
+      "types": "./dist/types/taxonomy.d.ts",
+      "import": "./dist/taxonomy.mjs",
+      "require": "./dist/taxonomy.js",
+      "default": "./dist/taxonomy.mjs"
+    },
+    "./types": {
+      "types": "./dist/types/types.d.ts",
+      "import": "./dist/types.mjs",
+      "require": "./dist/types.js",
+      "default": "./dist/types.mjs"
     },
     "./data/index.json": "./dist/json/index.json",
     "./data/options.json": "./dist/json/options.json",
@@ -89,12 +119,6 @@
     "./schema/job-specs.schema.json": "./dist/schema/job-specs.schema.json",
     "./schema/arith-ops.schema.json": "./dist/schema/arith-ops.schema.json",
     "./schema/special-functions.schema.json": "./dist/schema/special-functions.schema.json",
-    "./internal": {
-      "types": "./dist/internal.d.ts",
-      "import": "./dist/internal.mjs",
-      "require": "./dist/internal.js",
-      "default": "./dist/internal.mjs"
-    },
     "./package.json": "./package.json"
   },
   "scripts": {
@@ -107,8 +131,8 @@
     "jsrREGISTRY:dry": "pnpm dlx jsr publish --dry-run --allow-dirty",
     "jsrREGISTRY:check": "deno publish --dry-run --allow-dirty",
     "typecheck": "tsc --noEmit",
-    "format": "biome check --error-on-warnings --write assets.ts build.ts deno.json exec.ts index.ts internal.ts render.ts scripts src tsconfig.build.json tsconfig.json typedoc.json vitest.config.ts package.json",
-    "lint": "biome check --error-on-warnings assets.ts build.ts deno.json exec.ts index.ts internal.ts render.ts scripts src tsconfig.build.json tsconfig.json typedoc.json vitest.config.ts package.json",
+    "format": "biome check --error-on-warnings --write analysis.ts assets.ts build.ts deno.json exec.ts index.ts meta.ts render.ts resolver.ts taxonomy.ts types.ts scripts src tsconfig.build.json tsconfig.json typedoc.json vitest.config.ts package.json",
+    "lint": "biome check --error-on-warnings analysis.ts assets.ts build.ts deno.json exec.ts index.ts meta.ts render.ts resolver.ts taxonomy.ts types.ts scripts src tsconfig.build.json tsconfig.json typedoc.json vitest.config.ts package.json",
     "check": "pnpm typecheck && pnpm lint",
     "test": "vitest run",
     "test:smoke": "pnpm build && tsx scripts/test-smoke.ts",

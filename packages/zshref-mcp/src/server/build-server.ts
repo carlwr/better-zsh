@@ -5,13 +5,13 @@ import {
   type ToolInputSchema,
   toolDefs,
 } from "@carlwr/zsh-core-tooldef"
-import { Server } from "@modelcontextprotocol/sdk/server/index.js"
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
 import {
   type CallToolRequest,
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js"
-import { MCP_BIN_NAME, PKG_VERSION } from "../pkg-info.ts"
+import { MCP_BIN_NAME, PKG_VERSION } from "../meta/pkg-info.ts"
 
 export interface BuildServerOpts {
   readonly corpus: DocCorpus
@@ -20,17 +20,17 @@ export interface BuildServerOpts {
 }
 
 /**
- * Construct an MCP `Server` with the zsh-ref tool set registered.
+ * Construct an MCP `McpServer` with the zsh-ref tool set registered.
  *
  * The returned server is not yet connected to any transport — callers pick
  * stdio (typical), in-memory (tests), or other.
  */
-export function buildServer(opts: BuildServerOpts): Server {
+export function buildServer(opts: BuildServerOpts): McpServer {
   // `instructions` is surfaced at handshake; MCP clients typically inject
   // it as system context for the LLM. Shared across adapters; see the
   // drift warning on `TOOL_SUITE_PREAMBLE` in
   // `@carlwr/zsh-core-tooldef/src/tool-defs.ts`.
-  const server = new Server(
+  const mcp = new McpServer(
     {
       name: opts.name ?? MCP_BIN_NAME,
       version: opts.version ?? PKG_VERSION,
@@ -40,6 +40,7 @@ export function buildServer(opts: BuildServerOpts): Server {
       instructions: TOOL_SUITE_PREAMBLE,
     },
   )
+  const { server } = mcp
 
   const defByName = new Map<string, ToolDef>(
     toolDefs.map(def => [def.name, def]),
@@ -77,5 +78,5 @@ export function buildServer(opts: BuildServerOpts): Server {
     }
   })
 
-  return server
+  return mcp
 }

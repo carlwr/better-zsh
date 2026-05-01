@@ -18,7 +18,7 @@ vi.mock("vscode", () => ({
   },
 }))
 
-import { funcDocs as buildFuncDocs } from "../funcs"
+import { funcDocs as buildFuncDocs } from "../editor/funcs"
 import { lineDoc } from "./test-util"
 
 const docs = (text: string) => buildFuncDocs(lineDoc(text, "hover"))

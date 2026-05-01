@@ -9,7 +9,8 @@
  */
 
 import process from "node:process"
-import { loadCorpus, ZSH_UPSTREAM } from "@carlwr/zsh-core"
+import { loadCorpus } from "@carlwr/zsh-core"
+import { ZSH_UPSTREAM } from "@carlwr/zsh-core/meta"
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { decide, helpText, type PkgIdentity, ttyHintText } from "./src/cli.ts"
 import {
@@ -17,7 +18,7 @@ import {
   PKG_NAME,
   PKG_REPO_URL,
   PKG_VERSION,
-} from "./src/pkg-info.ts"
+} from "./src/meta/pkg-info.ts"
 import { buildServer } from "./src/server/build-server.ts"
 
 const pkgId: PkgIdentity = {

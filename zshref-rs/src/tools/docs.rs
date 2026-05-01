@@ -3,11 +3,13 @@
 //! Without `--category`, walks `CLASSIFY_ORDER` and returns one match per
 //! resolving category. Feedback (e.g. `NO_`-stripping → `input-negated`)
 //! is forwarded from the per-category resolver.
+//
+// MIRROR-OF: packages/zsh-core-tooldef/src/tools/docs.ts
 
 use crate::corpus::{Corpus, CLASSIFY_ORDER};
-use crate::tools::shared::{
-    mk_envelope, record_sub_kind, resolve_in, str_field, str_input, ResolvedHit,
-};
+use crate::resolver::{resolve_in, ResolvedHit};
+use crate::tools::envelope::mk_envelope;
+use crate::tools::record_fields::{record_sub_kind, str_field, str_input};
 use anyhow::Result;
 use serde_json::{json, Map, Value};
 

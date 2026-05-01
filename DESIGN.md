@@ -233,7 +233,7 @@ Per-category renderers are internal; public entry is `renderDoc`. The JSON expor
 
 `@carlwr/zsh-core-tooldef` holds pure `(DocCorpus, input) → output` implementations plus `ToolDef` metadata. MCP, CLI, and VS Code LM adapters all walk `toolDefs` or exported JSON — one place for names, descriptions, schemas, and drift tests.
 
-The subsections below use MCP as the main example; the same composition rules apply to other adapters.
+The library keeps `@carlwr/zsh-core` as a tiny corpus surface and exposes focused entrypoints such as `@carlwr/zsh-core/types`, `@carlwr/zsh-core/analysis`, `@carlwr/zsh-core/resolver`, and `@carlwr/zsh-core/taxonomy`. Tooldef and editor code import those subpaths so dependency arrows stay visible. AGENTS.md summarizes the split.
 
 ## Output schemas (tooldef-owned)
 
@@ -243,9 +243,11 @@ Shared fragments use `$defs` / `$ref`; a small builder handles per-tool variatio
 
 Per MCP spec (SDK 1.29+), tools register `outputSchema`; responses include `structuredContent` for schema-aware clients while legacy clients still get JSON in `content[0].text`.
 
-## MCP as a consumer
+## Adapters of the shared tool surface
 
-`@carlwr/zshref-mcp` exposes tooldef as MCP tools. The A+B→C principle applies outside the editor too: server code composes `resolve`, `renderDoc`, `loadCorpus`, `docCategories`, plus additive exports (`docDisplay`, `classifyOrder`, `docCategoryLabels`, `resolverFeedback`) — no separate zsh-core "query API" was required.
+Three adapters expose the same `toolDefs` through different transports — MCP (`packages/zshref-mcp/src/server/build-server.ts`), VS Code LM (`packages/vscode-better-zsh/src/lm-adapter/zsh-ref-tools.ts`), Rust CLI (`zshref-rs/src/cli.rs` + `batch.rs`). Adapters walk `toolDefs` and call `def.execute(corpus, input)`; nothing else.
+
+**Thin-adapter lock** — Each TS adapter has an import-whitelist test that fails if it imports anything beyond the corpus loader / types and `toolDefs`. Drift toward editor-feature primitives (`resolve`, `renderDoc`, analysis) breaks the test, not the human reviewer's attention.
 
 **Package boundaries** — MCP does not depend on `vscode`; LM registration lives in the extension. One extension test locks `contributes.languageModelTools` to `toolDefs` (names + `inputSchema`).
 
@@ -253,15 +255,15 @@ Per MCP spec (SDK 1.29+), tools register `outputSchema`; responses include `stru
 
 **Tool surface** — Split by intent (lookup-with-markdown vs fuzzy discovery vs enumeration), not one mega-tool with a `kind` enum and not one tool per category. `zsh_docs` unifies former classify/lookup/describe-style flows; `zsh_search` vs `zsh_list` stay separate so "search with no query" is not a silent footgun. Uniform output envelope `{ matches, matchesReturned, matchesTotal }` keeps adapters simple.
 
-## docs: direct lookup vs resolver (never both)
+## `lookupRaw`: direct ∥ resolver, direct preferred
 
-Per-category lookup: try `corpus[cat].get(trim(raw))` first; on miss, fall back to the per-category resolver. **Do not** run both paths for the same query.
+zsh-core exports `lookupRaw(corpus, cat, raw)`: try `corpus[cat].get(trim(raw))` first; on miss, fall back to `resolve()`. **Do not** run both paths for the same query, and **do not** re-implement the rule in consumers.
 
-Load-bearing for template-key categories. Example: `job_spec` has literal keys `%number`, `%string`, …; the resolver maps `%5` → `%number`. If `%number` went through the resolver first, shape inspection could return the wrong template — same risk for `history` (`!n` vs `!42`), `param_expn`, `special_function` (`TRAPZERR` vs `TRAPNAL`). Non-template categories typically miss direct lookup then resolve (`AUTO_CD` vs `autocd`).
+Load-bearing for template-key categories: `job_spec`'s literal `%number` vs the resolver's `%5 → %number` mapping; same risk for `history` (`!n` vs `!42`), `param_expn`, `special_function` (`TRAPZERR` vs `TRAPNAL`). Non-template categories miss direct lookup then resolve (`AUTO_CD` → `autocd`).
 
-The round-trip invariant test requires: for every literal corpus key `(cat, key)`, `docs(corpus, { raw: key, category: cat })` yields a single match with `id == key`.
+The round-trip invariant test asserts that for every literal corpus key `(cat, key)`, `docs(corpus, { raw: key, category: cat })` yields a single match with `id == key`.
 
-Implementation mirrors the tooldef `docs` implementation and `zshref-rs`’s `resolve_in` (see their file-level comments).
+Mirrored on the Rust side as `resolve_in` in `zshref-rs/src/resolver.rs`.
 
 ## Tie-break in docs
 

@@ -100,7 +100,7 @@ rg "^export" --type ts packages/zsh-core/src/docs/yodl/
 
 **Tool surface scope fence:** a test in `packages/zsh-core-tooldef/src/test/` asserts that `src/tools/` does not import `child_process`, network APIs, `node:fs`, `vscode`, or read `process.env`. The "no execution, no environment access" promise is a product feature advertised by the MCP and CLI package descriptions. Adding a tool that legitimately needs these requires loosening the fence deliberately.
 
-**zsh-core static entrypoint fence:** a test in `packages/zsh-core/src/test/` walks the import graph from the `.`, `./render`, and `./assets` entrypoints and rejects reached files that import execution/network/env APIs. `./exec` is excluded (exposes a `ZshRunner` injection type). Prophylactic — keeps the static-reference consumers structurally execution-free even when zsh-core gains new internal helpers.
+**zsh-core static entrypoint fence:** a test in `packages/zsh-core/src/test/` walks the import graph from the static entrypoints (`.`, `./analysis`, `./types`, `./meta`, `./render`, `./assets`, `./resolver`, `./taxonomy`) and rejects reached files that import execution/network/env APIs. `./exec` is excluded (exposes a `ZshRunner` injection type). Prophylactic — keeps the static-reference consumers structurally execution-free even when zsh-core gains new internal helpers.
 
 ---
 

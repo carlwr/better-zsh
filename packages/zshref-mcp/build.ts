@@ -24,6 +24,7 @@ const distDir = join(pkgDir, "dist")
     external: [
       "@modelcontextprotocol/sdk",
       "@carlwr/zsh-core",
+      "@carlwr/zsh-core/meta",
       "@carlwr/zsh-core/render",
       "@carlwr/zsh-core-tooldef",
     ],

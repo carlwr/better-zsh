@@ -74,6 +74,6 @@ There is a complementary static-entrypoint fence in `@carlwr/zsh-core` to keep t
 
 ## Release checklist
 
-- Bump `version` in `package.json`, `deno.json`, and `PKG_VERSION` in `src/pkg-info.ts`; all three must agree.
+- Bump `version` in `package.json`, `deno.json`, and `PKG_VERSION` in `src/meta/pkg-info.ts`; all three must agree.
 - Move `engines.node` and the CI workflow's `node-version` together.
 - Verify the built bin locally; `node dist/server.mjs` should accept a `tools/list` JSON-RPC frame on stdin.

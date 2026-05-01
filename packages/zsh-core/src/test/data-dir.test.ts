@@ -6,7 +6,7 @@ import {
   resolveZshDataDir,
   runtimeZshDataDir,
   vendoredZshDocFiles,
-} from "../data-dir"
+} from "../assets/data-dir"
 import { withTmpDir } from "./tmp-dir"
 
 describe("resolveZshDataDir", () => {

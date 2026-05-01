@@ -7,7 +7,7 @@ import {
   PKG_NAME,
   PKG_REPO_URL,
   PKG_VERSION,
-} from "../pkg-info.ts"
+} from "../meta/pkg-info.ts"
 
 const pkgDir = join(dirname(fileURLToPath(import.meta.url)), "..", "..")
 const readJson = (file: string) =>

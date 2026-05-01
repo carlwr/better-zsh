@@ -24,7 +24,7 @@ vi.mock("vscode", () => {
 
 import * as vscodeMock from "vscode"
 import { buildLmTools } from "../build/lm-tools-manifest"
-import { registerZshRefTools } from "../zsh-ref-tools"
+import { registerZshRefTools } from "../lm-adapter/zsh-ref-tools"
 
 function readManifestTools(): readonly unknown[] {
   const pkg = JSON.parse(

@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "node:fs"
 import { join } from "node:path"
 import { describe, expect, test } from "vitest"
-import { resolveZshDataDir, vendoredZshDocFiles } from "../data-dir"
+import { resolveZshDataDir, vendoredZshDocFiles } from "../assets/data-dir"
 import { loadCorpus } from "../docs/corpus"
 import { corpusYodlFiles } from "../docs/source-files"
 import { mkDocumented_ } from "./id-fns"

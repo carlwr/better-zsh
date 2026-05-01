@@ -41,9 +41,9 @@ vi.mock("../zsh", () => ({
 }))
 
 import type { DocCorpus } from "@carlwr/zsh-core"
-import { optSections } from "@carlwr/zsh-core"
-import { mkDocumented } from "@carlwr/zsh-core/internal"
-import { CompletionProvider } from "../completions"
+import { mkDocumented } from "@carlwr/zsh-core/types"
+import { optSections } from "@carlwr/zsh-core/types"
+import { CompletionProvider } from "../editor/completions"
 import { emptyCorpus, wordDoc } from "./test-util"
 
 suite("CompletionProvider", () => {

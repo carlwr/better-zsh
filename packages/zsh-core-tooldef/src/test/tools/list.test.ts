@@ -1,4 +1,5 @@
-import { docCategories, loadCorpus, RECORDS_TOTAL } from "@carlwr/zsh-core"
+import { loadCorpus, RECORDS_TOTAL } from "@carlwr/zsh-core"
+import { docCategories } from "@carlwr/zsh-core/taxonomy"
 import { describe, expect, test } from "vitest"
 import { DEFAULT_LIMIT, list, MAX_LIMIT } from "../../../index.ts"
 

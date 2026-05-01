@@ -1,4 +1,4 @@
-import { commentStart } from "../comment.ts"
+import { commentStart } from "./comment.ts"
 
 /** Minimal line abstraction for line-based analysis (compatible with VS Code TextDocument). */
 export interface DocLine {

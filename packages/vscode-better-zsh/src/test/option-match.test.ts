@@ -1,9 +1,9 @@
 import * as assert from "node:assert"
-import { matchOptions } from "../option-match"
-import { mkDocumented_ } from "./id-fns"
+import { mkDocumented } from "@carlwr/zsh-core/types"
+import { matchOptions } from "../editor/option-match"
 
 const opts = ["aliases", "errexit", "errreturn", "extendedglob", "notify"].map(
-  mkDocumented_("option"),
+  raw => mkDocumented("option", raw),
 )
 
 function labels(typed: string) {
@@ -11,16 +11,18 @@ function labels(typed: string) {
 }
 
 suite("matchOptions", () => {
-  test.each([
+  for (const [typed, want] of [
     ["er", ["errexit", "errreturn"]],
     ["err_ret", ["errreturn"]],
     ["ERR_RET", ["errreturn"]],
     ["no_er", ["no_errexit", "no_errreturn"]],
     ["noer", ["no_errexit", "no_errreturn"]],
     ["noti", ["notify"]],
-  ] as const)("%s", (typed, want) => {
-    assert.deepStrictEqual(labels(typed), want)
-  })
+  ] as const) {
+    test(typed, () => {
+      assert.deepStrictEqual(labels(typed), want)
+    })
+  }
 
   test("no bare options leak when typing negation prefix", () => {
     const result = matchOptions(opts, "no_er")

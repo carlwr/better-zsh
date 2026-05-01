@@ -8,15 +8,12 @@ Library-first: the VS Code extension, MCP server, and Rust CLI in the same monor
 
 ## What you get
 
-- **`DocCorpus`** — typed, category-keyed maps of parsed doc records. One map per `DocCategory`.
-- **`DocCategory`** — a closed `as const` union of doc categories (`option`, `cond_op`, `builtin`, `redir`, `param_expn`, …). Iterable at runtime; exhaustive at compile time.
-- **Brand types `Observed<K>` / `Documented<K>`** — separate "normalized from user code" and "corpus-confirmed" identities so they cannot be confused. See [`DESIGN.md`](https://github.com/carlwr/better-zsh/blob/main/DESIGN.md) §"Brand semantics" for the rationale.
-- **`resolve(corpus, cat, raw)` / `resolverFeedback(corpus, cat, raw)`** — the sanctioned crossing from raw user-code text to a corpus-verified `DocPieceId`. `resolve` returns identity only; `resolverFeedback` surfaces lossy-normalization signals (today: `{ kind: "input-negated" }` when an option was reached via `NO_`-stripping). Handles zsh-specific quirks: corpus-aware `NO_*` negation (including the `NOTIFY` / `NO_NOTIFY` edge case), redirection decomposition into `groupOp` + tail, parameter-expansion sig matching.
-- **`renderDoc(corpus, pieceId)`** — markdown generation for a known `DocPieceId`. Per-category renderers internal; the public API is uniform.
-- **A line-local analysis layer** (`src/analysis/`) — coarse, best-effort facts about zsh source without requiring shell execution.
+- **Tiny root** — `loadCorpus`, `DocCorpus`, aggregate corpus metadata.
+- **Focused subpaths** — `./types`, `./analysis`, `./resolver`, `./taxonomy`, `./render`, `./exec`, `./assets`, `./meta`.
+- **Orthogonal primitives** — brands/types, raw-to-doc resolution, markdown rendering, and line-local analysis stay separate.
 - **Pre-parsed JSON artifacts** — the same data shipped as package-exported `./data/*.json` files, for consumers that want the corpus without importing the runtime.
 
-Full typed surface: `dist/types/index.d.ts` (rolled up by API Extractor) after `pnpm build`.
+Public reading surface: `dist/types/*.d.ts` after `pnpm build`.
 
 ## Install
 
@@ -35,7 +32,8 @@ import { loadCorpus } from "jsr:@carlwr/zsh-core"
 ## Minimal usage
 
 ```ts
-import { loadCorpus, resolve, resolverFeedback } from "@carlwr/zsh-core"
+import { loadCorpus } from "@carlwr/zsh-core"
+import { resolverFeedback, resolve } from "@carlwr/zsh-core/resolver"
 import { renderDoc } from "@carlwr/zsh-core/render"
 
 const corpus = loadCorpus()
@@ -52,6 +50,7 @@ if (pid) {
 
 - **Static, not environment-aware.** The corpus is bundled; no probing of the host zsh, no `$commands` / `$aliases` / runtime `setopt` readout. Answers are the same on every machine.
 - **Parametric over per-category specialisation.** `DocCategory` is a closed union; adding a category is a local drop-in that the type system propagates.
+- **Focused imports.** Root is corpus-only; import analysis, types, resolver, taxonomy, and metadata from named subpaths.
 - **Orthogonal API.** `resolve` + `renderDoc` compose; no combined "raw string → markdown" convenience is exposed — that's a deliberate design choice, not an omission. See [`DESIGN.md`](https://github.com/carlwr/better-zsh/blob/main/DESIGN.md) §"API orthogonality".
 
 ## See also

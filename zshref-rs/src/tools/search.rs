@@ -3,11 +3,13 @@
 //! Exact/resolver/prefix → `score: 1.0`. Fuzzy tier uses `crate::fuzzy::score`
 //! (in-tree ASCII matcher) mapped into `(0, 1)` — strictly below 1.0 so the
 //! tier is recoverable from the score. `matchesTotal` is pre-truncation.
+//
+// MIRROR-OF: packages/zsh-core-tooldef/src/tools/search.ts
 
 use crate::corpus::Corpus;
-use crate::tools::shared::{
-    mk_entry, mk_envelope, record_display, record_id, record_sub_kind, resolve_in,
-};
+use crate::resolver::resolve_in;
+use crate::tools::envelope::{mk_entry, mk_envelope};
+use crate::tools::record_fields::{record_display, record_id, record_sub_kind};
 use anyhow::Result;
 use serde_json::Value;
 

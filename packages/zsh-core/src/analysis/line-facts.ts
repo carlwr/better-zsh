@@ -1,6 +1,6 @@
-import { commentStart } from "../comment.ts"
 import { mkObserved } from "../docs/brands.ts"
 import { type Observed, precmdNames } from "../docs/types.ts"
+import { commentStart } from "./comment.ts"
 import { activeText, type TextSpan } from "./doc.ts"
 import {
   type CmdHeadFact,

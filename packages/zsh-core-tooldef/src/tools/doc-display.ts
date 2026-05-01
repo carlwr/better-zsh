@@ -2,7 +2,7 @@ import {
   type DocCategory,
   type DocRecordMap,
   docDisplay,
-} from "@carlwr/zsh-core"
+} from "@carlwr/zsh-core/taxonomy"
 
 export const display = (
   cat: DocCategory,

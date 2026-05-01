@@ -3,7 +3,7 @@ import { existsSync } from "node:fs"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { promisify } from "node:util"
-import { ZSH_UPSTREAM } from "@carlwr/zsh-core"
+import { ZSH_UPSTREAM } from "@carlwr/zsh-core/meta"
 import { describe, expect, test } from "vitest"
 import { decide, helpText, type PkgIdentity, ttyHintText } from "../cli.ts"
 import {
@@ -11,7 +11,7 @@ import {
   PKG_NAME,
   PKG_REPO_URL,
   PKG_VERSION,
-} from "../pkg-info.ts"
+} from "../meta/pkg-info.ts"
 
 const sentinel: PkgIdentity = {
   bin: "bin-xyz",

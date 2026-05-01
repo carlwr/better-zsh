@@ -47,6 +47,17 @@ Consumers compose only the domains they need: editor paths map facts to docs to 
 - `src/docs/yodl/extractors/` — corpus-specific extraction into zsh doc records.
 - `src/analysis/facts.ts` — public fact-model surface. Keep scanner mechanics and heuristics in sibling modules.
 
+### zsh-core package imports
+
+Prefer explicit subpaths so dependency arrows stay visible and rollups stay legible:
+
+- **`@carlwr/zsh-core`** — tiny corpus surface: `loadCorpus`, `DocCorpus`, aggregate corpus metadata.
+- **`@carlwr/zsh-core/types`** — record types and brand smart constructors (`mkObserved`, `mkDocumented`).
+- **`@carlwr/zsh-core/analysis`** — line-local analysis and scanner helpers.
+- **`@carlwr/zsh-core/taxonomy`** — `docCategories`, `classifyOrder`, labels, `mkPieceId`, `DocPieceId`, `subKindEnums`, `docCategoryPreamble`, …
+- **`@carlwr/zsh-core/resolver`** — `resolve`, `lookupRaw`, `resolverFeedback`, …
+- **Other subpaths** — `./render`, `./exec`, `./assets`, `./meta`.
+
 ### Tooldef + adapters
 
 Tool layer is shared; adapters stay thin.
@@ -56,7 +67,7 @@ Tool layer is shared; adapters stay thin.
 - `src/tools/` — tool impls plus shared pure helpers. Pure `(DocCorpus, input) → output`; no IO, env, or `vscode`.
 - `src/tool-defs.ts` — aggregate `toolDefs` list; adapters walk this uniformly.
 
-Checked-in adapters cover MCP, Rust+clap, and VS Code LM hosts; each walks `toolDefs` or the exported JSON uniformly.
+Checked-in adapters: MCP (`packages/zshref-mcp/src/server/build-server.ts`), VS Code LM (`packages/vscode-better-zsh/src/lm-adapter/zsh-ref-tools.ts`), Rust+clap (`zshref-rs/src/cli.rs`). Each walks `toolDefs` or the exported JSON uniformly. Each TS adapter has an import-whitelist test that fails if it pulls anything beyond the corpus loader/types and `toolDefs`.
 
 Principle: tooldef consumes zsh-core; adapters consume tooldef. Do not add zsh-core query APIs just to support an adapter.
 
@@ -67,9 +78,12 @@ Before proposing new tools, reshaping the tool surface, or loosening the scope f
 
 The static, read-only, no-execution posture is a product feature. Host-dependent capabilities (live `setopt`, `$commands`, process env, filesystem, shell execution) do not belong in the tool layer.
 
-### Providers
+### Extension layout
 
-VS Code provider classes wire zsh-core analysis and doc records to language features. Reusable parsing/rendering logic belongs in pure helpers; provider-local dispatch may stay in provider modules.
+`packages/vscode-better-zsh/src/`:
+- `editor/` — language-feature providers (hover, completions, semantic tokens, …). Wire zsh-core analysis + doc records to VS Code APIs. Reusable parsing/rendering logic belongs in pure helpers; provider-local dispatch may stay here.
+- `lm-adapter/` — VS Code LM tool registration. Sibling of the MCP server; consumes only the shared tool surface. See §"Tooldef + adapters".
+- root (`extension.ts`, `cache.ts`, `settings.ts`, `zsh.ts`, …) — activation, infrastructure, host-zsh execution.
 
 ## Code style
 
@@ -257,7 +271,7 @@ The zsh-path matrix integration harness is CI/Docker-only. On macOS, VS Code's s
 `@carlwr/zsh-core`, `@carlwr/zsh-core-tooldef`, and `@carlwr/zshref-mcp` publish to npm and JSR. The Rust CLI in `zshref-rs/` publishes via cargo/crates.io; see `zshref-rs/` for its release conventions.
 
 - No runtime `package.json` reads in library code; JSR consumers receive source-form packages plus declared data/assets, not npm `dist`.
-- Package identity lives in `src/pkg-info.ts`; runtime and build code import from there.
+- Package identity lives in a package-local `src/meta/pkg-info.ts`; runtime and build code import from there.
 - `pkg-info.test.ts` guards manifest drift.
 - Shared subpath exports must stay aligned across `package.json` and `deno.json`.
 - npm-only generated artifacts and workspace-internal entrypoints stay out of `deno.json.exports`.

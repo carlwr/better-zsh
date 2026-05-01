@@ -1,16 +1,16 @@
 import * as assert from "node:assert"
+import type { DocCorpus } from "@carlwr/zsh-core"
+import { mkDocumented } from "@carlwr/zsh-core/types"
 import type {
   BuiltinDoc,
   ComplexCommandDoc,
   CondOpDoc,
-  DocCorpus,
   RedirDoc,
   ReservedWordDoc,
   ShellParamDoc,
   ZshOption,
-} from "@carlwr/zsh-core"
-import * as core from "@carlwr/zsh-core"
-import { mkDocumented } from "@carlwr/zsh-core/internal"
+} from "@carlwr/zsh-core/types"
+import { mkOptFlag, mkRedirOp } from "@carlwr/zsh-core/types"
 import { vi } from "vitest"
 import { by, emptyCorpus, wordDoc } from "./test-util"
 
@@ -41,11 +41,9 @@ vi.mock("vscode", () => ({
   },
 }))
 
-import { HoverProvider } from "../hover"
+import { HoverProvider } from "../editor/hover"
 
 // --- fixtures ---------------------------------------------------------------
-
-const { mkOptFlag, mkRedirOp } = core
 
 const b = (name: string, desc: string): BuiltinDoc => ({
   name: mkDocumented("builtin", name),

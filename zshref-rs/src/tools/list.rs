@@ -1,8 +1,11 @@
 //! `zsh_list` — enumerate corpus records (no `mdBody`), optional category filter.
 //! `limit=0` → metadata only (`matchesTotal` nonzero, `matches` empty).
+//
+// MIRROR-OF: packages/zsh-core-tooldef/src/tools/list.ts
 
 use crate::corpus::Corpus;
-use crate::tools::shared::{mk_entry, mk_envelope, record_display, record_id, record_sub_kind};
+use crate::tools::envelope::{mk_entry, mk_envelope};
+use crate::tools::record_fields::{record_display, record_id, record_sub_kind};
 use anyhow::Result;
 use serde_json::Value;
 

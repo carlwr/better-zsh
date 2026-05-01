@@ -1,6 +1,6 @@
-import { WORD_EXACT } from "@carlwr/zsh-core"
 import * as vscode from "vscode"
 import { activeWordRangeAt, hasFunc, wordMatches } from "./funcs"
+import { WORD_EXACT } from "./words"
 
 export class RenameProvider implements vscode.RenameProvider {
   prepareRename(doc: vscode.TextDocument, pos: vscode.Position) {

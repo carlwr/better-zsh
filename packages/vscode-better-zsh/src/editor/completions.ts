@@ -1,22 +1,13 @@
-import type {
-  CondOpDoc,
-  DocCorpus,
-  DocPieceId,
-  Documented,
-  ZshOption,
-} from "@carlwr/zsh-core"
-import {
-  filterTokens,
-  matchOptions,
-  mkPieceId,
-  syntacticContext,
-  WORD,
-  WORD_EXACT,
-} from "@carlwr/zsh-core"
+import type { DocCorpus } from "@carlwr/zsh-core"
+import { syntacticContext } from "@carlwr/zsh-core/analysis"
 import { renderDoc } from "@carlwr/zsh-core/render"
+import { type DocPieceId, mkPieceId } from "@carlwr/zsh-core/taxonomy"
+import type { CondOpDoc, Documented, ZshOption } from "@carlwr/zsh-core/types"
 import * as vscode from "vscode"
-import { asyncDocCache } from "./cache"
-import { zshTokenize } from "./zsh"
+import { asyncDocCache } from "../cache"
+import { zshTokenize } from "../zsh"
+import { matchOptions } from "./option-match"
+import { filterTokens, WORD, WORD_EXACT } from "./words"
 
 const getIds = asyncDocCache(async doc =>
   filterTokens(await zshTokenize(doc.getText())),

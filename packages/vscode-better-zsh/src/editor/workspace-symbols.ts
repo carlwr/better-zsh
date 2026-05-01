@@ -1,6 +1,6 @@
 import * as vscode from "vscode"
+import { ZSH_LANG_ID } from "../ids"
 import { funcDecls } from "./funcs"
-import { ZSH_LANG_ID } from "./ids"
 
 export class WorkspaceSymbolProvider implements vscode.WorkspaceSymbolProvider {
   provideWorkspaceSymbols(query: string) {

@@ -1,10 +1,12 @@
+// MIRRORED-IN: zshref-rs/src/tools/envelope.rs
+
+import type { DocCorpus } from "@carlwr/zsh-core"
 import {
   type DocCategory,
-  type DocCorpus,
   type DocRecordMap,
   docCategories,
   docSubKind,
-} from "@carlwr/zsh-core"
+} from "@carlwr/zsh-core/taxonomy"
 import { display } from "./doc-display.ts"
 import { isValidCategory } from "./result.ts"
 

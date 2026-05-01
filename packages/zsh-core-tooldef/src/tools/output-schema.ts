@@ -24,12 +24,12 @@
  * Rationale for owning schemas here: `DESIGN.md` (output schemas).
  */
 
+import { resolverFeedbackKinds } from "@carlwr/zsh-core/resolver"
 import {
   type DocCategory,
   docCategories,
-  resolverFeedbackKinds,
   subKindEnums,
-} from "@carlwr/zsh-core"
+} from "@carlwr/zsh-core/taxonomy"
 import type { ToolInputSchema } from "../tool-defs.ts"
 import { MAX_LIMIT } from "./limits.ts"
 

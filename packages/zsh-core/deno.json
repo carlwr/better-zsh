@@ -6,20 +6,29 @@
   "nodeModulesDir": "auto",
   "exports": {
     ".": "./index.ts",
-    "./render": "./render.ts",
+    "./analysis": "./analysis.ts",
+    "./assets": "./assets.ts",
     "./exec": "./exec.ts",
-    "./assets": "./assets.ts"
+    "./meta": "./meta.ts",
+    "./render": "./render.ts",
+    "./resolver": "./resolver.ts",
+    "./taxonomy": "./taxonomy.ts",
+    "./types": "./types.ts"
   },
   "publish": {
     "include": [
       "LICENSE",
       "README.md",
       "THIRD_PARTY_NOTICES.md",
+      "analysis.ts",
       "assets.ts",
       "exec.ts",
       "index.ts",
+      "meta.ts",
       "render.ts",
-      "zsh-types.ts",
+      "resolver.ts",
+      "taxonomy.ts",
+      "types.ts",
       "src/**/*.ts",
       "src/data/zsh-docs/**/*"
     ],
@@ -27,11 +36,15 @@
   },
   "lint": {
     "include": [
-      "index.ts",
+      "analysis.ts",
       "assets.ts",
-      "render.ts",
       "exec.ts",
-      "zsh-types.ts",
+      "index.ts",
+      "meta.ts",
+      "render.ts",
+      "resolver.ts",
+      "taxonomy.ts",
+      "types.ts",
       "src/**/*.ts"
     ],
     "exclude": ["src/test/**/*.ts"]

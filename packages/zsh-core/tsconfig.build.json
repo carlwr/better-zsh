@@ -3,6 +3,17 @@
   "compilerOptions": {
     "types": ["node"]
   },
-  "include": ["assets.ts", "exec.ts", "index.ts", "render.ts", "src/**/*.ts"],
+  "include": [
+    "analysis.ts",
+    "assets.ts",
+    "exec.ts",
+    "index.ts",
+    "meta.ts",
+    "render.ts",
+    "resolver.ts",
+    "taxonomy.ts",
+    "types.ts",
+    "src/**/*.ts"
+  ],
   "exclude": ["node_modules", "src/test/**/*.ts"]
 }

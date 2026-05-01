@@ -1,11 +1,11 @@
 import * as vscode from "vscode"
-import { ZSH_DIAGNOSTIC_SOURCE, ZSH_LANG_ID } from "./ids"
+import { ZSH_DIAGNOSTIC_SOURCE, ZSH_LANG_ID } from "../ids"
 import {
   DIAGNOSTICS_ENABLED_KEY,
   readDiagnosticsEnabled,
   ZSH_PATH_KEY,
-} from "./settings"
-import { zshCheck } from "./zsh"
+} from "../settings"
+import { zshCheck } from "../zsh"
 
 const DEBOUNCE_MS = 500
 

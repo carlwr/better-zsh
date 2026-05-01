@@ -1,5 +1,4 @@
-import { mkDocumented } from "./docs/brands.ts"
-import type { Documented } from "./docs/types.ts"
+import type { Documented } from "@carlwr/zsh-core/types"
 
 export interface OptionMatch {
   /** What to insert / display. */
@@ -16,7 +15,7 @@ export function matchOptions(
   options: readonly Documented<"option">[],
   typed: string,
 ): readonly OptionMatch[] {
-  const norm = mkDocumented("option", typed)
+  const norm = typed.toLowerCase().replaceAll("_", "")
   const out: OptionMatch[] = []
   pushMatches(
     out,
@@ -38,18 +37,13 @@ export function matchOptions(
 function pushMatches(
   out: OptionMatch[],
   options: readonly Documented<"option">[],
-  typed: Documented<"option">,
+  typed: string,
   canonicalOf: (option: string) => string,
   labelOf: (option: string) => string,
 ): void {
   for (const option of options) {
     const canonical = canonicalOf(option)
-    if (canonical.startsWith(typed)) {
-      // `canonical` stores the base option name (no `no-`/`no_` prefix), not
-      // `canonicalOf(option)` — `canonicalOf` is used only for prefix-match comparison.
-      // The asymmetry is intentional: callers need the base name for lookup, not the
-      // possibly-prefixed form used during matching.
+    if (canonical.startsWith(typed))
       out.push({ label: labelOf(option), canonical: option })
-    }
   }
 }

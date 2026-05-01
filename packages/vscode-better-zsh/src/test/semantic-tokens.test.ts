@@ -31,7 +31,7 @@ vi.mock("vscode", () => ({
   },
 }))
 
-import { SemanticTokensProvider } from "../semantic-tokens"
+import { SemanticTokensProvider } from "../editor/semantic-tokens"
 
 function tokens(
   text: string,

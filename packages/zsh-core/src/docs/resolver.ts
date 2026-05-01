@@ -1,3 +1,5 @@
+// MIRRORED-IN: zshref-rs/src/resolver.rs
+
 /**
  * @module
  * Resolver layer + lossy-resolution feedback channel.
@@ -370,6 +372,23 @@ export function resolve<K extends DocCategory>(
 ): DocPieceId | undefined {
   const id = resolvers[cat](corpus, raw)
   return id === undefined ? undefined : mkPieceId(cat, id)
+}
+
+/**
+ * Direct corpus-key lookup with resolver fallback. Direct precedence is
+ * load-bearing for template-key categories (`job_spec`, `history`,
+ * `param_expn`, `special_function`). See DESIGN.md §"`lookupRaw`".
+ */
+export function lookupRaw<K extends DocCategory>(
+  corpus: DocCorpus,
+  cat: K,
+  raw: string,
+): DocPieceId | undefined {
+  const trimmed = raw.trim()
+  const map = corpus[cat] as ReadonlyMap<string, unknown>
+  if (trimmed && map.has(trimmed))
+    return mkPieceId(cat, trimmed as Documented<K>)
+  return resolve(corpus, cat, raw)
 }
 
 // --- Resolver feedback ------------------------------------------------------

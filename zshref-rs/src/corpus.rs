@@ -268,7 +268,7 @@ mod tests {
     //! longer have Rust-side duplicates to drift against — `DOC_CATEGORIES`
     //! and `CLASSIFY_ORDER` project directly from the embedded
     //! `index.json`, so the only drift surface remaining is the per-record
-    //! field shape consumed by `tools::shared::record_id`.
+    //! field shape consumed by `tools::record_fields::record_id`.
     use super::*;
 
     #[test]
@@ -279,8 +279,8 @@ mod tests {
         let mut violations: Vec<String> = Vec::new();
         for cat in &corpus.categories {
             for rec in &cat.records {
-                let id = crate::tools::shared::record_id(cat.name, rec);
-                let display = crate::tools::shared::record_display(cat.name, rec);
+                let id = crate::tools::record_fields::record_id(cat.name, rec);
+                let display = crate::tools::record_fields::record_display(cat.name, rec);
                 if !id.is_ascii() {
                     violations.push(format!("category {}: _id {:?}", cat.name, id));
                 }
@@ -305,7 +305,7 @@ mod tests {
                 .records
                 .first()
                 .unwrap_or_else(|| panic!("category {} has zero records", cat.name));
-            let id = crate::tools::shared::record_id(cat.name, first);
+            let id = crate::tools::record_fields::record_id(cat.name, first);
             assert!(
                 !id.is_empty(),
                 "baked `_id` field is absent or empty for category {} — \

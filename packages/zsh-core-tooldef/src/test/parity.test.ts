@@ -253,6 +253,7 @@ describe.runIf(cliFresh)("parity: TS execute() vs zshref batch", () => {
     const tsOutput = td.execute(corpus, c.input)
     const rustOutput = await zsh.call(c.tool, c.input)
     validateOutput(td, tsOutput)
+    validateOutput(td, rustOutput)
     compareEnvelopes(c.tool, tsOutput, rustOutput)
   })
 
@@ -264,6 +265,7 @@ describe.runIf(cliFresh)("parity: TS execute() vs zshref batch", () => {
           const tsOutput = td.execute(corpus, input)
           const rustOutput = await zsh.call(td.name, input)
           validateOutput(td, tsOutput)
+          validateOutput(td, rustOutput)
           compareEnvelopes(td.name, tsOutput, rustOutput)
         }),
         { numRuns: NUM_RUNS },

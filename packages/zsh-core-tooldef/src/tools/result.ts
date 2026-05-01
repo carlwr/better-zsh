@@ -1,8 +1,10 @@
+// MIRRORED-IN: zshref-rs/src/tools/envelope.rs
+
 import {
   type DocCategory,
   docCategories,
   docCategoryLabels,
-} from "@carlwr/zsh-core"
+} from "@carlwr/zsh-core/taxonomy"
 
 const VALID_CATEGORIES: ReadonlySet<string> = new Set(docCategories)
 

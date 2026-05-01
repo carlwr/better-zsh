@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest"
 import { loadCorpus } from "../docs/corpus"
-import { resolve } from "../docs/resolvers"
+import { resolve } from "../docs/resolver"
 import { mkDocumented_ } from "./id-fns"
 
 const corpus = loadCorpus()

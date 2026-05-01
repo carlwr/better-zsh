@@ -1,10 +1,12 @@
+// MIRRORED-IN: zshref-rs/src/tools/record_fields.rs (augmentWithMarkdown's _id/_display/_subKind projection)
+
 import { cpSync, mkdirSync, writeFileSync } from "node:fs"
 import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 import { build } from "tsup"
 import { type DocCorpus, loadCorpus } from "./src/docs/corpus.ts"
 import { jsonArtifact, jsonDataFiles } from "./src/docs/json-artifacts.ts"
-import { hookNames } from "./src/docs/resolvers.ts"
+import { hookNames } from "./src/docs/resolver.ts"
 import {
   classifyOrder,
   type DocCategory,
@@ -16,9 +18,9 @@ import {
   mkPieceId,
 } from "./src/docs/taxonomy.ts"
 import type { Documented } from "./src/docs/types.ts"
-import { PKG_VERSION } from "./src/pkg-info.ts"
+import { PKG_VERSION } from "./src/meta/pkg-info.ts"
+import { ZSH_UPSTREAM } from "./src/meta/zsh-upstream.ts"
 import { renderDoc } from "./src/render/md.ts"
-import { ZSH_UPSTREAM } from "./src/zsh-upstream.ts"
 
 const pkgDir =
   typeof __dirname !== "undefined"
@@ -138,12 +140,15 @@ function isAscii(s: string): boolean {
 ;(async () => {
   await build({
     entry: [
-      resolve(pkgDir, "index.ts"),
-      resolve(pkgDir, "render.ts"),
-      resolve(pkgDir, "exec.ts"),
+      resolve(pkgDir, "analysis.ts"),
       resolve(pkgDir, "assets.ts"),
-      resolve(pkgDir, "zsh-types.ts"),
-      resolve(pkgDir, "internal.ts"),
+      resolve(pkgDir, "exec.ts"),
+      resolve(pkgDir, "index.ts"),
+      resolve(pkgDir, "meta.ts"),
+      resolve(pkgDir, "render.ts"),
+      resolve(pkgDir, "resolver.ts"),
+      resolve(pkgDir, "taxonomy.ts"),
+      resolve(pkgDir, "types.ts"),
     ],
     outDir: distDir,
     tsconfig: resolve(pkgDir, "tsconfig.build.json"),

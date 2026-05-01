@@ -9,7 +9,9 @@
   },
   "imports": {
     "@carlwr/zsh-core": "jsr:@carlwr/zsh-core@^0.1.0-alpha.0",
-    "@carlwr/zsh-core/render": "jsr:@carlwr/zsh-core@^0.1.0-alpha.0/render"
+    "@carlwr/zsh-core/render": "jsr:@carlwr/zsh-core@^0.1.0-alpha.0/render",
+    "@carlwr/zsh-core/resolver": "jsr:@carlwr/zsh-core@^0.1.0-alpha.0/resolver",
+    "@carlwr/zsh-core/taxonomy": "jsr:@carlwr/zsh-core@^0.1.0-alpha.0/taxonomy"
   },
   "publish": {
     "include": [

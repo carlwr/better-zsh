@@ -11,14 +11,10 @@ export function filterTokens(tokens: readonly string[]): string[] {
   const seen = new Set<string>()
   const out: string[] = []
   for (const t of tokens) {
-    if (isWordLikeToken(t) && !seen.has(t)) {
+    if (WORD_EXACT.test(t) && !seen.has(t)) {
       seen.add(t)
       out.push(t)
     }
   }
   return out
-}
-
-function isWordLikeToken(token: string): boolean {
-  return WORD_EXACT.test(token)
 }

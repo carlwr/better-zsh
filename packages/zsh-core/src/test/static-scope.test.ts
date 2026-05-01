@@ -6,9 +6,10 @@ import { describe, expect, test } from "vitest"
 /**
  * Structural scope fence for zsh-core's **static** public surface.
  *
- * The `.`, `./render`, and `./assets` entrypoints are advertised as
- * execution-free, network-free, and env-agnostic: they parse bundled
- * Yodl sources and render markdown. The `./exec` entrypoint is excluded
+ * The `.`, `./analysis`, `./assets`, `./meta`, `./render`, `./resolver`,
+ * `./taxonomy`, and `./types` entrypoints are advertised as
+ * execution-free, network-free, and env-agnostic: they parse bundled Yodl
+ * sources and render markdown. The `./exec` entrypoint is excluded
  * — it exposes a `ZshRunner` type; actual shell execution lives in the
  * *consumer*-injected runner, never inside this package, so nothing
  * routed through `./exec` gets to spawn processes either. This test
@@ -19,7 +20,16 @@ import { describe, expect, test } from "vitest"
 const here = dirname(fileURLToPath(import.meta.url))
 const pkgDir = resolve(here, "..", "..")
 
-const STATIC_ENTRIES = ["index.ts", "render.ts", "assets.ts"] as const
+const STATIC_ENTRIES = [
+  "analysis.ts",
+  "assets.ts",
+  "index.ts",
+  "meta.ts",
+  "render.ts",
+  "resolver.ts",
+  "taxonomy.ts",
+  "types.ts",
+] as const
 
 const forbidden = [
   /\bnode:child_process\b/,
@@ -88,7 +98,7 @@ describe("static-entrypoint scope fence", () => {
   test("static entrypoints do not reach ./exec", () => {
     const files = reachable(STATIC_ENTRIES)
     const execFile = resolve(pkgDir, "exec.ts")
-    const zshFile = resolve(pkgDir, "src", "zsh.ts")
+    const zshFile = resolve(pkgDir, "src", "exec", "zsh.ts")
     expect(files.has(execFile)).toBe(false)
     expect(files.has(zshFile)).toBe(false)
   })

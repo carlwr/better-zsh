@@ -1,18 +1,21 @@
+// MIRRORED-IN: zshref-rs/src/tools/docs.rs
+
+import type { DocCorpus } from "@carlwr/zsh-core"
+import { ZSH_UPSTREAM } from "@carlwr/zsh-core/meta"
+import { renderDoc } from "@carlwr/zsh-core/render"
+import {
+  lookupRaw,
+  type ResolverFeedback,
+  resolverFeedback,
+} from "@carlwr/zsh-core/resolver"
 import {
   classifyOrder,
   type DocCategory,
-  type DocCorpus,
   type DocPieceId,
   type DocRecordMap,
-  type Documented,
   docSubKind,
-  mkPieceId,
-  type ResolverFeedback,
-  resolve,
-  resolverFeedback,
-  ZSH_UPSTREAM,
-} from "@carlwr/zsh-core"
-import { renderDoc } from "@carlwr/zsh-core/render"
+} from "@carlwr/zsh-core/taxonomy"
+import type { Documented } from "@carlwr/zsh-core/types"
 import { makeToolDef, type ToolDef } from "../tool-defs.ts"
 import { display } from "./doc-display.ts"
 import type { BaseMatch } from "./entries.ts"
@@ -36,38 +39,6 @@ export interface DocsMatch extends BaseMatch {
 }
 
 export type DocsResult = Envelope<DocsMatch>
-
-/**
- * Resolve `raw` against one category using the "direct ∥ resolver, direct
- * preferred" rule:
- *
- *   1. Try `corpus[cat].get(trim(raw))` directly.
- *   2. If that misses, fall back to the per-category resolver.
- *
- * Direct precedence is load-bearing for template-key categories. Without
- * it, `--raw=%number --category=job_spec` would resolve `%number` (a
- * literal corpus key) to `%string` (the resolver's template fallback for
- * non-`%%`/`%+`/`%-`/digit forms), breaking round-trip. Non-template
- * categories don't care: direct misses on `AUTO_CD`, falls to the
- * resolver, which lowercases/strips underscores → `autocd`.
- *
- * See `DESIGN.md` (docs resolution: direct vs resolver).
- */
-function lookupOne(
-  corpus: DocCorpus,
-  cat: DocCategory,
-  raw: string,
-): DocPieceId | undefined {
-  const trimmed = raw.trim()
-  // Direct hit short-circuits the resolver. Brand-mint at this boundary is
-  // justified by the runtime `has` check — by construction every corpus
-  // key is `Documented<cat>`. The `as ReadonlyMap` widening avoids the
-  // distributed-union narrowing of `corpus[cat].has` to `never`.
-  const map = corpus[cat] as ReadonlyMap<string, unknown>
-  if (trimmed && map.has(trimmed))
-    return mkPieceId(cat, trimmed as Documented<typeof cat>)
-  return resolve(corpus, cat, raw)
-}
 
 function formatMatch(
   corpus: DocCorpus,
@@ -103,8 +74,7 @@ function formatMatch(
  * resolving category — usually 0–1, sometimes 2 when overlap categories
  * both resolve (`for`, `nocorrect`, etc.).
  *
- * Resolution is "direct ∥ resolver, direct preferred"; see `lookupOne`.
- * Pure; no IO.
+ * Resolution is `lookupRaw` (direct ∥ resolver, direct preferred). Pure; no IO.
  */
 export function docs(corpus: DocCorpus, input: DocsInput): DocsResult {
   const raw = input.raw
@@ -112,14 +82,14 @@ export function docs(corpus: DocCorpus, input: DocsInput): DocsResult {
 
   if (input.category !== undefined) {
     if (!isValidCategory(input.category)) return mkEnvelope<DocsMatch>([])
-    const pid = lookupOne(corpus, input.category, raw)
+    const pid = lookupRaw(corpus, input.category, raw)
     if (!pid) return mkEnvelope<DocsMatch>([])
     return mkEnvelope([formatMatch(corpus, pid, raw)])
   }
 
   const matches: DocsMatch[] = []
   for (const cat of classifyOrder) {
-    const pid = lookupOne(corpus, cat, raw)
+    const pid = lookupRaw(corpus, cat, raw)
     if (pid?.category === "history" && !isHistoryEvent(corpus, pid)) continue
     if (pid) matches.push(formatMatch(corpus, pid, raw))
   }

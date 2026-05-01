@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest"
 import type { DocCorpus } from "../docs/corpus"
-import { resolve, resolverFeedback } from "../docs/resolvers"
+import { resolve, resolverFeedback } from "../docs/resolver"
 import { mkDocumented_ } from "./id-fns"
 
 const opt = mkDocumented_("option")

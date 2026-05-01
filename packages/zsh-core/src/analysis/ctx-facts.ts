@@ -1,5 +1,4 @@
 import { mkObserved } from "../docs/brands.ts"
-import { advanceQuote, isQuoted, mkQuoteState } from "../quote-state.ts"
 import {
   absSpan,
   activeText,
@@ -9,6 +8,7 @@ import {
 } from "./doc.ts"
 import type { CtxFact, FactCtx } from "./fact-types.ts"
 import { cmdHeadFactsOnLine, firstCmdHeadOnLine } from "./line-facts.ts"
+import { advanceQuote, isQuoted, mkQuoteState } from "./quote-state.ts"
 import { isSetoptCommandText } from "./setopt-cmd.ts"
 
 export function ctxFacts(

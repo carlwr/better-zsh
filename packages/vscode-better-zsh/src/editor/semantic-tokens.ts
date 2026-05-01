@@ -1,4 +1,5 @@
-import { cmdHeadFactsOnLine, commentStart, mkObserved } from "@carlwr/zsh-core"
+import { cmdHeadFactsOnLine, commentStart } from "@carlwr/zsh-core/analysis"
+import { mkObserved } from "@carlwr/zsh-core/types"
 import * as vscode from "vscode"
 
 const TOKEN_TYPES = ["function", "keyword"] as const

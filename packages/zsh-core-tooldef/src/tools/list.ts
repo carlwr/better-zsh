@@ -1,4 +1,7 @@
-import type { DocCategory, DocCorpus } from "@carlwr/zsh-core"
+// MIRRORED-IN: zshref-rs/src/tools/list.rs
+
+import type { DocCorpus } from "@carlwr/zsh-core"
+import type { DocCategory } from "@carlwr/zsh-core/taxonomy"
 import { makeToolDef, type ToolDef } from "../tool-defs.ts"
 import { type BaseMatch, entries } from "./entries.ts"
 import { clampLimit, DEFAULT_LIMIT, MAX_LIMIT } from "./limits.ts"

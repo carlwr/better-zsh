@@ -1,5 +1,5 @@
 import type { DocCorpus } from "../docs/corpus.ts"
-import { resolve } from "../docs/resolvers.ts"
+import { resolve } from "../docs/resolver.ts"
 import type { DocCategory, DocPieceId, DocRecordMap } from "../docs/taxonomy.ts"
 import type {
   ArithOpDoc,
