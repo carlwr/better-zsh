@@ -67,7 +67,7 @@ Tool layer is shared; adapters stay thin.
 - `src/tools/` — tool impls plus shared pure helpers. Pure `(DocCorpus, input) → output`; no IO, env, or `vscode`.
 - `src/tool-defs.ts` — aggregate `toolDefs` list; adapters walk this uniformly.
 
-Checked-in adapters: MCP (`packages/zshref-mcp/src/server/build-server.ts`), VS Code LM (`packages/vscode-better-zsh/src/lm-adapter/zsh-ref-tools.ts`), Rust+clap (`zshref-rs/src/cli.rs`). Each walks `toolDefs` or the exported JSON uniformly. Each TS adapter has an import-whitelist test that fails if it pulls anything beyond the corpus loader/types and `toolDefs`.
+Checked-in adapters: MCP (`packages/zshref-mcp/src/server/build-server.ts`), VS Code LM (`packages/vscode-better-zsh/src/lm-adapter/zsh-ref-tools.ts`), Rust+clap (`zshref-rs/src/cli.rs`). Each walks `toolDefs` or the exported JSON uniformly. The two thin TS files use root `@carlwr/zsh-core` (typically `DocCorpus`) and `@carlwr/zsh-core-tooldef` only (no subpaths), named `{ … }` imports only, and per-adapter tooldef symbols (MCP: full declared set; LM: `toolDefs` only); allow-lists and enforcement live in `packages/zsh-core-tooldef/src/test/` (`adapter-matrix.ts`, `adapter-matrix.test.ts`).
 
 Principle: tooldef consumes zsh-core; adapters consume tooldef. Do not add zsh-core query APIs just to support an adapter.
 
@@ -352,6 +352,8 @@ After introducing shared infrastructure or parametric types, revisit consumer ca
 ### Renames, removals, and behavior changes
 
 When you **rename or remove** a function, type, variable, file, tool, setting key, or JSON/schema field—or **change what it does** in a way callers could notice—run a **deliberate full-repo search** (e.g. `rg` on the old and new strings, and on related prose) in addition to letting the typechecker and refactors update call sites. Refactoring and `pnpm check` alone are not sufficient: identifiers and behavior are also referenced in markdown, JSDoc, comments, manifests, JSON Schema, copy-pasted examples, test titles, and string literals. Missed prose references become silent drift.
+
+For TS↔Rust mirrors (`// MIRRORED-IN:` / `// MIRROR-OF:`), the rename touches both sides plus `parity-units.ts` (DESIGN.md §"Parity surface units").
 
 ### Research-agent proposals
 

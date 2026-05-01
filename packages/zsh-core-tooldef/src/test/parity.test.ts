@@ -27,6 +27,7 @@ import { type ToolDef, toolDefs } from "../tool-defs.ts"
 import { compact, inputArbFor } from "./_helpers/input-arbs.ts"
 import { ZshrefBatch } from "./_helpers/zshref-batch.ts"
 import { compareZshrefFingerprint } from "./_helpers/zshref-fingerprint.ts"
+import { parityToolDefNames } from "./parity-units.ts"
 
 const pkgDir = join(dirname(fileURLToPath(import.meta.url)), "..", "..")
 const repoRoot = join(pkgDir, "..", "..")
@@ -57,6 +58,14 @@ function checkCliFresh(): boolean {
 }
 
 const corpus = loadCorpus()
+
+describe("parity units vs toolDefs", () => {
+  test("parity surface lists exactly the shipped tools", () => {
+    expect(new Set(parityToolDefNames)).toEqual(
+      new Set(toolDefs.map(t => t.name)),
+    )
+  })
+})
 
 const ajv = new Ajv2020({ allErrors: true, strict: false })
 const validators = new Map<string, ValidateFunction>()

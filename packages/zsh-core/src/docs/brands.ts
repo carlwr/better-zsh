@@ -1,12 +1,8 @@
-// MIRRORED-IN: zshref-rs/src/resolver.rs (normalize_option mirrors normalizeOptName)
-
+import { normalizeOptName } from "./normalize-option.ts"
 import type { DocCategory } from "./taxonomy.ts"
 import type { Documented, Observed } from "./types.ts"
 
-/** Lowercase, strip all underscores. Idempotent. */
-export function normalizeOptName(raw: string): string {
-  return raw.replace(/_/g, "").toLowerCase()
-}
+export { normalizeOptName }
 
 // Per-category normalization. Shared by `mkObserved` and `mkDocumented`.
 //

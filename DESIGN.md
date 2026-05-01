@@ -239,7 +239,7 @@ The library keeps `@carlwr/zsh-core` as a tiny corpus surface and exposes focuse
 
 Each `ToolDef` has `outputSchema` (JSON Schema 2020-12) next to its result type. Closed unions (`category`, per-category `subKind`, `ResolverFeedback` kinds) **interpolate from zsh-core exports**, never hand-typed (`AGENTS.md` §"Never enumerate or count `DocCategory`"). Match shapes mark fields required vs absent; `additionalProperties: false`; parametric `feedback?: ResolverFeedback` where tools surface resolver feedback. Rationale: PRINCIPLES.md §"Schema precision when schemas are co-released".
 
-Shared fragments use `$defs` / `$ref`; a small builder handles per-tool variation. Drift: a property test (fast-check + Ajv) over `execute()` vs `outputSchema`, plus a cross-language parity test (`parity.test.ts`) that drives the same generated inputs into TS and the Rust `zshref batch` session. Hand-authored today; migrating to zod-derived schemas is a documented escape hatch if burden grows.
+Shared fragments use `$defs` / `$ref`; a small builder handles per-tool variation. Drift: a property test (fast-check + Ajv) over `execute()` vs `outputSchema`, plus a cross-language parity test (`parity.test.ts`) — see §"Parity surface units". Hand-authored today; migrating to zod-derived schemas is a documented escape hatch if burden grows.
 
 Per MCP spec (SDK 1.29+), tools register `outputSchema`; responses include `structuredContent` for schema-aware clients while legacy clients still get JSON in `content[0].text`.
 
@@ -247,13 +247,17 @@ Per MCP spec (SDK 1.29+), tools register `outputSchema`; responses include `stru
 
 Three adapters expose the same `toolDefs` through different transports — MCP (`packages/zshref-mcp/src/server/build-server.ts`), VS Code LM (`packages/vscode-better-zsh/src/lm-adapter/zsh-ref-tools.ts`), Rust CLI (`zshref-rs/src/cli.rs` + `batch.rs`). Adapters walk `toolDefs` and call `def.execute(corpus, input)`; nothing else.
 
-**Thin-adapter lock** — Each TS adapter has an import-whitelist test that fails if it imports anything beyond the corpus loader / types and `toolDefs`. Drift toward editor-feature primitives (`resolve`, `renderDoc`, analysis) breaks the test, not the human reviewer's attention.
+**Thin-adapter lock** — MCP and VS Code LM stay on root `@carlwr/zsh-core` + `@carlwr/zsh-core-tooldef` only (no subpaths), named brace imports, per-adapter tooldef symbols (MCP full set; LM `toolDefs` only); enforcement in `packages/zsh-core-tooldef/src/test/`. No `resolve` / `renderDoc` / analysis. See AGENTS.md §"Tooldef + adapters".
 
 **Package boundaries** — MCP does not depend on `vscode`; LM registration lives in the extension. One extension test locks `contributes.languageModelTools` to `toolDefs` (names + `inputSchema`).
 
 **Scope fence** — Product promise: static knowledge, no shell execution, no env reads from tool impls. The tooldef test rejects `child_process`, network, `node:fs`, `vscode`, and `process.env` under `src/tools/`. Loosening that is deliberate, not accidental.
 
 **Tool surface** — Split by intent (lookup-with-markdown vs fuzzy discovery vs enumeration), not one mega-tool with a `kind` enum and not one tool per category. `zsh_docs` unifies former classify/lookup/describe-style flows; `zsh_search` vs `zsh_list` stay separate so "search with no query" is not a silent footgun. Uniform output envelope `{ matches, matchesReturned, matchesTotal }` keeps adapters simple.
+
+## Parity surface units (TS ↔ Rust mirrors)
+
+The Rust CLI re-implements a small surface; the rest is consumed via baked JSON. Source of truth: `packages/zsh-core-tooldef/src/test/parity-units.ts`. Structural alignment of `// MIRRORED-IN:` / `// MIRROR-OF:` markers is enforced by `mirror-pairs.test.ts`; behavioral parity (modulo the carved-out fuzzy tier) by `parity.test.ts`.
 
 ## `lookupRaw`: direct ∥ resolver, direct preferred
 

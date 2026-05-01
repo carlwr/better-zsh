@@ -96,9 +96,9 @@ rg "^export" --type ts packages/zsh-core/src/docs/yodl/
 
 **Extension unit tests mock `vscode`:** The vitest config aliases `vscode` to `/dev/null`. Tests that use VS Code types must provide their own mock — find examples with `rg 'vi.mock.*vscode' packages/vscode-better-zsh/src/test/`.
 
-**Tool layer must not depend on `vscode`:** `packages/zsh-core-tooldef/` exports pure tool implementations and metadata; the VS Code LM registration glue lives in the extension, not in any of the tool-related packages. The one-to-one correspondence between `contributes.languageModelTools` in the extension manifest and `toolDefs` in tooldef is asserted by a unit test — drift fails CI.
+**Tool layer must not depend on `vscode`:** `packages/zsh-core-tooldef/` is pure tools + metadata; LM registration lives in the extension. `contributes.languageModelTools` vs `toolDefs` is drift-tested. MCP/LM wiring is locked to root `@carlwr/zsh-core`, root tooldef, brace imports, and per-adapter tooldef symbols — enforced from `packages/zsh-core-tooldef/src/test/` (see AGENTS.md §"Tooldef + adapters").
 
-**Tool surface scope fence:** a test in `packages/zsh-core-tooldef/src/test/` asserts that `src/tools/` does not import `child_process`, network APIs, `node:fs`, `vscode`, or read `process.env`. The "no execution, no environment access" promise is a product feature advertised by the MCP and CLI package descriptions. Adding a tool that legitimately needs these requires loosening the fence deliberately.
+**Tool surface scope fence:** tests under `packages/zsh-core-tooldef/src/test/` fail when `src/tools/` imports `child_process`, network APIs, `node:fs`, `vscode`, or reads `process.env`. Same "no execution, no environment access" promise as in MCP/CLI copy; loosen only deliberately.
 
 **zsh-core static entrypoint fence:** a test in `packages/zsh-core/src/test/` walks the import graph from the static entrypoints (`.`, `./analysis`, `./types`, `./meta`, `./render`, `./assets`, `./resolver`, `./taxonomy`) and rejects reached files that import execution/network/env APIs. `./exec` is excluded (exposes a `ZshRunner` injection type). Prophylactic — keeps the static-reference consumers structurally execution-free even when zsh-core gains new internal helpers.
 

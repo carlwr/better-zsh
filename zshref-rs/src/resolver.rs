@@ -2,7 +2,7 @@
 //! See DESIGN.md §"Resolver feedback channel".
 //
 // MIRROR-OF: packages/zsh-core/src/docs/resolver.ts
-// MIRROR-OF: packages/zsh-core/src/docs/brands.ts
+// MIRROR-OF: packages/zsh-core/src/docs/normalize-option.ts
 
 use crate::corpus::Corpus;
 use crate::tools::record_fields::{record_display, record_id, str_field, Rec};
@@ -17,7 +17,7 @@ pub fn strip_no_prefix(raw: &str) -> Option<String> {
         .map(str::to_string)
 }
 
-/// Lowercase + strip underscores. Mirrors `normalizeOptName` in `brands.ts`.
+/// Lowercase + strip underscores. Mirrors `normalizeOptName` in `normalize-option.ts`.
 pub fn normalize_option(raw: &str) -> String {
     raw.trim()
         .chars()

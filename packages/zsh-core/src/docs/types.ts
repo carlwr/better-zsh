@@ -82,9 +82,9 @@ export type Observed<K extends DocCategory> = K extends "precmd"
     ? ProcessSubstOp
     : string & { readonly __observed: K }
 
-// Brand-minting smart constructors (`mkObserved`, `mkDocumented`) and
-// `normalizeOptName` live in `brands.ts` — co-located with the shared
-// per-category normalization table they depend on.
+// Brand-minting smart constructors (`mkObserved`, `mkDocumented`) live in
+// `brands.ts`; `normalizeOptName` lives in `normalize-option.ts` (mirrored
+// in zshref-rs).
 
 // --- Closed literal unions --------------------------------------------------
 

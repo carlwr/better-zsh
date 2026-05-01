@@ -4,7 +4,6 @@ import type { DocCorpus } from "@carlwr/zsh-core"
 import { ZSH_UPSTREAM } from "@carlwr/zsh-core/meta"
 import { resolve } from "@carlwr/zsh-core/resolver"
 import { classifyOrder, type DocCategory } from "@carlwr/zsh-core/taxonomy"
-import fuzzysort from "fuzzysort"
 import { makeToolDef, type ToolDef } from "../tool-defs.ts"
 import { type BaseMatch, entries } from "./entries.ts"
 import { clampLimit, DEFAULT_LIMIT, MAX_LIMIT } from "./limits.ts"
@@ -15,6 +14,7 @@ import {
   isValidCategory,
   mkEnvelope,
 } from "./result.ts"
+import { fuzzySortMatches, seenKey } from "./search-fuzzy.ts"
 
 export interface SearchInput {
   readonly query: string
@@ -52,7 +52,6 @@ export function search(corpus: DocCorpus, input: SearchInput): SearchResult {
   // Dedup invariant: no two matches share `(category, id)`. The seen-set
   // spans all tiers; covered by search tool tests.
   const seen = new Set<string>()
-  const seenKey = (cat: DocCategory, id: string): string => `${cat}\0${id}`
   for (const e of pool) {
     const idLow = e.id.toLowerCase()
     const dispLow = e.display.toLowerCase()
@@ -93,10 +92,7 @@ export function search(corpus: DocCorpus, input: SearchInput): SearchResult {
   // Run fuzzy unlimited so `matchesTotal` reflects the true pre-truncation
   // count across every tier; cost is negligible at corpus scale.
   const fuzzyPool = rest.filter(e => !seen.has(seenKey(e.category, e.id)))
-  const fuzzyAll = fuzzysort.go(q, fuzzyPool, {
-    keys: ["id", "display"],
-    threshold: 0.3,
-  })
+  const fuzzyAll = fuzzySortMatches(q, fuzzyPool)
   const matchesTotal =
     exact.length + resolverHits.length + prefix.length + fuzzyAll.length
 

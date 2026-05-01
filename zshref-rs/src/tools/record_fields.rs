@@ -2,7 +2,7 @@
 //! `_id` / `_display` / `_subKind` field names project the
 //! `docId` / `docDisplay` / `docSubKind` tables (`taxonomy.ts`) into JSON.
 //
-// MIRROR-OF: packages/zsh-core/build.ts
+// MIRROR-OF: packages/zsh-core/src/docs/json-projection.ts
 
 use serde_json::{Map, Value};
 

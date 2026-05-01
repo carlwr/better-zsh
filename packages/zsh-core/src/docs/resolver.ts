@@ -33,8 +33,9 @@
  */
 
 import type { Assert, Eq } from "@carlwr/typescript-extra"
-import { mkDocumented, normalizeOptName } from "./brands.ts"
+import { mkDocumented } from "./brands.ts"
 import type { DocCorpus } from "./corpus.ts"
+import { normalizeOptName } from "./normalize-option.ts"
 import { type DocCategory, type DocPieceId, mkPieceId } from "./taxonomy.ts"
 import type { Documented } from "./types.ts"
 
