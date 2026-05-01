@@ -193,17 +193,20 @@ When adding or changing parsing/rendering, dump the full rendered corpus and ins
 
 ### Validation before returning
 
-After edits, `pnpm format && pnpm test ...` is a useful quick pass before the fuller validation chain.
+Pre-commit gate: `pnpm qa` = `pnpm check && pnpm test` (typecheck + lint + unit). Bare `pnpm test` skips typecheck.
 
-Only if you edited code, run:
+```sh
+# after any edits:
+pnpm format && pnpm qa
 
-`pnpm format && pnpm check && pnpm test && pnpm test:smoke && pnpm vsix && pnpm test:integration &>/dev/null`
+# after code edits — fuller chain:
+pnpm format && pnpm qa && pnpm test:smoke && pnpm vsix && pnpm test:integration &>/dev/null
+```
 
-Rules:
 - `pnpm format` first.
-- On any failure, fix and re-run.
-- `INTERACTIVE` and `REGISTRY` excluded unless user explicitly asks.
-- For docs-only or non-code edits, skip tests unless explicitly asked.
+- `pnpm qa` failure blocks commit — fix and re-run.
+- `INTERACTIVE`, `REGISTRY` excluded unless asked.
+- Docs-only / non-code: skip tests unless asked.
 
 ### Test-running policy
 
@@ -327,10 +330,16 @@ On first stable release: `zshref-rs/` → `zshref` repo; `packages/zshref-mcp/` 
 
 ### Markdown style in docs
 
-- Prefer bullet lists over prose enumerations of 3+ items. Semicolon-chains, "(a)/(b)/(c)" parentheticals, and colon-introduced inline lists scan worse than vertical bullets with incomplete-sentence items. Two-item enumerations stay inline. When adding content, reach for bullets first; when editing, look for prose enumerations to lift out. Structural prose→bullets passes may grow word count slightly — §"Conciseness"'s "do not grow the text" clause governs phrase-level rewrites, not reorganization.
-- No running numbering in headings or bullet lists. Renumbering on insert/delete balloons diffs and silently breaks cross-references; use bullets. Exception: the ordinal is semantically load-bearing (cross-referenced as "option 3", numbered steps in a runnable recipe).
-- Prefer cross-references (`see DESIGN.md §…`) over restating another doc's content. Same-layer repetition drifts.
-- Enumerating a concrete list (files, paths, tool dirs) is acceptable when members are not easily inferrable and the value outweighs drift risk. Mark such exceptions inline with an HTML comment.
+Maximum density. Prose is a last resort — prefer fenced code blocks, bullets, tables. Reach for them first when adding; lift prose enumerations out when editing. A short bullet list beats a paragraph; a code block beats a paraphrase of commands.
+
+- Bullets > prose for 3+ items; two stay inline. Avoid semicolon-chains, "(a)/(b)/(c)" parentheticals, colon-introduced inline lists.
+- Incomplete sentences in bullets fine; sacrifice grammar for concision.
+- One thought per bullet. Don't restate what adjacent code/structure already shows.
+- Fenced code blocks for command sequences; don't paraphrase commands in prose. Use comments inside the block to label variants.
+- Cross-reference (`see DESIGN.md §…`) over restating another doc — same-layer repetition drifts.
+- No numbered headings/bullets unless the ordinal is semantically load-bearing — renumbering on insert/delete balloons diffs and breaks cross-refs.
+- Concrete enumerations (files, paths) OK when not inferrable; mark with inline HTML comment.
+- Structural prose→bullets passes may grow word count; phrase-level rewrites must not (§"Conciseness").
 
 ### Recording design decisions
 
