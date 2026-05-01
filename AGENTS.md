@@ -377,6 +377,14 @@ When shaping a new doc category or reshaping one, compare against existing prece
 
 Follow patterns when they model the domain. See `PRINCIPLES.md` §"Category types".
 
+### Executable scripts should be extension-less
+
+Files with executable permissions and a shebang:
+- YES: `a`, `b` etc.
+- no: `a.sh`, `b.zsh` etc.
+
+Files WITHOUT executable permissions and a shebang, but that still contain shell script code (e.g.: shell script sourcecode for tests, files intended to be `source`-ed) may still have extension such as `.sh` or `.zsh`.
+
 ### Git; commits
 
 If making commits:

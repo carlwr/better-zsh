@@ -2,7 +2,7 @@
 # Cold loadCorpus() timings. N fresh node processes (default 10). Prints
 # sorted per-run ms plus summary stats. Requires dist/ to be built.
 #
-# Usage: scripts/bench-load-corpus.sh [N]
+# Usage: scripts/bench-load-corpus [N]
 set -eu
 N=${1:-10}
 cd "$(dirname "$0")/.."
