@@ -15,10 +15,10 @@ import {
 } from "@carlwr/zsh-core/taxonomy"
 import {
   type Documented,
+  mkOptFlag,
   type OptFlag,
   type OptFlagAlias,
   type ZshOption,
-  mkOptFlag,
 } from "@carlwr/zsh-core/types"
 import * as vscode from "vscode"
 import { activeWordRangeAt, commentStart, funcDocs } from "./funcs"

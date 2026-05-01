@@ -1,0 +1,75 @@
+#! /usr/bin/env zsh
+set -eu -o pipefail
+zmodload -F zsh/stat b:zstat
+
+me=${0:t}
+
+formHelp='"[file] -> [link-text]"; "dir/f -> g" is a link pointing to dir/g'
+
+help="
+List/check all symlinks in the working copy.
+
+Ignore .gitignore-ed paths.
+
+USAGE:
+  $me [--quiet|-q]
+
+OPTIONS:
+
+  --quiet, -q
+    on first broken symlink, if any, print a message and exit with a failure
+    if no broken symlinks, exit with success
+
+  (default)
+    print a message for each symlink, including ok/broken status
+    always exit with success
+
+OUTPUT:
+  form: $formHelp
+"
+
+list-nonignored-files() git ls-files --cached --others --exclude-standard
+unresolved-link-text () zstat -L +link $1   # if not a link, exit 1 + error msg
+is-resolving-link    () [[ -L $1 && -e $1 ]]
+heading              () print -- "\n$1\n${1//?/-}"
+
+handle-link() {
+  local link=$1
+  local target=$(unresolved-link-text $link)
+  local text="$link -> $target"
+
+  integer broken=0
+  is-resolving-link $link || broken=1
+
+  case $broken,$quiet in
+       (0,0) print "[  ok  ]  $text"
+    ;; (1,0) print "[BROKEN]  $text"
+    ;; (1,1) print "[ERROR ]  $text (broken symlink)" && exit 1
+    ;; (0,1) :
+    ;; ( * ) print 'internal error' && exit 1
+    ;;
+  esac
+}
+
+main() {
+
+  ((!quiet)) || print "$me: Running..."
+  (( quiet)) || heading "$me:"
+  (( quiet)) || print "(form: $formHelp)"
+
+  foreach f ( $(list-nonignored-files) ) {
+    [[ ! -L $f ]] || handle-link "$f"
+  }
+
+  (( quiet)) || print
+  ((!quiet)) || print "$me: ...OK."
+}
+
+integer quiet=0
+case ${1-} in
+     (-h|--help ) print $help && exit 0
+  ;; (-q|--quiet) quiet=1
+  ;;
+esac
+
+main

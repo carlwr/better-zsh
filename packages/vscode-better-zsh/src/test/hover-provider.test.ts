@@ -1,6 +1,5 @@
 import * as assert from "node:assert"
 import type { DocCorpus } from "@carlwr/zsh-core"
-import { mkDocumented } from "@carlwr/zsh-core/types"
 import type {
   BuiltinDoc,
   ComplexCommandDoc,
@@ -10,7 +9,7 @@ import type {
   ShellParamDoc,
   ZshOption,
 } from "@carlwr/zsh-core/types"
-import { mkOptFlag, mkRedirOp } from "@carlwr/zsh-core/types"
+import { mkDocumented, mkOptFlag, mkRedirOp } from "@carlwr/zsh-core/types"
 import { vi } from "vitest"
 import { by, emptyCorpus, wordDoc } from "./test-util"
 

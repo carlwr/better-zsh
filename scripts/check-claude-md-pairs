@@ -1,0 +1,67 @@
+#! /usr/bin/env zsh
+set -eu -o pipefail
+
+me=${0:t}
+
+help="
+List/check that each AGENTS.md in the working copy has a sibling CLAUDE.md.
+
+Ignore .gitignore-ed paths.
+
+USAGE:
+  $me [--quiet|-q]
+
+OPTIONS:
+
+  --quiet, -q
+    on first AGENTS.md without sibling, print and exit with a failure
+    if no such, exit with success
+
+  (default)
+    print a message for each AGENTS.md, including ok/missing status
+    always exit with success
+"
+
+list-nonignored-files() git ls-files --cached --others --exclude-standard
+
+heading() print -- "\n$1\n${1//?/-}"
+
+handle-pair() {
+  local agents=$1
+  local sibling=${agents:h}/CLAUDE.md
+
+  integer missing=0
+  [[ -e $sibling ]] || missing=1
+
+  case $missing,$quiet in
+       (0,0) print "[  ok   ]  ${agents:h}/{AGENTS.md,CLAUDE.md}"
+    ;; (1,0) print "[MISSING]  ${agents} (no $sibling)"
+    ;; (1,1) print "[ERROR  ]  ${agents} (no $sibling)" && exit 1
+    ;; (0,1) :
+    ;; ( * ) print 'internal error' && exit 1
+    ;;
+  esac
+}
+
+main() {
+
+  ((!quiet)) || print "$me: Running..."
+  (( quiet)) || heading "$me:"
+
+  foreach f ( $(list-nonignored-files) ) {
+    [[ ${f:t} != AGENTS.md ]] || handle-pair $f
+  }
+
+  (( quiet)) || print
+  ((!quiet)) || print "$me: ...OK."
+
+}
+
+integer quiet=0
+case ${1-} in
+     (-h|--help ) print $help && exit 0
+  ;; (-q|--quiet) quiet=1
+  ;;
+esac
+
+main

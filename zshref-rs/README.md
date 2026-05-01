@@ -8,7 +8,7 @@ A command-line reference for zsh syntax. Ask what a token is, search the manual,
 
 Built for agents, acceptable for humans. One of three adapters over the same parsed zsh reference (alongside the [MCP server](https://github.com/carlwr/zshref-mcp) and the [VS Code extension](https://github.com/carlwr/better-zsh/tree/main/packages/vscode-better-zsh)). What the CLI adds on top of the shared corpus:
 
-- **Single native binary** — no Node, Python, or zsh at runtime; drops into containers, air-gapped CI, and minimal base images.
+- **Single-file executable** — no Node, Python, or zsh at runtime; drops into containers, air-gapped CI, and minimal base images.
 - **Pipes and scripts.** JSON on stdout, human prose on stderr, stable exit-code contract. `zshref docs --key AUTO_CD | jq ...` is the intended shape, including for LLM agents composing through `sh`.
 - **Protocol-independent.** MCP is young; POSIX CLIs have fifty years of backward-compat. Insurance against whichever agent protocol comes next.
 

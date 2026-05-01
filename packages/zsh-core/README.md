@@ -57,10 +57,10 @@ if (pid) {
 
 - [`@carlwr/zsh-core-tooldef`](https://github.com/carlwr/better-zsh/tree/main/packages/zsh-core-tooldef) — declarative tool definitions over this library, consumed by the MCP, CLI, and VS Code adapters.
 - [`@carlwr/zshref-mcp`](https://github.com/carlwr/zshref-mcp) — Model Context Protocol server.
-- [`zshref`](https://github.com/carlwr/zshref) — single-binary Rust CLI.
+- [`zshref`](https://github.com/carlwr/zshref) — single-file executable Rust CLI.
 - [`better-zsh`](https://github.com/carlwr/better-zsh/tree/main/packages/vscode-better-zsh) — VS Code extension.
 - [`DESIGN.md`](https://github.com/carlwr/better-zsh/blob/main/DESIGN.md) — architectural rationale.
 
 ## License
 
-MIT. See [LICENSE](./LICENSE). Upstream zsh documentation notices: [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md).
+MIT. See `LICENSE`. Upstream zsh documentation notices: `THIRD_PARTY_NOTICES.md`.

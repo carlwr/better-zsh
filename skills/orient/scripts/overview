@@ -62,3 +62,9 @@ section  $ref/tests    && list $ref/tests    -name '*.rs'
 section 'API rollups (dist/types/*.d.ts)'
 list packages -maxdepth 4 -path '*/dist/types/*.d.ts' \
 || print '(not built — run the relevant package build)'
+
+
+# --- repo symlinks ---
+
+section 'repo symlinks (in HEAD)'
+scripts/list-repo-symlinks | tail -n +3

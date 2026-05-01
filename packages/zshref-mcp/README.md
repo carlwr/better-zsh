@@ -25,7 +25,7 @@ Categories covered:
 
 ## Why zshref-mcp?
 
-Built for agents, acceptable for humans. One of three adapters over the same parsed zsh reference (alongside the [single-binary CLI `zshref`](https://github.com/carlwr/zshref) and the [VS Code extension](https://github.com/carlwr/better-zsh/tree/main/packages/vscode-better-zsh)). What the MCP server adds:
+Built for agents, acceptable for humans. One of three adapters over the same parsed zsh reference (alongside the [single-file executable `zshref`](https://github.com/carlwr/zshref) and the [VS Code extension](https://github.com/carlwr/better-zsh/tree/main/packages/vscode-better-zsh)). What the MCP server adds:
 
 - **First-class in MCP-aware clients.** One line in a client config (Claude Desktop, Cursor, VS Code's built-in MCP, Zed, any generic MCP host) and the tools appear alongside the client's other MCP servers, selectable by the agent like any built-in.
 - **Conservative by default.** Unlike most shell-flavored MCP servers, this one does not execute shell or touch the host environment at all. Installing it is low-commitment — no trust boundary to defend, no shell review to do before adopting.
@@ -262,4 +262,4 @@ The server has no side effects beyond writing MCP JSON-RPC frames to stdout (and
 
 ## License
 
-MIT. See [LICENSE](./LICENSE). Upstream zsh documentation notices: see [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md).
+MIT. See `LICENSE`. Upstream zsh documentation notices: `THIRD_PARTY_NOTICES.md`.

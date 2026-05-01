@@ -57,9 +57,9 @@ The "no execution, no environment access" posture advertised by the MCP and CLI 
 
 ## See also
 
-- [`DEVELOPMENT.md`](./DEVELOPMENT.md) — adding a tool, tool-layer invariants, `brief` vs. `flagBriefs` vs. `description` asymmetry.
+- `DEVELOPMENT.md` — adding a tool, tool-layer invariants, `brief` vs. `flagBriefs` vs. `description` asymmetry.
 - [`DESIGN.md`](https://github.com/carlwr/better-zsh/blob/main/DESIGN.md) — architectural rationale for the tool layer and per-adapter consumer pattern.
 
 ## License
 
-MIT. See [LICENSE](./LICENSE). Upstream zsh documentation notices: [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md).
+MIT. See `LICENSE`. Upstream zsh documentation notices: `THIRD_PARTY_NOTICES.md`.
