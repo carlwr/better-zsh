@@ -56,6 +56,15 @@ function builtinWords(text: string, builtins: readonly string[]) {
     .map(t => t.word)
 }
 
+function tokenType(
+  text: string,
+  word: string,
+  builtins: readonly string[] = [],
+  reservedWords: readonly string[] = [],
+) {
+  return tokens(text, builtins, reservedWords).find(t => t.word === word)?.type
+}
+
 const kw = (word: string) => ({ word, type: 1 })
 const bi = (word: string) => ({ word, type: 0 })
 
@@ -101,11 +110,22 @@ suite("SemanticTokensProvider", () => {
       ["echo"],
       [kw("while"), kw("do"), bi("echo"), kw("done")],
     ],
-    ["if ((1)) echo", ["echo"], [kw("if"), kw("(("), kw("))"), bi("echo")]],
-    ["(( x++ ))", [], [kw("(("), kw("))")]],
+    ["if ((1)) echo", ["echo"], [kw("if"), bi("echo")]],
+    ["(( x++ ))", [], []],
+    ["[[ a && b ]]", [], []],
   ] as const) {
     test(text, () => {
       assert.deepStrictEqual(tokens(text, builtins), want)
+    })
+  }
+
+  for (const [text, left, right] of [
+    ["(( x++ ))", "((", "))"],
+    ["[[ a && b ]]", "[[", "]]"],
+    ["{ echo; }", "{", "}"],
+  ] as const) {
+    test(`pair consistency: ${left} ${right}`, () => {
+      assert.deepStrictEqual(tokenType(text, left), tokenType(text, right))
     })
   }
 

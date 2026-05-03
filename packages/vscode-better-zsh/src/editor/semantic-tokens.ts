@@ -4,6 +4,14 @@ import * as vscode from "vscode"
 
 const TOKEN_TYPES = ["function", "keyword"] as const
 const TOKEN_MODIFIERS = ["defaultLibrary"] as const
+const FILTERED_RESERVED_WORDS: ReadonlySet<string> = new Set([
+  "{",
+  "}",
+  "[[",
+  "]]",
+  "((",
+  "))",
+])
 
 export const SEMANTIC_LEGEND = new vscode.SemanticTokensLegend(
   [...TOKEN_TYPES],
@@ -37,7 +45,7 @@ export class SemanticTokensProvider
       const cmtAt = commentStart(text)
       for (const fact of cmdHeadFactsOnLine(text, cmtAt)) {
         if (fact.kind === "reserved-word") {
-          if (fact.text === "{" || fact.text === "}") continue
+          if (FILTERED_RESERVED_WORDS.has(fact.text)) continue
           b.push(i, fact.span.start, fact.span.end - fact.span.start, 1, 0)
           continue
         }

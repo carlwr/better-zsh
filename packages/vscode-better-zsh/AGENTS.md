@@ -35,7 +35,13 @@ The zsh-path matrix integration harness is CI/Docker-only. On macOS, VS Code's s
 
 ## Gotchas
 
-**`{`/`}` reserved-word facts are filtered out** in the semantic token provider (intentional). `((` / `))` are not filtered and get `keyword` tokens. Adding a new token type requires a matching `semanticTokenScopes` entry in `package.json`.
+**Delimiter-like reserved-word facts are filtered out** in the semantic token provider:
+
+- `{` / `}`
+- `[[` / `]]`
+- `((` / `))`
+
+The analysis layer may still emit those facts for other editor features. Adding a new token type requires a matching `semanticTokenScopes` entry in `package.json`.
 
 **Zsh process env isolation:** spawned zsh processes receive only an explicit allowlist of env vars. Check the zsh exec module in `src/` if a subprocess is missing an expected variable (search for `ZSH_ENV_KEEP` or `ZSH_ENV_DROP`).
 
