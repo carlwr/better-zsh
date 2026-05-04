@@ -87,6 +87,16 @@ suite("SemanticTokensProvider", () => {
     ["echo hi || fc", ["echo", "fc"], ["echo", "fc"]],
     ["if ((1)) { fc; }", ["fc"], ["fc"]],
     ["if ((1)) fc", ["fc"], ["fc"]],
+    [
+      'printingFunction -u2 "\nprint to stderr is enabled.\n"\necho after',
+      ["printingFunction", "print", "echo"],
+      ["printingFunction", "echo"],
+    ],
+    [
+      'printingFunction "$(\nprint active\n)"\necho "after"',
+      ["printingFunction", "print", "echo"],
+      ["printingFunction", "print", "echo"],
+    ],
   ] as const) {
     test(text, () => {
       assert.deepStrictEqual(builtinWords(text, builtins), want)

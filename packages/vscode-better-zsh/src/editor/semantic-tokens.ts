@@ -1,4 +1,4 @@
-import { cmdHeadFactsOnLine, commentStart } from "@carlwr/zsh-core/analysis"
+import { analyzeDoc } from "@carlwr/zsh-core/analysis"
 import { mkObserved } from "@carlwr/zsh-core/types"
 import * as vscode from "vscode"
 
@@ -40,27 +40,58 @@ export class SemanticTokensProvider
 
   provideDocumentSemanticTokens(doc: vscode.TextDocument) {
     const b = new vscode.SemanticTokensBuilder(SEMANTIC_LEGEND)
-    for (let i = 0; i < doc.lineCount; i++) {
-      const text = doc.lineAt(i).text
-      const cmtAt = commentStart(text)
-      for (const fact of cmdHeadFactsOnLine(text, cmtAt)) {
-        if (fact.kind === "reserved-word") {
-          if (FILTERED_RESERVED_WORDS.has(fact.text)) continue
-          b.push(i, fact.span.start, fact.span.end - fact.span.start, 1, 0)
-          continue
-        }
-        if (fact.kind !== "cmd-head") continue
-        if (fact.text === "[") continue
-        if (fact.precmds.includes(mkObserved("precmd", "command"))) continue
-        if (this.reservedWordPainting.has(fact.text)) {
-          b.push(i, fact.span.start, fact.span.end - fact.span.start, 1, 0)
-          continue
-        }
-        if (this.builtins.has(fact.text)) {
-          b.push(i, fact.span.start, fact.span.end - fact.span.start, 0, 1 << 0)
-        }
+    const starts = lineStarts(doc)
+
+    for (const fact of analyzeDoc(doc)) {
+      if (fact.kind === "reserved-word") {
+        if (FILTERED_RESERVED_WORDS.has(fact.text)) continue
+        pushSpan(b, starts, fact.span.start, fact.span.end, 1, 0)
+        continue
+      }
+      if (fact.kind !== "cmd-head") continue
+      if (fact.text === "[") continue
+      if (fact.precmds.includes(mkObserved("precmd", "command"))) continue
+      if (this.reservedWordPainting.has(fact.text)) {
+        pushSpan(b, starts, fact.span.start, fact.span.end, 1, 0)
+        continue
+      }
+      if (this.builtins.has(fact.text)) {
+        pushSpan(b, starts, fact.span.start, fact.span.end, 0, 1 << 0)
       }
     }
     return b.build()
   }
+}
+
+function lineStarts(doc: vscode.TextDocument): readonly number[] {
+  const out: number[] = []
+  let off = 0
+  for (let i = 0; i < doc.lineCount; i++) {
+    out.push(off)
+    off += doc.lineAt(i).text.length + 1
+  }
+  return out
+}
+
+function pushSpan(
+  b: vscode.SemanticTokensBuilder,
+  starts: readonly number[],
+  start: number,
+  end: number,
+  type: number,
+  modifiers: number,
+) {
+  const line = lineAt(starts, start)
+  const lineStart = starts[line] ?? 0
+  b.push(line, start - lineStart, end - start, type, modifiers)
+}
+
+function lineAt(starts: readonly number[], pos: number): number {
+  let line = 0
+  for (let i = 1; i < starts.length; i++) {
+    const start = starts[i]
+    if (start === undefined || start > pos) break
+    line = i
+  }
+  return line
 }

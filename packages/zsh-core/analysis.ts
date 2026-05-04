@@ -1,6 +1,6 @@
 /**
  * @packageDocumentation
- * Line-local zsh analysis primitives and scanner helpers.
+ * Zsh analysis primitives and scanner helpers.
  */
 
 export * from "./src/analysis/cmd-position.ts"

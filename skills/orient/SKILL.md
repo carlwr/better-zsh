@@ -75,7 +75,11 @@ rg "\bsymbolName\b" --type ts
 
 Subpackage-local gotchas live in each subpackage's `AGENTS.md`. The two below span packages or are visible to any consumer:
 
-**Analysis is line-local:** multi-line constructs and `$()` contents are not analyzed. See "Known limitations" comment in `packages/zsh-core/src/test/analysis/`.
+**Analysis is partial:**
+
+- command-position analysis remains line-local
+- cross-line quote suppression is narrow
+- `$()` contents are active code, not quoted-region silence
 
 **Tool layer must not depend on `vscode`:** `packages/zsh-core-tooldef/` is pure tools + metadata; LM registration lives in the extension. `contributes.languageModelTools` vs `toolDefs` is drift-tested. MCP/LM wiring is locked to:
 

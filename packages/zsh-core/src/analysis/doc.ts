@@ -1,11 +1,11 @@
 import { commentStart } from "./comment.ts"
 
-/** Minimal line abstraction for line-based analysis (compatible with VS Code TextDocument). */
+/** Minimal line abstraction for analysis (compatible with VS Code TextDocument). */
 export interface DocLine {
   readonly text: string
 }
 
-/** Minimal document abstraction for line-based analysis (compatible with VS Code TextDocument). */
+/** Minimal document abstraction for analysis (compatible with VS Code TextDocument). */
 export interface DocLike {
   lineAt(i: number): DocLine
   readonly lineCount: number

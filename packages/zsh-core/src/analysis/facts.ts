@@ -9,6 +9,7 @@ import {
 } from "./doc.ts"
 import type { Fact } from "./fact-types.ts"
 import { cmdHeadFactsOnLine, funcDeclAtLine } from "./line-facts.ts"
+import { quotedRegionFacts } from "./quoted-region.ts"
 
 export type { DocLike, DocLine, TextSpan } from "./doc.ts"
 export { factText } from "./doc.ts"
@@ -25,6 +26,8 @@ export type {
   LineFact,
   PrecmdFact,
   ProcessSubstFact,
+  QuotedRegionFact,
+  QuoteStyle,
   RedirFact,
   ReservedWordFact,
 } from "./fact-types.ts"
@@ -33,20 +36,31 @@ export {
   isFuncDeclFact,
   isPrecmdFact,
   isProcessSubstFact,
+  isQuotedRegionFact,
   isRedirFact,
   isReservedWordFact,
 } from "./fact-types.ts"
 export { cmdHeadFactsOnLine, funcDeclAtLine } from "./line-facts.ts"
+export { quotedRegionFacts } from "./quoted-region.ts"
 
 function shiftFact<T extends { span: TextSpan }>(base: number, fact: T): T {
   return { ...fact, span: absSpan(base, fact.span) }
 }
+
+const QUOTED_FILTERED_KINDS: ReadonlySet<Fact["kind"]> = new Set([
+  "cmd-head",
+  "precmd",
+  "reserved-word",
+  "redir",
+  "process-subst",
+])
 
 /** Analyze a whole document and return coarse zsh syntax facts. */
 export function analyzeDoc(doc: DocLike): readonly Fact[] {
   const lines = readLines(doc)
   const starts = lineStarts(lines)
   const facts: Fact[] = []
+  const quotedRegions = quotedRegionFacts(lines)
 
   for (let i = 0; i < lines.length; i++) {
     const text = lines[i] ?? ""
@@ -71,8 +85,16 @@ export function analyzeDoc(doc: DocLike): readonly Fact[] {
   }
 
   facts.push(...ctxFacts(lines, starts))
+  facts.push(...quotedRegions)
 
-  return facts
+  return facts.filter(
+    fact =>
+      fact.kind === "quoted-region" ||
+      !(
+        QUOTED_FILTERED_KINDS.has(fact.kind) &&
+        quotedRegions.some(quote => spansIntersect(fact.span, quote.span))
+      ),
+  )
 }
 
 export function factsAt(
@@ -86,4 +108,8 @@ export function factsAt(
     // ctx spans include their closing delimiter, so offset matching is inclusive
     hasOffset(fact.span, off, fact.kind === "ctx"),
   )
+}
+
+function spansIntersect(a: TextSpan, b: TextSpan): boolean {
+  return a.start < b.end && b.start < a.end
 }

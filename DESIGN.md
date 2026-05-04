@@ -25,7 +25,7 @@ A standalone package of structured zsh knowledge:
 
 Surface and posture: `packages/zsh-core/README.md`. The static-scope guarantee is enforced — and described — by `packages/zsh-core/src/test/static-scope.test.ts`.
 
-Not a grammar, not a tokenizer. Zsh is not generally parseable without running zsh; we take line-local, corpus-aware wins that do not require shell execution.
+Not a grammar, not a tokenizer. Zsh is not generally parseable without running zsh; we take bounded, corpus-aware wins that do not require shell execution.
 
 `src/analysis/` is conceptually separable from `src/docs/` + `src/render/` + JSON-dist artifacts. Splitting into two workspace packages was deferred: the static-scope test enforces the seam structurally; a separate package would add extraction config without payoff today.
 
@@ -53,7 +53,7 @@ Knows nothing about user code. The universe of documented elements is statically
 
 Coarse, potentially overlapping annotations about user zsh code. A `Fact` discriminated union keyed by `FactKind` with confidence levels (`"hard"` / `"heuristic"`).
 
-The term "fact" is load-bearing: facts are what the analyzer *asserts*, not a complete description. Analysis is best-effort and line-local; no claim of exhaustiveness.
+The term "fact" is load-bearing: facts are what the analyzer *asserts*, not a complete description. Analysis is best-effort and partial; no claim of exhaustiveness.
 
 Where a payload benefits from branding, it carries `Observed<K>` — **never** `Documented<K>`. Facts annotate syntax, not corpus membership.
 
@@ -447,7 +447,7 @@ A table-driven rewrite was tried and rejected. Pinning comment in `packages/vsco
 
 Full custom zsh TextMate grammar is out of scope; tree-sitter is the long-term direction. Today:
 
-- Vendor the stock sh/bash TM grammar; add **semantic tokens** only where line-local analysis is reliable.
+- Vendor the stock sh/bash TM grammar; add **semantic tokens** only where static analysis is reliable.
 - Stay consistent with TM where TM is right; prefer specifically qualified TextMate scope names for theme overrides.
 - `{` / `}` reserved-word facts are **skipped** in the token provider (TM already covers `f() { … }`; block-`{` vs word-`{` is hairy).
 - `((` / `))` **are** tokenized as `keyword` — reuses existing provider paths.

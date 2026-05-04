@@ -43,7 +43,7 @@ const TRANSPARENT: ReadonlySet<string> = new Set([
 // Reserved-word painting in the VS Code extension is a separate concern;
 // it consumes `corpus.reserved_word` directly and is therefore broader
 // than this set. See DESIGN.md §"Reserved word: an enumeration-primary
-// doc category" and `packages/vscode-better-zsh/src/semantic-tokens.ts`.
+// doc category" and `packages/vscode-better-zsh/src/editor/semantic-tokens.ts`.
 //
 // The companion lock-in test
 // (`src/test/analysis/cmd-position-keywords-lockin.test.ts`) pins the

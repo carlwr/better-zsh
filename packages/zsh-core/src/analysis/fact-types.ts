@@ -4,6 +4,7 @@ import type { TextSpan } from "./doc.ts"
 /** Confidence level: "hard" for structural syntax, "heuristic" for best-effort detection. */
 export type FactStrength = "hard" | "heuristic"
 export type FactCtx = "setopt" | "cond" | "arith"
+export type QuoteStyle = "'" | '"'
 export type FactKind =
   | "ctx"
   | "cmd-head"
@@ -12,6 +13,7 @@ export type FactKind =
   | "redir"
   | "process-subst"
   | "reserved-word"
+  | "quoted-region"
 
 export interface BaseFact {
   readonly kind: FactKind
@@ -59,6 +61,16 @@ export interface ReservedWordFact extends BaseFact {
   readonly text: string
 }
 
+/**
+ * Conservatively recognized closed quoted region.
+ * Emitted regions are non-overlapping; unsupported constructs may be omitted.
+ */
+export interface QuotedRegionFact extends BaseFact {
+  readonly kind: "quoted-region"
+  readonly quote: QuoteStyle
+  readonly multiline: boolean
+}
+
 export type Fact =
   | CtxFact
   | CmdHeadFact
@@ -67,6 +79,7 @@ export type Fact =
   | RedirFact
   | ProcessSubstFact
   | ReservedWordFact
+  | QuotedRegionFact
 
 /** Facts in command position. */
 export type CmdFact = CmdHeadFact | PrecmdFact
@@ -99,4 +112,8 @@ export function isProcessSubstFact(fact: Fact): fact is ProcessSubstFact {
 
 export function isReservedWordFact(fact: Fact): fact is ReservedWordFact {
   return fact.kind === "reserved-word"
+}
+
+export function isQuotedRegionFact(fact: Fact): fact is QuotedRegionFact {
+  return fact.kind === "quoted-region"
 }

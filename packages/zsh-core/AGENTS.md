@@ -17,7 +17,7 @@ Prefer explicit subpaths so dependency arrows stay visible and rollups stay legi
   - type
   - aggregate metadata
 - **`@carlwr/zsh-core/types`** — record types and brand smart constructors.
-- **`@carlwr/zsh-core/analysis`** — line-local analysis and scanner helpers.
+- **`@carlwr/zsh-core/analysis`** — static analysis and scanner helpers.
 - **`@carlwr/zsh-core/taxonomy`**:
   - category enumeration
   - ordering

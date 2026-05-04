@@ -23,7 +23,7 @@ Static zsh knowledge is the product. We parse vendored Yodl into typed records d
   - `$aliases`
   - `$fpath` beyond system defaults
 - **Mental model:** "if we could bundle a zsh binary and run it in an isolated container, we would." System zsh is invoked only where shell execution is intrinsically required (diagnostics, completion enrichment); otherwise bundled/static.
-- **`analysis/`:** low-hanging fruit — what line-local, corpus-aware logic can recognize. Everything else is silence.
+- **`analysis/`:** low-hanging fruit — what bounded, static logic can recognize. Everything else is silence.
 
 ### Resolver scope balance
 
@@ -60,7 +60,7 @@ See DESIGN.md.
 `src/docs/` and `src/analysis/` are intentionally asymmetric:
 
 - **`docs/` is exhaustive over a closed `DocCategory` taxonomy** with `DocCorpus`-keyed tables. Adding a category is a structural change with type-checked completeness everywhere.
-- **`analysis/` is line-local and partial.** `Fact` kinds (`cmd-head`, `redir`, `func-decl`, …) overlap `DocCategory` only incidentally and don't share its parametric machinery.
+- **`analysis/` is partial.** Narrow document-spanning facts exist only when they reduce false positives without claiming a full parse. `Fact` kinds overlap `DocCategory` only incidentally and don't share its parametric machinery.
 
 Different jobs:
 

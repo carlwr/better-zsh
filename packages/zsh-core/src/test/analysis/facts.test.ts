@@ -9,6 +9,7 @@ import {
   isFuncDeclFact,
   isPrecmdFact,
   isProcessSubstFact,
+  isQuotedRegionFact,
   isRedirFact,
   isReservedWordFact,
   type LineFact,
@@ -217,6 +218,37 @@ describe("document facts", () => {
     const doc = mockDoc(["builtin setopt extended_glob"])
     const facts = factsAt(doc, 0, 18)
     expect(facts.filter(isCtxFact).map(fact => fact.ctx)).toContain("setopt")
+  })
+
+  test("filters active-syntax facts inside recognized multiline quotes", () => {
+    const doc = mockDoc(['print "', "noglob echo > >(tee)", "then", '"'])
+    const facts = analyzeDoc(doc)
+    expect(facts.filter(isQuotedRegionFact)).toHaveLength(1)
+    expect(
+      facts.filter(fact => fact.kind === "cmd-head").map(fact => fact.text),
+    ).toEqual(["print"])
+    expect(facts.filter(isPrecmdFact)).toEqual([])
+    expect(facts.filter(isRedirFact)).toEqual([])
+    expect(facts.filter(isProcessSubstFact)).toEqual([])
+    expect(facts.filter(isReservedWordFact)).toEqual([])
+  })
+
+  test("keeps facts outside quoted regions", () => {
+    const doc = mockDoc(['print "then"', "then echo"])
+    expect(
+      analyzeDoc(doc)
+        .filter(isReservedWordFact)
+        .map(fact => fact.text),
+    ).toEqual(["then"])
+  })
+
+  test("keeps outside facts when quoted-region scan omits unsupported input", () => {
+    const doc = mockDoc(['print "$(then"', "then echo"])
+    const facts = analyzeDoc(doc)
+    expect(facts.filter(isQuotedRegionFact)).toHaveLength(0)
+    expect(facts.filter(isReservedWordFact).map(fact => fact.text)).toEqual([
+      "then",
+    ])
   })
 })
 
