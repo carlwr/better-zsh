@@ -16,10 +16,18 @@ import {
   type SearchResult,
   searchToolDef,
   TOOL_SUITE_PREAMBLE,
+  type ToolDef,
   toolDefs,
 } from "../../index.ts"
 
 const corpus = loadCorpus()
+
+function limitHelp(def: ToolDef): string {
+  const props = def.inputSchema.properties as
+    | Record<string, { description?: string }>
+    | undefined
+  return props?.limit?.description ?? ""
+}
 
 const eachTool = test.each(toolDefs.map(d => [d.name, d] as const))
 
@@ -122,7 +130,7 @@ describe("toolDefs description shape", () => {
 
   test("zsh_docs mentions every DocCategory (via branded string)", () => {
     const d = docsToolDef.description + JSON.stringify(docsToolDef.inputSchema)
-    for (const cat of classifyOrder) expect(d).toContain(`'${cat}'`)
+    for (const cat of classifyOrder) expect(d).toContain(cat)
   })
 
   test("zsh_docs description mentions option negation semantics", () => {
@@ -133,41 +141,42 @@ describe("toolDefs description shape", () => {
 
   test("zsh_docs warns about multi-match without `category`", () => {
     const d = docsToolDef.description
-    expect(d).toMatch(/more than one match/i)
+    expect(d).toMatch(/multiple matches/i)
+    expect(d).toContain("--category")
   })
 
   test("zsh_search lists every DocCategory (via branded string)", () => {
     const d =
       searchToolDef.description + JSON.stringify(searchToolDef.inputSchema)
-    for (const cat of docCategories) expect(d).toContain(`'${cat}'`)
+    for (const cat of docCategories) expect(d).toContain(cat)
   })
 
   test("zsh_search mentions ranking/limit and points at follow-up", () => {
-    const d = searchToolDef.description
-    expect(d).toMatch(/fuzzy/i)
-    expect(d).toMatch(/limit/i)
-    expect(d).toContain("zsh_docs")
+    expect(searchToolDef.description).toMatch(/fuzzy/i)
+    expect(limitHelp(searchToolDef)).toMatch(/limit|maximum/i)
+    expect(searchToolDef.description).toContain("zsh_docs")
   })
 
-  test("zsh_search and zsh_list describe matchesReturned/matchesTotal truncation signal", () => {
+  test("zsh_search and zsh_list output schema documents truncation counts", () => {
     for (const def of [searchToolDef, listToolDef]) {
-      expect(def.description).toContain("matchesReturned")
-      expect(def.description).toContain("matchesTotal")
+      const s = JSON.stringify(def.outputSchema)
+      expect(s).toContain("matchesReturned")
+      expect(s).toContain("matchesTotal")
     }
   })
 
   test("zsh_list lists every DocCategory (via branded string)", () => {
     const d = listToolDef.description + JSON.stringify(listToolDef.inputSchema)
-    for (const cat of docCategories) expect(d).toContain(`'${cat}'`)
+    for (const cat of docCategories) expect(d).toContain(cat)
   })
 
   test("zsh_list points at zsh_docs for the markdown body", () => {
     expect(listToolDef.description).toContain("zsh_docs")
   })
 
-  // Sanity: human-readable category labels make it into the docs description.
+  // Sanity: human-readable category labels make it into the docs option help.
   test("zsh_docs surfaces human-readable category labels", () => {
-    const d = docsToolDef.description
+    const d = JSON.stringify(docsToolDef.inputSchema)
     for (const cat of classifyOrder) expect(d).toContain(docCategoryLabels[cat])
   })
 
@@ -183,8 +192,8 @@ describe("toolDefs description shape", () => {
 
 // The preamble is single-sourced but rendered into two surfaces (MCP
 // handshake instructions + CLI `--help`). Every `zsh_*` mention must
-// resolve to a real tool, otherwise the CLI's `cli_prose()` leaves a
-// stale name in terminal output. Tone/length drift is on reviewers;
+// resolve to a real tool, otherwise the CLI's `prose::rewrite_refs` leaves
+// a stale name in terminal output. Tone/length drift is on reviewers;
 // this guards only the mechanically-checkable part.
 describe("TOOL_SUITE_PREAMBLE", () => {
   test("only references real tool names", () => {

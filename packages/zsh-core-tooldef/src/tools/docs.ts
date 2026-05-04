@@ -17,15 +17,17 @@ import {
 } from "@carlwr/zsh-core/taxonomy"
 import type { Documented } from "@carlwr/zsh-core/types"
 import { makeToolDef, type ToolDef } from "../tool-defs.ts"
-import { display } from "./doc-display.ts"
-import type { BaseMatch } from "./entries.ts"
-import { mkOutputSchema } from "./output-schema.ts"
+import { display } from "./shared/doc-display.ts"
+import type { BaseMatch } from "./shared/entries.ts"
+import { resolutionDescription, safetyDescription } from "./shared/help.ts"
+import { mkOutputSchema } from "./shared/output-schema.ts"
 import {
-  categoryList,
+  briefCategory,
   type Envelope,
+  inputSchemaCategory,
   isValidCategory,
   mkEnvelope,
-} from "./result.ts"
+} from "./shared/result.ts"
 
 export interface DocsInput {
   readonly key: string
@@ -101,41 +103,42 @@ function isHistoryEvent(corpus: DocCorpus, pid: DocPieceId): boolean {
   return rec?.kind === "event-designator"
 }
 
-const catList = categoryList(classifyOrder, { withLabel: true })
+const desc = `\
+Render markdown for a zsh token or canonical id from the bundled static ${ZSH_UPSTREAM.tag} reference.
+
+Omitting \`--category\` can return multiple matches for overlapping syntax. The category list under the help for \`--category\` is resolver order.
+
+${resolutionDescription}
+
+Output:
+  matches[]          matched records
+  matchesReturned    returned match count
+  matchesTotal       total match count
+
+Each match:
+  category           doc category
+  id                 canonical id
+  display            zsh-facing name
+  mdBody             rendered markdown
+  subKind            optional category facet
+  feedback           optional lossy-resolution signal
+
+No matches: empty \`matches[]\`, exit code 0. Returned \`id\` values are valid \`--key\` inputs.
+
+${safetyDescription}`
 
 export const docsToolDef: ToolDef = makeToolDef<"key" | "category">({
   name: "zsh_docs",
-  brief: "look up docs for a zsh key (markdown body)",
-  description: `\
-Look up the docs for a zsh key in the bundled static ${ZSH_UPSTREAM.tag} reference.
-
-Returns one match per category that resolves the input, each with the rendered markdown body.
-
-Categories searched (in resolver-walk order):
-
-${catList}
-
-Set \`category\` to constrain the search to one category; otherwise every category is tried and the response may carry more than one match. Some inputs name elements in more than one category (e.g. \`for\`, \`[[\`, \`function\`, \`nocorrect\`); without \`category\` those return multiple matches.
-
-Each match is \`{ category, id, display, mdBody, subKind?, feedback? }\`. \`subKind\` is surfaced when the category has a meaningful sub-facet (e.g. history \`kind\`, glob_op \`kind\`, reserved_word \`pos\`). \`feedback\` is emitted when the per-category resolver had a lossy-normalization signal worth surfacing — today, \`{ kind: "input-negated" }\` on option inputs reached via \`NO_\`-stripping, so agents can distinguish \`setopt AUTO_CD\` from \`setopt NO_AUTO_CD\` (handles the \`NOTIFY\` / \`NO_NOTIFY\` edge case).
-
-Resolution is corpus-aware: case-insensitive option matching, underscore stripping, redirection group-op + tail decomposition, history event-designators, and the option \`NO_*\` negation convention. Canonical record ids (e.g. \`autocd\`) round-trip exactly.
-
-Returns \`{ matches: [], matchesReturned: 0, matchesTotal: 0 }\` when nothing resolves. \`matchesReturned\` and \`matchesTotal\` are emitted for envelope uniformity with \`zsh_search\` / \`zsh_list\`; \`docs\` never truncates, so they always equal \`matches.length\`.
-
-No shell execution, no environment access.`,
+  brief: "look up bundled zsh reference docs",
+  description: desc,
   inputSchema: {
     type: "object",
     properties: {
       key: {
         type: "string",
-        description:
-          'The zsh token or canonical key to look up — e.g. "AUTO_CD", "echo", "[[", "<<<", "!42", "%1", "NO_NOTIFY", or a canonical id from a prior `zsh_search` such as "autocd". Case and underscores are normalized per category.',
+        description: `Zsh token or canonical id\n\nExamples: AUTO_CD, [[, %1, autocd`,
       },
-      category: {
-        type: "string",
-        description: `Optional: constrain the lookup to one category. When omitted, every category is tried and the response may carry more than one match. Unknown values yield an empty match set.\n\nValid values:\n\n${catList}`,
-      },
+      category: inputSchemaCategory,
     },
     required: ["key"],
     additionalProperties: false,
@@ -145,8 +148,8 @@ No shell execution, no environment access.`,
     feedback: "optional",
   }),
   flagBriefs: {
-    key: "Zsh token or canonical key to look up.",
-    category: "Optional: constrain to one doc category.",
+    key: "Zsh token or canonical id.",
+    category: briefCategory,
   },
   execute: (corpus, input): DocsResult =>
     docs(corpus, input as unknown as DocsInput),

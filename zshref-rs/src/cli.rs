@@ -5,153 +5,74 @@
 //! property's JSON Schema fragment: enum (`category`) → PossibleValues,
 //! integer with bounds → u32 range, everything else → String.
 
+mod prose;
+
 use crate::corpus::{Corpus, ToolDef, ToolDefs, DOC_CATEGORIES};
 use crate::output;
 use crate::tools;
 use anyhow::Result;
 use clap::{Arg, ArgAction, ArgMatches, Command};
-use serde_json::{Map, Value};
+use serde_json::{json, Map, Value};
 
-const ROOT_BIN_NAME: &str = "zshref";
-
-const ROOT_BRIEF: &str = "Query a bundled static zsh reference from the command line.";
-
-const ROOT_AFTER_HELP_TAIL: &str = concat!(
-    "Exit codes:\n",
-    "  0  success (also for empty matches)\n",
-    "  1  unexpected internal error\n",
-    "  2  invalid input (bad flag, enum, or subcommand)\n",
-    "\n",
-    "Environment:\n",
-    "  NO_COLOR          present + non-empty disables ANSI colors\n",
-    "  CLICOLOR_FORCE    present + non-empty forces ANSI colors on (even off a TTY)\n",
-    "\n",
-    "Examples:\n",
-    "  zshref docs --key AUTO_CD\n",
-    "  zshref docs --key NO_AUTO_CD                  # surfaces feedback:input-negated\n",
-    "  zshref docs --key for                         # multi-match without --category\n",
-    "  zshref search --query printf --limit 5\n",
-    "  zshref list --category option --limit 200\n",
-    "  zshref list                                   # first 20 records of every category\n",
-);
-
-// Hand-aligned so tool subcommands line up across columns.
-// Clap's default single-line usage loses readability for this surface.
-const ROOT_USAGE: &str = concat!(
-    "zshref [--pretty] docs    --key=K   [--category=C]\n",
-    "  zshref [--pretty] search  --query=W [--category=C] [--limit=L]\n",
-    "  zshref [--pretty] list              [--category=C] [--limit=L]\n",
-    "\n",
-    "  zshref [--pretty] info\n",
-    "  zshref [--pretty] schema\n",
-    "  zshref batch                                 # JSONL on stdin/stdout\n",
-    "  zshref completions <SHELL>\n",
-    "  zshref help [COMMAND]",
-);
+struct Ctx<'a> {
+    tool_defs: &'a ToolDefs,
+    corpus: &'a Corpus,
+    pretty: bool,
+}
 
 pub fn subcommand_name(tool_name: &str) -> &str {
     tool_name.strip_prefix("zsh_").unwrap_or(tool_name)
 }
 
 pub fn build_cli(tool_defs: &ToolDefs, corpus: &Corpus) -> Command {
-    // Preamble uses MCP-primary `zsh_*` names; `cli_prose()` rewrites them
-    // to `zshref *`. WARNING in `packages/zsh-core-tooldef/src/tool-defs.ts`
+    // Preamble uses MCP-primary `zsh_*` names; `prose::rewrite_refs` rewrites
+    // them to `zshref *`. WARNING in `packages/zsh-core-tooldef/src/tool-defs.ts`
     // applies here too — tone/length drift on that source affects terminal help.
     let root_after_help = format!(
-        "{}\n{}",
-        cli_prose(&tool_defs.preamble, &tool_defs.tools),
-        ROOT_AFTER_HELP_TAIL,
+        "\n{}\n{}\n",
+        prose::rewrite_refs(&tool_defs.preamble, &tool_defs.tools),
+        prose::ROOT_AFTER_HELP_TAIL,
     );
 
-    let mut root = Command::new(ROOT_BIN_NAME)
+    let mut root = Command::new(prose::BIN)
         .version(version_string(corpus))
-        .about(ROOT_BRIEF)
-        .long_about(concat!(
-            "Query a bundled static zsh reference from the command line.\n\n",
-            "Tool subcommands (docs, search, list) emit one compact JSON line ",
-            "on stdout (pass `--pretty` for indented multi-line). `info` ",
-            "always emits indented multi-line JSON. ",
-            "`docs` returns rendered markdown bodies; `search` and `list` return ",
-            "identifiers only — pair `search`/`list` results with `docs` for the ",
-            "full body. `completions` emits the requested shell script on stdout ",
-            "instead. Help, version, errors, and warnings go to stderr. ",
-            "ANSI colors in help output are auto-disabled when stderr is not a TTY.",
-        ))
-        .override_usage(ROOT_USAGE)
+        .about(prose::ROOT_BRIEF)
+        .long_about(prose::ROOT_LONG)
+        .override_usage(prose::ROOT_USAGE)
+        .arg(pretty_arg())
         .after_help(root_after_help)
         .arg_required_else_help(true)
-        .subcommand_required(true)
-        .color(clap::ColorChoice::Auto)
-        .arg(
-            // Global: both `zshref --pretty docs …` and `zshref docs … --pretty` work.
-            // `batch` ignores this — protocol requires one response line per request.
-            Arg::new("pretty")
-                .long("pretty")
-                .action(ArgAction::SetTrue)
-                .global(true)
-                .help("emit indented multi-line JSON instead of one compact line"),
-        );
+        .subcommand_required(true);
 
     for td in &tool_defs.tools {
-        root = root.subcommand(build_subcommand(td, &tool_defs.tools));
+        root = root.subcommand(build_subcommand(td, &tool_defs.tools, corpus));
     }
 
     root = root.subcommand(
-        Command::new("completions")
-            .about("emit a shell-completion script for the given shell to stdout")
-            .arg(
-                Arg::new("shell")
-                    .value_name("SHELL")
-                    .required(true)
-                    .value_parser(clap::value_parser!(clap_complete::Shell))
-                    .help("target shell (bash, zsh, fish, elvish, powershell)"),
-            ),
+        Command::new("batch")
+            .about(prose::BATCH_ABOUT)
+            .after_long_help(prose::BATCH_LONG),
     );
 
-    root = root.subcommand(
-        Command::new("info").about("emit corpus + upstream metadata as pretty-printed JSON"),
-    );
+    root = root.subcommand(Command::new("info").about(prose::INFO_ABOUT));
 
-    // Size hint on `about` warns agents off bulk-piping into context.
     let (words, leaves) = tools::schema::size_hint(tool_defs);
-    let schema_about =
-        format!("emit JSON Schema for tool inputs + outputs (≈{words} words; see --help)");
-    let schema_long_about = format!(
-        "Emit a JSON bundle of every tool's `inputSchema` and `outputSchema` \
-         to stdout. The input schemas also define the request shape for \
-         `zshref batch`.\n\
-         \n\
-         Intended use: codegen and programmatic validation. Not intended \
-         for human or agent reading — for documentation, prefer the \
-         tool-specific `--help` output and the shell-completion scripts \
-         (`zshref completions <SHELL>`).\n\
-         \n\
-         Size: ≈{words} words / ≈{leaves} leaf JSON properties. Bulk-piping \
-         this into an agent's context window is rarely what you want."
-    );
     root = root.subcommand(
         Command::new("schema")
-            .about(schema_about)
-            .long_about(schema_long_about),
+            .about(prose::schema_about(words))
+            .after_long_help(prose::schema_long(words, leaves))
+            .arg(pretty_arg()),
     );
 
     root = root.subcommand(
-        Command::new("batch")
-            .about("read JSONL requests on stdin; emit JSONL responses (one line per request)")
-            .long_about(
-                "Streaming I/O mode primarily for cross-language tests and IPC.\n\
-                 \n\
-                 Reads stdin until EOF; each non-empty line is a JSON object\n\
-                 `{\"tool\": \"<name>\", \"input\": {...}}` and produces one\n\
-                 compact-JSON response line — `{\"ok\": true, \"output\": ...}`\n\
-                 on success or `{\"ok\": false, \"error\": \"...\"}` on a\n\
-                 per-request error. Responses preserve input order. Exit code\n\
-                 is 0 unless stdin I/O fails (per-request errors are in-band).\n\
-                 \n\
-                 The `input` shape per tool is the corresponding `inputSchema`\n\
-                 emitted by `zshref schema`. `--pretty` is ignored — the\n\
-                 protocol requires one response line per request.",
-            ),
+        Command::new("completions").about(prose::COMPL_ABOUT).arg(
+            Arg::new("shell")
+                .value_name("SHELL")
+                .required(true)
+                .value_parser(clap::value_parser!(clap_complete::Shell))
+                .hide_possible_values(true)
+                .help(prose::COMPL_SHELL_HELP),
+        ),
     );
 
     root
@@ -174,12 +95,15 @@ fn version_string(corpus: &Corpus) -> String {
     format!("{pkg_version}\n{upstream_line}\n{total} records across {cats} categories")
 }
 
-fn build_subcommand(td: &ToolDef, tools: &[ToolDef]) -> Command {
+fn build_subcommand(td: &ToolDef, tools: &[ToolDef], corpus: &Corpus) -> Command {
     let name = subcommand_name(&td.name).to_string();
+    let after_help = tool_after_help(td, tools, corpus);
     let mut cmd = Command::new(name)
-        .about(cli_prose(&td.brief, tools))
-        .long_about(cli_prose(&td.description, tools))
-        .disable_help_flag(false);
+        .about(prose::rewrite_refs(&td.brief, tools))
+        .after_long_help(after_help)
+        .disable_help_flag(false)
+        // Subcommand arg: `zshref docs … --pretty`.
+        .arg(pretty_arg());
 
     let props = td
         .input_schema
@@ -201,7 +125,7 @@ fn build_subcommand(td: &ToolDef, tools: &[ToolDef]) -> Command {
     for (key, spec) in &props {
         let flag_brief = td.flag_briefs.get(key).cloned().unwrap_or_default();
         // MCP and `--help` share `inputSchema.properties[key].description`;
-        // `cli_prose` rewrites `zsh_*` refs before render.
+        // `prose::rewrite_refs` rewrites `zsh_*` refs before render.
         let long_help = spec
             .get("description")
             .and_then(Value::as_str)
@@ -220,6 +144,34 @@ fn build_subcommand(td: &ToolDef, tools: &[ToolDef]) -> Command {
     cmd
 }
 
+fn tool_after_help(td: &ToolDef, tools: &[ToolDef], corpus: &Corpus) -> String {
+    let cli_description = prose::rewrite_refs(&prose::cli_tool_description(&td.description), tools);
+    match tool_cli_example(td, corpus) {
+        Some(example) => format!("{cli_description}\n\n{example}"),
+        None => cli_description,
+    }
+}
+
+fn tool_cli_example(td: &ToolDef, corpus: &Corpus) -> Option<String> {
+    let (command, input) = match td.name.as_str() {
+        "zsh_docs" => ("zshref docs --key=bye --pretty", json!({ "key": "bye" })),
+        "zsh_search" => (
+            "zshref search --query=autolo --limit=1 --pretty",
+            json!({ "query": "autolo", "limit": 1 }),
+        ),
+        "zsh_list" => (
+            "zshref list --category=option --limit=1 --pretty",
+            json!({ "category": "option", "limit": 1 }),
+        ),
+        _ => return None,
+    };
+    let output = tools::dispatch(td, &input, corpus).expect("CLI help example must run");
+    Some(prose::shell_example(
+        command,
+        &output::render(&output, true),
+    ))
+}
+
 fn build_arg(
     key: &str,
     spec: &Value,
@@ -233,7 +185,7 @@ fn build_arg(
         .long(key.to_string())
         .value_name(value_name)
         .help(help.to_string())
-        .long_help(cli_prose(long_help, tools))
+        .long_help(prose::rewrite_refs(long_help, tools))
         .required(required)
         .action(ArgAction::Set)
         // zsh tokens include `-`, `-p`, fd prefixes (`2>`), etc.
@@ -251,9 +203,12 @@ fn build_arg(
             // clap range is i64; u32 parser narrows on parse.
             arg = arg.value_parser(clap::value_parser!(u32).range(min..=max));
             // Schema `default` → clap default; avoids Rust-side mirror constants.
-            if let Some(d) = spec.get("default").and_then(Value::as_u64) {
-                arg = arg.default_value(Box::leak(d.to_string().into_boxed_str()) as &'static str);
-            }
+            // ---
+            // disabled - at least for --limit, the dynamic text already contains the default; we don't want it twice.
+            // if let Some(d) = spec.get("default").and_then(Value::as_u64) {
+            //     arg = arg.default_value(d.to_string());
+            // }
+            // ---
         }
         "string"
             // The `category` flag has a closed enum — expose as PossibleValues
@@ -275,14 +230,11 @@ fn build_arg(
     arg
 }
 
-/// Rewrite MCP-primary `zsh_*` names to `zshref *` — avoids duplicating
-/// descriptions across the CLI and MCP seam.
-fn cli_prose(s: &str, tools: &[ToolDef]) -> String {
-    let mut out = s.to_string();
-    for td in tools {
-        out = out.replace(&td.name, &format!("zshref {}", subcommand_name(&td.name)));
-    }
-    out
+fn pretty_arg() -> Arg {
+    Arg::new("pretty")
+        .long("pretty")
+        .action(ArgAction::SetTrue)
+        .help(prose::ROOT_PRETTY_HELP)
 }
 
 pub fn dispatch(cmd: Command, tool_defs: &ToolDefs, corpus: &Corpus) -> Result<i32> {
@@ -291,54 +243,51 @@ pub fn dispatch(cmd: Command, tool_defs: &ToolDefs, corpus: &Corpus) -> Result<i
         Ok(m) => m,
         Err(err) => return Ok(output::handle_clap_error(err, &mut cmd_for_err)),
     };
-
-    let (sub_name, sub_matches) = match matches.subcommand() {
-        Some(x) => x,
-        None => {
-            cmd_for_err.print_long_help().ok();
-            return Ok(0);
-        }
+    let Some((sub_name, sub_matches)) = matches.subcommand() else {
+        cmd_for_err.print_long_help().ok();
+        return Ok(0);
+    };
+    // `--pretty` is registered only on JSON-emitting subcommands.
+    let ctx = Ctx {
+        tool_defs,
+        corpus,
+        pretty: optional_flag(sub_matches, "pretty"),
     };
 
-    // Read from sub_matches: global flag propagates here regardless of position.
-    let pretty = sub_matches.get_flag("pretty");
-
-    if sub_name == "completions" {
-        let shell: clap_complete::Shell = *sub_matches
-            .get_one::<clap_complete::Shell>("shell")
-            .expect("clap enforces required");
-        let mut stdout = std::io::stdout();
-        clap_complete::generate(shell, &mut cmd_for_err, ROOT_BIN_NAME, &mut stdout);
-        return Ok(0);
+    match sub_name {
+        "completions" => {
+            let shell: clap_complete::Shell = *sub_matches
+                .get_one::<clap_complete::Shell>("shell")
+                .expect("clap enforces required");
+            clap_complete::generate(shell, &mut cmd_for_err, prose::BIN, &mut std::io::stdout());
+            Ok(0)
+        }
+        "info" => {
+            output::emit_pretty(&tools::info::run(ctx.corpus)?);
+            Ok(0)
+        }
+        "schema" => {
+            output::emit(&tools::schema::run(ctx.tool_defs)?, ctx.pretty);
+            Ok(0)
+        }
+        "batch" => crate::batch::run(ctx.tool_defs, ctx.corpus),
+        sub => {
+            let tool_name = format!("zsh_{sub}");
+            let td = ctx
+                .tool_defs
+                .tools
+                .iter()
+                .find(|t| t.name == tool_name)
+                .expect("subcommand registered from tool_defs");
+            let input = matches_to_input_value(td, sub_matches);
+            output::emit(&tools::dispatch(td, &input, ctx.corpus)?, ctx.pretty);
+            Ok(0)
+        }
     }
+}
 
-    if sub_name == "info" {
-        let result = tools::info::run(corpus)?;
-        output::emit_pretty(&result);
-        return Ok(0);
-    }
-
-    if sub_name == "schema" {
-        let result = tools::schema::run(tool_defs)?;
-        output::emit(&result, pretty);
-        return Ok(0);
-    }
-
-    if sub_name == "batch" {
-        return crate::batch::run(tool_defs, corpus);
-    }
-
-    let tool_name = format!("zsh_{sub_name}");
-    let td = tool_defs
-        .tools
-        .iter()
-        .find(|t| t.name == tool_name)
-        .expect("subcommand registered from tool_defs");
-
-    let input = matches_to_input_value(td, sub_matches);
-    let result = tools::dispatch(td, &input, corpus)?;
-    output::emit(&result, pretty);
-    Ok(0)
+fn optional_flag(matches: &ArgMatches, key: &str) -> bool {
+    matches.try_contains_id(key).unwrap_or(false) && matches.get_flag(key)
 }
 
 /// Convert `ArgMatches` → JSON object matching the tool's `inputSchema`.

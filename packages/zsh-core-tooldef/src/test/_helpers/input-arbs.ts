@@ -12,7 +12,7 @@
 
 import type { DocCorpus } from "@carlwr/zsh-core"
 import fc from "fast-check"
-import { entries } from "../../tools/entries.ts"
+import { entries } from "../../tools/shared/entries.ts"
 
 export function corpusKeys(corpus: DocCorpus): readonly string[] {
   return entries(corpus)

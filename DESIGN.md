@@ -275,7 +275,7 @@ Wiring:
 For every doc category, `docSubKind[c]` returns either `undefined` for every record or a non-empty string for every record — never mixed.
 
 - Enforced corpus-wide: `packages/zsh-core/src/test/doc-sub-kind.test.ts`.
-- Tool-layer schema consumption (per-category `oneOf` branching, no schema-level optionality): file-header JSDoc on `packages/zsh-core-tooldef/src/tools/output-schema.ts`.
+- Tool-layer schema consumption (per-category `oneOf` branching, no schema-level optionality): file-header JSDoc on `packages/zsh-core-tooldef/src/tools/shared/output-schema.ts`.
 
 **Future work:** generalize to "per-category structural fields are always-or-never" so schemas encode presence structurally, not as blanket optionals. Fold tests and this section into one named invariant when a second concrete instance appears.
 
@@ -296,7 +296,7 @@ Per-category renderers are internal; public entry is `renderDoc`. The JSON expor
 ## Output schemas (tooldef-owned)
 
 - Each `ToolDef` has `outputSchema` (JSON Schema 2020-12) next to its result type.
-- Mechanical constraints — file-header JSDoc on `packages/zsh-core-tooldef/src/tools/output-schema.ts`:
+- Mechanical constraints — file-header JSDoc on `packages/zsh-core-tooldef/src/tools/shared/output-schema.ts`:
   - `$defs` shape
   - `subKind` always-or-never
   - feedback enum interpolation

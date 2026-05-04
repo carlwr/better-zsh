@@ -30,7 +30,7 @@ import {
   docCategories,
   subKindEnums,
 } from "@carlwr/zsh-core/taxonomy"
-import type { ToolInputSchema } from "../tool-defs.ts"
+import type { ToolInputSchema } from "../../tool-defs.ts"
 import { MAX_LIMIT } from "./limits.ts"
 
 /** Per-tool match-shape choices passed to `mkMatchSchema`. */

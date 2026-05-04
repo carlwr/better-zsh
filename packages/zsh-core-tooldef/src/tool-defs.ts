@@ -45,6 +45,7 @@ export const FLAG_BRIEF_MAX_LEN = 60
 export interface PropertySpec {
   readonly type?: "string" | "integer" | "number" | "boolean"
   readonly description?: string
+  readonly enum?: readonly string[]
   readonly minimum?: number
   readonly maximum?: number
   readonly default?: number | string | boolean
@@ -110,9 +111,9 @@ export const toolDefs: readonly ToolDef[] = [
 /**
  * Suite-level intent→tool cheat-sheet for hosts that surface suite framing:
  *   - MCP — `instructions` at handshake; often injected as system context.
- *   - Rust `zshref` CLI — concatenated after `cli_prose(preamble)` with
- *     `ROOT_AFTER_HELP_TAIL` into the root `--help` tail (tool names rewritten
- *     to subcommands first).
+ *   - Rust `zshref` CLI — concatenated after `prose::rewrite_refs(preamble)`
+ *     with `prose::ROOT_AFTER_HELP_TAIL` into the root `--help` tail (tool
+ *     names rewritten to subcommands first).
  *
  * The VS Code LM adapter has no server-level slot; per-tool descriptions
  * suffice there.
@@ -124,7 +125,7 @@ export const toolDefs: readonly ToolDef[] = [
  *   - keep tone neutral enough to read naturally in both a chat context
  *     and a terminal;
  *   - refer to tool parameters by name (e.g. "set `category`"), not as
- *     CLI flag syntax (`--category`) or JSON syntax — `cli_prose()`
+ *     CLI flag syntax (`--category`) or JSON syntax — `prose::rewrite_refs`
  *     only rewrites tool names, nothing else;
  *   - after editing, run `zshref --help` in a real terminal and check
  *     that the block scans cleanly at ≤80 columns;
@@ -135,9 +136,10 @@ export const toolDefs: readonly ToolDef[] = [
  * they do not catch tone, length, or formatting — reviewers do.
  */
 export const TOOL_SUITE_PREAMBLE: string = `\
-Intent → tool:
+Tool → intent:
+  \`zsh_docs\`   → look up the docs for a zsh key
+  \`zsh_search\` → fuzzy discovery by name
+  \`zsh_list\`   → enumerate records in the corpus
 
-  - look up the docs for a zsh key → \`zsh_docs\`
-  - fuzzy discovery by name → \`zsh_search\` (id-only; pair with \`zsh_docs\` for the body)
-  - enumerate records in the corpus → \`zsh_list\` (id-only; pair with \`zsh_docs\` for the body)
+  (search, list: id-only; pair with \`zsh_docs\` for the body)
 `

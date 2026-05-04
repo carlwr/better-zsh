@@ -3,10 +3,16 @@
 import type { DocCorpus } from "@carlwr/zsh-core"
 import type { DocCategory } from "@carlwr/zsh-core/taxonomy"
 import { makeToolDef, type ToolDef } from "../tool-defs.ts"
-import { type BaseMatch, entries } from "./entries.ts"
-import { clampLimit, DEFAULT_LIMIT, MAX_LIMIT } from "./limits.ts"
-import { mkOutputSchema } from "./output-schema.ts"
-import { categoryList, type Envelope, mkEnvelope } from "./result.ts"
+import { type BaseMatch, entries } from "./shared/entries.ts"
+import { safetyDescription } from "./shared/help.ts"
+import { clampLimit, inputSchemaLimit, limitBrief } from "./shared/limits.ts"
+import { mkOutputSchema } from "./shared/output-schema.ts"
+import {
+  briefCategory,
+  type Envelope,
+  inputSchemaCategory,
+  mkEnvelope,
+} from "./shared/result.ts"
 
 export interface ListInput {
   readonly category?: DocCategory
@@ -26,48 +32,43 @@ export function list(corpus: DocCorpus, input: ListInput): ListResult {
   return mkEnvelope(pool.slice(0, limit), pool.length)
 }
 
-const catList = categoryList()
+const desc = `\
+Return id/display records from the bundled static zsh reference.
 
-export const listToolDef: ToolDef = makeToolDef({
+Identifiers only. Use \`zsh_docs\` for rendered markdown.
+
+Order:
+  category omitted: default category order
+  category set: that category's corpus order
+
+Each match in \`matches[]\`:
+{
+  "category": "...",
+  "id": "...",
+  "display": "...",
+  "subKind": "..."
+}
+
+\`subKind\` is only present for categories with a meaningful sub-facet.
+
+${safetyDescription}`
+
+export const listToolDef: ToolDef = makeToolDef<"category" | "limit">({
   name: "zsh_list",
   brief: "enumerate corpus records (id-only; no markdown)",
-  description: `\
-Enumerate records from the bundled static zsh reference. Identifiers only — pair with \`zsh_docs\` for the rendered markdown body.
-
-Listing is corpus-iteration order; default category order when \`category\` is omitted, or the single category's iteration order when set.
-
-Each match is \`{ category, id, display, subKind? }\`. \`subKind\` is surfaced when the category has a meaningful sub-facet (e.g. history \`kind\`, glob_op \`kind\`, reserved_word \`pos\`).
-
-\`limit\` caps response size (default ${DEFAULT_LIMIT}, hard max ${MAX_LIMIT} = entire corpus). \`limit=0\` returns metadata only (\`matches: []\`); the response always carries \`matchesReturned\` (== \`matches.length\`) and \`matchesTotal\` (pre-truncation total), so \`matchesReturned < matchesTotal\` signals truncation — raise \`limit\` or narrow \`category\` to see the rest.
-
-Valid \`category\` values:
-
-${catList}
-
-Unknown \`category\` yields an empty match set.
-
-No shell execution, no environment access.`,
+  description: desc,
   inputSchema: {
     type: "object",
     properties: {
-      category: {
-        type: "string",
-        description: `Optional filter to a single doc category. Unknown categories yield an empty match set.\n\nValid values:\n\n${catList}`,
-      },
-      limit: {
-        type: "integer",
-        minimum: 0,
-        maximum: MAX_LIMIT,
-        default: DEFAULT_LIMIT,
-        description: `Maximum matches to return. Default ${DEFAULT_LIMIT}, hard max ${MAX_LIMIT} (entire corpus). \`limit=0\` returns metadata only.\n\nThe response carries \`matchesReturned\` (== \`matches.length\`) and \`matchesTotal\` (pre-truncation total); \`matchesReturned < matchesTotal\` signals truncation — raise \`limit\` or narrow \`category\`.`,
-      },
+      category: inputSchemaCategory,
+      limit: inputSchemaLimit,
     },
     additionalProperties: false,
   },
   outputSchema: mkOutputSchema({}),
   flagBriefs: {
-    category: "Filter to one doc category.",
-    limit: `Max matches to return (default ${DEFAULT_LIMIT}, max ${MAX_LIMIT}).`,
+    category: briefCategory,
+    limit: limitBrief,
   },
   execute: (corpus, input): ListResult =>
     list(corpus, input as unknown as ListInput),

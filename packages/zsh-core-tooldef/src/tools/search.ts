@@ -5,16 +5,18 @@ import { ZSH_UPSTREAM } from "@carlwr/zsh-core/meta"
 import { resolve } from "@carlwr/zsh-core/resolver"
 import { classifyOrder, type DocCategory } from "@carlwr/zsh-core/taxonomy"
 import { makeToolDef, type ToolDef } from "../tool-defs.ts"
-import { type BaseMatch, entries } from "./entries.ts"
-import { clampLimit, DEFAULT_LIMIT, MAX_LIMIT } from "./limits.ts"
-import { mkOutputSchema } from "./output-schema.ts"
+import { type BaseMatch, entries } from "./shared/entries.ts"
+import { resolutionDescription, safetyDescription } from "./shared/help.ts"
+import { clampLimit, inputSchemaLimit, limitBrief } from "./shared/limits.ts"
+import { mkOutputSchema } from "./shared/output-schema.ts"
 import {
-  categoryList,
+  briefCategory,
   type Envelope,
+  inputSchemaCategory,
   isValidCategory,
   mkEnvelope,
-} from "./result.ts"
-import { fuzzySortMatches, seenKey } from "./search-fuzzy.ts"
+} from "./shared/result.ts"
+import { fuzzySortMatches, seenKey } from "./shared/search-fuzzy.ts"
 
 export interface SearchInput {
   readonly query: string
@@ -125,57 +127,50 @@ function toMatch(e: BaseMatch, score: number): SearchMatch {
   }
 }
 
-const catList = categoryList()
+const desc = `\
+Find candidate records in the bundled static ${ZSH_UPSTREAM.tag} reference by id/display heading.
+
+${resolutionDescription}
+
+Ranking:
+  1. exact id/display
+  2. resolved input
+  3. prefix
+  4. fuzzy score
+
+\`score\` is 1 for exact/resolution/prefix matches. Fuzzy matches use a score in (0,1).
+
+No markdown body. Use \`zsh_docs\` for full docs.
+
+To enumerate without a query, use \`zsh_list\`.
+
+${safetyDescription}`
 
 export const searchToolDef: ToolDef = makeToolDef<
   "query" | "category" | "limit"
 >({
   name: "zsh_search",
   brief: "fuzzy-search the zsh reference by id/display",
-  description: `\
-Search the bundled static ${ZSH_UPSTREAM.tag} reference. Fuzzy-matches the query against record ids and display headings across every category (or one category if \`category\` is set).
-
-Ranking: exact id/display > resolver (corpus-aware close-variant match, e.g. \`au_to_cd\` → \`autocd\`) > prefix > fuzzy score.
-
-Results carry \`{ category, id, display, subKind?, score }\` but NOT the rendered markdown body — follow up with \`zsh_docs\` for the full doc. \`score\` is \`1.0\` for exact / resolver / prefix tiers; fuzzy-tier matches carry a score in \`(0, 1)\`. \`subKind\` is surfaced when the category has a meaningful sub-facet (e.g. history \`kind\`, glob_op \`kind\`, reserved_word \`pos\`).
-
-\`limit\` caps response size (default ${DEFAULT_LIMIT}, hard max ${MAX_LIMIT} = entire corpus). \`limit=0\` returns metadata only (\`matches: []\`); the response always carries \`matchesReturned\` (== \`matches.length\`) and \`matchesTotal\` (pre-truncation total), so \`matchesReturned < matchesTotal\` signals truncation — raise \`limit\` or narrow \`category\`/\`query\` to see the rest.
-
-To enumerate without a query, use \`zsh_list\`.
-
-Valid \`category\` values:
-
-${catList}
-
-No shell execution, no environment access.`,
+  description: desc,
   inputSchema: {
     type: "object",
     properties: {
       query: {
         type: "string",
         description:
-          "Fuzzy search string matched against ids and display headings. Empty/whitespace returns an empty match set — use `zsh_list` to enumerate.\n\nRanking: exact id/display > resolver (corpus-aware close-variant match) > prefix > fuzzy score.",
+          "Search string matched against ids and display headings. Empty or whitespace returns no matches; use `zsh_list` to enumerate.",
       },
-      category: {
-        type: "string",
-        description: `Optional filter to a single doc category. Unknown categories yield an empty match set.\n\nValid values:\n\n${catList}`,
-      },
-      limit: {
-        type: "integer",
-        minimum: 0,
-        maximum: MAX_LIMIT,
-        default: DEFAULT_LIMIT,
-        description: `Maximum matches to return. Default ${DEFAULT_LIMIT}, hard max ${MAX_LIMIT} (entire corpus). \`limit=0\` returns metadata only.\n\nThe response carries \`matchesReturned\` (== \`matches.length\`) and \`matchesTotal\` (pre-truncation total); \`matchesReturned < matchesTotal\` signals truncation — raise \`limit\` or narrow \`category\`/\`query\`.`,
-      },
+      category: inputSchemaCategory,
+      limit: inputSchemaLimit,
     },
     required: ["query"],
     additionalProperties: false,
   },
   outputSchema: mkOutputSchema({ score: "required" }),
   flagBriefs: {
-    query: "Fuzzy-search string (required).",
-    category: "Filter to one doc category.",
-    limit: `Max matches to return (default ${DEFAULT_LIMIT}, max ${MAX_LIMIT}).`,
+    query: "fuzzy-search string (required)",
+    category: briefCategory,
+    limit: limitBrief,
   },
   execute: (corpus, input): SearchResult =>
     search(corpus, input as unknown as SearchInput),

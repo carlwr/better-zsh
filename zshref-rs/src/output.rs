@@ -14,19 +14,23 @@ use std::io::{IsTerminal, Write};
 /// Compact JSON (single line + `\n`) by default; `--pretty` → indented.
 /// `batch` never calls this — it writes its own compact lines per request.
 pub fn emit(value: &Value, pretty: bool) {
+    print!("{}", render(value, pretty));
+}
+
+/// Always emit indented JSON.
+pub fn emit_pretty(value: &Value) {
+    print!("{}", render(value, true));
+}
+
+/// Render JSON exactly as `emit` writes it to stdout.
+pub fn render(value: &Value, pretty: bool) -> String {
     let s = if pretty {
         serde_json::to_string_pretty(value)
     } else {
         serde_json::to_string(value)
     }
     .unwrap_or_else(|_| "null".to_string());
-    println!("{s}");
-}
-
-/// Always emit indented JSON.
-pub fn emit_pretty(value: &Value) {
-    let s = serde_json::to_string_pretty(value).unwrap_or_else(|_| "null".to_string());
-    println!("{s}");
+    format!("{s}\n")
 }
 
 /// Translate a clap error to an exit code, routing output to the right stream.

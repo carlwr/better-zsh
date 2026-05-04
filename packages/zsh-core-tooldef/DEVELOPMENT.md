@@ -5,7 +5,7 @@ This package owns the pure tool implementations plus `ToolDef` metadata; every c
 
 ## Architectural invariants
 
-- Files under `src/tools/` are pure `(DocCorpus, input) → output`.
+- Files under `src/tools/` and `src/tools/shared/` are pure `(DocCorpus, input) → output`.
 - No `child_process`, networking, `node:fs`, `process.env`, or `vscode` in the tool layer.
 - `src/tool-defs.ts` is the single source of tool name, description, input + output JSON Schemas, and execute wrapper.
 - The package knows about zsh-core only, not MCP, CLI framework, or VS Code.
@@ -30,10 +30,10 @@ A consumer that needs neither short form reads only `description`; a consumer th
 
 ## Adding a tool
 
-- Add a file under `src/tools/` exporting I/O types, a pure implementation, and a `*ToolDef` constant.
-- Re-export it from `src/tools/index.ts`.
+- Add `src/tools/<tool>.ts` exporting I/O types, a pure implementation, and a `*ToolDef` constant.
+- Re-export it from `src/tools/index.ts` and `src/tools/index.ts`.
 - Re-export the `*ToolDef` from `src/tool-defs.ts` and add it to `toolDefs`.
-- Author the `outputSchema` co-located with the result type alias; use `mkOutputSchema` (in `src/tools/output-schema.ts`) so per-category `subKind` enums and `category` enums interpolate from canonical zsh-core tables. See DESIGN.md §"Output schemas (tooldef-owned)".
+- Author the `outputSchema` co-located with the result type alias; use `mkOutputSchema` (in `src/tools/shared/output-schema.ts`) so per-category `subKind` enums and `category` enums interpolate from canonical zsh-core tables. See DESIGN.md §"Output schemas (tooldef-owned)".
 - Add unit tests under `src/test/tools/<tool>.test.ts`.
 - Extend metadata assertions in `src/test/tool-defs.test.ts`.
 - Run `pnpm run check && pnpm run test`.

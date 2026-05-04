@@ -1,6 +1,9 @@
 /**
  * Authoritative TS↔Rust parity surface. `mirror-pairs.test.ts` and
  * `parity.test.ts` derive from this; add a row before new mirror pairs.
+ *
+ * Each TS and each RS path appears in at most one unit. Schema shape
+ * (N TS → 1 RS) is deliberate; 1 TS → N RS is not supported.
  */
 
 export interface ParityUnit {
@@ -31,8 +34,8 @@ export const parityUnits = [
   {
     name: "envelope",
     ts: [
-      "packages/zsh-core-tooldef/src/tools/entries.ts",
-      "packages/zsh-core-tooldef/src/tools/result.ts",
+      "packages/zsh-core-tooldef/src/tools/shared/entries.ts",
+      "packages/zsh-core-tooldef/src/tools/shared/result.ts",
     ],
     rs: "zshref-rs/src/tools/envelope.rs",
   },
