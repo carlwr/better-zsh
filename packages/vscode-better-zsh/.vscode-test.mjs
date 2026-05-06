@@ -1,3 +1,5 @@
+import { dirname, resolve } from "node:path"
+import { fileURLToPath } from "node:url"
 import { defineConfig } from "@vscode/test-cli"
 
 const extDir = process.env.BUNDLED_EXT_DIR
@@ -5,6 +7,13 @@ const stubDir = process.env.BUNDLED_STUB_DIR
 const userData = process.env.BUNDLED_USER_DATA
 const testExtDir = process.env.VSCODE_TEST_EXTENSIONS_DIR
 const testUserData = process.env.VSCODE_TEST_USER_DATA
+const pkgDir = dirname(fileURLToPath(import.meta.url))
+const stagedExtRoot = resolve(
+  pkgDir,
+  "../..",
+  ".non-vcs",
+  "vscode-better-zsh-extension",
+)
 
 const launchArgs = ({ extDir, userData }) => [
   "--disable-gpu",
@@ -24,6 +33,7 @@ export default defineConfig([
   {
     label: "integration",
     files: ".vscode-test/**/test/integration/**/*.test.js",
+    extensionDevelopmentPath: stagedExtRoot,
     launchArgs: launchArgs({
       extDir: testExtDir,
       userData: testUserData,
@@ -32,6 +42,7 @@ export default defineConfig([
   {
     label: "zsh-path-matrix",
     files: ".vscode-test/**/test/zsh-path-matrix/**/*.test.js",
+    extensionDevelopmentPath: stagedExtRoot,
     launchArgs: launchArgs({
       extDir: testExtDir,
       userData: testUserData,

@@ -13,11 +13,13 @@ echo "=== Provider classes ==="
 rg 'class \w+Provider' --type ts packages/vscode-better-zsh/src/ 2>/dev/null || echo "  (none found)"
 
 echo ""
-echo "=== semanticTokenScopes in package.json ==="
+echo "=== semanticTokenScopes in extension manifest ==="
 node - <<'NODE'
-const { readFileSync } = require("node:fs")
+const { existsSync, readFileSync } = require("node:fs")
+const staged = ".non-vcs/vscode-better-zsh-extension/package.json"
+const checkedIn = "packages/vscode-better-zsh/package.json"
 const pkg = JSON.parse(
-  readFileSync("packages/vscode-better-zsh/package.json", "utf8"),
+  readFileSync(existsSync(staged) ? staged : checkedIn, "utf8"),
 )
 console.log(JSON.stringify(pkg.contributes?.semanticTokenScopes ?? [], null, 2))
 NODE

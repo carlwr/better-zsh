@@ -8,6 +8,9 @@
 
 set -eu
 
+pkg_dir=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+repo_root=$(CDPATH= cd -- "$pkg_dir/../.." && pwd)
+stage=$repo_root/.non-vcs/vscode-better-zsh-extension
 out=${1:-better-zsh.vsix}
 
 if [ "${1:-}" = -- ]; then
@@ -15,5 +18,10 @@ if [ "${1:-}" = -- ]; then
 	out=${1:-better-zsh.vsix}
 fi
 
-node scripts/check-package.mjs
-pnpm exec vsce package --no-dependencies --out "$out"
+case $out in
+	/*) abs_out=$out ;;
+	*) abs_out=$pkg_dir/$out ;;
+esac
+
+node "$pkg_dir/scripts/check-package.mjs"
+(cd "$stage" && "$repo_root/node_modules/.bin/vsce" package --no-dependencies --out "$abs_out")

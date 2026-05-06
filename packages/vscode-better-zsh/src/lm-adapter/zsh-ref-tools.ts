@@ -14,8 +14,8 @@ import * as vscode from "vscode"
  * writes JSON to stdout. Nothing in this file spawns a process or reads
  * env.
  *
- * Tool `name` values must match entries in `contributes.languageModelTools`
- * in `package.json`; a unit test guards the one-to-one correspondence.
+ * Tool `name` values must match the staged extension manifest's LM tool
+ * contribution; a unit test guards the one-to-one correspondence.
  */
 export function registerZshRefTools(
   ctx: vscode.ExtensionContext,

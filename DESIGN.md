@@ -323,7 +323,7 @@ Structural locks (each is the spec for its own claim):
   - `resolve`
   - `renderDoc`
   - analysis
-- **`contributes.languageModelTools` ↔ `toolDefs`** — `packages/vscode-better-zsh/src/test/zsh-ref-tools.test.ts`.
+- **VS Code LM manifest ↔ `toolDefs`** — `packages/vscode-better-zsh/src/test/zsh-ref-tools.test.ts`.
 - **Tool-impl scope fence** — `packages/zsh-core-tooldef/src/test/scope.test.ts`.
 
 Three tools, intent-split:
@@ -451,4 +451,4 @@ Full custom zsh TextMate grammar is out of scope; tree-sitter is the long-term d
 - Stay consistent with TM where TM is right; prefer specifically qualified TextMate scope names for theme overrides.
 - `{` / `}` reserved-word facts are **skipped** in the token provider (TM already covers `f() { … }`; block-`{` vs word-`{` is hairy).
 - `((` / `))` **are** tokenized as `keyword` — reuses existing provider paths.
-- New token types need matching `semanticTokenScopes` in `package.json`.
+- New token types need a matching semantic-token scope contribution in the extension manifest source.

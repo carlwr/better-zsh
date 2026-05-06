@@ -1,6 +1,7 @@
 import * as assert from "node:assert"
 import { existsSync } from "node:fs"
 import { join, resolve } from "node:path"
+import { runtimeZshDataDir, vendoredZshDocFiles } from "@carlwr/zsh-core/assets"
 import * as vscode from "vscode"
 import { BETTER_ZSH_EXT_ID } from "../../ids"
 
@@ -58,16 +59,7 @@ suite("bundled extension", function () {
     assert.ok(extPath, "expected installed extension path")
 
     for (const rel of [
-      "out/zsh-core-data/SOURCE.md",
-      "out/zsh-core-data/builtins.yo",
-      "out/zsh-core-data/cond.yo",
-      "out/zsh-core-data/expn.yo",
-      "out/zsh-core-data/grammar.yo",
-      "out/zsh-core-data/options.yo",
-      "out/zsh-core-data/params.yo",
-      "out/zsh-core-data/prompt.yo",
-      "out/zsh-core-data/redirect.yo",
-      "out/zsh-core-data/zle.yo",
+      ...vendoredZshDocFiles.map(file => join("out", runtimeZshDataDir, file)),
       "out/language-configuration.json",
       "out/snippets.json",
       "out/zsh-chat-instructions.md",

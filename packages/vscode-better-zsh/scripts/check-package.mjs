@@ -1,8 +1,23 @@
 import { execFileSync } from "node:child_process"
+import { createRequire } from "node:module"
+import { dirname, resolve } from "node:path"
+import { fileURLToPath } from "node:url"
 
 const pnpm = process.platform === "win32" ? "pnpm.cmd" : "pnpm"
+const require = createRequire(import.meta.url)
+const {
+  runtimeZshDataDir,
+  vendoredZshDocFiles,
+} = require("@carlwr/zsh-core/assets")
+const stageRoot = resolve(
+  dirname(fileURLToPath(import.meta.url)),
+  "../../..",
+  ".non-vcs",
+  "vscode-better-zsh-extension",
+)
 
 const files = execFileSync(pnpm, ["exec", "vsce", "ls", "--no-dependencies"], {
+  cwd: stageRoot,
   encoding: "utf8",
 })
   .split(/\r?\n/)
@@ -20,12 +35,7 @@ const required = [
   "out/language-configuration.json",
   "out/snippets.json",
   "out/zsh-chat-instructions.md",
-  "out/zsh-core-data/SOURCE.md",
-  "out/zsh-core-data/THIRD_PARTY_NOTICES.md",
-  "out/zsh-core-data/builtins.yo",
-  "out/zsh-core-data/cond.yo",
-  "out/zsh-core-data/grammar.yo",
-  "out/zsh-core-data/options.yo",
+  ...vendoredZshDocFiles.map(file => `out/${runtimeZshDataDir}/${file}`),
 ]
 
 const forbidden = [

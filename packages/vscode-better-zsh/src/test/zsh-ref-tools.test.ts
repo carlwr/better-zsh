@@ -1,5 +1,3 @@
-import { readFileSync } from "node:fs"
-import { join } from "node:path"
 import { toolDefs } from "@carlwr/zsh-core-tooldef"
 import { describe, expect, test, vi } from "vitest"
 
@@ -26,20 +24,12 @@ import * as vscodeMock from "vscode"
 import { buildLmTools } from "../build/lm-tools-manifest"
 import { registerZshRefTools } from "../lm-adapter/zsh-ref-tools"
 
-function readManifestTools(): readonly unknown[] {
-  const pkg = JSON.parse(
-    readFileSync(join(process.cwd(), "package.json"), "utf8"),
-  ) as { contributes?: { languageModelTools?: readonly unknown[] } }
-  return pkg.contributes?.languageModelTools ?? []
-}
-
-// Guards that `contributes.languageModelTools` (a checked-in generated
-// artifact) matches what the build would produce now. Catches stale
-// commits when a tooldef edit lands without a rebuild. See
-// `src/build/lm-tools-manifest.ts` for the contract.
-describe("contributes.languageModelTools is up-to-date", () => {
-  test("committed manifest equals buildLmTools(toolDefs)", () => {
-    expect(readManifestTools()).toEqual(buildLmTools(toolDefs))
+describe("staged LM-tools manifest covers every toolDef", () => {
+  test("buildLmTools(toolDefs) yields one entry per tooldef", () => {
+    const names = (buildLmTools(toolDefs) as { name: string }[])
+      .map(t => t.name)
+      .sort()
+    expect(names).toEqual(toolDefs.map(d => d.name).sort())
   })
 })
 

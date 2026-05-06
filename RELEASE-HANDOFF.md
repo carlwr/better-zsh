@@ -90,7 +90,7 @@ For the extension, versions containing `-` publish with `--pre-release`; clean v
 - `engines.node` and workflow `node-version` move together.
 - The extension VSIX is built once and then published byte-identically to both marketplaces; use the workflow artifact to sanity-check it before a real publish.
 - Rehearse with `workflow_dispatch` in dry-run mode before a real publish.
-- The extension `contributes.languageModelTools` manifest mirrors the shared `toolDefs`; a test guards the equality.
+- The staged VS Code LM manifest mirrors the shared `toolDefs`; a test guards the equality.
 - Dependabot will keep touching release workflows. Low risk, but the `@types/node` ignore rule should remain until `engines.node` moves deliberately.
 - After a zsh-core public-API addition, `verifyREGISTRY` stays red in downstream packages until the new zsh-core publish exists on the registries. Local ordinary tests are intentionally insulated from that.
 

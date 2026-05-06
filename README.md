@@ -18,7 +18,7 @@ Pick the adapter that matches your runtime; they all wrap the same static corpus
 
 ## Architecture in one paragraph
 
-Two layers, three adapters. `zsh-core` (the knowledge layer) feeds `zsh-core-tooldef` (the single `ToolDef` surface: name, JSON-Schema input, brief + long description, pure `(corpus, input) → output` `execute`). Each adapter — MCP, CLI, VS Code — is thin transport glue that walks `toolDefs` uniformly. Drift guards at every joint: the extension's `contributes.languageModelTools` manifest must match `toolDefs` by a unit-test invariant, and the Rust CLI parses the exported tool-def JSON at build time and bakes it into the binary.
+Two layers, three adapters. `zsh-core` (the knowledge layer) feeds `zsh-core-tooldef` (the single `ToolDef` surface: name, JSON-Schema input, brief + long description, pure `(corpus, input) → output` `execute`). Each adapter — MCP, CLI, VS Code — is thin transport glue that walks `toolDefs` uniformly. Drift guards at every joint: the staged VS Code LM manifest must match `toolDefs` by a unit-test invariant, and the Rust CLI parses the exported tool-def JSON at build time and bakes it into the binary.
 
 No shell execution, no subprocess, no network, no filesystem, no `process.env` reads in the tool layer — structurally enforced by a scope-fence test. This is a product feature, not just policy.
 
@@ -28,13 +28,10 @@ No shell execution, no subprocess, no network, no filesystem, no `process.env` r
 - The MCP server and CLI are planned for post-1.0 extraction into their own repos; the `zshref-rs/` Rust crate already builds standalone via a dual-mode `build.rs` (auto-detect monorepo source vs. vendored `data/`).
 - A first non-alpha release bundle is planned; no date committed.
 
-See `RELEASE-HANDOFF.md` for the release workflow and per-package publish auth.
-
 ## Contributing
 
 - `DESIGN.md` — architectural rationale
 - `AGENTS.md` — contributor conventions, testing, packaging, code style
-- `CLI-VISUAL-POLICY.md` — CLI visual policy
 - `SECURITY.md` — security reporting
 
 ## License

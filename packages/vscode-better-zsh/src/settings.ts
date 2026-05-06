@@ -1,12 +1,16 @@
 import * as path from "node:path"
 import * as vscode from "vscode"
 import { BETTER_ZSH_CONFIG, mkZshBinary, type ZshBinary } from "./ids"
+import {
+  diagnosticsEnabledSetting,
+  settingFullKey,
+  zshPathSetting,
+} from "./settings-metadata"
 
 // ── Config keys (constructed from config section; only this module knows the suffixes) ──
 
-const ZSH_PATH_KEY = `${BETTER_ZSH_CONFIG}.zshPath` as const
-const DIAGNOSTICS_ENABLED_KEY =
-  `${BETTER_ZSH_CONFIG}.diagnostics.enabled` as const
+const ZSH_PATH_KEY = settingFullKey(zshPathSetting)
+const DIAGNOSTICS_ENABLED_KEY = settingFullKey(diagnosticsEnabledSetting)
 
 /** For `affectsConfiguration` checks in wiring code. */
 export { DIAGNOSTICS_ENABLED_KEY, ZSH_PATH_KEY }
@@ -43,9 +47,14 @@ function getConfig<T>(key: string, defaultVal: T): T {
 }
 
 export function readZshPathConfig(): ZshPathConfig {
-  return parseZshPath(getConfig<string>("zshPath", ""))
+  return parseZshPath(
+    getConfig<string>(zshPathSetting.suffix, zshPathSetting.default),
+  )
 }
 
 export function readDiagnosticsEnabled(): boolean {
-  return getConfig("diagnostics.enabled", true)
+  return getConfig(
+    diagnosticsEnabledSetting.suffix,
+    diagnosticsEnabledSetting.default,
+  )
 }

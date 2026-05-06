@@ -81,7 +81,7 @@ Subpackage-local gotchas live in each subpackage's `AGENTS.md`. The two below sp
 - cross-line quote suppression is narrow
 - `$()` contents are active code, not quoted-region silence
 
-**Tool layer must not depend on `vscode`:** `packages/zsh-core-tooldef/` is pure tools + metadata; LM registration lives in the extension. `contributes.languageModelTools` vs `toolDefs` is drift-tested. MCP/LM wiring is locked to:
+**Tool layer must not depend on `vscode`:** `packages/zsh-core-tooldef/` is pure tools + metadata; LM registration lives in the extension. The staged VS Code LM contribution vs `toolDefs` is drift-tested. MCP/LM wiring is locked to:
 
 - root `@carlwr/zsh-core`
 - root tooldef

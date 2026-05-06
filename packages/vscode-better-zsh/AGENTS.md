@@ -22,12 +22,14 @@ VS Code extension; editor providers + LM-tool adapter + host-zsh execution.
 
 Always use `--no-dependencies`. The extension is bundled, and `vsce`'s internal `npm list` is incompatible with pnpm's layout.
 
-### Generated `contributes.languageModelTools`
+### Staged extension root
 
-- generated from `toolDefs`; committed for VSIX inlining
-- rebuilt after tooldef edits; not hand-edited
-- contract spec: file-header JSDoc on `src/build/lm-tools-manifest.ts`
-- drift test: `src/test/zsh-ref-tools.test.ts`
+- checked-in `package.json` is the pnpm workspace manifest
+- `pnpm build` refreshes `.non-vcs/vscode-better-zsh-extension/`
+- VSIX, publish, and VS Code test entrypoints use the staged root
+- generated `contributes` fields in the staged manifest:
+  - `languageModelTools` from `toolDefs`
+  - `configuration` from `settings-metadata`
 
 ## Container-only integration tests
 
@@ -41,7 +43,7 @@ The zsh-path matrix integration harness is CI/Docker-only. On macOS, VS Code's s
 - `[[` / `]]`
 - `((` / `))`
 
-The analysis layer may still emit those facts for other editor features. Adding a new token type requires a matching `semanticTokenScopes` entry in `package.json`.
+The analysis layer may still emit those facts for other editor features. Adding a new token type requires a matching semantic-token scope contribution in the extension manifest source.
 
 **Zsh process env isolation:** spawned zsh processes receive only an explicit allowlist of env vars. Check the zsh exec module in `src/` if a subprocess is missing an expected variable (search for `ZSH_ENV_KEEP` or `ZSH_ENV_DROP`).
 
