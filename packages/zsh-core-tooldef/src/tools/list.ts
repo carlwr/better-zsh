@@ -2,17 +2,12 @@
 
 import type { DocCorpus } from "@carlwr/zsh-core"
 import type { DocCategory } from "@carlwr/zsh-core/taxonomy"
-import { makeToolDef, type ToolDef } from "../tool-defs.ts"
+import { buildToolDef, type SchemaShape, type ToolDef } from "../tool-defs.ts"
+import { listProse } from "./prose.ts"
 import { type BaseMatch, entries } from "./shared/entries.ts"
-import { safetyDescription } from "./shared/help.ts"
-import { clampLimit, inputSchemaLimit, limitBrief } from "./shared/limits.ts"
+import { categoryShape, type Envelope, mkEnvelope } from "./shared/envelope.ts"
+import { clampLimit, limitShape } from "./shared/limits.ts"
 import { mkOutputSchema } from "./shared/output-schema.ts"
-import {
-  briefCategory,
-  type Envelope,
-  inputSchemaCategory,
-  mkEnvelope,
-} from "./shared/result.ts"
 
 export interface ListInput {
   readonly category?: DocCategory
@@ -32,44 +27,20 @@ export function list(corpus: DocCorpus, input: ListInput): ListResult {
   return mkEnvelope(pool.slice(0, limit), pool.length)
 }
 
-const desc = `\
-Return id/display records from the bundled static zsh reference.
-
-Identifiers only. Use \`zsh_docs\` for rendered markdown.
-
-Order:
-  category omitted: default category order
-  category set: that category's corpus order
-
-Each match in \`matches[]\`:
-{
-  "category": "...",
-  "id": "...",
-  "display": "...",
-  "subKind": "..."
+const listShape: SchemaShape<"category" | "limit"> = {
+  type: "object",
+  properties: {
+    category: categoryShape,
+    limit: limitShape,
+  },
+  additionalProperties: false,
 }
 
-\`subKind\` is only present for categories with a meaningful sub-facet.
-
-${safetyDescription}`
-
-export const listToolDef: ToolDef = makeToolDef<"category" | "limit">({
+export const listToolDef: ToolDef = buildToolDef<"category" | "limit">({
   name: "zsh_list",
-  brief: "enumerate corpus records (id-only; no markdown)",
-  description: desc,
-  inputSchema: {
-    type: "object",
-    properties: {
-      category: inputSchemaCategory,
-      limit: inputSchemaLimit,
-    },
-    additionalProperties: false,
-  },
+  prose: listProse,
+  shape: listShape,
   outputSchema: mkOutputSchema({}),
-  flagBriefs: {
-    category: briefCategory,
-    limit: limitBrief,
-  },
   execute: (corpus, input): ListResult =>
     list(corpus, input as unknown as ListInput),
 })

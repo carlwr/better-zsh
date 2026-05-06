@@ -42,7 +42,7 @@ export const FLAG_BRIEF_MAX_LEN = 60
  * JSON Schema property fragment for tool `inputSchema` definitions — wide
  * enough for usual metadata, narrow enough for the builder to infer keys.
  */
-export interface PropertySpec {
+interface PropertySpec {
   readonly type?: "string" | "integer" | "number" | "boolean"
   readonly description?: string
   readonly enum?: readonly string[]
@@ -52,47 +52,82 @@ export interface PropertySpec {
 }
 
 /**
- * `inputSchema` shape keyed by property union `K`. Lets `makeToolDef` type
+ * `inputSchema` shape keyed by property union `K`. Lets `buildToolDef` type
  * `flagBriefs` and `required` against those keys at compile time.
  */
-export interface SchemaFor<K extends string> {
+interface SchemaFor<K extends string> {
   readonly type: "object"
   readonly properties: Readonly<Record<K, PropertySpec>>
   readonly required?: readonly K[]
   readonly additionalProperties?: boolean
 }
 
-export interface MakeToolDefArgs<K extends string> {
-  readonly name: string
+export interface FlagProse {
   readonly brief: string
-  readonly description: string
-  readonly inputSchema: SchemaFor<K>
-  readonly outputSchema: ToolInputSchema
-  readonly flagBriefs: Readonly<Record<K, string>>
-  readonly execute: (corpus: DocCorpus, input: ToolInputSchema) => unknown
+  readonly long: string
 }
 
-/**
- * Build a `ToolDef` with compile-time coupling between the input schema's
- * property keys and the `flagBriefs` / `required` entries:
- *
- *   - Missing `flagBriefs[key]` for any schema property → TS error
- *     (Record<K, string> is total over K).
- *   - Extra `flagBriefs` key not in the schema → TS error (object
- *     literal freshness).
- *   - `required: ["bogus"]` where "bogus" is not a schema property → TS
- *     error (the `readonly K[]` bound forbids non-K strings).
- *
- * Adapters see the erased `ToolDef`; `K` stays internal so they can walk
- * `toolDefs` without per-tool key unions.
- */
-export function makeToolDef<K extends string>(
-  args: MakeToolDefArgs<K>,
-): ToolDef {
-  // The cast widens `SchemaFor<K>` to `ToolInputSchema` (opaque JSON
-  // Schema object) for the erased surface — adapters don't rely on the
-  // narrowed key union; they walk the schema generically.
-  return args as unknown as ToolDef
+/** `K` totality enforces flag-key/schema-key coupling at call sites. */
+export interface ToolProse<K extends string> {
+  readonly brief: string
+  readonly long: string
+  readonly flags: Readonly<Record<K, FlagProse>>
+}
+
+/** JSON Schema fragment without `description` — prose merges in at build. */
+export interface FieldShape {
+  readonly type?: "string" | "integer" | "number" | "boolean"
+  readonly enum?: readonly string[]
+  readonly minimum?: number
+  readonly maximum?: number
+  readonly default?: number | string | boolean
+}
+
+export interface SchemaShape<K extends string> {
+  readonly type: "object"
+  readonly properties: Readonly<Record<K, FieldShape>>
+  readonly required?: readonly K[]
+  readonly additionalProperties?: boolean
+}
+
+/** Compose `ToolDef` from prose + structural shape; `K` couples flag keys. */
+export function buildToolDef<K extends string>(args: {
+  readonly name: string
+  readonly prose: ToolProse<K>
+  readonly shape: SchemaShape<K>
+  readonly outputSchema: ToolInputSchema
+  readonly execute: (corpus: DocCorpus, input: ToolInputSchema) => unknown
+}): ToolDef {
+  const properties: Record<string, PropertySpec> = {}
+  for (const k of Object.keys(args.shape.properties) as K[]) {
+    properties[k] = {
+      ...args.shape.properties[k],
+      description: args.prose.flags[k].long,
+    }
+  }
+  const inputSchema: SchemaFor<K> = {
+    type: "object",
+    properties: properties as Record<K, PropertySpec>,
+    ...(args.shape.required ? { required: args.shape.required } : {}),
+    ...(args.shape.additionalProperties !== undefined
+      ? { additionalProperties: args.shape.additionalProperties }
+      : {}),
+  }
+  const flagBriefs = Object.fromEntries(
+    (Object.keys(args.prose.flags) as K[]).map(k => [
+      k,
+      args.prose.flags[k].brief,
+    ]),
+  ) as Record<K, string>
+  return {
+    name: args.name,
+    brief: args.prose.brief,
+    description: args.prose.long,
+    inputSchema,
+    outputSchema: args.outputSchema,
+    flagBriefs,
+    execute: args.execute,
+  } as unknown as ToolDef
 }
 
 export { docsToolDef, listToolDef, searchToolDef }

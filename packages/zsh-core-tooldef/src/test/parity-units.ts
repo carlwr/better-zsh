@@ -35,7 +35,7 @@ export const parityUnits = [
     name: "envelope",
     ts: [
       "packages/zsh-core-tooldef/src/tools/shared/entries.ts",
-      "packages/zsh-core-tooldef/src/tools/shared/result.ts",
+      "packages/zsh-core-tooldef/src/tools/shared/envelope.ts",
     ],
     rs: "zshref-rs/src/tools/envelope.rs",
   },

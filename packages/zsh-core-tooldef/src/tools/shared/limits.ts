@@ -1,5 +1,5 @@
 import { RECORDS_TOTAL } from "@carlwr/zsh-core"
-import type { PropertySpec } from "../../tool-defs"
+import type { FieldShape } from "../../tool-defs.ts"
 
 /** Default `limit` when callers omit it on `search` / `list`. */
 export const DEFAULT_LIMIT = 20
@@ -13,20 +13,9 @@ export function clampLimit(limit: number | undefined): number {
   return Math.min(n, MAX_LIMIT)
 }
 
-export const limitBrief = `max. matches to return (default: ${DEFAULT_LIMIT})`
-
-export const limitOptionDescription = `Limit the number of matches to return.
-
-Use 0 to return only metadata.
-
-Default: ${DEFAULT_LIMIT}`
-
-export const limitDescription = limitOptionDescription
-
-export const inputSchemaLimit: PropertySpec = {
+export const limitShape: FieldShape = {
   type: "integer",
   minimum: 0,
   maximum: MAX_LIMIT,
   default: DEFAULT_LIMIT,
-  description: limitOptionDescription,
 }

@@ -1,36 +1,25 @@
 import type { ToolDef } from "@carlwr/zsh-core-tooldef"
 
-interface VscodeFields {
-  readonly toolReferenceName: string
-  readonly displayName: string
-}
-
-/** VS Code-side LM-tool fields not in `ToolDef`. Keyed by `td.name`. */
-const VSCODE_FIELDS: Readonly<Record<string, VscodeFields>> = {
-  zsh_docs: { toolReferenceName: "zshDocs", displayName: "zsh docs lookup" },
-  zsh_search: {
-    toolReferenceName: "zshSearch",
-    displayName: "Search zsh reference",
-  },
-  zsh_list: {
-    toolReferenceName: "zshList",
-    displayName: "List zsh reference records",
-  },
+/** VS Code-side LM-tool display names. Keyed by `td.name`; `toolReferenceName` mirrors `td.name`. */
+const DISPLAY_NAMES: Readonly<Record<string, string>> = {
+  zsh_docs: "zsh docs lookup",
+  zsh_search: "Search zsh reference",
+  zsh_list: "List zsh reference records",
 }
 
 export function buildLmTools(defs: readonly ToolDef[]): readonly object[] {
   return defs.map(td => {
-    const ext = VSCODE_FIELDS[td.name]
-    if (!ext) {
+    const displayName = DISPLAY_NAMES[td.name]
+    if (!displayName) {
       throw new Error(
-        `generate-assets: no VS Code LM-tool fields for "${td.name}". ` +
-          `Add an entry in VSCODE_FIELDS in lm-tools-manifest.ts.`,
+        `generate-assets: no VS Code LM-tool displayName for "${td.name}". ` +
+          `Add an entry in DISPLAY_NAMES in lm-tools-manifest.ts.`,
       )
     }
     return {
       name: td.name,
-      toolReferenceName: ext.toolReferenceName,
-      displayName: ext.displayName,
+      toolReferenceName: td.name,
+      displayName,
       modelDescription: td.description,
       canBeReferencedInPrompt: true,
       tags: ["zsh"],

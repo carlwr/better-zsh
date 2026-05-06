@@ -1,6 +1,6 @@
 //! Result envelope + entry shape.
 //
-// MIRROR-OF: packages/zsh-core-tooldef/src/tools/shared/result.ts
+// MIRROR-OF: packages/zsh-core-tooldef/src/tools/shared/envelope.ts
 // MIRROR-OF: packages/zsh-core-tooldef/src/tools/shared/entries.ts
 
 use serde_json::{json, Map, Value};

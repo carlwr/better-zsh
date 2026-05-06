@@ -8,7 +8,7 @@ import {
   docSubKind,
 } from "@carlwr/zsh-core/taxonomy"
 import { display } from "./doc-display.ts"
-import { isValidCategory } from "./result.ts"
+import { isValidCategory } from "./envelope.ts"
 
 export interface BaseMatch {
   readonly category: DocCategory

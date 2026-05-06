@@ -88,7 +88,7 @@ describe("toolDefs metadata", () => {
 })
 
 // `flagBriefs` are one-line CLI flag-column entries. Compile-time checks on
-// `makeToolDef` enforce keys against the schema — no runtime key-match test.
+// `buildToolDef` enforce keys against the schema — no runtime key-match test.
 // Length cap and single-line shape are still asserted at runtime.
 describe("toolDefs flagBriefs shape", () => {
   eachTool(
@@ -142,7 +142,30 @@ describe("toolDefs description shape", () => {
   test("zsh_docs warns about multi-match without `category`", () => {
     const d = docsToolDef.description
     expect(d).toMatch(/multiple matches/i)
-    expect(d).toContain("--category")
+    expect(d).toContain("`category`")
+  })
+
+  test("no `--option` references in tooldef-emitted prose", () => {
+    // Tooldef prose reaches MCP/LM verbatim; CLI shows real flags.
+    const FLAG_RE = /--\w/
+    for (const td of toolDefs) {
+      expect(td.description).not.toMatch(FLAG_RE)
+      expect(td.brief).not.toMatch(FLAG_RE)
+      for (const v of Object.values(td.flagBriefs)) {
+        expect(v).not.toMatch(FLAG_RE)
+      }
+      const props =
+        (
+          td.inputSchema as {
+            properties?: Record<string, { description?: string }>
+          }
+        ).properties ?? {}
+      for (const spec of Object.values(props)) {
+        if (typeof spec.description === "string") {
+          expect(spec.description).not.toMatch(FLAG_RE)
+        }
+      }
+    }
   })
 
   test("zsh_search lists every DocCategory (via branded string)", () => {

@@ -131,6 +131,14 @@ Static, read-only, no-execution posture is a product feature. Mechanics + scope-
   - types
 - Use established terms consistently; once a concept is named "facts", keep using it.
 
+Preferred style for multiline string literals is (top-level/file level):
+```ts
+const str = `\
+first line
+second line\
+`
+```
+
 ### Conciseness
 
 - Prefer short identifiers.
@@ -310,6 +318,8 @@ Two contracts prevent races on shared upstream `dist/` (tsup `clean: true` wipes
 
 Spec + enforcement: `scripts/verify-upstream-contract.mjs`. New aggregators invoking upstream-rebuilding `pre*` hooks follow the pattern; hook-less aggregators (`format`, `lint`) need not.
 
+Mid-wipe, the TS LSP can emit transient TS7016 ghosts for `<pkg>/dist/*` — ignore.
+
 ## Contributor guidance
 
 ### Keeping docs fresh
@@ -360,7 +370,7 @@ On first stable release: `zshref-rs/` → `zshref` repo; `packages/zshref-mcp/` 
 
 ### Markdown style in non-user-facing docs
 
-"non-user-facing docs": AGENTS.md, DESIGN.md and similar - NOT README.md, DEVELOPMENT.md etc.
+"non-user-facing docs": AGENTS.md, DESIGN.md and similar - NOT README.md, DEVELOPMENT.md, implementation plans etc.
 
 > **Self-application:** each rule has one home. When extending, search first; add a new heading rather than restating elsewhere.
 

@@ -1,7 +1,6 @@
 // MIRRORED-IN: zshref-rs/src/tools/docs.rs
 
 import type { DocCorpus } from "@carlwr/zsh-core"
-import { ZSH_UPSTREAM } from "@carlwr/zsh-core/meta"
 import { renderDoc } from "@carlwr/zsh-core/render"
 import {
   lookupRaw,
@@ -16,18 +15,17 @@ import {
   docSubKind,
 } from "@carlwr/zsh-core/taxonomy"
 import type { Documented } from "@carlwr/zsh-core/types"
-import { makeToolDef, type ToolDef } from "../tool-defs.ts"
+import { buildToolDef, type SchemaShape, type ToolDef } from "../tool-defs.ts"
+import { docsProse } from "./prose.ts"
 import { display } from "./shared/doc-display.ts"
 import type { BaseMatch } from "./shared/entries.ts"
-import { resolutionDescription, safetyDescription } from "./shared/help.ts"
-import { mkOutputSchema } from "./shared/output-schema.ts"
 import {
-  briefCategory,
+  categoryShape,
   type Envelope,
-  inputSchemaCategory,
   isValidCategory,
   mkEnvelope,
-} from "./shared/result.ts"
+} from "./shared/envelope.ts"
+import { mkOutputSchema } from "./shared/output-schema.ts"
 
 export interface DocsInput {
   readonly key: string
@@ -103,54 +101,21 @@ function isHistoryEvent(corpus: DocCorpus, pid: DocPieceId): boolean {
   return rec?.kind === "event-designator"
 }
 
-const desc = `\
-Render markdown for a zsh token or canonical id from the bundled static ${ZSH_UPSTREAM.tag} reference.
+const docsShape: SchemaShape<"key" | "category"> = {
+  type: "object",
+  properties: {
+    key: { type: "string" },
+    category: categoryShape,
+  },
+  required: ["key"],
+  additionalProperties: false,
+}
 
-Omitting \`--category\` can return multiple matches for overlapping syntax. The category list under the help for \`--category\` is resolver order.
-
-${resolutionDescription}
-
-Output:
-  matches[]          matched records
-  matchesReturned    returned match count
-  matchesTotal       total match count
-
-Each match:
-  category           doc category
-  id                 canonical id
-  display            zsh-facing name
-  mdBody             rendered markdown
-  subKind            optional category facet
-  feedback           optional lossy-resolution signal
-
-No matches: empty \`matches[]\`, exit code 0. Returned \`id\` values are valid \`--key\` inputs.
-
-${safetyDescription}`
-
-export const docsToolDef: ToolDef = makeToolDef<"key" | "category">({
+export const docsToolDef: ToolDef = buildToolDef<"key" | "category">({
   name: "zsh_docs",
-  brief: "look up bundled zsh reference docs",
-  description: desc,
-  inputSchema: {
-    type: "object",
-    properties: {
-      key: {
-        type: "string",
-        description: `Zsh token or canonical id\n\nExamples: AUTO_CD, [[, %1, autocd`,
-      },
-      category: inputSchemaCategory,
-    },
-    required: ["key"],
-    additionalProperties: false,
-  },
-  outputSchema: mkOutputSchema({
-    mdBody: "required",
-    feedback: "optional",
-  }),
-  flagBriefs: {
-    key: "Zsh token or canonical id.",
-    category: briefCategory,
-  },
+  prose: docsProse,
+  shape: docsShape,
+  outputSchema: mkOutputSchema({ mdBody: "required", feedback: "optional" }),
   execute: (corpus, input): DocsResult =>
     docs(corpus, input as unknown as DocsInput),
 })

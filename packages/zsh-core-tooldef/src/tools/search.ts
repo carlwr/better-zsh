@@ -1,21 +1,19 @@
 // MIRRORED-IN: zshref-rs/src/tools/search.rs
 
 import type { DocCorpus } from "@carlwr/zsh-core"
-import { ZSH_UPSTREAM } from "@carlwr/zsh-core/meta"
 import { resolve } from "@carlwr/zsh-core/resolver"
 import { classifyOrder, type DocCategory } from "@carlwr/zsh-core/taxonomy"
-import { makeToolDef, type ToolDef } from "../tool-defs.ts"
+import { buildToolDef, type SchemaShape, type ToolDef } from "../tool-defs.ts"
+import { searchProse } from "./prose.ts"
 import { type BaseMatch, entries } from "./shared/entries.ts"
-import { resolutionDescription, safetyDescription } from "./shared/help.ts"
-import { clampLimit, inputSchemaLimit, limitBrief } from "./shared/limits.ts"
-import { mkOutputSchema } from "./shared/output-schema.ts"
 import {
-  briefCategory,
+  categoryShape,
   type Envelope,
-  inputSchemaCategory,
   isValidCategory,
   mkEnvelope,
-} from "./shared/result.ts"
+} from "./shared/envelope.ts"
+import { clampLimit, limitShape } from "./shared/limits.ts"
+import { mkOutputSchema } from "./shared/output-schema.ts"
 import { fuzzySortMatches, seenKey } from "./shared/search-fuzzy.ts"
 
 export interface SearchInput {
@@ -127,51 +125,24 @@ function toMatch(e: BaseMatch, score: number): SearchMatch {
   }
 }
 
-const desc = `\
-Find candidate records in the bundled static ${ZSH_UPSTREAM.tag} reference by id/display heading.
+const searchShape: SchemaShape<"query" | "category" | "limit"> = {
+  type: "object",
+  properties: {
+    query: { type: "string" },
+    category: categoryShape,
+    limit: limitShape,
+  },
+  required: ["query"],
+  additionalProperties: false,
+}
 
-${resolutionDescription}
-
-Ranking:
-  1. exact id/display
-  2. resolved input
-  3. prefix
-  4. fuzzy score
-
-\`score\` is 1 for exact/resolution/prefix matches. Fuzzy matches use a score in (0,1).
-
-No markdown body. Use \`zsh_docs\` for full docs.
-
-To enumerate without a query, use \`zsh_list\`.
-
-${safetyDescription}`
-
-export const searchToolDef: ToolDef = makeToolDef<
+export const searchToolDef: ToolDef = buildToolDef<
   "query" | "category" | "limit"
 >({
   name: "zsh_search",
-  brief: "fuzzy-search the zsh reference by id/display",
-  description: desc,
-  inputSchema: {
-    type: "object",
-    properties: {
-      query: {
-        type: "string",
-        description:
-          "Search string matched against ids and display headings. Empty or whitespace returns no matches; use `zsh_list` to enumerate.",
-      },
-      category: inputSchemaCategory,
-      limit: inputSchemaLimit,
-    },
-    required: ["query"],
-    additionalProperties: false,
-  },
+  prose: searchProse,
+  shape: searchShape,
   outputSchema: mkOutputSchema({ score: "required" }),
-  flagBriefs: {
-    query: "fuzzy-search string (required)",
-    category: briefCategory,
-    limit: limitBrief,
-  },
   execute: (corpus, input): SearchResult =>
     search(corpus, input as unknown as SearchInput),
 })
