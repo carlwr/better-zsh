@@ -109,23 +109,28 @@ ${safety}\
 // --- flag prose ------------------------------------------------------------
 
 const flag_key: FlagProse = {
-  brief: "Zsh token or canonical id.",
-  long: `Zsh token or canonical id\n\nExamples: AUTO_CD, [[, %1, autocd`,
+  brief: "zsh token or canonical id (required)",
+  long: `zsh token or canonical id\n\nExamples: AUTO_CD, [[, %1, autocd`,
 }
 
 const flag_query: FlagProse = {
   brief: "fuzzy-search string (required)",
-  long: "Search string matched against ids and display headings. Empty or whitespace returns no matches; use `zsh_list` to enumerate.",
+  long: "search string matched against ids and display headings\n\nEmpty or whitespace returns no matches; use `zsh_list` to enumerate.",
 }
 
-const flag_category: FlagProse = {
+const flag_docs_category: FlagProse = {
   brief: "restrict to one category",
-  long: `Restrict to one doc category. At most one match will be returned.\n\nIf omitted, all categories are tried, in the order given below. There will be at most one match per category.\n\nValid values:\n\n${renderedCategoryList}`,
+  long: `restrict to one doc category\n\nAt most one match will be returned.\n\nIf omitted, all categories are tried, in the order given below. There will be at most one match per category.\n\nValid values:\n\n${renderedCategoryList}`,
+}
+
+const flag_filter_category: FlagProse = {
+  brief: "restrict to one category",
+  long: `restrict to one doc category\n\nIf omitted, all categories are tried in the order given below.\n\nValid values:\n\n${renderedCategoryList}`,
 }
 
 const flag_limit: FlagProse = {
   brief: `max. matches to return (default: ${DEFAULT_LIMIT})`,
-  long: `Limit the number of matches to return.\n\nUse 0 to return only metadata.\n\nDefault: ${DEFAULT_LIMIT}`,
+  long: `limit the number of matches to return\n\nUse 0 to return only metadata.\n\nDefault: ${DEFAULT_LIMIT}`,
 }
 
 // --- assembled -------------------------------------------------------------
@@ -133,17 +138,21 @@ const flag_limit: FlagProse = {
 export const docsProse: ToolProse<"key" | "category"> = {
   brief: docs_brief,
   long: docs_long,
-  flags: { key: flag_key, category: flag_category },
+  flags: { key: flag_key, category: flag_docs_category },
 }
 
 export const searchProse: ToolProse<"query" | "category" | "limit"> = {
   brief: search_brief,
   long: search_long,
-  flags: { query: flag_query, category: flag_category, limit: flag_limit },
+  flags: {
+    query: flag_query,
+    category: flag_filter_category,
+    limit: flag_limit,
+  },
 }
 
 export const listProse: ToolProse<"category" | "limit"> = {
   brief: list_brief,
   long: list_long,
-  flags: { category: flag_category, limit: flag_limit },
+  flags: { category: flag_filter_category, limit: flag_limit },
 }

@@ -22,7 +22,12 @@ fn help_for(sub: &str) -> String {
         .output()
         .unwrap_or_else(|e| panic!("spawn zshref {sub} --help: {e}"));
     assert!(out.status.success(), "zshref {sub} --help failed: {out:?}");
-    String::from_utf8(out.stderr).expect("help is utf-8")
+    assert!(
+        out.stderr.is_empty(),
+        "zshref {sub} --help wrote stderr:\n{}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+    String::from_utf8(out.stdout).expect("help is utf-8")
 }
 
 fn extract_example(help: &str, sub: &str) -> (String, String) {
@@ -31,19 +36,26 @@ fn extract_example(help: &str, sub: &str) -> (String, String) {
         .iter()
         .position(|line| *line == "Example:")
         .unwrap_or_else(|| panic!("zshref {sub} --help has no Example section:\n{help}"));
-    let prompt = lines
-        .get(idx + 1)
+    let prompt_idx = lines[idx + 1..]
+        .iter()
+        .position(|line| !line.is_empty())
+        .map(|offset| idx + 1 + offset)
         .unwrap_or_else(|| panic!("zshref {sub} --help Example has no command:\n{help}"));
+    let prompt = lines
+        .get(prompt_idx)
+        .expect("prompt_idx is derived from existing lines");
     let command = prompt
-        .strip_prefix("  $ ")
+        .strip_prefix("    $ ")
+        .or_else(|| prompt.strip_prefix("  $ "))
         .unwrap_or_else(|| panic!("bad Example prompt line in zshref {sub} --help: {prompt:?}"));
     let mut out = String::new();
-    for line in &lines[idx + 2..] {
+    for line in &lines[prompt_idx + 1..] {
         if line.is_empty() {
             continue;
         }
         let body = line
-            .strip_prefix("  ")
+            .strip_prefix("    ")
+            .or_else(|| line.strip_prefix("  "))
             .unwrap_or_else(|| panic!("bad Example output line in zshref {sub} --help: {line:?}"));
         out.push_str(body);
         out.push('\n');

@@ -1,3 +1,5 @@
+# for help and use, see zshref-rs/DEVELOPMENT.md
+
 .PHONY: artifacts
 artifacts:
 	pnpm --filter @carlwr/zsh-core build

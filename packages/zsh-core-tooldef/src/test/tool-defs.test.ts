@@ -29,6 +29,13 @@ function limitHelp(def: ToolDef): string {
   return props?.limit?.description ?? ""
 }
 
+function categoryHelp(def: ToolDef): string {
+  const props = def.inputSchema.properties as
+    | Record<string, { description?: string }>
+    | undefined
+  return props?.category?.description ?? ""
+}
+
 const eachTool = test.each(toolDefs.map(d => [d.name, d] as const))
 
 describe("toolDefs metadata", () => {
@@ -178,6 +185,18 @@ describe("toolDefs description shape", () => {
     expect(searchToolDef.description).toMatch(/fuzzy/i)
     expect(limitHelp(searchToolDef)).toMatch(/limit|maximum/i)
     expect(searchToolDef.description).toContain("zsh_docs")
+  })
+
+  test("zsh_docs category help documents resolver cardinality", () => {
+    const help = categoryHelp(docsToolDef)
+    expect(help).toMatch(/At most one match/i)
+    expect(help).toMatch(/one match per category/i)
+  })
+
+  test("search/list category help does not promise one-match output", () => {
+    for (const def of [searchToolDef, listToolDef]) {
+      expect(categoryHelp(def)).not.toMatch(/one match|at most/i)
+    }
   })
 
   test("zsh_search and zsh_list output schema documents truncation counts", () => {

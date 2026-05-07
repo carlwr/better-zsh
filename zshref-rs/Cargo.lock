@@ -1526,6 +1526,7 @@ dependencies = [
  "indoc",
  "jsonschema",
  "proptest",
+ "regex",
  "serde",
  "serde_json",
  "sha2",

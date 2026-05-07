@@ -37,6 +37,8 @@ The `build.rs` auto-detects two data sources (monorepo paths vs. vendored `data/
 - `make cli-vendored` / `cli-vendored-test` — build/test in vendored mode
 - `make cli-package` — `cargo package --allow-dirty` (publishable-tarball smoke)
 
+CI enforces `make cli-check`; run it before PRs.
+
 ## Fast dev loop
 
 From inside `zshref-rs/`:
@@ -47,8 +49,6 @@ cargo build && ./target/debug/zshref <args>
 
 From repo root: `./zshref-rs/target/debug/zshref <args>`.
 
-Optional alias: `alias zshref-dev=./zshref-rs/target/debug/zshref`
-
 ## Testing
 
 ```sh
@@ -56,9 +56,7 @@ cargo test          # Rust-only proptests + schema/help smoke
 ```
 
 Cross-language parity (TS `tool.execute()` vs the Rust binary) lives in
-`packages/zsh-core-tooldef/src/test/parity.test.ts`. It drives a single
-long-lived `zshref batch` session per test file via JSONL on
-stdin/stdout. Build the release binary first, then run vitest:
+`packages/zsh-core-tooldef/src/test/parity.test.ts`. Build the release binary first, then run vitest:
 
 ```sh
 make cli
@@ -69,21 +67,3 @@ pnpm --filter @carlwr/zsh-core-tooldef test parity
 The suite compares the binary's embedded `buildInputHash` against current
 Rust inputs + generated JSON artifacts. Missing/stale binaries skip with a
 banner; set `BZ_REQUIRE_PARITY=1` to fail instead. No auto-build.
-
-## Debugging help output
-
-`zshref --help` writes to stderr (CLI contract). Page it with:
-
-```sh
-zshref --help 2>&1 | less
-```
-
-## Formatting / lint
-
-CI enforces `make cli-check`; run it before PRs.
-
-## Code shape
-
-`src/` contains CLI assembly, batch JSONL handling, output routing, embedded
-corpus loading, fuzzy scoring, and tool dispatch. `src/tools/` contains the
-tool subcommands plus shared resolver/record helpers.

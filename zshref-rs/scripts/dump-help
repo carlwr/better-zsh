@@ -1,0 +1,84 @@
+#! /usr/bin/env zsh
+emulate -LR zsh
+set -eu -o pipefail
+
+me=${0:t}
+me_dir=${0:A:h}
+
+help="
+Dump --help output for top-level + every subcommand.
+
+Useful for diffing across changes.
+
+Limitation: hard-wrapping position depends on the terminal width.
+
+--print-tools is parsed by a Rust drift guard.
+
+USAGE:
+  $me OUT             dump to file (use - for stdout)
+  $me --print-tools   print one tool subcommand per line, then exit
+
+ENV:
+  ZSHREF              binary to dump (default: zshref-rs/target/debug/zshref)
+"
+
+
+# --- functions ---
+
+msg() { print -u2 -- "$me: $@"; }
+die() { msg $@ && exit 1; }
+
+dump-form() {
+  local form=$1
+  print
+  print -- "# =========================================================="
+  print -- "# zshref $form"
+  print -- "#"
+  NO_COLOR=1 $bin ${(z)form} 2>&1 || true
+  print
+}
+
+emit() {
+  local forms s
+  forms=('--help')
+  for s in $subcmds
+    forms+=("$s --help")
+
+  print -- "## zshref help dump"
+  print -- "## bin: ${(D)bin}"
+  print -- "## version: '$(NO_COLOR=1 $bin --version 2>&1|xargs)'"
+  print -- "## $me #forms: ${#forms}"
+  print -- "## $me forms:"
+  print -l -- ${forms/#/'##   '}
+  print -- "##"
+  print
+  local f
+  for f in $forms
+    dump-form $f
+}
+
+
+ # --- constants ---
+
+readonly tool_subcmds=(docs search list)
+readonly subcmds=($tool_subcmds batch info schema completions help ILLEGAL_SUBCMD)
+
+
+# --- main ---
+
+case ${1-} in
+     (-h|--help    ) print -- $help && exit 0
+  ;; (--print-tools) print -l -- $tool_subcmds && exit 0
+  ;; (''           ) die "OUT required"
+  ;;
+esac
+
+readonly out=$1
+readonly default_bin=${${:-$me_dir/../target/debug/zshref}:a}
+readonly bin=${ZSHREF:-$default_bin}
+
+[[ -x $bin ]] || { die "not executable: $bin"; }
+if [[ $out == - ]]
+then emit
+else emit >$out && msg "wrote $(wc -l <$out|tr -d ' ') lines to $out"
+fi

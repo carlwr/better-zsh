@@ -37,6 +37,36 @@ fn batch(req: &str) -> Value {
     })
 }
 
+fn batch_stdout(reqs: &[&str]) -> String {
+    let mut child = Command::new(BIN)
+        .arg("batch")
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .expect("spawn zshref batch");
+
+    let mut stdin = child.stdin.take().expect("batch stdin");
+    for req in reqs {
+        writeln!(stdin, "{req}").expect("write batch request");
+    }
+    drop(stdin);
+
+    let out = child.wait_with_output().expect("wait for zshref batch");
+    assert!(
+        out.status.success(),
+        "zshref batch exit {:?}; stderr:\n{}",
+        out.status.code(),
+        String::from_utf8_lossy(&out.stderr),
+    );
+    assert!(
+        out.stderr.is_empty(),
+        "zshref batch should not write stderr on in-band errors:\n{}",
+        String::from_utf8_lossy(&out.stderr),
+    );
+    String::from_utf8(out.stdout).expect("batch stdout is utf-8")
+}
+
 #[test]
 fn rejects_null_required_string() {
     let resp = batch(r#"{"tool":"zsh_docs","input":{"key":null}}"#);
@@ -71,4 +101,20 @@ fn rejects_unknown_input_field() {
             .is_some_and(|e| e.contains("unknown field: `extra`")),
         "unexpected response: {resp}",
     );
+}
+
+#[test]
+fn emits_one_compact_json_line_per_request() {
+    let stdout = batch_stdout(&[
+        r#"{"tool":"zsh_docs","input":{"key":"echo"}}"#,
+        r#"{"tool":"zsh_docs","input":{"key":null}}"#,
+    ]);
+    let lines = stdout.lines().collect::<Vec<_>>();
+    assert_eq!(lines.len(), 2, "expected two JSONL responses:\n{stdout}");
+    for line in lines {
+        assert!(
+            serde_json::from_str::<Value>(line).is_ok(),
+            "batch response line is not JSON: {line}",
+        );
+    }
 }

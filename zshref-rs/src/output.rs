@@ -1,4 +1,4 @@
-//! Output routing: JSON → stdout, help/errors → stderr.
+//! Output routing: JSON/help/version → stdout, errors → stderr.
 //!
 //! Exit-code contract (mirrors `CLI-VISUAL-POLICY.md` and the existing TS
 //! adapters):
@@ -34,14 +34,14 @@ pub fn render(value: &Value, pretty: bool) -> String {
 }
 
 /// Translate a clap error to an exit code, routing output to the right stream.
-/// `DisplayHelp`/`DisplayVersion` → stderr (stdout is reserved for JSON per
-/// CLI-VISUAL-POLICY.md), rendered with ANSI via `StyledStr::ansi()` so
-/// styling isn't lost (clap's `Display` strips ANSI). User errors → 2;
-/// internal errors → 1.
+/// `DisplayHelp`/`DisplayVersion` → stdout (explicit help/version request);
+/// implicit bad-input help stays on stderr. Display output uses
+/// `StyledStr::ansi()` when color is enabled so styling isn't lost
+/// (clap's `Display` strips ANSI). User errors → 2; internal errors → 1.
 pub fn handle_clap_error(err: clap::Error, _cmd: &mut Command) -> i32 {
     match err.kind() {
         ErrorKind::DisplayHelp | ErrorKind::DisplayVersion => {
-            write_to_stderr(&err);
+            write_to_stdout(&err);
             0
         }
         ErrorKind::DisplayHelpOnMissingArgumentOrSubcommand => {
@@ -71,6 +71,16 @@ pub fn handle_clap_error(err: clap::Error, _cmd: &mut Command) -> i32 {
     }
 }
 
+fn write_to_stdout(err: &clap::Error) {
+    let rendered = err.render();
+    let mut stdout = std::io::stdout().lock();
+    let _ = if stdout_wants_color() {
+        write!(stdout, "{}", rendered.ansi())
+    } else {
+        write!(stdout, "{rendered}")
+    };
+}
+
 fn write_to_stderr(err: &clap::Error) {
     let rendered = err.render();
     let mut stderr = std::io::stderr().lock();
@@ -81,22 +91,36 @@ fn write_to_stderr(err: &clap::Error) {
     };
 }
 
-/// Mirror the gating `anstream::AutoStream` applies to stderr:
-///   NO_COLOR (non-empty)   → never
-///   CLICOLOR_FORCE ("1"…)  → always
-///   otherwise              → `stderr.is_terminal()`
+/// Mirror the relevant `anstream::AutoStream` color gates:
+///   NO_COLOR (non-empty)          → never
+///   CLICOLOR_FORCE (non-0 value)  → always
+///   otherwise                     → destination stream `.is_terminal()`
+fn stdout_wants_color() -> bool {
+    stream_wants_color(std::io::stdout().is_terminal())
+}
+
 fn stderr_wants_color() -> bool {
+    stream_wants_color(std::io::stderr().is_terminal())
+}
+
+fn stream_wants_color(is_terminal: bool) -> bool {
     if env_nonempty("NO_COLOR") {
         return false;
     }
-    if env_nonempty("CLICOLOR_FORCE") {
+    if env_force_color() {
         return true;
     }
-    std::io::stderr().is_terminal()
+    is_terminal
 }
 
 fn env_nonempty(key: &str) -> bool {
     std::env::var_os(key)
         .map(|v| !v.is_empty())
+        .unwrap_or(false)
+}
+
+fn env_force_color() -> bool {
+    std::env::var_os("CLICOLOR_FORCE")
+        .map(|v| !v.is_empty() && v.to_string_lossy() != "0")
         .unwrap_or(false)
 }

@@ -39,10 +39,19 @@ pub fn build_cli(tool_defs: &ToolDefs, corpus: &Corpus) -> Command {
         .about(prose::ROOT_BRIEF)
         .long_about(prose::ROOT_LONG)
         .override_usage(prose::ROOT_USAGE)
-        .arg(pretty_arg())
-        .after_help(root_after_help)
+        .after_long_help(root_after_help)
         .arg_required_else_help(true)
-        .subcommand_required(true);
+        .subcommand_required(true)
+        .disable_help_subcommand(true)
+        .disable_help_flag(true)
+        .disable_version_flag(true)
+        // Root-level `--pretty` is documented in `Options:` (the override
+        // `Usage:` block hides it). Each JSON-emitting subcommand also
+        // registers its own `--pretty`; `dispatch` OR's the two positions
+        // so `zshref --pretty docs …` and `zshref docs --pretty` are equal.
+        .arg(pretty_arg())
+        .arg(help_arg())
+        .arg(version_arg());
 
     for td in &tool_defs.tools {
         root = root.subcommand(build_subcommand(td, &tool_defs.tools, corpus));
@@ -51,48 +60,71 @@ pub fn build_cli(tool_defs: &ToolDefs, corpus: &Corpus) -> Command {
     root = root.subcommand(
         Command::new("batch")
             .about(prose::BATCH_ABOUT)
-            .after_long_help(prose::BATCH_LONG),
+            .after_long_help(prose::BATCH_LONG)
+            .disable_help_flag(true)
+            .arg(help_arg()),
     );
 
-    root = root.subcommand(Command::new("info").about(prose::INFO_ABOUT));
+    root = root.subcommand(
+        Command::new("info")
+            .about(prose::INFO_ABOUT)
+            .disable_help_flag(true)
+            .arg(help_arg()),
+    );
 
     let (words, leaves) = tools::schema::size_hint(tool_defs);
     root = root.subcommand(
         Command::new("schema")
             .about(prose::schema_about(words))
             .after_long_help(prose::schema_long(words, leaves))
-            .arg(pretty_arg()),
+            .disable_help_flag(true)
+            .arg(pretty_arg())
+            .arg(help_arg()),
     );
 
     root = root.subcommand(
-        Command::new("completions").about(prose::COMPL_ABOUT).arg(
-            Arg::new("shell")
-                .value_name("SHELL")
-                .required(true)
-                .value_parser(clap::value_parser!(clap_complete::Shell))
-                .hide_possible_values(true)
-                .help(prose::COMPL_SHELL_HELP),
-        ),
+        Command::new("completions")
+            .about(prose::COMPL_ABOUT)
+            .disable_help_flag(true)
+            .arg(
+                Arg::new("shell")
+                    .value_name("SHELL")
+                    .required(true)
+                    .value_parser(clap::value_parser!(clap_complete::Shell))
+                    .hide_possible_values(true)
+                    .help(prose::COMPL_SHELL_HELP),
+            )
+            .arg(help_arg()),
+    );
+
+    root = root.subcommand(
+        Command::new("help")
+            .about(prose::HELP_ABOUT)
+            .disable_help_flag(true)
+            .arg(
+                Arg::new("command")
+                    .value_name("COMMAND")
+                    .num_args(0..=1)
+                    .help(prose::HELP_COMMAND_HELP),
+            )
+            .arg(help_arg()),
     );
 
     root
 }
 
 /// Multi-line `--version` string: pkg version, zsh upstream, corpus totals.
-/// `commit` may be empty in dev builds — fall back to omitting the parenthetical.
 fn version_string(corpus: &Corpus) -> String {
     let pkg_version = env!("CARGO_PKG_VERSION");
     let up = &corpus.index.zsh_upstream;
     let total: usize = corpus.categories.iter().map(|c| c.records.len()).sum();
     let cats = corpus.categories.len();
 
-    let upstream_line = if up.commit.is_empty() {
-        format!("zsh upstream: {} ({})", up.tag, up.date)
-    } else {
-        let commit_short: String = up.commit.chars().take(8).collect();
-        format!("zsh upstream: {} ({}, {})", up.tag, commit_short, up.date)
-    };
-    format!("{pkg_version}\n{upstream_line}\n{total} records across {cats} categories")
+    let commit_short: Option<String> =
+        (!up.commit.is_empty()).then(|| up.commit.chars().take(8).collect());
+    let upstream = prose::version_upstream_line(&up.tag, &up.date, commit_short.as_deref());
+    let summary = prose::version_corpus_summary(total, cats);
+    format!("{pkg_version}\n{upstream}\n{summary}")
 }
 
 fn build_subcommand(td: &ToolDef, tools: &[ToolDef], corpus: &Corpus) -> Command {
@@ -101,9 +133,10 @@ fn build_subcommand(td: &ToolDef, tools: &[ToolDef], corpus: &Corpus) -> Command
     let mut cmd = Command::new(name)
         .about(prose::rewrite_refs(&td.brief, tools))
         .after_long_help(after_help)
-        .disable_help_flag(false)
+        .disable_help_flag(true)
         // Subcommand arg: `zshref docs … --pretty`.
-        .arg(pretty_arg());
+        .arg(pretty_arg())
+        .arg(help_arg());
 
     let props = td
         .input_schema
@@ -233,13 +266,33 @@ fn build_arg(
 fn pretty_arg() -> Arg {
     Arg::new("pretty")
         .long("pretty")
+        .display_order(90)
         .action(ArgAction::SetTrue)
         .help(prose::ROOT_PRETTY_HELP)
 }
 
+fn help_arg() -> Arg {
+    // `-h` and `--help` share one row and show the same (long) help; the
+    // short/long distinction adds no value here and lets `-h` look truncated.
+    Arg::new("help")
+        .short('h')
+        .long("help")
+        .action(ArgAction::HelpLong)
+        .help(prose::HELP_FLAG_HELP)
+}
+
+fn version_arg() -> Arg {
+    // Custom so the description follows phrase form (clap default capitalizes).
+    Arg::new("version")
+        .short('V')
+        .long("version")
+        .action(ArgAction::Version)
+        .help(prose::VERSION_FLAG_HELP)
+}
+
 pub fn dispatch(cmd: Command, tool_defs: &ToolDefs, corpus: &Corpus) -> Result<i32> {
     let mut cmd_for_err = cmd.clone();
-    let matches = match cmd.try_get_matches() {
+    let matches = match cmd.try_get_matches_from(std::env::args_os()) {
         Ok(m) => m,
         Err(err) => return Ok(output::handle_clap_error(err, &mut cmd_for_err)),
     };
@@ -247,11 +300,11 @@ pub fn dispatch(cmd: Command, tool_defs: &ToolDefs, corpus: &Corpus) -> Result<i
         cmd_for_err.print_long_help().ok();
         return Ok(0);
     };
-    // `--pretty` is registered only on JSON-emitting subcommands.
+    // `--pretty` accepted at root or on the subcommand; OR the two.
     let ctx = Ctx {
         tool_defs,
         corpus,
-        pretty: optional_flag(sub_matches, "pretty"),
+        pretty: optional_flag(&matches, "pretty") || optional_flag(sub_matches, "pretty"),
     };
 
     match sub_name {
@@ -271,6 +324,10 @@ pub fn dispatch(cmd: Command, tool_defs: &ToolDefs, corpus: &Corpus) -> Result<i
             Ok(0)
         }
         "batch" => crate::batch::run(ctx.tool_defs, ctx.corpus),
+        "help" => {
+            let command = sub_matches.get_one::<String>("command").map(String::as_str);
+            Ok(render_help(cmd_for_err, command))
+        }
         sub => {
             let tool_name = format!("zsh_{sub}");
             let td = ctx
@@ -283,6 +340,17 @@ pub fn dispatch(cmd: Command, tool_defs: &ToolDefs, corpus: &Corpus) -> Result<i
             output::emit(&tools::dispatch(td, &input, ctx.corpus)?, ctx.pretty);
             Ok(0)
         }
+    }
+}
+
+fn render_help(mut cmd: Command, subcommand: Option<&str>) -> i32 {
+    let args = match subcommand {
+        Some(sub) => vec![prose::BIN, sub, "--help"],
+        None => vec![prose::BIN, "--help"],
+    };
+    match cmd.try_get_matches_from_mut(args) {
+        Ok(_) => 0,
+        Err(err) => output::handle_clap_error(err, &mut cmd),
     }
 }
 

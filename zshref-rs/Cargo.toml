@@ -49,6 +49,7 @@ indoc = "2"
 [dev-dependencies]
 proptest = "1"
 jsonschema = { version = "0.18", default-features = false, features = ["draft202012"] }
+regex = "1"
 
 [build-dependencies]
 sha2 = "0.10"

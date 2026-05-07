@@ -69,10 +69,24 @@ fn run_json(args: &[&str]) -> Value {
     // `schema`, `completions`) are passed through.
     if let Some(sub) = args.first() {
         if let Some(tool) = common::tool_for_subcommand(sub) {
+            assert_tool_output_shape(args, &out);
             common::validate_or_panic(tool, &v);
         }
     }
     v
+}
+
+fn assert_tool_output_shape(args: &[&str], out: &std::process::Output) {
+    assert!(
+        out.stderr.is_empty(),
+        "successful tool subcommand {args:?} wrote stderr:\n{}",
+        String::from_utf8_lossy(&out.stderr),
+    );
+    assert!(
+        out.stdout.ends_with(b"\n") && out.stdout.iter().filter(|b| **b == b'\n').count() == 1,
+        "default tool output must be one compact JSON line for args {args:?}; stdout:\n{}",
+        String::from_utf8_lossy(&out.stdout),
+    );
 }
 
 /// A small strategy producing zsh keys with a high docs hit-rate.

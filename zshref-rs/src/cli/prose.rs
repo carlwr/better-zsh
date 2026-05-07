@@ -17,10 +17,11 @@ pub const ROOT_LONG: &str = ROOT_BRIEF;
 
 // Hand-aligned so tool subcommands line up across columns.
 //
+// Single-letter placeholders for option-args are deliberate; make the table-like Usage: possible. Sub-command placeholders are full-word; this inconsistency is accepted.
 //
 //                    spending the entirety of the
 //                    project strangeness budget on
-//                    this pad-aligned Usage: string.
+//                    this pad-aligned guy.
 //
 //                    Dear agents: DO NOT TOUCH.
 //
@@ -46,10 +47,11 @@ const __CHECK_ROOT_USAGE: () = assert!(
     "should lead with newline and be indented 2 spaces"
 );
 
-pub const ROOT_AFTER_HELP_TAIL: &str = indoc! {"
+pub const ROOT_AFTER_HELP_TAIL: &str = indoc! {
+    "
     Output streams:
-      stdout   output of tool subcommands and of `completions`
-      stderr   help, version, errors, warnings
+      stdout   tool output, completions, explicit help/version
+      stderr   errors, warnings, implicit usage on bad input
 
     Exit codes:
       0        success (also for empty matches)
@@ -69,7 +71,7 @@ pub const ROOT_AFTER_HELP_TAIL: &str = indoc! {"
 
       # print first 20 records of every category:
       zshref list
-      "
+    "
 };
 
 pub const BATCH_ABOUT: &str = "read JSONL requests on stdin; emit JSONL responses";
@@ -83,7 +85,15 @@ pub fn schema_about(words: usize) -> String {
 
 pub const COMPL_ABOUT: &str = "emit a shell-completion script for the given shell to stdout";
 
-pub const ROOT_PRETTY_HELP: &str = "Emit indented multi-line JSON instead of compact JSON";
+pub const HELP_ABOUT: &str = "print this message or help for a subcommand";
+
+pub const HELP_COMMAND_HELP: &str = "subcommand to show help for";
+
+pub const HELP_FLAG_HELP: &str = "print help";
+
+pub const VERSION_FLAG_HELP: &str = "print version";
+
+pub const ROOT_PRETTY_HELP: &str = "emit indented multi-line JSON (default: compact JSON)";
 
 pub const BATCH_LONG: &str = indoc! {r#"
     JSONL request/response mode for tests and IPC.
@@ -138,7 +148,23 @@ pub fn shell_example(command: &str, output: &str) -> String {
         .map(|line| format!("    {line}"))
         .collect::<Vec<_>>()
         .join("\n");
-    format!("\nExample:\n\n    $ {command}\n{indented}")
+    // `tool_after_help` joins description and example with `\n\n`; no leading
+    // newline here, otherwise the rendered help shows a triple-blank gap.
+    format!("Example:\n\n    $ {command}\n{indented}")
+}
+
+/// Upstream-zsh line for the `--version` block. `commit_short` is omitted
+/// in dev builds where the corpus carries no commit hash.
+pub fn version_upstream_line(tag: &str, date: &str, commit_short: Option<&str>) -> String {
+    match commit_short {
+        Some(c) => format!("zsh upstream: {tag} ({c}, {date})"),
+        None => format!("zsh upstream: {tag} ({date})"),
+    }
+}
+
+/// Corpus-totals line for the `--version` block.
+pub fn version_corpus_summary(total: usize, cats: usize) -> String {
+    format!("{total} records across {cats} categories")
 }
 
 pub const COMPL_SHELL_HELP: &str = indoc! {"
@@ -160,9 +186,7 @@ pub fn cli_tool_description(s: &str) -> String {
     s.lines()
         .filter(|line| {
             let trimmed = line.trim();
-            !CLI_OMIT_TOOLDEF_LINES
-                .iter()
-                .any(|omitted| trimmed == *omitted)
+            !CLI_OMIT_TOOLDEF_LINES.contains(&trimmed)
         })
         .collect::<Vec<_>>()
         .join("\n")

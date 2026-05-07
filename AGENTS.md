@@ -19,6 +19,7 @@ Every `.md` edit, however small, follows these steps:
 
 **The before-returning audit is mandatory.**
 
+
 ## Overview
 
 Workspace shape and per-package distribution: `README.md` packages table. Pre-1.0; libraries still free to move.
@@ -28,6 +29,13 @@ Workspace shape and per-package distribution: `README.md` packages table. Pre-1.
 - Package `dist/types/*.d.ts` — rolled-up public APIs with JSDoc.
 - **`skills/orient/`** — discovery scripts and reading paths.
 - **`plan-json-artifacts.md`** — deferred plan for release-hosted JSON artifacts.
+
+## Shell commands and `cd`
+
+- **MUST** use absolute paths in `Bash` invocations.
+- **MUST NOT** use bare `cd <dir>`: it permanently changes the shell's working directory for every subsequent command in the session, and a single forgotten `cd` silently invalidates later relative paths.
+- For a transient directory change, use a subshell: `(cd <dir> && <cmd>)`.
+- Never prepend `cd <repo-root>` to a `git` command — `git` already operates on the working tree, and the compound triggers a permission prompt.
 
 ## DRY across documentation layers
 
