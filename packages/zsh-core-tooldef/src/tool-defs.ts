@@ -1,5 +1,5 @@
 import type { DocCorpus } from "@carlwr/zsh-core"
-import { docsToolDef, listToolDef, searchToolDef } from "./tools/index.ts"
+import { docsToolDef, listToolDef, searchToolDef } from "./tools.ts"
 
 /** JSON Schema object as shipped to MCP/LM clients; opaque to this package. */
 export type ToolInputSchema = Readonly<Record<string, unknown>>

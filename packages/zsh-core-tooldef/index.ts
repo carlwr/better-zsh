@@ -7,4 +7,4 @@
  */
 
 export * from "./src/tool-defs.ts"
-export * from "./src/tools/index.ts"
+export * from "./src/tools.ts"

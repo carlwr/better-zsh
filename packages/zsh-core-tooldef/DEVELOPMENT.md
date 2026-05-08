@@ -31,7 +31,7 @@ A consumer that needs neither short form reads only `description`; a consumer th
 ## Adding a tool
 
 - Add `src/tools/<tool>.ts` exporting I/O types, a pure implementation, and a `*ToolDef` constant.
-- Re-export it from `src/tools/index.ts` and `src/tools/index.ts`.
+- Re-export it from `src/tools.ts`.
 - Re-export the `*ToolDef` from `src/tool-defs.ts` and add it to `toolDefs`.
 - Author the `outputSchema` co-located with the result type alias; use `mkOutputSchema` (in `src/tools/shared/output-schema.ts`) so per-category `subKind` enums and `category` enums interpolate from canonical zsh-core tables. See DESIGN.md §"Output schemas (tooldef-owned)".
 - Add unit tests under `src/test/tools/<tool>.test.ts`.

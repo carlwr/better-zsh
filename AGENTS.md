@@ -154,6 +154,12 @@ second line\
 - Decide conciseness consciously; a mild clarity tradeoff may still be worth it.
 - For conciseness-only changes, compare `wc -w` or `wc -c` before/after — at minimum, do not grow the text.
 
+### Module layout
+
+- no `src/**/index.ts` barrels — use `src/<area>.ts` beside `src/<area>/` when an aggregate is needed
+- published TS packages under `packages/`: each non-glob `package.json` `exports` key has a matching package-root facade (`.` → `index.ts`, `./foo` → `foo.ts`)
+- _notes:_ `scripts/build/module-layout.test.mjs` enforces the above (`pnpm test:scripts`, `pnpm qa`)
+
 ### Types
 
 - Branded types for domain strings.
