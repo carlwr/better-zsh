@@ -4,11 +4,13 @@ import { readdirSync, readFileSync } from "node:fs"
 import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 
-const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
+import { buildTasks } from "./build-tasks.mjs"
+
+const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..")
 const errs = []
 const safeRawRecursive = new Set(["format", "lint"])
-const helperRun = "node scripts/upstream-ready.mjs run"
-const helperBootstrap = "node scripts/upstream-ready.mjs bootstrap"
+const helperRun = "node scripts/build/upstream-ready.mjs run"
+const helperBootstrap = "node scripts/build/upstream-ready.mjs bootstrap"
 
 function read(rel) {
   return readFileSync(join(repoRoot, rel), "utf8")
@@ -32,18 +34,23 @@ function hasUpstreamBuild(cmd) {
 const rootPkg = readJson("package.json")
 if (rootPkg.scripts["bootstrap:upstream"] !== helperBootstrap) {
   fail(
-    "package.json: bootstrap:upstream must delegate to scripts/upstream-ready.mjs",
+    "package.json: bootstrap:upstream must delegate to scripts/build/upstream-ready.mjs",
   )
 }
 
+const rootCommands = {
+  ...rootPkg.scripts,
+  ...buildTasks,
+}
+
 const guardedRootRecursive = []
-for (const [name, cmd] of Object.entries(rootPkg.scripts)) {
+for (const [name, cmd] of Object.entries(rootCommands)) {
   if (!cmd.includes("pnpm -r")) continue
   if (safeRawRecursive.has(name)) continue
   guardedRootRecursive.push(name)
   if (!cmd.includes("pnpm verify:upstream") || !cmd.includes(helperRun)) {
     fail(
-      `package.json: recursive script "${name}" must run pnpm verify:upstream and scripts/upstream-ready.mjs`,
+      `package.json: recursive script "${name}" must run pnpm verify:upstream and scripts/build/upstream-ready.mjs`,
     )
   }
 }

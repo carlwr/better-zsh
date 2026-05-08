@@ -233,7 +233,17 @@ Close-variant normalization of a raw token against a documented identity is in s
 
 ### Validation before returning
 
-Pre-commit gate: `pnpm qa` = `pnpm check && pnpm test` (typecheck + lint + unit). Bare `pnpm test` skips typecheck.
+Pre-commit gate: `pnpm qa` runs quiet success output for:
+
+- typecheck
+- lint
+- unit tests
+
+Related:
+
+- Full logs: `pnpm qa:verbose`.
+- Build-script rationale: `scripts/build/README.md`.
+- Bare `pnpm test` skips typecheck.
 
 ```sh
 # after any edits:
@@ -319,12 +329,14 @@ The Rust CLI in `zshref-rs/` publishes via cargo/crates.io — see `zshref-rs/` 
 
 ### `BZ_SKIP_UPSTREAM`
 
-Two contracts prevent races on shared upstream `dist/` (tsup `clean: true` wipes it at every concurrent rebuild):
+Required contracts:
 
 - downstream `pre*` hooks short-circuit on `BZ_SKIP_UPSTREAM`
-- workspace-recursive aggregators route through `scripts/upstream-ready.mjs`
+- workspace-recursive aggregators route through `scripts/build/upstream-ready.mjs`
 
-Spec + enforcement: `scripts/verify-upstream-contract.mjs`. New aggregators invoking upstream-rebuilding `pre*` hooks follow the pattern; hook-less aggregators (`format`, `lint`) need not.
+Rationale: `scripts/build/README.md`. Enforcement: `scripts/build/verify-upstream-contract.mjs`.
+
+New aggregators invoking upstream-rebuilding `pre*` hooks follow the pattern. Hook-less aggregators (`format`, `lint`) need not.
 
 Mid-wipe, the TS LSP can emit transient TS7016 ghosts for `<pkg>/dist/*` — ignore.
 

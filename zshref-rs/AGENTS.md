@@ -13,3 +13,8 @@ When renaming a mirrored symbol on either side: update both markers plus `parity
 - Rust-only edits: `cargo build` + `cargo test` (skip `pnpm qa`).
 - From outside `zshref-rs/`: pass `--manifest-path zshref-rs/Cargo.toml`.
 - Edits touching `packages/zsh-core-tooldef/` prose: rebuild tooldef first (`pnpm --filter @carlwr/zsh-core-tooldef build`), then `cargo build`.
+
+## Make targets
+
+- Agents: use `pnpm cli`, `pnpm cli:test`, etc — wrapped via `quiet-run.mjs`, silent on success.
+- Direct `make cli`: stays verbose; silencing would duplicate `quiet-run.mjs` buffering for no agent-path benefit.

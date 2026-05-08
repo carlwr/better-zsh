@@ -4,7 +4,7 @@ import { spawnSync } from "node:child_process"
 import { dirname, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 
-const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
+const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..")
 const args = process.argv.slice(2)
 
 function die(msg) {
@@ -50,10 +50,10 @@ switch (args[0]) {
     break
   case "run":
     if (args.length < 2)
-      die("usage: node scripts/upstream-ready.mjs run <cmd> [args...]")
+      die("usage: node scripts/build/upstream-ready.mjs run <cmd> [args...]")
     bootstrap()
     run(args.slice(1), { BZ_SKIP_UPSTREAM: "1" })
     break
   default:
-    die("usage: node scripts/upstream-ready.mjs <bootstrap|run>")
+    die("usage: node scripts/build/upstream-ready.mjs <bootstrap|run>")
 }
