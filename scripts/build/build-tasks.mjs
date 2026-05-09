@@ -11,7 +11,7 @@ export const buildTasks = {
   "format:check": "pnpm lint && pnpm verify:upstream",
   lint: "pnpm lint:root && pnpm -r --filter './packages/*' --if-present lint",
   typecheck: verifiedRecursive("typecheck"),
-  check: `pnpm lint:symlinks && pnpm lint:root && ${verifiedRecursive("check")}`,
+  check: `pnpm lint:symlinks && pnpm lint:md && pnpm lint:root && ${verifiedRecursive("check")}`,
   test: "pnpm format:check && pnpm test:unit",
   "test:unit": verifiedRecursive("test"),
   "test:scripts": "node --test 'scripts/build/*.test.mjs'",

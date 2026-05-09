@@ -1,9 +1,17 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
+emulate -LR zsh
+set -eu -o pipefail
 
-set -euo pipefail
+me=${0:t}
+me_dir=${0:A:h}
 
 help="
-Usage: $0 <zsh-core|tooldef|mcp|ext>
+Usage:
+  $me <zsh-core|zsh-core-tooldef|zshref-mcp|vscode-better-zsh>...
+
+Examples:
+  $me zsh-core
+  $me zsh-core zsh-core-tooldef
 
 Lists all 'export' lines from source (excluding tests). Each output line is filename + first line of the export expression.
 
@@ -11,19 +19,32 @@ The Rust CLI under zshref-rs/ is out of scope; browse that crate directly.
 
 Useful for: finding functions, types, constants by name.
 
+WARNING: output may be hundreds of lines/thousands of tokens; agents are recommended to either truncate or filter/search the output.
+
 Requires: ripgrep (rg)
 "
 
-cd "$(git -C "$(dirname "$0")" rev-parse --show-toplevel)"
+msg() { print -u2 -- "$me: $@"; }
+die() { msg "ERROR: $@ (see --help)" && exit 1; }
 
-pkg="${1:-}"
-case "$pkg" in
-  (zsh-core)   dir=packages/zsh-core/src ;;
-  (tooldef)    dir=packages/zsh-core-tooldef ;;
-  (mcp)        dir=packages/zshref-mcp ;;
-  (ext)        dir=packages/vscode-better-zsh/src ;;
-  (-h|--help)  echo "$help"     && exit 0;;
-  (*)          echo "$help" >&2 && exit 1;;
-esac
+dirs=()
+foreach arg ( $@ ) {
+  case $arg in
+       (zsh-core         ) dirs+=( packages/zsh-core/src          )
+    ;; (zsh-core-tooldef ) dirs+=( packages/zsh-core-tooldef      )
+    ;; (zshref-mcp       ) dirs+=( packages/zshref-mcp            )
+    ;; (vscode-better-zsh) dirs+=( packages/vscode-better-zsh/src )
+    ;; (-h|--help        ) print -r -- $help && exit 0
+    ;; (*                ) die "illegal arg: $arg"
+    ;;
+  esac
+}
+((#dirs)) || die 'no subpackage(s) specified'
 
-rg '^export ' --type ts -g '!test/' -g '!dist/' -g '!node_modules/' "$dir" | sort
+cd "$(git -C $me_dir rev-parse --show-toplevel)"
+
+print
+foreach d ( $dirs ) {
+  rg '^export ' --type ts -g '!test/' -g '!dist/' -g '!node_modules/' $d | sort
+  print
+}

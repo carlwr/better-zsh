@@ -1,0 +1,87 @@
+#! /usr/bin/env zsh
+set -eu -o pipefail
+
+me=${0:t}
+
+help="
+List maintainer-audience .md files (those carrying 'audience: maintainer' in
+YAML frontmatter).
+
+Ignores .gitignore-ed paths.
+
+USAGE:
+  $me [--quiet|-q]
+
+OPTIONS:
+
+  --quiet, -q
+    on first malformed frontmatter (audience: maintainer with missing
+    or empty 'read-when:'), print and exit non-zero
+    suppresses normal output
+
+  (default)
+    print '<path>\t<when>' per maintainer-audience file
+
+OUTPUT:
+  Tab-separated lines: <relative-path>\t<when-value>
+"
+
+list-nonignored-files() git ls-files --cached --others --exclude-standard $@
+
+# Extract YAML frontmatter (between first two --- delimiters at file start).
+# Output empty if file has no frontmatter or first line is not '---'.
+frontmatter() {
+  perl -ne '
+    if (/^---\s*$/) {
+      exit 0 if $n == 0 && $. != 1;
+      $n++;
+      next if $n == 1;
+      exit 0 if $n == 2;
+    }
+    print if $n == 1;
+  ' -- "$1"
+}
+
+handle-file() {
+  local f=$1
+  [[ ! -L $f ]] || return 0   # symlinks (e.g. CLAUDE.md->AGENTS.md): skip
+  local fm
+  fm=$(frontmatter "$f")
+  [[ -n $fm ]] || return 0
+
+  local audience when
+  audience=$(yq -r '.audience // ""' <<< $fm)
+  [[ $audience == "maintainer" ]] || return 0
+
+  when=$(yq -r '.read-when // ""' <<< $fm)
+
+  if [[ -z $when ]]
+  then
+    print -u2 -- "$me: $f: 'missing/empty 'read-when:'"
+    exit 1
+  fi
+
+  ((quiet)) || print -- "${f}\t${when}"
+}
+
+verboseMsg=(
+  '# non-.gitignored .md files with "audience: maintainer"'
+  '# form: "<file>\t<read-when:>"'
+)
+
+main() {
+  ((!verbose)) || print -lr -- $verboseMsg
+  foreach f ( $(list-nonignored-files '*.md') ) {
+    handle-file "$f"
+  }
+}
+
+integer quiet=0 verbose=0
+case ${1-} in
+     (-h|--help   ) print $help && exit 0
+  ;; (   --verbose) verbose=1
+  ;; (-q|--quiet  ) quiet=1
+  ;;
+esac
+
+main

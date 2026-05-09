@@ -90,6 +90,7 @@ const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..")
 const smokeScripts = [
   ["verify:upstream", 0],
   ["format:check", 1],
+  ["lint:md", 0],
 ]
 
 for (const [script, maxStdoutLines] of smokeScripts) {

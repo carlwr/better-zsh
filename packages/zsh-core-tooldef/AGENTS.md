@@ -1,3 +1,8 @@
+---
+audience: maintainer
+read-when: working in packages/zsh-core-tooldef/
+---
+
 # AGENTS.md — `@carlwr/zsh-core-tooldef`
 
 Tool definitions over zsh-core; consumed by adapters (CLI, MCP, VS Code LM).

@@ -48,7 +48,7 @@ directory is committed. See `DATA-SYNC.md`.
 
 ### Docs
 
-Companion-repo URLs and the project name are already post-extraction form (AGENTS.md §"Post-extraction repo URLs in user-facing docs"). Remaining extraction-day items:
+Companion-repo URLs and the project name are already in post-extraction form. Remaining extraction-day items:
 
 - `README.md`:
   - `../LICENSE` / `../THIRD_PARTY_NOTICES.md` → `./LICENSE` / `./THIRD_PARTY_NOTICES.md`.

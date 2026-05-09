@@ -1,10 +1,7 @@
 //! Output routing: JSON/help/version → stdout, errors → stderr.
 //!
-//! Exit-code contract (mirrors `CLI-VISUAL-POLICY.md` and the existing TS
-//! adapters):
-//!   0 — success, including empty-match (`matches: []`) results
-//!   1 — unexpected internal error
-//!   2 — invalid input (bad flag, enum, missing required, unknown subcommand)
+//! Exit-code contract mirrors the CLI policy document and the existing TS
+//! adapters.
 
 use clap::error::ErrorKind;
 use clap::Command;

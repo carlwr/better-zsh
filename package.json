@@ -17,6 +17,7 @@
     "lint": "node scripts/build/quiet-run.mjs lint",
     "lint:root": "biome check --error-on-warnings scripts package.json",
     "lint:symlinks": "scripts/list-repo-symlinks --quiet && scripts/check-claude-md-pairs --quiet",
+    "lint:md": "scripts/list-maintainer-docs --quiet",
     "verify:upstream": "node scripts/build/verify-upstream-contract.mjs",
     "bootstrap:upstream": "node scripts/build/upstream-ready.mjs bootstrap",
     "run:verbose": "node scripts/build/quiet-run.mjs --verbose",

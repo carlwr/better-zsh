@@ -1,17 +1,26 @@
+---
+audience: maintainer
+read-when: working in packages/vscode-better-zsh/
+---
+
 # AGENTS.md — `better-zsh` (VS Code extension)
 
-VS Code extension; editor providers + LM-tool adapter + host-zsh execution.
+VS Code extension package:
+
+- editor providers
+- LM-tool adapter
+- host-zsh execution
 
 ## Layout
 
 `src/`:
 
-- `editor/` — language-feature providers (hover, completions, semantic tokens, …):
+- `editor/` — language-feature providers:
   - wires zsh-core analysis + doc records to VS Code APIs
   - reusable parsing/rendering belongs in pure helpers; provider-local dispatch may stay here
 - `lm-adapter/` — VS Code LM tool registration:
   - sibling of the MCP server; consumes only the shared tool surface
-- root (`extension.ts`, `cache.ts`, `settings.ts`, `zsh.ts`, …):
+- extension-root modules:
   - activation
   - infrastructure
   - host-zsh execution

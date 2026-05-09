@@ -1,3 +1,8 @@
+---
+audience: maintainer
+read-when: subsystem rationale and design decisions
+---
+
 # Design
 
 **Why**, not what — for subsystems. API rollups (JSDoc in the `.d.ts` files) describe *what* the public surface does; this file explains *why* subsystems are shaped as they are.
@@ -5,13 +10,10 @@
 Layered docs:
 
 - `PRINCIPLES.md` — cross-cutting principles
-- `AGENTS.md` — contributor conventions:
-  - style
-  - testing
-  - tooling
-  - workflow
+- `AGENTS.md` — contributor conventions entry point; links into topic files for universal patterns
+- maintainer-doc index: `./scripts/list-maintainer-docs`
 
-Don't duplicate JSDoc; point to it. If a rule already lives in PRINCIPLES or AGENTS, **cross-link** instead of restating — same-layer repetition drifts.
+Don't duplicate JSDoc; point to it. If a rule already lives in PRINCIPLES or any contributor doc, **cross-link** instead of restating — same-layer repetition drifts.
 
 ---
 
@@ -393,7 +395,7 @@ External coverage:
 
 - `zshref-rs/README.md` — user-facing surface and conventions
 - `zshref-rs/DATA-SYNC.md` — dual-mode build, bundled corpus
-- `CLI-VISUAL-POLICY.md` — stream / color discipline
+- `CLI-POLICY.md` — stream / color discipline
 
 Tooldef keeps the marginal cost of "another adapter" low — dynamic `clap::Command` assembly walks the bundled tool-def JSON:
 

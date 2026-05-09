@@ -52,7 +52,7 @@
   - Companion-repo links are already in post-extraction form; re-check on extraction day.
 - `DEVELOPMENT.md §deno.lock` — replace with "committed; standard JSR lockfile policy."
 - This file (`EXTRACTION.md`) — delete on the extraction commit.
-- Workspace-level `DESIGN.md` §"MCP as a consumer" can move to past tense and keep a short pointer to the new repo.
+- Workspace-level design docs can move MCP extraction notes to past tense and keep a short pointer to the new repo.
 - Workspace-level `AGENTS.md` should drop MCP-specific layout details and keep a pointer.
 
 ### Cross-repo drift guards

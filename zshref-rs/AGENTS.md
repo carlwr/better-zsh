@@ -1,3 +1,8 @@
+---
+audience: maintainer
+read-when: working in zshref-rs/
+---
+
 # AGENTS.md — `zshref` (Rust CLI)
 
 Single-file Rust CLI; tool-surface mirror of the TS adapters.

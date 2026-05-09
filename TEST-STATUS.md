@@ -26,7 +26,7 @@ Also green at the same snapshot:
 ## Deferred, not known broken
 
 - `INTERACTIVE` tests such as the Electron desktop runs and the zsh-path matrix. CI covers these on Linux.
-- Registry-dependent checks (`testREGISTRY:install`, `jsrREGISTRY:check`, `verifyREGISTRY`) that depend on published upstream state. See `AGENTS.md` for the `REGISTRY` rule and `packages/zshref-mcp/DEVELOPMENT.md` for the MCP-side rationale.
+- Registry-dependent checks (`testREGISTRY:install`, `jsrREGISTRY:check`, `verifyREGISTRY`) that depend on published upstream state. See `TESTING.md` for consent-required script markers and `packages/zshref-mcp/DEVELOPMENT.md` for the MCP-side rationale.
 
 ## Known orthogonal blocker
 

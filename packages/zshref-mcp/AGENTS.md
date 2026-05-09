@@ -1,3 +1,8 @@
+---
+audience: maintainer
+read-when: working in packages/zshref-mcp/
+---
+
 # AGENTS.md — `@carlwr/zshref-mcp`
 
 MCP server adapting tooldef to the Model Context Protocol.

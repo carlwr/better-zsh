@@ -1,3 +1,8 @@
+---
+audience: maintainer
+read-when: cross-cutting design tradeoffs
+---
+
 # Principles
 
 Cross-cutting design principles. Read before:

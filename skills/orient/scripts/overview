@@ -5,66 +5,100 @@
 emulate -LR zsh
 set -eu -o pipefail
 
-cd "$(git -C ${0:A:h} rev-parse --show-toplevel)"
+me=${0:t}
+me_dir=${0:A:h}
 
-section() {
-  print "\n=== $1 ==="
-  }
+help="
+Usage:
+  $me [zsh-core|zsh-core-tooldef|zshref-mcp|vscode-better-zsh|zshref-rs]...
 
-list() {
-  local fs=( $(find "$@" -type f 2>/dev/null | sort) )
-  (( $#fs )) || return 1
-  local f
-  for f in $fs
-  do printf '  %4d\t%s\n' "$(wc -l < $f)" $f
-  done
+Print the repo overview. With subpackage args, also print file trees for those
+packages.
+"
+
+section() print "\n=== $1 ==="
+msg    () print -u2 -- "$me: $@"
+die    () { msg "ERROR: $@ (see --help)" && exit 1; }
+
+list-nonignored-files() git ls-files --cached --others --exclude-standard
+
+tree_() {
+  local dirs=( $@ )
+  local args=( -a -F --noreport --prune --compress=3 --gitignore --filesfirst )
+  print "\n\$ tree $args $dirs\n"
+  tree $args $dirs
+}
+
+dirs_ts=()
+dirs_rs=()
+foreach arg ( $@ ) {
+  case $arg in
+       (-h|--help        ) print -r -- $help && exit 0
+    ;;
+       (zsh-core         ) dirs_ts+=( packages/zsh-core          )
+    ;; (zsh-core-tooldef ) dirs_ts+=( packages/zsh-core-tooldef  )
+    ;; (zshref-mcp       ) dirs_ts+=( packages/zshref-mcp        )
+    ;; (vscode-better-zsh) dirs_ts+=( packages/vscode-better-zsh )
+    ;; (zshref-rs        ) dirs_rs+=( zshref-rs                  )
+    ;; (*                ) die "illegal arg: $arg"
+    ;;
+  esac
 }
 
 
-# --- preamble ---
+cd "$(git -C $me_dir rev-parse --show-toplevel)"
 
-print 'source files; test/* under separate heading'
+
+# --- print sections ---
+
+section 'maintainer docs'
 print
-print 'form (N == #lines):'
-printf '  %s\t%s\n' '<N>' '<file>'
+print '$ ./scripts/list-maintainer-docs'
+print
+./scripts/list-maintainer-docs
 print
 
+section 'packages/projects manifests'
+print
+list-nonignored-files \
+| grep -E 'pnpm-workspace.yaml|package.json|deno.json|Cargo.toml|Makefile'
+print
 
-# --- packages ---
+() {
+  local glob='*/dist/types/*.d.ts'
+  local matches
+  section "rolled-up public APIs with JSDoc ($glob)"
+  print
+  matches=$(find packages -type f -path $glob -not -path '*/node_modules/*' | sort)
+  [[ -n $matches ]] && print -r -- $matches || print '(not built — run the relevant package build)'
+  print
+}
 
-cre=packages/zsh-core
-def=packages/zsh-core-tooldef
-mcp=packages/zshref-mcp
-vsc=packages/vscode-better-zsh
-ref=zshref-rs
+section 'repo symlinks'
+print
+print '$ ./scripts/list-repo-symlinks'
+print
+./scripts/list-repo-symlinks
 
-section  $cre/src      && list $cre/src      -name '*.ts' ! -path '*/test/*'
-section  $cre/src/test && list $cre/src/test -name '*.ts'
-
-section "$def (root)"  && list $def          -name '*.ts' -maxdepth 1
-section  $def/src      && list $def/src      -name '*.ts' ! -path '*/test/*'
-section  $def/src/test && list $def/src/test -name '*.ts'
-
-section "$mcp (root)"  && list $mcp          -name '*.ts' -maxdepth 1
-section  $mcp/src      && list $mcp/src      -name '*.ts' ! -path '*/test/*'
-section  $mcp/src/test && list $mcp/src/test -name '*.ts'
-
-section  $vsc/src      && list $vsc/src      -name '*.ts' ! -path '*/test/*'
-section  $vsc/src/test && list $vsc/src/test -name '*.ts'
-
-section "$ref (root)"  && list $ref          -name '*.rs' -maxdepth 1
-section  $ref/src      && list $ref/src      -name '*.rs'
-section  $ref/tests    && list $ref/tests    -name '*.rs'
-
-
-# --- API rollups ---
-
-section 'API rollups (dist/types/*.d.ts)'
-list packages -maxdepth 4 -path '*/dist/types/*.d.ts' \
-|| print '(not built — run the relevant package build)'
-
-
-# --- repo symlinks ---
-
-section 'repo symlinks (in HEAD)'
-scripts/list-repo-symlinks | tail -n +3
+() {
+  section 'file trees'
+  print
+  if (( $#dirs_ts || $#dirs_rs ))
+  then
+    local d
+    foreach d ($dirs_ts) { tree_                  $d; }
+    foreach d ($dirs_rs) { tree_ -I '**/target/*' $d; }
+  else
+    print -l \
+      'only printed when requested explicitly' \
+      '(tree -> not grep-friendly)' \
+      'examples:' \
+      "  $me zsh-core" \
+      "  $me zsh-core-tooldef" \
+      "  $me zshref-mcp" \
+      "  $me vscode-better-zsh" \
+      "  $me zshref-rs" \
+      "  $me zsh-core zsh-core-tooldef"
+  fi
+  print
+}

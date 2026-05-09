@@ -5,8 +5,23 @@ set -euo pipefail
 cd "$(git -C "$(dirname "$0")" rev-parse --show-toplevel)"
 
 echo "=== Provider registrations (extension.ts) ==="
-rg 'new \w+Provider|register\w+Provider|languages\.register' \
-  packages/vscode-better-zsh/src/extension.ts 2>/dev/null || echo "  (none found)"
+node - <<'NODE'
+const { readFileSync } = require("node:fs")
+const src = readFileSync("packages/vscode-better-zsh/src/extension.ts", "utf8")
+const re = /vscode\.languages\.(register\w+Provider)\(/g
+
+for (const match of src.matchAll(re)) {
+  let depth = 1
+  let i = match.index + match[0].length
+  for (; i < src.length && depth > 0; i++) {
+    if (src[i] === "(") depth++
+    if (src[i] === ")") depth--
+  }
+  const call = src.slice(match.index + match[0].length, i)
+  const provider = call.match(/\b(?:new\s+)?(\w+Provider)\b/)?.[1]
+  if (provider) console.log(`  ${match[1]} -> ${provider}`)
+}
+NODE
 
 echo ""
 echo "=== Provider classes ==="

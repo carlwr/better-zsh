@@ -4,7 +4,7 @@ zmodload -F zsh/stat b:zstat
 
 me=${0:t}
 
-formHelp='"[file] -> [link-text]"; "dir/f -> g" is a link pointing to dir/g'
+formHelp='"[<status>]  <file> -> <target (rel.)>"; "dir/f -> g" is a link pointing to dir/g'
 
 help="
 List/check all symlinks in the working copy.
@@ -31,7 +31,6 @@ OUTPUT:
 list-nonignored-files() git ls-files --cached --others --exclude-standard
 unresolved-link-text () zstat -L +link $1   # if not a link, exit 1 + error msg
 is-resolving-link    () [[ -L $1 && -e $1 ]]
-heading              () print -- "\n$1\n${1//?/-}"
 
 handle-link() {
   local link=$1
@@ -54,8 +53,7 @@ handle-link() {
 main() {
 
   ((!quiet)) || print "$me: Running..."
-  (( quiet)) || heading "$me:"
-  (( quiet)) || print "(form: $formHelp)"
+  (( quiet)) || print "# form: $formHelp"
 
   foreach f ( $(list-nonignored-files) ) {
     [[ ! -L $f ]] || handle-link "$f"
