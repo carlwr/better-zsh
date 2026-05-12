@@ -88,10 +88,10 @@ export class HoverProvider implements vscode.HoverProvider {
   private condHover(doc: vscode.TextDocument, pos: vscode.Position) {
     const ctx = syntacticContext(doc, pos.line, pos.character)
     if (ctx.kind !== "cond") return
-    const condOpKeys = this.corpus.cond_op.keys()
+    const condOpKeys = this.corpus.conditional_op.keys()
     const range = activeCondTokenRangeAt(doc, pos, condOpKeys)
     if (!range) return
-    return this.hoverFor("cond_op", doc.getText(range), range)
+    return this.hoverFor("conditional_op", doc.getText(range), range)
   }
 
   private funcHover(doc: vscode.TextDocument, pos: vscode.Position) {
@@ -107,7 +107,7 @@ export class HoverProvider implements vscode.HoverProvider {
   private paramHover(doc: vscode.TextDocument, pos: vscode.Position) {
     const range = activeWordRangeAt(doc, pos)
     if (!range) return
-    return this.hoverFor("shell_param", doc.getText(range), range)
+    return this.hoverFor("special_param", doc.getText(range), range)
   }
 
   private factBasedHover(doc: vscode.TextDocument, pos: vscode.Position) {
@@ -117,7 +117,8 @@ export class HoverProvider implements vscode.HoverProvider {
     const token = tokenRange ? doc.getText(tokenRange) : undefined
 
     const precmd = factAt(af, line, token, "precmd")
-    const onPrecmd = precmd && this.hoverFor("precmd", precmd.name, tokenRange)
+    const onPrecmd =
+      precmd && this.hoverFor("precmd_modifier", precmd.name, tokenRange)
     if (onPrecmd) return onPrecmd
 
     const head = factAt(af, line, token, "cmd-head")
@@ -129,7 +130,7 @@ export class HoverProvider implements vscode.HoverProvider {
       const redirRange = activeRedirRangeAt(doc, pos, redir)
       const redirToken = redirRange ? doc.getText(redirRange) : undefined
       const onRedir =
-        redirToken && this.hoverFor("redir", redirToken, redirRange)
+        redirToken && this.hoverFor("redirection", redirToken, redirRange)
       if (onRedir) return onRedir
     }
 
@@ -229,7 +230,7 @@ function isTokenDelimiter(ch: string): boolean {
 function activeCondTokenRangeAt(
   doc: vscode.TextDocument,
   pos: vscode.Position,
-  condOpKeys: Iterable<Documented<"cond_op">>,
+  condOpKeys: Iterable<Documented<"conditional_op">>,
 ): vscode.Range | undefined {
   const range = activeTokenRangeAt(doc, pos)
   if (range) return range

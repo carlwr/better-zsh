@@ -110,13 +110,13 @@ export function mdCondOp(cop: CondOpDoc, corpus: DocCorpus): string {
   return docBlock(sigCond(cop), fmtOptRefsInMd(cop.desc, corpus))
 }
 
-/** Render one shell-parameter doc block as markdown. */
+/** Render one special-parameter doc block as markdown. */
 export function mdShellParam(doc: ShellParamDoc): string {
   return docBlock(
     mdFmt.code(doc.name),
     doc.desc,
     ...(doc.tied ? [`_Tied with:_ ${mdFmt.code(doc.tied)}`] : []),
-    `_Category:_ Shell Parameter — ${doc.section}`,
+    `_Category:_ Special Parameter — ${doc.section}`,
   )
 }
 
@@ -134,7 +134,11 @@ export function mdSubscriptFlag(
   doc: SubscriptFlagDoc,
   corpus: DocCorpus,
 ): string {
-  return sigBlock(doc, corpus, `subscript flag${argsSuffix(doc.args)}`)
+  return sigBlock(
+    doc,
+    corpus,
+    `parameter-subscript flag${argsSuffix(doc.args)}`,
+  )
 }
 
 /** Render one history-expansion doc block as markdown. */
@@ -400,18 +404,18 @@ export const mdRenderer: {
   [K in DocCategory]: (doc: DocRecordMap[K], corpus: DocCorpus) => string
 } = {
   option: mdOpt,
-  cond_op: mdCondOp,
+  conditional_op: mdCondOp,
   builtin: mdBuiltin,
-  precmd: mdPrecmd,
-  shell_param: mdShellParam,
+  precmd_modifier: mdPrecmd,
+  special_param: mdShellParam,
   complex_command: mdComplexCommand,
   reserved_word: mdReservedWord,
-  redir: mdRedir,
+  redirection: mdRedir,
   process_subst: mdProcessSubst,
   param_expn: mdParamExpn,
   subscript_flag: mdSubscriptFlag,
-  param_flag: mdParamFlag,
-  history: mdHistory,
+  param_expn_flag: mdParamFlag,
+  history_expn: mdHistory,
   glob_op: mdGlobOp,
   glob_flag: mdGlobFlag,
   glob_qualifier: mdGlobQualifier,

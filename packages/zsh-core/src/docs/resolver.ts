@@ -95,10 +95,10 @@ function resolveByKey<K extends DocCategory>(
 function resolveRedir(
   c: DocCorpus,
   raw: string,
-): Documented<"redir"> | undefined {
-  const literal = mkDocumented("redir", raw)
-  if (c.redir.has(literal)) return literal
-  return resolveByKey(c, "redir", raw, t => matchRedirKey(c, t))
+): Documented<"redirection"> | undefined {
+  const literal = mkDocumented("redirection", raw)
+  if (c.redirection.has(literal)) return literal
+  return resolveByKey(c, "redirection", raw, t => matchRedirKey(c, t))
 }
 
 /** Literal tail word from a doc sig ("number" / "word" / "-" / "p" / ""). */
@@ -110,7 +110,7 @@ function matchRedirKey(c: DocCorpus, t: string): string | undefined {
   const text = t.replace(/^[0-9]+/, "")
   if (!text || /^<<-?$/.test(text)) return undefined
 
-  const matches = [...c.redir.values()]
+  const matches = [...c.redirection.values()]
     .map(doc => redirMatch(doc.sig, doc.groupOp, text))
     .filter((m): m is RedirMatch => m !== undefined)
 
@@ -125,7 +125,7 @@ interface RedirMatch {
 }
 
 function redirMatch(
-  sig: Documented<"redir">,
+  sig: Documented<"redirection">,
   groupOp: string,
   text: string,
 ): RedirMatch | undefined {
@@ -174,8 +174,8 @@ function escapeRegExp(s: string): string {
 function resolveHistory(
   c: DocCorpus,
   raw: string,
-): Documented<"history"> | undefined {
-  return resolveByKey(c, "history", raw, matchHistoryKey)
+): Documented<"history_expn"> | undefined {
+  return resolveByKey(c, "history_expn", raw, matchHistoryKey)
 }
 
 function matchHistoryKey(t: string): string | undefined {
@@ -202,7 +202,11 @@ function matchHistoryKey(t: string): string | undefined {
  * documented flag never cross-resolves to an unrelated category entry.
  */
 function parensAgnosticFlagResolver<
-  K extends "subscript_flag" | "param_flag" | "glob_flag" | "glob_qualifier",
+  K extends
+    | "subscript_flag"
+    | "param_expn_flag"
+    | "glob_flag"
+    | "glob_qualifier",
 >(cat: K): Resolver<K> {
   return (c, raw) => {
     const map = c[cat] as ReadonlyMap<string, unknown>
@@ -219,7 +223,7 @@ function parensAgnosticFlagResolver<
 }
 
 function flagInnerKey(
-  cat: "subscript_flag" | "param_flag" | "glob_flag" | "glob_qualifier",
+  cat: "subscript_flag" | "param_expn_flag" | "glob_flag" | "glob_qualifier",
   t: string,
 ): string | undefined {
   const inner = t.match(/^\((.+)\)$/)?.[1]
@@ -320,13 +324,13 @@ function resolveOption(
 
 const resolvers: { [K in DocCategory]: Resolver<K> } = {
   option: (c, raw) => resolveOption(c, raw)?.id,
-  cond_op: simpleResolver("cond_op"),
+  conditional_op: simpleResolver("conditional_op"),
   builtin: simpleResolver("builtin"),
-  precmd: simpleResolver("precmd"),
-  shell_param: simpleResolver("shell_param"),
+  precmd_modifier: simpleResolver("precmd_modifier"),
+  special_param: simpleResolver("special_param"),
   complex_command: simpleResolver("complex_command"),
   reserved_word: simpleResolver("reserved_word"),
-  redir: resolveRedir,
+  redirection: resolveRedir,
   process_subst: simpleResolver("process_subst"),
   // param_expn ids are literal doc-template strings (e.g. `${name:-word}`),
   // so `simpleResolver` will essentially never match live user-code tokens;
@@ -334,8 +338,8 @@ const resolvers: { [K in DocCategory]: Resolver<K> } = {
   // in the table for total coverage of the closed `DocCategory` union.
   param_expn: simpleResolver("param_expn"),
   subscript_flag: parensAgnosticFlagResolver("subscript_flag"),
-  param_flag: parensAgnosticFlagResolver("param_flag"),
-  history: resolveHistory,
+  param_expn_flag: parensAgnosticFlagResolver("param_expn_flag"),
+  history_expn: resolveHistory,
   glob_op: simpleResolver("glob_op"),
   glob_flag: parensAgnosticFlagResolver("glob_flag"),
   glob_qualifier: parensAgnosticFlagResolver("glob_qualifier"),
@@ -352,7 +356,7 @@ const resolvers: { [K in DocCategory]: Resolver<K> } = {
  *
  * Dispatches through an internal per-category resolver table; each category
  * may apply corpus-aware parsing (`option` handles `no_`-prefix negation;
- * `redir` decomposes group-op + tail; most others just normalize + `Map.has`).
+ * redirections decompose group-op + tail; most others just normalize + `Map.has`).
  *
  * Returns the matching `DocPieceId` (i.e. `{ category, id }` where `id` is
  * `Documented<K>`) or `undefined` if the token does not identify a corpus
@@ -377,7 +381,7 @@ export function resolve<K extends DocCategory>(
 
 /**
  * Direct corpus-key lookup with resolver fallback. Direct precedence is
- * load-bearing for template-key categories (`job_spec`, `history`,
+ * load-bearing for template-key categories (`job_spec`, `history_expn`,
  * `param_expn`, `special_function`). See DESIGN.md §"`lookupRaw`".
  */
 export function lookupRaw<K extends DocCategory>(
@@ -436,18 +440,18 @@ const noFeedback: FeedbackResolver = () => undefined
 
 const feedbackResolvers: { readonly [K in DocCategory]: FeedbackResolver } = {
   option: optionFeedback,
-  cond_op: noFeedback,
+  conditional_op: noFeedback,
   builtin: noFeedback,
-  precmd: noFeedback,
-  shell_param: noFeedback,
+  precmd_modifier: noFeedback,
+  special_param: noFeedback,
   complex_command: noFeedback,
   reserved_word: noFeedback,
-  redir: noFeedback,
+  redirection: noFeedback,
   process_subst: noFeedback,
   param_expn: noFeedback,
   subscript_flag: noFeedback,
-  param_flag: noFeedback,
-  history: noFeedback,
+  param_expn_flag: noFeedback,
+  history_expn: noFeedback,
   glob_op: noFeedback,
   glob_flag: noFeedback,
   glob_qualifier: noFeedback,

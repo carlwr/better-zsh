@@ -17,7 +17,7 @@ export class CompletionProvider implements vscode.CompletionItemProvider {
   private general: vscode.CompletionItem[]
   private options: readonly Documented<"option">[]
   private optionMap: ReadonlyMap<Documented<"option">, ZshOption>
-  private condOps: readonly CondOpDoc[]
+  private conditionalOps: readonly CondOpDoc[]
 
   constructor(corpus: DocCorpus) {
     const options = [...corpus.option.values()]
@@ -25,14 +25,14 @@ export class CompletionProvider implements vscode.CompletionItemProvider {
     const wordCategories: readonly [
       keyof Pick<
         DocCorpus,
-        "builtin" | "reserved_word" | "precmd" | "shell_param"
+        "builtin" | "reserved_word" | "precmd_modifier" | "special_param"
       >,
       vscode.CompletionItemKind,
     ][] = [
       ["builtin", kw],
       ["reserved_word", kw],
-      ["precmd", kw],
-      ["shell_param", vscode.CompletionItemKind.Variable],
+      ["precmd_modifier", kw],
+      ["special_param", vscode.CompletionItemKind.Variable],
     ]
     this.general = wordCategories.flatMap(([cat, kind]) =>
       [...corpus[cat].values()]
@@ -43,7 +43,7 @@ export class CompletionProvider implements vscode.CompletionItemProvider {
     )
     this.options = options.map(opt => opt.name)
     this.optionMap = new Map(options.map(o => [o.name, o]))
-    this.condOps = [...corpus.cond_op.values()]
+    this.conditionalOps = [...corpus.conditional_op.values()]
   }
 
   async provideCompletionItems(doc: vscode.TextDocument, pos: vscode.Position) {
@@ -87,7 +87,7 @@ export class CompletionProvider implements vscode.CompletionItemProvider {
   }
 
   private condCompletions() {
-    const items = this.condOps.map(cop => {
+    const items = this.conditionalOps.map(cop => {
       const item = new vscode.CompletionItem(
         cop.op,
         vscode.CompletionItemKind.Operator,

@@ -25,7 +25,7 @@ const REDIR_YO = readVendoredYo("redirect.yo")
 const ZLE_YO = readVendoredYo("zle.yo")
 
 describe("more yodl parsers", () => {
-  test("shell params keep tied pairs and xitem aliases with shared docs", () => {
+  test("special params keep tied pairs and xitem aliases with shared docs", () => {
     const yo = [
       "sect(Parameters Set By The Shell)",
       "startitem()",
@@ -40,9 +40,9 @@ describe("more yodl parsers", () => {
     ].join("\n")
     const docs = by(parseShellParams(yo), doc => doc.name)
     const getShParam = (raw: string) =>
-      docs.get(mkDocumented("shell_param", raw))
-    expect(getShParam("path")?.tied).toBe(mkDocumented("shell_param", "PATH"))
-    expect(getShParam("PATH")?.tied).toBe(mkDocumented("shell_param", "path"))
+      docs.get(mkDocumented("special_param", raw))
+    expect(getShParam("path")?.tied).toBe(mkDocumented("special_param", "PATH"))
+    expect(getShParam("PATH")?.tied).toBe(mkDocumented("special_param", "path"))
     expect(getShParam("path")?.desc).toBe("Pair docs.")
     expect(getShParam("RPS1")?.desc).toBe("Prompt docs.")
     expect(getShParam("RPROMPT")?.desc).toBe("Prompt docs.")
@@ -170,7 +170,7 @@ enditem()`
         }),
     ],
     [
-      "vendored shell-parameter corpus parses",
+      "vendored special-parameter corpus parses",
       () =>
         expectDocCorpus({
           docs: parseShellParams(PARAMS_YO),
@@ -309,14 +309,14 @@ enditem()`
   test("normalized syntax-doc identity fields are idempotent", () => {
     const t = [
       [parseRedirs(REDIR_YO).map(doc => doc.groupOp), mkRedirOp],
-      [parseRedirs(REDIR_YO).map(doc => doc.sig), mkDocumented_("redir")],
+      [parseRedirs(REDIR_YO).map(doc => doc.sig), mkDocumented_("redirection")],
       [
         parseReswords(GRAMMAR_YO).map(doc => doc.name),
         mkDocumented_("reserved_word"),
       ],
       [
         parseShellParams(PARAMS_YO).map(doc => doc.name),
-        mkDocumented_("shell_param"),
+        mkDocumented_("special_param"),
       ],
       [
         parseSubscriptFlags(PARAMS_YO).map(d => d.flag),
@@ -324,9 +324,12 @@ enditem()`
       ],
       [
         parseParamFlags(EXPN_YO).map(doc => doc.flag),
-        mkDocumented_("param_flag"),
+        mkDocumented_("param_expn_flag"),
       ],
-      [parseHistory(EXPN_YO).map(doc => doc.key), mkDocumented_("history")],
+      [
+        parseHistory(EXPN_YO).map(doc => doc.key),
+        mkDocumented_("history_expn"),
+      ],
       [parseGlobOps(EXPN_YO).map(doc => doc.op), mkDocumented_("glob_op")],
       [
         parseGlobFlags(EXPN_YO).map(doc => doc.flag),

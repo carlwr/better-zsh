@@ -11,6 +11,8 @@ read-when: renames, refactors, design decisions, research-agent rules, shell dis
 - **MUST NOT** use bare `cd <dir>`: it permanently changes the shell's working directory for every subsequent command in the session, and a single forgotten `cd` silently invalidates later relative paths.
 - For a transient directory change, use a subshell: `(cd <dir> && <cmd>)`.
 - Never prepend `cd <repo-root>` to a `git` command — `git` already operates on the working tree, and the compound triggers a permission prompt.
+- Broad searches/rewrites should skip symlink paths unless checking links; symlinks can duplicate hits or be replaced by regular files.
+- Broad searches should avoid ignored/generated trees first; raw `rg` can waste context on build outputs and tool targets.
 
 ## Pull data from elsewhere
 

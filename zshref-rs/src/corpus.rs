@@ -61,8 +61,8 @@ const FILE_BYTES: &[(&str, &[u8])] = &[
         include_bytes!(corpus_path!("complex-commands.json")),
     ),
     (
-        "cond-ops.json",
-        include_bytes!(corpus_path!("cond-ops.json")),
+        "conditional-ops.json",
+        include_bytes!(corpus_path!("conditional-ops.json")),
     ),
     (
         "glob-flags.json",
@@ -76,7 +76,10 @@ const FILE_BYTES: &[(&str, &[u8])] = &[
         "glob-qualifiers.json",
         include_bytes!(corpus_path!("glob-qualifiers.json")),
     ),
-    ("history.json", include_bytes!(corpus_path!("history.json"))),
+    (
+        "history-expns.json",
+        include_bytes!(corpus_path!("history-expns.json")),
+    ),
     (
         "job-specs.json",
         include_bytes!(corpus_path!("job-specs.json")),
@@ -88,10 +91,13 @@ const FILE_BYTES: &[(&str, &[u8])] = &[
         include_bytes!(corpus_path!("param-expns.json")),
     ),
     (
-        "param-flags.json",
-        include_bytes!(corpus_path!("param-flags.json")),
+        "param-expn-flags.json",
+        include_bytes!(corpus_path!("param-expn-flags.json")),
     ),
-    ("precmds.json", include_bytes!(corpus_path!("precmds.json"))),
+    (
+        "precmd-modifiers.json",
+        include_bytes!(corpus_path!("precmd-modifiers.json")),
+    ),
     (
         "process-substs.json",
         include_bytes!(corpus_path!("process-substs.json")),
@@ -109,8 +115,8 @@ const FILE_BYTES: &[(&str, &[u8])] = &[
         include_bytes!(corpus_path!("reserved-words.json")),
     ),
     (
-        "shell-params.json",
-        include_bytes!(corpus_path!("shell-params.json")),
+        "special-params.json",
+        include_bytes!(corpus_path!("special-params.json")),
     ),
     (
         "special-functions.json",

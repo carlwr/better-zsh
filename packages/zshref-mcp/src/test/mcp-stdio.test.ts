@@ -122,7 +122,7 @@ describeIfBuilt("MCP stdio integration", () => {
 
   test("zsh_list enumerates a category", async () => {
     const result = await callTool("zsh_list", {
-      category: "precmd",
+      category: "precmd_modifier",
       limit: 100,
     })
     expect(result.isError).toBeFalsy()
@@ -132,7 +132,7 @@ describeIfBuilt("MCP stdio integration", () => {
     }
     expect(parsed.matches.length).toBeGreaterThan(0)
     for (const m of parsed.matches) {
-      expect(m.category).toBe("precmd")
+      expect(m.category).toBe("precmd_modifier")
       expect(m.mdBody).toBeUndefined()
     }
   })

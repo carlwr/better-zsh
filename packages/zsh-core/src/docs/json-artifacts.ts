@@ -7,7 +7,11 @@ export const jsonArtifact = {
     count: "complexCommands",
     schema: "ComplexCommandsJson",
   },
-  cond_op: { file: "cond-ops.json", count: "condOps", schema: "CondOpsJson" },
+  conditional_op: {
+    file: "conditional-ops.json",
+    count: "conditionalOps",
+    schema: "ConditionalOpsJson",
+  },
   glob_flag: {
     file: "glob-flags.json",
     count: "globFlags",
@@ -23,19 +27,27 @@ export const jsonArtifact = {
     count: "globQualifiers",
     schema: "GlobQualifiersJson",
   },
-  history: { file: "history.json", count: "history", schema: "HistoryJson" },
+  history_expn: {
+    file: "history-expns.json",
+    count: "historyExpns",
+    schema: "HistoryExpnsJson",
+  },
   option: { file: "options.json", count: "options", schema: "OptionsJson" },
   param_expn: {
     file: "param-expns.json",
     count: "paramExpns",
     schema: "ParamExpnsJson",
   },
-  param_flag: {
-    file: "param-flags.json",
-    count: "paramFlags",
-    schema: "ParamFlagsJson",
+  param_expn_flag: {
+    file: "param-expn-flags.json",
+    count: "paramExpnFlags",
+    schema: "ParamExpnFlagsJson",
   },
-  precmd: { file: "precmds.json", count: "precmds", schema: "PrecmdsJson" },
+  precmd_modifier: {
+    file: "precmd-modifiers.json",
+    count: "precmdModifiers",
+    schema: "PrecmdModifiersJson",
+  },
   process_subst: {
     file: "process-substs.json",
     count: "processSubsts",
@@ -46,7 +58,7 @@ export const jsonArtifact = {
     count: "promptEscapes",
     schema: "PromptEscapesJson",
   },
-  redir: {
+  redirection: {
     file: "redirections.json",
     count: "redirections",
     schema: "RedirectionsJson",
@@ -56,10 +68,10 @@ export const jsonArtifact = {
     count: "reservedWords",
     schema: "ReservedWordsJson",
   },
-  shell_param: {
-    file: "shell-params.json",
-    count: "shellParams",
-    schema: "ShellParamsJson",
+  special_param: {
+    file: "special-params.json",
+    count: "specialParams",
+    schema: "SpecialParamsJson",
   },
   subscript_flag: {
     file: "subscript-flags.json",

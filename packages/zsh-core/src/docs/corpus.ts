@@ -94,18 +94,18 @@ const fileFixups: Readonly<Record<string, (yo: string) => string>> = {
 
 const categoryLoader: CategoryLoader = {
   option: { file: "options.yo", parse: parseOptions },
-  cond_op: { file: "cond.yo", parse: parseCondOps },
+  conditional_op: { file: "cond.yo", parse: parseCondOps },
   builtin: { file: "builtins.yo", parse: parseBuiltins },
-  precmd: { file: "grammar.yo", parse: parsePrecmds },
-  shell_param: { file: "params.yo", parse: parseShellParams },
+  precmd_modifier: { file: "grammar.yo", parse: parsePrecmds },
+  special_param: { file: "params.yo", parse: parseShellParams },
   complex_command: { file: "grammar.yo", parse: parseComplexCommands },
   reserved_word: { file: "grammar.yo", parse: parseReswords },
-  redir: { file: "redirect.yo", parse: parseRedirs },
+  redirection: { file: "redirect.yo", parse: parseRedirs },
   process_subst: { file: "expn.yo", parse: parseProcessSubsts },
   param_expn: { file: "expn.yo", parse: parseParamExpns },
   subscript_flag: { file: "params.yo", parse: parseSubscriptFlags },
-  param_flag: { file: "expn.yo", parse: parseParamFlags },
-  history: { file: "expn.yo", parse: parseHistory },
+  param_expn_flag: { file: "expn.yo", parse: parseParamFlags },
+  history_expn: { file: "expn.yo", parse: parseHistory },
   glob_op: { file: "expn.yo", parse: parseGlobOps },
   glob_flag: { file: "expn.yo", parse: parseGlobFlags },
   glob_qualifier: { file: "expn.yo", parse: parseGlobQualifiers },
@@ -120,10 +120,16 @@ const categoryLoader: CategoryLoader = {
 /** In-memory corpus of parsed zsh documentation, keyed by category then identity. */
 export interface DocCorpus {
   readonly option: ReadonlyMap<Documented<"option">, ZshOption>
-  readonly cond_op: ReadonlyMap<Documented<"cond_op">, CondOpDoc>
+  readonly conditional_op: ReadonlyMap<Documented<"conditional_op">, CondOpDoc>
   readonly builtin: ReadonlyMap<Documented<"builtin">, BuiltinDoc>
-  readonly precmd: ReadonlyMap<Documented<"precmd">, PrecmdDoc>
-  readonly shell_param: ReadonlyMap<Documented<"shell_param">, ShellParamDoc>
+  readonly precmd_modifier: ReadonlyMap<
+    Documented<"precmd_modifier">,
+    PrecmdDoc
+  >
+  readonly special_param: ReadonlyMap<
+    Documented<"special_param">,
+    ShellParamDoc
+  >
   readonly complex_command: ReadonlyMap<
     Documented<"complex_command">,
     ComplexCommandDoc
@@ -132,7 +138,7 @@ export interface DocCorpus {
     Documented<"reserved_word">,
     ReservedWordDoc
   >
-  readonly redir: ReadonlyMap<Documented<"redir">, RedirDoc>
+  readonly redirection: ReadonlyMap<Documented<"redirection">, RedirDoc>
   readonly process_subst: ReadonlyMap<
     Documented<"process_subst">,
     ProcessSubstDoc
@@ -142,8 +148,11 @@ export interface DocCorpus {
     Documented<"subscript_flag">,
     SubscriptFlagDoc
   >
-  readonly param_flag: ReadonlyMap<Documented<"param_flag">, ParamFlagDoc>
-  readonly history: ReadonlyMap<Documented<"history">, HistoryDoc>
+  readonly param_expn_flag: ReadonlyMap<
+    Documented<"param_expn_flag">,
+    ParamFlagDoc
+  >
+  readonly history_expn: ReadonlyMap<Documented<"history_expn">, HistoryDoc>
   readonly glob_op: ReadonlyMap<Documented<"glob_op">, GlobOpDoc>
   readonly glob_flag: ReadonlyMap<Documented<"glob_flag">, GlobFlagDoc>
   readonly glob_qualifier: ReadonlyMap<
@@ -175,12 +184,12 @@ function loadCategoryDocs<K extends DocCategory>(
   cat: K,
   getNodes: (file: string) => YNodeSeq,
 ): readonly DocRecordMap[K][] {
-  // shell_param is composed from two files: `params.yo` (global parameters)
+  // special_param is composed from two files: `params.yo` (global parameters)
   // plus `zle.yo` widget-local params. Widget-params share ShellParamDoc's
   // shape; they surface under the `zle-widget` section. Kept out of the
   // generic CategoryLoader to avoid a multi-file dispatch schema for a
   // single outlier.
-  if (cat === "shell_param") {
+  if (cat === "special_param") {
     return [
       ...parseShellParams(getNodes("params.yo")),
       ...parseWidgetParams(getNodes("zle.yo")),

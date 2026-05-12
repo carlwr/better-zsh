@@ -94,7 +94,10 @@ function scanSetoptCtx(
 
     const headLine = activeText(lines[block.start] ?? "")
     const head = firstCmdHeadOnLine(headLine)
-    if (!head || head.precmds.includes(mkObserved("precmd", "command")))
+    if (
+      !head ||
+      head.precmds.includes(mkObserved("precmd_modifier", "command"))
+    )
       continue
     const text = continuedText(lines, block.start, block.end).slice(
       head.span.start,

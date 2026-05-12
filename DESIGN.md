@@ -83,7 +83,7 @@ Composition:
 Dispatch stays in consumer code — partial and context-dependent. Example: a `cmd-head` fact might match:
 
 - a builtin
-- a precmd
+- a precommand modifier
 - a user function
 - nothing
 
@@ -142,7 +142,7 @@ Not an absolute ban. A post-refactor convenience wrapper is fine as a conscious 
 raw→documented genuinely differs by category:
 
 - `option` — corpus-aware negation.
-- `redir` — composite-token decomposition.
+- `redirection` — composite-token decomposition.
 - `job_spec`, `special_function` — template + compositional fallback matching.
 - Most others — trivial lookup.
 
@@ -203,9 +203,9 @@ The parametric `docId` table gives uniform access without renaming fields. `docD
 - `groupOp` is the shared lookup bucket; the resolver disambiguates by tail — corpus-aware, not plain map lookup.
 - `OptFlag` and `RedirOp` are secondary-index brands outside the `Observed`/`Documented` split.
 
-### History: grammar components, not independent tokens
+### History expansion: grammar components, not independent tokens
 
-`history` resembles short-key categories structurally but models **components** of `![event][:word][:modifier…]`, not parallel standalone tokens. A bare `^` or `:h` is not a zsh token in isolation — unlike `glob_op`, where each record is a single user-code token.
+`history_expn` resembles short-key categories structurally but models **components** of `![event][:word][:modifier…]`, not parallel standalone tokens. A bare `^` or `:h` is not a zsh token in isolation — unlike `glob_op`, where each record is a single user-code token.
 
 - **Corpus keys are templates** (`!n`, `!str`, `h [ digits ]`, …).
 - **`resolveHistory` is intentionally narrow** — event-designators only (same "totality, not utility" posture as `param_expn`); details and the future-`src/analysis/` placement: its JSDoc in `zsh-core/resolver`.
@@ -360,7 +360,7 @@ The Rust CLI re-implements a small surface; the rest is consumed via baked JSON.
 Direct precedence is load-bearing for template-key categories — the literal corpus key and the live token resolved through templates must not collide:
 
 - `job_spec` — literal `%number` vs resolver's `%5 → %number`
-- `history` — `!n` vs `!42`
+- `history_expn` — `!n` vs `!42`
 - `param_expn`
 - `special_function` — direct hit `TRAPZERR` vs template `TRAPNAL`
 
@@ -373,7 +373,7 @@ Round-trip invariant: every literal corpus key resolves to itself via `zsh_docs`
 
 ## Tie-break in docs
 
-With `category` omitted, `zsh_docs` walks `classifyOrder` so tight identity resolvers beat `option`'s `no_` stripping and `redir`'s loose matching — e.g. `nocorrect` must not shadow-resolve as a negated option. Ordering and per-entry rationale: inline comments on `classifyOrderTuple` in `zsh-core/taxonomy.ts`.
+With `category` omitted, `zsh_docs` walks `classifyOrder` so tight identity resolvers beat `option`'s `no_` stripping and `redirection`'s loose matching — e.g. `nocorrect` must not shadow-resolve as a negated option. Ordering and per-entry rationale: inline comments on `classifyOrderTuple` in `zsh-core/taxonomy.ts`.
 
 ## Fuzzy search rationale
 

@@ -67,10 +67,11 @@ export function search(corpus: DocCorpus, input: SearchInput): SearchResult {
   }
 
   // Resolver tier: route the query through each category's per-category
-  // resolver (option NO_-stripping, redir group-op + tail decomposition,
-  // history event-designators, etc.). Hits not already bucketed by the
-  // exact/prefix pass surface here. Walks `classifyOrder` when the caller
-  // didn't pin a category; otherwise just the one.
+  // resolver (option NO_-stripping, redirection group-op + tail
+  // decomposition, history-expansion event-designators, etc.). Hits not
+  // already bucketed by the exact/prefix pass surface here. Walks
+  // `classifyOrder` when the caller didn't pin a category; otherwise just
+  // the one.
   const resolverHits: BaseMatch[] = []
   const resolverCats: readonly DocCategory[] =
     input.category !== undefined ? [input.category] : classifyOrder

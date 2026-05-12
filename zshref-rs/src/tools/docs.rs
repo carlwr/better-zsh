@@ -29,7 +29,7 @@ pub fn run(input: &Value, corpus: &Corpus) -> Result<Value> {
                 .iter()
                 .filter_map(|cat| {
                     let h = resolve_in(corpus, cat, key)?;
-                    if h.category == "history"
+                    if h.category == "history_expn"
                         && record_sub_kind(h.category, h.rec).as_deref() != Some("event-designator")
                     {
                         return None;

@@ -63,7 +63,7 @@ describe("docs — multi-match (no `category`)", () => {
   test("`nocorrect` resolves in both precmd and option", () => {
     const r = docs(corpus, { key: "nocorrect" })
     const cats = r.matches.map(m => m.category)
-    expect(cats).toContain("precmd")
+    expect(cats).toContain("precmd_modifier")
     expect(cats).toContain("option")
   })
 
@@ -72,7 +72,7 @@ describe("docs — multi-match (no `category`)", () => {
     "a",
   ])("bare history component `%s` is not a history match", key => {
     const r = docs(corpus, { key })
-    expect(r.matches.map(m => m.category)).not.toContain("history")
+    expect(r.matches.map(m => m.category)).not.toContain("history_expn")
   })
 })
 
@@ -123,13 +123,13 @@ describe("docs — direct ∥ resolver, direct preferred (template-key categorie
     expect(r.matches[0]?.id).toBe("%number")
   })
 
-  test("history: direct hit on `!n` does NOT fall through to resolver", () => {
-    const r = docs(corpus, { key: "!n", category: "history" })
+  test("history expansion direct hit does NOT fall through to resolver", () => {
+    const r = docs(corpus, { key: "!n", category: "history_expn" })
     expect(r.matches[0]?.id).toBe("!n")
   })
 
-  test("history: resolver fallback handles literal `!42`", () => {
-    const r = docs(corpus, { key: "!42", category: "history" })
+  test("history expansion resolver fallback handles literal `!42`", () => {
+    const r = docs(corpus, { key: "!42", category: "history_expn" })
     expect(r.matches[0]?.id).toBe("!n")
   })
 })

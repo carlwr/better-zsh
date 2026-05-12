@@ -8,7 +8,7 @@ import { mkDocumented_ } from "./id-fns"
 
 const dataDir = resolveZshDataDir()
 const opt = mkDocumented_("option")
-const cond = mkDocumented_("cond_op")
+const cond = mkDocumented_("conditional_op")
 const bi = mkDocumented_("builtin")
 const rw = mkDocumented_("reserved_word")
 
@@ -30,9 +30,9 @@ describe("vendored zsh data assets", () => {
   test("parses vendored options and conditional operators", () => {
     const corpus = loadCorpus()
     expect(corpus.option.size).toBeGreaterThan(0)
-    expect(corpus.cond_op.size).toBeGreaterThan(0)
+    expect(corpus.conditional_op.size).toBeGreaterThan(0)
     expect(corpus.option.has(opt("AUTO_CD"))).toBe(true)
-    expect(corpus.cond_op.has(cond("=="))).toBe(true)
+    expect(corpus.conditional_op.has(cond("=="))).toBe(true)
   })
 
   test("parses vendored builtins docs", () => {
@@ -49,7 +49,7 @@ describe("vendored zsh data assets", () => {
 
   test("parses vendored precommand modifier docs", () => {
     const corpus = loadCorpus()
-    expect([...corpus.precmd.values()].map(doc => doc.name)).toEqual([
+    expect([...corpus.precmd_modifier.values()].map(doc => doc.name)).toEqual([
       "-",
       "builtin",
       "command",
@@ -61,22 +61,22 @@ describe("vendored zsh data assets", () => {
 
   test("parses newly vendored structured syntax docs", () => {
     const corpus = loadCorpus()
-    expect([...corpus.redir.values()].some(doc => doc.groupOp === "<")).toBe(
-      true,
-    )
+    expect(
+      [...corpus.redirection.values()].some(doc => doc.groupOp === "<"),
+    ).toBe(true)
     expect(corpus.reserved_word.has(rw("if"))).toBe(true)
     expect(
-      [...corpus.shell_param.values()].some(doc => doc.name === "SECONDS"),
+      [...corpus.special_param.values()].some(doc => doc.name === "SECONDS"),
     ).toBe(true)
     expect(
       [...corpus.subscript_flag.values()].some(doc => doc.flag === "w"),
     ).toBe(true)
-    expect([...corpus.param_flag.values()].some(doc => doc.flag === "@")).toBe(
-      true,
-    )
-    expect([...corpus.history.values()].some(doc => doc.key === "!!")).toBe(
-      true,
-    )
+    expect(
+      [...corpus.param_expn_flag.values()].some(doc => doc.flag === "@"),
+    ).toBe(true)
+    expect(
+      [...corpus.history_expn.values()].some(doc => doc.key === "!!"),
+    ).toBe(true)
     expect([...corpus.glob_op.values()].some(doc => doc.op === "*")).toBe(true)
     expect([...corpus.glob_flag.values()].some(doc => doc.flag === "i")).toBe(
       true,

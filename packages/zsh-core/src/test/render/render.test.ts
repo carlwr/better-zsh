@@ -74,7 +74,12 @@ const cond = <A extends CondOpDoc["arity"]>(
   operands: Extract<CondOpDoc, { arity: A }>["operands"],
   desc: string,
 ): CondOpDoc =>
-  ({ op: mkDocumented("cond_op", op), operands, desc, arity }) as CondOpDoc
+  ({
+    op: mkDocumented("conditional_op", op),
+    operands,
+    desc,
+    arity,
+  }) as CondOpDoc
 
 const cu = cond("unary", "-a", ["file"], "d:u")
 const cb = cond("binary", "-nt", ["left", "right"], "d:b")
@@ -91,7 +96,7 @@ const pc: PrecmdDoc = {
 }
 const rd: RedirDoc = {
   groupOp: mkRedirOp(">>"),
-  sig: mkDocumented("redir", ">> word"),
+  sig: mkDocumented("redirection", ">> word"),
   desc: "d:r",
   section: "",
 }
@@ -126,13 +131,12 @@ const cc: ComplexCommandDoc = {
   bodyKeywords: ["then", "fi"],
 }
 const sec: ShellParamDoc = {
-  name: mkDocumented("shell_param", "SECONDS"),
+  name: mkDocumented("special_param", "SECONDS"),
   sig: "SECONDS",
   desc: "d:p",
   section: "shell-set",
 }
-// Flag/key/operator-shaped fixture helper. Centralizes the K↔idField
-// correlation TS can't propagate through a computed property key.
+// Flag/key/op-shaped fixtures: TS can't propagate K↔idField through a computed key.
 const stub = <K extends DocCategory>(
   cat: K,
   idField: "flag" | "key" | "op",
@@ -152,8 +156,8 @@ const sf = stub("subscript_flag", "flag", "(w)", {
   desc: "d:sf",
   args: ["string"],
 })
-const pf = stub("param_flag", "flag", "(U)", { desc: "d:pf" })
-const hi = stub("history", "key", "!!", {
+const pf = stub("param_expn_flag", "flag", "(U)", { desc: "d:pf" })
+const hi = stub("history_expn", "key", "!!", {
   kind: "event-designator",
   desc: "d:hi",
 })
@@ -211,18 +215,18 @@ type DocArrays = { readonly [K in DocCategory]: readonly DocRecordMap[K][] }
 
 const baseArrays: DocArrays = {
   option: [cd],
-  cond_op: [cu],
+  conditional_op: [cu],
   builtin: [bi],
-  precmd: [pc],
-  shell_param: [sec],
+  precmd_modifier: [pc],
+  special_param: [sec],
   complex_command: [cc],
   reserved_word: [word],
-  redir: [rd],
+  redirection: [rd],
   process_subst: [sub],
   param_expn: [px],
   subscript_flag: [sf],
-  param_flag: [pf],
-  history: [hi],
+  param_expn_flag: [pf],
+  history_expn: [hi],
   glob_op: [go],
   glob_flag: [gf],
   glob_qualifier: [gq],
@@ -255,14 +259,26 @@ const headings = (t: string | undefined) => (t?.match(/^## /gm) ?? []).length
 // --- case tables ------------------------------------------------------------
 
 const renderedMarkdownCases = [
-  ["shell_param", mdShellParam(sec), ["`SECONDS`", "d:p", "Shell Parameter"]],
+  [
+    "special_param",
+    mdShellParam(sec),
+    ["`SECONDS`", "d:p", "Special Parameter"],
+  ],
   [
     "builtin",
     mdBuiltin(bi),
     ["`echo`", "```zsh", "echo [ -n ] [ arg ... ]", "d:bi"],
   ],
-  ["precmd", mdPrecmd(pc), ["`noglob`", "_Role:_ precommand modifier"]],
-  ["redir", mdRedir(rd), ["`>>`", "```zsh", ">> word", "d:r", "Redirection"]],
+  [
+    "precmd_modifier",
+    mdPrecmd(pc),
+    ["`noglob`", "_Role:_ precommand modifier"],
+  ],
+  [
+    "redirection",
+    mdRedir(rd),
+    ["`>>`", "```zsh", ">> word", "d:r", "Redirection"],
+  ],
   [
     "process_subst",
     mdProcessSubst(sub),
@@ -357,15 +373,15 @@ const compactMarkdownCases = [
   [
     "subscript_flag",
     mdSubscriptFlag(sf, noOptsCorpus),
-    ["`(w)`", "d:sf", "_Role:_ subscript flag (args: string)"],
+    ["`(w)`", "d:sf", "_Role:_ parameter-subscript flag (args: string)"],
   ],
   [
-    "param_flag",
+    "param_expn_flag",
     mdParamFlag(pf, noOptsCorpus),
     ["`(U)`", "d:pf", "_Role:_ parameter-expansion flag"],
   ],
   [
-    "history",
+    "history_expn",
     mdHistory(hi, noOptsCorpus),
     ["`!!`", "d:hi", "_Role:_ history event designator"],
   ],
@@ -386,24 +402,23 @@ const compactMarkdownCases = [
   ],
 ] as const
 
-// Dump metadata per category: file, heading, snippet. Used both for
-// full-dump assertions and the vendored-docs coverage loop.
+// Per-category dump metadata: [file, heading, snippet].
 const dumpByCat: {
   readonly [K in DocCategory]: readonly [RefDumpFile, string, string]
 } = {
   option: ["options.md", "## AUTO_CD", "d:o"],
-  cond_op: ["cond-ops.md", "## -nt", "d:b"],
+  conditional_op: ["conditional-ops.md", "## -nt", "d:b"],
   builtin: ["builtins.md", "## echo", "d:bi"],
-  precmd: ["precmds.md", "## noglob", "d:pc"],
-  shell_param: ["shell-params.md", "## SECONDS", "`SECONDS`"],
+  precmd_modifier: ["precmd-modifiers.md", "## noglob", "d:pc"],
+  special_param: ["special-params.md", "## SECONDS", "`SECONDS`"],
   complex_command: ["complex-commands.md", "## if", "d:cc"],
   reserved_word: ["reserved-words.md", "## if", "d:rw"],
-  redir: ["redirs.md", "## >> word", "d:r"],
+  redirection: ["redirections.md", "## >> word", "d:r"],
   process_subst: ["process-substs.md", "## <(...)", "d:ps"],
   param_expn: ["param-expns.md", "## ${name:-word}", "d:px"],
   subscript_flag: ["subscript-flags.md", "## (w)", "d:sf"],
-  param_flag: ["param-flags.md", "## (U)", "d:pf"],
-  history: ["history.md", "## !!", "d:hi"],
+  param_expn_flag: ["param-expn-flags.md", "## (U)", "d:pf"],
+  history_expn: ["history-expns.md", "## !!", "d:hi"],
   glob_op: ["glob-ops.md", "## *", "d:go"],
   glob_flag: ["glob-flags.md", "## i", "d:gf"],
   glob_qualifier: ["glob-qualifiers.md", "## @", "d:gq"],
@@ -483,32 +498,32 @@ describe("render markdown", () => {
     expect(defaultStateIn({ ...cd, defaultIn: ["ksh"] }, "zsh")).toBe("off")
   })
 
-  test("refDocs — collects and sorts shell params", () => {
+  test("refDocs — collects and sorts special params", () => {
     const argv: ShellParamDoc = {
       ...sec,
-      name: mkDocumented("shell_param", "argv"),
+      name: mkDocumented("special_param", "argv"),
       sig: "argv",
     }
     const ids = refDocs(
       mkTestCorpus({
-        shell_param: [sec, argv],
-        redir: [],
+        special_param: [sec, argv],
+        redirection: [],
         process_subst: [],
         reserved_word: [],
       }),
     ).map(d => `${d.kind}:${d.id}`)
     expect(ids).toEqual([
       `option:${mkDocumented("option", "AUTO_CD")}`,
-      "cond_op:-a",
+      "conditional_op:-a",
       "builtin:echo",
-      "precmd:noglob",
-      "shell_param:argv",
-      "shell_param:SECONDS",
+      "precmd_modifier:noglob",
+      "special_param:argv",
+      "special_param:SECONDS",
       "complex_command:if",
       "param_expn:${name:-word}",
       "subscript_flag:(w)",
-      "param_flag:(U)",
-      "history:!!",
+      "param_expn_flag:(U)",
+      "history_expn:!!",
       "glob_op:*",
       "glob_flag:i",
       "glob_qualifier:@",
@@ -526,13 +541,15 @@ describe("render markdown", () => {
     const opt = docs.find(d => d.kind === "option")
     expect(opt?.id).toBe(mkDocumented("option", "AUTO_CD"))
     expect(opt?.heading).toBe("AUTO_CD")
-    expect(docs.find(d => d.kind === "redir")?.heading).toBe(">> word")
+    expect(docs.find(d => d.kind === "redirection")?.heading).toBe(">> word")
   })
 })
 
 describe("render dump", () => {
+  const refFiles = dumpText(corpus())
+
   test("per-kind dump files", () => {
-    const files = dumpText(corpus({ cond_op: [cb] }))
+    const files = dumpText(corpus({ conditional_op: [cb] }))
     for (const [file, heading] of dumpCases) {
       expect(files.get(file)).toContain(heading)
       expect(files.get("all.md")).toContain(heading)
@@ -540,36 +557,36 @@ describe("render dump", () => {
     expect(files.get("suspicious.md")).toBe("")
   })
 
-  test("history.md starts with the category preamble", () => {
-    const files = dumpText(corpus())
-    // biome-ignore lint/style/noNonNullAssertion: table-driven presence
-    const preamble = docCategoryPreamble.history!
-    const history = files.get("history.md")
-    expect(history).toBeDefined()
-    expect(history?.startsWith("<!-- preamble for category -->")).toBe(true)
-    expect(history).toContain(preamble)
-    // Separator between preamble and first record.
-    expect(history?.indexOf(preamble) ?? -1).toBeLessThan(
-      history?.indexOf("## !!") ?? -1,
-    )
+  const preambleCases = docCategories.flatMap(k => {
+    const p = docCategoryPreamble[k]
+    return p === undefined ? [] : [[k, p] as const]
+  })
+  const noPreambleCats = docCategories.filter(k => !docCategoryPreamble[k])
+
+  test.each(
+    preambleCases,
+  )("%s dump starts with the category preamble", (k, preamble) => {
+    const [file, heading] = dumpByCat[k]
+    const body = refFiles.get(file) ?? ""
+    expect(body.startsWith("<!-- preamble for category -->")).toBe(true)
+    expect(body).toContain(preamble)
+    expect(body.indexOf(preamble)).toBeLessThan(body.indexOf(heading))
   })
 
-  test("all.md does NOT contain the history preamble", () => {
-    const files = dumpText(corpus())
-    // biome-ignore lint/style/noNonNullAssertion: table-driven presence
-    const preamble = docCategoryPreamble.history!
-    expect(files.get("all.md")).not.toContain(preamble)
+  test.each(
+    preambleCases,
+  )("all.md does NOT contain %s preamble", (_k, preamble) => {
+    expect(refFiles.get("all.md")).not.toContain(preamble)
   })
 
-  test("categories without a preamble dump without the marker", () => {
-    const files = dumpText(corpus())
-    expect(files.get("options.md")).not.toContain("<!-- preamble for category")
-    expect(files.get("builtins.md")).not.toContain("<!-- preamble for category")
+  test.each(noPreambleCats)("%s dump has no preamble marker", k => {
+    const [file] = dumpByCat[k]
+    expect(refFiles.get(file)).not.toContain("<!-- preamble for category")
   })
 
   test("writes dump files", async () => {
     await withTmpDirAsync("better-zsh-ref-", async dir => {
-      await writeRefDump(dir, corpus({ cond_op: [cb] }))
+      await writeRefDump(dir, corpus({ conditional_op: [cb] }))
       const all = readFileSync(join(dir, "all.md"), "utf8")
       for (const [file, heading, snippet] of dumpCases) {
         expect(all).toContain(heading)
@@ -594,7 +611,6 @@ describe("render dump", () => {
     }
 
     test("strips raw yodl markers", () => {
-      // All dump files: rendered files must strip yodl macros; stubs are trivial.
       for (const [file] of dumpCases) {
         expect(files.get(file)).not.toContain("tt(")
         expect(files.get(file)).not.toContain("var(")
@@ -605,7 +621,7 @@ describe("render dump", () => {
       for (const [file, pattern] of [
         ["options.md", "See ."],
         ["options.md", "See \\ ."],
-        ["cond-ops.md", "See ."],
+        ["conditional-ops.md", "See ."],
       ] as const) {
         expect(files.get(file)).not.toContain(pattern)
       }

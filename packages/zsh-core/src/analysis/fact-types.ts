@@ -31,12 +31,12 @@ export interface CmdHeadFact extends BaseFact {
   readonly kind: "cmd-head"
   /** Raw command-head spelling; may name a builtin, function, alias, or external command. */
   readonly text: string
-  readonly precmds: readonly Observed<"precmd">[]
+  readonly precmds: readonly Observed<"precmd_modifier">[]
 }
 
 export interface PrecmdFact extends BaseFact {
   readonly kind: "precmd"
-  readonly name: Observed<"precmd">
+  readonly name: Observed<"precmd_modifier">
 }
 
 export interface FuncDeclFact extends BaseFact {

@@ -62,9 +62,9 @@ pub fn resolve_in<'c>(corpus: &'c Corpus, cat_name: &str, raw: &str) -> Option<R
     }
     match cat_name {
         "option" => resolve_option_via_resolver(corpus, raw),
-        "redir" => resolve_redir(corpus, raw),
-        "history" => resolve_history(corpus, raw),
-        "subscript_flag" | "param_flag" | "glob_flag" | "glob_qualifier" => {
+        "redirection" => resolve_redir(corpus, raw),
+        "history_expn" => resolve_history(corpus, raw),
+        "subscript_flag" | "param_expn_flag" | "glob_flag" | "glob_qualifier" => {
             resolve_parens_agnostic_flag(corpus, cat_name, raw)
         }
         "job_spec" => resolve_job_spec(corpus, raw),
@@ -195,7 +195,7 @@ fn resolve_option_via_resolver<'c>(corpus: &'c Corpus, raw: &str) -> Option<Reso
 
 fn resolve_history<'c>(corpus: &'c Corpus, raw: &str) -> Option<ResolvedHit<'c>> {
     let key = history_key(raw.trim())?;
-    find_by_id(corpus, "history", key, None)
+    find_by_id(corpus, "history_expn", key, None)
 }
 
 fn history_key(t: &str) -> Option<&'static str> {
@@ -274,7 +274,7 @@ fn resolve_parens_agnostic_flag<'c>(
 }
 
 fn resolve_redir<'c>(corpus: &'c Corpus, raw: &str) -> Option<ResolvedHit<'c>> {
-    let cat = corpus.category("redir")?;
+    let cat = corpus.category("redirection")?;
     let text = raw.trim().trim_start_matches(|c: char| c.is_ascii_digit());
     if text.is_empty() {
         return None;
@@ -284,12 +284,12 @@ fn resolve_redir<'c>(corpus: &'c Corpus, raw: &str) -> Option<ResolvedHit<'c>> {
     }
     if let Some(delim) = text.strip_prefix("<<-") {
         if !delim.is_empty() {
-            return find_by_id(corpus, "redir", "<<[-] word", None);
+            return find_by_id(corpus, "redirection", "<<[-] word", None);
         }
     } else if text.starts_with("<<") && !text.starts_with("<<<") {
         let delim = &text[2..];
         if !delim.is_empty() {
-            return find_by_id(corpus, "redir", "<<[-] word", None);
+            return find_by_id(corpus, "redirection", "<<[-] word", None);
         }
     }
 

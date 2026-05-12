@@ -14,10 +14,10 @@ describe("list", () => {
   })
 
   test("category filter restricts the pool", () => {
-    const r = list(corpus, { category: "precmd", limit: MAX_LIMIT })
-    for (const m of r.matches) expect(m.category).toBe("precmd")
+    const r = list(corpus, { category: "precmd_modifier", limit: MAX_LIMIT })
+    for (const m of r.matches) expect(m.category).toBe("precmd_modifier")
     expect(r.matches.length).toBeGreaterThan(0)
-    expect(r.matchesTotal).toBe(corpus.precmd.size)
+    expect(r.matchesTotal).toBe(corpus.precmd_modifier.size)
   })
 
   test("limit=0 returns metadata only", () => {
@@ -28,9 +28,9 @@ describe("list", () => {
   })
 
   test("limit=0 with category", () => {
-    const r = list(corpus, { category: "precmd", limit: 0 })
+    const r = list(corpus, { category: "precmd_modifier", limit: 0 })
     expect(r.matches).toEqual([])
-    expect(r.matchesTotal).toBe(corpus.precmd.size)
+    expect(r.matchesTotal).toBe(corpus.precmd_modifier.size)
   })
 
   test("limit clamped to MAX_LIMIT (entire corpus)", () => {
@@ -55,7 +55,7 @@ describe("list", () => {
   })
 
   test("history match surfaces subKind", () => {
-    const r = list(corpus, { category: "history", limit: 50 })
+    const r = list(corpus, { category: "history_expn", limit: 50 })
     expect(r.matches.length).toBeGreaterThan(0)
     for (const m of r.matches) {
       expect(["event-designator", "word-designator", "modifier"]).toContain(

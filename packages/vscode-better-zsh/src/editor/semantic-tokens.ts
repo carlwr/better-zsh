@@ -50,7 +50,8 @@ export class SemanticTokensProvider
       }
       if (fact.kind !== "cmd-head") continue
       if (fact.text === "[") continue
-      if (fact.precmds.includes(mkObserved("precmd", "command"))) continue
+      if (fact.precmds.includes(mkObserved("precmd_modifier", "command")))
+        continue
       if (this.reservedWordPainting.has(fact.text)) {
         pushSpan(b, starts, fact.span.start, fact.span.end, 1, 0)
         continue

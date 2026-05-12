@@ -7,7 +7,7 @@ Improved zsh shellscript editing for VS Code. Layers structured zsh knowledge �
 ## Features
 
 - **Hovers** for documented zsh syntax such as builtins, shell options, redirections, parameter expansion, prompt escapes, and ZLE widgets. Content comes from a structured reference, not a regex-scraped manpage.
-- **Completions** over the same structured reference, category-aware (only shell options are offered after `setopt` / `unsetopt`; only builtins/precmds/functions at command position; …).
+- **Completions** over the same structured reference, category-aware (only shell options are offered after `setopt` / `unsetopt`; only builtins/precommand modifiers/functions at command position; …).
 - **Semantic tokens** that refine the vendored TM grammar where zsh needs it (`((` / `))` as keywords, known builtins as `support.function.builtin.shell`, etc.).
 - **Go-to-definition, references, rename, document/workspace symbols** for user-defined functions in the workspace.
 - **Optional diagnostics** via `zsh -n` (syntax check). Disabled per-document if the file reports as a non-zsh shell.

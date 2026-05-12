@@ -115,12 +115,12 @@ const PINNED_CASES: readonly Case[] = [
   {
     tool: "zsh_docs",
     name: "history_bang_number",
-    input: { key: "!42", category: "history" },
+    input: { key: "!42", category: "history_expn" },
   },
   {
     tool: "zsh_docs",
     name: "history_search",
-    input: { key: "!?zsh", category: "history" },
+    input: { key: "!?zsh", category: "history_expn" },
   },
   {
     tool: "zsh_docs",
@@ -149,7 +149,7 @@ const PINNED_CASES: readonly Case[] = [
   {
     tool: "zsh_search",
     name: "history_bang_number",
-    input: { query: "!42", category: "history", limit: 3 },
+    input: { query: "!42", category: "history_expn", limit: 3 },
   },
   {
     tool: "zsh_search",

@@ -23,13 +23,13 @@ export function parseCondOps(yo: string | YNodeSeq): readonly CondOpDoc[] {
   return flattenAliasedEntries(extractItems(yo), parseHeader, (parsed, desc) =>
     parsed.arity === "unary"
       ? {
-          op: mkDocumented("cond_op", parsed.op),
+          op: mkDocumented("conditional_op", parsed.op),
           operands: parsed.operands,
           desc,
           arity: "unary",
         }
       : {
-          op: mkDocumented("cond_op", parsed.op),
+          op: mkDocumented("conditional_op", parsed.op),
           operands: parsed.operands,
           desc,
           arity: "binary",

@@ -90,14 +90,15 @@ export function docs(corpus: DocCorpus, input: DocsInput): DocsResult {
   const matches: DocsMatch[] = []
   for (const cat of classifyOrder) {
     const pid = lookupRaw(corpus, cat, key)
-    if (pid?.category === "history" && !isHistoryEvent(corpus, pid)) continue
+    if (pid?.category === "history_expn" && !isHistoryEvent(corpus, pid))
+      continue
     if (pid) matches.push(formatMatch(corpus, pid, key))
   }
   return mkEnvelope(matches)
 }
 
 function isHistoryEvent(corpus: DocCorpus, pid: DocPieceId): boolean {
-  const rec = corpus.history.get(pid.id as Documented<"history">)
+  const rec = corpus.history_expn.get(pid.id as Documented<"history_expn">)
   return rec?.kind === "event-designator"
 }
 

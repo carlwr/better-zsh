@@ -86,10 +86,10 @@ describe("toolDefs metadata", () => {
     expect(s.matches[0]?.id).toBe("echo")
 
     const l = listToolDef.execute(corpus, {
-      category: "precmd",
+      category: "precmd_modifier",
       limit: 100,
     }) as ListResult
-    for (const m of l.matches) expect(m.category).toBe("precmd")
+    for (const m of l.matches) expect(m.category).toBe("precmd_modifier")
     expect(l.matches.length).toBeGreaterThan(0)
   })
 })

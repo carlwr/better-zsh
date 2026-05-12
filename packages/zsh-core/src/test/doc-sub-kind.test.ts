@@ -17,10 +17,10 @@ function firstRec<K extends DocCategory>(cat: K): DocRecordMap[K] {
 
 describe("docSubKind", () => {
   test("history doc surfaces its kind string", () => {
-    const doc = firstRec("history")
-    expect(docSubKind.history(doc)).toBe(doc.kind)
+    const doc = firstRec("history_expn")
+    expect(docSubKind.history_expn(doc)).toBe(doc.kind)
     expect(["event-designator", "word-designator", "modifier"]).toContain(
-      docSubKind.history(doc),
+      docSubKind.history_expn(doc),
     )
   })
 

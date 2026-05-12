@@ -8,18 +8,18 @@ import type { RefDoc } from "./refs.ts"
 export type RefDumpFile =
   | "all.md"
   | "options.md"
-  | "cond-ops.md"
-  | "shell-params.md"
+  | "conditional-ops.md"
+  | "special-params.md"
   | "complex-commands.md"
   | "builtins.md"
-  | "precmds.md"
-  | "redirs.md"
+  | "precmd-modifiers.md"
+  | "redirections.md"
   | "process-substs.md"
   | "param-expns.md"
   | "reserved-words.md"
   | "subscript-flags.md"
-  | "param-flags.md"
-  | "history.md"
+  | "param-expn-flags.md"
+  | "history-expns.md"
   | "glob-ops.md"
   | "glob-flags.md"
   | "glob-qualifiers.md"
@@ -33,18 +33,18 @@ export type RefDumpFile =
 
 const dumpFile: { [K in DocCategory]: RefDumpFile } = {
   option: "options.md",
-  cond_op: "cond-ops.md",
+  conditional_op: "conditional-ops.md",
   builtin: "builtins.md",
-  precmd: "precmds.md",
-  shell_param: "shell-params.md",
+  precmd_modifier: "precmd-modifiers.md",
+  special_param: "special-params.md",
   complex_command: "complex-commands.md",
   reserved_word: "reserved-words.md",
-  redir: "redirs.md",
+  redirection: "redirections.md",
   process_subst: "process-substs.md",
   param_expn: "param-expns.md",
   subscript_flag: "subscript-flags.md",
-  param_flag: "param-flags.md",
-  history: "history.md",
+  param_expn_flag: "param-expn-flags.md",
+  history_expn: "history-expns.md",
   glob_op: "glob-ops.md",
   glob_flag: "glob-flags.md",
   glob_qualifier: "glob-qualifiers.md",

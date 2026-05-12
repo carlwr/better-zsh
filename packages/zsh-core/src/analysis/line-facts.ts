@@ -86,7 +86,7 @@ export function cmdHeadFactsOnLine(
   const out: LineFact[] = []
   let i = 0
   let expectCmd = true
-  let precmds: readonly Observed<"precmd">[] = []
+  let precmds: readonly Observed<"precmd_modifier">[] = []
 
   // expectCmd: true when the next word should be in command position
   // precmds:   precommand modifiers accumulated before the current command head
@@ -171,7 +171,7 @@ export function cmdHeadFactsOnLine(
     }
 
     if (PRECMDS.has(word)) {
-      const observed = mkObserved("precmd", word)
+      const observed = mkObserved("precmd_modifier", word)
       out.push(precmdFact(observed, wordSpan))
       precmds = [...precmds, observed]
       const parsed = skipPrecmdArgs(line, i, len, word)
@@ -215,7 +215,7 @@ export function funcDeclAtLine(
 function cmdHeadFact(
   text: string,
   span: TextSpan,
-  precmds: readonly Observed<"precmd">[],
+  precmds: readonly Observed<"precmd_modifier">[],
 ): CmdHeadFact {
   return {
     kind: "cmd-head",
@@ -226,7 +226,10 @@ function cmdHeadFact(
   }
 }
 
-function precmdFact(name: Observed<"precmd">, span: TextSpan): PrecmdFact {
+function precmdFact(
+  name: Observed<"precmd_modifier">,
+  span: TextSpan,
+): PrecmdFact {
   return {
     kind: "precmd",
     span,

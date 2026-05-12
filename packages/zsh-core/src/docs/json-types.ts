@@ -52,12 +52,12 @@ type WithMarkdown<T> = T & {
 export type JsonRecordMap = {
   [K in Exclude<
     DocCategory,
-    "builtin" | "cond_op" | "precmd" | "param_expn"
+    "builtin" | "conditional_op" | "precmd_modifier" | "param_expn"
   >]: WithMarkdown<JsonDoc<K>>
 } & {
   builtin: WithMarkdown<JsonBuiltinDoc>
-  cond_op: WithMarkdown<JsonCondOpDoc>
-  precmd: WithMarkdown<JsonPrecmdDoc>
+  conditional_op: WithMarkdown<JsonCondOpDoc>
+  precmd_modifier: WithMarkdown<JsonPrecmdDoc>
   param_expn: WithMarkdown<JsonParamExpnDoc>
 }
 export type JsonDocArrayMap = {
@@ -65,18 +65,18 @@ export type JsonDocArrayMap = {
 }
 
 export type OptionsJson = JsonDocArrayMap["option"]
-export type CondOpsJson = JsonDocArrayMap["cond_op"]
+export type ConditionalOpsJson = JsonDocArrayMap["conditional_op"]
 export type ComplexCommandsJson = JsonDocArrayMap["complex_command"]
 export type BuiltinsJson = JsonDocArrayMap["builtin"]
-export type PrecmdsJson = JsonDocArrayMap["precmd"]
-export type ShellParamsJson = JsonDocArrayMap["shell_param"]
+export type PrecmdModifiersJson = JsonDocArrayMap["precmd_modifier"]
+export type SpecialParamsJson = JsonDocArrayMap["special_param"]
 export type ReservedWordsJson = JsonDocArrayMap["reserved_word"]
-export type RedirectionsJson = JsonDocArrayMap["redir"]
+export type RedirectionsJson = JsonDocArrayMap["redirection"]
 export type ProcessSubstsJson = JsonDocArrayMap["process_subst"]
 export type ParamExpnsJson = JsonDocArrayMap["param_expn"]
 export type SubscriptFlagsJson = JsonDocArrayMap["subscript_flag"]
-export type ParamFlagsJson = JsonDocArrayMap["param_flag"]
-export type HistoryJson = JsonDocArrayMap["history"]
+export type ParamExpnFlagsJson = JsonDocArrayMap["param_expn_flag"]
+export type HistoryExpnsJson = JsonDocArrayMap["history_expn"]
 export type GlobOperatorsJson = JsonDocArrayMap["glob_op"]
 export type GlobFlagsJson = JsonDocArrayMap["glob_flag"]
 export type GlobQualifiersJson = JsonDocArrayMap["glob_qualifier"]

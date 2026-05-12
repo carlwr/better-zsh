@@ -229,7 +229,7 @@ Fuzzy discovery across the bundled reference. Matches the query against record i
 { "matches": [], "matchesReturned": 0, "matchesTotal": 0 }
 ```
 
-Other example inputs: `{"query": "autocd"}`, `{"query": "redir", "limit": 50}`.
+Other example inputs: `{"query": "autocd"}`, `{"query": "redirection", "limit": 50}`.
 
 ### `zsh_list`
 
@@ -238,7 +238,7 @@ Enumerate records, optionally filtered to one category. Same envelope as `zsh_se
 **Input**
 
 ```json
-{ "category": "precmd", "limit": 100 }
+{ "category": "precmd_modifier", "limit": 100 }
 ```
 
 **Output**
@@ -246,15 +246,15 @@ Enumerate records, optionally filtered to one category. Same envelope as `zsh_se
 ```json
 {
   "matches": [
-    { "category": "precmd", "id": "noglob", "display": "noglob" },
-    { "category": "precmd", "id": "nocorrect", "display": "nocorrect" }
+    { "category": "precmd_modifier", "id": "noglob", "display": "noglob" },
+    { "category": "precmd_modifier", "id": "nocorrect", "display": "nocorrect" }
   ],
   "matchesReturned": 2,
   "matchesTotal": 2
 }
 ```
 
-Other example inputs: `{}` (first 20 records of every category, with `matchesTotal` = entire corpus), `{"category": "option", "limit": 0}` (metadata only — counts without payload), `{"category": "history"}`.
+Other example inputs: `{}` (first 20 records of every category, with `matchesTotal` = entire corpus), `{"category": "option", "limit": 0}` (metadata only — counts without payload), `{"category": "history_expn"}`.
 
 ## Privacy & side effects
 

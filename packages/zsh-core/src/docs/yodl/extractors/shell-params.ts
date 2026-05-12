@@ -41,7 +41,7 @@ export function parseShellParams(
  * Widget params (BUFFER, CURSOR, CONTEXT, ...) share `ShellParamDoc`'s shape
  * but come from a different manual section and never carry `tied`. Exposed as
  * a separate entrypoint so `loadCorpus` can compose both passes into a single
- * `shell_param` map without coupling the extractors to a multi-file loader.
+ * `special_param` map without coupling the extractors to a multi-file loader.
  */
 export function parseWidgetParams(
   yo: string | YNodeSeq,
@@ -86,11 +86,11 @@ function emitParams(
     const desc = normalizeBody(item.body)
     for (const head of [...heads, ...pending]) {
       out.push({
-        name: mkDocumented("shell_param", head.name),
+        name: mkDocumented("special_param", head.name),
         sig: head.name,
         desc,
         section,
-        ...(head.tied && { tied: mkDocumented("shell_param", head.tied) }),
+        ...(head.tied && { tied: mkDocumented("special_param", head.tied) }),
       })
     }
     pending = []

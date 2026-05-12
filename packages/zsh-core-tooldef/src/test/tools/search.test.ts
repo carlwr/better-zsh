@@ -21,10 +21,10 @@ describe("search", () => {
   test("category filter narrows results", () => {
     const r = search(corpus, {
       query: "command",
-      category: "precmd",
+      category: "precmd_modifier",
       limit: 100,
     })
-    for (const m of r.matches) expect(m.category).toBe("precmd")
+    for (const m of r.matches) expect(m.category).toBe("precmd_modifier")
     expect(r.matches.length).toBeGreaterThan(0)
   })
 
@@ -131,7 +131,11 @@ describe("search", () => {
   })
 
   test("history match surfaces subKind", () => {
-    const r = search(corpus, { query: "!", category: "history", limit: 50 })
+    const r = search(corpus, {
+      query: "!",
+      category: "history_expn",
+      limit: 50,
+    })
     expect(r.matches.length).toBeGreaterThan(0)
     for (const m of r.matches) {
       expect(["event-designator", "word-designator", "modifier"]).toContain(

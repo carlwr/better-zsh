@@ -58,8 +58,9 @@ pub fn run(input: &Value, corpus: &Corpus) -> Result<Value> {
         }
     }
 
-    // Resolver tier: per-category resolver (NO_-strip, redir decomp, history, …).
-    // Hits not yet bucketed by exact/prefix. Walks `CLASSIFY_ORDER` unless pinned.
+    // Resolver tier: per-category resolver (NO_-strip, redirection decomp,
+    // history-expansion, …). Hits not yet bucketed by exact/prefix. Walks
+    // `CLASSIFY_ORDER` unless pinned.
     let resolver_cats: Vec<&str> = match category {
         Some(c) => vec![c],
         None => crate::corpus::CLASSIFY_ORDER.to_vec(),

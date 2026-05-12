@@ -46,7 +46,7 @@ function corpusDocs<K extends DocCategory>(
   const vals = [
     ...(corpus[kind] as ReadonlyMap<unknown, DocRecordMap[K]>).values(),
   ]
-  if (kind !== "shell_param") return vals
+  if (kind !== "special_param") return vals
   return [...vals].sort((a, b) =>
     (a as { name: string }).name.localeCompare((b as { name: string }).name),
   )

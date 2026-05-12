@@ -32,7 +32,7 @@ function parseSection(
     normalizeHeader,
     (key, desc) => ({
       kind,
-      key: mkDocumented("history", key),
+      key: mkDocumented("history_expn", key),
       sig: key,
       desc,
       section,
@@ -48,7 +48,7 @@ function parseWordDesignators(yo: string | YNodeSeq): HistoryDoc[] {
     const sig = normalizeHeader(item.header)
     return {
       kind: "word-designator",
-      key: mkDocumented("history", sig),
+      key: mkDocumented("history_expn", sig),
       sig,
       desc: normalizeBody(item.body),
       section: "Word Designators",

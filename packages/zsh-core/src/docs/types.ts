@@ -56,11 +56,11 @@ export const mkRedirOp = (raw: string): RedirOp => raw.trim() as RedirOp
  *    caller vouches for membership. Misuse is detectable only indirectly
  *    (subsequent `Map.get` returning `undefined`).
  *
- * `precmd` and `process_subst` collapse via conditional type to their closed
+ * `precmd_modifier` and `process_subst` collapse via conditional type to their closed
  * literal unions (every valid string is a corpus member); all other categories
  * use phantom brands.
  */
-export type Documented<K extends DocCategory> = K extends "precmd"
+export type Documented<K extends DocCategory> = K extends "precmd_modifier"
   ? PrecmdName
   : K extends "process_subst"
     ? ProcessSubstOp
@@ -73,10 +73,10 @@ export type Documented<K extends DocCategory> = K extends "precmd"
  * policy. The boundary crossing to `Documented<K>` is `resolve(corpus, K,
  * raw)`, which applies category-specific corpus-aware parsing.
  *
- * `precmd` and `process_subst` resolve to their literal unions (symmetric with
- * `Documented<K>`).
+ * `precmd_modifier` and `process_subst` resolve to their literal unions
+ * (symmetric with `Documented<K>`).
  */
-export type Observed<K extends DocCategory> = K extends "precmd"
+export type Observed<K extends DocCategory> = K extends "precmd_modifier"
   ? PrecmdName
   : K extends "process_subst"
     ? ProcessSubstOp
@@ -161,7 +161,7 @@ export interface ZshOption {
 
 /** Parsed unary `[[ ... ]]` conditional operator docs. */
 export interface UnaryCondOpDoc {
-  readonly op: Documented<"cond_op">
+  readonly op: Documented<"conditional_op">
   readonly operands: UnaryCondOperands
   readonly desc: string
   readonly arity: "unary"
@@ -169,7 +169,7 @@ export interface UnaryCondOpDoc {
 
 /** Parsed binary `[[ ... ]]` conditional operator docs. */
 export interface BinaryCondOpDoc {
-  readonly op: Documented<"cond_op">
+  readonly op: Documented<"conditional_op">
   readonly operands: BinaryCondOperands
   readonly desc: string
   readonly arity: "binary"
@@ -206,7 +206,7 @@ export interface SyntaxDocBase<Sig extends string = string> {
 }
 
 /**
- * Typed source of a shell-parameter record.
+ * Typed source of a special-parameter record.
  *
  * - `shell-set`: global parameters the shell assigns to (`zshparam` §"Parameters Set By The Shell").
  * - `shell-used`: global parameters the shell reads (`zshparam` §"Parameters Used By The Shell").
@@ -214,11 +214,11 @@ export interface SyntaxDocBase<Sig extends string = string> {
  */
 export type ShellParamSection = "shell-set" | "shell-used" | "zle-widget"
 
-/** Shell-managed parameters documented in `zshparam` and ZLE widget-local parameters from `zle.yo`. */
+/** Special parameters documented in `zshparam` and ZLE widget-local parameters from `zle.yo`. */
 export interface ShellParamDoc extends SyntaxDocBase {
-  readonly name: Documented<"shell_param">
+  readonly name: Documented<"special_param">
   readonly section: ShellParamSection
-  readonly tied?: Documented<"shell_param">
+  readonly tied?: Documented<"special_param">
 }
 
 /**
@@ -269,9 +269,9 @@ export interface ComplexCommandDoc extends SyntaxDocBase {
   readonly bodyKeywords: readonly string[]
 }
 
-export interface RedirDoc extends SyntaxDocBase<Documented<"redir">> {
+export interface RedirDoc extends SyntaxDocBase<Documented<"redirection">> {
   /** Full signature is the doc identity; `groupOp` is only the shared lookup bucket. */
-  readonly sig: Documented<"redir">
+  readonly sig: Documented<"redirection">
   /** Grouping token only; multiple redirection docs share the same `groupOp`. */
   readonly groupOp: RedirOp
 }
@@ -337,12 +337,12 @@ export interface SubscriptFlagDoc extends SyntaxDocBase {
 
 /** Parameter-expansion flags -- e.g. `(U)`, `(L)` inside `${(...)var}`. */
 export interface ParamFlagDoc extends SyntaxDocBase {
-  readonly flag: Documented<"param_flag">
+  readonly flag: Documented<"param_expn_flag">
   readonly args: readonly string[]
 }
 
 export interface HistoryDoc extends SyntaxDocBase {
-  readonly key: Documented<"history">
+  readonly key: Documented<"history_expn">
   readonly kind: HistoryKind
 }
 

@@ -46,7 +46,7 @@ import { CompletionProvider } from "../editor/completions"
 import { emptyCorpus, wordDoc } from "./test-util"
 
 suite("CompletionProvider", () => {
-  test("offers static builtins, precmds, reserved words, and params", async () => {
+  test("offers static commands and params", async () => {
     const builtin = {
       name: mkDocumented("builtin", "echo"),
       synopsis: ["echo"] as [string],
@@ -65,7 +65,7 @@ suite("CompletionProvider", () => {
       desc: "",
     }
     const param = {
-      name: mkDocumented("shell_param", "SECONDS"),
+      name: mkDocumented("special_param", "SECONDS"),
       sig: "SECONDS",
       desc: "",
       section: "shell-set" as const,
@@ -82,8 +82,8 @@ suite("CompletionProvider", () => {
       ...emptyCorpus(),
       builtin: new Map([[builtin.name, builtin]]),
       reserved_word: new Map([[reservedWord.name, reservedWord]]),
-      precmd: new Map([[precmd.name, precmd]]),
-      shell_param: new Map([[param.name, param]]),
+      precmd_modifier: new Map([[precmd.name, precmd]]),
+      special_param: new Map([[param.name, param]]),
       option: new Map([[option.name, option]]),
     }
     const provider = new CompletionProvider(corpus)

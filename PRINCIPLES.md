@@ -154,8 +154,8 @@ Not a separate type or interface — both roles use the same `DocCategory` machi
 `DocRecordMap[K]` is a custom shape per category. Field names read as domain vocabulary:
 
 - `name` for builtin
-- `op` for cond_op
-- `sig` for redir
+- `op` for conditional_op
+- `sig` for redirection
 - `flag` for glob_flag
 
 A shared `id` field name would obscure, not clarify. Per-category record shapes: JSDoc in `zsh-core/types`.

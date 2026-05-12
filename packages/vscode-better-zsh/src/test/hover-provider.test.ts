@@ -61,13 +61,13 @@ const o = (name: string, category: ZshOption["category"]): ZshOption => ({
 
 const r = (groupOp: string, sig: string, desc: string): RedirDoc => ({
   groupOp: mkRedirOp(groupOp),
-  sig: mkDocumented("redir", sig),
+  sig: mkDocumented("redirection", sig),
   desc,
   section: "",
 })
 
 const p = (name: string, desc: string): ShellParamDoc => ({
-  name: mkDocumented("shell_param", name),
+  name: mkDocumented("special_param", name),
   sig: name,
   desc,
   section: "shell-set",
@@ -79,7 +79,12 @@ const c = (
   operands: CondOpDoc["operands"],
   desc: string,
 ): CondOpDoc =>
-  ({ op: mkDocumented("cond_op", op), operands, desc, arity }) as CondOpDoc
+  ({
+    op: mkDocumented("conditional_op", op),
+    operands,
+    desc,
+    arity,
+  }) as CondOpDoc
 
 const cc = (name: string, desc: string): ComplexCommandDoc => ({
   name: mkDocumented("complex_command", name),
@@ -106,7 +111,7 @@ const corpus: DocCorpus = {
     o("GLOB", "Expansion and Globbing"),
     o("RCS", "Initialisation"),
   ]),
-  cond_op: by("op", [
+  conditional_op: by("op", [
     c("binary", "&&", ["exp1", "exp2"], "d:&"),
     c("binary", "||", ["exp1", "exp2"], "d:|"),
     c("binary", "<", ["s1", "s2"], "d:<"),
@@ -116,8 +121,8 @@ const corpus: DocCorpus = {
   builtin: by("name", [b("echo", "d:e"), b("fc", "d:f")]),
   complex_command: by("name", [cc("for", "d:cc-for")]),
   reserved_word: by("name", [rw("for", "d:rw-for"), rw("do", "d:rw-do")]),
-  shell_param: by("name", [p("SECONDS", "d:s")]),
-  redir: by("sig", [
+  special_param: by("name", [p("SECONDS", "d:s")]),
+  redirection: by("sig", [
     r(">&", ">& number", "d:n"),
     r(">&", ">& -", "d:-"),
     r(">&", ">& p", "d:p"),

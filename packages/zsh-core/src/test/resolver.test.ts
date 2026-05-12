@@ -5,13 +5,13 @@ import { mkDocumented_ } from "./id-fns"
 
 const corpus = loadCorpus()
 
-const hist = mkDocumented_("history")
+const hist = mkDocumented_("history_expn")
 const subFlag = mkDocumented_("subscript_flag")
-const parFlag = mkDocumented_("param_flag")
+const parFlag = mkDocumented_("param_expn_flag")
 const glFlag = mkDocumented_("glob_flag")
 const glQual = mkDocumented_("glob_qualifier")
 const jobSpec = mkDocumented_("job_spec")
-const redir = mkDocumented_("redir")
+const redir = mkDocumented_("redirection")
 const specFn = mkDocumented_("special_function")
 
 describe("resolveHistory (event designators)", () => {
@@ -30,8 +30,8 @@ describe("resolveHistory (event designators)", () => {
     // whitespace is trimmed
     ["  !42  ", hist("!n")],
   ] as const)("%s -> %s", (raw, expected) => {
-    const got = resolve(corpus, "history", raw)
-    expect(got).toEqual({ category: "history", id: expected })
+    const got = resolve(corpus, "history_expn", raw)
+    expect(got).toEqual({ category: "history_expn", id: expected })
   })
 
   test.each([
@@ -54,20 +54,20 @@ describe("resolveHistory (event designators)", () => {
     "",
     "   ",
   ])("%s -> undefined", raw => {
-    expect(resolve(corpus, "history", raw)).toBeUndefined()
+    expect(resolve(corpus, "history_expn", raw)).toBeUndefined()
   })
 
   test.each([
     ["!{foo}", hist("!{...}")],
   ] as const)("%s resolves as braced history", (raw, expected) => {
-    expect(resolve(corpus, "history", raw)).toEqual({
-      category: "history",
+    expect(resolve(corpus, "history_expn", raw)).toEqual({
+      category: "history_expn",
       id: expected,
     })
   })
 
   test.each(["!$"])("%s does not resolve as `!str`", raw => {
-    expect(resolve(corpus, "history", raw)).toBeUndefined()
+    expect(resolve(corpus, "history_expn", raw)).toBeUndefined()
   })
 })
 
@@ -81,8 +81,8 @@ describe("resolveRedir", () => {
     ["2<<EOF", redir("<<[-] word")],
     ["2<<-EOF", redir("<<[-] word")],
   ] as const)("%s resolves to the matching redirection doc", (raw, expected) => {
-    expect(resolve(corpus, "redir", raw)).toEqual({
-      category: "redir",
+    expect(resolve(corpus, "redirection", raw)).toEqual({
+      category: "redirection",
       id: expected,
     })
   })
@@ -91,7 +91,7 @@ describe("resolveRedir", () => {
     "<<",
     "<<-",
   ])("incomplete here-document %s does not resolve", raw => {
-    expect(resolve(corpus, "redir", raw)).toBeUndefined()
+    expect(resolve(corpus, "redirection", raw)).toBeUndefined()
   })
 })
 
@@ -118,21 +118,21 @@ describe("parens-agnostic flag resolvers", () => {
     })
   })
 
-  describe("param_flag", () => {
+  describe("param_expn_flag", () => {
     test.each([
       ["@", parFlag("@")],
       ["(@)", parFlag("@")],
       ["U", parFlag("U")],
       ["(U)", parFlag("U")],
     ] as const)("%s -> %s", (raw, expected) => {
-      expect(resolve(corpus, "param_flag", raw)).toEqual({
-        category: "param_flag",
+      expect(resolve(corpus, "param_expn_flag", raw)).toEqual({
+        category: "param_expn_flag",
         id: expected,
       })
     })
 
     test.each(["Z", "(Z)", ""])("%s -> undefined", raw => {
-      expect(resolve(corpus, "param_flag", raw)).toBeUndefined()
+      expect(resolve(corpus, "param_expn_flag", raw)).toBeUndefined()
     })
   })
 

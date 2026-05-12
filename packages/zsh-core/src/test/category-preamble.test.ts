@@ -4,7 +4,7 @@ import { docCategories } from "../docs/taxonomy"
 
 describe("docCategoryPreamble", () => {
   test("history preamble is a non-empty string mentioning event and modifier", () => {
-    const pre = docCategoryPreamble.history
+    const pre = docCategoryPreamble.history_expn
     expect(typeof pre).toBe("string")
     expect(pre?.length).toBeGreaterThan(0)
     expect(pre).toMatch(/event/i)
@@ -13,7 +13,7 @@ describe("docCategoryPreamble", () => {
 
   test("non-history categories have no preamble", () => {
     for (const cat of docCategories) {
-      if (cat === "history") continue
+      if (cat === "history_expn") continue
       expect(docCategoryPreamble[cat]).toBeUndefined()
     }
   })

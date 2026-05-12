@@ -36,7 +36,9 @@ export function parseParamFlagSection(
   yo: string | YNodeSeq,
   section: string,
 ): readonly ParamFlagDoc[] {
-  return parseFlagSection(yo, section, sig => mkDocumented("param_flag", sig))
+  return parseFlagSection(yo, section, sig =>
+    mkDocumented("param_expn_flag", sig),
+  )
 }
 
 function parseFlagSection<T>(

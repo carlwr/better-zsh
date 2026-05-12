@@ -5,7 +5,7 @@ import { mkOptFlag } from "../docs/types"
 import { mkDocumented_, mkObserved_ } from "./id-fns"
 
 const opt = mkDocumented_("option")
-const cond = mkDocumented_("cond_op")
+const cond = mkDocumented_("conditional_op")
 const optO = mkObserved_("option")
 
 describe("mkDocumented option (normalizes case + strips underscores)", () => {
@@ -34,7 +34,7 @@ describe("mkDocumented option (normalizes case + strips underscores)", () => {
   })
 })
 
-describe("mkDocumented cond_op (trims)", () => {
+describe("mkDocumented conditional_op (trims)", () => {
   test("trims whitespace", () => {
     expect(cond("  -a  ")).toBe(cond("-a"))
   })
@@ -88,6 +88,8 @@ describe("mkObserved option is symmetric with mkDocumented option", () => {
 describe("mkObserved / mkDocumented coincide for non-option categories", () => {
   test("Observed and Documented produce equal strings", () => {
     const raw = "  -a  "
-    expect(mkObserved("cond_op", raw) as string).toBe(cond(raw) as string)
+    expect(mkObserved("conditional_op", raw) as string).toBe(
+      cond(raw) as string,
+    )
   })
 })

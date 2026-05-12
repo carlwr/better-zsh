@@ -27,18 +27,19 @@ import type {
 
 export const docCategories = [
   "option",
-  "cond_op",
+  "conditional_op",
   "builtin",
-  "precmd",
-  "shell_param",
+  "precmd_modifier",
+  "special_param",
   "complex_command",
   "reserved_word",
-  "redir",
+  "redirection",
   "process_subst",
   "param_expn",
+  // Deliberately short; exact alternatives are too long.
   "subscript_flag",
-  "param_flag",
-  "history",
+  "param_expn_flag",
+  "history_expn",
   "glob_op",
   "glob_flag",
   "glob_qualifier",
@@ -64,22 +65,22 @@ export type DocCategory = (typeof docCategories)[number]
 const classifyOrderTuple = [
   "complex_command",
   "reserved_word",
-  "precmd",
+  "precmd_modifier",
   "builtin",
-  "cond_op",
+  "conditional_op",
   // special_function precedes option so `TRAPHUP` / `precmd_functions` resolve
   // to the function record rather than misresolving; see DESIGN.md §"Tie-break
   // in docs".
   "special_function",
-  "shell_param",
+  "special_param",
   "process_subst",
   "param_expn",
-  "param_flag",
+  "param_expn_flag",
   "subscript_flag",
   "glob_flag",
   "glob_qualifier",
   "glob_op",
-  "history",
+  "history_expn",
   // prompt_escape precedes job_spec because `job_spec`'s `%string` fallback
   // would otherwise shadow `%n`, `%~`, `%F`, etc. Real job-spec tokens
   // (`%%`, `%1`, `%?foo`) have no prompt-escape conflict, so nothing is
@@ -88,12 +89,12 @@ const classifyOrderTuple = [
   "job_spec",
   "zle_widget",
   "keymap",
-  // arith_op sits after cond_op so that `==`, `!=`, `<`, `>`, `<=`, `>=` prefer
-  // the more common cond_op interpretation; bare arith ops (`**`, `<<`, `%`, ...)
+  // arith_op sits after conditional_op so that `==`, `!=`, `<`, `>`, `<=`, `>=` prefer
+  // the more common conditional_op interpretation; bare arith ops (`**`, `<<`, `%`, ...)
   // still route here.
   "arith_op",
   "option",
-  "redir",
+  "redirection",
 ] as const satisfies readonly DocCategory[]
 
 // Bidirectional set-equality of `docCategories` and `classifyOrderTuple`:
@@ -118,18 +119,18 @@ export const classifyOrder: readonly DocCategory[] = classifyOrderTuple
  */
 export const docCategoryLabels: Readonly<Record<DocCategory, string>> = {
   option: "option",
-  cond_op: "conditional operator",
+  conditional_op: "conditional operator",
   builtin: "builtin",
-  precmd: "precommand modifier",
-  shell_param: "shell parameter",
+  precmd_modifier: "precommand modifier",
+  special_param: "special parameter",
   complex_command: "complex command",
   reserved_word: "reserved word",
-  redir: "redirection",
+  redirection: "redirection",
   process_subst: "process substitution",
   param_expn: "parameter-expansion form",
-  subscript_flag: "subscript flag",
-  param_flag: "parameter-expansion flag",
-  history: "history designator",
+  subscript_flag: "parameter-subscript flag",
+  param_expn_flag: "parameter-expansion flag",
+  history_expn: "history-expansion component",
   glob_op: "glob operator",
   glob_flag: "glob flag",
   glob_qualifier: "glob qualifier",
@@ -143,18 +144,18 @@ export const docCategoryLabels: Readonly<Record<DocCategory, string>> = {
 
 export interface DocRecordMap {
   option: ZshOption
-  cond_op: CondOpDoc
+  conditional_op: CondOpDoc
   builtin: BuiltinDoc
-  precmd: PrecmdDoc
-  shell_param: ShellParamDoc
+  precmd_modifier: PrecmdDoc
+  special_param: ShellParamDoc
   complex_command: ComplexCommandDoc
   reserved_word: ReservedWordDoc
-  redir: RedirDoc
+  redirection: RedirDoc
   process_subst: ProcessSubstDoc
   param_expn: ParamExpnDoc
   subscript_flag: SubscriptFlagDoc
-  param_flag: ParamFlagDoc
-  history: HistoryDoc
+  param_expn_flag: ParamFlagDoc
+  history_expn: HistoryDoc
   glob_op: GlobOpDoc
   glob_flag: GlobFlagDoc
   glob_qualifier: GlobQualifierDoc
@@ -193,18 +194,18 @@ export const docId: {
   [K in DocCategory]: (doc: DocRecordMap[K]) => Documented<K>
 } = {
   option: d => d.name,
-  cond_op: d => d.op,
+  conditional_op: d => d.op,
   builtin: d => d.name,
-  precmd: d => d.name as Documented<"precmd">,
-  shell_param: d => d.name,
+  precmd_modifier: d => d.name as Documented<"precmd_modifier">,
+  special_param: d => d.name,
   complex_command: d => d.name,
   reserved_word: d => d.name,
-  redir: d => d.sig,
+  redirection: d => d.sig,
   process_subst: d => d.op as Documented<"process_subst">,
   param_expn: d => d.sig,
   subscript_flag: d => d.flag,
-  param_flag: d => d.flag,
-  history: d => d.key,
+  param_expn_flag: d => d.flag,
+  history_expn: d => d.key,
   glob_op: d => d.op,
   glob_flag: d => d.flag,
   glob_qualifier: d => d.flag,
@@ -246,18 +247,18 @@ export const docSubKind: {
   [K in DocCategory]: (doc: DocRecordMap[K]) => string | undefined
 } = {
   option: _ => undefined,
-  cond_op: d => d.arity,
+  conditional_op: d => d.arity,
   builtin: _ => undefined,
-  precmd: _ => undefined,
-  shell_param: d => d.section,
+  precmd_modifier: _ => undefined,
+  special_param: d => d.section,
   complex_command: _ => undefined,
   reserved_word: d => d.pos,
-  redir: _ => undefined,
+  redirection: _ => undefined,
   process_subst: _ => undefined,
   param_expn: d => d.subKind,
   subscript_flag: _ => undefined,
-  param_flag: _ => undefined,
-  history: d => d.kind,
+  param_expn_flag: _ => undefined,
+  history_expn: d => d.kind,
   glob_op: d => d.kind,
   glob_flag: _ => undefined,
   glob_qualifier: _ => undefined,
