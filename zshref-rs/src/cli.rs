@@ -11,7 +11,7 @@ use crate::corpus::{Corpus, ToolDef, ToolDefs, DOC_CATEGORIES};
 use crate::output;
 use crate::tools;
 use anyhow::Result;
-use clap::{Arg, ArgAction, ArgMatches, Command};
+use clap::{Arg, ArgAction, ArgMatches, Command, ValueHint};
 use serde_json::{json, Map, Value};
 
 struct Ctx<'a> {
@@ -97,6 +97,12 @@ pub fn build_cli(tool_defs: &ToolDefs, corpus: &Corpus) -> Command {
             .arg(help_arg()),
     );
 
+    let mut help_commands: Vec<String> = root
+        .get_subcommands()
+        .map(|cmd| cmd.get_name().to_string())
+        .collect();
+    help_commands.push("help".to_string());
+
     root = root.subcommand(
         Command::new("help")
             .about(prose::HELP_ABOUT)
@@ -105,6 +111,8 @@ pub fn build_cli(tool_defs: &ToolDefs, corpus: &Corpus) -> Command {
                 Arg::new("command")
                     .value_name("COMMAND")
                     .num_args(0..=1)
+                    .value_parser(clap::builder::PossibleValuesParser::new(help_commands))
+                    .hide_possible_values(true)
                     .help(prose::HELP_COMMAND_HELP),
             )
             .arg(help_arg()),
@@ -221,6 +229,7 @@ fn build_arg(
         .long_help(prose::rewrite_refs(long_help, tools))
         .required(required)
         .action(ArgAction::Set)
+        .value_hint(ValueHint::Other)
         // zsh tokens include `-`, `-p`, fd prefixes (`2>`), etc.
         // Without this, `--key -p` errors; `--key=VALUE` is the only escape.
         .allow_hyphen_values(true);

@@ -67,3 +67,10 @@ pnpm --filter @carlwr/zsh-core-tooldef test parity
 The suite compares the binary's embedded `buildInputHash` against current
 Rust inputs + generated JSON artifacts. Missing/stale binaries skip with a
 banner; set `BZ_REQUIRE_PARITY=1` to fail instead. No auto-build.
+
+## Test/use zsh completions manually
+
+Configure completions for the curren zsh interactive session:
+```sh
+source =(cd zshref-rs && cargo run --quiet -- completions zsh)
+```
