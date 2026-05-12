@@ -20,11 +20,39 @@ struct Ctx<'a> {
     pretty: bool,
 }
 
+/// Why this enum exists: `--pretty` is universally a valid request — for
+/// JSON-emitting subcommands it changes output, for everything else it's a
+/// no-op. We want both halves:
+///
+/// 1. Parse-time: `--pretty` accepted at any position on any subcommand
+///    (so `zshref info --pretty`, `zshref help --pretty` etc. don't error).
+/// 2. Tab-completion: only offer `--pretty` on subcommands where it
+///    actually changes output.
+///
+/// `Arg::hide(true)` solves (1) for `--help` rendering but `clap_complete`
+/// (AOT generators, ≤4.6.5) does not filter hidden args from generated
+/// shell completions. So we build two trees from the same source: `Parsing`
+/// adds hidden `--pretty` to no-op subcommands; `Completions` omits them.
+#[derive(Clone, Copy, Debug)]
+pub enum BuildMode {
+    Parsing,
+    Completions,
+}
+
 pub fn subcommand_name(tool_name: &str) -> &str {
     tool_name.strip_prefix("zsh_").unwrap_or(tool_name)
 }
 
-pub fn build_cli(tool_defs: &ToolDefs, corpus: &Corpus) -> Command {
+/// Wrap a subcommand that doesn't natively use `--pretty` so that, in
+/// `Parsing` mode, it still accepts the flag as a hidden no-op.
+fn with_noop_pretty(cmd: Command, mode: BuildMode) -> Command {
+    match mode {
+        BuildMode::Parsing => cmd.arg(pretty_arg().hide(true)),
+        BuildMode::Completions => cmd,
+    }
+}
+
+pub fn build_cli(tool_defs: &ToolDefs, corpus: &Corpus, mode: BuildMode) -> Command {
     // Preamble uses MCP-primary `zsh_*` names; `prose::rewrite_refs` rewrites
     // them to `zshref *`. WARNING in `packages/zsh-core-tooldef/src/tool-defs.ts`
     // applies here too — tone/length drift on that source affects terminal help.
@@ -40,8 +68,9 @@ pub fn build_cli(tool_defs: &ToolDefs, corpus: &Corpus) -> Command {
         .long_about(prose::ROOT_LONG)
         .override_usage(prose::ROOT_USAGE)
         .after_long_help(root_after_help)
-        .arg_required_else_help(true)
-        .subcommand_required(true)
+        // Bare `zshref` is treated as an implicit help request:
+        // `dispatch` routes the no-subcommand branch through `render_help`,
+        // matching `zshref --help` byte-for-byte (CLI-POLICY.md).
         .disable_help_subcommand(true)
         .disable_help_flag(true)
         .disable_version_flag(true)
@@ -49,6 +78,8 @@ pub fn build_cli(tool_defs: &ToolDefs, corpus: &Corpus) -> Command {
         // `Usage:` block hides it). Each JSON-emitting subcommand also
         // registers its own `--pretty`; `dispatch` OR's the two positions
         // so `zshref --pretty docs …` and `zshref docs --pretty` are equal.
+        // Subcommands without native `--pretty` get a hidden no-op variant
+        // in `Parsing` mode — see `BuildMode`.
         .arg(pretty_arg())
         .arg(help_arg())
         .arg(version_arg());
@@ -57,20 +88,22 @@ pub fn build_cli(tool_defs: &ToolDefs, corpus: &Corpus) -> Command {
         root = root.subcommand(build_subcommand(td, &tool_defs.tools, corpus));
     }
 
-    root = root.subcommand(
+    root = root.subcommand(with_noop_pretty(
         Command::new("batch")
             .about(prose::BATCH_ABOUT)
             .after_long_help(prose::BATCH_LONG)
             .disable_help_flag(true)
             .arg(help_arg()),
-    );
+        mode,
+    ));
 
-    root = root.subcommand(
+    root = root.subcommand(with_noop_pretty(
         Command::new("info")
             .about(prose::INFO_ABOUT)
             .disable_help_flag(true)
             .arg(help_arg()),
-    );
+        mode,
+    ));
 
     let (words, leaves) = tools::schema::size_hint(tool_defs);
     root = root.subcommand(
@@ -82,7 +115,7 @@ pub fn build_cli(tool_defs: &ToolDefs, corpus: &Corpus) -> Command {
             .arg(help_arg()),
     );
 
-    root = root.subcommand(
+    root = root.subcommand(with_noop_pretty(
         Command::new("completions")
             .about(prose::COMPL_ABOUT)
             .disable_help_flag(true)
@@ -95,7 +128,8 @@ pub fn build_cli(tool_defs: &ToolDefs, corpus: &Corpus) -> Command {
                     .help(prose::COMPL_SHELL_HELP),
             )
             .arg(help_arg()),
-    );
+        mode,
+    ));
 
     let mut help_commands: Vec<String> = root
         .get_subcommands()
@@ -103,7 +137,7 @@ pub fn build_cli(tool_defs: &ToolDefs, corpus: &Corpus) -> Command {
         .collect();
     help_commands.push("help".to_string());
 
-    root = root.subcommand(
+    root = root.subcommand(with_noop_pretty(
         Command::new("help")
             .about(prose::HELP_ABOUT)
             .disable_help_flag(true)
@@ -116,7 +150,8 @@ pub fn build_cli(tool_defs: &ToolDefs, corpus: &Corpus) -> Command {
                     .help(prose::HELP_COMMAND_HELP),
             )
             .arg(help_arg()),
-    );
+        mode,
+    ));
 
     root
 }
@@ -245,12 +280,11 @@ fn build_arg(
             // clap range is i64; u32 parser narrows on parse.
             arg = arg.value_parser(clap::value_parser!(u32).range(min..=max));
             // Schema `default` → clap default; avoids Rust-side mirror constants.
-            // ---
-            // disabled - at least for --limit, the dynamic text already contains the default; we don't want it twice.
-            // if let Some(d) = spec.get("default").and_then(Value::as_u64) {
-            //     arg = arg.default_value(d.to_string());
-            // }
-            // ---
+            // The schema `description` already states the default, so suppress
+            // clap's auto-appended "[default: …]" to avoid duplication.
+            if let Some(d) = spec.get("default").and_then(Value::as_u64) {
+                arg = arg.default_value(d.to_string()).hide_default_value(true);
+            }
         }
         "string"
             // The `category` flag has a closed enum — expose as PossibleValues
@@ -306,8 +340,7 @@ pub fn dispatch(cmd: Command, tool_defs: &ToolDefs, corpus: &Corpus) -> Result<i
         Err(err) => return Ok(output::handle_clap_error(err, &mut cmd_for_err)),
     };
     let Some((sub_name, sub_matches)) = matches.subcommand() else {
-        cmd_for_err.print_long_help().ok();
-        return Ok(0);
+        return Ok(render_help(cmd_for_err, None));
     };
     // `--pretty` accepted at root or on the subcommand; OR the two.
     let ctx = Ctx {
@@ -321,7 +354,17 @@ pub fn dispatch(cmd: Command, tool_defs: &ToolDefs, corpus: &Corpus) -> Result<i
             let shell: clap_complete::Shell = *sub_matches
                 .get_one::<clap_complete::Shell>("shell")
                 .expect("clap enforces required");
-            clap_complete::generate(shell, &mut cmd_for_err, prose::BIN, &mut std::io::stdout());
+            // Rebuild from the same source with `Completions` mode so that
+            // hidden no-op `--pretty` args don't surface as tab-completion
+            // offers on info/batch/help/completions.
+            let mut cmd_for_completions =
+                build_cli(ctx.tool_defs, ctx.corpus, BuildMode::Completions);
+            clap_complete::generate(
+                shell,
+                &mut cmd_for_completions,
+                prose::BIN,
+                &mut std::io::stdout(),
+            );
             Ok(0)
         }
         "info" => {

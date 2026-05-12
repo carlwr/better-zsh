@@ -74,7 +74,7 @@ fn subcommand_usage_lines_never_bracket_required_flags() {
 fn help_fits_at_eighty_columns() {
     // Generous threshold: guards runaway prose, not normal growth. clap's
     // wrap_help honors $COLUMNS even on non-tty stdout.
-    let mut targets: Vec<Vec<&str>> = vec![vec!["--help"], vec!["-h"]];
+    let mut targets: Vec<Vec<&str>> = vec![vec![], vec!["--help"], vec!["-h"]];
     for sub in SUBCOMMANDS {
         targets.push(vec![*sub, "--help"]);
         targets.push(vec![*sub, "-h"]);
@@ -106,14 +106,24 @@ fn root_help_has_examples_section() {
 #[test]
 fn help_invocations_are_equivalent() {
     // The three help-request forms must produce byte-identical output:
-    //   root:    `zshref help`        ≡ `zshref --help`        ≡ `zshref -h`
-    //   sub:     `zshref help SUBCMD` ≡ `zshref SUBCMD --help` ≡ `zshref SUBCMD -h`
-    // `help` routes through `cli::render_help`; `-h`/`--help` share clap's
+    //   root:    `zshref`             ≡ `zshref help`         ≡ `zshref --help`        ≡ `zshref -h`
+    //   sub:     `zshref help SUBCMD`                          ≡ `zshref SUBCMD --help` ≡ `zshref SUBCMD -h`
+    // Bare invocation routes through `cli::render_help` (implicit help
+    // request, CLI-POLICY.md); `help` does too; `-h`/`--help` share clap's
     // `HelpLong` action. Drift here usually means one path lost styling,
     // prose, or footer text.
-    let mut groups: Vec<[Vec<&str>; 3]> = vec![[vec!["help"], vec!["--help"], vec!["-h"]]];
+    let mut groups: Vec<Vec<Vec<&str>>> = vec![vec![
+        vec![],
+        vec!["help"],
+        vec!["--help"],
+        vec!["-h"],
+    ]];
     for sub in SUBCOMMANDS {
-        groups.push([vec!["help", *sub], vec![*sub, "--help"], vec![*sub, "-h"]]);
+        groups.push(vec![
+            vec!["help", *sub],
+            vec![*sub, "--help"],
+            vec![*sub, "-h"],
+        ]);
     }
     for forms in &groups {
         let outs: Vec<(&[&str], String)> = forms

@@ -1,6 +1,11 @@
 //! `zshref batch` — JSONL loop over `tools::dispatch`. Each non-empty stdin
 //! line: `{"tool":"<name>","input":{...}}` → one compact-JSON stdout line.
 //! Per-request errors are in-band; exit 0 unless stdin I/O fails.
+//!
+//! Programmatic callers must drain stdout concurrently with the stdin write
+//! (e.g. write on a thread). Stdout (matches × `mdBody`) easily exceeds the
+//! OS pipe buffer; otherwise the child blocks on stdout, stops reading
+//! stdin, and a parent that completes stdin before reading stdout deadlocks.
 
 use crate::corpus::{Corpus, ToolDef, ToolDefs};
 use crate::tools;

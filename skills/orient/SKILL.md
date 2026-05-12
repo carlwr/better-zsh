@@ -57,10 +57,6 @@ rg "^export.*(function|const|type|interface|class) SymbolName" --type ts
 rg "\bsymbolName\b" --type ts
 ```
 
-## Reading paths
-
-Use the overview output to find applicable maintainer docs before editing. Package-local gotchas live in each subpackage's `AGENTS.md`; cross-package constraints live in root maintainer docs.
-
 ---
 
 ## Keeping this skill fresh

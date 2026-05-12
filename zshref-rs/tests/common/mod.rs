@@ -1,12 +1,18 @@
-//! Shared helpers for the `fuzz.rs` proptest crate.
+//! Shared helpers for the `zshref` integration test suite.
 //!
-//! Resolves the bundled `tooldef.json` (mirrors `build.rs`'s auto-detect:
-//! vendored first, else the monorepo `dist/json/` sibling) and compiles
-//! each tool's `outputSchema` once for validate-or-panic.
+//! Two roles, both used by `tests/properties.rs` and `tests/cli_invariants.rs`:
+//!
+//! 1. **Spawn-and-parse vocabulary.** `BIN`, `run_raw`, `run_json`,
+//!    `assert_envelope`, `doc_categories` — the minimum surface for
+//!    invoking the built binary and shaping its JSON responses.
+//! 2. **`outputSchema` validation.** `locate_tooldef_json`,
+//!    `validator_for`, `validate_or_panic`, `tool_for_subcommand` —
+//!    `run_json` auto-validates every tool-subcommand response against
+//!    its bundled schema, so new tests get conformance checks for free.
 //!
 //! `#[allow(dead_code)]` because Rust compiles each `tests/*.rs` as a
-//! separate crate with its own copy of this module — only `fuzz.rs`
-//! exercises these helpers today.
+//! separate crate with its own copy of this module — items unused by
+//! one test binary still warn unless suppressed at the module level.
 
 #![allow(dead_code)]
 
@@ -15,7 +21,89 @@ use serde_json::Value;
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::process::Command;
 use std::sync::OnceLock;
+
+/// Path to the test crate's binary under test, baked in by Cargo.
+pub const BIN: &str = env!("CARGO_BIN_EXE_zshref");
+
+/// Spawn `zshref` with `args` and return the raw `Output`. Use for
+/// byte-level assertions (determinism, exit code, stderr).
+pub fn run_raw(args: &[&str]) -> std::process::Output {
+    Command::new(BIN).args(args).output().expect("spawn zshref")
+}
+
+/// Spawn `zshref` with `args`, assert success, parse stdout as JSON,
+/// and auto-validate against the tool's bundled `outputSchema` when
+/// one exists. Subcommands without a schema (`info`, `schema`,
+/// `completions`) are passed through unchecked.
+pub fn run_json(args: &[&str]) -> Value {
+    let out = run_raw(args);
+    if !out.status.success() {
+        panic!(
+            "nonzero exit {:?} for args {:?}\nstderr:\n{}",
+            out.status.code(),
+            args,
+            String::from_utf8_lossy(&out.stderr),
+        );
+    }
+    let v: Value = serde_json::from_slice(&out.stdout).expect("stdout is valid JSON");
+    if let Some(sub) = args.first() {
+        if let Some(tool) = tool_for_subcommand(sub) {
+            assert_tool_output_shape(args, &out);
+            validate_or_panic(tool, &v);
+        }
+    }
+    v
+}
+
+fn assert_tool_output_shape(args: &[&str], out: &std::process::Output) {
+    assert!(
+        out.stderr.is_empty(),
+        "successful tool subcommand {args:?} wrote stderr:\n{}",
+        String::from_utf8_lossy(&out.stderr),
+    );
+    assert!(
+        out.stdout.ends_with(b"\n") && out.stdout.iter().filter(|b| **b == b'\n').count() == 1,
+        "default tool output must be one compact JSON line for args {args:?}; stdout:\n{}",
+        String::from_utf8_lossy(&out.stdout),
+    );
+}
+
+/// Destructure the standard `{matches, matchesReturned, matchesTotal}`
+/// envelope. Panics on shape mismatch.
+pub fn assert_envelope(v: &Value) -> (&Vec<Value>, u64, u64) {
+    let matches = v
+        .get("matches")
+        .and_then(Value::as_array)
+        .expect("`matches` is an array");
+    let returned = v
+        .get("matchesReturned")
+        .and_then(Value::as_u64)
+        .expect("`matchesReturned` is u64");
+    let total = v
+        .get("matchesTotal")
+        .and_then(Value::as_u64)
+        .expect("`matchesTotal` is u64");
+    (matches, returned, total)
+}
+
+/// Category list discovered from the running binary's own `info` output —
+/// the canonical taxonomy (owned by zsh-core / baked into the binary).
+/// Using this as the source of truth for test inputs means new categories
+/// are automatically covered without hand-typed constants.
+pub fn doc_categories() -> &'static [String] {
+    static CATS: OnceLock<Vec<String>> = OnceLock::new();
+    CATS.get_or_init(|| {
+        let v = run_json(&["info"]);
+        v.get("categories")
+            .and_then(Value::as_array)
+            .expect("`zshref info` emits a `categories` array")
+            .iter()
+            .filter_map(|x| x.as_str().map(str::to_owned))
+            .collect()
+    })
+}
 
 /// Find `tooldef.json` next to the binary's baked corpus; vendored copy
 /// wins over monorepo sibling so a packaged crate validates against the

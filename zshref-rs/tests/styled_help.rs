@@ -65,7 +65,8 @@ fn has_ansi(bytes: &[u8]) -> bool {
 #[test]
 fn explicit_help_and_version_use_stdout() {
     for args in [
-        &["--help"][..],
+        &[][..],
+        &["--help"],
         &["-h"],
         &["--version"],
         &["-V"],
@@ -97,9 +98,9 @@ fn explicit_help_and_version_use_stdout() {
 #[test]
 fn bad_input_routes_to_stderr_with_exit_2() {
     // Covers: unknown subcommand, unknown flag, missing required, missing
-    // positional, bad enum, missing subcommand entirely.
+    // positional, bad enum. Bare invocation (`&[]`) is NOT here — it is an
+    // implicit help request (stdout + exit 0); see CLI-POLICY.md.
     let cases: &[&[&str]] = &[
-        &[],
         &["nope"],
         &["--bogus"],
         &["docs"],
@@ -124,16 +125,14 @@ fn bad_input_routes_to_stderr_with_exit_2() {
 }
 
 #[test]
-fn implicit_usage_on_bad_input_uses_stderr() {
-    let (stdout, stderr) = bad_input_stderr(&[]);
-    assert!(
-        stdout.is_empty(),
-        "missing subcommand should not write stdout:\n{}",
-        String::from_utf8_lossy(&stdout)
-    );
-    assert!(
-        !stderr.is_empty(),
-        "missing subcommand should write usage to stderr"
+fn bare_invocation_emits_full_help_to_stdout() {
+    // CLI-POLICY.md: bare invocation is an implicit help request. Output
+    // is byte-identical to `--help` so all `--help` invariants apply for free.
+    let bare = explicit_stdout(&[], &[("NO_COLOR", "1")]);
+    let explicit = explicit_stdout(&["--help"], &[("NO_COLOR", "1")]);
+    assert_eq!(
+        bare, explicit,
+        "bare `zshref` must emit the same stdout as `zshref --help`",
     );
 }
 

@@ -239,7 +239,7 @@ Two kinds of drift to worry about:
   Rust CI vendored-mode step runs `make cli-vendored-test` and
   `make cli-package`. Drift from stale vendored data surfaces as
   Rust-side test failures against the embedded JSON (record-shape
-  sanity in `corpus.rs::tests`, the `fuzz.rs` proptests, and the
+  sanity in `corpus.rs::tests`, the `properties.rs` proptests, and the
   TS-side `parity.test.ts` against the built binary) or as a package
   build failure.
 - **Schema drift (Rust structs vs. TS JSON shape).** Taxonomy order and
