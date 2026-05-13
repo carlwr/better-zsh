@@ -1,0 +1,37 @@
+#! /usr/bin/env zsh
+# Validate a cli-ux-probe trace JSONL against scripts/trace.schema.json
+# using `check-jsonschema` (pipx). The schema is the contract; this script
+# is a thin invoker.
+#
+# Exit codes:
+#   0 — all present records validate (incl. empty trace: no records to fail)
+#   1 — at least one malformed record
+#   2 — setup error (unreadable file, missing schema)
+#
+# Empty-trace == exit 0 by design: "trace populated" is a separate check
+# (see SKILL.md canonical session step 6); validate-trace only asks
+# "do the records that exist match the schema?".
+#
+# Usage:  validate-trace <path/to/trace.jsonl>
+
+emulate -LR zsh
+set -eu -o pipefail
+
+trace=${1:?usage: validate-trace <trace.jsonl>}
+[[ -r $trace ]] || { print -ru2 -- "not readable: $trace"; exit 2 }
+
+schema=${0:A:h}/trace.schema.json
+[[ -r $schema ]] || { print -ru2 -- "schema not found: $schema"; exit 2 }
+
+scratch=$(mktemp -d -- "${TMPDIR:-/tmp}/cli-ux-probe-validate.XXXXXXXX")
+trap 'rm -rf -- "$scratch"' EXIT
+
+# Split JSONL into per-line files so check-jsonschema's multi-file mode can
+# validate everything in one process startup.
+awk -v out="$scratch" 'NF { fname = sprintf("%s/L%07d.json", out, NR); print > fname; close(fname) }' "$trace"
+
+setopt nullglob
+files=("$scratch"/*.json)
+(( $#files )) || { print -ru2 -- "no records in $trace"; exit 0 }
+
+check-jsonschema --schemafile "$schema" "$files[@]"

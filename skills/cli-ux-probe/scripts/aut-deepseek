@@ -1,0 +1,215 @@
+#!/usr/bin/env python3
+"""
+cli-ux-probe AUT runner: Deepseek chat-completions API direct (stdlib only).
+
+Why not via opencode: opencode's `--format json` truncates the event stream for
+deepseek (no `step_finish` → no token data). Direct API gives precise token
+counts (incl. `reasoning_tokens`) and exposes `reasoning_content` on every turn.
+
+Reads DEEPSEEK_API_KEY from env. Models supported: any model id deepseek's
+`/v1/models` exposes (today: `deepseek-v4-flash`, `deepseek-v4-pro`). Use
+`--reasoning-effort low|medium|high|max|xhigh` to tune.
+
+Agent loop: registers a single `bash` tool. Tool calls shell out via
+`subprocess.run(..., shell=True)` inheriting PATH/env from the caller — so the
+cli-ux-probe shim catches every invocation, counts, and refuses past the budget.
+
+Output (under --out-dir):
+  final.txt        last assistant content (the AUT's final answer)
+  transcript.json  list of {round, content, reasoning_content, tool_calls,
+                            finish_reason, usage}
+  usage.json       totals: prompt_tokens, completion_tokens, reasoning_tokens,
+                           cache_hit_tokens, cache_miss_tokens, rounds, shim_invs
+
+Dependencies: Python 3 stdlib only (urllib, json, subprocess). No SDK install.
+
+The script does NOT enforce the invocation budget — that's the shim's job. It
+caps the round count (`--max-rounds`) to prevent runaway loops.
+"""
+import argparse, json, os, pathlib, subprocess, sys, time, urllib.request, urllib.error
+
+
+API_URL = "https://api.deepseek.com/v1/chat/completions"
+
+
+def parse_args():
+    p = argparse.ArgumentParser(description="Deepseek API AUT runner for cli-ux-probe")
+    p.add_argument("--model", required=True,
+                   help="deepseek model id (e.g. deepseek-v4-flash, deepseek-v4-pro)")
+    p.add_argument("--reasoning-effort", default=None,
+                   choices=["low", "medium", "high", "max", "xhigh"])
+    p.add_argument("--prompt-file", required=True,
+                   help="path to a file containing the user prompt (single user turn, no chat template)")
+    p.add_argument("--out-dir", required=True)
+    p.add_argument("--scratch-dir",
+                   help="cwd for tool-call subprocesses (default: $PWD)")
+    p.add_argument("--max-rounds", type=int, default=20)
+    p.add_argument("--timeout-per-call", type=int, default=180,
+                   help="HTTP timeout per chat-completion request")
+    p.add_argument("--retries", type=int, default=2,
+                   help="retries on transient HTTP errors (exp backoff)")
+    p.add_argument("--no-tools", action="store_true",
+                   help="register no tools (knowledge-only / reverse-comprehension arm-1)")
+    return p.parse_args()
+
+
+def post_json(url, headers, body, timeout):
+    data = json.dumps(body).encode("utf-8")
+    req = urllib.request.Request(url, data=data, headers=headers, method="POST")
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        return json.loads(r.read().decode("utf-8"))
+
+
+def main():
+    a = parse_args()
+    api_key = os.environ.get("DEEPSEEK_API_KEY")
+    if not api_key:
+        sys.stderr.write("ERROR: DEEPSEEK_API_KEY not set.\n")
+        sys.exit(2)
+
+    out = pathlib.Path(a.out_dir)
+    out.mkdir(parents=True, exist_ok=True)
+    scratch = pathlib.Path(a.scratch_dir) if a.scratch_dir else pathlib.Path.cwd()
+    if not scratch.exists():
+        scratch.mkdir(parents=True, exist_ok=True)
+
+    prompt = pathlib.Path(a.prompt_file).read_text()
+
+    tools = [] if a.no_tools else [{
+        "type": "function",
+        "function": {
+            "name": "bash",
+            "description": "Run a single shell command and return its stdout (truncated to 16 KB). stderr is appended after a [stderr] header. The command may invoke any CLI on PATH.",
+            "parameters": {
+                "type": "object",
+                "properties": {"command": {"type": "string"}},
+                "required": ["command"]
+            }
+        }
+    }]
+
+    messages = [{"role": "user", "content": prompt}]
+    transcript = []
+    total = {"prompt_tokens": 0, "completion_tokens": 0, "reasoning_tokens": 0,
+             "cache_hit_tokens": 0, "cache_miss_tokens": 0, "rounds": 0,
+             "shim_invocations": 0}
+    final_text = ""
+
+    headers = {"Authorization": f"Bearer {api_key}",
+               "Content-Type": "application/json"}
+
+    def call_api(body):
+        last_err = None
+        for attempt in range(a.retries + 1):
+            try:
+                return post_json(API_URL, headers, body, a.timeout_per_call)
+            except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError) as e:
+                last_err = e
+                time.sleep(2 ** attempt)
+        raise last_err
+
+    for round_i in range(a.max_rounds):
+        body = {"model": a.model, "messages": messages}
+        if tools:
+            body["tools"] = tools
+        if a.reasoning_effort:
+            body["reasoning_effort"] = a.reasoning_effort
+        try:
+            resp = call_api(body)
+        except Exception as e:  # noqa: BLE001
+            sys.stderr.write(f"ERROR: API call failed after retries: {e}\n")
+            (out / "error.txt").write_text(f"API failure: {e}\n")
+            break
+
+        u = resp.get("usage", {})
+        total["prompt_tokens"]     += u.get("prompt_tokens", 0)
+        total["completion_tokens"] += u.get("completion_tokens", 0)
+        ctd = u.get("completion_tokens_details") or {}
+        rt = ctd.get("reasoning_tokens", 0) or 0
+        total["reasoning_tokens"]  += rt
+        total["cache_hit_tokens"]  += u.get("prompt_cache_hit_tokens", 0) or 0
+        total["cache_miss_tokens"] += u.get("prompt_cache_miss_tokens", 0) or 0
+        total["rounds"] = round_i + 1
+
+        choice = resp["choices"][0]
+        msg = choice["message"]
+        tool_calls = msg.get("tool_calls") or []
+
+        transcript.append({
+            "round": round_i,
+            "content": msg.get("content"),
+            "reasoning_content": msg.get("reasoning_content"),
+            "finish_reason": choice.get("finish_reason"),
+            "tool_calls": [
+                {"id": tc["id"], "name": tc["function"]["name"], "arguments": tc["function"]["arguments"]}
+                for tc in tool_calls
+            ],
+            "usage": {"prompt_tokens": u.get("prompt_tokens"),
+                      "completion_tokens": u.get("completion_tokens"),
+                      "reasoning_tokens": rt}
+        })
+
+        # Assistant turn — deepseek requires:
+        #   - `content` as a string (even if empty)
+        #   - `tool_calls` echoed verbatim if any
+        #   - `reasoning_content` echoed back when thinking-mode was active
+        assistant_msg = {"role": "assistant", "content": msg.get("content") or ""}
+        if msg.get("reasoning_content"):
+            assistant_msg["reasoning_content"] = msg["reasoning_content"]
+        if tool_calls:
+            assistant_msg["tool_calls"] = tool_calls
+        messages.append(assistant_msg)
+
+        if not tool_calls:
+            final_text = msg.get("content") or ""
+            break
+
+        # execute tool calls
+        for tc in tool_calls:
+            if tc["function"]["name"] != "bash":
+                tool_result = f"ERROR: unknown tool '{tc['function']['name']}'"
+            else:
+                try:
+                    args = json.loads(tc["function"]["arguments"] or "{}")
+                except Exception:
+                    args = {}
+                cmd = (args.get("command") or "").strip()
+                if not cmd:
+                    tool_result = "ERROR: empty command"
+                else:
+                    try:
+                        r = subprocess.run(
+                            cmd, shell=True, capture_output=True, text=True,
+                            timeout=60, cwd=str(scratch))
+                        out_text = r.stdout or ""
+                        if r.stderr:
+                            out_text += "\n[stderr]\n" + r.stderr
+                        if r.returncode != 0:
+                            out_text = f"[exit={r.returncode}]\n" + out_text
+                        tool_result = out_text[:16000]
+                    except subprocess.TimeoutExpired:
+                        tool_result = "ERROR: command timed out"
+                    except Exception as e:  # noqa: BLE001
+                        tool_result = f"ERROR: {e}"
+            messages.append({"role": "tool", "tool_call_id": tc["id"], "content": tool_result})
+
+    # invocation count from shim's .invcount marker (dots, one per invocation)
+    trace_file = os.environ.get("CLI_UX_PROBE_TRACE_FILE")
+    if trace_file:
+        invcount = pathlib.Path(trace_file + ".invcount")
+        if invcount.exists():
+            try:
+                total["shim_invocations"] = len(invcount.read_text().strip())
+            except Exception:
+                pass
+
+    (out / "final.txt").write_text(final_text)
+    (out / "transcript.json").write_text(json.dumps(transcript, indent=2, ensure_ascii=False))
+    (out / "usage.json").write_text(json.dumps(total, indent=2))
+    print(f"MODEL={a.model} ROUNDS={total['rounds']} SHIM_INVS={total['shim_invocations']} "
+          f"TOKENS={total['prompt_tokens']}/{total['completion_tokens']} "
+          f"(reasoning {total['reasoning_tokens']})")
+
+
+if __name__ == "__main__":
+    main()

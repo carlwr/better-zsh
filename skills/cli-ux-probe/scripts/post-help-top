@@ -1,0 +1,30 @@
+#!/usr/bin/env -S jq -srf
+
+# post-help (top-level) — emit AUT invocations performed AFTER the trace's
+# first top-level help call; drop pre-help guesses and the help calls
+# themselves. Input shape: scripts/trace.schema.json. Output: argv joined by
+# single spaces, one record per line.
+#
+# Invoke:
+#   ./post-help-top                <trace.jsonl>
+#   jq -srf post-help-top          <trace.jsonl>
+#
+# See post-help-sub for the per-subcommand variant.
+
+
+# Top-level help — argv[1] in {--help, -h, help} (canonical clap forms), or
+# --help/-h anywhere later in argv (clap-rs mid-argv form).
+def is_top_help:
+     ((.argv[1] // "") | IN("--help","-h","help"))
+  or any(.argv[1:][]?; . == "--help" or . == "-h");
+
+
+# Earliest help-call timestamp; null if no help call.
+(map(select(is_top_help)) | first | .ts // null) as $t0
+
+# Emit non-help records after the boundary, or nothing if no help was called.
+| if $t0 == null then empty
+  else .[]
+       | select(.ts > $t0 and (is_top_help | not))
+       | .argv | join(" ")
+  end

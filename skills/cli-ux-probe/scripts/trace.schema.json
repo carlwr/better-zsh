@@ -1,0 +1,63 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "cli-ux-probe trace record",
+  "description": "One JSON record per shim invocation. The trace file is JSONL: one record per line.",
+  "type": "object",
+  "required": [
+    "ts",
+    "argv",
+    "cwd",
+    "pid",
+    "ppid",
+    "parent_cmd",
+    "stdin",
+    "stdout",
+    "stderr",
+    "exit"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "ts": {
+      "type": "number",
+      "description": "Unix epoch seconds with fractional precision, captured just before the real binary is exec'd."
+    },
+    "argv": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1,
+      "description": "Full argv as seen by the shim. argv[0] is the symlink's basename (the target CLI's name)."
+    },
+    "cwd": {
+      "type": "string",
+      "description": "Working directory of the shim process when invoked."
+    },
+    "pid": {
+      "type": "integer",
+      "description": "Shim's own PID."
+    },
+    "ppid": {
+      "type": "integer",
+      "description": "Parent PID. 0 means lookup failed."
+    },
+    "parent_cmd": {
+      "type": "string",
+      "description": "Best-effort caller-shell command line via `ps -o command=` on the parent PID. When the caller is `bash -c '<line>'` / `zsh -c '<line>'` (typical for agent shell tools) this contains the AUT's pipeline + redirects. If the runner exec's the binary directly without a shell, this is less informative."
+    },
+    "stdin": {
+      "type": "string",
+      "description": "Bytes received on stdin, UTF-8-sanitised. Empty when stdin was a TTY or had no pending data."
+    },
+    "stdout": {
+      "type": "string",
+      "description": "Bytes the real binary wrote to stdout, UTF-8-sanitised. Not truncated."
+    },
+    "stderr": {
+      "type": "string",
+      "description": "Bytes the real binary wrote to stderr, UTF-8-sanitised. Not truncated."
+    },
+    "exit": {
+      "type": "integer",
+      "description": "Exit status of the real binary."
+    }
+  }
+}

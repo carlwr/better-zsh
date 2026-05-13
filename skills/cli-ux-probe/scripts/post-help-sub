@@ -1,0 +1,28 @@
+#!/usr/bin/env -S jq -srf
+
+# post-help (per-subcommand) — as post-help-top, but for one subcommand. Pass
+# SUB via `--arg s <SUB>`. Empty output when help-for-SUB was never called —
+# itself signal (AUTs commonly skip per-subcmd help).
+#
+# Invoke:
+#   ./post-help-sub        --arg s <SUB>   <trace.jsonl>
+#   jq -srf post-help-sub  --arg s <SUB>   <trace.jsonl>
+
+
+# Help-for-SUB — argv[1] == SUB and argv[2] in {--help, -h}, or argv[1] is
+# the `help` subcommand with argv[2] == SUB.
+def is_sub_help($s):
+     ((.argv[1] // "") == $s     and ((.argv[2] // "") | IN("--help","-h")))
+  or ((.argv[1] // "") == "help" and  (.argv[2] // "") == $s               );
+
+
+(map(select(is_sub_help($s))) | first | .ts // null) as $t0
+
+| if $t0 == null then empty
+  else .[]
+       | select(     (.argv[1] // "") == $s
+                 and .ts > $t0
+                 and (is_sub_help($s) | not)
+               )
+       | .argv | join(" ")
+  end

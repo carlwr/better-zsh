@@ -59,6 +59,18 @@ pub fn handle_clap_error(err: clap::Error, _cmd: &mut Command) -> i32 {
             // `err.print()` routes through `anstream::AutoStream` — color
             // gating on NO_COLOR / CLICOLOR_FORCE / TTY is already correct.
             let _ = err.print();
+            if matches!(err.kind(), ErrorKind::InvalidSubcommand) {
+                let mut stderr = std::io::stderr().lock();
+                let _ = writeln!(stderr);
+                let _ = writeln!(
+                    stderr,
+                    "hint: to look up a zsh token, use: zshref docs --key <TOKEN>"
+                );
+                let _ = writeln!(
+                    stderr,
+                    "hint: to find matches by substring, use: zshref search --query <SUBSTRING>"
+                );
+            }
             2
         }
         _ => {

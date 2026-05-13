@@ -1,0 +1,157 @@
+#! /usr/bin/env zsh
+# cli-ux-probe shim — noninteractive CLI passthrough + JSONL trace per
+# invocation. Symlink under the target binary's name into a scratch dir,
+# then PATH-prepend that dir.
+#
+# Env. vars:
+#   see beginning of script
+#
+# Requirements:
+#   jq
+#   check-jsonschema
+
+emulate -LR zsh
+set -eu -o pipefail
+zmodload zsh/datetime zsh/system zsh/zselect
+
+me=${0:t}
+me_full=$0
+
+
+# --- env. vars ---
+
+# real binary (absolute path)
+bin=${CLI_UX_PROBE_REAL_BIN:?must be set}
+[[ -x $bin ]] || {
+  print -ru2 -- "$me: real binary not executable: $bin"
+  exit 127
+}
+
+# trace JSONL file (created if missing)
+trace=${CLI_UX_PROBE_TRACE_FILE:?must be set}
+
+# invocation cap (default: no cap)
+cap=${CLI_UX_PROBE_MAX_INVOCATIONS:-0}
+
+# --- derived variables ---
+
+pid=$$
+f_schema=${me_full:A:h}/trace.schema.json
+
+
+# --- implementation ---
+
+# Race-free invocation budget. Each shim atomically reserves a byte in
+# $f_counter under flock; cap-met → refuse. Delete $f_counter to reset.
+if (( cap > 0 )); then
+  f_counter=$trace.invcount
+  : >> "$f_counter"
+  refused=0
+  (
+    zsystem flock "$f_counter"
+    cur=$(wc -c 2>/dev/null < "$f_counter" | tr -d ' ' || print -- 0)
+    (( cur < cap )) || exit 1
+    print -n . >> "$f_counter"
+  ) || refused=1
+  if (( refused )); then
+    cur=$(wc -c < "$f_counter" | tr -d ' ')
+    print -ru2 -- "$me: invocation budget exhausted ($cur/$cap); refusing"
+    exit 127
+  fi
+fi
+
+scratch=$(mktemp -d -- "${TMPDIR:-/tmp}/cli-ux-probe-shim.XXXXXXXX")
+trap 'rm -rf -- "$scratch"' EXIT
+
+f_stdin=$scratch/stdin
+f_stdout=$scratch/stdout
+f_stderr=$scratch/stderr
+
+# stdin: poll fd 0 briefly so an open-but-inactive pipe (typical of
+# non-interactive callers without redir) doesn't block. zselect -t is 1/100 s.
+: > "$f_stdin"
+if [[ ! -t 0 ]] && zselect -t 20 -r 0 &>/dev/null; then
+  cat > "$f_stdin"
+fi
+
+# parent_cmd: best-effort caller command line. Informative when caller is a
+# shell (`bash -c '<line>'`, typical of agent shell tools); a direct exec
+# yields an empty / less useful value.
+ppid=$(ps -o ppid= -p $pid 2>/dev/null | tr -d ' ' || true)
+parent_cmd=""
+if [[ -n "$ppid" ]]; then
+  parent_cmd=$(ps -o command= -p $ppid 2>/dev/null || true)
+fi
+
+ts=$EPOCHREALTIME
+
+set +e
+"$bin" "$@" < "$f_stdin" > "$f_stdout" 2> "$f_stderr"
+rc=$?
+set -e
+
+cat -- "$f_stdout"
+cat -- "$f_stderr" >&2
+
+# UTF-8 sanitisation for JSON encoding only; agent already saw raw bytes.
+clean() iconv -c -f UTF-8 -t UTF-8
+
+record=$(jq -nc \
+  --arg     argv0      "$me" \
+  --arg     cwd        "$PWD" \
+  --argjson pid        $pid \
+  --argjson ppid       "${ppid:-0}" \
+  --arg     parent_cmd "$parent_cmd" \
+  --arg     ts         "$ts" \
+  --rawfile stdin      <(clean < "$f_stdin" ) \
+  --rawfile stdout     <(clean < "$f_stdout") \
+  --rawfile stderr     <(clean < "$f_stderr") \
+  --argjson exit       $rc \
+  --args \
+  '{ ts: ($ts|tonumber)
+   , argv: ([$argv0] + $ARGS.positional)
+   , cwd: $cwd
+   , pid: $pid
+   , ppid: $ppid
+   , parent_cmd: $parent_cmd
+   , stdin: $stdin
+   , stdout: $stdout
+   , stderr: $stderr
+   , exit: $exit
+   }' \
+  -- "$@")
+
+# Outer-subshell `>>` keeps the write fd open across the lock region. An
+# inner `>>` re-opens inside the lock and tears at ~20% under 50-way
+# concurrency (POSIX close-releases-all-locks).
+: >> "$trace"
+(
+  zsystem flock "$trace"
+  print -r -- "$record"
+) >> "$trace"
+
+# concurrent first-burst marker writes are race-tolerant
+# failures append to $f_invalid for triage
+#
+# schema-check the first record; short-circuit thereafter via $trace.validated. Failures land in $trace.invalid. scripts/validate-trace re-checks all records post-hoc.
+f_marker=$trace.validated
+if [[ ! -e $f_marker ]]
+then
+  if print -r -- "$record" \
+     | check-jsonschema --schemafile "$f_schema" - >/dev/null 2>&1
+  then
+    : > "$f_marker"
+  else
+    f_invalid=$trace.invalid
+    {
+      print -r -- "---"
+      print -r -- "ts=$ts argv=$me $*"
+      print -r -- "record:"
+      print -r -- "$record"
+      print -r -- "validator output:"
+      print -r -- "$record" | check-jsonschema --schemafile "$f_schema" - 2>&1 || true
+    } >> "$f_invalid"
+  fi
+fi
+
+exit $rc
