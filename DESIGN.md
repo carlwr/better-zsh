@@ -193,27 +193,30 @@ Each record keeps its domain identity in a category-specific field:
 - `op`
 - `flag`
 - `key`
-- `sig`
+- `slug`
 
-The parametric `docId` table gives uniform access without renaming fields. `docDisplay` is the public display function — divergence from id (currently only `option`) and consumer guidance: its JSDoc in `zsh-core/taxonomy`.
+The parametric `docId` table gives uniform access without renaming fields. `docDisplay` is the public display function — divergence from id and consumer guidance: its JSDoc in `zsh-core/taxonomy`.
 
-### Redirection: full-signature identity, auxiliary brands
+Ids are **shell-safe slugs** — printable ASCII, no whitespace, non-empty. The surface `sig`/`_display` fields keep the human-readable form (with spaces, placeholders). Invariants enforced by `packages/zsh-core/src/test/corpus-ascii.test.ts`.
 
-- Identity is the full signature, not the leading operator (`RedirDoc` JSDoc in `zsh-core/types`).
+### Redirection: shell-safe slug identity, sig surface
+
+- Identity is `slug`, derived from `sig` by replacing whitespace with `_` (`>_word`, `<<[-]_word`). `sig` keeps the upstream form (`> word`).
 - `groupOp` is the shared lookup bucket; the resolver disambiguates by tail — corpus-aware, not plain map lookup.
+- Both forms round-trip through `docs`: direct on `slug`, close-variant resolver on `sig`.
 - `OptFlag` and `RedirOp` are secondary-index brands outside the `Observed`/`Documented` split.
 
 ### History expansion: grammar components, not independent tokens
 
 `history_expn` resembles short-key categories structurally but models **components** of `![event][:word][:modifier…]`, not parallel standalone tokens. A bare `^` or `:h` is not a zsh token in isolation — unlike `glob_op`, where each record is a single user-code token.
 
-- **Corpus keys are templates** (`!n`, `!str`, `h [ digits ]`, …).
+- **Corpus keys are templates** (`!n`, `!str`, `h`, …). For modifiers, the id is the bare letter (`h`) and `sig` keeps the documented form (`h [ digits ]`).
 - **`resolveHistory` is intentionally narrow** — event-designators only (same "totality, not utility" posture as `param_expn`); details and the future-`src/analysis/` placement: its JSDoc in `zsh-core/resolver`.
 - **`kind` is the typed facet** — search exposes `subKind` from each record's `kind`.
 
 ### Parameter-expansion identity and shape
 
-Identity is the full sig (e.g. `${name:-word}` vs `${name-word}` as distinct records), same precedent as redirections. Record details: `ParamExpnDoc` / `ParamExpnSubKind` JSDoc in `zsh-core/types`.
+Identity is the full sig (e.g. `${name:-word}` vs `${name-word}` as distinct records) — sigs are already shell-safe slugs (printable ASCII, no whitespace). Record details: `ParamExpnDoc` / `ParamExpnSubKind` JSDoc in `zsh-core/types`.
 
 - **Trivial resolver for totality** — sigs are literal templates; the resolver entry exists only to keep completeness guards closed. `param_expn` entry comment in `zsh-core/resolver`.
 - **Placeholders via an exact-string table** — one source of truth for `subKind` and operand-slot names; bad renames fail at extraction, not as garbage markdown.

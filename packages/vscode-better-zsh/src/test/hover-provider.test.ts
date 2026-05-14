@@ -61,7 +61,8 @@ const o = (name: string, category: ZshOption["category"]): ZshOption => ({
 
 const r = (groupOp: string, sig: string, desc: string): RedirDoc => ({
   groupOp: mkRedirOp(groupOp),
-  sig: mkDocumented("redirection", sig),
+  slug: mkDocumented("redirection", sig.replace(/\s+/g, "_")),
+  sig,
   desc,
   section: "",
 })
@@ -122,7 +123,7 @@ const corpus: DocCorpus = {
   complex_command: by("name", [cc("for", "d:cc-for")]),
   reserved_word: by("name", [rw("for", "d:rw-for"), rw("do", "d:rw-do")]),
   special_param: by("name", [p("SECONDS", "d:s")]),
-  redirection: by("sig", [
+  redirection: by("slug", [
     r(">&", ">& number", "d:n"),
     r(">&", ">& -", "d:-"),
     r(">&", ">& p", "d:p"),

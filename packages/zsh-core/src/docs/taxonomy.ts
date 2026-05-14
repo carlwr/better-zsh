@@ -200,7 +200,7 @@ export const docId: {
   special_param: d => d.name,
   complex_command: d => d.name,
   reserved_word: d => d.name,
-  redirection: d => d.sig,
+  redirection: d => d.slug,
   process_subst: d => d.op as Documented<"process_subst">,
   param_expn: d => d.sig,
   subscript_flag: d => d.flag,
@@ -220,19 +220,38 @@ export const docId: {
 /**
  * Display heading for a doc record; may differ from the typed id.
  *
- * For most categories the display is the id verbatim. `option` diverges: its
- * `.display` preserves human-oriented case and underscores (`AUTO_CD`) while
- * its `.name` is the normalized lookup key (`autocd`). Consumers that render
- * doc records to users (hover UIs, MCP tool responses, dumps) should prefer
- * this function over reading identity fields directly.
+ * The id is a shell-safe slug (printable ASCII, no whitespace) suitable as a
+ * stable lookup key; the display is the human-readable surface form. Most
+ * categories collapse the two — display equals id verbatim. Divergent
+ * categories:
+ *
+ * - `option`: id is the normalized lookup key (`autocd`); display preserves
+ *   upstream case and underscores (`AUTO_CD`).
+ * - `redirection`: id is `slug` (`>_word`); display is `sig` (`> word`).
+ * - `param_expn_flag`, `subscript_flag`: id is the bare flag letter (`j`);
+ *   display is the full sig with placeholders (`j:string:`).
+ * - `history_expn`: id is the bare letter for modifiers (`h`); display is
+ *   the full sig (`h [ digits ]`). Event/word designators are unchanged.
+ *
+ * Consumers that render doc records to users (hover UIs, MCP tool responses,
+ * dumps) should prefer this function over reading identity fields directly.
  */
 export const docDisplay = <K extends DocCategory>(
   cat: K,
   doc: DocRecordMap[K],
-): string =>
-  cat === "option"
-    ? (doc as ZshOption).display
-    : (docId[cat](doc as never) as string)
+): string => {
+  switch (cat) {
+    case "option":
+      return (doc as ZshOption).display
+    case "redirection":
+    case "param_expn_flag":
+    case "subscript_flag":
+    case "history_expn":
+      return (doc as { readonly sig: string }).sig
+    default:
+      return docId[cat](doc as never) as string
+  }
+}
 
 /**
  * Optional typed sub-facet of a doc record; `undefined` when a category has

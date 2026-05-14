@@ -254,7 +254,7 @@ fn resolve_parens_agnostic_flag<'c>(
     raw: &str,
 ) -> Option<ResolvedHit<'c>> {
     let t = raw.trim();
-    if let Some(h) = find_by_id(corpus, cat_name, t, None) {
+    if let Some(h) = try_flag_key(corpus, cat_name, t) {
         return Some(h);
     }
     if !(t.starts_with('(') && t.ends_with(')') && t.len() >= 2) {
@@ -270,11 +270,35 @@ fn resolve_parens_agnostic_flag<'c>(
     if stripped.is_empty() {
         return None;
     }
-    find_by_id(corpus, cat_name, stripped, None)
+    try_flag_key(corpus, cat_name, stripped)
+}
+
+/// Try a key against the flag map. For categories whose sigs carry argument
+/// placeholders (`param_expn_flag`, `subscript_flag`), accepts the full sig
+/// form (`j:string:`) by stripping args down to the bare flag letter (`j`).
+fn try_flag_key<'c>(corpus: &'c Corpus, cat_name: &str, key: &str) -> Option<ResolvedHit<'c>> {
+    if let Some(h) = find_by_id(corpus, cat_name, key, None) {
+        return Some(h);
+    }
+    if matches!(cat_name, "param_expn_flag" | "subscript_flag") && key.contains(':') {
+        let bare = key.split(':').next().unwrap_or("");
+        if !bare.is_empty() {
+            return find_by_id(corpus, cat_name, bare, None);
+        }
+    }
+    None
 }
 
 fn resolve_redir<'c>(corpus: &'c Corpus, raw: &str) -> Option<ResolvedHit<'c>> {
     let cat = corpus.category("redirection")?;
+    // Sig-form close-variant: the documented sig (e.g. `> word`) maps to its
+    // shell-safe slug (`>_word`) by replacing whitespace with `_`.
+    let sig_slug: String = raw.trim().split_whitespace().collect::<Vec<_>>().join("_");
+    if !sig_slug.is_empty() {
+        if let Some(h) = find_by_id(corpus, "redirection", &sig_slug, None) {
+            return Some(h);
+        }
+    }
     let text = raw.trim().trim_start_matches(|c: char| c.is_ascii_digit());
     if text.is_empty() {
         return None;
@@ -284,12 +308,12 @@ fn resolve_redir<'c>(corpus: &'c Corpus, raw: &str) -> Option<ResolvedHit<'c>> {
     }
     if let Some(delim) = text.strip_prefix("<<-") {
         if !delim.is_empty() {
-            return find_by_id(corpus, "redirection", "<<[-] word", None);
+            return find_by_id(corpus, "redirection", "<<[-]_word", None);
         }
     } else if text.starts_with("<<") && !text.starts_with("<<<") {
         let delim = &text[2..];
         if !delim.is_empty() {
-            return find_by_id(corpus, "redirection", "<<[-] word", None);
+            return find_by_id(corpus, "redirection", "<<[-]_word", None);
         }
     }
 
@@ -311,8 +335,8 @@ fn resolve_redir<'c>(corpus: &'c Corpus, raw: &str) -> Option<ResolvedHit<'c>> {
         entries: &[&(&str, &str, &'c Rec)],
     ) -> Option<ResolvedHit<'c>> {
         if entries.len() == 1 {
-            let (sig, _, rec) = entries[0];
-            Some(make_hit(cat, rec, Some((*sig).to_string()), None))
+            let (_, _, rec) = entries[0];
+            Some(make_hit(cat, rec, None, None))
         } else {
             None
         }

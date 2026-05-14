@@ -96,7 +96,8 @@ const pc: PrecmdDoc = {
 }
 const rd: RedirDoc = {
   groupOp: mkRedirOp(">>"),
-  sig: mkDocumented("redirection", ">> word"),
+  slug: mkDocumented("redirection", ">>_word"),
+  sig: ">> word",
   desc: "d:r",
   section: "",
 }

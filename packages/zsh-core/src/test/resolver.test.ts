@@ -73,13 +73,13 @@ describe("resolveHistory (event designators)", () => {
 
 describe("resolveRedir", () => {
   test.each([
-    ["> file", redir("> word")],
-    ["2>& 1", redir(">& number")],
-    ["<<EOF", redir("<<[-] word")],
-    ["<< EOF", redir("<<[-] word")],
-    ["<<-EOF", redir("<<[-] word")],
-    ["2<<EOF", redir("<<[-] word")],
-    ["2<<-EOF", redir("<<[-] word")],
+    ["> file", redir(">_word")],
+    ["2>& 1", redir(">&_number")],
+    ["<<EOF", redir("<<[-]_word")],
+    ["<< EOF", redir("<<[-]_word")],
+    ["<<-EOF", redir("<<[-]_word")],
+    ["2<<EOF", redir("<<[-]_word")],
+    ["2<<-EOF", redir("<<[-]_word")],
   ] as const)("%s resolves to the matching redirection doc", (raw, expected) => {
     expect(resolve(corpus, "redirection", raw)).toEqual({
       category: "redirection",
@@ -92,6 +92,17 @@ describe("resolveRedir", () => {
     "<<-",
   ])("incomplete here-document %s does not resolve", raw => {
     expect(resolve(corpus, "redirection", raw)).toBeUndefined()
+  })
+
+  test.each([
+    ["> word", redir(">_word")],
+    [">& number", redir(">&_number")],
+    ["<<[-] word", redir("<<[-]_word")],
+  ] as const)("full sig form %s resolves to the slug id", (raw, expected) => {
+    expect(resolve(corpus, "redirection", raw)).toEqual({
+      category: "redirection",
+      id: expected,
+    })
   })
 })
 
@@ -106,6 +117,9 @@ describe("parens-agnostic flag resolvers", () => {
       ["(w)", subFlag("w")],
       ["e", subFlag("e")],
       ["(e)", subFlag("e")],
+      // full-sig close-variant: strip args down to the bare flag letter
+      ["e:string:", subFlag("e")],
+      ["(e:string:)", subFlag("e")],
     ] as const)("%s -> %s", (raw, expected) => {
       expect(resolve(corpus, "subscript_flag", raw)).toEqual({
         category: "subscript_flag",
@@ -124,6 +138,9 @@ describe("parens-agnostic flag resolvers", () => {
       ["(@)", parFlag("@")],
       ["U", parFlag("U")],
       ["(U)", parFlag("U")],
+      // full-sig close-variant: strip args down to the bare flag letter
+      ["j:string:", parFlag("j")],
+      ["(j:string:)", parFlag("j")],
     ] as const)("%s -> %s", (raw, expected) => {
       expect(resolve(corpus, "param_expn_flag", raw)).toEqual({
         category: "param_expn_flag",
@@ -131,7 +148,7 @@ describe("parens-agnostic flag resolvers", () => {
       })
     })
 
-    test.each(["Z", "(Z)", ""])("%s -> undefined", raw => {
+    test.each(["Y", "(Y)", ""])("%s -> undefined", raw => {
       expect(resolve(corpus, "param_expn_flag", raw)).toBeUndefined()
     })
   })

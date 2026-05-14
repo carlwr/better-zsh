@@ -16,7 +16,8 @@ export function parseRedirs(yo: string | YNodeSeq): readonly RedirDoc[] {
     normalizeHeader,
     (sig, desc) => ({
       groupOp: mkRedirOp(sig.match(/^\S+/)?.[0] ?? sig),
-      sig: mkDocumented("redirection", sig),
+      slug: mkDocumented("redirection", sig.replace(/\s+/g, "_")),
+      sig,
       desc,
       section: "Redirection",
     }),

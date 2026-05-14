@@ -37,7 +37,7 @@ import { mkDocumented } from "./brands.ts"
 import type { DocCorpus } from "./corpus.ts"
 import { normalizeOptName } from "./normalize-option.ts"
 import { type DocCategory, type DocPieceId, mkPieceId } from "./taxonomy.ts"
-import type { Documented } from "./types.ts"
+import type { Documented, RedirDoc } from "./types.ts"
 
 // --- Resolvers --------------------------------------------------------------
 //
@@ -98,6 +98,10 @@ function resolveRedir(
 ): Documented<"redirection"> | undefined {
   const literal = mkDocumented("redirection", raw)
   if (c.redirection.has(literal)) return literal
+  // Sig-form close-variant: the documented sig (e.g. `> word`) maps to its
+  // shell-safe slug (`>_word`) by replacing whitespace with `_`.
+  const sigSlug = mkDocumented("redirection", raw.trim().replace(/\s+/g, "_"))
+  if (c.redirection.has(sigSlug)) return sigSlug
   return resolveByKey(c, "redirection", raw, t => matchRedirKey(c, t))
 }
 
@@ -111,30 +115,27 @@ function matchRedirKey(c: DocCorpus, t: string): string | undefined {
   if (!text || /^<<-?$/.test(text)) return undefined
 
   const matches = [...c.redirection.values()]
-    .map(doc => redirMatch(doc.sig, doc.groupOp, text))
+    .map(doc => redirMatch(doc, text))
     .filter((m): m is RedirMatch => m !== undefined)
 
   const longest = Math.max(...matches.map(m => m.groupLen), -1)
   const hit = matches.filter(m => m.groupLen === longest)
-  return hit.length === 1 ? hit[0]?.sig : undefined
+  return hit.length === 1 ? hit[0]?.slug : undefined
 }
 
 interface RedirMatch {
-  readonly sig: string
+  readonly slug: string
   readonly groupLen: number
 }
 
-function redirMatch(
-  sig: Documented<"redirection">,
-  groupOp: string,
-  text: string,
-): RedirMatch | undefined {
+function redirMatch(doc: RedirDoc, text: string): RedirMatch | undefined {
+  const { sig, slug, groupOp } = doc
   const group = groupOp === "<<[-]" ? "<<-?" : escapeRegExp(groupOp)
   const tail = docTail(sig, groupOp.length)
   const tailPat =
     groupOp === "<<[-]" ? String.raw`\s*\S.*` : redirTailPattern(groupOp, tail)
   const m = text.match(new RegExp(`^(${group})${tailPat}$`))
-  return m ? { sig, groupLen: m[1]?.length ?? 0 } : undefined
+  return m ? { slug, groupLen: m[1]?.length ?? 0 } : undefined
 }
 
 function redirTailPattern(groupOp: string, tail: string): string {
@@ -211,15 +212,38 @@ function parensAgnosticFlagResolver<
   return (c, raw) => {
     const map = c[cat] as ReadonlyMap<string, unknown>
     const t = raw.trim()
-    const direct = mkDocumented(cat, t)
-    if (map.has(direct as string)) return direct
+    const direct = tryFlagKey(cat, map, t)
+    if (direct) return direct
 
-    const key = flagInnerKey(cat, t)
-    if (!key) return undefined
-
-    const id = mkDocumented(cat, key)
-    return map.has(id as string) ? id : undefined
+    const inner = flagInnerKey(cat, t)
+    if (!inner) return undefined
+    return tryFlagKey(cat, map, inner)
   }
+}
+
+/**
+ * Try a key against the flag map. For categories whose sigs carry argument
+ * placeholders (`param_expn_flag`, `subscript_flag`), accepts the full sig
+ * form (`j:string:`) by stripping args down to the bare flag letter (`j`).
+ */
+function tryFlagKey<K extends DocCategory>(
+  cat: K,
+  map: ReadonlyMap<string, unknown>,
+  key: string,
+): Documented<K> | undefined {
+  const id = mkDocumented(cat, key)
+  if (map.has(id as string)) return id
+  if (
+    (cat === "param_expn_flag" || cat === "subscript_flag") &&
+    key.includes(":")
+  ) {
+    const bare = key.split(":")[0] ?? ""
+    if (bare) {
+      const bareId = mkDocumented(cat, bare)
+      if (map.has(bareId as string)) return bareId
+    }
+  }
+  return undefined
 }
 
 function flagInnerKey(

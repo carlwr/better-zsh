@@ -30,14 +30,21 @@ function parseSection(
   return flattenAliasedEntries(
     extractItemList(list),
     normalizeHeader,
-    (key, desc) => ({
+    (sig, desc) => ({
       kind,
-      key: mkDocumented("history_expn", key),
-      sig: key,
+      key: mkDocumented(
+        "history_expn",
+        kind === "modifier" ? modifierBareKey(sig) : sig,
+      ),
+      sig,
       desc,
       section,
     }),
   )
+}
+
+function modifierBareKey(sig: string): string {
+  return /^[A-Za-z&]+/.exec(sig)?.[0] ?? sig
 }
 
 function parseWordDesignators(yo: string | YNodeSeq): HistoryDoc[] {

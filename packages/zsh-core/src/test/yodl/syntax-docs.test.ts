@@ -163,7 +163,7 @@ enditem()`
         expectDocCorpus({
           docs: parseSubscriptFlags(PARAMS_YO),
           minCount: 10,
-          keyOf: doc => doc.flag,
+          keyOf: doc => doc.sig,
           descOf: doc => doc.desc,
           sectionOf: doc => doc.section,
           known: ["w", "s:string:", "n:expr:", "R"],
@@ -221,7 +221,7 @@ enditem()`
             "word-designator:0",
             "word-designator:x-",
             "modifier:a",
-            "modifier:s/l/r[/]",
+            "modifier:s",
           ],
         }),
     ],
@@ -309,7 +309,10 @@ enditem()`
   test("normalized syntax-doc identity fields are idempotent", () => {
     const t = [
       [parseRedirs(REDIR_YO).map(doc => doc.groupOp), mkRedirOp],
-      [parseRedirs(REDIR_YO).map(doc => doc.sig), mkDocumented_("redirection")],
+      [
+        parseRedirs(REDIR_YO).map(doc => doc.slug),
+        mkDocumented_("redirection"),
+      ],
       [
         parseReswords(GRAMMAR_YO).map(doc => doc.name),
         mkDocumented_("reserved_word"),

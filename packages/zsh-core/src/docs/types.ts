@@ -269,9 +269,14 @@ export interface ComplexCommandDoc extends SyntaxDocBase {
   readonly bodyKeywords: readonly string[]
 }
 
-export interface RedirDoc extends SyntaxDocBase<Documented<"redirection">> {
-  /** Full signature is the doc identity; `groupOp` is only the shared lookup bucket. */
-  readonly sig: Documented<"redirection">
+export interface RedirDoc extends SyntaxDocBase {
+  /**
+   * Shell-safe doc identity (lookup key). Derived from `sig` by replacing
+   * spaces with `_` (e.g. `"> word"` → `">_word"`, `"<<[-] word"` → `"<<[-]_word"`).
+   */
+  readonly slug: Documented<"redirection">
+  /** Human-readable signature from the upstream manual; not the identity. */
+  readonly sig: string
   /** Grouping token only; multiple redirection docs share the same `groupOp`. */
   readonly groupOp: RedirOp
 }
@@ -315,8 +320,7 @@ export type ParamExpnSubKind =
  * One record per sig. Related sigs that share a doc chunk in the upstream
  * manual (e.g. the three `replace` variants) carry identical `desc`; each
  * record also knows every sibling in its group via `groupSigs` (manual source
- * order) and its own position via `orderInGroup`. This mirrors the "full sig
- * is the identity" precedent from `RedirDoc`.
+ * order) and its own position via `orderInGroup`.
  */
 export interface ParamExpnDoc extends SyntaxDocBase<Documented<"param_expn">> {
   readonly sig: Documented<"param_expn">

@@ -55,9 +55,9 @@ function parseFlagSection<T>(
   return withBody(extractItems(extractSectionBody(yo, section), 1)).map(
     item => {
       const sig = normalizeHeader(item.header)
-      const { args } = splitFlagSig(sig)
+      const { flag, args } = splitFlagSig(sig)
       return {
-        flag: mkFlag(sig),
+        flag: mkFlag(flag),
         args,
         sig,
         desc: normalizeBody(item.body),

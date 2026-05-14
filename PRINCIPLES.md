@@ -155,7 +155,7 @@ Not a separate type or interface — both roles use the same `DocCategory` machi
 
 - `name` for builtin
 - `op` for conditional_op
-- `sig` for redirection
+- `slug` for redirection
 - `flag` for glob_flag
 
 A shared `id` field name would obscure, not clarify. Per-category record shapes: JSDoc in `zsh-core/types`.
