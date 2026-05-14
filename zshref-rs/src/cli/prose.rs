@@ -2,8 +2,10 @@
 
 // Prose strings in this file are hand-written by a human. Agents making changes to this file must approach with great care.
 
-use crate::corpus::ToolDef;
+use crate::corpus::{Corpus, ToolDef, ToolDefs};
+use crate::tools;
 use indoc::{formatdoc, indoc};
+use serde_json::json;
 
 pub const BIN: &str = "zshref";
 
@@ -17,7 +19,8 @@ pub const ROOT_LONG: &str = ROOT_BRIEF;
 
 // Hand-aligned so tool subcommands line up across columns.
 //
-// Single-letter placeholders for option-args are deliberate; make the table-like Usage: possible. Sub-command placeholders are full-word; this inconsistency is accepted.
+// Single-letter placeholders for option-args are deliberate; this makes the table-like Usage: possible. Placeholders in _subcommand_ help are full-word; this inconsistency is accepted.
+//
 //
 //                    spending the entirety of the
 //                    project strangeness budget on
@@ -95,31 +98,41 @@ pub const VERSION_FLAG_HELP: &str = "print version";
 
 pub const ROOT_PRETTY_HELP: &str = "emit indented multi-line JSON (default: compact JSON)";
 
-pub const BATCH_LONG: &str = indoc! {r#"
-    JSONL request/response mode for tests and IPC.
+pub fn batch_long(tool_defs: &ToolDefs, corpus: &Corpus) -> String {
+    let example = batch_example(tool_defs, corpus);
+    formatdoc! {r#"
+        JSONL request/response mode for tests and IPC.
 
-    Input: one request object per non-empty stdin line:
-    {
-      "tool": "zsh_docs",
-      "input": {}
-    }
+        Tool names follow the pattern `zsh_<verb>` and correspond to the CLI subcommand `<verb>` (e.g. `zsh_docs` ↔ `zshref docs`).
 
-    Success response:
-    {
-      "ok": true,
-      "output": {}
-    }
+        {example}
 
-    Error response:
-    {
-      "ok": false,
-      "error": "..."
-    }
+        Error response shape:
+        {{
+          "ok": false,
+          "error": "..."
+        }}
 
-    Per-request errors are in-band. Exit code is 0 unless stdin I/O fails. The protocol requires one response line per request.
+        Per-request errors are in-band. Exit code is 0 unless stdin I/O fails. The protocol requires one response line per request.
 
-    Request `input` schemas: `zshref schema`.
-"#};
+        The request format is documented through a schema; see `zshref schema --help`.
+    "#}
+}
+
+fn batch_example(tool_defs: &ToolDefs, corpus: &Corpus) -> String {
+    let td = tool_defs
+        .tools
+        .iter()
+        .find(|t| t.name == "zsh_search")
+        .expect("batch help example needs zsh_search tooldef");
+    let input = json!({ "query": "autolo", "limit": 1 });
+    let output = tools::dispatch(td, &input, corpus).expect("batch help example must run");
+    let envelope = json!({ "ok": true, "output": output });
+    let compact = serde_json::to_string(&envelope).expect("envelope serializes");
+    let command =
+        r#"echo '{"tool":"zsh_search","input":{"query":"autolo","limit":1}}' | zshref batch"#;
+    shell_example(command, &compact)
+}
 
 pub fn schema_long(words: usize, _leaves: usize) -> String {
     formatdoc! {"

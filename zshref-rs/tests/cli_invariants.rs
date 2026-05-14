@@ -6,7 +6,9 @@
 
 mod common;
 
-use common::{doc_categories, locate_tooldef_json, run_json, validate_or_panic, BIN};
+use common::{
+    assert_envelope, doc_categories, locate_tooldef_json, run_json, validate_or_panic, BIN,
+};
 use serde_json::{json, Value};
 use std::process::Command;
 use std::sync::OnceLock;
@@ -174,6 +176,48 @@ fn cli_equals_batch() {
         let mut batch = run_batch(&[json!({ "tool": tool, "input": input })]);
         assert_eq!(batch.len(), 1);
         assert_eq!(cli, batch.remove(0), "{tool}: cli != batch");
+    }
+}
+
+/// `--limit` above corpus size must clamp silently: exit 0, full result
+/// set returned. Pins the schema's "no upper bound" contract — see
+/// `packages/zsh-core-tooldef/src/tools/shared/limits.ts` (no `maximum`).
+/// Mirrored in batch input to pin CLI ↔ batch parity under clamping.
+#[test]
+fn limit_above_corpus_clamps_silently() {
+    let cases: &[(&str, &[&str], Value)] = &[
+        (
+            "zsh_list",
+            &["list", "--limit=999999"],
+            json!({"limit": 999_999}),
+        ),
+        (
+            "zsh_search",
+            &["search", "--query=echo", "--limit=999999"],
+            json!({"query": "echo", "limit": 999_999}),
+        ),
+    ];
+    for (tool, args, input) in cases {
+        let v = run_json(args);
+        let (matches, returned, total) = assert_envelope(&v);
+        assert!(total > 0, "{tool}: vacuous baseline (matchesTotal=0)");
+        assert_eq!(
+            matches.len() as u64,
+            returned,
+            "{tool}: matches.len() != matchesReturned"
+        );
+        assert_eq!(
+            returned, total,
+            "{tool}: --limit far above corpus; expected matchesReturned == matchesTotal"
+        );
+
+        let mut batch = run_batch(&[json!({ "tool": tool, "input": input })]);
+        assert_eq!(batch.len(), 1);
+        assert_eq!(
+            v,
+            batch.remove(0),
+            "{tool}: cli != batch under --limit=999999"
+        );
     }
 }
 

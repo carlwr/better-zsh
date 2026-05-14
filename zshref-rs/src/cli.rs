@@ -91,7 +91,7 @@ pub fn build_cli(tool_defs: &ToolDefs, corpus: &Corpus, mode: BuildMode) -> Comm
     root = root.subcommand(with_noop_pretty(
         Command::new("batch")
             .about(prose::BATCH_ABOUT)
-            .after_long_help(prose::BATCH_LONG)
+            .after_long_help(prose::batch_long(tool_defs, corpus))
             .disable_help_flag(true)
             .arg(help_arg()),
         mode,

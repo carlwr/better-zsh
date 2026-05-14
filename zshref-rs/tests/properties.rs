@@ -60,7 +60,7 @@ proptest! {
     }
 
     #[test]
-    fn list_never_crashes(n in 0u32..=20) {
+    fn list_never_crashes(n in 0u32..=200_000) {
         let n_s = n.to_string();
         let v = run_json(&["list", "--limit", &n_s]);
         let (matches, returned, _) = assert_envelope(&v);
@@ -99,7 +99,7 @@ proptest! {
     /// `search --limit N`: returned count ≤ N, returned count ≤ total,
     /// and `matches.len()` must equal `matchesReturned`.
     #[test]
-    fn search_limit_invariant(q in r"\PC{1,20}", n in 0u32..=20) {
+    fn search_limit_invariant(q in r"\PC{1,20}", n in 0u32..=200_000) {
         let n_s = n.to_string();
         let v = run_json(&["search", "--query", &q, "--limit", &n_s]);
         let (matches, returned, total) = assert_envelope(&v);
@@ -122,7 +122,7 @@ proptest! {
     /// Confirms the category filter is a pure pass-through (no leakage
     /// from other categories).
     #[test]
-    fn list_category_filter_is_pure(cat in known_category(), n in 1u32..=20) {
+    fn list_category_filter_is_pure(cat in known_category(), n in 1u32..=200_000) {
         let n_s = n.to_string();
         let v = run_json(&["list", "--category", &cat, "--limit", &n_s]);
         let (matches, _, _) = assert_envelope(&v);
@@ -201,7 +201,7 @@ proptest! {
     /// (exact / resolver / prefix / fuzzy) safe; this catches walk-order
     /// regressions wherever they manifest.
     #[test]
-    fn search_dedup_invariant(q in r"\PC{1,20}", n in 1u32..=50) {
+    fn search_dedup_invariant(q in r"\PC{1,20}", n in 1u32..=200_000) {
         let n_s = n.to_string();
         let v = run_json(&["search", "--query", &q, "--limit", &n_s]);
         let (matches, _, _) = assert_envelope(&v);
@@ -224,7 +224,7 @@ proptest! {
     ///     below `1.0`, no later score may climb back. Catches
     ///     tier-walk reordering regressions.
     #[test]
-    fn search_score_monotone_in_unit_interval(q in r"\PC{1,20}", n in 1u32..=50) {
+    fn search_score_monotone_in_unit_interval(q in r"\PC{1,20}", n in 1u32..=200_000) {
         let n_s = n.to_string();
         let v = run_json(&["search", "--query", &q, "--limit", &n_s]);
         let (matches, _, _) = assert_envelope(&v);

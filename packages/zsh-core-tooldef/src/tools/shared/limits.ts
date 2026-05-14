@@ -16,6 +16,5 @@ export function clampLimit(limit: number | undefined): number {
 export const limitShape: FieldShape = {
   type: "integer",
   minimum: 0,
-  maximum: MAX_LIMIT,
   default: DEFAULT_LIMIT,
 }
