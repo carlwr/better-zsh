@@ -10,4 +10,4 @@
  */
 
 /** Total number of records across every `DocCategory` in the bundled corpus. */
-export const RECORDS_TOTAL = 1128
+export const RECORDS_TOTAL = 1133

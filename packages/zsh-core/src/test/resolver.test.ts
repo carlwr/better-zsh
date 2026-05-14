@@ -13,6 +13,7 @@ const glQual = mkDocumented_("glob_qualifier")
 const jobSpec = mkDocumented_("job_spec")
 const redir = mkDocumented_("redirection")
 const specFn = mkDocumented_("special_function")
+const promptEsc = mkDocumented_("prompt_escape")
 
 describe("resolveHistory (event designators)", () => {
   test.each([
@@ -258,5 +259,28 @@ describe("resolveSpecialFunction", () => {
     "unrelated",
   ])("%s -> undefined", raw => {
     expect(resolve(corpus, "special_function", raw)).toBeUndefined()
+  })
+})
+
+describe("prompt_escape paired sigs (corpus-wide property)", () => {
+  // Catches the regression where a `%X (%x)` header is parsed but only the
+  // starter glyph is emitted. Pre-fix this failed on `%f`, `%b`, `%u`, `%s`,
+  // `%k`. Scoped to paired sigs only — the corpus also contains keys that
+  // legitimately include parentheses (e.g. `%)`, `%(x.true.false)`), so a
+  // blanket `%\S+` scan over all sigs would be ambiguous.
+  test("every paired '%X (%x)' sig has both glyphs resolvable", () => {
+    let pairCount = 0
+    for (const doc of corpus.prompt_escape.values()) {
+      const m = doc.sig.match(/^(%\S+)\s+\(\s*(%\S+)\s*\)\s*$/)
+      if (!m) continue
+      pairCount++
+      for (const tok of [m[1] as string, m[2] as string]) {
+        expect(
+          resolve(corpus, "prompt_escape", tok),
+          `sig=${doc.sig} token=${tok}`,
+        ).toEqual({ category: "prompt_escape", id: promptEsc(tok) })
+      }
+    }
+    expect(pairCount).toBeGreaterThan(0)
   })
 })

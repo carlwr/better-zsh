@@ -1,3 +1,5 @@
+import type { NonEmpty } from "@carlwr/typescript-extra"
+
 import { mkDocumented } from "../../brands.ts"
 import {
   type PromptEscapeDoc,
@@ -5,14 +7,19 @@ import {
   promptSubsections,
 } from "../../types.ts"
 import {
+  collectAliasedEntries,
   extractItems,
-  flattenAliasedEntries,
   parseClosedUnion,
 } from "../core/doc.ts"
 import type { YNodeSeq } from "../core/nodes.ts"
-import { normalizeHeader } from "../core/text.ts"
+import { normalizeBody, normalizeHeader } from "../core/text.ts"
 
 const PROMPT_SUBSECTION_SET: ReadonlySet<string> = new Set(promptSubsections)
+
+interface PromptHead {
+  readonly sig: string
+  readonly keys: NonEmpty<string>
+}
 
 /**
  * Parse prompt expansion escapes from `prompt.yo`.
@@ -22,24 +29,37 @@ const PROMPT_SUBSECTION_SET: ReadonlySet<string> = new Set(promptSubsections)
  * time, Visual effects, Conditional Substrings in Prompts). Header-sig is the
  * rendered header text (e.g. `%n`, `%D{string}`, `%B (%b)`); lookup key is
  * the first whitespace-separated run starting at `%`.
+ *
+ * "Visual effects" entries pair a starter and stopper glyph in one header,
+ * e.g. `item(tt(%F) LPAR()tt(%f)RPAR())`. Both glyphs are emitted as
+ * separate records sharing one body chunk and the full `%X (%x)` sig.
  */
 export function parsePromptEscapes(
   yo: string | YNodeSeq,
 ): readonly PromptEscapeDoc[] {
-  return flattenAliasedEntries(
+  const out: PromptEscapeDoc[] = []
+  for (const aliased of collectAliasedEntries<PromptHead>(
     extractItems(yo, 1),
     header => {
       const sig = normalizeHeader(header)
-      const key = promptKey(sig)
-      return key ? { sig, key } : undefined
+      const keys = promptKeys(sig)
+      return keys ? { sig, keys } : undefined
     },
-    ({ sig, key }, desc, entry) => ({
-      key: mkDocumented("prompt_escape", key),
-      sig,
-      desc,
-      section: parsePromptSubsection(entry.section),
-    }),
-  )
+  )) {
+    const desc = normalizeBody(aliased.entry.body ?? [])
+    const section = parsePromptSubsection(aliased.entry.section)
+    for (const head of [aliased.head, ...aliased.aliases]) {
+      for (const key of head.keys) {
+        out.push({
+          key: mkDocumented("prompt_escape", key),
+          sig: head.sig,
+          desc,
+          section,
+        })
+      }
+    }
+  }
+  return out
 }
 
 function parsePromptSubsection(raw: string): PromptSubsection {
@@ -50,9 +70,15 @@ function parsePromptSubsection(raw: string): PromptSubsection {
   )
 }
 
-/** Extract the `%X` lookup key from a rendered prompt-escape header. */
-function promptKey(sig: string): string {
-  const m = sig.match(/^%\S+/)
-  if (!m) return ""
-  return m[0]
+/**
+ * Extract the `%X` lookup keys from a rendered prompt-escape header.
+ *
+ * Returns one key for solo headers, two for the inline-paired
+ * `%X (%x)` form used in "Visual effects".
+ */
+function promptKeys(sig: string): NonEmpty<string> | undefined {
+  const paired = sig.match(/^(%\S+)\s+\(\s*(%\S+)\s*\)\s*$/)
+  if (paired) return [paired[1] as string, paired[2] as string]
+  const single = sig.match(/^%\S+/)
+  return single ? [single[0]] : undefined
 }
