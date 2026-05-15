@@ -15,7 +15,7 @@ export const buildTasks = {
   test: "pnpm format:check && pnpm test:unit",
   "test:unit": verifiedRecursive("test"),
   "test:scripts": "node --test 'scripts/build/*.test.mjs'",
-  qa: "pnpm check && pnpm test:unit && pnpm test:scripts",
+  qa: "pnpm check && pnpm test:unit && pnpm test:scripts && pnpm cli:qa",
   "test:integration": verifiedRecursive("test:integration"),
   vsix: `${pkg("better-zsh")} vsix`,
   "test:smoke": [
@@ -28,4 +28,7 @@ export const buildTasks = {
   "cli:debug": "make cli-debug",
   "cli:test": "make cli-test",
   "cli:check": "make cli-check",
+  // One make invocation: `cli-test` and `cli-check` both depend on
+  // `artifacts`; chaining via pnpm would rebuild artifacts twice.
+  "cli:qa": "make cli-test cli-check",
 }

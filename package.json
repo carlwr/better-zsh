@@ -50,7 +50,8 @@
     "cli": "node scripts/build/quiet-run.mjs cli",
     "cli:debug": "node scripts/build/quiet-run.mjs cli:debug",
     "cli:test": "node scripts/build/quiet-run.mjs cli:test",
-    "cli:check": "node scripts/build/quiet-run.mjs cli:check"
+    "cli:check": "node scripts/build/quiet-run.mjs cli:check",
+    "cli:qa": "node scripts/build/quiet-run.mjs cli:qa"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.12",

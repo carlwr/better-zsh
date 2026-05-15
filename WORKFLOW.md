@@ -14,6 +14,10 @@ read-when: renames, refactors, design decisions, research-agent rules, shell dis
 - Broad searches/rewrites should skip symlink paths unless checking links; symlinks can duplicate hits or be replaced by regular files.
 - Broad searches should avoid ignored/generated trees first; raw `rg` can waste context on build outputs and tool targets.
 
+## Piped commands: don't mask failures
+
+Pipeline exit = last stage, so `cargo test | tail` swallows a failed producer. Prefix `set -o pipefail &&` (bash/zsh) when piping anything fallible.
+
 ## Pull data from elsewhere
 
 For lists, enumerations, or current-state claims in docs, prefer pulling from where data lives (an `rg` query, a script call) over hand-maintaining prose. Drift becomes impossible on the data being pulled. Reach for this lever often.

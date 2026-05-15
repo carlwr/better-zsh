@@ -79,10 +79,10 @@ const PRETTY_SUBS: &[(&str, &[&str])] = &[
 /// No-op subcommands: parse must succeed in every position; we don't
 /// assert anything about stdout shape (varies per subcommand).
 const NOOP_SUBS: &[(&str, &[&str])] = &[
-    ("batch", &[]),               // empty stdin → empty stdout, exit 0
-    ("help", &[]),                // root help
-    ("help", &["docs"]),          // help for a specific subcommand
-    ("completions", &["zsh"]),    // emits a shell script
+    ("batch", &[]),            // empty stdin → empty stdout, exit 0
+    ("help", &[]),             // root help
+    ("help", &["docs"]),       // help for a specific subcommand
+    ("completions", &["zsh"]), // emits a shell script
 ];
 
 #[test]
@@ -146,4 +146,3 @@ fn pretty_is_silent_noop_on_non_json_subs() {
         }
     }
 }
-

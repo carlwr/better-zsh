@@ -1,14 +1,18 @@
 //! Shared helpers for the `zshref` integration test suite.
 //!
-//! Two roles, both used by `tests/properties.rs` and `tests/cli_invariants.rs`:
+//! Roles:
 //!
 //! 1. **Spawn-and-parse vocabulary.** `BIN`, `run_raw`, `run_json`,
 //!    `assert_envelope`, `doc_categories` — the minimum surface for
 //!    invoking the built binary and shaping its JSON responses.
+//!    (Used by `properties.rs`, `cli_invariants.rs`.)
 //! 2. **`outputSchema` validation.** `locate_tooldef_json`,
 //!    `validator_for`, `validate_or_panic`, `tool_for_subcommand` —
 //!    `run_json` auto-validates every tool-subcommand response against
 //!    its bundled schema, so new tests get conformance checks for free.
+//! 3. **`Example:` block parsing.** `extract_example` — pairs with
+//!    `cli/prose.rs::shell_example`; used by `help_examples.rs` and
+//!    `help_layout.rs`.
 //!
 //! `#[allow(dead_code)]` because Rust compiles each `tests/*.rs` as a
 //! separate crate with its own copy of this module — items unused by
@@ -31,6 +35,84 @@ pub const BIN: &str = env!("CARGO_BIN_EXE_zshref");
 /// byte-level assertions (determinism, exit code, stderr).
 pub fn run_raw(args: &[&str]) -> std::process::Output {
     Command::new(BIN).args(args).output().expect("spawn zshref")
+}
+
+const NON_TOOL_SUBCOMMANDS: &[&str] = &["batch", "info", "schema", "completions", "help"];
+
+pub fn tool_full_names() -> &'static [String] {
+    static NAMES: OnceLock<Vec<String>> = OnceLock::new();
+    NAMES.get_or_init(|| {
+        let path = locate_tooldef_json();
+        let bytes = fs::read(&path).unwrap_or_else(|e| panic!("read {}: {e}", path.display()));
+        let defs: Value = serde_json::from_slice(&bytes)
+            .unwrap_or_else(|e| panic!("parse {}: {e}", path.display()));
+        defs.get("tools")
+            .and_then(Value::as_array)
+            .expect("tools array")
+            .iter()
+            .map(|t| {
+                t.get("name")
+                    .and_then(Value::as_str)
+                    .expect("tool.name")
+                    .to_string()
+            })
+            .collect()
+    })
+}
+
+/// `tool_full_names` with `zsh_` stripped.
+pub fn tool_subcommands() -> &'static [String] {
+    static SUBS: OnceLock<Vec<String>> = OnceLock::new();
+    SUBS.get_or_init(|| {
+        tool_full_names()
+            .iter()
+            .map(|n| n.strip_prefix("zsh_").unwrap_or(n).to_string())
+            .collect()
+    })
+}
+
+pub fn subcommands() -> &'static [String] {
+    static ALL: OnceLock<Vec<String>> = OnceLock::new();
+    ALL.get_or_init(|| {
+        let mut v: Vec<String> = tool_subcommands().to_vec();
+        v.extend(NON_TOOL_SUBCOMMANDS.iter().map(|s| (*s).to_string()));
+        v
+    })
+}
+
+pub fn run_with_env(args: &[&str], env: &[(&str, &str)]) -> std::process::Output {
+    let mut cmd = Command::new(BIN);
+    cmd.args(args);
+    cmd.env_remove("NO_COLOR");
+    cmd.env_remove("CLICOLOR_FORCE");
+    cmd.env_remove("COLUMNS");
+    for (k, v) in env {
+        cmd.env(k, v);
+    }
+    let out = cmd
+        .output()
+        .unwrap_or_else(|e| panic!("spawn zshref {args:?}: {e}"));
+    assert!(
+        out.status.success(),
+        "zshref {args:?} exit {:?}; stderr:\n{}",
+        out.status.code(),
+        String::from_utf8_lossy(&out.stderr),
+    );
+    out
+}
+
+pub fn stdout_with_env(args: &[&str], env: &[(&str, &str)]) -> String {
+    let out = run_with_env(args, env);
+    String::from_utf8(out.stdout).expect("stdout is utf-8")
+}
+
+pub fn help_target_args() -> Vec<Vec<&'static str>> {
+    let mut out: Vec<Vec<&'static str>> = vec![vec![], vec!["--help"], vec!["-h"]];
+    for sub in subcommands() {
+        out.push(vec![sub.as_str(), "--help"]);
+        out.push(vec![sub.as_str(), "-h"]);
+    }
+    out
 }
 
 /// Spawn `zshref` with `args`, assert success, parse stdout as JSON,
@@ -177,13 +259,107 @@ pub fn validate_or_panic(tool: &str, v: &Value) {
     }
 }
 
+/// Parse the first example from an `Example:` / `Examples:` block in
+/// `--help` output. See `extract_examples` for the multi-example case.
+pub fn extract_example(help: &str) -> Option<(String, String)> {
+    extract_examples(help).into_iter().next()
+}
+
+/// Parse every example from an `Example:` / `Examples:` block in
+/// `--help` output. See `extract_examples_under` — this is the common case
+/// keyed on the default `Example:` / `Examples:` headings.
+pub fn extract_examples(help: &str) -> Vec<(String, String)> {
+    extract_examples_under(help, &["Example:", "Examples:"])
+}
+
+/// Parse every example from a `<heading>` block in `--help` output (e.g.
+/// `Examples:`, `Typical workflow:`). Returns `(command, output)` pairs
+/// where `command` is the full logical command (`\` continuations
+/// absorbed and joined with single spaces) and `output` is the indented
+/// prose lines below it (with the `    ` prefix stripped). Examples are
+/// separated by a blank line followed by another `    $ ` prompt;
+/// parsing stops at the first non-indented line — that's prose after the
+/// block (e.g. batch's "Error response shape:" follows the JSON output).
+///
+/// `    $ # ...` shell-comment prompts (no-ops, but useful for narrating
+/// a workflow) are skipped — they aren't commands to re-run.
+///
+/// Pairs with `cli/prose.rs::shell_examples`: prompt at 4-space indent,
+/// continuations at 8-space indent, output at 4-space indent. Returns
+/// an empty Vec if the help text has no matching heading or the layout
+/// doesn't match (e.g. dangling `\` continuation, missing prompt).
+pub fn extract_examples_under(help: &str, headings: &[&str]) -> Vec<(String, String)> {
+    let lines: Vec<&str> = help.lines().collect();
+    let Some(idx) = lines.iter().position(|l| headings.contains(l)) else {
+        return Vec::new();
+    };
+    let mut cursor = idx + 1;
+    let mut out = Vec::new();
+    loop {
+        loop {
+            if cursor >= lines.len() {
+                return out;
+            }
+            let line = lines[cursor];
+            if line.is_empty() {
+                cursor += 1;
+                continue;
+            }
+            // Skip shell-comment prompts: `    $ # ...` is a no-op the
+            // user could type — useful as inline narration but not a
+            // command to re-run.
+            if let Some(stripped) = line.strip_prefix("    $ ") {
+                if stripped.starts_with('#') {
+                    cursor += 1;
+                    continue;
+                }
+            }
+            break;
+        }
+        let Some(prompt) = lines.get(cursor).and_then(|l| l.strip_prefix("    $ ")) else {
+            break;
+        };
+        let mut command = prompt.to_string();
+        cursor += 1;
+        while command.trim_end().ends_with('\\') {
+            let Some(line) = lines.get(cursor) else {
+                return Vec::new();
+            };
+            let Some(cont) = line.strip_prefix("    ") else {
+                return Vec::new();
+            };
+            command = format!(
+                "{} {}",
+                command.trim_end().trim_end_matches('\\').trim_end(),
+                cont.trim_start(),
+            );
+            cursor += 1;
+        }
+        let mut output = String::new();
+        while cursor < lines.len() {
+            let line = lines[cursor];
+            if line.is_empty() {
+                cursor += 1;
+                break;
+            }
+            let Some(body) = line.strip_prefix("    ") else {
+                break;
+            };
+            output.push_str(body);
+            output.push('\n');
+            cursor += 1;
+        }
+        out.push((command, output));
+    }
+    out
+}
+
 /// Map a CLI subcommand to the tooldef name (`docs` → `zsh_docs`). `None`
 /// for subcommands that don't have a tool schema (`info`, `schema`, …).
 pub fn tool_for_subcommand(sub: &str) -> Option<&'static str> {
-    match sub {
-        "docs" => Some("zsh_docs"),
-        "search" => Some("zsh_search"),
-        "list" => Some("zsh_list"),
-        _ => None,
-    }
+    let target = format!("zsh_{sub}");
+    tool_full_names()
+        .iter()
+        .find(|name| **name == target)
+        .map(String::as_str)
 }

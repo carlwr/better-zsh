@@ -54,7 +54,7 @@ fn handle_request(line: &str, tool_defs: &ToolDefs, corpus: &Corpus) -> Value {
     }
 }
 
-fn fill_defaults_from_schema(td: &ToolDef, input: &Value) -> Value {
+pub fn fill_defaults_from_schema(td: &ToolDef, input: &Value) -> Value {
     let mut obj = input.as_object().cloned().unwrap_or_default();
     let Some(props) = td.input_schema.get("properties").and_then(Value::as_object) else {
         return Value::Object(obj);

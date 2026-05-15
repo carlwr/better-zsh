@@ -57,9 +57,9 @@ pub fn build_cli(tool_defs: &ToolDefs, corpus: &Corpus, mode: BuildMode) -> Comm
     // them to `zshref *`. WARNING in `packages/zsh-core-tooldef/src/tool-defs.ts`
     // applies here too — tone/length drift on that source affects terminal help.
     let root_after_help = format!(
-        "\n{}\n{}\n",
+        "\n{}\n{}",
         prose::rewrite_refs(&tool_defs.preamble, &tool_defs.tools),
-        prose::ROOT_AFTER_HELP_TAIL,
+        prose::root_after_help_tail(tool_defs, corpus),
     );
 
     let mut root = Command::new(prose::BIN)
@@ -229,23 +229,83 @@ fn tool_after_help(td: &ToolDef, tools: &[ToolDef], corpus: &Corpus) -> String {
 }
 
 fn tool_cli_example(td: &ToolDef, corpus: &Corpus) -> Option<String> {
-    let (command, input) = match td.name.as_str() {
-        "zsh_docs" => ("zshref docs --key=bye --pretty", json!({ "key": "bye" })),
-        "zsh_search" => (
+    // Three examples for `docs`: `(.)` shows the resolver doing visible
+    // work (key="(.)" → id="."; mdBody short, no elision); ALIASES /
+    // NO_ALIASES make the resolver-table mapping concrete and show the
+    // `feedback.kind` channel. Both ALIASES examples elide `mdBody`
+    // (option records exceed the 80-col help budget by construction).
+    let pairs: Vec<(&str, Value)> = match td.name.as_str() {
+        "zsh_docs" => vec![
+            ("zshref docs --key='(.)' --pretty", json!({ "key": "(.)" })),
+            (
+                "zshref docs --key=ALIASES --pretty",
+                json!({ "key": "ALIASES" }),
+            ),
+            (
+                "zshref docs --key=NO_ALIASES --pretty",
+                json!({ "key": "NO_ALIASES" }),
+            ),
+        ],
+        "zsh_search" => vec![(
             "zshref search --query=autolo --limit=1 --pretty",
             json!({ "query": "autolo", "limit": 1 }),
-        ),
-        "zsh_list" => (
+        )],
+        "zsh_list" => vec![(
             "zshref list --category=option --limit=1 --pretty",
             json!({ "category": "option", "limit": 1 }),
-        ),
+        )],
         _ => return None,
     };
-    let output = tools::dispatch(td, &input, corpus).expect("CLI help example must run");
-    Some(prose::shell_example(
-        command,
-        &output::render(&output, true),
-    ))
+    let outputs: Vec<String> = pairs
+        .iter()
+        .map(|(_, input)| {
+            let mut value = tools::dispatch(td, input, corpus).expect("CLI help example must run");
+            prose::elide_for_help_example(&mut value);
+            output::render(&value, true)
+        })
+        .collect();
+    let items: Vec<prose::ShellExample<'_>> = pairs
+        .iter()
+        .zip(outputs.iter())
+        .map(|((command, _), output)| prose::ShellExample {
+            prompt: command,
+            continuations: &[],
+            output: output.as_str(),
+        })
+        .collect();
+    let block = prose::shell_examples(&items);
+    // `docs` carries a trailing `jq -r` recipe: the JSON output of `docs` has
+    // exactly one field most CLI users actually want piped into a `.md` file
+    // (`mdBody`), and `jq -r` is the JSON-spec-correct interpreter of its
+    // embedded escapes (`\n`, `\"`, `\\`, …) — saving callers from
+    // hand-patching quoting.
+    if td.name == "zsh_docs" {
+        Some(format!("{block}\n\n{}", docs_md_recipe(td, corpus)))
+    } else {
+        Some(block)
+    }
+}
+
+/// `!` (`conditional_op`) is the ideal record for this recipe: its `mdBody`
+/// is 3 lines — short enough to render inline without help-block reflow —
+/// and pairing with `--category` forces a single match (`!` overlaps 5
+/// categories) which doubles as a demo of the narrowing idiom the recipe
+/// needs anyway. Re-uses the same record as the root-level workflow example
+/// so the worked example stays consistent across help surfaces.
+fn docs_md_recipe(td: &ToolDef, corpus: &Corpus) -> String {
+    let input = json!({ "key": "!", "category": "conditional_op" });
+    let out = tools::dispatch(td, &input, corpus).expect("docs md recipe must run");
+    let md_body = out["matches"][0]["mdBody"]
+        .as_str()
+        .expect("docs md recipe expects matches[0].mdBody to be a string");
+    prose::labelled_example(
+        "Recipe — extract just the markdown body:",
+        prose::ShellExample {
+            prompt: "zshref docs --key='!' --category=conditional_op",
+            continuations: &["| jq -r '.matches[].mdBody'"],
+            output: md_body,
+        },
+    )
 }
 
 fn build_arg(
@@ -311,7 +371,7 @@ fn pretty_arg() -> Arg {
         .long("pretty")
         .display_order(90)
         .action(ArgAction::SetTrue)
-        .help(prose::ROOT_PRETTY_HELP)
+        .long_help(prose::ROOT_PRETTY_HELP)
 }
 
 fn help_arg() -> Arg {

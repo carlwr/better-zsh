@@ -2,43 +2,10 @@
 //! Options:-section descriptions, short/long help equivalence.
 
 use regex::Regex;
-use std::process::Command;
 
-const BIN: &str = env!("CARGO_BIN_EXE_zshref");
+mod common;
 
-const SUBCOMMANDS: &[&str] = &[
-    "docs",
-    "search",
-    "list",
-    "batch",
-    "info",
-    "schema",
-    "completions",
-    "help",
-];
-
-fn run(args: &[&str], env: &[(&str, &str)]) -> std::process::Output {
-    let mut cmd = Command::new(BIN);
-    cmd.args(args);
-    cmd.env_remove("NO_COLOR");
-    cmd.env_remove("CLICOLOR_FORCE");
-    cmd.env_remove("COLUMNS");
-    for (k, v) in env {
-        cmd.env(k, v);
-    }
-    cmd.output()
-        .unwrap_or_else(|e| panic!("spawn zshref {args:?}: {e}"))
-}
-
-fn stdout_utf8(args: &[&str], env: &[(&str, &str)]) -> String {
-    let out = run(args, env);
-    assert!(
-        out.status.success(),
-        "zshref {args:?} exit {:?}",
-        out.status
-    );
-    String::from_utf8(out.stdout).expect("stdout is utf-8")
-}
+use common::{help_target_args, stdout_with_env, subcommands};
 
 #[test]
 fn subcommand_usage_lines_never_bracket_required_flags() {
@@ -51,7 +18,7 @@ fn subcommand_usage_lines_never_bracket_required_flags() {
     ];
 
     for (sub, required) in must_be_unbracketed {
-        let help = stdout_utf8(&[sub, "--help"], &[("NO_COLOR", "1")]);
+        let help = stdout_with_env(&[sub, "--help"], &[("NO_COLOR", "1")]);
         let usage = help
             .lines()
             .find(|l| l.starts_with("Usage:"))
@@ -74,14 +41,8 @@ fn subcommand_usage_lines_never_bracket_required_flags() {
 fn help_fits_at_eighty_columns() {
     // Generous threshold: guards runaway prose, not normal growth. clap's
     // wrap_help honors $COLUMNS even on non-tty stdout.
-    let mut targets: Vec<Vec<&str>> = vec![vec![], vec!["--help"], vec!["-h"]];
-    for sub in SUBCOMMANDS {
-        targets.push(vec![*sub, "--help"]);
-        targets.push(vec![*sub, "-h"]);
-    }
-
-    for args in &targets {
-        let help = stdout_utf8(args, &[("NO_COLOR", "1"), ("COLUMNS", "80")]);
+    for args in &help_target_args() {
+        let help = stdout_with_env(args, &[("NO_COLOR", "1"), ("COLUMNS", "80")]);
         let too_long = help
             .lines()
             .filter(|l| l.chars().count() > 80)
@@ -95,11 +56,38 @@ fn help_fits_at_eighty_columns() {
 }
 
 #[test]
+fn example_prompt_lines_dont_wrap_at_eighty_columns() {
+    // CLI-POLICY.md wrapping-may-not-lose-indentation: clap-wrapped `$ <cmd>`
+    // continuations land flush with the original indent and read as a fresh
+    // shell statement. The 80-col guard misses it — every wrap fragment is
+    // <=80. Detection: extract the prompt at wide vs narrow COLUMNS, absorbing
+    // explicit `\` continuations as one logical command; assert they match.
+    for args in &help_target_args() {
+        let wide = stdout_with_env(args, &[("NO_COLOR", "1"), ("COLUMNS", "1000")]);
+        let narrow = stdout_with_env(args, &[("NO_COLOR", "1"), ("COLUMNS", "80")]);
+        let Some((wide_cmd, _)) = common::extract_example(&wide) else {
+            continue;
+        };
+        let Some((narrow_cmd, _)) = common::extract_example(&narrow) else {
+            continue;
+        };
+        assert_eq!(
+            wide_cmd, narrow_cmd,
+            "zshref {args:?}: Example `$` prompt line wraps at COLUMNS=80, losing visual indentation (CLI-POLICY.md). Use an explicit shell `\\` continuation, or shorten the command.\n\nat wide COLUMNS: {wide_cmd:?}\nat COLUMNS=80: {narrow_cmd:?}",
+        );
+    }
+}
+
+#[test]
 fn root_help_has_examples_section() {
-    let help = stdout_utf8(&["--help"], &[("NO_COLOR", "1")]);
+    let help = stdout_with_env(&["--help"], &[("NO_COLOR", "1")]);
     assert!(
-        help.contains("\nExamples:\n"),
-        "root --help is missing Examples section:\n{help}"
+        help.contains("\nCommand examples:\n"),
+        "root --help is missing `Command examples:` section:\n{help}"
+    );
+    assert!(
+        help.contains("\nTypical workflow:\n"),
+        "root --help is missing `Typical workflow:` section:\n{help}"
     );
 }
 
@@ -112,17 +100,13 @@ fn help_invocations_are_equivalent() {
     // request, CLI-POLICY.md); `help` does too; `-h`/`--help` share clap's
     // `HelpLong` action. Drift here usually means one path lost styling,
     // prose, or footer text.
-    let mut groups: Vec<Vec<Vec<&str>>> = vec![vec![
-        vec![],
-        vec!["help"],
-        vec!["--help"],
-        vec!["-h"],
-    ]];
-    for sub in SUBCOMMANDS {
+    let mut groups: Vec<Vec<Vec<&str>>> =
+        vec![vec![vec![], vec!["help"], vec!["--help"], vec!["-h"]]];
+    for sub in subcommands() {
         groups.push(vec![
-            vec!["help", *sub],
-            vec![*sub, "--help"],
-            vec![*sub, "-h"],
+            vec!["help", sub.as_str()],
+            vec![sub.as_str(), "--help"],
+            vec![sub.as_str(), "-h"],
         ]);
     }
     for forms in &groups {
@@ -130,7 +114,7 @@ fn help_invocations_are_equivalent() {
             .iter()
             .map(|args| {
                 let slice: &[&str] = args;
-                (slice, stdout_utf8(slice, &[("NO_COLOR", "1")]))
+                (slice, stdout_with_env(slice, &[("NO_COLOR", "1")]))
             })
             .collect();
         let (ref_args, ref_out) = &outs[0];
@@ -148,13 +132,13 @@ fn option_descriptions_are_phrase_form() {
     // Briefs are phrases, not sentences: lowercase first letter, no trailing
     // period.
     let mut violations: Vec<String> = Vec::new();
-    for sub in SUBCOMMANDS {
-        let help = stdout_utf8(&[sub, "--help"], &[("NO_COLOR", "1")]);
+    for sub in subcommands() {
+        let help = stdout_with_env(&[sub.as_str(), "--help"], &[("NO_COLOR", "1")]);
         for (flag, desc) in option_descriptions(&help) {
             check_phrase(sub, &flag, &desc, &mut violations);
         }
     }
-    let help = stdout_utf8(&["--help"], &[("NO_COLOR", "1")]);
+    let help = stdout_with_env(&["--help"], &[("NO_COLOR", "1")]);
     for (flag, desc) in option_descriptions(&help) {
         check_phrase("(root)", &flag, &desc, &mut violations);
     }
@@ -215,7 +199,7 @@ fn flag_token(s: &str) -> String {
 fn json_subcommand_long_help_is_non_empty() {
     // Tool subcommands need a long body so users get more than just Usage.
     for sub in ["docs", "search", "list", "batch", "schema"] {
-        let help = stdout_utf8(&[sub, "--help"], &[("NO_COLOR", "1")]);
+        let help = stdout_with_env(&[sub, "--help"], &[("NO_COLOR", "1")]);
         let after_options = help
             .split_once("Options:")
             .map(|(_, tail)| tail)

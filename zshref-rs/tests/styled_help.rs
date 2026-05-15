@@ -233,8 +233,9 @@ fn root_help_documents_color_environment_and_pretty_default() {
     for sub in ["docs", "search", "list", "schema"] {
         let help =
             String::from_utf8(explicit_stdout(&[sub, "--help"], &[])).expect("help is utf-8");
+        // Case-insensitive per CLI-POLICY.md ("Testing discipline").
         assert!(
-            help.contains("default: compact JSON"),
+            help.to_lowercase().contains("default: compact json"),
             "zshref {sub} --help must state the --pretty default:\n{help}"
         );
     }

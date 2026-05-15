@@ -293,7 +293,7 @@ fn resolve_redir<'c>(corpus: &'c Corpus, raw: &str) -> Option<ResolvedHit<'c>> {
     let cat = corpus.category("redirection")?;
     // Sig-form close-variant: the documented sig (e.g. `> word`) maps to its
     // shell-safe slug (`>_word`) by replacing whitespace with `_`.
-    let sig_slug: String = raw.trim().split_whitespace().collect::<Vec<_>>().join("_");
+    let sig_slug: String = raw.split_whitespace().collect::<Vec<_>>().join("_");
     if !sig_slug.is_empty() {
         if let Some(h) = find_by_id(corpus, "redirection", &sig_slug, None) {
             return Some(h);

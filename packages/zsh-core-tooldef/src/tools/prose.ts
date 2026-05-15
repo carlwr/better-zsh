@@ -22,10 +22,15 @@ const list_brief = "enumerate corpus records (id-only; no markdown)"
 const safety = "No shell execution, no environment access."
 
 const resolution = `\
-Resolution turns input forms into canonical ids:
-  AUTO_CD     -> option/autocd
-  NO_AUTO_CD  -> option/autocd (feedback: input-negated)
-  %1          -> job_spec/%number\
+Resolvers normalize input forms to canonical records (per-category, rule-based):
+
+  INPUT:            RESOLVED:
+                    category  id
+  ----------        --------  --------
+  ALIASES           option    aliases
+  NO_ALIASES        option    aliases  (input-negated)
+  %number           job_spec  %number
+  %1                job_spec  %number\
 `
 
 const renderedCategoryList = (() => {
@@ -46,20 +51,22 @@ Omitting \`category\` can return multiple matches for overlapping syntax. The li
 
 ${resolution}
 
-Output:
+Input \`key\` and the returned \`id\` may therefore differ; the returned \`id\` is always a valid \`key\` for follow-up lookups and is shell-safe (printable ASCII, no whitespace).
+
+Output object properties:
   matches[]          matched records
   matchesReturned    returned match count
   matchesTotal       total match count
 
-Each match:
-  category           doc category
-  id                 canonical id
-  display            zsh-facing name
-  mdBody             rendered markdown
-  subKind            optional category facet
-  feedback           optional lossy-resolution signal
+  Each matches[] element is an object with mandatory properties:
+    category           doc category
+    id                 canonical id
+    display            zsh-facing name
+    mdBody             rendered markdown
+    subKind            optional category facet
+    feedback           optional lossy-resolution signal
 
-No matches: empty \`matches[]\`, exit code 0. Returned \`id\` values are valid \`key\` inputs and are shell-safe (printable ASCII, no whitespace).
+If no matches, returned matches[] is empty. The exit code is still 0 (success).
 
 ${safety}\
 `
@@ -71,11 +78,11 @@ ${resolution}
 
 Ranking:
   1. exact id/display
-  2. resolved input
+  2. resolver match
   3. prefix
   4. fuzzy score
 
-\`score\` is 1 for exact/resolution/prefix matches. Fuzzy matches use a score in (0,1).
+The score is 1 for exact/resolver/prefix matches. Fuzzy matches use a score in (0,1).
 
 No markdown body. Use \`zsh_docs\` for full docs.
 
