@@ -59,7 +59,7 @@ Each match:
   subKind            optional category facet
   feedback           optional lossy-resolution signal
 
-No matches: empty \`matches[]\`, exit code 0. Returned \`id\` values are valid \`key\` inputs.
+No matches: empty \`matches[]\`, exit code 0. Returned \`id\` values are valid \`key\` inputs and are shell-safe (printable ASCII, no whitespace).
 
 ${safety}\
 `
@@ -110,7 +110,11 @@ ${safety}\
 
 const flag_key: FlagProse = {
   brief: "zsh token or canonical id (required)",
-  long: `zsh token or canonical id\n\nExamples: AUTO_CD, [[, %1, autocd`,
+  long: `zsh token or canonical id (lookup key)
+
+Accepts: raw zsh tokens (\`AUTO_CD\`, \`[[\`, \`%1\`, \`<<<\`, \`> word\`) and canonical ids from prior \`zsh_search\` / \`zsh_list\` (\`autocd\`).
+
+\`id\` values returned by any tool are always valid \`key\` inputs.`,
 }
 
 const flag_query: FlagProse = {

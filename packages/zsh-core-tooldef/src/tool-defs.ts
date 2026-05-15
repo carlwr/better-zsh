@@ -172,9 +172,9 @@ export const toolDefs: readonly ToolDef[] = [
  */
 export const TOOL_SUITE_PREAMBLE: string = `\
 Tool → intent:
-  \`zsh_docs\`   → look up the docs for a zsh key
-  \`zsh_search\` → fuzzy discovery by name
-  \`zsh_list\`   → enumerate records in the corpus
+  \`zsh_docs\`   → look up docs for a zsh key (raw token or canonical id)
+  \`zsh_search\` → fuzzy-match on tokens/id-s → returns ids
+  \`zsh_list\`   → enumerate records          → returns ids
 
-  (search, list: id-only; pair with \`zsh_docs\` for the body)
+  (search/list emit \`id\`; feed back to \`zsh_docs\` as \`key\` for the body)
 `

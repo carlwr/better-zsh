@@ -4,13 +4,20 @@
  * Per-category match branches sit in `oneOf` under `matches.items`, with the
  * common shape factored into `$defs`/`$ref`:
  *
- * - `$defs.IdString` — `{ type: "string", minLength: 1 }` referenced by `id`,
- *   `display`, `mdBody`.
+ * - `$defs.IdString` — shell-safe identity slug pattern (printable ASCII,
+ *   no whitespace); referenced by `id`.
+ * - `$defs.DisplayString` — surface-form pattern (printable ASCII with
+ *   spaces); referenced by `display`.
+ * - `$defs.MdBodyString` — minLength only; Unicode prose may carry
+ *   non-ASCII (em-dashes etc.); referenced by `mdBody`.
  * - `$defs.SubKind.<cat>` — closed enum of subKind values per category that
  *   has a meaningful sub-facet; referenced from the per-category match branch.
  * - `$defs.Feedback` — closed `oneOf` over `ResolverFeedback` kinds; referenced
  *   from per-category match branches when the tool surfaces feedback (today,
  *   only `zsh_docs`). Adding a feedback kind in zsh-core lifts here for free.
+ *
+ * `IdString` / `DisplayString` patterns mirror `ID_RE` / `SURFACE_RE` in
+ * `packages/zsh-core/src/test/corpus-ascii.test.ts` — keep aligned.
  *
  * `subKind` is always-or-never per category: when `subKindEnums[cat]` is
  * non-undefined the branch declares `subKind` with the closed enum AND
@@ -45,6 +52,8 @@ export interface MatchShape {
 }
 
 const idStringRef = { $ref: "#/$defs/IdString" } as const
+const displayStringRef = { $ref: "#/$defs/DisplayString" } as const
+const mdBodyStringRef = { $ref: "#/$defs/MdBodyString" } as const
 const feedbackRef = { $ref: "#/$defs/Feedback" } as const
 
 const subKindRef = (cat: DocCategory): { readonly $ref: string } => ({
@@ -66,7 +75,7 @@ function mkMatchSchema(
   const properties: Record<string, unknown> = {
     category: { const: cat },
     id: idStringRef,
-    display: idStringRef,
+    display: displayStringRef,
   }
   const required: string[] = ["category", "id", "display"]
   if (subEnum !== undefined) {
@@ -74,7 +83,7 @@ function mkMatchSchema(
     required.push("subKind")
   }
   if (shape.mdBody === "required") {
-    properties.mdBody = idStringRef
+    properties.mdBody = mdBodyStringRef
     required.push("mdBody")
   }
   if (shape.score === "required") {
@@ -95,7 +104,17 @@ function mkMatchSchema(
 /** `$defs` block: shared fragments referenced from per-category match branches. */
 function mkDefs(shape: MatchShape): Readonly<Record<string, unknown>> {
   const defs: Record<string, unknown> = {
-    IdString: { type: "string", minLength: 1 },
+    IdString: {
+      type: "string",
+      minLength: 1,
+      pattern: "^[\\x21-\\x7E]+$",
+    },
+    DisplayString: {
+      type: "string",
+      minLength: 1,
+      pattern: "^[\\x20-\\x7E]+$",
+    },
+    MdBodyString: { type: "string", minLength: 1 },
   }
   for (const cat of docCategories) {
     const subEnum = subKindEnums[cat]

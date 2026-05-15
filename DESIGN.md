@@ -369,10 +369,27 @@ Direct precedence is load-bearing for template-key categories — the literal co
 
 Non-template categories miss direct lookup then resolve (`AUTO_CD` → `autocd`).
 
-Round-trip invariant: every literal corpus key resolves to itself via `zsh_docs`.
+### Resolver input is wider than the id set
 
-- enforced: `packages/zsh-core-tooldef/src/test/round-trip.test.ts`
-- Rust mirror: `parity-units.ts` (see above)
+The `zsh_docs` input parameter is intentionally named `key`, not `id`. The resolver entry is permissive — all of these resolve through it:
+
+- raw zsh tokens — `AUTO_CD`, `<<<`
+- close-variant surface forms with whitespace — `> word`
+- canonical ids — `autocd`
+
+Inputs that fall outside the id charset (whitespace, etc.) are not errors; they are normal resolver input and yield 0 matches when nothing resolves.
+
+The contract on the canonical-id subset is tight:
+
+- every `id` returned by any tool is shell-safe (printable ASCII, no whitespace)
+- re-feeding such an `id` as `key` is guaranteed to resolve: ≥1 match overall, ≤1 per category
+- with `category` set to the resolved category, the returned `id` equals the input
+
+Enforcement:
+
+- charset — `packages/zsh-core/src/test/corpus-ascii.test.ts`
+- round-trip — `packages/zsh-core-tooldef/src/test/round-trip.test.ts`
+- Rust mirror — `parity-units.ts` (see above)
 
 ## Tie-break in docs
 

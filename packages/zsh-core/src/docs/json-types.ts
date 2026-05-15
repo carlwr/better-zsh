@@ -41,10 +41,21 @@ type JsonParamExpnDoc = Omit<Unbrand<ParamExpnDoc>, "groupSigs"> & {
  * Generated fields attached to every JSON record at build time. The
  * in-memory corpus does not carry these fields — they are projected during
  * JSON emission for out-of-process consumers.
+ *
+ * `_id` / `_display` patterns mirror `ID_RE` / `SURFACE_RE` in
+ * `src/test/corpus-ascii.test.ts` — keep aligned.
  */
 type WithMarkdown<T> = T & {
   readonly mdBody: string
+  /**
+   * Shell-safe identity slug: printable ASCII, no whitespace, non-empty.
+   * @pattern ^[\x21-\x7E]+$
+   */
   readonly _id: string
+  /**
+   * Surface form for display: printable ASCII with spaces; non-empty.
+   * @pattern ^[\x20-\x7E]+$
+   */
   readonly _display: string
   readonly _subKind?: string
 }
