@@ -1,8 +1,3 @@
----
-audience: maintainer
-read-when: working in packages/vscode-better-zsh/
----
-
 # AGENTS.md — `better-zsh` (VS Code extension)
 
 VS Code extension package:

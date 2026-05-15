@@ -1,3 +1,8 @@
+---
+audience: maintainer
+read-when: moving zsh-core JSON artifacts off npm/JSR onto GitHub release assets
+---
+
 # Plan: pre-parsed JSON as GitHub release assets
 
 Small standalone refactor. Independent of the tooldef/CLI work (both landed; the Rust CLI under `zshref-rs/` is the current form).

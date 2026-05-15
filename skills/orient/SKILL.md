@@ -1,8 +1,6 @@
 ---
 name: orient
 description: Orient quickly in the better-zsh monorepo. Use at the start of any work session, when adding features, debugging, or navigating unfamiliar code. Provides discovery scripts and reading-path strategies rather than hardcoded filenames.
-audience: maintainer
-read-when: orientation at session start
 ---
 
 # Orientation: better-zsh monorepo

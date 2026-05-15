@@ -5,11 +5,11 @@ read-when: editing markdown in maintainer-audience docs
 
 # STYLE-MD.md
 
-Rules for editing maintainer-audience `.md` files (those carrying `audience: maintainer` in YAML frontmatter). Not user-facing docs.
+Rules for editing maintainer-audience `.md` files — all repo `.md` except user-facing docs (`README.md`, `DEVELOPMENT.md`, `SECURITY.md`, `THIRD_PARTY_NOTICES.md` at workspace root and at to-be-extracted package roots).
 
 ## Frontmatter
 
-Every maintainer-audience `.md` starts with:
+Conditional-read topic guides (those listed by `scripts/list-maintainer-docs`) start with:
 
 ```yaml
 ---
@@ -19,6 +19,7 @@ read-when: <one-line phrase>
 ```
 
 - `read-when:` is a single short phrase; multi-line prose is malformed.
+- `AGENTS.md` files and `.md` under `skills/` do not carry this tag.
 - Additional top-level keys: only when an external consumer requires them (e.g. skill metadata fields). Re-evaluate before adding.
 
 ## Pre-edit ritual

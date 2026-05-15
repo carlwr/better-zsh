@@ -1,3 +1,8 @@
+---
+audience: maintainer
+read-when: extraction-day checklist for zshref (Rust CLI)
+---
+
 # Extraction checklist
 
 > **Scope and lifetime.** Working checklist for the day
@@ -12,7 +17,7 @@
 
 ### Lockfile / toolchain
 
-- `Cargo.lock` — committed (correct for a binary crate). No change needed; carry it over as-is.
+- `Cargo.lock` — committed (correct for a binary crate). Carry it over as-is.
 
 ### `Cargo.toml` edits
 
@@ -21,7 +26,12 @@
 
 ### Embedded JSON paths
 
-Already routed through cfg-gated macros (`corpus_path!`, `tooldef_path!` in `src/corpus.rs`) by the option-6 dual-mode build. At extraction, drop the `monorepo` arm from the macros and from `build.rs`, leaving only the `vendored` arm. See `DATA-SYNC.md` for the landed design.
+Already routed through cfg-gated macros (`corpus_path!`, `tooldef_path!` in `src/corpus.rs`) by the option-6 dual-mode build. At extraction:
+
+- Drop the `monorepo` arm from the macros in `src/corpus.rs` and the corresponding branch in `build.rs`.
+- Remove `/data/` from `.gitignore` and commit the vendored JSONs.
+
+See `DATA-SYNC.md` for the landed design.
 
 ### `include` / `exclude` in `Cargo.toml`
 
@@ -31,7 +41,8 @@ directory is committed. See `DATA-SYNC.md`.
 
 ### Makefile
 
-- The repo root `Makefile` goes away. The `artifacts` target (which drives `pnpm build` for `zsh-core` and `zsh-core-tooldef`) moves to whatever cross-repo data-sync mechanism is chosen. → See `DATA-SYNC.md`.
+- The repo root `Makefile` goes away. The `artifacts` target (which drives `pnpm build` for the TS packages) moves to whatever cross-repo data-sync mechanism is chosen; the monorepo-only CI job disappears alongside it.
+- The vendor target pivots: instead of copying from a sibling package, it clones the TS repo at a pinned commit (`DATA_COMMIT` file or similar) and runs its build, then copies.
 - The extracted repo will have a simpler `Makefile` (or rely on cargo-native workflows) covering only the Rust side: `cli-debug`, `cli`, `cli-test`, `cli-check`, `cli-clean`.
 
 ### CI
@@ -63,11 +74,19 @@ Companion-repo URLs and the project name are already in post-extraction form. Re
 
 ### Cross-repo drift guards
 
-- Taxonomy order and category→file mapping load directly from the embedded `index.json`; there is no Rust-side category-table mirror to drift. The hand-maintained filename→`include_bytes!` inventory still has to cover every indexed artifact. The `#[cfg(test)]` tests in `src/corpus.rs` cover record-shape sanity (id/display ASCII, `record_id` returns non-empty per category) and stay unchanged post-extraction as long as the vendored `index.json` ships with the crate.
+- No extraction-day action. The TS↔Rust drift guards described in `DATA-SYNC.md` survive unchanged as long as the vendored `index.json` ships with the crate.
 
 ### Scope fence
 
 - N/A for Rust.
+
+---
+
+## Open questions (decide on extraction day)
+
+- **Sync trigger discipline.** When TS data changes upstream, how does the Rust repo learn? Options: (a) manual PR bumping `DATA_COMMIT`; (b) a scheduled action on the Rust repo that polls the TS repo and opens a PR if data changed (the classic "dependabot for vendored data" pattern).
+- **One data version, or a range?** Simplest: one. `DATA_COMMIT` (or `DATA_VERSION` once TS gets tags) is a pin; the Rust repo releases when the pin bumps, not on TS's cadence.
+- **Size budget.** The current ~1 MB is fine baked into a binary. If the corpus grows past ~5 MB, reconsider — either compress at build time (`zstd`/`brotli`, decompress at load) or split into a data-only crate.
 
 ---
 

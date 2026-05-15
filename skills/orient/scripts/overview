@@ -51,6 +51,13 @@ cd "$(git -C $me_dir rev-parse --show-toplevel)"
 
 # --- print sections ---
 
+section 'AGENTS.md files'
+print
+print '# read the relevant ones for your work; non-claude tools do not auto-load them'
+print
+list-nonignored-files | grep -E '(^|/)AGENTS\.md$'
+print
+
 section 'maintainer docs'
 print
 print '$ ./scripts/list-maintainer-docs'

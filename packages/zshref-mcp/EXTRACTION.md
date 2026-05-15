@@ -1,3 +1,8 @@
+---
+audience: maintainer
+read-when: extraction-day checklist for @carlwr/zshref-mcp
+---
+
 # Extraction checklist
 
 > **Scope and lifetime.** Working checklist for the day

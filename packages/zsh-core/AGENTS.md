@@ -1,8 +1,3 @@
----
-audience: maintainer
-read-when: working in packages/zsh-core/
----
-
 # AGENTS.md — `@carlwr/zsh-core`
 
 Library:

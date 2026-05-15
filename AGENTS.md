@@ -1,8 +1,3 @@
----
-audience: maintainer
-read-when: project-specific contributor entry point for better-zsh
----
-
 # AGENTS.md
 
 Prefer executable discovery scripts over hand-maintained file lists. Scripts produce always-current output.
@@ -19,7 +14,8 @@ Always run (general project overview):
 - **definition:** an `.md` file that has `audience: maintainer` in its YAML frontmatter
 - always has a `read-when:` frontmatter entry
 - may contain rules, guidelines and/or information
-- carries the same weight as an `AGENTS.md` file
+- normative when its `read-when:` applies
+- `AGENTS.md` files and `.md` under `skills/` are not maintainer docs (entry points / skill content respectively)
 
 List all maintainer docs and the `read-when:` value of each:
 ```sh

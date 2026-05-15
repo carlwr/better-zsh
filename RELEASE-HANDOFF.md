@@ -1,3 +1,8 @@
+---
+audience: maintainer
+read-when: release-wiring context; manual-publish procedures; pre-release handoff state
+---
+
 # Release handoff
 
 Written 2026-04-19 at the end of a pre-release wiring session.
