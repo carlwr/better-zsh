@@ -90,7 +90,6 @@
   "scripts": {
     "prebuild": "[ -n \"$BZ_SKIP_UPSTREAM\" ] || (pnpm --filter @carlwr/zsh-core build && BZ_SKIP_UPSTREAM=1 pnpm --filter @carlwr/zsh-core-tooldef build)",
     "prewatch": "[ -n \"$BZ_SKIP_UPSTREAM\" ] || (pnpm --filter @carlwr/zsh-core build && BZ_SKIP_UPSTREAM=1 pnpm --filter @carlwr/zsh-core-tooldef build)",
-    "predump:refs": "[ -n \"$BZ_SKIP_UPSTREAM\" ] || pnpm --filter @carlwr/zsh-core build",
     "pretypecheck": "[ -n \"$BZ_SKIP_UPSTREAM\" ] || (pnpm --filter @carlwr/zsh-core build && BZ_SKIP_UPSTREAM=1 pnpm --filter @carlwr/zsh-core-tooldef build)",
     "pretest": "[ -n \"$BZ_SKIP_UPSTREAM\" ] || (pnpm --filter @carlwr/zsh-core build && BZ_SKIP_UPSTREAM=1 pnpm --filter @carlwr/zsh-core-tooldef build)",
     "build": "tsx build.ts",
@@ -101,7 +100,6 @@
     "check": "pnpm typecheck && pnpm lint",
     "test": "vitest run",
     "test:integration": "../../scripts/test-integration-act",
-    "dump:refs": "tsx src/dev/dump-refs.ts",
     "testINTERACTIVE:electron": "pnpm build && tsc -p tsconfig.vscode-test.json && scripts/testINTERACTIVE-electron",
     "testINTERACTIVE:electron-bundled": "pnpm build && scripts/package-vsix ./better-zsh.vsix && tsc -p tsconfig.vscode-test.json && scripts/testINTERACTIVE-bundled",
     "vsix": "pnpm build && export BZ_SKIP_UPSTREAM=1 && pnpm check && pnpm test && scripts/package-vsix ./better-zsh.vsix",

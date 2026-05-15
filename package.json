@@ -29,7 +29,7 @@
     "qa": "node scripts/build/quiet-run.mjs qa",
     "qa:verbose": "pnpm run:verbose qa",
     "test:integration": "node scripts/build/quiet-run.mjs test:integration",
-    "dump:refs": "pnpm --filter better-zsh dump:refs",
+    "dump:refs": "pnpm --filter @carlwr/zsh-core dump:refs",
     "testINTERACTIVE": "pnpm run testINTERACTIVE:electron && pnpm run testINTERACTIVE:electron-bundled",
     "testINTERACTIVE:electron": "pnpm --filter better-zsh testINTERACTIVE:electron",
     "testINTERACTIVE:electron-bundled": "pnpm --filter better-zsh testINTERACTIVE:electron-bundled",

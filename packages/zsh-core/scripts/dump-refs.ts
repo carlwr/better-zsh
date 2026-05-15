@@ -1,8 +1,9 @@
 import { readFile } from "node:fs/promises"
 import { resolve } from "node:path"
-import { loadCorpus } from "@carlwr/zsh-core"
-import { refDocs, writeRefDump } from "@carlwr/zsh-core/render"
-import { docCategories, docCategoryLabels } from "@carlwr/zsh-core/taxonomy"
+import { loadCorpus } from "../src/docs/corpus.ts"
+import { docCategories, docCategoryLabels } from "../src/docs/taxonomy.ts"
+import { writeRefDump } from "../src/render/dump.ts"
+import { refDocs } from "../src/render/refs.ts"
 
 async function main() {
   const root = process.cwd()

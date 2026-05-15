@@ -80,6 +80,7 @@
   "scripts": {
     "build": "tsx build.ts && node scripts/build-api.mjs && tsx scripts/build-schema.ts",
     "watch": "tsx build.ts --watch",
+    "dump:refs": "tsx scripts/dump-refs.ts",
     "docs:typedoc:html": "typedoc",
     "docs:typedoc:json": "typedoc --emit none",
     "docs:api": "node scripts/build-api.mjs",
