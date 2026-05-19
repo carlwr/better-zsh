@@ -18,6 +18,10 @@ export const mkOptFlag = (raw: string): OptFlag => raw.trim() as OptFlag
 
 export const mkRedirOp = (raw: string): RedirOp => raw.trim() as RedirOp
 
+/** Shell-safe redirection slug from a sig (whitespace → `_`). See `RedirDoc.slug`. */
+export const redirSlugFromSig = (sig: string): string =>
+  sig.replace(/\s+/g, "_")
+
 // --- Parametric observed/documented brands ---------------------------------
 //
 // Two phantom brands, both indexed on DocCategory. The distinction is PURELY
@@ -114,6 +118,10 @@ export type OptState = "on" | "off"
 /** Sign of an option flag: `-` turns the option on, `+` turns it off (zsh convention). */
 export type OptFlagSign = "+" | "-"
 
+/** Toggle an `OptFlagSign` to its complement (`-` ↔ `+`). */
+export const flipOptFlagSign = (sign: OptFlagSign): OptFlagSign =>
+  sign === "-" ? "+" : "-"
+
 /** Where zsh recognizes the word as reserved, not just as an ordinary word. */
 export type ReservedWordPos = "command" | "any"
 
@@ -178,15 +186,54 @@ export interface BinaryCondOpDoc {
 /** Parsed `[[ ... ]]` conditional operator docs. */
 export type CondOpDoc = UnaryCondOpDoc | BinaryCondOpDoc
 
+/**
+ * One row in a `{sig, desc}` nested item list. Captured when upstream documents
+ * a depth-1 nested list inside a builtin/comp-utility body. `sig` is the
+ * normalized header (e.g. `-V group-name`); `desc` is normalized prose.
+ *
+ * Shared shape (`BuiltinDoc.flagGroups[*].flags`, `CompUtilityDoc.flagGroups[*].flags`)
+ * — both categories model the same upstream pattern; see `[[records-are-self-contained]]`.
+ */
+export interface FlagEntry {
+  readonly sig: string
+  readonly desc: string
+}
+
+/**
+ * One sibling nested item list inside a record body. Most records have a
+ * single group; a few (notably `typeset`, `_arguments`) document two or more
+ * separate flag-set sections in the same body. Each group renders as its own
+ * bullet list. `intro` is the prose between the previous group's `enditem()`
+ * and this group's `startitem()` — empty for the first group.
+ */
+export interface FlagGroup {
+  readonly intro: string
+  readonly flags: readonly FlagEntry[]
+}
+
 /** Parsed builtin command doc block. */
 export interface BuiltinDoc {
   readonly name: Documented<"builtin">
   readonly synopsis: NonEmpty<string>
+  /**
+   * Body prose. When `flagGroups` is present this is the prose appearing
+   * before the first flag list; the renderer composes the visible body as
+   * desc → (group intro → flag list)+ → `outro`. When `flagGroups` is
+   * absent `desc` is the full body.
+   */
   readonly desc: string
   /** present when builtin requires a loaded module */
   readonly module?: string
   /** present when this is an alias of another builtin */
   readonly aliasOf?: Documented<"builtin">
+  /**
+   * Per-group flag entries when upstream documents one or more depth-1
+   * nested item lists inside the builtin body. Absent when upstream uses
+   * flat prose for the flags.
+   */
+  readonly flagGroups?: readonly FlagGroup[]
+  /** Prose after the last flag group. Present only when `flagGroups` is and upstream has trailing content. */
+  readonly outro?: string
 }
 
 /** Parsed precommand modifier doc block. */
@@ -232,13 +279,26 @@ export const mkShellParamKeyName = (raw: string): ShellParamKeyName =>
   raw.trim() as ShellParamKeyName
 
 /**
+ * One sub-value documented under a `ShellParamKey` whose body itself
+ * contains a nested item list (e.g. `compstate.context`, where the key's
+ * value is one of `array_value`, `brace_parameter`, ...). `desc` is the
+ * sub-value's normalized prose; no further nesting is captured.
+ */
+export interface ShellParamKeyValue {
+  readonly name: ShellParamKeyName
+  readonly desc: string
+}
+
+/**
  * One member of a `ShellParamDoc.keys` payload. `desc` is the member's
- * normalized prose; any deeper Yodl structure inside the member's body is
- * already flattened.
+ * normalized intro prose. When `values` is present the upstream Yodl
+ * documents an enumerated sub-list inside this key's body (depth-2 from
+ * the parameter's POV); the renderer emits it as a nested bullet list.
  */
 export interface ShellParamKey {
   readonly name: ShellParamKeyName
   readonly desc: string
+  readonly values?: readonly ShellParamKeyValue[]
 }
 
 /**
@@ -254,11 +314,18 @@ export interface ShellParamKey {
  */
 export interface ShellParamDoc {
   readonly name: Documented<"special_param">
+  /**
+   * Body prose. When `keys` is present this is the intro (text before the
+   * key list); the renderer composes intro → key headings → `outro`. When
+   * `keys` is absent `desc` is the full body.
+   */
   readonly sig: string
   readonly desc: string
   readonly scope: ShellParamScope
   readonly tied?: Documented<"special_param">
   readonly keys?: readonly ShellParamKey[]
+  /** Prose after the key list. Present only when `keys` is and upstream has trailing content. */
+  readonly outro?: string
 }
 
 /**
@@ -455,15 +522,34 @@ export const zleWidgetSubsections = [
 
 export type ZleWidgetSubsection = (typeof zleWidgetSubsections)[number]
 
+export type ZleWidgetKind = "standard" | "special"
+
+/**
+ * One nested entry within a ZLE widget's body (e.g. the editing functions
+ * documented inside `history-incremental-search-backward`'s mini-buffer
+ * support list). `sig` is the normalized full header (with any
+ * `xitem`-aliased markers folded into it); `desc` is the entry's prose.
+ */
+export interface ZleWidgetSubItem {
+  readonly sig: string
+  readonly desc: string
+}
+
 /** Zsh Line Editor widget names -- standard and special widgets from `zle.yo`. */
 export interface ZleWidgetDoc extends SyntaxDocBase {
   readonly name: Documented<"zle_widget">
   /** `"standard"` for bindable editing widgets; `"special"` for shell-called hooks. */
   readonly kind: ZleWidgetKind
   readonly section: ZleWidgetSubsection
+  /**
+   * Present when the widget's body contains a depth-1 nested item list
+   * (currently just `history-incremental-search-backward`). `desc` is then
+   * the intro prose; the renderer composes intro → sub-items → `outro`.
+   */
+  readonly subItems?: readonly ZleWidgetSubItem[]
+  /** Prose after the sub-item list. Present only when `subItems` is. */
+  readonly outro?: string
 }
-
-export type ZleWidgetKind = "standard" | "special"
 
 /**
  * ZLE keymap entry -- one of the fixed initial keymaps (`emacs`, `viins`,
@@ -524,7 +610,27 @@ export interface SpecialFunctionDoc extends SyntaxDocBase {
  * Completion utility function — completion-system helper functions from
  * `compsys.yo` §"Utility Functions": `_absolute_command_paths`,
  * `_all_labels`, `_arguments`, and others. One record per function.
+ *
+ * `desc` / `flagGroups` / `outro` follow the same pattern as `BuiltinDoc`:
+ * when `flagGroups` is present, `desc` is the intro before the first list
+ * and `outro` (if any) is the post-last-list prose.
+ *
+ * `sig` carries the canonical first synopsis line (single-line for the
+ * `SyntaxDocBase` surface-form invariant); `synopsis` carries every
+ * synopsis line, with upstream `SPACES()` continuations folded onto the
+ * preceding line. The renderer emits `synopsis` as a multi-line code
+ * block — mirrors `BuiltinDoc.synopsis`.
  */
 export interface CompUtilityDoc extends SyntaxDocBase {
   readonly name: Documented<"comp_utility">
+  readonly synopsis: NonEmpty<string>
+  /**
+   * Per-group flag entries captured when the upstream documents one or
+   * more depth-1 nested item lists inside the function body (e.g.
+   * `_arguments`'s sibling flag / spec-form lists). Same posture as
+   * `BuiltinDoc.flagGroups`.
+   */
+  readonly flagGroups?: readonly FlagGroup[]
+  /** Prose after the last flag group. */
+  readonly outro?: string
 }

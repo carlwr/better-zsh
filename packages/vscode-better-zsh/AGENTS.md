@@ -35,6 +35,10 @@ Always use `--no-dependencies`. The extension is bundled, and `vsce`'s internal 
   - `languageModelTools` from `toolDefs`
   - `configuration` from `settings-metadata`
 
+## Testing scope
+
+Extension tests cover VS Code wiring: position→record dispatch, command/provider registration, priority resolution. Hover/doc-record content and formatting are `@carlwr/zsh-core`'s concern — assert them in zsh-core unit tests, not here. Integration tests are expensive: anything assertable from a unit test (or any assumption an integration test relies on) belongs in a unit test.
+
 ## Container-only integration tests
 
 The zsh-path matrix integration harness is CI/Docker-only. On macOS, VS Code's shell-env resolution defeats the test's env isolation before extension activation.

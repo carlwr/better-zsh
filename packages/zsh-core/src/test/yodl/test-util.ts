@@ -31,7 +31,8 @@ export function expectDocCorpus<T>({
   docs: readonly T[]
   minCount: number
   keyOf: (doc: T) => string
-  descOf: (doc: T) => string
+  /** Return `undefined` for records whose desc is legitimately absent. */
+  descOf: (doc: T) => string | undefined
   known?: readonly string[]
   sectionOf?: (doc: T) => string
 }) {
@@ -42,8 +43,11 @@ export function expectDocCorpus<T>({
 
   for (const doc of docs) {
     expect(keyOf(doc)).toBeTruthy()
-    expect(descOf(doc)).toBeTruthy()
-    expect(descOf(doc)).not.toMatch(/\b(?:tt|var|item|xitem|sitem)\(/)
+    const desc = descOf(doc)
+    if (desc !== undefined) {
+      expect(desc).toBeTruthy()
+      expect(desc).not.toMatch(/\b(?:tt|var|item|xitem|sitem)\(/)
+    }
     if (sectionOf) expect(sectionOf(doc).trim()).toBeTruthy()
   }
 

@@ -1,6 +1,6 @@
 // MIRRORED-IN: zshref-rs/src/tools/record_fields.rs
 
-import { renderDoc } from "../render/md.ts"
+import { renderRecord } from "../render/md.ts"
 import type { DocCorpus } from "./corpus.ts"
 import {
   type DocCategory,
@@ -8,7 +8,6 @@ import {
   docDisplay,
   docId,
   docSubKind,
-  mkPieceId,
 } from "./taxonomy.ts"
 import type { Documented } from "./types.ts"
 
@@ -29,11 +28,11 @@ export function augmentWithMarkdown<K extends DocCategory>(
   readonly _subKind?: string
 })[] {
   const map = corpus[cat] as ReadonlyMap<Documented<K>, DocRecordMap[K]>
-  return [...map.entries()].map(([id, rec]) => {
+  return [...map.values()].map(rec => {
     const subKind = docSubKind[cat](rec as never)
     return {
       ...rec,
-      mdBody: renderDoc(corpus, mkPieceId(cat, id)),
+      mdBody: renderRecord(corpus, cat, rec),
       _id: docId[cat](rec as never) as string,
       _display: docDisplay(cat, rec as never),
       ...(subKind !== undefined ? { _subKind: subKind } : {}),

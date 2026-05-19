@@ -4,131 +4,29 @@ import { docCategoryPreamble } from "../docs/category-preamble.ts"
 import { type DocCategory, docCategories } from "../docs/taxonomy.ts"
 import type { RefDoc } from "./refs.ts"
 
+/** Canonical dump filenames — the single source of truth. */
+export const dumpFile = {
+  all: "all.md",
+  /** Per-category dump filename. */
+  forCat: (cat: DocCategory): `${DocCategory}.md` => `${cat}.md`,
+} as const
+
 /** Filename variants emitted by the reference-dump writer. */
 export type RefDumpFile =
-  | "all.md"
-  | "options.md"
-  | "conditional-ops.md"
-  | "special-params.md"
-  | "complex-commands.md"
-  | "builtins.md"
-  | "precmd-modifiers.md"
-  | "redirections.md"
-  | "process-substs.md"
-  | "param-expns.md"
-  | "reserved-words.md"
-  | "subscript-flags.md"
-  | "param-expn-flags.md"
-  | "history-expns.md"
-  | "glob-ops.md"
-  | "glob-flags.md"
-  | "glob-qualifiers.md"
-  | "prompt-escapes.md"
-  | "zle-widgets.md"
-  | "keymaps.md"
-  | "job-specs.md"
-  | "arith-ops.md"
-  | "special-functions.md"
-  | "comp-utils.md"
-  | "suspicious.md"
-
-const dumpFile: { [K in DocCategory]: RefDumpFile } = {
-  option: "options.md",
-  conditional_op: "conditional-ops.md",
-  builtin: "builtins.md",
-  precmd_modifier: "precmd-modifiers.md",
-  special_param: "special-params.md",
-  complex_command: "complex-commands.md",
-  reserved_word: "reserved-words.md",
-  redirection: "redirections.md",
-  process_subst: "process-substs.md",
-  param_expn: "param-expns.md",
-  subscript_flag: "subscript-flags.md",
-  param_expn_flag: "param-expn-flags.md",
-  history_expn: "history-expns.md",
-  glob_op: "glob-ops.md",
-  glob_flag: "glob-flags.md",
-  glob_qualifier: "glob-qualifiers.md",
-  prompt_escape: "prompt-escapes.md",
-  zle_widget: "zle-widgets.md",
-  keymap: "keymaps.md",
-  job_spec: "job-specs.md",
-  arith_op: "arith-ops.md",
-  special_function: "special-functions.md",
-  comp_utility: "comp-utils.md",
-}
-
-const dumpSpecs = [
-  ["all", "all.md"] as const,
-  ...docCategories.map(kind => [kind, dumpFile[kind]] as const),
-] satisfies readonly (readonly [DocCategory | "all", RefDumpFile])[]
-
-const dumpKinds: readonly DocCategory[] = docCategories
-
-const suspiciousPatterns: readonly [string, (md: string) => boolean][] = [
-  [
-    "empty ref",
-    md => /\b(?:See|see|described in|noted in) (?:\\ )?\./.test(md),
-  ],
-  ["dangling continuation", md => inProseLines(md, line => /\\$/m.test(line))],
-  ["raw yodl marker", md => /\b(?:tt|var|example|manref|noderef)\(/.test(md)],
-  ["unbalanced inline backticks", hasUnbalancedInlineBackticks],
-  [
-    'stray "+" before macro-shaped call',
-    md => /[A-Za-z_][A-Za-z0-9_]+\+\(/.test(md),
-  ],
-  ["double comma (null reference substitution)", md => /,\s*,/.test(md)],
-]
-
-/**
- * Like `hasUnbalancedInlineBackticks` but generic: tests `check` against
- * every non-fence line and returns true if any match.
- */
-function inProseLines(md: string, check: (line: string) => boolean): boolean {
-  let inFence = false
-  for (const line of md.split("\n")) {
-    if (line.startsWith("```")) {
-      inFence = !inFence
-      continue
-    }
-    if (inFence) continue
-    if (check(line)) return true
-  }
-  return false
-}
-
-/**
- * True if any non-fence line has an odd number of `` ` `` characters — a
- * reliable signal of an inline-code span that never closed. Fenced code
- * blocks are excluded because backticks within them are literal text.
- *
- * The heuristic can false-positive on doubled-backtick spans (`` ``x`y`` ``),
- * but our pipeline only emits the single-backtick form, so this is tight for
- * our corpus. Extend here if we ever start rendering doubled spans.
- */
-function hasUnbalancedInlineBackticks(md: string): boolean {
-  return inProseLines(md, line => {
-    const count = (line.match(/`/g) ?? []).length
-    return count % 2 !== 0
-  })
-}
-
-function section(doc: RefDoc): string {
-  return `## ${doc.heading}\n\n${doc.md}`
-}
+  | typeof dumpFile.all
+  | ReturnType<typeof dumpFile.forCat>
 
 /** Split rendered reference docs into markdown dump files for QA/review. */
 export function dumpText(
   docs: readonly RefDoc[],
 ): ReadonlyMap<RefDumpFile, string> {
   const byKind = groupByKind(docs)
-  const entries: readonly (readonly [RefDumpFile, string])[] = [
-    ...dumpSpecs.map(
-      ([kind, file]) => [file, renderDumpText(kind, docs, byKind)] as const,
-    ),
-    ["suspicious.md", suspiciousText(docs)] as const,
-  ]
-  return new Map(entries)
+  const out = new Map<RefDumpFile, string>()
+  out.set(dumpFile.all, renderDumpText("all", docs, byKind))
+  for (const kind of docCategories) {
+    out.set(dumpFile.forCat(kind), renderDumpText(kind, docs, byKind))
+  }
+  return out
 }
 
 /** Write reference markdown dump files to a directory. */
@@ -142,13 +40,10 @@ export async function writeRefDump(
   }
 }
 
-function suspiciousText(docs: readonly RefDoc[]): string {
-  const hits = docs.flatMap(doc => suspiciousHits(doc))
-  return hits.length > 0 ? `${hits.join("\n")}\n` : ""
-}
-
 function groupByKind(docs: readonly RefDoc[]): Map<DocCategory, RefDoc[]> {
-  const byKind = new Map(dumpKinds.map(kind => [kind, [] as RefDoc[]] as const))
+  const byKind = new Map<DocCategory, RefDoc[]>(
+    docCategories.map(kind => [kind, []]),
+  )
   for (const doc of docs) byKind.get(doc.kind)?.push(doc)
   return byKind
 }
@@ -161,17 +56,13 @@ function renderDumpText(
   const selected = kind === "all" ? docs : (byKind.get(kind) ?? [])
   const body = `${selected.map(section).join("\n\n---\n\n")}\n`
   // Preambles are per-category context; `all.md` intermixes categories and
-  // would fragment if each section were prefixed, so only prepend for
-  // per-category dumps with a preamble defined.
+  // would fragment if each section were prefixed.
   if (kind === "all") return body
   const preamble = docCategoryPreamble[kind]
   if (preamble === undefined) return body
   return `<!-- preamble for category -->\n\n${preamble}\n\n---\n\n${body}`
 }
 
-function suspiciousHits(doc: RefDoc): string[] {
-  const id = `${doc.kind}:${doc.id}`
-  return suspiciousPatterns
-    .filter(([, check]) => check(doc.md))
-    .map(([name]) => `- ${id} — ${name}`)
+function section(doc: RefDoc): string {
+  return `## ${doc.heading}\n\n${doc.md}`
 }

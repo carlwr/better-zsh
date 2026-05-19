@@ -62,10 +62,7 @@ function assertFactInvariants(line: string, facts: LineFact[]): void {
   const sorted = [...facts].sort((a, b) => a.span.start - b.span.start)
   for (let i = 1; i < sorted.length; i++) {
     // biome-ignore lint/style/noNonNullAssertion: loop bounds guarantee presence
-    const prev = sorted[i - 1]!,
-      // biome-ignore lint/style/noNonNullAssertion: loop bounds guarantee presence
-      curr = sorted[i]!
-    expect(prev.span.end).toBeLessThanOrEqual(curr.span.start)
+    expect(sorted[i - 1]!.span.end).toBeLessThanOrEqual(sorted[i]!.span.start)
   }
 }
 

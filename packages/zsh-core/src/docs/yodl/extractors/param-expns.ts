@@ -6,7 +6,7 @@ import {
   extractItems,
   extractSectionBody,
 } from "../core/doc.ts"
-import type { YNodeSeq } from "../core/nodes.ts"
+import type { YodlSrc } from "../core/nodes.ts"
 import { normalizeBody, normalizeHeader } from "../core/text.ts"
 
 // Sigs here are literal doc templates — e.g. `${name:-word}` — not live
@@ -114,6 +114,8 @@ export function fixupExpnYo(yo: string): string {
   )
 }
 
+const SECTION = "Parameter Expansion"
+
 /**
  * Parse the `Parameter Expansion` section of zshexpn into one record per sig.
  *
@@ -122,26 +124,22 @@ export function fixupExpnYo(yo: string): string {
  * its own sig but lists every sibling in `groupSigs` (manual source order) so
  * renderers can show the family together.
  */
-export function parseParamExpns(
-  yo: string | YNodeSeq,
-): readonly ParamExpnDoc[] {
+export function parseParamExpns(yo: YodlSrc): readonly ParamExpnDoc[] {
   const section = extractSectionBody(
     typeof yo === "string" ? fixupExpnYo(yo) : yo,
-    "Parameter Expansion",
+    SECTION,
   )
-  const entries = extractItems(section, 1)
   const out: ParamExpnDoc[] = []
   for (const { head, aliases, entry } of collectAliasedEntries(
-    entries,
+    extractItems(section, 1),
     normalizeHeader,
   )) {
     const desc = normalizeBody(entry.body ?? [])
     // Source order is `aliases` first (the preceding xitems) then `head` (the
-    // item carrying the body); TS can't prove the spread-tail tuple matches
-    // `[T, ...T[]]`, but the runtime invariant is clear.
+    // item carrying the body); the runtime invariant `head` is defined means
+    // the tuple is non-empty, but TS can't track the spread-tail.
     const groupSigs = [...aliases, head] as unknown as NonEmpty<string>
-    for (let i = 0; i < groupSigs.length; i++) {
-      const sig = groupSigs[i] as string
+    groupSigs.forEach((sig, i) => {
       const cls = SIG_CLASSIFICATION[sig]
       if (!cls) {
         throw new Error(
@@ -155,9 +153,9 @@ export function parseParamExpns(
         subKind: cls.subKind,
         placeholders: cls.placeholders,
         desc,
-        section: "Parameter Expansion",
+        section: SECTION,
       })
-    }
+    })
   }
   return out
 }

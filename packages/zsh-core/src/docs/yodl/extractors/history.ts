@@ -1,41 +1,42 @@
 import { mkDocumented } from "../../brands.ts"
 import type { HistoryDoc, HistoryKind } from "../../types.ts"
 import {
-  extractFirstList,
-  extractItemList,
+  extractFirstItemList,
+  extractFirstSitemList,
   extractSectionBody,
-  extractSitemList,
   flattenAliasedEntries,
   withBody,
 } from "../core/doc.ts"
-import type { YNodeSeq } from "../core/nodes.ts"
+import type { YodlSrc } from "../core/nodes.ts"
 import { normalizeBody, normalizeHeader } from "../core/text.ts"
 
-export function parseHistory(yo: string | YNodeSeq): readonly HistoryDoc[] {
+const EVENT_SECTION = "Event Designators"
+const MOD_SECTION = "Modifiers"
+const WORD_DESIG_SECTION = "Word Designators"
+
+const sigKey = (sig: string) => sig
+const modifierBareKey = (sig: string) => /^[A-Za-z&]+/.exec(sig)?.[0] ?? sig
+
+export function parseHistory(yo: YodlSrc): readonly HistoryDoc[] {
   return [
-    ...parseSection(yo, "Event Designators", "event-designator"),
+    ...parseSection(yo, EVENT_SECTION, "event-designator", sigKey),
     ...parseWordDesignators(yo),
-    ...parseSection(yo, "Modifiers", "modifier"),
+    ...parseSection(yo, MOD_SECTION, "modifier", modifierBareKey),
   ]
 }
 
 function parseSection(
-  yo: string | YNodeSeq,
+  yo: YodlSrc,
   section: string,
   kind: HistoryKind,
+  toKey: (sig: string) => string,
 ): HistoryDoc[] {
-  const body = extractSectionBody(yo, section)
-  const list = extractFirstList(body, "item")
-  if (!list) return []
   return flattenAliasedEntries(
-    extractItemList(list),
+    extractFirstItemList(extractSectionBody(yo, section)),
     normalizeHeader,
     (sig, desc) => ({
       kind,
-      key: mkDocumented(
-        "history_expn",
-        kind === "modifier" ? modifierBareKey(sig) : sig,
-      ),
+      key: mkDocumented("history_expn", toKey(sig)),
       sig,
       desc,
       section,
@@ -43,22 +44,17 @@ function parseSection(
   )
 }
 
-function modifierBareKey(sig: string): string {
-  return /^[A-Za-z&]+/.exec(sig)?.[0] ?? sig
-}
-
-function parseWordDesignators(yo: string | YNodeSeq): HistoryDoc[] {
-  const body = extractSectionBody(yo, "Word Designators")
-  const list = extractFirstList(body, "sitem")
-  if (!list) return []
-  return withBody(extractSitemList(list)).map(item => {
+function parseWordDesignators(yo: YodlSrc): HistoryDoc[] {
+  return withBody(
+    extractFirstSitemList(extractSectionBody(yo, WORD_DESIG_SECTION)),
+  ).map(item => {
     const sig = normalizeHeader(item.header)
     return {
       kind: "word-designator",
       key: mkDocumented("history_expn", sig),
       sig,
       desc: normalizeBody(item.body),
-      section: "Word Designators",
+      section: WORD_DESIG_SECTION,
     } satisfies HistoryDoc
   })
 }

@@ -9,7 +9,12 @@ import type {
   ShellParamDoc,
   ZshOption,
 } from "@carlwr/zsh-core/types"
-import { mkDocumented, mkOptFlag, mkRedirOp } from "@carlwr/zsh-core/types"
+import {
+  mkDocumented,
+  mkOptFlag,
+  mkRedirOp,
+  redirSlugFromSig,
+} from "@carlwr/zsh-core/types"
 import { vi } from "vitest"
 import { by, emptyCorpus, wordDoc } from "./test-util"
 
@@ -61,7 +66,7 @@ const o = (name: string, category: ZshOption["category"]): ZshOption => ({
 
 const r = (groupOp: string, sig: string, desc: string): RedirDoc => ({
   groupOp: mkRedirOp(groupOp),
-  slug: mkDocumented("redirection", sig.replace(/\s+/g, "_")),
+  slug: mkDocumented("redirection", redirSlugFromSig(sig)),
   sig,
   desc,
   section: "",

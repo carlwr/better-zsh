@@ -6,30 +6,29 @@ import { describe, expect, test } from "vitest"
 /**
  * Structural scope fence for zsh-core's **static** public surface.
  *
- * The `.`, `./analysis`, `./assets`, `./meta`, `./render`, `./resolver`,
- * `./taxonomy`, and `./types` entrypoints are advertised as
- * execution-free, network-free, and env-agnostic: they parse bundled Yodl
- * sources and render markdown. The `./exec` entrypoint is excluded
- * — it exposes a `ZshRunner` type; actual shell execution lives in the
- * *consumer*-injected runner, never inside this package, so nothing
- * routed through `./exec` gets to spawn processes either. This test
- * asserts the guarantee structurally by walking the import graph from
- * each static entrypoint and grepping reached files.
+ * Every non-glob `package.json` `exports` subpath (excluding `./exec`) is
+ * advertised as execution-free, network-free, and env-agnostic: it parses
+ * bundled Yodl sources and renders markdown. `./exec` is excluded — it
+ * exposes a `ZshRunner` type; actual shell execution lives in the
+ * *consumer*-injected runner, never inside this package. This test walks
+ * the import graph from each static entrypoint and greps reached files.
  */
 
 const here = dirname(fileURLToPath(import.meta.url))
 const pkgDir = resolve(here, "..", "..")
 
-const STATIC_ENTRIES = [
-  "analysis.ts",
-  "assets.ts",
-  "index.ts",
-  "meta.ts",
-  "render.ts",
-  "resolver.ts",
-  "taxonomy.ts",
-  "types.ts",
-] as const
+// Derive static entrypoints from package.json so new shared subpaths are
+// auto-checked. Excludes: `./exec` (ZshRunner injection), glob patterns
+// (data/schema JSON), and the manifest itself.
+const EXCLUDED_KEYS: ReadonlySet<string> = new Set(["./exec", "./package.json"])
+const pkgExports = (
+  JSON.parse(readFileSync(resolve(pkgDir, "package.json"), "utf8")) as {
+    exports: Record<string, unknown>
+  }
+).exports
+const STATIC_ENTRIES: readonly string[] = Object.keys(pkgExports)
+  .filter(k => !k.includes("*") && !EXCLUDED_KEYS.has(k))
+  .map(k => (k === "." ? "index.ts" : `${k.slice(2)}.ts`))
 
 const forbidden = [
   /\bnode:child_process\b/,
@@ -47,8 +46,8 @@ const importPattern = /\bfrom\s+["']([^"']+)["']/g
 function resolveImport(fromFile: string, spec: string): string | null {
   if (!spec.startsWith(".")) return null
   const base = resolve(dirname(fromFile), spec)
+  if (spec.endsWith(".ts") || spec.endsWith(".tsx")) return base
   for (const ext of [".ts", ".tsx", "/index.ts"]) {
-    if (spec.endsWith(".ts") || spec.endsWith(".tsx")) return base
     try {
       const candidate = base + ext
       readFileSync(candidate, "utf8")

@@ -1,116 +1,59 @@
 import { type DocCategory, docCategories } from "./taxonomy.ts"
 
-export const jsonArtifact = {
-  builtin: { file: "builtins.json", count: "builtins", schema: "BuiltinsJson" },
-  complex_command: {
-    file: "complex-commands.json",
-    count: "complexCommands",
-    schema: "ComplexCommandsJson",
-  },
-  conditional_op: {
-    file: "conditional-ops.json",
-    count: "conditionalOps",
-    schema: "ConditionalOpsJson",
-  },
-  glob_flag: {
-    file: "glob-flags.json",
-    count: "globFlags",
-    schema: "GlobFlagsJson",
-  },
-  glob_op: {
-    file: "glob-operators.json",
-    count: "globOperators",
-    schema: "GlobOperatorsJson",
-  },
-  glob_qualifier: {
-    file: "glob-qualifiers.json",
-    count: "globQualifiers",
-    schema: "GlobQualifiersJson",
-  },
-  history_expn: {
-    file: "history-expns.json",
-    count: "historyExpns",
-    schema: "HistoryExpnsJson",
-  },
-  option: { file: "options.json", count: "options", schema: "OptionsJson" },
-  param_expn: {
-    file: "param-expns.json",
-    count: "paramExpns",
-    schema: "ParamExpnsJson",
-  },
-  param_expn_flag: {
-    file: "param-expn-flags.json",
-    count: "paramExpnFlags",
-    schema: "ParamExpnFlagsJson",
-  },
-  precmd_modifier: {
-    file: "precmd-modifiers.json",
-    count: "precmdModifiers",
-    schema: "PrecmdModifiersJson",
-  },
-  process_subst: {
-    file: "process-substs.json",
-    count: "processSubsts",
-    schema: "ProcessSubstsJson",
-  },
-  prompt_escape: {
-    file: "prompt-escapes.json",
-    count: "promptEscapes",
-    schema: "PromptEscapesJson",
-  },
-  redirection: {
-    file: "redirections.json",
-    count: "redirections",
-    schema: "RedirectionsJson",
-  },
-  reserved_word: {
-    file: "reserved-words.json",
-    count: "reservedWords",
-    schema: "ReservedWordsJson",
-  },
-  special_param: {
-    file: "special-params.json",
-    count: "specialParams",
-    schema: "SpecialParamsJson",
-  },
-  subscript_flag: {
-    file: "subscript-flags.json",
-    count: "subscriptFlags",
-    schema: "SubscriptFlagsJson",
-  },
-  zle_widget: {
-    file: "zle-widgets.json",
-    count: "zleWidgets",
-    schema: "ZleWidgetsJson",
-  },
-  keymap: { file: "keymaps.json", count: "keymaps", schema: "KeymapsJson" },
-  job_spec: {
-    file: "job-specs.json",
-    count: "jobSpecs",
-    schema: "JobSpecsJson",
-  },
-  arith_op: {
-    file: "arith-ops.json",
-    count: "arithOps",
-    schema: "ArithOpsJson",
-  },
-  special_function: {
-    file: "special-functions.json",
-    count: "specialFunctions",
-    schema: "SpecialFunctionsJson",
-  },
-  comp_utility: {
-    file: "comp-utils.json",
-    count: "compUtils",
-    schema: "CompUtilsJson",
-  },
-} as const satisfies {
-  [K in DocCategory]: {
-    file: string
-    count: string
-    schema: string
-  }
+// Each category contributes a JSON data file, a camelCase count key, and a
+// PascalCase schema root name. All three derive from one `base` string:
+//   file   = `${base}.json`
+//   count  = camelCase(base)
+//   schema = `${PascalCase(base)}Json`
+// Default base is the category name with `_` → `-` and a trailing `s`. Two
+// categories deviate from the simple plural-s rule and need explicit overrides.
+const baseOverrides = {
+  glob_op: "glob-operators",
+  comp_utility: "comp-utils",
+} as const satisfies Partial<Record<DocCategory, string>>
+
+type BaseOverrides = typeof baseOverrides
+
+type SnakeToKebab<S extends string> = S extends `${infer A}_${infer B}`
+  ? `${A}-${SnakeToKebab<B>}`
+  : S
+
+type Camelize<S extends string> = S extends `${infer A}-${infer B}`
+  ? `${A}${Capitalize<Camelize<B>>}`
+  : S
+
+type Base<K extends DocCategory> = K extends keyof BaseOverrides
+  ? BaseOverrides[K]
+  : `${SnakeToKebab<K>}s`
+
+type Artifact<K extends DocCategory> = {
+  readonly file: `${Base<K>}.json`
+  readonly count: Camelize<Base<K>>
+  readonly schema: `${Capitalize<Camelize<Base<K>>>}Json`
 }
+
+const camelize = (s: string): string =>
+  s.replace(/-(.)/g, (_, c: string) => c.toUpperCase())
+
+function baseFor<K extends DocCategory>(cat: K): Base<K> {
+  return ((baseOverrides as Partial<Record<DocCategory, string>>)[cat] ??
+    `${cat.replace(/_/g, "-")}s`) as Base<K>
+}
+
+function artifactFor<K extends DocCategory>(cat: K): Artifact<K> {
+  const b = baseFor(cat)
+  const c = camelize(b)
+  return {
+    file: `${b}.json`,
+    count: c,
+    schema: `${c.charAt(0).toUpperCase()}${c.slice(1)}Json`,
+  } as Artifact<K>
+}
+
+export const jsonArtifact: { [K in DocCategory]: Artifact<K> } =
+  Object.fromEntries(docCategories.map(cat => [cat, artifactFor(cat)])) as {
+    [K in DocCategory]: Artifact<K>
+  }
 
 type JsonArtifact = (typeof jsonArtifact)[DocCategory]
 

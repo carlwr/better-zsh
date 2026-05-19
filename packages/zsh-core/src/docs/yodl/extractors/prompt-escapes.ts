@@ -11,7 +11,7 @@ import {
   extractItems,
   parseClosedUnion,
 } from "../core/doc.ts"
-import type { YNodeSeq } from "../core/nodes.ts"
+import type { YodlSrc } from "../core/nodes.ts"
 import { normalizeBody, normalizeHeader } from "../core/text.ts"
 
 const PROMPT_SUBSECTION_SET: ReadonlySet<string> = new Set(promptSubsections)
@@ -34,9 +34,7 @@ interface PromptHead {
  * e.g. `item(tt(%F) LPAR()tt(%f)RPAR())`. Both glyphs are emitted as
  * separate records sharing one body chunk and the full `%X (%x)` sig.
  */
-export function parsePromptEscapes(
-  yo: string | YNodeSeq,
-): readonly PromptEscapeDoc[] {
+export function parsePromptEscapes(yo: YodlSrc): readonly PromptEscapeDoc[] {
   const out: PromptEscapeDoc[] = []
   for (const aliased of collectAliasedEntries<PromptHead>(
     extractItems(yo, 1),
@@ -78,7 +76,7 @@ function parsePromptSubsection(raw: string): PromptSubsection {
  */
 function promptKeys(sig: string): NonEmpty<string> | undefined {
   const paired = sig.match(/^(%\S+)\s+\(\s*(%\S+)\s*\)\s*$/)
-  if (paired) return [paired[1] as string, paired[2] as string]
-  const single = sig.match(/^%\S+/)
-  return single ? [single[0]] : undefined
+  if (paired?.[1] && paired[2]) return [paired[1], paired[2]]
+  const single = sig.match(/^%\S+/)?.[0]
+  return single ? [single] : undefined
 }

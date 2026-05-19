@@ -296,6 +296,8 @@ Vendored `.yo` is consumed three ways:
 
 Per-category renderers are internal; public entry is `renderDoc`. The JSON export is a sibling consumer path (e.g. Rust `include_bytes!`); it stays in zsh-core for build convenience — package split deferred.
 
+Parser and renderer are layered: the parser may capture structure the renderer chooses to flatten or compose. Rendered markdown is the byte-equal contract surface; record-shape changes (new typed fields) stay below it until they cross into the wire schema. Cross-cutting "records are self-contained" framing: PRINCIPLES.md.
+
 ---
 
 ## Output schemas (tooldef-owned)

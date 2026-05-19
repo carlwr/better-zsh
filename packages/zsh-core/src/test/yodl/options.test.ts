@@ -76,15 +76,12 @@ endsitem()`
       expect(opts.length).toBeGreaterThan(100)
     })
 
-    test("all options have non-empty name and desc", () => {
+    test("every option: non-empty name+desc, idempotent under brand mint", () => {
       for (const o of opts) {
         expect(o.name).toBeTruthy()
         expect(o.desc).toBeTruthy()
-      }
-    })
-
-    test("all names pass mkProven option idempotence", () => {
-      for (const o of opts) {
+        // Catches a record minted from a non-canonical raw form: every
+        // emitted `name` must already be the normalized brand key.
         expect(opt(o.name)).toBe(o.name)
       }
     })
@@ -94,8 +91,10 @@ endsitem()`
       expect(new Set(names).size).toBe(names.length)
     })
 
-    test("all categories are non-empty", () => {
-      expect([...new Set(opts.map(o => o.category))]).toEqual(optSections)
+    test("category set equals optSections", () => {
+      expect([...new Set(opts.map(o => o.category))].sort()).toEqual(
+        [...optSections].sort(),
+      )
     })
 
     test("known options exist", () => {

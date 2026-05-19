@@ -1,9 +1,9 @@
 import {
+  asNodes,
   isMacro,
   macroArg,
-  parseNodes,
-  type YNode,
   type YNodeSeq,
+  type YodlSrc,
 } from "./nodes.ts"
 import { normalizeBody, stripYodl } from "./text.ts"
 
@@ -22,6 +22,8 @@ export function parseClosedUnion<T extends string>(
   throw new Error(`Unknown ${label}: ${raw}`)
 }
 
+type YodlListKind = "item" | "sitem"
+
 export interface YodlEntry {
   kind: "item" | "sitem" | "xitem"
   header: YNodeSeq
@@ -36,18 +38,13 @@ export interface YodlSection {
   body: YNodeSeq
 }
 
-type YodlListKind = "item" | "sitem"
-
 export interface AliasedYodlEntry<T> {
   head: T
   aliases: readonly T[]
   entry: YodlEntry
 }
 
-export function extractItems(
-  src: string | YNodeSeq,
-  depth?: number,
-): YodlEntry[] {
+export function extractItems(src: YodlSrc, depth?: number): YodlEntry[] {
   return extractEntries(asNodes(src), ["xitem", "item"], depth)
 }
 
@@ -60,22 +57,137 @@ export function withBody(
   )
 }
 
-export function extractItemList(src: string | YNodeSeq): YodlEntry[] {
-  return extractEntries(asNodes(src), ["xitem", "item"], 1)
+/** Convenience: only the top-level (depth-1) `item`/`xitem` entries. */
+export function extractItemList(src: YodlSrc): YodlEntry[] {
+  return extractItems(src, 1)
 }
 
-export function extractSitemList(src: string | YNodeSeq): YodlEntry[] {
-  return extractEntries(asNodes(src), ["sitem"], 1)
+/**
+ * Three-way split of an item-body at its first depth-1
+ * `startitem()`/`enditem()` block.
+ *
+ * - `intro`  — body nodes before the nested list (still as Yodl nodes)
+ * - `entries` — the depth-1 list's `item`/`xitem` entries
+ * - `outro` — body nodes after the matching `enditem()`
+ *
+ * Returns `undefined` when no nested list is present; the caller should
+ * treat the whole body as flat prose.
+ *
+ * Only the immediate level is structured. Deeper nesting inside an entry's
+ * body stays inside that entry and will flatten through `normalizeBody`
+ * when the caller renders the entry. Lifting nested structure further is
+ * a separate operation (call `splitBodyAtNestedList` again on the entry's
+ * body if needed).
+ */
+export interface ItemBodySplit {
+  readonly intro: YNodeSeq
+  readonly entries: readonly YodlEntry[]
+  readonly outro: YNodeSeq
 }
 
-export function extractSections(src: string | YNodeSeq): YodlSection[] {
+export function splitBodyAtNestedList(
+  body: YNodeSeq,
+): ItemBodySplit | undefined {
+  const range = findBracketRange(body, "startitem", "enditem")
+  if (!range) return undefined
+  return {
+    intro: body.slice(0, range.start),
+    entries: extractItemList(body.slice(range.start, range.end + 1)),
+    outro: body.slice(range.end + 1),
+  }
+}
+
+/**
+ * Generalization of `splitBodyAtNestedList` over every sibling
+ * `startitem()`/`enditem()` block in `body`. Returns the leading prose, each
+ * captured list with the inter-list prose immediately preceding it, and the
+ * trailing prose after the final list. Returns `undefined` when the body has
+ * no nested list — callers can then keep the body as flat prose.
+ *
+ * Used by extractors whose record body may carry multiple sibling nested
+ * lists (e.g. `typeset`, `_arguments`). The first group's `preIntro` is
+ * always the empty sequence — the body's intro is exposed separately so the
+ * caller can place it before the first group in the rendered output.
+ */
+export interface BodyWithNestedLists {
+  readonly intro: YNodeSeq
+  readonly groups: readonly {
+    readonly preIntro: YNodeSeq
+    readonly entries: readonly YodlEntry[]
+  }[]
+  readonly outro: YNodeSeq
+}
+
+export function splitBodyAtAllNestedLists(
+  body: YNodeSeq,
+): BodyWithNestedLists | undefined {
+  const first = splitBodyAtNestedList(body)
+  if (!first) return undefined
+  const groups: BodyWithNestedLists["groups"][number][] = [
+    { preIntro: [], entries: first.entries },
+  ]
+  let cursor: ItemBodySplit = first
+  while (true) {
+    const next = splitBodyAtNestedList(cursor.outro)
+    if (!next) break
+    groups.push({ preIntro: next.intro, entries: next.entries })
+    cursor = next
+  }
+  return { intro: first.intro, groups, outro: cursor.outro }
+}
+
+/**
+ * Locate the first balanced top-level `open()` / `close()` pair in `nodes`,
+ * returning the indices of the opener and matching closer. Nested pairs of
+ * the same kind nest by depth count. Returns `undefined` if no balanced
+ * pair exists.
+ */
+function findBracketRange(
+  nodes: YNodeSeq,
+  open: string,
+  close: string,
+): { start: number; end: number } | undefined {
+  let depth = 0
+  let start = -1
+  for (let i = 0; i < nodes.length; i++) {
+    const node = nodes[i]
+    if (isMacro(node, open)) {
+      if (depth === 0) start = i
+      depth++
+      continue
+    }
+    if (isMacro(node, close) && depth > 0) {
+      depth--
+      if (depth === 0 && start !== -1) return { start, end: i }
+    }
+  }
+  return undefined
+}
+
+/**
+ * The depth-1 `item`/`xitem` entries inside the first
+ * `startitem()`/`enditem()` block of `src`. Empty when no such block exists
+ * (matches the historical "guard the list, iterate it" pattern in extractors).
+ */
+export function extractFirstItemList(src: YodlSrc): YodlEntry[] {
+  return extractFirstList(src, "item", ["xitem", "item"])
+}
+
+/**
+ * The depth-1 `sitem` entries inside the first
+ * `startsitem()`/`endsitem()` block of `src`. Empty when no such block exists.
+ */
+export function extractFirstSitemList(src: YodlSrc): YodlEntry[] {
+  return extractFirstList(src, "sitem", ["sitem"])
+}
+
+export function extractSections(src: YodlSrc): YodlSection[] {
   const nodes = asNodes(src)
   const heads = nodes.flatMap((node, idx) =>
-    isSection(node)
-      ? [{ idx, level: node.name, name: stripYodl(macroArg(node, 0)) }]
+    isMacro(node, "sect") || isMacro(node, "subsect")
+      ? [{ idx, level: node.name, name: stripYodl(macroArg(node, 0), "code") }]
       : [],
   )
-
   return heads.map((head, idx) => ({
     level: head.level,
     name: head.name,
@@ -83,11 +195,8 @@ export function extractSections(src: string | YNodeSeq): YodlSection[] {
   }))
 }
 
-export function extractSectionBody(
-  src: string | YNodeSeq,
-  name: string,
-): YNodeSeq {
-  return extractSections(src).find(section => section.name === name)?.body ?? []
+export function extractSectionBody(src: YodlSrc, name: string): YNodeSeq {
+  return extractSections(src).find(s => s.name === name)?.body ?? []
 }
 
 /**
@@ -95,48 +204,43 @@ export function extractSectionBody(
  * `subsect(...)`-delimited bodies — up to (but excluding) the next top-level
  * `sect(...)`. Unlike `extractSectionBody`, this does not stop at subsections.
  */
-export function extractSectBody(
-  src: string | YNodeSeq,
-  name: string,
-): YNodeSeq {
+export function extractSectBody(src: YodlSrc, name: string): YNodeSeq {
   const nodes = asNodes(src)
   const start = nodes.findIndex(
-    n => isMacro(n, "sect") && macroName(n) === name,
+    n => isMacro(n, "sect") && stripYodl(macroArg(n, 0), "code") === name,
   )
   if (start < 0) return []
-  const endRel = nodes.slice(start + 1).findIndex(n => isMacro(n, "sect"))
-  const end = endRel < 0 ? nodes.length : start + 1 + endRel
-  return nodes.slice(start + 1, end)
+  const after = start + 1
+  const endRel = nodes.slice(after).findIndex(n => isMacro(n, "sect"))
+  return nodes.slice(after, endRel < 0 ? nodes.length : after + endRel)
 }
 
-function macroName(node: YNode): string {
-  return node.kind === "macro" ? stripYodl(macroArg(node, 0)) : ""
-}
+const LIST_BRACKETS = {
+  item: { open: "startitem", close: "enditem" },
+  sitem: { open: "startsitem", close: "endsitem" },
+} as const satisfies Record<YodlListKind, { open: string; close: string }>
 
-export function extractFirstList(
-  src: string | YNodeSeq,
+function extractFirstList(
+  src: YodlSrc,
   kind: YodlListKind,
-): YNodeSeq | undefined {
+  entryKinds: readonly YodlEntry["kind"][],
+): YodlEntry[] {
   const nodes = asNodes(src)
-  const open = kind === "item" ? "startitem" : "startsitem"
-  const close = kind === "item" ? "enditem" : "endsitem"
-  let depth = 0
-  let start = -1
-
-  for (let idx = 0; idx < nodes.length; idx++) {
-    const node = nodes[idx]
-    if (isMacro(node, open)) {
-      if (depth === 0) start = idx
-      depth++
-      continue
-    }
-    if (isMacro(node, close) && depth > 0) {
-      depth--
-      if (depth === 0 && start !== -1) return nodes.slice(start, idx + 1)
-    }
+  const { open, close } = LIST_BRACKETS[kind]
+  const range = findBracketRange(nodes, open, close)
+  if (range) {
+    return extractEntries(
+      nodes.slice(range.start, range.end + 1),
+      entryKinds,
+      1,
+    )
   }
-
-  return start === -1 ? undefined : nodes.slice(start)
+  // Unbalanced: take the tail from the first opener if any (matches the
+  // historical behavior of the inline walker).
+  const openIdx = nodes.findIndex(n => isMacro(n, open))
+  return openIdx === -1
+    ? []
+    : extractEntries(nodes.slice(openIdx), entryKinds, 1)
 }
 
 export function flattenAliasedEntries<T, U>(
@@ -177,8 +281,28 @@ export function collectAliasedEntries<T>(
   return out
 }
 
-function asNodes(src: string | YNodeSeq): YNodeSeq {
-  return typeof src === "string" ? parseNodes(src) : src
+/**
+ * Maps every list-bracket macro to the list family it bounds and the depth
+ * delta it applies. Derived from `LIST_BRACKETS` so adding a list kind is one
+ * edit. `extractEntries` walks these to track current nesting depth per
+ * family without parallel counters.
+ */
+const BRACKET_FAMILY: Readonly<
+  Record<string, readonly [YodlListKind, 1 | -1]>
+> = Object.fromEntries(
+  (
+    Object.entries(LIST_BRACKETS) as readonly [
+      YodlListKind,
+      { open: string; close: string },
+    ][]
+  ).flatMap(([k, b]) => [
+    [b.open, [k, 1] as const],
+    [b.close, [k, -1] as const],
+  ]),
+)
+
+function entryFamily(name: YodlEntry["kind"]): YodlListKind {
+  return name === "sitem" ? "sitem" : "item"
 }
 
 function extractEntries(
@@ -188,34 +312,23 @@ function extractEntries(
 ): YodlEntry[] {
   const out: YodlEntry[] = []
   let section = ""
-  let itemDepth = 0
-  let sitemDepth = 0
+  const depths: Record<YodlListKind, number> = { item: 0, sitem: 0 }
 
   for (const node of nodes) {
-    if (isMacro(node, "sect") || isMacro(node, "subsect")) {
-      section = stripYodl(macroArg(node, 0))
-      continue
-    }
-    if (isMacro(node, "startitem")) {
-      itemDepth++
-      continue
-    }
-    if (isMacro(node, "enditem")) {
-      itemDepth = Math.max(0, itemDepth - 1)
-      continue
-    }
-    if (isMacro(node, "startsitem")) {
-      sitemDepth++
-      continue
-    }
-    if (isMacro(node, "endsitem")) {
-      sitemDepth = Math.max(0, sitemDepth - 1)
-      continue
-    }
     if (node.kind !== "macro") continue
-    if (!isEntry(node.name) || !kinds.includes(node.name)) continue
+    if (node.name === "sect" || node.name === "subsect") {
+      section = stripYodl(macroArg(node, 0), "code")
+      continue
+    }
+    const bracket = BRACKET_FAMILY[node.name]
+    if (bracket) {
+      const [family, delta] = bracket
+      depths[family] = Math.max(0, depths[family] + delta)
+      continue
+    }
+    if (!isEntryKind(node.name) || !kinds.includes(node.name)) continue
 
-    const entryDepth = node.name === "sitem" ? sitemDepth : itemDepth
+    const entryDepth = depths[entryFamily(node.name)]
     if (depth !== undefined && entryDepth !== depth) continue
 
     out.push({
@@ -230,12 +343,6 @@ function extractEntries(
   return out
 }
 
-function isSection(
-  node: YNode,
-): node is Extract<YNode, { kind: "macro" }> & { name: "sect" | "subsect" } {
-  return isMacro(node, "sect") || isMacro(node, "subsect")
-}
-
-function isEntry(name: string): name is YodlEntry["kind"] {
+function isEntryKind(name: string): name is YodlEntry["kind"] {
   return name === "item" || name === "sitem" || name === "xitem"
 }

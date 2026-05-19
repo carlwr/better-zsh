@@ -12,6 +12,19 @@ export interface YMacro {
 export type YNode = YText | YMacro
 export type YNodeSeq = readonly YNode[]
 
+/**
+ * Yodl source accepted by parsers and extractors: either raw text (parsed on
+ * the fly) or an already-parsed node sequence. Lets callers compose without
+ * re-parsing while keeping the one-shot string form available for tests and
+ * direct extractor calls.
+ */
+export type YodlSrc = string | YNodeSeq
+
+/** Coerce a `YodlSrc` to nodes, parsing strings lazily. */
+export function asNodes(src: YodlSrc): YNodeSeq {
+  return typeof src === "string" ? parseNodes(src) : src
+}
+
 interface ParseResult {
   nodes: YNode[]
   pos: number
@@ -19,7 +32,12 @@ interface ParseResult {
 }
 
 export function parseNodes(raw: string): YNode[] {
-  return parseSeq(raw, 0).nodes
+  // Yodl preprocessor convention: a backslash at end of input line strips
+  // both the backslash and the following newline (line continuation). The
+  // real `yodl` tool consumes this before macro expansion; doing the same
+  // here matches behavior. Without this, line-continuation markers leak
+  // into rendered output as paragraph-breaking standalone `\` lines.
+  return parseSeq(raw.replace(/\\\n/g, ""), 0).nodes
 }
 
 export function isMacro<N extends string>(
@@ -85,6 +103,18 @@ function parseSeq(src: string, start: number, stop?: ")"): ParseResult {
   return { nodes, pos, closed: stop === undefined }
 }
 
+// Macros with a fixed argument count. Without this cap, the parser greedily
+// consumes every adjacent `(...)` group as another macro arg, swallowing
+// trailing parenthesized literals. The vendored corpus relies on tt() being
+// 1-arg: e.g. `tt(SP())(single unquoted space)` is meant to be `tt(SP())`
+// followed by literal `(single unquoted space)`, but without the cap the
+// trailing `(...)` becomes a discarded args[1] of tt.
+const KNOWN_ARITY: Readonly<Record<string, number>> = {
+  tt: 1,
+  var: 1,
+  em: 1,
+}
+
 function parseMacroAt(
   src: string,
   pos: number,
@@ -98,8 +128,9 @@ function parseMacroAt(
   let next = pos + name.length
   if (src[next] !== "(") return undefined
 
+  const maxArgs = KNOWN_ARITY[name] ?? Infinity
   const args: YNode[][] = []
-  while (src[next] === "(") {
+  while (src[next] === "(" && args.length < maxArgs) {
     const inner = parseSeq(src, next + 1, ")")
     if (!inner.closed) return undefined
     args.push(inner.nodes)

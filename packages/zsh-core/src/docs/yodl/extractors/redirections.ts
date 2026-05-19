@@ -1,25 +1,27 @@
 import { mkDocumented } from "../../brands.ts"
 import type { RedirDoc } from "../../types.ts"
-import { mkRedirOp } from "../../types.ts"
+import { mkRedirOp, redirSlugFromSig } from "../../types.ts"
 import {
   extractItems,
   extractSectionBody,
   flattenAliasedEntries,
 } from "../core/doc.ts"
-import type { YNodeSeq } from "../core/nodes.ts"
+import type { YodlSrc } from "../core/nodes.ts"
 import { normalizeHeader } from "../core/text.ts"
 
-export function parseRedirs(yo: string | YNodeSeq): readonly RedirDoc[] {
-  const section = extractSectionBody(yo, "Redirection")
+const SECTION = "Redirection"
+
+export function parseRedirs(yo: YodlSrc): readonly RedirDoc[] {
+  const section = extractSectionBody(yo, SECTION)
   return flattenAliasedEntries(
     extractItems(section.length > 0 ? section : yo, 1),
     normalizeHeader,
     (sig, desc) => ({
       groupOp: mkRedirOp(sig.match(/^\S+/)?.[0] ?? sig),
-      slug: mkDocumented("redirection", sig.replace(/\s+/g, "_")),
+      slug: mkDocumented("redirection", redirSlugFromSig(sig)),
       sig,
       desc,
-      section: "Redirection",
+      section: SECTION,
     }),
   )
 }

@@ -5,26 +5,29 @@ import {
   extractSectionBody,
   flattenAliasedEntries,
 } from "../core/doc.ts"
-import type { YNodeSeq } from "../core/nodes.ts"
+import type { YodlSrc } from "../core/nodes.ts"
 import { normalizeHeader } from "../core/text.ts"
 
-export function parseGlobOps(yo: string | YNodeSeq): readonly GlobOpDoc[] {
+const STD_SECTION = "Glob Operators"
+const KSH_SECTION = "ksh-like Glob Operators"
+
+export function parseGlobOps(yo: YodlSrc): readonly GlobOpDoc[] {
   return [
     ...parseSection(
-      extractSectionBody(yo, "Glob Operators"),
-      "Glob Operators",
+      extractSectionBody(yo, STD_SECTION),
+      STD_SECTION,
       "standard",
     ),
     ...parseSection(
-      extractSectionBody(yo, "ksh-like Glob Operators"),
-      "ksh-like Glob Operators",
+      extractSectionBody(yo, KSH_SECTION),
+      KSH_SECTION,
       "ksh-like",
     ),
   ]
 }
 
 function parseSection(
-  section: Parameters<typeof extractItems>[0],
+  section: YodlSrc,
   name: string,
   kind: GlobOpKind,
 ): GlobOpDoc[] {

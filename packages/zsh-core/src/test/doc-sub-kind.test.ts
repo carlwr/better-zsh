@@ -15,6 +15,13 @@ function firstRec<K extends DocCategory>(cat: K): DocRecordMap[K] {
   return rec as DocRecordMap[K]
 }
 
+// Parametric `docSubKind[cat](rec)` — single dispatch-cast site.
+const subKindOf = <K extends DocCategory>(
+  cat: K,
+  rec: DocRecordMap[K],
+): string | undefined =>
+  (docSubKind[cat] as (d: DocRecordMap[K]) => string | undefined)(rec)
+
 describe("docSubKind", () => {
   test("history doc surfaces its kind string", () => {
     const doc = firstRec("history_expn")
@@ -25,8 +32,9 @@ describe("docSubKind", () => {
   })
 
   test("glob_op doc surfaces standard | ksh-like", () => {
-    const doc = firstRec("glob_op")
-    expect(["standard", "ksh-like"]).toContain(docSubKind.glob_op(doc))
+    expect(["standard", "ksh-like"]).toContain(
+      docSubKind.glob_op(firstRec("glob_op")),
+    )
   })
 
   test("builtin doc has no subKind", () => {
@@ -34,11 +42,8 @@ describe("docSubKind", () => {
   })
 
   test("every category resolves without throwing on a sample record", () => {
-    for (const cat of docCategories) {
-      const rec = firstRec(cat)
-      const fn = docSubKind[cat] as (d: typeof rec) => string | undefined
-      expect(() => fn(rec)).not.toThrow()
-    }
+    for (const cat of docCategories)
+      expect(() => subKindOf(cat, firstRec(cat))).not.toThrow()
   })
 
   // Specific instance of a broader future invariant: per-category structural
@@ -51,14 +56,10 @@ describe("docSubKind", () => {
   test("subKindAlwaysOrNever: per-category subKind is always-or-never populated", () => {
     const mixed: { cat: string; defined: number; undef: number }[] = []
     for (const cat of docCategories) {
-      const map = corpus[cat] as ReadonlyMap<string, DocRecordMap[DocCategory]>
-      const fn = docSubKind[cat] as (
-        d: DocRecordMap[DocCategory],
-      ) => string | undefined
       let defined = 0
       let undef = 0
-      for (const rec of map.values()) {
-        const v = fn(rec)
+      for (const rec of corpus[cat].values()) {
+        const v = subKindOf(cat, rec)
         if (v === undefined || v === null || v === "") undef++
         else defined++
       }

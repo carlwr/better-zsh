@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest"
 import { loadCorpus } from "../docs/corpus"
 import { resolve } from "../docs/resolver"
+import { mkPieceId } from "../docs/taxonomy"
 import { mkDocumented_ } from "./id-fns"
 
 const corpus = loadCorpus()
@@ -31,8 +32,9 @@ describe("resolveHistory (event designators)", () => {
     // whitespace is trimmed
     ["  !42  ", hist("!n")],
   ] as const)("%s -> %s", (raw, expected) => {
-    const got = resolve(corpus, "history_expn", raw)
-    expect(got).toEqual({ category: "history_expn", id: expected })
+    expect(resolve(corpus, "history_expn", raw)).toEqual(
+      mkPieceId("history_expn", expected),
+    )
   })
 
   test.each([
@@ -61,10 +63,9 @@ describe("resolveHistory (event designators)", () => {
   test.each([
     ["!{foo}", hist("!{...}")],
   ] as const)("%s resolves as braced history", (raw, expected) => {
-    expect(resolve(corpus, "history_expn", raw)).toEqual({
-      category: "history_expn",
-      id: expected,
-    })
+    expect(resolve(corpus, "history_expn", raw)).toEqual(
+      mkPieceId("history_expn", expected),
+    )
   })
 
   test.each(["!$"])("%s does not resolve as `!str`", raw => {
@@ -82,10 +83,9 @@ describe("resolveRedir", () => {
     ["2<<EOF", redir("<<[-]_word")],
     ["2<<-EOF", redir("<<[-]_word")],
   ] as const)("%s resolves to the matching redirection doc", (raw, expected) => {
-    expect(resolve(corpus, "redirection", raw)).toEqual({
-      category: "redirection",
-      id: expected,
-    })
+    expect(resolve(corpus, "redirection", raw)).toEqual(
+      mkPieceId("redirection", expected),
+    )
   })
 
   test.each([
@@ -100,10 +100,9 @@ describe("resolveRedir", () => {
     [">& number", redir(">&_number")],
     ["<<[-] word", redir("<<[-]_word")],
   ] as const)("full sig form %s resolves to the slug id", (raw, expected) => {
-    expect(resolve(corpus, "redirection", raw)).toEqual({
-      category: "redirection",
-      id: expected,
-    })
+    expect(resolve(corpus, "redirection", raw)).toEqual(
+      mkPieceId("redirection", expected),
+    )
   })
 })
 
@@ -122,10 +121,9 @@ describe("parens-agnostic flag resolvers", () => {
       ["e:string:", subFlag("e")],
       ["(e:string:)", subFlag("e")],
     ] as const)("%s -> %s", (raw, expected) => {
-      expect(resolve(corpus, "subscript_flag", raw)).toEqual({
-        category: "subscript_flag",
-        id: expected,
-      })
+      expect(resolve(corpus, "subscript_flag", raw)).toEqual(
+        mkPieceId("subscript_flag", expected),
+      )
     })
 
     test.each(["Z", "(Z)", "()", "(", ")", ""])("%s -> undefined", raw => {
@@ -143,10 +141,9 @@ describe("parens-agnostic flag resolvers", () => {
       ["j:string:", parFlag("j")],
       ["(j:string:)", parFlag("j")],
     ] as const)("%s -> %s", (raw, expected) => {
-      expect(resolve(corpus, "param_expn_flag", raw)).toEqual({
-        category: "param_expn_flag",
-        id: expected,
-      })
+      expect(resolve(corpus, "param_expn_flag", raw)).toEqual(
+        mkPieceId("param_expn_flag", expected),
+      )
     })
 
     test.each(["Y", "(Y)", ""])("%s -> undefined", raw => {
@@ -162,10 +159,9 @@ describe("parens-agnostic flag resolvers", () => {
       ["I", glFlag("I")],
       ["(#I)", glFlag("I")],
     ] as const)("%s -> %s", (raw, expected) => {
-      expect(resolve(corpus, "glob_flag", raw)).toEqual({
-        category: "glob_flag",
-        id: expected,
-      })
+      expect(resolve(corpus, "glob_flag", raw)).toEqual(
+        mkPieceId("glob_flag", expected),
+      )
     })
 
     test.each(["Z", "(Z)", "(#Z)", "(#)", ""])("%s -> undefined", raw => {
@@ -181,10 +177,9 @@ describe("parens-agnostic flag resolvers", () => {
       ["@", glQual("@")],
       ["(#q@)", glQual("@")],
     ] as const)("%s -> %s", (raw, expected) => {
-      expect(resolve(corpus, "glob_qualifier", raw)).toEqual({
-        category: "glob_qualifier",
-        id: expected,
-      })
+      expect(resolve(corpus, "glob_qualifier", raw)).toEqual(
+        mkPieceId("glob_qualifier", expected),
+      )
     })
 
     test.each(["Z", "(Z)", "(#qZ)", "(#q)", ""])("%s -> undefined", raw => {
@@ -204,10 +199,9 @@ describe("resolveJobSpec", () => {
     ["%?foo", jobSpec("%?string")],
     ["  %1  ", jobSpec("%number")],
   ] as const)("%s -> %s", (raw, expected) => {
-    expect(resolve(corpus, "job_spec", raw)).toEqual({
-      category: "job_spec",
-      id: expected,
-    })
+    expect(resolve(corpus, "job_spec", raw)).toEqual(
+      mkPieceId("job_spec", expected),
+    )
   })
 
   test.each([
@@ -241,10 +235,9 @@ describe("resolveSpecialFunction", () => {
     // TRAPZERR), so it lands on the template.
     ["TRAPERR", specFn("TRAPNAL")],
   ] as const)("%s -> %s", (raw, expected) => {
-    expect(resolve(corpus, "special_function", raw)).toEqual({
-      category: "special_function",
-      id: expected,
-    })
+    expect(resolve(corpus, "special_function", raw)).toEqual(
+      mkPieceId("special_function", expected),
+    )
   })
 
   test.each([
@@ -269,18 +262,16 @@ describe("prompt_escape paired sigs (corpus-wide property)", () => {
   // legitimately include parentheses (e.g. `%)`, `%(x.true.false)`), so a
   // blanket `%\S+` scan over all sigs would be ambiguous.
   test("every paired '%X (%x)' sig has both glyphs resolvable", () => {
-    let pairCount = 0
-    for (const doc of corpus.prompt_escape.values()) {
+    const pairs = [...corpus.prompt_escape.values()].flatMap(doc => {
       const m = doc.sig.match(/^(%\S+)\s+\(\s*(%\S+)\s*\)\s*$/)
-      if (!m) continue
-      pairCount++
-      for (const tok of [m[1] as string, m[2] as string]) {
+      return m ? [[doc.sig, m[1] ?? "", m[2] ?? ""] as const] : []
+    })
+    expect(pairs.length).toBeGreaterThan(0)
+    for (const [sig, a, b] of pairs)
+      for (const tok of [a, b])
         expect(
           resolve(corpus, "prompt_escape", tok),
-          `sig=${doc.sig} token=${tok}`,
-        ).toEqual({ category: "prompt_escape", id: promptEsc(tok) })
-      }
-    }
-    expect(pairCount).toBeGreaterThan(0)
+          `sig=${sig} token=${tok}`,
+        ).toEqual(mkPieceId("prompt_escape", promptEsc(tok)))
   })
 })

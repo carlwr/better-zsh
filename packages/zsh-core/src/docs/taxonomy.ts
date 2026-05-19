@@ -268,30 +268,33 @@ export const docDisplay = <K extends DocCategory>(
  * Consumers (e.g. MCP search results) can forward this to give agents and
  * humans more structure than a bare id list.
  */
-export const docSubKind: {
-  [K in DocCategory]: (doc: DocRecordMap[K]) => string | undefined
-} = {
-  option: _ => undefined,
+// Categories without a meaningful subKind fall through to `noSub` (returns
+// `undefined`); only those that DO expose a sub-facet appear below. The
+// per-category table is materialized from these overrides so consumers can
+// access `docSubKind[cat](doc)` uniformly.
+const noSub = (_: unknown) => undefined
+
+type SubKindFn<K extends DocCategory> = (
+  doc: DocRecordMap[K],
+) => string | undefined
+
+type SubKindFnMap = { [K in DocCategory]: SubKindFn<K> }
+
+const subKindOverrides: Partial<SubKindFnMap> = {
   conditional_op: d => d.arity,
-  builtin: _ => undefined,
-  precmd_modifier: _ => undefined,
   special_param: d => d.scope,
-  complex_command: _ => undefined,
   reserved_word: d => d.pos,
-  redirection: _ => undefined,
-  process_subst: _ => undefined,
   param_expn: d => d.subKind,
-  subscript_flag: _ => undefined,
-  param_expn_flag: _ => undefined,
   history_expn: d => d.kind,
   glob_op: d => d.kind,
-  glob_flag: _ => undefined,
-  glob_qualifier: _ => undefined,
   prompt_escape: d => d.section,
   zle_widget: d => `${d.kind}:${d.section}`,
   keymap: d => (d.isSpecial ? "special" : "regular"),
   job_spec: d => d.kind,
   arith_op: d => d.arity,
   special_function: d => d.kind,
-  comp_utility: _ => undefined,
 }
+
+export const docSubKind: SubKindFnMap = Object.fromEntries(
+  docCategories.map(cat => [cat, subKindOverrides[cat] ?? noSub]),
+) as SubKindFnMap

@@ -4,9 +4,11 @@ import { describe, expect, test } from "vitest"
 import { resolveZshDataDir, vendoredZshDocFiles } from "../assets/data-dir"
 import { loadCorpus } from "../docs/corpus"
 import { corpusYodlFiles } from "../docs/source-files"
+import { precmdNames } from "../docs/types"
 import { mkDocumented_ } from "./id-fns"
 
 const dataDir = resolveZshDataDir()
+const corpus = loadCorpus()
 const opt = mkDocumented_("option")
 const cond = mkDocumented_("conditional_op")
 const bi = mkDocumented_("builtin")
@@ -28,7 +30,6 @@ describe("vendored zsh data assets", () => {
   })
 
   test("parses vendored options and conditional operators", () => {
-    const corpus = loadCorpus()
     expect(corpus.option.size).toBeGreaterThan(0)
     expect(corpus.conditional_op.size).toBeGreaterThan(0)
     expect(corpus.option.has(opt("AUTO_CD"))).toBe(true)
@@ -36,7 +37,6 @@ describe("vendored zsh data assets", () => {
   })
 
   test("parses vendored builtins docs", () => {
-    const corpus = loadCorpus()
     expect(corpus.builtin.size).toBeGreaterThan(0)
 
     const autoload = corpus.builtin.get(bi("autoload"))
@@ -48,19 +48,12 @@ describe("vendored zsh data assets", () => {
   })
 
   test("parses vendored precommand modifier docs", () => {
-    const corpus = loadCorpus()
-    expect([...corpus.precmd_modifier.values()].map(doc => doc.name)).toEqual([
-      "-",
-      "builtin",
-      "command",
-      "exec",
-      "nocorrect",
-      "noglob",
-    ])
+    expect(
+      [...corpus.precmd_modifier.values()].map(doc => doc.name).sort(),
+    ).toEqual([...precmdNames].sort())
   })
 
   test("parses newly vendored structured syntax docs", () => {
-    const corpus = loadCorpus()
     expect(
       [...corpus.redirection.values()].some(doc => doc.groupOp === "<"),
     ).toBe(true)

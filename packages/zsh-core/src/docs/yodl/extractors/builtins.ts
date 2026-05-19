@@ -2,8 +2,9 @@ import type { NonEmpty } from "@carlwr/typescript-extra"
 import { mkDocumented } from "../../brands.ts"
 import type { BuiltinDoc } from "../../types.ts"
 import { collectAliasedEntries, extractItems } from "../core/doc.ts"
-import { isMacro, parseNodes, type YNodeSeq } from "../core/nodes.ts"
-import { normalizeBody, normalizeHeader, stripYodl } from "../core/text.ts"
+import { asNodes, isMacro, type YNodeSeq, type YodlSrc } from "../core/nodes.ts"
+import { normalizeHeader, stripYodl } from "../core/text.ts"
+import { splitFlagBody } from "./flag-section.ts"
 
 interface SynopsisLine {
   text: string
@@ -11,14 +12,14 @@ interface SynopsisLine {
 }
 
 export function parseBuiltins(
-  yo: string | YNodeSeq,
+  yo: YodlSrc,
   depth?: number,
 ): readonly BuiltinDoc[] {
-  const nodes = typeof yo === "string" ? parseNodes(yo) : yo
+  const nodes = asNodes(yo)
   const byName = new Map<string, BuiltinDoc>()
 
   for (const doc of macroDocs(nodes)) {
-    byName.set(doc.name as string, doc)
+    byName.set(doc.name, doc)
   }
 
   for (const entry of collectAliasedEntries(
@@ -27,18 +28,16 @@ export function parseBuiltins(
   )) {
     const body = entry.entry.body ?? []
     const lines = [...entry.aliases, entry.head]
-    const synopsisTail = lines
-      .filter(line => line.continuation)
-      .map(line => line.text)
-    const heads = lines.filter(line => !line.continuation)
+    const synopsisTail = lines.filter(l => l.continuation).map(l => l.text)
+    const heads = lines.filter(l => !l.continuation)
     if (heads.length === 0) continue
 
-    const desc = normalizeBody(body)
+    const { desc, flagGroups, outro } = splitFlagBody(body)
     const aliasOf = extractAlias(body)
     const module = extractModule(body)
 
     for (const head of heads) {
-      const name = extractCmdName(head.text)
+      const name = head.text.match(/^(\S+)/)?.[1]
       if (!name) continue
       const synopsis: NonEmpty<string> = [head.text, ...synopsisTail]
       byName.set(name, {
@@ -47,6 +46,8 @@ export function parseBuiltins(
         desc,
         ...(aliasOf && { aliasOf }),
         ...(module && { module }),
+        ...(flagGroups && { flagGroups }),
+        ...(outro && { outro }),
       })
     }
   }
@@ -99,7 +100,9 @@ function macroDocs(nodes: YNodeSeq): BuiltinDoc[] {
 }
 
 function normalizeSynopsis(raw: YNodeSeq): string {
-  return stripYodl(raw)
+  // Synopsis ends up inside a fenced ```zsh code block — strip tt/var
+  // markup to plain text so the code block stays clean.
+  return stripYodl(raw, "code")
     .replace(/\\\n/g, "\n")
     .replace(/\\$/gm, "")
     .replace(/\n{2,}/g, "\n")
@@ -111,30 +114,21 @@ function normalizeSynopsis(raw: YNodeSeq): string {
 
 function parseSynopsisLine(raw: YNodeSeq): SynopsisLine | undefined {
   const text = normalizeSynopsis(raw)
-  return text
-    ? {
-        text,
-        continuation: isMacro(raw[0], "SPACES"),
-      }
-    : undefined
-}
-
-function extractCmdName(synopsis: string): string | undefined {
-  return synopsis.match(/^(\S+)/)?.[1]
+  if (!text) return undefined
+  return { text, continuation: isMacro(raw[0], "SPACES") }
 }
 
 function extractAlias(body: YNodeSeq) {
-  // Match either a backtick-apostrophe-wrapped name (e.g. `.' for the dot builtin)
-  // or a plain word. The backtick-quote form arises when the upstream source uses
-  // `tt(name)' and stripYodl leaves the wrapping delimiters around the rendered name.
-  const m = stripYodl(body).match(/\bSame as (?:`([^']*)'|([^.\s]+))/)
+  // Match the name in `Same as X' / `Same as `tt(X)' ` upstream forms.
+  // `stripYodl` in code mode gives us the raw extracted text — no markdown
+  // markup to disambiguate against.
+  const m = stripYodl(body, "code").match(/\bSame as (?:`([^']*)'|([^.\s]+))/)
   const name = m?.[1] ?? m?.[2]
   return name ? mkDocumented("builtin", name) : undefined
 }
 
 function extractModule(body: YNodeSeq): string | undefined {
-  const m = stripYodl(body)
+  return stripYodl(body, "code")
     .replace(/\s+/g, " ")
-    .match(/\bThe (\S+) Module\b/)
-  return m?.[1]
+    .match(/\bThe (\S+) Module\b/)?.[1]
 }

@@ -37,6 +37,7 @@ When adding or changing parsing/rendering, dump the full rendered corpus and ins
 - Prefer actual zsh usage over raw upstream notation.
 - Option docs: `zsh` forms first, category last, plain-zsh defaults over emulation forms.
 - Preserve visible prose unless there is a strong reason to change user-facing output.
-- Generate: use build script `dump:refs [OUTDIR]` (default `.aux/refs`).
-- Review: for one-category changes read that category's file; for cross-cutting changes scan `all.md`. `suspicious.md` lists heuristic hits.
-- When a bug is found: prefer widening `suspiciousPatterns` in `src/render/dump.ts` so the family is caught corpus-wide; fall back to a targeted regression test only when a general heuristic is not tractable.
+- Generate: use build script `dump:refs [OUTDIR]` (default `.aux/refs`). Diff dumps before/after edits to spot regressions.
+- Review: for one-category changes read that category's file; for cross-cutting changes scan `all.md`.
+- Drift catchers: `src/test/render/heuristics.ts` (rules) + `known-offenders.ts` (typed frozen list). Empty list = zero-tolerance; non-empty entries carry per-entry justifications.
+- When a bug is found: prefer widening a heuristic so the family is caught corpus-wide; fall back to a targeted regression test only when a general heuristic is not tractable.

@@ -1,12 +1,11 @@
 import { mkDocumented } from "../../brands.ts"
 import type { SpecialFunctionDoc, SpecialFunctionKind } from "../../types.ts"
 import {
-  extractFirstList,
-  extractItemList,
+  extractFirstItemList,
   extractSectionBody,
   withBody,
 } from "../core/doc.ts"
-import type { YNodeSeq } from "../core/nodes.ts"
+import type { YodlSrc } from "../core/nodes.ts"
 import {
   extractTokens,
   firstTt,
@@ -29,15 +28,15 @@ const TRAP_SECTION = "Trap Functions"
  *   corpus id is the literal string `TRAPNAL`.
  */
 export function parseSpecialFunctions(
-  yo: string | YNodeSeq,
+  yo: YodlSrc,
 ): readonly SpecialFunctionDoc[] {
   return [...parseHooks(yo), ...parseTraps(yo)]
 }
 
-function parseHooks(yo: string | YNodeSeq): SpecialFunctionDoc[] {
-  const list = extractFirstList(extractSectionBody(yo, HOOK_SECTION), "item")
-  if (!list) return []
-  return withBody(extractItemList(list)).flatMap(item => {
+function parseHooks(yo: YodlSrc): SpecialFunctionDoc[] {
+  return withBody(
+    extractFirstItemList(extractSectionBody(yo, HOOK_SECTION)),
+  ).flatMap(item => {
     const name = firstTt(item.header)?.trim()
     if (!name) return []
     return [
@@ -46,17 +45,17 @@ function parseHooks(yo: string | YNodeSeq): SpecialFunctionDoc[] {
         sig: normalizeHeader(item.header),
         desc: normalizeBody(item.body),
         section: HOOK_SECTION,
-        kind: "hook" satisfies SpecialFunctionKind,
+        kind: "hook",
         hookArray: `${name}_functions`,
-      },
+      } satisfies SpecialFunctionDoc,
     ]
   })
 }
 
-function parseTraps(yo: string | YNodeSeq): SpecialFunctionDoc[] {
-  const list = extractFirstList(extractSectionBody(yo, TRAP_SECTION), "item")
-  if (!list) return []
-  return withBody(extractItemList(list)).flatMap(item => {
+function parseTraps(yo: YodlSrc): SpecialFunctionDoc[] {
+  return withBody(
+    extractFirstItemList(extractSectionBody(yo, TRAP_SECTION)),
+  ).flatMap(item => {
     const sig = normalizeHeader(item.header)
     const { name, kind } = trapIdentity(item.header, sig)
     if (!name) return []
@@ -67,7 +66,7 @@ function parseTraps(yo: string | YNodeSeq): SpecialFunctionDoc[] {
         desc: normalizeBody(item.body),
         section: TRAP_SECTION,
         kind,
-      },
+      } satisfies SpecialFunctionDoc,
     ]
   })
 }
@@ -77,13 +76,14 @@ function parseTraps(yo: string | YNodeSeq): SpecialFunctionDoc[] {
 //   tt(TRAPDEBUG)      -> name=TRAPDEBUG, kind=trap-literal
 //   tt(TRAPZERR)       -> name=TRAPZERR, kind=trap-literal (TRAPERR alias via xitem)
 function trapIdentity(
-  header: Parameters<typeof extractTokens>[0],
+  header: YodlSrc,
   sig: string,
 ): { name: string; kind: SpecialFunctionKind } {
   const toks = extractTokens(header)
-  const hasVar = toks.some(t => t.kind === "var")
   const tt = toks.find(t => t.kind === "tt")?.text.trim() ?? ""
-  if (hasVar) return { name: `${tt}NAL`, kind: "trap-template" }
+  if (toks.some(t => t.kind === "var")) {
+    return { name: `${tt}NAL`, kind: "trap-template" }
+  }
   // Direct sig starts at TRAP for all non-template trap entries; strip any
   // non-word cruft.
   const literal = sig.trim().match(/^TRAP[A-Z0-9]+/)?.[0] ?? tt

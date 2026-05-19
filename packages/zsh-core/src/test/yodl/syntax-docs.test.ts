@@ -140,22 +140,18 @@ enditem()`
     ],
     [
       "vendored reserved words corpus parses",
-      () => {
-        const docs = parseReswords(GRAMMAR_YO)
-        // complex_command-covered heads intentionally omit desc; exclude from
-        // the truthy-desc assertion but still require ids + sections.
+      () =>
+        // `complex_command`-covered heads intentionally omit desc; `descOf`
+        // returns `undefined` for them so `expectDocCorpus` skips the
+        // desc-truthy check while still requiring ids + sections.
         expectDocCorpus({
-          docs: docs.filter(doc => doc.desc),
-          minCount: 15,
+          docs: parseReswords(GRAMMAR_YO),
+          minCount: 20,
           keyOf: doc => doc.name,
-          descOf: doc => doc.desc ?? "",
+          descOf: doc => doc.desc,
           sectionOf: doc => doc.section,
-          known: ["do", "done", "foreach", "typeset", "!"],
-        })
-        const names = docs.map(d => d.name)
-        for (const id of ["if", "for", "[[", "{", "}"])
-          expect(names).toContain(id)
-      },
+          known: ["do", "done", "foreach", "typeset", "!", "if", "for", "[["],
+        }),
     ],
     [
       "vendored subscript flag corpus parses",

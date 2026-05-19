@@ -22,12 +22,14 @@ describe.runIf(existsSync(jsonDir))(
   () => {
     type Rec = { readonly mdBody?: unknown } & Record<string, unknown>
 
+    type NamedRec = { name: string; mdBody: string }
+    const loadRecs = <T = Rec>(file: string): T[] =>
+      JSON.parse(readFileSync(join(jsonDir, file), "utf8")) as T[]
+
     test.each(
       jsonDataFiles,
     )("%s records have a non-empty mdBody string", file => {
-      const recs = JSON.parse(
-        readFileSync(join(jsonDir, file), "utf8"),
-      ) as Rec[]
+      const recs = loadRecs(file)
       expect(recs.length).toBeGreaterThan(0)
       for (const r of recs) {
         expect(typeof r.mdBody).toBe("string")
@@ -35,25 +37,15 @@ describe.runIf(existsSync(jsonDir))(
       }
     })
 
-    test("options.json:autocd mdBody contains real rendered content", () => {
-      const recs = JSON.parse(
-        readFileSync(join(jsonDir, "options.json"), "utf8"),
-      ) as { name: string; mdBody: string }[]
-      const autocd = recs.find(r => r.name === "autocd")
-      expect(autocd).toBeDefined()
-      const md = autocd?.mdBody ?? ""
-      expect(md).toContain("AUTO_CD")
-      expect(md).toContain("setopt")
-      expect(md.length).toBeGreaterThan(100)
-    })
-
-    test("builtins.json:echo mdBody contains synopsis + description", () => {
-      const recs = JSON.parse(
-        readFileSync(join(jsonDir, "builtins.json"), "utf8"),
-      ) as { name: string; mdBody: string }[]
-      const echo = recs.find(r => r.name === "echo")
-      expect(echo).toBeDefined()
-      expect((echo?.mdBody ?? "").length).toBeGreaterThan(50)
+    test.each([
+      ["options.json", "autocd", 100, ["AUTO_CD", "setopt"]],
+      ["builtins.json", "echo", 50, []],
+    ] as const)("%s:%s mdBody contains rendered content", (file, name, minLen, parts) => {
+      const rec = loadRecs<NamedRec>(file).find(r => r.name === name)
+      expect(rec).toBeDefined()
+      const md = rec?.mdBody ?? ""
+      expect(md.length).toBeGreaterThan(minLen)
+      for (const p of parts) expect(md).toContain(p)
     })
   },
 )

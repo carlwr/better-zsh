@@ -1,27 +1,31 @@
 import { mkDocumented } from "../../brands.ts"
 import type { GlobFlagDoc } from "../../types.ts"
 import {
-  extractFirstList,
-  extractItemList,
+  extractFirstItemList,
   extractSectionBody,
   withBody,
 } from "../core/doc.ts"
-import type { YNodeSeq } from "../core/nodes.ts"
-import { normalizeBody, ttTexts, varTexts } from "../core/text.ts"
-import { flagSigText } from "./flag-section.ts"
+import type { YodlSrc } from "../core/nodes.ts"
+import {
+  normalizeBody,
+  normalizeHeader,
+  ttTexts,
+  varTexts,
+} from "../core/text.ts"
 
-export function parseGlobFlags(yo: string | YNodeSeq): readonly GlobFlagDoc[] {
-  const section = "Globbing Flags"
-  const sec = extractSectionBody(yo, "Globbing Flags")
-  const list = extractFirstList(sec, "item")
-  if (!list) return []
+const SECTION = "Globbing Flags"
 
-  return withBody(extractItemList(list)).flatMap(item => {
+export function parseGlobFlags(yo: YodlSrc): readonly GlobFlagDoc[] {
+  return withBody(
+    extractFirstItemList(extractSectionBody(yo, SECTION)),
+  ).flatMap(item => {
     const desc = normalizeBody(item.body)
     const tt = ttTexts(item.header)
     const vars = varTexts(item.header)
-    const sig = flagSigText(item.header)
+    const sig = normalizeHeader(item.header)
 
+    // `tt(a)tt(b)…` with no var() — header lists several solo flags sharing
+    // a body. Emit one record per flag.
     if (vars.length === 0 && tt.length > 1) {
       return tt.map(
         flag =>
@@ -30,7 +34,7 @@ export function parseGlobFlags(yo: string | YNodeSeq): readonly GlobFlagDoc[] {
             args: [],
             sig: flag,
             desc,
-            section,
+            section: SECTION,
           }) satisfies GlobFlagDoc,
       )
     }
@@ -42,7 +46,7 @@ export function parseGlobFlags(yo: string | YNodeSeq): readonly GlobFlagDoc[] {
         args: vars,
         sig,
         desc,
-        section,
+        section: SECTION,
       } satisfies GlobFlagDoc,
     ]
   })

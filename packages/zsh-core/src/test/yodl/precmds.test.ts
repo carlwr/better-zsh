@@ -1,20 +1,17 @@
 import { describe, expect, test } from "vitest"
+import { precmdNames } from "../../docs/types"
 import { parsePrecmds } from "../../docs/yodl/extractors/precmds"
 import { readVendoredYo } from "./test-util"
 
 const GRAMMAR_YO = readVendoredYo("grammar.yo")
 
 describe("parsePrecmds", () => {
-  test("parses vendored precommand modifiers", () => {
-    const docs = parsePrecmds(GRAMMAR_YO)
-    expect(docs.map(d => d.name)).toEqual([
-      "-",
-      "builtin",
-      "command",
-      "exec",
-      "nocorrect",
-      "noglob",
-    ])
+  test("parses every documented precommand modifier", () => {
+    expect(
+      parsePrecmds(GRAMMAR_YO)
+        .map(d => d.name)
+        .sort(),
+    ).toEqual([...precmdNames].sort())
   })
 
   test("command and exec keep synopsis and prose", () => {

@@ -17,7 +17,7 @@ describe("mkDocumented option (normalizes case + strips underscores)", () => {
 
   test("is idempotent", () => {
     fc.assert(
-      fc.property(fc.string(), (s: string) => {
+      fc.property(fc.string(), s => {
         expect(opt(opt(s))).toBe(opt(s))
       }),
     )
@@ -25,7 +25,7 @@ describe("mkDocumented option (normalizes case + strips underscores)", () => {
 
   test("result is lowercase, no underscores", () => {
     fc.assert(
-      fc.property(fc.string(), (s: string) => {
+      fc.property(fc.string(), s => {
         const r = opt(s)
         expect(r).toBe(r.toLowerCase())
         expect(r).not.toContain("_")
@@ -41,7 +41,7 @@ describe("mkDocumented conditional_op (trims)", () => {
 
   test("preserves non-whitespace", () => {
     fc.assert(
-      fc.property(fc.string(), (s: string) => {
+      fc.property(fc.string(), s => {
         expect(cond(s) as string).toBe(s.trim())
       }),
     )
@@ -54,10 +54,8 @@ describe("mkOptFlag", () => {
   })
 })
 
-// Observed<K> and Documented<K> share the same normalization table. The two
-// brands differ only in provenance (user-code vs corpus). Corpus-aware parse
-// concerns like option `no_` negation live in the resolver layer (the option
-// resolver / `resolverFeedback`), not in these smart constructors.
+// Provenance-only split; same normalization. `no_` negation belongs to the
+// resolver, not the constructors. See `brands.ts`.
 describe("mkObserved option is symmetric with mkDocumented option", () => {
   test("strips underscores and lowercases", () => {
     expect(optO("AUTO_CD") as string).toBe("autocd")
@@ -72,7 +70,7 @@ describe("mkObserved option is symmetric with mkDocumented option", () => {
 
   test("matches mkDocumented option for every input", () => {
     fc.assert(
-      fc.property(fc.string(), (s: string) => {
+      fc.property(fc.string(), s => {
         expect(optO(s) as string).toBe(opt(s) as string)
       }),
     )
@@ -83,8 +81,7 @@ describe("mkObserved option is symmetric with mkDocumented option", () => {
   })
 })
 
-// Observed<K> for non-option categories — identical to Documented<K>,
-// checked once to document the provenance-only split at this layer.
+// Non-option categories: the provenance-only split has no behavioural effect.
 describe("mkObserved / mkDocumented coincide for non-option categories", () => {
   test("Observed and Documented produce equal strings", () => {
     const raw = "  -a  "

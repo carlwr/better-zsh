@@ -1,11 +1,7 @@
 import { mkDocumented } from "../../brands.ts"
 import type { KeymapDoc } from "../../types.ts"
-import {
-  extractFirstList,
-  extractSectBody,
-  extractSitemList,
-} from "../core/doc.ts"
-import type { YNodeSeq } from "../core/nodes.ts"
+import { extractFirstSitemList, extractSectBody } from "../core/doc.ts"
+import type { YodlSrc } from "../core/nodes.ts"
 import { firstTt, normalizeBody } from "../core/text.ts"
 
 const SECTION = "Keymaps"
@@ -19,13 +15,9 @@ const SECTION = "Keymaps"
  * `viins` (vi emulation); represented via `linkedFrom: ["main"]` on `emacs`.
  * `.safe` gets `isSpecial: true` — upstream prose marks it as immutable.
  */
-export function parseKeymaps(yo: string | YNodeSeq): readonly KeymapDoc[] {
-  const body = extractSectBody(yo, SECTION)
-  const list = extractFirstList(body, "sitem")
-  if (!list) return []
-
+export function parseKeymaps(yo: YodlSrc): readonly KeymapDoc[] {
   const out: KeymapDoc[] = []
-  for (const item of extractSitemList(list)) {
+  for (const item of extractFirstSitemList(extractSectBody(yo, SECTION))) {
     if (!item.body) continue
     const name = firstTt(item.header)?.trim()
     if (!name) continue

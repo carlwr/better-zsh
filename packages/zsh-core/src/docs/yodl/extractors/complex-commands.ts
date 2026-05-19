@@ -2,12 +2,11 @@ import { mkDocumented } from "../../brands.ts"
 import type { AlternateForm, ComplexCommandDoc } from "../../types.ts"
 import {
   collectAliasedEntries,
-  extractFirstList,
-  extractItemList,
+  extractFirstItemList,
   extractSectionBody,
   type YodlEntry,
 } from "../core/doc.ts"
-import type { YNodeSeq } from "../core/nodes.ts"
+import type { YNodeSeq, YodlSrc } from "../core/nodes.ts"
 import { extractTokens, normalizeBody, normalizeHeader } from "../core/text.ts"
 
 /**
@@ -16,24 +15,21 @@ import { extractTokens, normalizeBody, normalizeHeader } from "../core/text.ts"
  * loop from the word-list `for name in … do … done` — structurally distinct
  * enough that collapsing them costs clarity.
  */
-const HEAD_KEYS = [
-  "if",
-  "for",
-  "for-arith",
-  "while",
-  "until",
-  "repeat",
-  "case",
-  "select",
-  "function",
-  "time",
-  "(",
-  "{",
-  "{try}always",
-  "[[",
-] as const
-
-type HeadKey = (typeof HEAD_KEYS)[number]
+type HeadKey =
+  | "if"
+  | "for"
+  | "for-arith"
+  | "while"
+  | "until"
+  | "repeat"
+  | "case"
+  | "select"
+  | "function"
+  | "time"
+  | "("
+  | "{"
+  | "{try}always"
+  | "[["
 
 const BODY_KW_SET: ReadonlySet<string> = new Set([
   "do",
@@ -48,6 +44,9 @@ const BODY_KW_SET: ReadonlySet<string> = new Set([
   "end",
 ])
 
+const BASE_SECTION = "Complex Commands"
+const ALT_SECTION = "Alternate Forms For Complex Commands"
+
 function classifyHead(sig: string): HeadKey | undefined {
   const s = sig.trim()
 
@@ -60,8 +59,8 @@ function classifyHead(sig: string): HeadKey | undefined {
     return /}\s*always\s*{/.test(s) ? "{try}always" : "{"
   }
 
-  const firstWord = s.split(/\s+/)[0] ?? ""
-  switch (firstWord) {
+  const first = s.split(/\s+/)[0] ?? ""
+  switch (first) {
     case "if":
     case "while":
     case "until":
@@ -70,7 +69,7 @@ function classifyHead(sig: string): HeadKey | undefined {
     case "select":
     case "function":
     case "time":
-      return firstWord
+      return first
     case "for":
       // `for (( … )) do … done` is the arithmetic form — distinct record key.
       return s.startsWith("for ((") || s.startsWith("for LPAR()LPAR()")
@@ -90,10 +89,10 @@ function bodyKeywords(header: YNodeSeq): readonly string[] {
   for (const tok of extractTokens(header)) {
     if (tok.kind !== "tt") continue
     for (const part of tok.text.split(/\s+/)) {
-      const lower = part.toLowerCase()
-      if (BODY_KW_SET.has(lower) && !seen.has(lower)) {
-        seen.add(lower)
-        out.push(lower)
+      const kw = part.toLowerCase()
+      if (BODY_KW_SET.has(kw) && !seen.has(kw)) {
+        seen.add(kw)
+        out.push(kw)
       }
     }
   }
@@ -116,61 +115,46 @@ function altForm(item: YodlEntry): AlternateForm | undefined {
  * the upstream grammar surfaces as missing records, not as silent mis-routing.
  */
 export function parseComplexCommands(
-  yo: string | YNodeSeq,
+  yo: YodlSrc,
 ): readonly ComplexCommandDoc[] {
   const out = new Map<HeadKey, ComplexCommandDoc>()
 
-  const base = extractFirstList(
-    extractSectionBody(yo, "Complex Commands"),
-    "item",
-  )
-  if (base) {
-    // Capture every header — xitems that precede a body-bearing item share
-    // that body (e.g. the `function` synopsis has two xitems before its
-    // `item(...)(body)`). Return a non-undefined value unconditionally so
-    // `collectAliasedEntries` doesn't reset the pending-head run on headers
-    // whose first word isn't a known head keyword.
-    const parseHead = (header: YodlEntry["header"]) => {
-      const sig = normalizeHeader(header)
-      return { head: classifyHead(sig), sig, header }
-    }
-    for (const grp of collectAliasedEntries(extractItemList(base), parseHead)) {
-      if (!grp.entry.body) continue
-      // Prefer the first classified head in the alias-run + body entry; the
-      // winner supplies its own sig + header for bodyKeywords. Unclassified
-      // groups (none of the headers start with a known keyword) are skipped.
-      const all = [...grp.aliases, grp.head]
-      const winner = all.find(x => x.head !== undefined)
-      if (!winner?.head) continue
-      if (out.has(winner.head)) continue
-      out.set(winner.head, {
-        name: mkDocumented("complex_command", winner.head),
-        sig: winner.sig,
-        desc: normalizeBody(grp.entry.body),
-        section: "Complex Commands",
-        alternateForms: [],
-        bodyKeywords: bodyKeywords(winner.header),
-      })
-    }
+  // Capture every header — xitems that precede a body-bearing item share
+  // that body (e.g. the `function` synopsis has two xitems before its
+  // `item(...)(body)`). Return a non-undefined value unconditionally so
+  // `collectAliasedEntries` doesn't reset the pending-head run on headers
+  // whose first word isn't a known head keyword.
+  const parseHead = (header: YodlEntry["header"]) => {
+    const sig = normalizeHeader(header)
+    return { head: classifyHead(sig), sig, header }
+  }
+  const baseEntries = extractFirstItemList(extractSectionBody(yo, BASE_SECTION))
+  for (const grp of collectAliasedEntries(baseEntries, parseHead)) {
+    if (!grp.entry.body) continue
+    // Prefer the first classified head in the alias-run + body entry; the
+    // winner supplies its own sig + header for bodyKeywords. Unclassified
+    // groups (none of the headers start with a known keyword) are skipped.
+    const winner = [...grp.aliases, grp.head].find(x => x.head !== undefined)
+    if (!winner?.head || out.has(winner.head)) continue
+    out.set(winner.head, {
+      name: mkDocumented("complex_command", winner.head),
+      sig: winner.sig,
+      desc: normalizeBody(grp.entry.body),
+      section: BASE_SECTION,
+      alternateForms: [],
+      bodyKeywords: bodyKeywords(winner.header),
+    })
   }
 
-  const alt = extractFirstList(
-    extractSectionBody(yo, "Alternate Forms For Complex Commands"),
-    "item",
-  )
-  if (alt) {
-    for (const item of extractItemList(alt)) {
-      const sig = normalizeHeader(item.header)
-      const head = classifyHead(sig)
-      if (!head) continue
-      const base = out.get(head)
-      const af = altForm(item)
-      if (!base || !af) continue
-      out.set(head, {
-        ...base,
-        alternateForms: [...base.alternateForms, af],
-      })
-    }
+  for (const item of extractFirstItemList(
+    extractSectionBody(yo, ALT_SECTION),
+  )) {
+    const head = classifyHead(normalizeHeader(item.header))
+    if (!head) continue
+    const base = out.get(head)
+    const af = altForm(item)
+    if (!base || !af) continue
+    out.set(head, { ...base, alternateForms: [...base.alternateForms, af] })
   }
 
   return [...out.values()]

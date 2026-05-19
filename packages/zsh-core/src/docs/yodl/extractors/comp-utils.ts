@@ -1,41 +1,48 @@
 import { mkDocumented } from "../../brands.ts"
 import type { CompUtilityDoc } from "../../types.ts"
 import { extractSectionBody } from "../core/doc.ts"
-import { isMacro, macroArg, parseNodes, type YNodeSeq } from "../core/nodes.ts"
-import { normalizeBody, normalizeHeader } from "../core/text.ts"
+import {
+  asNodes,
+  isMacro,
+  macroArg,
+  type YNodeSeq,
+  type YodlSrc,
+} from "../core/nodes.ts"
+import { normalizeHeader } from "../core/text.ts"
+import { splitFlagBody } from "./flag-section.ts"
 
 interface FindexAssoc {
   /** Function name(s) from findex entries preceding the item. */
   readonly findexNames: readonly string[]
-  /** First xitem header if any xitems exist, otherwise the item header. */
-  readonly sig: string
+  /**
+   * One element per logical synopsis line. xitems whose header begins
+   * with the `SPACES()` macro are continuations of the previous line and
+   * already folded onto it; the upstream uses SPACES() to indent wrapped
+   * forms.
+   */
+  readonly synopsis: [string, ...string[]]
   readonly body: YNodeSeq
 }
 
-export function parseCompUtils(
-  yo: string | YNodeSeq,
-): readonly CompUtilityDoc[] {
-  const nodes = typeof yo === "string" ? parseNodes(yo) : yo
-  const section = "Utility Functions"
-  const body = extractSectionBody(nodes, section)
-  const assocs = collectFindexAssociations(body)
+const SECTION = "Utility Functions"
+
+export function parseCompUtils(yo: YodlSrc): readonly CompUtilityDoc[] {
+  const body = extractSectionBody(asNodes(yo), SECTION)
   const seen = new Set<string>()
 
-  return assocs.flatMap(a => {
-    const desc = normalizeBody(a.body)
-    const sig = a.sig
-    // Determine the record's name. Prefer the first underscore-prefixed
-    // findex name; fall back to extracting a function name from the sig;
-    // last resort: the first findex entry. When findex provides the name,
-    // emit one record per findex name (handles _options_set / _options_unset
-    // that share a body).
-    const fromFindex = findexFuncName(a.findexNames)
-    const sigName = extractFuncName(a.sig)
+  return collectFindexAssociations(body).flatMap(a => {
+    const split = splitFlagBody(a.body)
+    const sig = a.synopsis[0]
+    // Prefer the first underscore-prefixed findex name; fall back to extracting
+    // a function name from the sig; last resort: the first findex entry.
+    // When findex provides the name, emit one record per findex name
+    // (handles `_options_set` / `_options_unset` that share a body).
+    const fromFindex = a.findexNames.find(n => n.startsWith("_"))
+    const sigName = sig.match(/^(_[a-zA-Z0-9_]+)/)?.[1]
     const primary = fromFindex ?? sigName ?? a.findexNames[0]
     if (!primary) return []
-    const names = fromFindex
-      ? a.findexNames // use findex names as-is (they may list multiple)
-      : [primary]
+
+    const names = fromFindex ? a.findexNames : [primary]
     return names.flatMap(n => {
       if (!n || seen.has(n)) return []
       seen.add(n)
@@ -43,85 +50,88 @@ export function parseCompUtils(
         {
           name: mkDocumented("comp_utility", n),
           sig,
-          desc,
-          section,
+          synopsis: a.synopsis,
+          desc: split.desc,
+          section: SECTION,
+          ...(split.flagGroups && { flagGroups: split.flagGroups }),
+          ...(split.outro && { outro: split.outro }),
         } satisfies CompUtilityDoc,
       ]
     })
   })
 }
 
-/** First findex name that looks like a function name (starts with `_`). */
-function findexFuncName(findexNames: readonly string[]): string | undefined {
-  return findexNames.find(n => /^_/.test(n))
-}
-
-function extractFuncName(sig: string): string | undefined {
-  const m = sig.match(/^(_[a-zA-Z0-9_]+)/)
-  return m?.[1]
-}
-
 /**
  * Walk top-level nodes in the Utility Functions section, collecting
  * findex-name → user-visible-item associations. xitem entries between
- * findex and the body-carrying item are treated as sig aliases (their
+ * findex and the body-bearing item are treated as sig aliases (their
  * combined text becomes the record's sig).
  */
 function collectFindexAssociations(body: YNodeSeq): FindexAssoc[] {
   const out: FindexAssoc[] = []
-  let pendingFindex: string[] = []
-  let pendingXitems: YNodeSeq[] = []
+  let findex: string[] = []
+  let xitems: YNodeSeq[] = []
+  const reset = () => {
+    findex = []
+    xitems = []
+  }
 
   for (const node of body) {
     if (isMacro(node, "findex")) {
-      const name = normalizeHeader(macroArg(node, 0)).replace(/\s*\[.*\]$/, "") // strip args in findex like `_regex_words [ -t term ]`
-      if (name) pendingFindex.push(name)
+      // strip args in findex like `_regex_words [ -t term ]`
+      const name = normalizeHeader(macroArg(node, 0)).replace(/\s*\[.*\]$/, "")
+      if (name) findex.push(name)
       continue
     }
     if (isMacro(node, "xitem")) {
-      pendingXitems.push(macroArg(node, 0))
+      xitems.push(macroArg(node, 0))
       continue
     }
     if (isMacro(node, "redef")) continue
+
     if (isMacro(node, "item") && node.args.length >= 2) {
-      if (pendingFindex.length === 0) {
-        pendingXitems = []
-        continue
-      }
-      const itemHeader = node.args[0] ?? []
       const itemBody = node.args[1] ?? []
-      if (!itemBody || itemBody.length === 0) {
-        pendingXitems = []
+      if (findex.length === 0 || itemBody.length === 0) {
+        reset()
         continue
       }
-
-      // Build sig from all xitems + the item header
-      const sigParts = [...pendingXitems, itemHeader].map(h =>
-        normalizeHeader(h),
-      )
-      const sig = sigParts.join(" ")
-
-      out.push({
-        findexNames: [...pendingFindex],
-        sig,
-        body: itemBody,
-      })
-
-      pendingFindex = []
-      pendingXitems = []
+      // Build the synopsis from all xitems + the item header. Each
+      // xitem/item is one logical synopsis line. xitems whose header begins
+      // with the `SPACES()` macro are continuations of the previous line
+      // (upstream uses SPACES() to indent wrapped forms); fold them back
+      // onto the prior line.
+      const lines = buildSynopsisLines([...xitems, node.args[0] ?? []])
+      const [first, ...rest] = lines
+      if (first) {
+        out.push({
+          findexNames: [...findex],
+          synopsis: [first, ...rest],
+          body: itemBody,
+        })
+      }
+      reset()
       continue
     }
-    // Any non-ignored macro resets state (e.g. startitem(), enditem(),
-    // startitemize() inside _arguments body)
-    if (
-      node.kind === "macro" &&
-      !["findex", "xitem", "redef"].includes(node.name) &&
-      pendingFindex.length > 0
-    ) {
-      pendingFindex = []
-      pendingXitems = []
-    }
+
+    // Any other macro (startitem(), enditem(), startitemize(), etc.) resets
+    // the pending findex/xitem run — we've left the entry's outer scope.
+    if (node.kind === "macro" && findex.length > 0) reset()
   }
 
   return out
+}
+
+function buildSynopsisLines(headers: readonly YNodeSeq[]): string[] {
+  const lines: string[] = []
+  for (const header of headers) {
+    const text = normalizeHeader(header)
+    if (!text) continue
+    const first = header[0]
+    if (lines.length > 0 && isMacro(first, "SPACES")) {
+      lines[lines.length - 1] = `${lines[lines.length - 1]} ${text}`
+    } else {
+      lines.push(text)
+    }
+  }
+  return lines
 }

@@ -1,41 +1,46 @@
 import type { JsonCountKey, JsonDataFile } from "./json-artifacts.ts"
 import type { DocCategory, DocRecordMap } from "./taxonomy.ts"
-import type { BuiltinDoc, CondOpDoc, ParamExpnDoc, PrecmdDoc } from "./types.ts"
+import type {
+  BuiltinDoc,
+  CompUtilityDoc,
+  CondOpDoc,
+  ParamExpnDoc,
+  PrecmdDoc,
+} from "./types.ts"
 
 type UnbrandTuple<T extends readonly unknown[]> = {
   readonly [K in keyof T]: Unbrand<T[K]>
 }
 
-type Unbrand<T> = T extends string & {
-  readonly __documented: unknown
-}
+type BrandTag =
+  | { readonly __documented: unknown }
+  | { readonly __observed: unknown }
+  | { readonly __brand: unknown }
+
+type Unbrand<T> = T extends string & BrandTag
   ? string
-  : T extends string & { readonly __observed: unknown }
-    ? string
-    : T extends string & { readonly __brand: unknown }
-      ? string
-      : T extends readonly [unknown, ...unknown[]]
-        ? UnbrandTuple<T>
-        : T extends readonly (infer U)[]
-          ? readonly Unbrand<U>[]
-          : T extends object
-            ? { readonly [K in keyof T]: Unbrand<T[K]> }
-            : T
+  : T extends readonly [unknown, ...unknown[]]
+    ? UnbrandTuple<T>
+    : T extends readonly (infer U)[]
+      ? readonly Unbrand<U>[]
+      : T extends object
+        ? { readonly [K in keyof T]: Unbrand<T[K]> }
+        : T
 
 type JsonDoc<K extends DocCategory> = Unbrand<DocRecordMap[K]>
 
-type JsonBuiltinDoc = Omit<Unbrand<BuiltinDoc>, "synopsis"> & {
-  readonly synopsis: readonly string[]
+/** Replace a `NonEmpty<string>` (or similarly tuple-shaped) field with a plain
+ * `readonly string[]` so the emitted JSON schema describes it as an array,
+ * not a positional object keyed by `"0"`, `"1"`, ... . */
+type FlatField<T, K extends keyof T> = Omit<Unbrand<T>, K> & {
+  readonly [P in K]: readonly string[]
 }
-type JsonCondOpDoc = Omit<Unbrand<CondOpDoc>, "operands"> & {
-  readonly operands: readonly string[]
-}
-type JsonPrecmdDoc = Omit<Unbrand<PrecmdDoc>, "synopsis"> & {
-  readonly synopsis: readonly string[]
-}
-type JsonParamExpnDoc = Omit<Unbrand<ParamExpnDoc>, "groupSigs"> & {
-  readonly groupSigs: readonly string[]
-}
+
+type JsonBuiltinDoc = FlatField<BuiltinDoc, "synopsis">
+type JsonCondOpDoc = FlatField<CondOpDoc, "operands">
+type JsonPrecmdDoc = FlatField<PrecmdDoc, "synopsis">
+type JsonParamExpnDoc = FlatField<ParamExpnDoc, "groupSigs">
+type JsonCompUtilityDoc = FlatField<CompUtilityDoc, "synopsis">
 
 /**
  * Generated fields attached to every JSON record at build time. The
@@ -60,20 +65,30 @@ type WithMarkdown<T> = T & {
   readonly _subKind?: string
 }
 
+// Override map for categories whose record has tuple-shaped fields that
+// `Unbrand` would emit as positional objects keyed by `"0"`, `"1"`, ... in
+// the JSON schema. Other categories fall through to `JsonDoc<K>`.
+type FlatOverrides = {
+  builtin: JsonBuiltinDoc
+  conditional_op: JsonCondOpDoc
+  precmd_modifier: JsonPrecmdDoc
+  param_expn: JsonParamExpnDoc
+  comp_utility: JsonCompUtilityDoc
+}
+
 export type JsonRecordMap = {
-  [K in Exclude<
-    DocCategory,
-    "builtin" | "conditional_op" | "precmd_modifier" | "param_expn"
-  >]: WithMarkdown<JsonDoc<K>>
-} & {
-  builtin: WithMarkdown<JsonBuiltinDoc>
-  conditional_op: WithMarkdown<JsonCondOpDoc>
-  precmd_modifier: WithMarkdown<JsonPrecmdDoc>
-  param_expn: WithMarkdown<JsonParamExpnDoc>
+  [K in DocCategory]: WithMarkdown<
+    K extends keyof FlatOverrides ? FlatOverrides[K] : JsonDoc<K>
+  >
 }
 export type JsonDocArrayMap = {
   [K in DocCategory]: readonly JsonRecordMap[K][]
 }
+
+// Per-category schema-root aliases. `scripts/build-schema.ts` resolves these
+// by string name (via `jsonArtifact[cat].schema`); ts-json-schema-generator
+// cannot follow generic instantiations, so each name must exist as its own
+// `export type`. New `DocCategory` -> add the matching alias here.
 
 export type OptionsJson = JsonDocArrayMap["option"]
 export type ConditionalOpsJson = JsonDocArrayMap["conditional_op"]

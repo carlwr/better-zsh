@@ -9,34 +9,12 @@ Word-designators and modifiers are only meaningful inside a history expansion (a
 /**
  * Optional category-level preamble for consumers that surface a category as a
  * whole (e.g. rendered dump files, category overviews in tool descriptions).
- * Empty for most categories; present only where the records cannot be
+ * Absent for most categories; present only where the records cannot be
  * meaningfully interpreted on their own. Composable with per-record markdown;
  * not a substitute for it.
  */
 export const docCategoryPreamble: Readonly<
-  Record<DocCategory, string | undefined>
+  Partial<Record<DocCategory, string>>
 > = {
-  option: undefined,
-  conditional_op: undefined,
-  builtin: undefined,
-  precmd_modifier: undefined,
-  special_param: undefined,
-  complex_command: undefined,
-  reserved_word: undefined,
-  redirection: undefined,
-  process_subst: undefined,
-  param_expn: undefined,
-  subscript_flag: undefined,
-  param_expn_flag: undefined,
   history_expn: historyPreamble,
-  glob_op: undefined,
-  glob_flag: undefined,
-  glob_qualifier: undefined,
-  prompt_escape: undefined,
-  zle_widget: undefined,
-  keymap: undefined,
-  job_spec: undefined,
-  arith_op: undefined,
-  special_function: undefined,
-  comp_utility: undefined,
 }

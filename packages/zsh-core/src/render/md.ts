@@ -15,7 +15,6 @@ import type {
   JobSpecDoc,
   KeymapDoc,
   OptFlagAlias,
-  OptFlagSign,
   OptState,
   ParamExpnDoc,
   ParamFlagDoc,
@@ -30,104 +29,207 @@ import type {
   ZleWidgetDoc,
   ZshOption,
 } from "../docs/types.ts"
+import { flipOptFlagSign } from "../docs/types.ts"
+import { splitInlineCode, walkProseLines } from "./prose-walk.ts"
 
-const OPT_REF_RE = /\b(?:NO_?)?[A-Z][A-Z0-9_]*\b/g
-const inlineCodeRe = /(`[^`\n]+`)/
+// --- formatting primitives --------------------------------------------------
 
-function code(s: string): string {
-  return `\`${s}\``
+const bt = (s: string) => `\`${s}\``
+const codeBlock = (lang: string, ...lines: readonly string[]) =>
+  [`\`\`\`${lang}`, ...lines, "```"].join("\n")
+const docBlock = (...parts: readonly string[]) => parts.join("\n\n")
+
+/** `[fn(x)]` if `x` is defined, otherwise `[]`. For value-gated optional parts. */
+const maybe = <T>(x: T | undefined, fn: (x: T) => string): readonly string[] =>
+  x === undefined ? [] : [fn(x)]
+
+/** `[s]` if `s` is a non-empty string, otherwise `[]`. For passing through optional prose. */
+const nonEmpty = (s: string | undefined): readonly string[] => (s ? [s] : [])
+
+/** `items` when `cond`, otherwise `[]`. Eager — see `maybe` for value-gated parts. */
+const when = (cond: boolean, ...items: readonly string[]): readonly string[] =>
+  cond ? items : []
+
+// --- nested member-list helpers --------------------------------------------
+
+/**
+ * Item in a depth-1 nested bullet list. Renders as
+ * `- \`sig\`: <first paragraph of desc>` with subsequent paragraphs indented
+ * by 2 spaces (CommonMark list-item continuation). `subItems`, when present,
+ * render as a depth-2 nested bullet list under this item.
+ */
+interface MemberItem {
+  readonly sig: string
+  readonly desc: string
+  readonly subItems?: readonly { readonly sig: string; readonly desc: string }[]
 }
 
-function strong(s: string): string {
-  return `**${s}**`
+function renderMemberList(
+  intro: string,
+  members: readonly MemberItem[] | undefined,
+  outro?: string,
+): string {
+  const items = (members ?? []).filter(m => m.sig).map(renderMemberBullet)
+  return docBlock(
+    ...nonEmpty(intro),
+    ...when(items.length > 0, items.join("\n\n")),
+    ...nonEmpty(outro),
+  )
 }
 
-const mdFmt = {
-  code,
-  optRef: (s: string) => strong(code(s)),
+function renderMemberBullet(m: MemberItem): string {
+  const head = `- ${bt(m.sig)}`
+  // subItems hold {sig, desc} only (no deeper nesting); passing them through
+  // renderMemberBullet renders them as leaf bullets.
+  const subBlock = (m.subItems ?? [])
+    .filter(s => s.sig)
+    .map(renderMemberBullet)
+    .join("\n\n")
+  const body = !subBlock
+    ? m.desc
+    : m.desc.trim()
+      ? `${m.desc}\n\n${subBlock}`
+      : subBlock
+  if (!body.trim()) return head
+  const [first = "", ...rest] = body.split(/\n{2,}/)
+  const lines = [`${head}: ${first}`]
+  for (const para of rest) {
+    lines.push("")
+    for (const line of para.split("\n")) lines.push(`  ${line}`)
+  }
+  return lines.join("\n")
 }
+
+/**
+ * Body composed of `desc` (intro) + sibling flag groups (each: optional intro
+ * + bullet list of flags) + optional `outro`. When `groups` is empty/missing,
+ * returns just `desc`. Used by builtins and comp utilities, which can
+ * document multiple sibling flag sections.
+ */
+function renderFlagGroupBody(
+  desc: string,
+  groups:
+    | readonly {
+        readonly intro: string
+        readonly flags: readonly MemberItem[]
+      }[]
+    | undefined,
+  outro?: string,
+): string {
+  if (!groups?.length) return desc
+  return docBlock(
+    ...nonEmpty(desc),
+    ...groups.flatMap(g => [
+      ...nonEmpty(g.intro),
+      renderMemberList("", g.flags),
+    ]),
+    ...nonEmpty(outro),
+  )
+}
+
+// --- option-ref bolding -----------------------------------------------------
 
 /** Emphasize option references inside markdown prose, skipping fenced code. */
 export function fmtOptRefsInMd(md: string, corpus: DocCorpus): string {
   if (corpus.option.size === 0) return md
-
-  let fenced = false
-  return md
-    .split("\n")
-    .map(line => {
-      if (line.startsWith("```")) {
-        fenced = !fenced
-        return line
-      }
-      return fenced ? line : fmtOptRefsInLine(line, corpus)
-    })
-    .join("\n")
+  return walkProseLines(md, line => fmtOptRefsInLine(line, corpus))
 }
 
-/** Render one option doc block as markdown. */
+// Bare ALL_CAPS, optionally NO_-prefixed; `\b` anchors keep `FOO_BAR` whole.
+const OPT_REF_RE = /\b(?:NO_?)?[A-Z][A-Z0-9_]*\b/g
+// Backticked option ref (from upstream `tt(OPT)`). Lookbehind/-ahead skip
+// cases already bolded so re-running this pass is a no-op.
+const BACKTICKED_OPT_RE = /(?<!\*\*)`([A-Z][A-Z0-9_]*)`(?!\*\*)/g
+
+function fmtOptRefsInLine(line: string, corpus: DocCorpus): string {
+  // Pass 1: bare ALL_CAPS in non-code segments → bold-coded.
+  // Pass 2: backticked refs already in prose (from upstream `tt(OPT)`) get
+  // the same treatment, yielding a single canonical bolded form.
+  const pass1 = splitInlineCode(line)
+    .map((part, i) => (i % 2 === 1 ? part : fmtOptRefsInText(part, corpus)))
+    .join("")
+  return pass1.replace(BACKTICKED_OPT_RE, (m, name) =>
+    resolve(corpus, "option", name) ? `**${m}**` : m,
+  )
+}
+
+function fmtOptRefsInText(text: string, corpus: DocCorpus): string {
+  return text.replace(OPT_REF_RE, (raw, offset, whole) =>
+    isShellParameterRef(whole, offset) || !resolve(corpus, "option", raw)
+      ? raw
+      : `**${bt(raw)}**`,
+  )
+}
+
+/** True iff the match at `offset` is preceded by `$` or `${` (a parameter ref). */
+function isShellParameterRef(whole: string, offset: number): boolean {
+  const prev = whole[offset - 1]
+  return prev === "$" || (prev === "{" && whole[offset - 2] === "$")
+}
+
+// --- per-category renderers ------------------------------------------------
+
 export function mdOpt(opt: ZshOption, corpus: DocCorpus): string {
-  const title = mdFmt.code(opt.display)
   const long = opt.display.toLowerCase()
-  const defaultLine = `**Default in zsh: \`${defaultStateIn(opt, "zsh")}\`**`
-  // Render the alias target using the target option's display form when the
-  // corpus knows the target, falling back to the raw normalized key. Keeps
-  // `_Alias of: NO_IGNORE_BRACES` readable instead of `NO_ignorebraces`.
-  const aliasLine = opt.aliasOf
-    ? `_Alias of:_ ${mdFmt.code(aliasTargetDisplay(opt.aliasOf, corpus))}`
-    : undefined
-  // Keep the preamble to executable zsh forms; status/context lines read better outside it.
+  // Preamble stays inside executable zsh forms; status/context lines read
+  // better outside it.
   return docBlock(
-    title,
+    bt(opt.display),
     codeBlock(
       "zsh",
       label("setopt", long, "on"),
       label("unsetopt", long, "off"),
       ...opt.flags.map(renderFlag),
     ),
-    defaultLine,
+    `**Default in zsh: ${bt(defaultStateIn(opt, "zsh"))}**`,
     fmtOptRefsInMd(opt.desc, corpus),
-    ...(aliasLine ? [aliasLine] : []),
+    ...maybe(
+      opt.aliasOf,
+      a => `_Alias of:_ ${bt(aliasTargetDisplay(a, corpus))}`,
+    ),
     `_Option category:_ ${opt.category}`,
   )
 }
 
+/**
+ * Display form of an option alias's target. Uses the target option's display
+ * casing when known so e.g. `NO_IGNORE_BRACES` wins over `NO_ignorebraces`.
+ */
 function aliasTargetDisplay(
   aliasOf: NonNullable<ZshOption["aliasOf"]>,
   corpus: DocCorpus,
 ): string {
-  const rec = corpus.option.get(aliasOf.target)
-  const display = rec?.display ?? (aliasOf.target as string)
+  const display = corpus.option.get(aliasOf.target)?.display ?? aliasOf.target
   return aliasOf.negated ? `NO_${display}` : display
 }
 
-function sigCond(cop: CondOpDoc): string {
-  return cop.arity === "unary"
-    ? `${mdFmt.code(cop.op as string)} *${cop.operands[0]}*`
-    : `*${cop.operands[0]}* ${mdFmt.code(cop.op as string)} *${cop.operands[1]}*`
-}
-
-/** Render one conditional-operator doc block as markdown. */
 export function mdCondOp(cop: CondOpDoc, corpus: DocCorpus): string {
   return docBlock(sigCond(cop), fmtOptRefsInMd(cop.desc, corpus))
 }
 
-/** Render one special-parameter doc block as markdown. */
+function sigCond(cop: CondOpDoc): string {
+  const op = bt(cop.op)
+  return cop.arity === "unary"
+    ? `${op} *${cop.operands[0]}*`
+    : `*${cop.operands[0]}* ${op} *${cop.operands[1]}*`
+}
+
 export function mdShellParam(doc: ShellParamDoc): string {
+  const keys = doc.keys?.map(k => ({
+    sig: k.name,
+    desc: k.desc,
+    ...(k.values && {
+      subItems: k.values.map(v => ({ sig: v.name, desc: v.desc })),
+    }),
+  }))
   return docBlock(
-    mdFmt.code(doc.name),
-    shellParamBody(doc),
-    ...(doc.tied ? [`_Tied with:_ ${mdFmt.code(doc.tied)}`] : []),
+    bt(doc.name),
+    renderMemberList(doc.desc, keys, doc.outro),
+    ...maybe(doc.tied, t => `_Tied with:_ ${bt(t)}`),
     `_Category:_ Special Parameter — ${doc.scope}`,
   )
 }
 
-function shellParamBody(doc: ShellParamDoc): string {
-  if (!doc.keys || doc.keys.length === 0) return doc.desc
-  const tail = doc.keys.map(k => `${k.name} ${k.desc}`).join("\n\n")
-  return doc.desc ? `${doc.desc}\n\n${tail}` : tail
-}
-
-/** Render one parameter-expansion flag doc block as markdown. */
 export function mdParamFlag(doc: ParamFlagDoc, corpus: DocCorpus): string {
   return sigBlock(
     doc,
@@ -136,7 +238,6 @@ export function mdParamFlag(doc: ParamFlagDoc, corpus: DocCorpus): string {
   )
 }
 
-/** Render one subscript flag doc block as markdown. */
 export function mdSubscriptFlag(
   doc: SubscriptFlagDoc,
   corpus: DocCorpus,
@@ -148,22 +249,18 @@ export function mdSubscriptFlag(
   )
 }
 
-/** Render one history-expansion doc block as markdown. */
 export function mdHistory(doc: HistoryDoc, corpus: DocCorpus): string {
   return sigBlock(doc, corpus, `history ${doc.kind.replace("-", " ")}`)
 }
 
-/** Render one globbing-operator doc block as markdown. */
 export function mdGlobOp(doc: GlobOpDoc, corpus: DocCorpus): string {
   return sigBlock(doc, corpus, `glob operator (${doc.kind})`)
 }
 
-/** Render one glob-flag doc block as markdown. */
 export function mdGlobFlag(doc: GlobFlagDoc, corpus: DocCorpus): string {
   return sigBlock(doc, corpus, `glob flag${argsSuffix(doc.args)}`)
 }
 
-/** Render one glob-qualifier doc block as markdown. */
 export function mdGlobQualifier(
   doc: GlobQualifierDoc,
   corpus: DocCorpus,
@@ -177,146 +274,132 @@ function sigBlock(
   role: string,
 ): string {
   return docBlock(
-    mdFmt.code(doc.sig),
+    bt(doc.sig),
     fmtOptRefsInMd(doc.desc, corpus),
     `_Role:_ ${role}`,
   )
 }
 
-function argsSuffix(args: readonly string[]): string {
-  return args.length > 0 ? ` (args: ${args.join(", ")})` : ""
-}
+const argsSuffix = (args: readonly string[]): string =>
+  args.length > 0 ? ` (args: ${args.join(", ")})` : ""
 
-/** Render one builtin doc block as markdown. */
 export function mdBuiltin(doc: BuiltinDoc): string {
-  const out = [
-    mdFmt.code(doc.name as string),
+  return docBlock(
+    bt(doc.name),
     codeBlock("zsh", ...doc.synopsis),
-    doc.desc,
-  ]
-  if (doc.aliasOf) out.push(`_Alias of:_ ${mdFmt.code(doc.aliasOf as string)}`)
-  if (doc.module) out.push(`_Module:_ ${mdFmt.code(doc.module)}`)
-  return docBlock(...out)
+    renderFlagGroupBody(doc.desc, doc.flagGroups, doc.outro),
+    ...maybe(doc.aliasOf, a => `_Alias of:_ ${bt(a)}`),
+    ...maybe(doc.module, m => `_Module:_ ${bt(m)}`),
+  )
 }
 
-/** Render one precommand doc block as markdown. */
 export function mdPrecmd(doc: PrecmdDoc): string {
   return docBlock(
-    mdFmt.code(doc.name),
+    bt(doc.name),
     codeBlock("zsh", ...doc.synopsis),
     doc.desc,
     "_Role:_ precommand modifier",
   )
 }
 
-/** Render one redirection doc block as markdown. */
 export function mdRedir(doc: RedirDoc): string {
   return docBlock(
-    mdFmt.code(doc.groupOp),
+    bt(doc.groupOp),
     codeBlock("zsh", doc.sig),
     doc.desc,
     "_Category:_ Redirection",
   )
 }
 
-/** Render one process-substitution doc block as markdown. */
 export function mdProcessSubst(doc: ProcessSubstDoc): string {
-  return docBlock(
-    mdFmt.code(doc.op),
-    doc.desc,
-    "_Category:_ Process Substitution",
-  )
+  return docBlock(bt(doc.op), doc.desc, "_Category:_ Process Substitution")
 }
 
 /**
- * Render one parameter-expansion doc block as markdown.
- *
- * For grouped sigs (the doc's `groupSigs` has 2+ entries sharing one desc),
- * a zsh code block lists every sibling sig in manual order with `# <- this
- * form` on the focused row — the reader sees which form they asked about in
- * the context of the family it belongs to. Solo sigs skip the code block
- * entirely (the header already shows the sig).
+ * Parameter-expansion form. Grouped sigs (2+ siblings sharing one desc) get a
+ * code block listing every sibling in manual order with `# <- this form` on
+ * the focused row; solo sigs skip it (header already shows the sig).
  */
 export function mdParamExpn(doc: ParamExpnDoc): string {
-  const multi = doc.groupSigs.length > 1
+  const n = doc.groupSigs.length
+  const multi = n > 1
   const subtitle = multi
-    ? `_(${doc.subKind}, form ${doc.orderInGroup + 1} of ${doc.groupSigs.length})_`
+    ? `_(${doc.subKind}, form ${doc.orderInGroup + 1} of ${n})_`
     : `_(${doc.subKind})_`
-  const parts: string[] = [`${mdFmt.code(doc.sig as string)}    ${subtitle}`]
-  if (multi) {
-    const lines = doc.groupSigs.map((s, i) =>
-      i === doc.orderInGroup ? `${s}    # <- this form` : s,
-    )
-    parts.push(codeBlock("zsh", ...lines))
-  }
-  parts.push(doc.desc)
-  parts.push("_Category:_ Parameter Expansion")
-  return docBlock(...parts)
-}
-
-/** Render one reserved-word doc block as markdown. */
-export function mdReservedWord(doc: ReservedWordDoc): string {
-  const parts: string[] = [mdFmt.code(doc.name)]
-  if (doc.desc) parts.push(doc.desc)
-  parts.push(
-    `_Role:_ reserved word (${doc.pos === "command" ? "command position" : "any position"})`,
+  return docBlock(
+    `${bt(doc.sig)}    ${subtitle}`,
+    ...when(
+      multi,
+      codeBlock(
+        "zsh",
+        ...doc.groupSigs.map((s, i) =>
+          i === doc.orderInGroup ? `${s}    # <- this form` : s,
+        ),
+      ),
+    ),
+    doc.desc,
+    "_Category:_ Parameter Expansion",
   )
-  return docBlock(...parts)
 }
 
-/** Render one complex-command doc block as markdown. */
+export function mdReservedWord(doc: ReservedWordDoc): string {
+  const pos = doc.pos === "command" ? "command position" : "any position"
+  return docBlock(
+    bt(doc.name),
+    ...nonEmpty(doc.desc),
+    `_Role:_ reserved word (${pos})`,
+  )
+}
+
 export function mdComplexCommand(
   doc: ComplexCommandDoc,
   corpus: DocCorpus,
 ): string {
-  const parts: string[] = [mdFmt.code(doc.name), codeBlock("zsh", doc.sig)]
-  parts.push(fmtOptRefsInMd(doc.desc, corpus))
-  if (doc.alternateForms.length > 0) {
-    parts.push("_Alternate forms:_")
-    parts.push(codeBlock("zsh", ...doc.alternateForms.map(a => a.template)))
-  }
-  if (doc.bodyKeywords.length > 0) {
-    parts.push(`_Body keywords:_ ${doc.bodyKeywords.map(code).join(" ")}`)
-  }
-  parts.push("_Role:_ complex command")
-  return docBlock(...parts)
+  return docBlock(
+    bt(doc.name),
+    codeBlock("zsh", doc.sig),
+    fmtOptRefsInMd(doc.desc, corpus),
+    ...when(
+      doc.alternateForms.length > 0,
+      "_Alternate forms:_",
+      codeBlock("zsh", ...doc.alternateForms.map(a => a.template)),
+    ),
+    ...when(
+      doc.bodyKeywords.length > 0,
+      `_Body keywords:_ ${doc.bodyKeywords.map(bt).join(" ")}`,
+    ),
+    "_Role:_ complex command",
+  )
 }
 
-/** Render one prompt-escape doc block as markdown. */
 export function mdPromptEscape(doc: PromptEscapeDoc): string {
   return docBlock(
-    mdFmt.code(doc.sig),
+    bt(doc.sig),
     doc.desc,
     `_Category:_ Prompt Escape — ${doc.section}`,
   )
 }
 
-/** Render one ZLE keymap doc block as markdown. */
 export function mdKeymap(doc: KeymapDoc): string {
   return docBlock(
-    mdFmt.code(doc.name),
+    bt(doc.name),
     doc.desc,
     "_Role:_ ZLE keymap",
-    ...(doc.isSpecial ? ["_Special:_ cannot be altered"] : []),
-    ...(doc.linkedFrom.length > 0
-      ? [`_Linked from:_ ${doc.linkedFrom.map(mdFmt.code).join(", ")}`]
-      : []),
+    ...when(doc.isSpecial, "_Special:_ cannot be altered"),
+    ...when(
+      doc.linkedFrom.length > 0,
+      `_Linked from:_ ${doc.linkedFrom.map(bt).join(", ")}`,
+    ),
   )
 }
 
-/** Render one job-spec doc block as markdown. */
 export function mdJobSpec(doc: JobSpecDoc): string {
-  return docBlock(
-    mdFmt.code(doc.sig),
-    doc.desc,
-    `_Role:_ job spec (${doc.kind})`,
-  )
+  return docBlock(bt(doc.sig), doc.desc, `_Role:_ job spec (${doc.kind})`)
 }
 
-/** Render one arithmetic-operator doc block as markdown. */
 export function mdArithOp(doc: ArithOpDoc): string {
   return docBlock(
-    mdFmt.code(doc.op),
+    bt(doc.op),
     doc.desc,
     `_Role:_ arithmetic operator (${doc.arity})`,
   )
@@ -328,96 +411,58 @@ const specialFunctionRoleLabel = {
   "trap-template": "trap function (template)",
 } as const
 
-/** Render one special-function doc block as markdown. */
 export function mdSpecialFunction(doc: SpecialFunctionDoc): string {
-  const role = `_Role:_ ${specialFunctionRoleLabel[doc.kind]}`
-  const hookLine = doc.hookArray
-    ? codeBlock("zsh", `${doc.hookArray}=( funcname1 funcname2 ... )`)
-    : undefined
   return docBlock(
-    mdFmt.code(doc.name),
+    bt(doc.name),
     doc.desc,
-    ...(hookLine ? [hookLine] : []),
-    role,
+    ...maybe(doc.hookArray, h =>
+      codeBlock("zsh", `${h}=( funcname1 funcname2 ... )`),
+    ),
+    `_Role:_ ${specialFunctionRoleLabel[doc.kind]}`,
   )
 }
 
-/** Render one ZLE widget doc block as markdown. */
 export function mdZleWidget(doc: ZleWidgetDoc): string {
-  const role =
-    doc.kind === "special" ? "ZLE special widget" : "ZLE standard widget"
   return docBlock(
-    mdFmt.code(doc.name),
+    bt(doc.name),
     codeBlock("zsh", doc.sig),
-    doc.desc,
-    `_Role:_ ${role}`,
+    renderMemberList(doc.desc, doc.subItems, doc.outro),
+    `_Role:_ ZLE ${doc.kind} widget`,
     `_Subsection:_ ${doc.section}`,
   )
 }
 
-/** Render one completion-utility doc block as markdown. */
 export function mdCompUtility(doc: CompUtilityDoc): string {
   return docBlock(
-    mdFmt.code(doc.name),
-    codeBlock("zsh", doc.sig),
-    doc.desc,
+    bt(doc.name),
+    codeBlock("zsh", ...doc.synopsis),
+    renderFlagGroupBody(doc.desc, doc.flagGroups, doc.outro),
     "_Category:_ Completion Utility",
   )
 }
 
-/** Return whether an option defaults on/off for an emulation mode. */
+// --- option-rendering helpers ----------------------------------------------
+
+/** Whether an option defaults on/off under an emulation mode. */
 export function defaultStateIn(opt: ZshOption, emulation: Emulation): OptState {
   return opt.defaultIn.includes(emulation) ? "on" : "off"
 }
 
 function renderFlag(flag: OptFlagAlias): string {
-  // Long and short forms should show the same on/off semantics, even when `+x` means "on".
-  const on = label("set", `${flag.on}${flag.char}`, "on")
-  const off = label("set", `${flip(flag.on)}${flag.char}`, "off")
-  return [on, off].join("\n")
+  // Long and short forms show identical on/off semantics, even when `+x` means on.
+  return [
+    label("set", `${flag.on}${flag.char}`, "on"),
+    label("set", `${flipOptFlagSign(flag.on)}${flag.char}`, "off"),
+  ].join("\n")
 }
 
-function flip(sign: OptFlagSign): OptFlagSign {
-  return sign === "-" ? "+" : "-"
-}
+const label = (cmd: string, arg: string, state: OptState): string =>
+  `${`${cmd} ${arg}`.padEnd(20)} # ${state}`
 
-function label(cmd: string, arg: string, state: OptState): string {
-  return `${`${cmd} ${arg}`.padEnd(20)} # ${state}`
-}
+// --- public dispatch -------------------------------------------------------
 
-function fmtOptRefsInLine(line: string, corpus: DocCorpus): string {
-  return line
-    .split(inlineCodeRe)
-    .map((part, i) => (i % 2 === 1 ? part : fmtOptRefsInText(part, corpus)))
-    .join("")
-}
-
-function fmtOptRefsInText(text: string, corpus: DocCorpus): string {
-  return text.replace(OPT_REF_RE, (raw, offset, whole) => {
-    if (isShellParameterRef(whole, offset)) return raw
-    return resolve(corpus, "option", raw) ? mdFmt.optRef(raw) : raw
-  })
-}
-
-// Checks whether the match at `offset` in `whole` is preceded by `$` or `${`,
-// i.e. is a shell parameter reference ($VAR or ${VAR}) rather than a bare option name.
-// offset-1 is the char immediately before the match; offset-2 is one further back.
-function isShellParameterRef(whole: string, offset: number): boolean {
-  const prev = whole[offset - 1]
-  const prevPrev = whole[offset - 2]
-  return prev === "$" || (prev === "{" && prevPrev === "$")
-}
-
-function codeBlock(lang: string, ...lines: readonly string[]): string {
-  return [`\`\`\`${lang}`, ...lines, "```"].join("\n")
-}
-
-function docBlock(...parts: readonly string[]): string {
-  return parts.join("\n\n")
-}
-
-/** Per-category markdown renderers, dispatched by `DocCategory`. */
-export const mdRenderer: {
+// Per-category markdown renderers, dispatched by `DocCategory`.
+const mdRenderer: {
   [K in DocCategory]: (doc: DocRecordMap[K], corpus: DocCorpus) => string
 } = {
   option: mdOpt,
@@ -446,24 +491,30 @@ export const mdRenderer: {
 }
 
 /**
- * Render the markdown doc block for a proven documented element.
- * `id` must come from `resolve()` or from corpus iteration; the lookup is
- * guaranteed by the static corpus, so the return type is `string`.
- *
- * Upgrade path: if multiple categories gain meaningful compact/signature
- * forms, add an options bag with a `level: "full" | "sig"` axis and a
- * parallel `sigRenderer` table — preserving the parametric shape. Until
- * then, short-form presentation is a consumer concern: doc record fields
- * are already public and consumers can format inline.
+ * Render a doc record through its per-category renderer and apply the
+ * option-ref bolding pass. Idempotent — re-running on already-bolded
+ * markdown is a no-op.
+ */
+export function renderRecord<K extends DocCategory>(
+  corpus: DocCorpus,
+  cat: K,
+  doc: DocRecordMap[K],
+): string {
+  const render = mdRenderer[cat] as (
+    d: DocRecordMap[K],
+    corpus: DocCorpus,
+  ) => string
+  return fmtOptRefsInMd(render(doc, corpus), corpus)
+}
+
+/**
+ * Render the markdown doc block for a proven documented element. `id` must
+ * come from `resolve()` or corpus iteration; returns `""` if the lookup
+ * misses.
  */
 export function renderDoc(corpus: DocCorpus, id: DocPieceId): string {
   const doc = corpus[id.category].get(id.id as never) as
     | DocRecordMap[typeof id.category]
     | undefined
-  if (!doc) return ""
-  const render = mdRenderer[id.category] as (
-    d: DocRecordMap[typeof id.category],
-    corpus: DocCorpus,
-  ) => string
-  return render(doc, corpus)
+  return doc ? renderRecord(corpus, id.category, doc) : ""
 }

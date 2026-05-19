@@ -133,6 +133,7 @@ pnpm format && pnpm qa && pnpm test:smoke && pnpm vsix && pnpm test:integration 
 ```
 
 - `pnpm format` first.
+- Build-scripts may never be run in parallel (since: may race) — chain with `&&`.
 - `pnpm qa` failure blocks commit — fix and re-run.
 - `INTERACTIVE`, `REGISTRY` excluded unless asked.
 - Docs-only / non-code: skip tests unless asked.

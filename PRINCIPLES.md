@@ -191,6 +191,23 @@ Agents pay tokens for markdown. Structured JSON beats it on:
 
 Markdown explains; typed fields route.
 
+### Records are self-contained
+
+One identity unit, one rendered markdown body. The ontology has no "see also" between records; consumers receive a self-contained body per identity unit.
+
+A record's typed sub-payload (variable-length composite field) is *internal structure*, not navigation: when an upstream item documents an enumerated nested set whose members carry their own prose, capture it as a typed field on the record and let the renderer compose prose from it. The producer can grow richer shapes without consumers lifting navigation primitives.
+
+### Parsers parse yodl; renderers may shape-infer
+
+Two roles, two postures:
+
+- **Parser:** captures what Yodl *literally says*. Item bodies, nested-list structure, header signatures, macro names — these are explicit signals. The parser preserves them as typed record fields and stops there.
+- **Renderer:** may apply heuristics on shape and sequence — "a lone `em()` on its own paragraph behaves like a section heading" is a shape inference, not a parse fact. Heuristics belong in the renderer (or a render-time pre-pass), not in the extractors.
+
+Why: parser output is the typed corpus and feeds every downstream consumer (TS, Rust, schemas). Heuristics in parsers leak into types and tests; renderers absorb heuristics without contaminating shapes.
+
+Pragmatism carve-out: when shape inference *radically* simplifies code or removes large amounts of duplicated downstream logic, a parser-level heuristic is acceptable — but always with an in-code comment explaining the inference. Clear code beats a comment; a comment beats a hidden coupling.
+
 ---
 
 ## Tooldef + adapters

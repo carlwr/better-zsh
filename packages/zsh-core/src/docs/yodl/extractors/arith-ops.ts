@@ -1,8 +1,8 @@
 import { mkDocumented } from "../../brands.ts"
 import type { ArithOpArity, ArithOpDoc } from "../../types.ts"
-import { extractFirstList, extractSitemList, withBody } from "../core/doc.ts"
-import type { YNodeSeq } from "../core/nodes.ts"
-import { type extractTokens, firstTt, normalizeBody } from "../core/text.ts"
+import { extractFirstSitemList, withBody } from "../core/doc.ts"
+import type { YodlSrc } from "../core/nodes.ts"
+import { firstTt, normalizeBody } from "../core/text.ts"
 
 const SECTION = "Arithmetic Evaluation"
 
@@ -19,34 +19,27 @@ const SECTION = "Arithmetic Evaluation"
  * forms. `+` and `-` appear in both: we emit one record each, with
  * `arity: "overloaded"`, and concatenate the unary/binary descriptions.
  *
- * Uses `extractFirstList` directly: the section heading lives inside an
+ * Uses `extractFirstSitemList` directly: the section heading lives inside an
  * `ifzman(...)` wrapper so `extractSectBody` misses it, and there is only one
  * operator table in the file anyway (the first one). Precedent: cond-ops.ts.
  */
-export function parseArithOps(yo: string | YNodeSeq): readonly ArithOpDoc[] {
-  const list = extractFirstList(yo, "sitem")
-  if (!list) return []
-
-  const rows = withBody(extractSitemList(list)).flatMap(item => {
-    const ops = opsInHeader(item.header)
-    if (ops.length === 0) return []
-    return [{ ops, desc: normalizeBody(item.body), arity: rowArity(item.body) }]
-  })
-
+export function parseArithOps(yo: YodlSrc): readonly ArithOpDoc[] {
   const byOp = new Map<string, { arity: ArithOpArity; desc: string }>()
-  for (const row of rows) {
-    for (const op of row.ops) {
+  for (const item of withBody(extractFirstSitemList(yo))) {
+    const ops = (firstTt(item.header) ?? "").split(/\s+/).filter(Boolean)
+    if (ops.length === 0) continue
+    const desc = normalizeBody(item.body)
+    const arity = rowArity(desc)
+    for (const op of ops) {
       const prev = byOp.get(op)
-      if (!prev) {
-        byOp.set(op, { arity: row.arity, desc: row.desc })
-        continue
-      }
       // Same op seen twice — only true for `+` and `-` in the native table.
       // Mark as overloaded, concat descriptions for reader context.
-      byOp.set(op, {
-        arity: "overloaded",
-        desc: `${prev.desc}\n\n${row.desc}`,
-      })
+      byOp.set(
+        op,
+        prev
+          ? { arity: "overloaded", desc: `${prev.desc}\n\n${desc}` }
+          : { arity, desc },
+      )
     }
   }
 
@@ -59,14 +52,9 @@ export function parseArithOps(yo: string | YNodeSeq): readonly ArithOpDoc[] {
   }))
 }
 
-function opsInHeader(header: Parameters<typeof extractTokens>[0]): string[] {
-  const tt = firstTt(header)
-  return tt ? tt.split(/\s+/).filter(Boolean) : []
-}
-
-function rowArity(body: Parameters<typeof extractTokens>[0]): ArithOpArity {
-  const desc = normalizeBody(body).toLowerCase()
-  if (desc.startsWith("unary")) return "unary"
-  if (desc.startsWith("ternary")) return "ternary"
+function rowArity(desc: string): ArithOpArity {
+  const lower = desc.toLowerCase()
+  if (lower.startsWith("unary")) return "unary"
+  if (lower.startsWith("ternary")) return "ternary"
   return "binary"
 }

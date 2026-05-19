@@ -80,46 +80,60 @@ import { parseZleWidgets } from "./yodl/extractors/zle-widgets.ts"
 
 const dataDir = resolveZshDataDir()
 
+type GetNodes = (file: CorpusYodlFile) => YNodeSeq
 type CategoryLoader = {
-  [K in DocCategory]: {
-    readonly file: CorpusYodlFile
-    readonly parse: (yo: YNodeSeq) => readonly DocRecordMap[K][]
-  }
+  [K in DocCategory]: (gn: GetNodes) => readonly DocRecordMap[K][]
 }
 
 // Pre-parse fixups for known upstream-doc typos live next to the extractor
 // that relies on the fixed text; `loadCorpus` dispatches through this table
 // so the shared-file parse sees the patched source, and direct extractor
 // callers (tests) get the same input via each extractor's own string branch.
-const fileFixups: Readonly<Record<string, (yo: string) => string>> = {
+const fileFixups: Readonly<
+  Partial<Record<CorpusYodlFile, (yo: string) => string>>
+> = {
   "options.yo": fixupOptionsYo,
   "expn.yo": fixupExpnYo,
 }
 
+// `special_param` spans three files; `builtin` spans two (compwid.yo carries
+// completion-builtin entries interleaved with other constructs, so only the
+// "Completion Builtin Commands" section is extracted at depth 1). Both stay
+// in-table so dispatch remains parametric over `DocCategory`.
 const categoryLoader: CategoryLoader = {
-  option: { file: "options.yo", parse: parseOptions },
-  conditional_op: { file: "cond.yo", parse: parseCondOps },
-  builtin: { file: "builtins.yo", parse: parseBuiltins },
-  precmd_modifier: { file: "grammar.yo", parse: parsePrecmds },
-  special_param: { file: "params.yo", parse: parseShellParams },
-  complex_command: { file: "grammar.yo", parse: parseComplexCommands },
-  reserved_word: { file: "grammar.yo", parse: parseReswords },
-  redirection: { file: "redirect.yo", parse: parseRedirs },
-  process_subst: { file: "expn.yo", parse: parseProcessSubsts },
-  param_expn: { file: "expn.yo", parse: parseParamExpns },
-  subscript_flag: { file: "params.yo", parse: parseSubscriptFlags },
-  param_expn_flag: { file: "expn.yo", parse: parseParamFlags },
-  history_expn: { file: "expn.yo", parse: parseHistory },
-  glob_op: { file: "expn.yo", parse: parseGlobOps },
-  glob_flag: { file: "expn.yo", parse: parseGlobFlags },
-  glob_qualifier: { file: "expn.yo", parse: parseGlobQualifiers },
-  prompt_escape: { file: "prompt.yo", parse: parsePromptEscapes },
-  zle_widget: { file: "zle.yo", parse: parseZleWidgets },
-  keymap: { file: "zle.yo", parse: parseKeymaps },
-  job_spec: { file: "jobs.yo", parse: parseJobSpecs },
-  arith_op: { file: "arith.yo", parse: parseArithOps },
-  special_function: { file: "func.yo", parse: parseSpecialFunctions },
-  comp_utility: { file: "compsys.yo", parse: parseCompUtils },
+  option: gn => parseOptions(gn("options.yo")),
+  conditional_op: gn => parseCondOps(gn("cond.yo")),
+  builtin: gn => [
+    ...parseBuiltins(gn("builtins.yo")),
+    ...parseBuiltins(
+      extractSectionBody(gn("compwid.yo"), "Completion Builtin Commands"),
+      1,
+    ),
+  ],
+  precmd_modifier: gn => parsePrecmds(gn("grammar.yo")),
+  special_param: gn => [
+    ...parseShellParams(gn("params.yo")),
+    ...parseWidgetParams(gn("zle.yo")),
+    ...parseCompletionParams(gn("compwid.yo")),
+  ],
+  complex_command: gn => parseComplexCommands(gn("grammar.yo")),
+  reserved_word: gn => parseReswords(gn("grammar.yo")),
+  redirection: gn => parseRedirs(gn("redirect.yo")),
+  process_subst: gn => parseProcessSubsts(gn("expn.yo")),
+  param_expn: gn => parseParamExpns(gn("expn.yo")),
+  subscript_flag: gn => parseSubscriptFlags(gn("params.yo")),
+  param_expn_flag: gn => parseParamFlags(gn("expn.yo")),
+  history_expn: gn => parseHistory(gn("expn.yo")),
+  glob_op: gn => parseGlobOps(gn("expn.yo")),
+  glob_flag: gn => parseGlobFlags(gn("expn.yo")),
+  glob_qualifier: gn => parseGlobQualifiers(gn("expn.yo")),
+  prompt_escape: gn => parsePromptEscapes(gn("prompt.yo")),
+  zle_widget: gn => parseZleWidgets(gn("zle.yo")),
+  keymap: gn => parseKeymaps(gn("zle.yo")),
+  job_spec: gn => parseJobSpecs(gn("jobs.yo")),
+  arith_op: gn => parseArithOps(gn("arith.yo")),
+  special_function: gn => parseSpecialFunctions(gn("func.yo")),
+  comp_utility: gn => parseCompUtils(gn("compsys.yo")),
 }
 
 /** In-memory corpus of parsed zsh documentation, keyed by category then identity. */
@@ -185,49 +199,20 @@ type _AssertDocCorpusKeys1 = Assert<
 type _AssertDocCorpusKeys2 = Assert<
   Eq<Exclude<Extract<keyof DocCorpus, string>, DocCategory>, never>
 >
-
-function loadCategoryDocs<K extends DocCategory>(
-  cat: K,
-  getNodes: (file: string) => YNodeSeq,
-): readonly DocRecordMap[K][] {
-  // special_param spans three files (`params.yo`, `zle.yo`, `compwid.yo`);
-  // each feed emits records of the same shape, differentiated by `scope`.
-  // Composed inline rather than through the generic CategoryLoader to avoid
-  // a multi-file dispatch schema for what is a small set of special cases.
-  if (cat === "special_param") {
-    return [
-      ...parseShellParams(getNodes("params.yo")),
-      ...parseWidgetParams(getNodes("zle.yo")),
-      ...parseCompletionParams(getNodes("compwid.yo")),
-    ] as unknown as readonly DocRecordMap[K][]
-  }
-  // builtin spans two files: `builtins.yo` (core shell builtins) plus
-  // `compwid.yo` (completion-widget builtins: compadd, compset, compcall).
-  // compwid.yo interleaves builtin entries with other constructs; only the
-  // "Completion Builtin Commands" section is extracted, at depth 1, to
-  // exclude nested flag-description items.
-  if (cat === "builtin") {
-    const cmdSection = extractSectionBody(
-      getNodes("compwid.yo"),
-      "Completion Builtin Commands",
-    )
-    return [
-      ...parseBuiltins(getNodes("builtins.yo")),
-      ...parseBuiltins(cmdSection, 1),
-    ] as unknown as readonly DocRecordMap[K][]
-  }
-  const { file, parse } = categoryLoader[cat]
-  return parse(getNodes(file)) as readonly DocRecordMap[K][]
-}
+// Catch a wrong record-type per field, not just key drift.
+type _AssertDocCorpusValueShapes = Assert<
+  Eq<
+    DocCorpus,
+    { readonly [K in DocCategory]: ReadonlyMap<Documented<K>, DocRecordMap[K]> }
+  >
+>
 
 function buildCategoryMap<K extends DocCategory>(
   cat: K,
   docs: readonly DocRecordMap[K][],
 ): ReadonlyMap<Documented<K>, DocRecordMap[K]> {
-  const map = new Map<Documented<K>, DocRecordMap[K]>()
   const getId = docId[cat] as (doc: DocRecordMap[K]) => Documented<K>
-  for (const doc of docs) map.set(getId(doc), doc)
-  return map
+  return new Map(docs.map(d => [getId(d), d]))
 }
 
 /** Load the full parsed doc corpus. Eager, cached, immutable. */
@@ -235,18 +220,17 @@ export const loadCorpus: () => DocCorpus = cached(() => {
   // Parse each .yo file at most once: several categories share a file (expn.yo
   // covers 6 categories, grammar.yo and params.yo 2 each), and parseNodes is
   // the dominant cost. `cachedUnary` keeps the lookup lazy and per-file.
-  const getNodes = cachedUnary((file: string): YNodeSeq => {
+  const getNodes: GetNodes = cachedUnary(file => {
     const raw = readFileSync(join(dataDir, file), "utf8")
     return parseNodes(fileFixups[file]?.(raw) ?? raw)
   })
-
   const out: {
     [K in DocCategory]?: ReadonlyMap<Documented<K>, DocRecordMap[K]>
   } = {}
   for (const cat of docCategories) {
     ;(out as Record<DocCategory, unknown>)[cat] = buildCategoryMap(
       cat,
-      loadCategoryDocs(cat, getNodes),
+      categoryLoader[cat](getNodes),
     )
   }
   return Object.freeze(out) as DocCorpus
@@ -264,12 +248,13 @@ export const loadCorpus: () => DocCorpus = cached(() => {
  * Eager, cached, immutable. Total over `DocCategory`, mirroring
  * `docSubKind` in `taxonomy.ts`.
  */
-export const subKindEnums: Readonly<{
+type SubKindEnums = Readonly<{
   [K in DocCategory]: readonly string[] | undefined
-}> = cached(() => {
+}>
+
+export const subKindEnums: SubKindEnums = cached(() => {
   const corpus = loadCorpus()
-  const out: { [K in DocCategory]?: readonly string[] | undefined } = {}
-  for (const cat of docCategories) {
+  const entries = docCategories.map(cat => {
     const map = corpus[cat] as ReadonlyMap<string, DocRecordMap[DocCategory]>
     const getSubKind = docSubKind[cat] as (
       d: DocRecordMap[DocCategory],
@@ -277,11 +262,9 @@ export const subKindEnums: Readonly<{
     const seen = new Set<string>()
     for (const rec of map.values()) {
       const k = getSubKind(rec)
-      if (k !== undefined && k !== null && k !== "") seen.add(k)
+      if (k) seen.add(k)
     }
-    out[cat] = seen.size === 0 ? undefined : [...seen].sort()
-  }
-  return Object.freeze(out) as Readonly<{
-    [K in DocCategory]: readonly string[] | undefined
-  }>
+    return [cat, seen.size === 0 ? undefined : [...seen].sort()] as const
+  })
+  return Object.freeze(Object.fromEntries(entries)) as SubKindEnums
 })()

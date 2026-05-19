@@ -40,6 +40,24 @@ second line\
 - Counter the line-count-as-conciseness bias actively in any agent-facing prose.
 - For conciseness-only changes: at minimum, do not grow `wc -w`.
 
+## Single source of truth
+
+Same value (literal, shape, behaviour) in two places: declare once and reference. Parallel definitions drift silently; type-checking rarely catches it.
+
+```diff
+- // file-a.ts and file-b.ts both declare:
+- const fileName = "things.json"
+- const countKey = "things"
++ // shared.ts: one base, derive the rest
++ const base = "things"
++ export const fileName = `${base}.json`
++ export const countKey = base
+```
+
+Where N entries follow a rule from one per-row input, derive — don't hand-list shape. Where most rows share a default, list deviations only and fall through. When such a table needs to be materialized in full, iterate the canonical key source (e.g. the union's literal list), not the table's own keys — otherwise default-bearing keys are silently absent.
+
+Accidental similarity of conceptually-different values may stay duplicated; when the *implementation* must match but the *meaning* differs, share a helper, not the name.
+
 ## Module layout
 
 - no `index.ts` barrels under `src/**/` — use `src/<area>.ts` beside `src/<area>/` when an aggregate is needed
@@ -74,7 +92,8 @@ Smells:
 
 - Cross-brand casts outside the sanctioned crossing — route through a resolver/dispatcher.
 - Ad-hoc construction of discriminated-union members at call sites — use a typed constructor.
-- Scaffolding casts hiding a design issue, especially `as unknown as T`.
+- Hand-rolled string forms of branded / typed identifiers — use the typed constructor; the rule applies in tests and tables, not just production code.
+- Scaffolding casts hiding a design issue (sometimes look like `as unknown as T` - but note that this pattern is not always a smell).
 
 Rules of thumb:
 
@@ -86,6 +105,7 @@ Rules of thumb:
 - Small declaration comments are fine for scanning-loop state.
 - Prefer "obviously correct islands": narrow, pure, strongly-typed helpers.
 - Prefer structural enforcement over advisory comments.
+- Prefer type-level invariants over runtime assertions when the type system can express the property.
 - Evaluate a package's public surface from a general-consumer perspective, not only through one consumer's needs.
 
 ## Shell scripts: tooling preferences

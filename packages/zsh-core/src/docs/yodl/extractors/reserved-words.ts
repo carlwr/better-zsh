@@ -1,8 +1,10 @@
 import { mkDocumented } from "../../brands.ts"
 import type { ReservedWordDoc } from "../../types.ts"
 import { extractSectionBody } from "../core/doc.ts"
-import type { YNodeSeq } from "../core/nodes.ts"
+import type { YodlSrc } from "../core/nodes.ts"
 import { ttTexts } from "../core/text.ts"
+
+const SECTION = "Reserved Words"
 
 // Heads handled by `complex_command`; their `ReservedWordDoc.desc` is left
 // absent. See `ReservedWordDoc`'s comment for rationale.
@@ -65,10 +67,8 @@ function descFor(name: string): string | undefined {
   return ROLE[name]
 }
 
-export function parseReswords(
-  yo: string | YNodeSeq,
-): readonly ReservedWordDoc[] {
-  const words = ttTexts(extractSectionBody(yo, "Reserved Words")).find(
+export function parseReswords(yo: YodlSrc): readonly ReservedWordDoc[] {
+  const words = ttTexts(extractSectionBody(yo, SECTION)).find(
     text => /\bdo\b/.test(text) && /\btypeset\b/.test(text),
   )
   if (!words) return []
@@ -82,7 +82,7 @@ export function parseReswords(
         name: mkDocumented("reserved_word", name),
         pos: "command",
         sig: name,
-        section: "Reserved Words",
+        section: SECTION,
         ...(desc === undefined ? {} : { desc }),
       }
     })
@@ -94,7 +94,7 @@ export function parseReswords(
       pos: "any",
       sig: "}",
       desc: ANY_DESC,
-      section: "Reserved Words",
+      section: SECTION,
     },
   ]
 }

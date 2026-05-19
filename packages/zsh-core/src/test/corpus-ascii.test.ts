@@ -35,63 +35,56 @@ function isProse(s: string): boolean {
   return true
 }
 
+// Augment once: `augmentWithMarkdown` re-renders every body.
+const augmented = docCategories.map(
+  cat => [cat, augmentWithMarkdown(corpus, cat)] as const,
+)
+
+const strField = (rec: object, key: string): string | undefined => {
+  const v = (rec as Record<string, unknown>)[key]
+  return typeof v === "string" ? v : undefined
+}
+
 describe("corpus string-field invariants", () => {
   test("every _id is printable ASCII with no whitespace", () => {
     const violations: string[] = []
-    for (const cat of docCategories) {
-      for (const rec of augmentWithMarkdown(corpus, cat)) {
-        if (!ID_RE.test(rec._id)) {
+    for (const [cat, recs] of augmented)
+      for (const rec of recs)
+        if (!ID_RE.test(rec._id))
           violations.push(`${cat}: _id ${JSON.stringify(rec._id)}`)
-        }
-      }
-    }
     expect(violations, violations.join("\n  ")).toEqual([])
   })
 
   test("every _display and sig is printable ASCII (space allowed)", () => {
     const violations: string[] = []
-    for (const cat of docCategories) {
-      for (const rec of augmentWithMarkdown(corpus, cat)) {
-        if (!SURFACE_RE.test(rec._display)) {
+    for (const [cat, recs] of augmented)
+      for (const rec of recs) {
+        if (!SURFACE_RE.test(rec._display))
           violations.push(`${cat}: _display ${JSON.stringify(rec._display)}`)
-        }
-        const sig = (rec as { readonly sig?: unknown }).sig
-        if (typeof sig === "string" && !SURFACE_RE.test(sig)) {
+        const sig = strField(rec, "sig")
+        if (sig !== undefined && !SURFACE_RE.test(sig))
           violations.push(`${cat}: sig ${JSON.stringify(sig)}`)
-        }
       }
-    }
     expect(violations, violations.join("\n  ")).toEqual([])
   })
 
   test("every desc / mdBody / section is printable ASCII (space, \\n, \\t)", () => {
     const violations: string[] = []
-    for (const cat of docCategories) {
-      for (const rec of augmentWithMarkdown(corpus, cat)) {
-        const r = rec as {
-          readonly desc?: unknown
-          readonly mdBody?: unknown
-          readonly section?: unknown
-        }
-        // `desc` is optional on a handful of records (e.g. reserved words
-        // whose head is documented by complex_command); skip when absent.
-        if (typeof r.desc === "string" && r.desc && !isProse(r.desc)) {
-          violations.push(`${cat}: desc ${JSON.stringify(r.desc.slice(0, 60))}`)
-        }
-        if (typeof r.mdBody === "string") {
-          if (!r.mdBody) {
-            violations.push(`${cat}: mdBody empty`)
-          } else if (!isProse(r.mdBody)) {
-            violations.push(
-              `${cat}: mdBody ${JSON.stringify(r.mdBody.slice(0, 60))}`,
-            )
-          }
-        }
-        if (typeof r.section === "string" && r.section && !isProse(r.section)) {
-          violations.push(`${cat}: section ${JSON.stringify(r.section)}`)
-        }
-      }
+    // `desc`/`section` are optional on some records (e.g. reserved words
+    // whose head is documented by complex_command); skip when absent.
+    const checkProse = (cat: string, key: string, val: string | undefined) => {
+      if (val !== undefined && val && !isProse(val))
+        violations.push(`${cat}: ${key} ${JSON.stringify(val.slice(0, 60))}`)
     }
+    for (const [cat, recs] of augmented)
+      for (const rec of recs) {
+        checkProse(cat, "desc", strField(rec, "desc"))
+        checkProse(cat, "section", strField(rec, "section"))
+        const md = strField(rec, "mdBody")
+        if (md === undefined) continue
+        if (!md) violations.push(`${cat}: mdBody empty`)
+        else checkProse(cat, "mdBody", md)
+      }
     expect(violations, violations.join("\n  ")).toEqual([])
   })
 })

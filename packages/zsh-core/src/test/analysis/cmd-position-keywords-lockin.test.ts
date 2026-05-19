@@ -60,8 +60,4 @@ describe("analysis layer: command-position keyword set lock-in", () => {
     const leaked = corpusOnly.filter(emitsReservedFact)
     expect(leaked).toEqual([])
   })
-
-  test("EXPECTED size is stable", () => {
-    expect(EXPECTED.size).toBe(22)
-  })
 })

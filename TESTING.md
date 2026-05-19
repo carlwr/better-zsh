@@ -34,6 +34,7 @@ If you touch tests, look for conciseness wins unless that would hide intent.
 - Prefer tables/helpers when arrange/act/assert repeats.
 - Keep `desc`/labels only when they add information.
 - Derive titles from the sample or a small discriminator.
+- Title states the asserted invariant, not the procedure.
 - Use the smallest fixture that still proves the point.
 - Shared fixture shapes become helpers.
 - `test.each` / `describe.each` when it truly reduces duplication.

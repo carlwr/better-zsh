@@ -18,12 +18,9 @@ describe("docCategoryPreamble", () => {
     }
   })
 
-  test("table has an entry for every DocCategory", () => {
-    for (const cat of docCategories) {
-      expect(cat in docCategoryPreamble).toBe(true)
-    }
-    // Extraneous keys — guard against accidental typos introducing a key
-    // outside the DocCategory union.
+  test("no extraneous keys outside DocCategory", () => {
+    // Type system already constrains keys to DocCategory; this guards
+    // against a stray cast at the declaration site.
     const extraneous = Object.keys(docCategoryPreamble).filter(
       k => !(docCategories as readonly string[]).includes(k),
     )

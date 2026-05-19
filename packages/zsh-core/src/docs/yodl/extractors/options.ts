@@ -8,22 +8,20 @@ import type {
   OptSection,
   ZshOption,
 } from "../../types.ts"
-import { mkOptFlag, optSections } from "../../types.ts"
+import { flipOptFlagSign, mkOptFlag, optSections } from "../../types.ts"
 import {
-  extractFirstList,
+  extractFirstSitemList,
   extractItems,
   extractSectionBody,
-  extractSitemList,
   parseClosedUnion,
   withBody,
 } from "../core/doc.ts"
-import { parseNodes, type YNodeSeq } from "../core/nodes.ts"
+import { asNodes, type YodlSrc } from "../core/nodes.ts"
 import {
-  type extractTokens,
   firstTt,
   normalizeBody,
   stripYodl,
-  ttTexts,
+  trimmedTtTexts,
 } from "../core/text.ts"
 
 const DEFAULT_RE = /<([DKSCZ])>/g
@@ -59,8 +57,8 @@ export function fixupOptionsYo(yo: string): string {
 }
 
 /** Parse options.yo → ZshOption[] */
-export function parseOptions(yo: string | YNodeSeq): readonly ZshOption[] {
-  const nodes = typeof yo === "string" ? parseNodes(fixupOptionsYo(yo)) : yo
+export function parseOptions(yo: YodlSrc): readonly ZshOption[] {
+  const nodes = asNodes(typeof yo === "string" ? fixupOptionsYo(yo) : yo)
   const flagMap = parseDefaultFlagAliases(nodes)
   return withBody(extractItems(nodes)).flatMap(item => {
     const parsed = parseOptHeader(item.header)
@@ -86,9 +84,7 @@ export function parseOptions(yo: string | YNodeSeq): readonly ZshOption[] {
 // `em(NO_)` tokens render as `var` tokens via the yodl parser (em == var-style
 // emphasis). The tt() is the target; the preceding em()/var() text signals
 // negation.
-function parseAliasTarget(
-  body: Parameters<typeof extractTokens>[0],
-): ZshOption["aliasOf"] {
+function parseAliasTarget(body: YodlSrc): ZshOption["aliasOf"] {
   const target = firstTt(body)?.trim()
   if (!target) return undefined
   const negated = /\bNO_/.test(stripYodl(body))
@@ -102,7 +98,7 @@ function parseOptionCategory(raw: string): OptSection {
   return parseClosedUnion(raw, OPTION_SECTION_SET, "zsh option category")
 }
 
-function parseOptHeader(header: Parameters<typeof extractTokens>[0]):
+function parseOptHeader(header: YodlSrc):
   | {
       name: Documented<"option">
       display: string
@@ -119,15 +115,14 @@ function parseOptHeader(header: Parameters<typeof extractTokens>[0]):
 }
 
 function parseDefaultFlagAliases(
-  yo: Parameters<typeof extractItems>[0],
+  yo: YodlSrc,
 ): Map<string, readonly OptFlagAlias[]> {
-  const body = extractSectionBody(yo, "Default set")
-  const list = extractFirstList(body, "sitem")
   const out = new Map<string, readonly OptFlagAlias[]>()
-  if (!list) return out
-  for (const item of extractSitemList(list)) {
+  for (const item of extractFirstSitemList(
+    extractSectionBody(yo, "Default set"),
+  )) {
     const flag = trimmedTtTexts(item.header)[0]
-    const target = stripYodl(item.body ?? "").trim()
+    const target = stripYodl(item.body ?? "", "code").trim()
     if (!flag || !target) continue
     const alias = aliasFrom(flag, target)
     if (!alias) continue
@@ -135,12 +130,6 @@ function parseDefaultFlagAliases(
     out.set(key, mergeFlags(out.get(key), [alias.flag]))
   }
   return out
-}
-
-function trimmedTtTexts(raw: Parameters<typeof extractTokens>[0]): string[] {
-  return ttTexts(raw)
-    .map(t => t.trim())
-    .filter(Boolean)
 }
 
 function aliasFrom(
@@ -152,7 +141,7 @@ function aliasFrom(
   const char = flag[1]
   if (!char) return undefined
 
-  const positive = target.startsWith("NO_") ? opposite(listed) : listed
+  const positive = target.startsWith("NO_") ? flipOptFlagSign(listed) : listed
   const display = target.replace(/^NO_/, "")
 
   return {
@@ -162,10 +151,6 @@ function aliasFrom(
       on: positive,
     },
   }
-}
-
-function opposite(sign: OptFlagSign): OptFlagSign {
-  return sign === "-" ? "+" : "-"
 }
 
 function toFlagAlias(raw: string): OptFlagAlias[] {
@@ -191,10 +176,8 @@ function mergeFlags(
   return out
 }
 
-function defaultMarkers(
-  header: string | Parameters<typeof extractTokens>[0],
-): DefaultMarker[] {
-  const text = typeof header === "string" ? header : stripYodl(header)
+function defaultMarkers(header: YodlSrc): DefaultMarker[] {
+  const text = typeof header === "string" ? header : stripYodl(header, "code")
   return [...text.matchAll(DEFAULT_RE)].flatMap(m =>
     m[1] ? [m[1] as DefaultMarker] : [],
   )

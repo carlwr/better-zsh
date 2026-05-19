@@ -36,9 +36,8 @@ function assertQuotedInvariants(lines: readonly string[]): void {
   }
 
   for (let i = 1; i < facts.length; i++) {
-    expect(facts[i - 1]?.span.end).toBeLessThanOrEqual(
-      facts[i]?.span.start ?? 0,
-    )
+    // biome-ignore lint/style/noNonNullAssertion: loop bounds guarantee presence
+    expect(facts[i - 1]!.span.end).toBeLessThanOrEqual(facts[i]!.span.start)
   }
 }
 

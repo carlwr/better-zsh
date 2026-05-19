@@ -2,55 +2,45 @@ import * as assert from "node:assert"
 import * as vscode from "vscode"
 import { hoverText, openText } from "./helpers"
 
+// Hover wiring through the VS Code API: each test asserts only that the right
+// doc record is dispatched at the given cursor position and that the hover
+// content mentions the head token. Rendering content and format are
+// `@carlwr/zsh-core`'s concern, verified in its unit tests.
+
 suite("ZshHoverProvider", () => {
-  test("shows builtin docs for command head", async () => {
+  test("builtin command head", async () => {
     const doc = await openText("echo hi")
-    const text = await hoverText(doc, new vscode.Position(0, 1))
-    assert.match(text, /^`echo`/m)
-    assert.match(text, /Write each arg on the standard output/i)
+    assert.match(await hoverText(doc, new vscode.Position(0, 1)), /`echo`/)
   })
 
-  test("shows builtin docs for punctuation builtins", async () => {
+  test("punctuation builtins", async () => {
     const dot = await openText(". ./script.zsh")
-    const dotText = await hoverText(dot, new vscode.Position(0, 0))
-    assert.match(dotText, /^`\.`/m)
-    assert.match(dotText, /Read commands from file/i)
-
+    assert.match(await hoverText(dot, new vscode.Position(0, 0)), /`\.`/)
     const colon = await openText(": foo")
-    const colonText = await hoverText(colon, new vscode.Position(0, 0))
-    assert.match(colonText, /^`:`/m)
-    assert.match(colonText, /does nothing/i)
+    assert.match(await hoverText(colon, new vscode.Position(0, 0)), /`:`/)
   })
 
-  test("shows precommand modifier docs", async () => {
+  test("precommand modifier", async () => {
     const doc = await openText("noglob echo *.txt")
-    const text = await hoverText(doc, new vscode.Position(0, 1))
-    assert.match(text, /^`noglob`/m)
-    assert.match(text, /precommand modifier/i)
-    assert.match(text, /Filename generation \(globbing\) is not performed/i)
+    assert.match(await hoverText(doc, new vscode.Position(0, 1)), /`noglob`/)
   })
 
-  test("shows docs for == inside [[ ]]", async () => {
-    const doc = await openText("[[ 1 == 2 ]]")
-    const text = await hoverText(doc, new vscode.Position(0, 5))
-    assert.match(text, /matches pattern/i)
-  })
-
-  for (const [src, char, re] of [
-    ["[[ a && b ]]", 5, /both true/i],
-    ["[[ a || b ]]", 5, /either exp1 or exp2 is true/i],
-    ["[[ a < b ]]", 5, /comes before string2/i],
-    ["[[ a > b ]]", 5, /comes after string2/i],
-    ["[[ ! -f x ]]", 3, /exp is false/i],
+  for (const [src, char, op] of [
+    ["[[ 1 == 2 ]]", 5, "=="],
+    ["[[ a && b ]]", 5, "&&"],
+    ["[[ a || b ]]", 5, "||"],
+    ["[[ a < b ]]", 5, "<"],
+    ["[[ a > b ]]", 5, ">"],
+    ["[[ ! -f x ]]", 3, "!"],
   ] as const) {
-    test(`shows docs for symbolic cond op in ${src}`, async () => {
+    test(`cond op in ${src}`, async () => {
       const doc = await openText(src)
       const text = await hoverText(doc, new vscode.Position(0, char))
-      assert.match(text, re)
+      assert.ok(text.includes(`\`${op}\``), `hover should mention \`${op}\``)
     })
   }
 
-  test("does not treat command-list && as a conditional operator hover", async () => {
+  test("command-list && yields no hover", async () => {
     const doc = await openText("echo hi && echo bye")
     const hovers =
       (await vscode.commands.executeCommand<vscode.Hover[]>(
@@ -61,56 +51,27 @@ suite("ZshHoverProvider", () => {
     assert.strictEqual(hovers.length, 0)
   })
 
-  test("option hover renders code preamble and category", async () => {
+  test("option name resolves to option doc", async () => {
     const doc = await openText("setopt warn_nested_var")
-    const text = await hoverText(doc, new vscode.Position(0, 10))
-    assert.strictEqual(text.split("\n")[0], "`WARN_NESTED_VAR`")
-    assert.match(text, /```zsh/)
-    assert.match(text, /setopt warn_nested_var/)
-    assert.match(text, /\*\*Default in zsh: `off`\*\*/)
-    assert.match(text, /_Option category:_ Expansion and Globbing/)
-    assert.ok(!text.includes("example("), "expected example() markup stripped")
+    assert.match(
+      await hoverText(doc, new vscode.Position(0, 10)),
+      /WARN_NESTED_VAR/,
+    )
   })
 
-  test("short and long set forms resolve to the same option docs", async () => {
+  test("short and long set forms resolve to options", async () => {
     const doc = await openText("set -e -o pipefail")
-    const shortText = await hoverText(doc, new vscode.Position(0, 5))
-    const longText = await hoverText(doc, new vscode.Position(0, 12))
-    assert.match(shortText, /`ERR_EXIT`/)
-    assert.match(shortText, /set -e/)
-    assert.match(shortText, /set \+e/)
-    assert.match(longText, /`PIPE_FAIL`/)
-    assert.match(longText, /setopt pipe_fail|setopt pipefail/)
-  })
-
-  test("rendered option docs keep selected references and code quotes", async () => {
-    const cPrec = await openText("setopt c_precedences")
-    const cPrecText = await hoverText(cPrec, new vscode.Position(0, 9))
-    assert.match(cPrecText, /Arithmetic Evaluation has an explicit list\./)
-    assert.ok(!cPrecText.includes("See ."))
-    assert.ok(!cPrecText.includes("\\"))
-
-    const errReturn = await openText("setopt err_return")
-    const errReturnText = await hoverText(errReturn, new vscode.Position(0, 9))
-    assert.match(errReturnText, /`&&` `\|\|` does not trigger a return/)
-    assert.match(errReturnText, /```zsh\nsummit \|\| true\n```/)
-  })
-
-  test("rendered option docs format option refs but not env vars", async () => {
-    const doc = await openText("setopt cd_silent")
-    const text = await hoverText(doc, new vscode.Position(0, 9))
-    assert.match(text, /\*\*`AUTO_CD`\*\*/)
-    assert.match(text, /\*\*`PUSHD_SILENT`\*\*/)
-    assert.match(text, /\*\*`POSIX_CD`\*\*/)
-    assert.doesNotMatch(text, /`CDPATH`/)
+    assert.match(await hoverText(doc, new vscode.Position(0, 5)), /ERR_EXIT/)
+    assert.match(await hoverText(doc, new vscode.Position(0, 12)), /PIPE_FAIL/)
   })
 
   test("local function docs win over builtin docs", async () => {
     const doc = await openText(
       ["# local echo", "echo() {", "}", "echo hi"].join("\n"),
     )
-    const text = await hoverText(doc, new vscode.Position(3, 1))
-    assert.match(text, /local echo/)
-    assert.doesNotMatch(text, /Write each arg on the standard output/i)
+    // The user-defined echo's body contains the comment `# local echo`;
+    // matching it confirms dispatch landed on the local function, not the
+    // builtin.
+    assert.match(await hoverText(doc, new vscode.Position(3, 1)), /local echo/)
   })
 })

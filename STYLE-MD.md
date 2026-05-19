@@ -51,6 +51,7 @@ Per-doc-layer detail:
   - invariants
   - workarounds
   - "why not the obvious alternative"
+  - kept local: no specific other-file paths or sibling-identifier names — they rot as code moves
 - **File-header comments** — first few lines of any source/config file. Keep locally essential. Do NOT:
   - claim global state about other files or packages
   - restate what the file already expresses:

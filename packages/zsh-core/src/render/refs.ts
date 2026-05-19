@@ -7,7 +7,7 @@ import {
   docId,
 } from "../docs/taxonomy.ts"
 import type { Documented } from "../docs/types.ts"
-import { mdRenderer } from "./md.ts"
+import { renderRecord } from "./md.ts"
 
 export interface RefDocBase<K extends DocCategory, I extends string> {
   readonly kind: K
@@ -22,8 +22,6 @@ export type RefDoc = {
   [K in DocCategory]: RefDocBase<K, Documented<K>>
 }[DocCategory]
 
-// Keep corpus assembly separate from markdown rendering so consumers can compose
-// the rendered reference corpus independently.
 function mkRefDocs<K extends DocCategory>(
   kind: K,
   docs: readonly DocRecordMap[K][],
@@ -33,7 +31,7 @@ function mkRefDocs<K extends DocCategory>(
     kind,
     id: docId[kind](doc),
     heading: docDisplay(kind, doc),
-    md: mdRenderer[kind](doc, corpus),
+    md: renderRecord(corpus, kind, doc),
   }))
 }
 
@@ -46,17 +44,19 @@ function corpusDocs<K extends DocCategory>(
   const vals = [
     ...(corpus[kind] as ReadonlyMap<unknown, DocRecordMap[K]>).values(),
   ]
-  if (kind !== "special_param") return vals
-  return [...vals].sort((a, b) =>
-    (a as { name: string }).name.localeCompare((b as { name: string }).name),
-  )
+  // `special_param` records arrive grouped by source file (shell-set →
+  // zle-widget → completion-widget); alphabetize for a stable, predictable
+  // consumer-visible ordering.
+  if (kind === "special_param") {
+    const name = (d: DocRecordMap[K]) => (d as { name: string }).name
+    vals.sort((a, b) => name(a).localeCompare(name(b)))
+  }
+  return vals
 }
 
 /** Generate the full static reference corpus from a `DocCorpus`. */
 export function refDocs(corpus: DocCorpus): readonly RefDoc[] {
-  const out: RefDoc[] = []
-  for (const kind of docCategories) {
-    out.push(...(mkRefDocs(kind, corpusDocs(corpus, kind), corpus) as RefDoc[]))
-  }
-  return out
+  return docCategories.flatMap(
+    kind => mkRefDocs(kind, corpusDocs(corpus, kind), corpus) as RefDoc[],
+  )
 }

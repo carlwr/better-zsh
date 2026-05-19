@@ -2,20 +2,24 @@ import { mkDocumented } from "../../brands.ts"
 import {
   type ZleWidgetDoc,
   type ZleWidgetKind,
+  type ZleWidgetSubItem,
   type ZleWidgetSubsection,
   zleWidgetSubsections,
 } from "../../types.ts"
 import {
+  collectAliasedEntries,
   extractItems,
   extractSectBody,
   extractSectionBody,
-  flattenAliasedEntries,
   parseClosedUnion,
+  splitBodyAtNestedList,
 } from "../core/doc.ts"
-import type { YNodeSeq } from "../core/nodes.ts"
-import { firstTt, normalizeHeader } from "../core/text.ts"
+import type { YNodeSeq, YodlSrc } from "../core/nodes.ts"
+import { firstTt, normalizeBody, normalizeHeader } from "../core/text.ts"
 
 const WIDGET_SUBSECTION_SET: ReadonlySet<string> = new Set(zleWidgetSubsections)
+const STANDARD_SECTION = "Standard Widgets"
+const SPECIAL_SECTION = "Special Widgets"
 
 /**
  * Parse ZLE widget names from `zle.yo`.
@@ -32,39 +36,80 @@ const WIDGET_SUBSECTION_SET: ReadonlySet<string> = new Set(zleWidgetSubsections)
  * rendered header (including the default-bindings-per-keymap triple when
  * present).
  */
-export function parseZleWidgets(
-  yo: string | YNodeSeq,
-): readonly ZleWidgetDoc[] {
+export function parseZleWidgets(yo: YodlSrc): readonly ZleWidgetDoc[] {
   return [
-    ...parseWidgetSection(extractSectBody(yo, "Standard Widgets"), "standard"),
+    ...parseWidgetSection(extractSectBody(yo, STANDARD_SECTION), "standard"),
     ...parseWidgetSection(
-      extractSectionBody(yo, "Special Widgets"),
+      extractSectionBody(yo, SPECIAL_SECTION),
       "special",
-      "Special Widgets",
+      SPECIAL_SECTION,
     ),
   ]
 }
 
 function parseWidgetSection(
-  section: Parameters<typeof extractItems>[0],
+  section: YodlSrc,
   kind: ZleWidgetKind,
   sectionDefault = "",
 ): ZleWidgetDoc[] {
-  return flattenAliasedEntries(
+  const out: ZleWidgetDoc[] = []
+  for (const aliased of collectAliasedEntries(
     extractItems(section, 1),
     header => {
       const sig = normalizeHeader(header)
       const name = firstTt(header)
       return name ? { sig, name } : undefined
     },
-    ({ sig, name }, desc, entry) => ({
-      name: mkDocumented("zle_widget", name),
-      sig,
-      desc,
-      section: parseSubsection(entry.section || sectionDefault),
+  )) {
+    const body = splitWidgetBody(aliased.entry.body ?? [])
+    const section = parseSubsection(aliased.entry.section || sectionDefault)
+    const mkDoc = (head: { sig: string; name: string }): ZleWidgetDoc => ({
+      name: mkDocumented("zle_widget", head.name),
+      sig: head.sig,
+      desc: body.desc,
+      section,
       kind,
-    }),
-  )
+      ...(body.subItems && { subItems: body.subItems }),
+      ...(body.outro && { outro: body.outro }),
+    })
+    out.push(mkDoc(aliased.head))
+    for (const alias of aliased.aliases) out.push(mkDoc(alias))
+  }
+  return out
+}
+
+/**
+ * Split a widget's item-body into intro prose, an enumerated nested item
+ * list (if present), and any post-list outro prose. Mirrors the pattern in
+ * `shell-params.ts:splitBody` / `builtins.ts:splitBuiltinBody`: structural
+ * lift only happens when upstream has a depth-1 `startitem()` block;
+ * otherwise the whole body stays flat in `desc`.
+ */
+function splitWidgetBody(body: YNodeSeq): {
+  desc: string
+  subItems?: readonly ZleWidgetSubItem[]
+  outro?: string
+} {
+  const split = splitBodyAtNestedList(body)
+  if (!split) return { desc: normalizeBody(body) }
+  const subItems: ZleWidgetSubItem[] = []
+  for (const aliased of collectAliasedEntries(split.entries, header => {
+    const sig = normalizeHeader(header)
+    return sig.length > 0 ? sig : undefined
+  })) {
+    if (!aliased.entry.body) continue
+    // `aliases` are the body-less `xitem` headers preceding the entry that
+    // carries the body — restore source order by putting them first.
+    const allHeads = [...aliased.aliases, aliased.head]
+    subItems.push({
+      sig: allHeads.join(", "),
+      desc: normalizeBody(aliased.entry.body),
+    })
+  }
+  if (subItems.length === 0) return { desc: normalizeBody(body) }
+  const desc = normalizeBody(split.intro)
+  const outro = normalizeBody(split.outro)
+  return outro ? { desc, subItems, outro } : { desc, subItems }
 }
 
 function parseSubsection(raw: string): ZleWidgetSubsection {

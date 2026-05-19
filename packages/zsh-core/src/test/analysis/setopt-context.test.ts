@@ -1,8 +1,8 @@
-import * as assert from "node:assert"
+import { describe, expect, test } from "vitest"
 import { isSetoptContext } from "../../analysis/setopt-context"
 import { doc } from "./test-util"
 
-suite("isSetoptContext", () => {
+describe("isSetoptContext", () => {
   test.each([
     ["setopt extendedglob", 0, true],
     ["unsetopt extendedglob", 0, true],
@@ -18,6 +18,6 @@ suite("isSetoptContext", () => {
     ["set extendedglob", 0, false],
     ["", 0, false],
   ] as const)("%s @%d → %s", (text, line, want) => {
-    assert.strictEqual(isSetoptContext(doc(text), line), want)
+    expect(isSetoptContext(doc(text), line)).toBe(want)
   })
 })

@@ -1,39 +1,16 @@
 import { describe, expect, test } from "vitest"
-import type { DocCorpus } from "../docs/corpus"
 import { resolve, resolverFeedback } from "../docs/resolver"
-import { mkDocumented_ } from "./id-fns"
+import { docCategories } from "../docs/taxonomy"
+import { emptyCorpus, mkDocumented_ } from "./id-fns"
 
 const opt = mkDocumented_("option")
 
-const empty = new Map() as unknown as ReadonlyMap<never, never>
-const corpus: DocCorpus = {
+const corpus = emptyCorpus({
   option: new Map([
     [opt("AUTO_CD"), {} as never],
     [opt("NOTIFY"), {} as never],
   ]),
-  conditional_op: empty,
-  builtin: empty,
-  precmd_modifier: empty,
-  special_param: empty,
-  complex_command: empty,
-  reserved_word: empty,
-  redirection: empty,
-  process_subst: empty,
-  param_expn: empty,
-  subscript_flag: empty,
-  param_expn_flag: empty,
-  history_expn: empty,
-  glob_op: empty,
-  glob_flag: empty,
-  glob_qualifier: empty,
-  prompt_escape: empty,
-  zle_widget: empty,
-  keymap: empty,
-  job_spec: empty,
-  arith_op: empty,
-  special_function: empty,
-  comp_utility: empty,
-}
+})
 
 describe("resolve(corpus, 'option', raw) — option identity", () => {
   test.each([
@@ -80,14 +57,9 @@ describe("resolverFeedback(corpus, 'option', raw) — input-negated", () => {
 })
 
 describe("resolverFeedback — non-option categories never emit feedback", () => {
-  test.each([
-    "conditional_op",
-    "builtin",
-    "redirection",
-    "history_expn",
-    "glob_flag",
-    "special_function",
-  ] as const)("%s → undefined", cat => {
+  test.each(
+    docCategories.filter(c => c !== "option"),
+  )("%s → undefined", cat => {
     expect(resolverFeedback(corpus, cat, "anything")).toBeUndefined()
   })
 })

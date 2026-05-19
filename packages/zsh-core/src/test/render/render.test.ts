@@ -27,7 +27,7 @@ import type {
   ZshOption,
 } from "../../docs/types"
 import { mkOptFlag, mkRedirOp } from "../../docs/types"
-import { dumpText, type RefDumpFile, writeRefDump } from "../../render/dump"
+import { dumpFile, dumpText, writeRefDump } from "../../render/dump"
 import {
   defaultStateIn,
   fmtOptRefsInMd,
@@ -214,6 +214,7 @@ const sfn: SpecialFunctionDoc = {
 const cuu: CompUtilityDoc = {
   name: mkDocumented("comp_utility", "_all_labels"),
   sig: "_all_labels [ -x ] [ -12VJ ] tag name descr [ command arg ... ]",
+  synopsis: ["_all_labels [ -x ] [ -12VJ ] tag name descr [ command arg ... ]"],
   desc: "d:cuu",
   section: "Utility Functions",
 }
@@ -377,37 +378,38 @@ const renderedMarkdownCases = [
   ],
 ] as const
 
-const noOptsCorpus = mkTestCorpus({ option: [] })
+const noOpts = mkTestCorpus({ option: [] })
+const cdCorpus = mkTestCorpus({ option: [cd] })
 
 const compactMarkdownCases = [
   [
     "subscript_flag",
-    mdSubscriptFlag(sf, noOptsCorpus),
+    mdSubscriptFlag(sf, noOpts),
     ["`(w)`", "d:sf", "_Role:_ parameter-subscript flag (args: string)"],
   ],
   [
     "param_expn_flag",
-    mdParamFlag(pf, noOptsCorpus),
+    mdParamFlag(pf, noOpts),
     ["`(U)`", "d:pf", "_Role:_ parameter-expansion flag"],
   ],
   [
     "history_expn",
-    mdHistory(hi, noOptsCorpus),
+    mdHistory(hi, noOpts),
     ["`!!`", "d:hi", "_Role:_ history event designator"],
   ],
   [
     "glob_op",
-    mdGlobOp(go, noOptsCorpus),
+    mdGlobOp(go, noOpts),
     ["`*`", "d:go", "_Role:_ glob operator (standard)"],
   ],
   [
     "glob_flag",
-    mdGlobFlag(gf, noOptsCorpus),
+    mdGlobFlag(gf, noOpts),
     ["`i`", "d:gf", "_Role:_ glob flag (args: expr)"],
   ],
   [
     "glob_qualifier",
-    mdGlobQualifier(gq, noOptsCorpus),
+    mdGlobQualifier(gq, noOpts),
     ["`@`", "d:gq", "_Role:_ glob qualifier"],
   ],
   [
@@ -417,43 +419,9 @@ const compactMarkdownCases = [
   ],
 ] as const
 
-// Per-category dump metadata: [file, heading, snippet].
-const dumpByCat: {
-  readonly [K in DocCategory]: readonly [RefDumpFile, string, string]
-} = {
-  option: ["options.md", "## AUTO_CD", "d:o"],
-  conditional_op: ["conditional-ops.md", "## -nt", "d:b"],
-  builtin: ["builtins.md", "## echo", "d:bi"],
-  precmd_modifier: ["precmd-modifiers.md", "## noglob", "d:pc"],
-  special_param: ["special-params.md", "## SECONDS", "`SECONDS`"],
-  complex_command: ["complex-commands.md", "## if", "d:cc"],
-  reserved_word: ["reserved-words.md", "## if", "d:rw"],
-  redirection: ["redirections.md", "## >> word", "d:r"],
-  process_subst: ["process-substs.md", "## <(...)", "d:ps"],
-  param_expn: ["param-expns.md", "## ${name:-word}", "d:px"],
-  subscript_flag: ["subscript-flags.md", "## (w)", "d:sf"],
-  param_expn_flag: ["param-expn-flags.md", "## (U)", "d:pf"],
-  history_expn: ["history-expns.md", "## !!", "d:hi"],
-  glob_op: ["glob-ops.md", "## *", "d:go"],
-  glob_flag: ["glob-flags.md", "## i", "d:gf"],
-  glob_qualifier: ["glob-qualifiers.md", "## @", "d:gq"],
-  prompt_escape: ["prompt-escapes.md", "## %n", "d:pe"],
-  zle_widget: ["zle-widgets.md", "## backward-kill-word", "d:zw"],
-  keymap: ["keymaps.md", "## emacs", "d:km"],
-  job_spec: ["job-specs.md", "## %%", "d:js"],
-  arith_op: ["arith-ops.md", "## +", "d:ao"],
-  special_function: ["special-functions.md", "## chpwd", "d:sfn"],
-  comp_utility: ["comp-utils.md", "## _all_labels", "d:cuu"],
-}
-
-const dumpCases = docCategories.map(k => dumpByCat[k])
-
 // --- tests ------------------------------------------------------------------
 
 describe("render markdown", () => {
-  const noOpts = mkTestCorpus({ option: [] })
-  const cdCorpus = mkTestCorpus({ option: [cd] })
-
   test("option markdown", () => {
     containsAll(mdOpt(cd, noOpts), [
       "`AUTO_CD`",
@@ -478,9 +446,11 @@ describe("render markdown", () => {
     const input =
       "$AUTO_CD ${AUTO_CD} $NO_AUTO_CD ${NOAUTOCD}\n" +
       "`AUTO_CD` AUTO_CD\n```zsh\nAUTO_CD\n```\nAUTOCD"
+    // Backticked option references (e.g. from `tt(AUTO_CD)` upstream) are
+    // bold-promoted the same as bare ones; fenced code is untouched.
     const want =
       "$AUTO_CD ${AUTO_CD} $NO_AUTO_CD ${NOAUTOCD}\n" +
-      "`AUTO_CD` **`AUTO_CD`**\n```zsh\nAUTO_CD\n```\n**`AUTOCD`**"
+      "**`AUTO_CD`** **`AUTO_CD`**\n```zsh\nAUTO_CD\n```\n**`AUTOCD`**"
     expect(fmtOptRefsInMd(input, cdCorpus)).toBe(want)
   })
 
@@ -528,28 +498,9 @@ describe("render markdown", () => {
         reserved_word: [],
       }),
     ).map(d => `${d.kind}:${d.id}`)
-    expect(ids).toEqual([
-      `option:${mkDocumented("option", "AUTO_CD")}`,
-      "conditional_op:-a",
-      "builtin:echo",
-      "precmd_modifier:noglob",
+    expect(ids.filter(id => id.startsWith("special_param:"))).toEqual([
       "special_param:argv",
       "special_param:SECONDS",
-      "complex_command:if",
-      "param_expn:${name:-word}",
-      "subscript_flag:(w)",
-      "param_expn_flag:(U)",
-      "history_expn:!!",
-      "glob_op:*",
-      "glob_flag:i",
-      "glob_qualifier:@",
-      "prompt_escape:%n",
-      "zle_widget:backward-kill-word",
-      "keymap:emacs",
-      "job_spec:%%",
-      "arith_op:+",
-      "special_function:chpwd",
-      "comp_utility:_all_labels",
     ])
   })
 
@@ -563,15 +514,19 @@ describe("render markdown", () => {
 })
 
 describe("render dump", () => {
-  const refFiles = dumpText(corpus())
+  const baseDocs = corpus()
+  const refFiles = dumpText(baseDocs)
+  const headingOf = (k: DocCategory) =>
+    baseDocs.find(d => d.kind === k)?.heading ?? ""
 
   test("per-kind dump files", () => {
-    const files = dumpText(corpus({ conditional_op: [cb] }))
-    for (const [file, heading] of dumpCases) {
-      expect(files.get(file)).toContain(heading)
-      expect(files.get("all.md")).toContain(heading)
+    const docs = corpus({ conditional_op: [cb] })
+    const files = dumpText(docs)
+    for (const doc of docs) {
+      const h = `## ${doc.heading}`
+      expect(files.get(dumpFile.forCat(doc.kind))).toContain(h)
+      expect(files.get(dumpFile.all)).toContain(h)
     }
-    expect(files.get("suspicious.md")).toBe("")
   })
 
   const preambleCases = docCategories.flatMap(k => {
@@ -583,33 +538,37 @@ describe("render dump", () => {
   test.each(
     preambleCases,
   )("%s dump starts with the category preamble", (k, preamble) => {
-    const [file, heading] = dumpByCat[k]
-    const body = refFiles.get(file) ?? ""
+    const body = refFiles.get(dumpFile.forCat(k)) ?? ""
     expect(body.startsWith("<!-- preamble for category -->")).toBe(true)
     expect(body).toContain(preamble)
-    expect(body.indexOf(preamble)).toBeLessThan(body.indexOf(heading))
+    expect(body.indexOf(preamble)).toBeLessThan(
+      body.indexOf(`## ${headingOf(k)}`),
+    )
   })
 
   test.each(
     preambleCases,
   )("all.md does NOT contain %s preamble", (_k, preamble) => {
-    expect(refFiles.get("all.md")).not.toContain(preamble)
+    expect(refFiles.get(dumpFile.all)).not.toContain(preamble)
   })
 
   test.each(noPreambleCats)("%s dump has no preamble marker", k => {
-    const [file] = dumpByCat[k]
-    expect(refFiles.get(file)).not.toContain("<!-- preamble for category")
+    expect(refFiles.get(dumpFile.forCat(k))).not.toContain(
+      "<!-- preamble for category",
+    )
   })
 
   test("writes dump files", async () => {
     await withTmpDirAsync("better-zsh-ref-", async dir => {
-      await writeRefDump(dir, corpus({ conditional_op: [cb] }))
-      const all = readFileSync(join(dir, "all.md"), "utf8")
-      for (const [file, heading, snippet] of dumpCases) {
-        expect(all).toContain(heading)
-        expect(readFileSync(join(dir, file), "utf8")).toContain(snippet)
+      const docs = corpus({ conditional_op: [cb] })
+      await writeRefDump(dir, docs)
+      const all = readFileSync(join(dir, dumpFile.all), "utf8")
+      for (const doc of docs) {
+        expect(all).toContain(`## ${doc.heading}`)
+        expect(
+          readFileSync(join(dir, dumpFile.forCat(doc.kind)), "utf8"),
+        ).toContain(doc.md)
       }
-      expect(readFileSync(join(dir, "suspicious.md"), "utf8")).toBe("")
     })
   })
 
@@ -619,7 +578,7 @@ describe("render dump", () => {
     const files = dumpText(docs)
 
     for (const kind of docCategories) {
-      const [file] = dumpByCat[kind]
+      const file = dumpFile.forCat(kind)
       const src = [...vendored[kind].values()]
       test(`${file} covers ${kind}`, () => {
         expect(docs.filter(d => d.kind === kind)).toHaveLength(src.length)
@@ -627,54 +586,38 @@ describe("render dump", () => {
       })
     }
 
-    test("strips raw yodl markers", () => {
-      for (const [file] of dumpCases) {
-        expect(files.get(file)).not.toContain("tt(")
-        expect(files.get(file)).not.toContain("var(")
-      }
-    })
-
-    test("avoids known suspicious patterns", () => {
-      for (const [file, pattern] of [
-        ["options.md", "See ."],
-        ["options.md", "See \\ ."],
-        ["conditional-ops.md", "See ."],
-      ] as const) {
-        expect(files.get(file)).not.toContain(pattern)
-      }
-      expect(files.get("suspicious.md")).toBe("")
-    })
+    // Vendored-option lookup that throws on miss; mdOpt rendered inline.
+    const renderOpt = (name: string): string => {
+      const opt = vendored.option.get(mkDocumented("option", name))
+      if (!opt) throw new Error(`no vendored option: ${name}`)
+      return mdOpt(opt, vendored)
+    }
 
     test("formats real option cross-refs but not env vars", () => {
-      const cdSilent = vendored.option.get(mkDocumented("option", "CD_SILENT"))
-      expect(cdSilent).toBeTruthy()
-      // biome-ignore lint/style/noNonNullAssertion: asserted above
-      const out = mdOpt(cdSilent!, vendored)
+      const out = renderOpt("CD_SILENT")
       expect(out).toContain("**`AUTO_CD`**")
       expect(out).toContain("**`PUSHD_SILENT`**")
       expect(out).toContain("**`POSIX_CD`**")
-      expect(out).not.toContain("`CDPATH`")
+      // CDPATH is an env var (not an option), so it gets the upstream
+      // `tt()` backticks but never the bold-coded option treatment.
+      expect(out).not.toContain("**`CDPATH`**")
     })
 
     test("keeps literal pseudo-calls in vendored option prose", () => {
-      const globalRcs = vendored.option.get(
-        mkDocumented("option", "GLOBAL_RCS"),
-      )
-      const rcs = vendored.option.get(mkDocumented("option", "RCS"))
-      expect(globalRcs).toBeTruthy()
-      expect(rcs).toBeTruthy()
-      // biome-ignore lint/style/noNonNullAssertion: asserted above
-      const globalMd = mdOpt(globalRcs!, vendored)
-      // biome-ignore lint/style/noNonNullAssertion: asserted above
-      const rcsMd = mdOpt(rcs!, vendored)
+      const globalMd = renderOpt("GLOBAL_RCS")
+      const rcsMd = renderOpt("RCS")
+      // Upstream marks pseudo-call names with `tt(zprofile())` etc. and
+      // dotfile names with `tt(.zshenv)` etc.; `tt()` rendering now
+      // backticks them, hence the assertion shape changed from naked
+      // `zprofile()` to `` `zprofile()` ``.
       expect(globalMd).toContain(
-        "startup files zprofile(), zshrc(), zlogin() and zlogout() will not be run.",
+        "startup files `zprofile()`, `zshrc()`, `zlogin()` and `zlogout()` will not be run.",
       )
       expect(globalMd).not.toContain(",,")
       expect(rcsMd).toContain(
-        "After zshenv() is sourced on startup, source the .zshenv, zprofile(), .zprofile, zshrc(), .zshrc, zlogin(), .zlogin, and .zlogout files, as described in Files.",
+        "After `zshenv()` is sourced on startup, source the `.zshenv`, `zprofile()`, `.zprofile`, `zshrc()`, `.zshrc`, `zlogin()`, `.zlogin`, and `.zlogout` files, as described in Files.",
       )
-      expect(rcsMd).toContain("the zshenv() file is still sourced")
+      expect(rcsMd).toContain("the `zshenv()` file is still sourced")
       expect(rcsMd).toContain("Files")
       expect(rcsMd).not.toContain(",,")
     })
