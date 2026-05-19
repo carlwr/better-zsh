@@ -17,6 +17,7 @@ const SPECIAL_MACROS: Record<string, string> = {
   PLUS: "+",
   RPAR: ")",
   RSQUARE: "]",
+  SP: " ",
   SPACES: " ",
 }
 
@@ -122,8 +123,10 @@ function renderNode(node: YNode, mode: RenderMode): string {
       return renderSeq(node.args[0] ?? [], "code")
     case "COMMENT":
     case "cindex":
+    case "def":
     case "findex":
     case "pindex":
+    case "redef":
     case "vindex":
     case "chapter":
     case "texinode":
@@ -147,6 +150,12 @@ function renderNode(node: YNode, mode: RenderMode): string {
           return ""
         case "manref":
           return `${a}(${b})`
+        case "sectref":
+        case "subref":
+        case "noderef":
+        case "nmref":
+        case "zmanref":
+          return a
         case "sitem":
           return node.args.length >= 2 ? `- ${a}: ${b}` : a
         case "item":

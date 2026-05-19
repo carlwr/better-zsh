@@ -130,6 +130,10 @@ const FILE_BYTES: &[(&str, &[u8])] = &[
         "zle-widgets.json",
         include_bytes!(corpus_path!("zle-widgets.json")),
     ),
+    (
+        "comp-utils.json",
+        include_bytes!(corpus_path!("comp-utils.json")),
+    ),
 ];
 
 fn file_bytes(name: &str) -> Option<&'static [u8]> {

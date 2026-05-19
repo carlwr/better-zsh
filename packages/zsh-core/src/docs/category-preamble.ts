@@ -38,4 +38,5 @@ export const docCategoryPreamble: Readonly<
   job_spec: undefined,
   arith_op: undefined,
   special_function: undefined,
+  comp_utility: undefined,
 }

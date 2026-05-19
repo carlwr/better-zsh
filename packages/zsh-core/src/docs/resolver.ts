@@ -258,6 +258,26 @@ function flagInnerKey(
 }
 
 /**
+ * Special-parameter resolver. Literal first; falls back to stripping a
+ * trailing `[...]` subscript so live forms like `compstate[context]`,
+ * `words[CURRENT]`, `pipestatus[1]` resolve to the parent record. This is
+ * the same corpus-aware close-variant class as the parens-agnostic flag
+ * resolvers — bridging documented identity to surface syntax, not parsing
+ * user expressions. See PRINCIPLES.md §"Resolver scope balance".
+ */
+function resolveSpecialParam(
+  c: DocCorpus,
+  raw: string,
+): Documented<"special_param"> | undefined {
+  const literal = mkDocumented("special_param", raw)
+  if (c.special_param.has(literal)) return literal
+  return resolveByKey(c, "special_param", raw, t => {
+    const m = t.match(/^([A-Za-z_][A-Za-z0-9_]*)\[.+\]$/)
+    return m?.[1]
+  })
+}
+
+/**
  * Job-spec resolver. Literal-first for `%%`, `%+`, `%-`; template matches for
  * `%n` (digits), `%?str`, `%str`.
  */
@@ -351,7 +371,7 @@ const resolvers: { [K in DocCategory]: Resolver<K> } = {
   conditional_op: simpleResolver("conditional_op"),
   builtin: simpleResolver("builtin"),
   precmd_modifier: simpleResolver("precmd_modifier"),
-  special_param: simpleResolver("special_param"),
+  special_param: resolveSpecialParam,
   complex_command: simpleResolver("complex_command"),
   reserved_word: simpleResolver("reserved_word"),
   redirection: resolveRedir,
@@ -373,6 +393,7 @@ const resolvers: { [K in DocCategory]: Resolver<K> } = {
   job_spec: resolveJobSpec,
   arith_op: simpleResolver("arith_op"),
   special_function: resolveSpecialFunction,
+  comp_utility: simpleResolver("comp_utility"),
 }
 
 /**
@@ -485,6 +506,7 @@ const feedbackResolvers: { readonly [K in DocCategory]: FeedbackResolver } = {
   job_spec: noFeedback,
   arith_op: noFeedback,
   special_function: noFeedback,
+  comp_utility: noFeedback,
 }
 
 /**

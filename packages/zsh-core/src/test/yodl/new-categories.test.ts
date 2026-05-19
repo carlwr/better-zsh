@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vitest"
 import { parseArithOps } from "../../docs/yodl/extractors/arith-ops"
+import { parseCompUtils } from "../../docs/yodl/extractors/comp-utils"
 import { parseJobSpecs } from "../../docs/yodl/extractors/job-specs"
 import { parseKeymaps } from "../../docs/yodl/extractors/keymaps"
 import { parsePromptEscapes } from "../../docs/yodl/extractors/prompt-escapes"
@@ -169,5 +170,78 @@ describe("parseZleWidgets — typed subsection (enrichment)", () => {
         "Special Widgets",
       ]).toContain(s)
     }
+  })
+})
+
+describe("parseCompUtils", () => {
+  const docs = parseCompUtils(readVendoredYo("compsys.yo"))
+  const map = by(docs, d => d.name)
+
+  test("all names start with underscore", () => {
+    for (const d of docs) {
+      expect(d.name).toMatch(/^_/)
+    }
+  })
+
+  test("every record has a non-empty sig and desc", () => {
+    for (const d of docs) {
+      expect(d.sig).toBeTruthy()
+      expect(d.desc).toBeTruthy()
+    }
+  })
+
+  test("section is Utility Functions for all records", () => {
+    for (const d of docs) {
+      expect(d.section).toBe("Utility Functions")
+    }
+  })
+
+  test("includes core utility functions", () => {
+    for (const n of [
+      "_absolute_command_paths",
+      "_all_labels",
+      "_alternative",
+      "_arguments",
+      "_describe",
+      "_message",
+      "_normal",
+      "_tags",
+      "_values",
+      "_wanted",
+      "_requested",
+      "_files",
+      "_guard",
+      "_path_files",
+      "_numbers",
+      "_regex_arguments",
+      "_regex_words",
+    ]) {
+      expect(map.has(n as never), n).toBe(true)
+    }
+  })
+
+  test("_options_set and _options_unset share identical desc", () => {
+    const set = map.get("_options_set" as never)
+    const unset = map.get("_options_unset" as never)
+    expect(set).toBeDefined()
+    expect(unset).toBeDefined()
+    expect(set?.desc).toBe(unset?.desc)
+  })
+
+  test("_arguments has the richest desc", () => {
+    const args = map.get("_arguments" as never)
+    expect(args).toBeDefined()
+    expect(args?.desc.length).toBeGreaterThan(500)
+  })
+
+  test("_describe has xitem-derived multi-line sig", () => {
+    const d = map.get("_describe" as never)
+    expect(d).toBeDefined()
+    expect(d?.sig).toContain("[ --")
+  })
+
+  test("no function names appear more than once", () => {
+    const names = docs.map(d => d.name as string)
+    expect(new Set(names).size).toBe(names.length)
   })
 })

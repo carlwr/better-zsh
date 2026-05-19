@@ -29,6 +29,7 @@ export type RefDumpFile =
   | "job-specs.md"
   | "arith-ops.md"
   | "special-functions.md"
+  | "comp-utils.md"
   | "suspicious.md"
 
 const dumpFile: { [K in DocCategory]: RefDumpFile } = {
@@ -54,6 +55,7 @@ const dumpFile: { [K in DocCategory]: RefDumpFile } = {
   job_spec: "job-specs.md",
   arith_op: "arith-ops.md",
   special_function: "special-functions.md",
+  comp_utility: "comp-utils.md",
 }
 
 const dumpSpecs = [
@@ -68,7 +70,7 @@ const suspiciousPatterns: readonly [string, (md: string) => boolean][] = [
     "empty ref",
     md => /\b(?:See|see|described in|noted in) (?:\\ )?\./.test(md),
   ],
-  ["dangling continuation", md => /\\$/m.test(md)],
+  ["dangling continuation", md => inProseLines(md, line => /\\$/m.test(line))],
   ["raw yodl marker", md => /\b(?:tt|var|example|manref|noderef)\(/.test(md)],
   ["unbalanced inline backticks", hasUnbalancedInlineBackticks],
   [
@@ -77,6 +79,23 @@ const suspiciousPatterns: readonly [string, (md: string) => boolean][] = [
   ],
   ["double comma (null reference substitution)", md => /,\s*,/.test(md)],
 ]
+
+/**
+ * Like `hasUnbalancedInlineBackticks` but generic: tests `check` against
+ * every non-fence line and returns true if any match.
+ */
+function inProseLines(md: string, check: (line: string) => boolean): boolean {
+  let inFence = false
+  for (const line of md.split("\n")) {
+    if (line.startsWith("```")) {
+      inFence = !inFence
+      continue
+    }
+    if (inFence) continue
+    if (check(line)) return true
+  }
+  return false
+}
 
 /**
  * True if any non-fence line has an odd number of `` ` `` characters — a
@@ -88,17 +107,10 @@ const suspiciousPatterns: readonly [string, (md: string) => boolean][] = [
  * our corpus. Extend here if we ever start rendering doubled spans.
  */
 function hasUnbalancedInlineBackticks(md: string): boolean {
-  let inFence = false
-  for (const line of md.split("\n")) {
-    if (line.startsWith("```")) {
-      inFence = !inFence
-      continue
-    }
-    if (inFence) continue
+  return inProseLines(md, line => {
     const count = (line.match(/`/g) ?? []).length
-    if (count % 2 !== 0) return true
-  }
-  return false
+    return count % 2 !== 0
+  })
 }
 
 function section(doc: RefDoc): string {

@@ -10,7 +10,10 @@ interface SynopsisLine {
   continuation: boolean
 }
 
-export function parseBuiltins(yo: string | YNodeSeq): readonly BuiltinDoc[] {
+export function parseBuiltins(
+  yo: string | YNodeSeq,
+  depth?: number,
+): readonly BuiltinDoc[] {
   const nodes = typeof yo === "string" ? parseNodes(yo) : yo
   const byName = new Map<string, BuiltinDoc>()
 
@@ -19,7 +22,7 @@ export function parseBuiltins(yo: string | YNodeSeq): readonly BuiltinDoc[] {
   }
 
   for (const entry of collectAliasedEntries(
-    extractItems(nodes),
+    extractItems(nodes, depth),
     parseSynopsisLine,
   )) {
     const body = entry.entry.body ?? []

@@ -26,6 +26,7 @@ import type {
   ArithOpDoc,
   BuiltinDoc,
   ComplexCommandDoc,
+  CompUtilityDoc,
   CondOpDoc,
   Documented,
   GlobFlagDoc,
@@ -47,9 +48,11 @@ import type {
   ZleWidgetDoc,
   ZshOption,
 } from "./types.ts"
+import { extractSectionBody } from "./yodl/core/doc.ts"
 import { parseNodes, type YNodeSeq } from "./yodl/core/nodes.ts"
 import { parseArithOps } from "./yodl/extractors/arith-ops.ts"
 import { parseBuiltins } from "./yodl/extractors/builtins.ts"
+import { parseCompUtils } from "./yodl/extractors/comp-utils.ts"
 import { parseComplexCommands } from "./yodl/extractors/complex-commands.ts"
 import { parseCondOps } from "./yodl/extractors/cond-ops.ts"
 import { parseGlobFlags } from "./yodl/extractors/glob-flags.ts"
@@ -67,6 +70,7 @@ import { parsePromptEscapes } from "./yodl/extractors/prompt-escapes.ts"
 import { parseRedirs } from "./yodl/extractors/redirections.ts"
 import { parseReswords } from "./yodl/extractors/reserved-words.ts"
 import {
+  parseCompletionParams,
   parseShellParams,
   parseWidgetParams,
 } from "./yodl/extractors/shell-params.ts"
@@ -115,6 +119,7 @@ const categoryLoader: CategoryLoader = {
   job_spec: { file: "jobs.yo", parse: parseJobSpecs },
   arith_op: { file: "arith.yo", parse: parseArithOps },
   special_function: { file: "func.yo", parse: parseSpecialFunctions },
+  comp_utility: { file: "compsys.yo", parse: parseCompUtils },
 }
 
 /** In-memory corpus of parsed zsh documentation, keyed by category then identity. */
@@ -171,6 +176,7 @@ export interface DocCorpus {
     Documented<"special_function">,
     SpecialFunctionDoc
   >
+  readonly comp_utility: ReadonlyMap<Documented<"comp_utility">, CompUtilityDoc>
 }
 
 type _AssertDocCorpusKeys1 = Assert<
@@ -184,15 +190,30 @@ function loadCategoryDocs<K extends DocCategory>(
   cat: K,
   getNodes: (file: string) => YNodeSeq,
 ): readonly DocRecordMap[K][] {
-  // special_param is composed from two files: `params.yo` (global parameters)
-  // plus `zle.yo` widget-local params. Widget-params share ShellParamDoc's
-  // shape; they surface under the `zle-widget` section. Kept out of the
-  // generic CategoryLoader to avoid a multi-file dispatch schema for a
-  // single outlier.
+  // special_param spans three files (`params.yo`, `zle.yo`, `compwid.yo`);
+  // all three feeds share `ShellParamDoc`'s shape and differ only in
+  // `section`. Composed here rather than via the generic CategoryLoader to
+  // avoid a multi-file dispatch schema for a single outlier.
   if (cat === "special_param") {
     return [
       ...parseShellParams(getNodes("params.yo")),
       ...parseWidgetParams(getNodes("zle.yo")),
+      ...parseCompletionParams(getNodes("compwid.yo")),
+    ] as unknown as readonly DocRecordMap[K][]
+  }
+  // builtin likewise spans two files: `builtins.yo` (core shell builtins)
+  // plus `compwid.yo` (completion-widget builtins: compadd, compset,
+  // compcall). compwid.yo interleaves builtin entries with other constructs;
+  // only the "Completion Builtin Commands" section is extracted, at
+  // depth 1, to exclude nested flag-description items.
+  if (cat === "builtin") {
+    const cmdSection = extractSectionBody(
+      getNodes("compwid.yo"),
+      "Completion Builtin Commands",
+    )
+    return [
+      ...parseBuiltins(getNodes("builtins.yo")),
+      ...parseBuiltins(cmdSection, 1),
     ] as unknown as readonly DocRecordMap[K][]
   }
   const { file, parse } = categoryLoader[cat]

@@ -11,6 +11,7 @@ import type {
   ArithOpDoc,
   BuiltinDoc,
   ComplexCommandDoc,
+  CompUtilityDoc,
   CondOpDoc,
   JobSpecDoc,
   KeymapDoc,
@@ -33,6 +34,7 @@ import {
   mdArithOp,
   mdBuiltin,
   mdComplexCommand,
+  mdCompUtility,
   mdCondOp,
   mdGlobFlag,
   mdGlobOp,
@@ -209,6 +211,12 @@ const sfn: SpecialFunctionDoc = {
   kind: "hook",
   hookArray: "chpwd_functions",
 }
+const cuu: CompUtilityDoc = {
+  name: mkDocumented("comp_utility", "_all_labels"),
+  sig: "_all_labels [ -x ] [ -12VJ ] tag name descr [ command arg ... ]",
+  desc: "d:cuu",
+  section: "Utility Functions",
+}
 
 // --- corpus builder ---------------------------------------------------------
 
@@ -237,6 +245,7 @@ const baseArrays: DocArrays = {
   job_spec: [js],
   arith_op: [ao],
   special_function: [sfn],
+  comp_utility: [cuu],
 }
 
 function mkTestCorpus(overrides: Partial<DocArrays> = {}): DocCorpus {
@@ -401,6 +410,11 @@ const compactMarkdownCases = [
     mdGlobQualifier(gq, noOptsCorpus),
     ["`@`", "d:gq", "_Role:_ glob qualifier"],
   ],
+  [
+    "comp_utility",
+    mdCompUtility(cuu),
+    ["`_all_labels`", "d:cuu", "_Category:_ Completion Utility"],
+  ],
 ] as const
 
 // Per-category dump metadata: [file, heading, snippet].
@@ -429,6 +443,7 @@ const dumpByCat: {
   job_spec: ["job-specs.md", "## %%", "d:js"],
   arith_op: ["arith-ops.md", "## +", "d:ao"],
   special_function: ["special-functions.md", "## chpwd", "d:sfn"],
+  comp_utility: ["comp-utils.md", "## _all_labels", "d:cuu"],
 }
 
 const dumpCases = docCategories.map(k => dumpByCat[k])
@@ -534,6 +549,7 @@ describe("render markdown", () => {
       "job_spec:%%",
       "arith_op:+",
       "special_function:chpwd",
+      "comp_utility:_all_labels",
     ])
   })
 

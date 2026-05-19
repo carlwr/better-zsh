@@ -2,6 +2,8 @@
 export const corpusYodlFiles = [
   "arith.yo",
   "builtins.yo",
+  "compsys.yo",
+  "compwid.yo",
   "cond.yo",
   "expn.yo",
   "func.yo",

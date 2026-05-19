@@ -33,6 +33,7 @@ const norm: { [K in DocCategory]: (s: string) => string } = {
   job_spec: s => s.trim(),
   arith_op: s => s.trim(),
   special_function: s => s.trim(),
+  comp_utility: s => s.trim(),
 }
 
 /**

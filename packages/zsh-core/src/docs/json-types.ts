@@ -97,6 +97,7 @@ export type KeymapsJson = JsonDocArrayMap["keymap"]
 export type JobSpecsJson = JsonDocArrayMap["job_spec"]
 export type ArithOpsJson = JsonDocArrayMap["arith_op"]
 export type SpecialFunctionsJson = JsonDocArrayMap["special_function"]
+export type CompUtilsJson = JsonDocArrayMap["comp_utility"]
 
 export type JsonCounts = { readonly [K in JsonCountKey]: number }
 

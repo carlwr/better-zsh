@@ -69,6 +69,7 @@ pub fn resolve_in<'c>(corpus: &'c Corpus, cat_name: &str, raw: &str) -> Option<R
         }
         "job_spec" => resolve_job_spec(corpus, raw),
         "special_function" => resolve_special_function(corpus, raw),
+        "special_param" => resolve_special_param(corpus, raw),
         _ => resolve_literal(corpus, cat_name, raw),
     }
 }
@@ -144,6 +145,30 @@ fn resolve_job_spec<'c>(corpus: &'c Corpus, raw: &str) -> Option<ResolvedHit<'c>
         }
     };
     find_by_id(corpus, "job_spec", key, None)
+}
+
+/// Special-parameter resolver. Direct lookup happens in `resolve_in`; this
+/// path handles the close-variant case `IDENT[...]` → `IDENT` (e.g.
+/// `compstate[context]` → `compstate`, `words[CURRENT]` → `words`).
+fn resolve_special_param<'c>(corpus: &'c Corpus, raw: &str) -> Option<ResolvedHit<'c>> {
+    let t = raw.trim();
+    let open = t.find('[')?;
+    if !t.ends_with(']') || open == 0 || open + 1 == t.len() - 1 {
+        return None;
+    }
+    let ident = &t[..open];
+    let bytes = ident.as_bytes();
+    let first_ok = matches!(bytes[0], b'A'..=b'Z' | b'a'..=b'z' | b'_');
+    if !first_ok {
+        return None;
+    }
+    if !bytes[1..]
+        .iter()
+        .all(|b| matches!(b, b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'_'))
+    {
+        return None;
+    }
+    find_by_id(corpus, "special_param", ident, None)
 }
 
 fn resolve_special_function<'c>(corpus: &'c Corpus, raw: &str) -> Option<ResolvedHit<'c>> {

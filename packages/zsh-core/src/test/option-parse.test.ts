@@ -32,6 +32,7 @@ const corpus: DocCorpus = {
   job_spec: empty,
   arith_op: empty,
   special_function: empty,
+  comp_utility: empty,
 }
 
 describe("resolve(corpus, 'option', raw) — option identity", () => {

@@ -3,6 +3,7 @@ import type {
   ArithOpDoc,
   BuiltinDoc,
   ComplexCommandDoc,
+  CompUtilityDoc,
   CondOpDoc,
   Documented,
   GlobFlagDoc,
@@ -49,6 +50,7 @@ export const docCategories = [
   "job_spec",
   "arith_op",
   "special_function",
+  "comp_utility",
 ] as const
 
 export type DocCategory = (typeof docCategories)[number]
@@ -95,6 +97,7 @@ const classifyOrderTuple = [
   "arith_op",
   "option",
   "redirection",
+  "comp_utility",
 ] as const satisfies readonly DocCategory[]
 
 // Bidirectional set-equality of `docCategories` and `classifyOrderTuple`:
@@ -140,6 +143,7 @@ export const docCategoryLabels: Readonly<Record<DocCategory, string>> = {
   job_spec: "job spec",
   arith_op: "arithmetic operator",
   special_function: "special function",
+  comp_utility: "completion utility",
 }
 
 export interface DocRecordMap {
@@ -165,6 +169,7 @@ export interface DocRecordMap {
   job_spec: JobSpecDoc
   arith_op: ArithOpDoc
   special_function: SpecialFunctionDoc
+  comp_utility: CompUtilityDoc
 }
 
 /**
@@ -215,6 +220,7 @@ export const docId: {
   job_spec: d => d.key,
   arith_op: d => d.op,
   special_function: d => d.name,
+  comp_utility: d => d.name,
 }
 
 /**
@@ -287,4 +293,5 @@ export const docSubKind: {
   job_spec: d => d.kind,
   arith_op: d => d.arity,
   special_function: d => d.kind,
+  comp_utility: _ => undefined,
 }

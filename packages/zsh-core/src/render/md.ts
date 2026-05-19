@@ -5,6 +5,7 @@ import type {
   ArithOpDoc,
   BuiltinDoc,
   ComplexCommandDoc,
+  CompUtilityDoc,
   CondOpDoc,
   Emulation,
   GlobFlagDoc,
@@ -348,6 +349,16 @@ export function mdZleWidget(doc: ZleWidgetDoc): string {
   )
 }
 
+/** Render one completion-utility doc block as markdown. */
+export function mdCompUtility(doc: CompUtilityDoc): string {
+  return docBlock(
+    mdFmt.code(doc.name),
+    codeBlock("zsh", doc.sig),
+    doc.desc,
+    "_Category:_ Completion Utility",
+  )
+}
+
 /** Return whether an option defaults on/off for an emulation mode. */
 export function defaultStateIn(opt: ZshOption, emulation: Emulation): OptState {
   return opt.defaultIn.includes(emulation) ? "on" : "off"
@@ -425,6 +436,7 @@ export const mdRenderer: {
   job_spec: mdJobSpec,
   arith_op: mdArithOp,
   special_function: mdSpecialFunction,
+  comp_utility: mdCompUtility,
 }
 
 /**

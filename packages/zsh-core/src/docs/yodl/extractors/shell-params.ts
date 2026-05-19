@@ -31,37 +31,50 @@ export function parseShellParams(
   yo: string | YNodeSeq,
 ): readonly ShellParamDoc[] {
   return Object.entries(PARAM_SECTIONS).flatMap(([long, short]) =>
-    parseParamSection(extractSectionBody(yo, long), short),
+    parseParamSection(extractSectionBody(yo, long), short, { allowTied: true }),
   )
 }
 
 /**
  * Parse ZLE widget-local parameters from `zle.yo` §"User-Defined Widgets".
- *
- * Widget params (BUFFER, CURSOR, CONTEXT, ...) share `ShellParamDoc`'s shape
- * but come from a different manual section and never carry `tied`. Exposed as
- * a separate entrypoint so `loadCorpus` can compose both passes into a single
- * `special_param` map without coupling the extractors to a multi-file loader.
+ * `extractSectBody` spans subsections; `extractItemList` runs depth=1 inside
+ * `parseParamSection`, so the nested CONTEXT list is naturally filtered out.
  */
 export function parseWidgetParams(
   yo: string | YNodeSeq,
 ): readonly ShellParamDoc[] {
-  const body = extractSectBody(yo, "User-Defined Widgets")
-  // `extractSectBody` spans subsections, but `extractFirstList` finds the
-  // first outer startitem() after the preamble prose. `extractItemList` is
-  // depth=1, filtering the nested CONTEXT list entries out.
-  const list = extractFirstList(body, "item")
-  if (!list) return []
-  return emitParams(extractItemList(list), "zle-widget", { allowTied: false })
+  return parseParamSection(
+    extractSectBody(yo, "User-Defined Widgets"),
+    "zle-widget",
+    { allowTied: false },
+  )
+}
+
+/**
+ * Parse completion-widget special parameters from `compwid.yo`
+ * §"Completion Special Parameters". `compstate` is one record like the
+ * others — its nested per-key documentation lands in `desc` as prose, in
+ * keeping with how every other assoc/array parameter (`words`, `argv`,
+ * `region_highlight`, ...) is handled.
+ */
+export function parseCompletionParams(
+  yo: string | YNodeSeq,
+): readonly ShellParamDoc[] {
+  return parseParamSection(
+    extractSectionBody(yo, "Completion Special Parameters"),
+    "completion-widget",
+    { allowTied: false },
+  )
 }
 
 function parseParamSection(
   body: YNodeSeq,
   section: ShellParamSection,
+  opts: { readonly allowTied: boolean },
 ): ShellParamDoc[] {
   const list = extractFirstList(body, "item")
   if (!list) return []
-  return emitParams(extractItemList(list), section, { allowTied: true })
+  return emitParams(extractItemList(list), section, opts)
 }
 
 function emitParams(

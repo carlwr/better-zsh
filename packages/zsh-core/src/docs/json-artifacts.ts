@@ -99,6 +99,11 @@ export const jsonArtifact = {
     count: "specialFunctions",
     schema: "SpecialFunctionsJson",
   },
+  comp_utility: {
+    file: "comp-utils.json",
+    count: "compUtils",
+    schema: "CompUtilsJson",
+  },
 } as const satisfies {
   [K in DocCategory]: {
     file: string

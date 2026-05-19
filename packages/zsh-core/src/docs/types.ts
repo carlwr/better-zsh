@@ -211,10 +211,15 @@ export interface SyntaxDocBase<Sig extends string = string> {
  * - `shell-set`: global parameters the shell assigns to (`zshparam` §"Parameters Set By The Shell").
  * - `shell-used`: global parameters the shell reads (`zshparam` §"Parameters Used By The Shell").
  * - `zle-widget`: widget-local parameters visible inside user-defined ZLE widgets (BUFFER, CURSOR, ...); `zle.yo` §"User-Defined Widgets".
+ * - `completion-widget`: parameters visible inside completion widgets (CURRENT, PREFIX, compstate, ...); `compwid.yo` §"Completion Special Parameters".
  */
-export type ShellParamSection = "shell-set" | "shell-used" | "zle-widget"
+export type ShellParamSection =
+  | "shell-set"
+  | "shell-used"
+  | "zle-widget"
+  | "completion-widget"
 
-/** Special parameters documented in `zshparam` and ZLE widget-local parameters from `zle.yo`. */
+/** Special parameters documented in `zshparam`, ZLE widget-local parameters from `zle.yo`, and completion-widget parameters from `compwid.yo`. */
 export interface ShellParamDoc extends SyntaxDocBase {
   readonly name: Documented<"special_param">
   readonly section: ShellParamSection
@@ -478,4 +483,13 @@ export interface SpecialFunctionDoc extends SyntaxDocBase {
   readonly kind: SpecialFunctionKind
   /** For hooks: the companion `${name}_functions` array name. Absent on TRAP* records. */
   readonly hookArray?: string
+}
+
+/**
+ * Completion utility function — completion-system helper functions from
+ * `compsys.yo` §"Utility Functions": `_absolute_command_paths`,
+ * `_all_labels`, `_arguments`, and others. One record per function.
+ */
+export interface CompUtilityDoc extends SyntaxDocBase {
+  readonly name: Documented<"comp_utility">
 }
