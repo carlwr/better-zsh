@@ -11,7 +11,7 @@ use crate::resolver::{resolve_in, ResolvedHit};
 use crate::tools::envelope::mk_envelope;
 use crate::tools::record_fields::{record_sub_kind, str_field, str_input};
 use anyhow::Result;
-use serde_json::{json, Map, Value};
+use serde_json::{Map, Value};
 
 pub fn run(input: &Value, corpus: &Corpus) -> Result<Value> {
     let key = str_input(input, "key");
@@ -57,7 +57,7 @@ fn hit_to_match(h: &ResolvedHit<'_>) -> Value {
         m.insert("subKind".into(), Value::String(sk));
     }
     if let Some(fb) = &h.feedback {
-        m.insert("feedback".into(), json!({ "kind": fb.kind() }));
+        m.insert("feedback".into(), fb.to_json());
     }
     Value::Object(m)
 }

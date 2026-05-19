@@ -191,9 +191,9 @@ function loadCategoryDocs<K extends DocCategory>(
   getNodes: (file: string) => YNodeSeq,
 ): readonly DocRecordMap[K][] {
   // special_param spans three files (`params.yo`, `zle.yo`, `compwid.yo`);
-  // all three feeds share `ShellParamDoc`'s shape and differ only in
-  // `section`. Composed here rather than via the generic CategoryLoader to
-  // avoid a multi-file dispatch schema for a single outlier.
+  // each feed emits records of the same shape, differentiated by `scope`.
+  // Composed inline rather than through the generic CategoryLoader to avoid
+  // a multi-file dispatch schema for what is a small set of special cases.
   if (cat === "special_param") {
     return [
       ...parseShellParams(getNodes("params.yo")),
@@ -201,11 +201,11 @@ function loadCategoryDocs<K extends DocCategory>(
       ...parseCompletionParams(getNodes("compwid.yo")),
     ] as unknown as readonly DocRecordMap[K][]
   }
-  // builtin likewise spans two files: `builtins.yo` (core shell builtins)
-  // plus `compwid.yo` (completion-widget builtins: compadd, compset,
-  // compcall). compwid.yo interleaves builtin entries with other constructs;
-  // only the "Completion Builtin Commands" section is extracted, at
-  // depth 1, to exclude nested flag-description items.
+  // builtin spans two files: `builtins.yo` (core shell builtins) plus
+  // `compwid.yo` (completion-widget builtins: compadd, compset, compcall).
+  // compwid.yo interleaves builtin entries with other constructs; only the
+  // "Completion Builtin Commands" section is extracted, at depth 1, to
+  // exclude nested flag-description items.
   if (cat === "builtin") {
     const cmdSection = extractSectionBody(
       getNodes("compwid.yo"),

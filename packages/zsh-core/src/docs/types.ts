@@ -206,24 +206,59 @@ export interface SyntaxDocBase<Sig extends string = string> {
 }
 
 /**
- * Typed source of a special-parameter record.
+ * Typed scope of a special-parameter record.
  *
- * - `shell-set`: global parameters the shell assigns to (`zshparam` §"Parameters Set By The Shell").
- * - `shell-used`: global parameters the shell reads (`zshparam` §"Parameters Used By The Shell").
- * - `zle-widget`: widget-local parameters visible inside user-defined ZLE widgets (BUFFER, CURSOR, ...); `zle.yo` §"User-Defined Widgets".
- * - `completion-widget`: parameters visible inside completion widgets (CURRENT, PREFIX, compstate, ...); `compwid.yo` §"Completion Special Parameters".
+ * - `shell-set`: global parameters the shell assigns to.
+ * - `shell-used`: global parameters the shell reads.
+ * - `zle-widget`: widget-local parameters visible inside user-defined ZLE widgets (BUFFER, CURSOR, ...).
+ * - `completion-widget`: parameters visible inside completion widgets (CURRENT, PREFIX, compstate, ...).
+ *
+ * Values are internal identifiers, not man-page section titles.
  */
-export type ShellParamSection =
+export type ShellParamScope =
   | "shell-set"
   | "shell-used"
   | "zle-widget"
   | "completion-widget"
 
-/** Special parameters documented in `zshparam`, ZLE widget-local parameters from `zle.yo`, and completion-widget parameters from `compwid.yo`. */
-export interface ShellParamDoc extends SyntaxDocBase {
+/**
+ * Branded name of one enumerated sub-key inside a special-parameter record's
+ * `keys` payload (e.g. an associative-array's documented key set, or the
+ * enumerated values of a colon-list parameter).
+ */
+export type ShellParamKeyName = Brand<string, "ShellParamKeyName">
+
+export const mkShellParamKeyName = (raw: string): ShellParamKeyName =>
+  raw.trim() as ShellParamKeyName
+
+/**
+ * One member of a `ShellParamDoc.keys` payload. `desc` is the member's
+ * normalized prose; any deeper Yodl structure inside the member's body is
+ * already flattened.
+ */
+export interface ShellParamKey {
+  readonly name: ShellParamKeyName
+  readonly desc: string
+}
+
+/**
+ * Special-parameter doc record. Does not extend `SyntaxDocBase`: this category
+ * carries a typed `scope` instead of a generic `section: string` prose field.
+ *
+ * `keys` is present only when the upstream documentation lists an enumerated
+ * nested set under the parameter (e.g. an associative-array's keys). `desc`
+ * is then just the intro prose; the renderer composes the visible body from
+ * `desc` plus `keys`. Pattern fits PRINCIPLES.md §"Records are self-contained":
+ * intra-record structure replaces flattened prose; no cross-record navigation
+ * is introduced.
+ */
+export interface ShellParamDoc {
   readonly name: Documented<"special_param">
-  readonly section: ShellParamSection
+  readonly sig: string
+  readonly desc: string
+  readonly scope: ShellParamScope
   readonly tied?: Documented<"special_param">
+  readonly keys?: readonly ShellParamKey[]
 }
 
 /**

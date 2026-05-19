@@ -1,12 +1,17 @@
 import { mkDocumented } from "../../brands.ts"
-import type { ShellParamDoc, ShellParamSection } from "../../types.ts"
+import {
+  mkShellParamKeyName,
+  type ShellParamDoc,
+  type ShellParamKey,
+  type ShellParamScope,
+} from "../../types.ts"
 import {
   extractFirstList,
   extractItemList,
   extractSectBody,
   extractSectionBody,
 } from "../core/doc.ts"
-import type { YNodeSeq } from "../core/nodes.ts"
+import { isMacro, type YNodeSeq } from "../core/nodes.ts"
 import {
   type extractTokens,
   normalizeBody,
@@ -14,9 +19,10 @@ import {
   ttTexts,
 } from "../core/text.ts"
 
-// Upstream section name → typed short form. Short form is what record consumers
-// read; long form is only used to find the section in the Yodl.
-const PARAM_SECTIONS: Readonly<Record<string, ShellParamSection>> = {
+// Upstream section name → typed scope. Scope is what record consumers
+// read; the upstream-section string is only used to find the section in
+// the Yodl.
+const PARAM_SECTIONS: Readonly<Record<string, ShellParamScope>> = {
   "Parameters Set By The Shell": "shell-set",
   "Parameters Used By The Shell": "shell-used",
 }
@@ -37,8 +43,8 @@ export function parseShellParams(
 
 /**
  * Parse ZLE widget-local parameters from `zle.yo` §"User-Defined Widgets".
- * `extractSectBody` spans subsections; `extractItemList` runs depth=1 inside
- * `parseParamSection`, so the nested CONTEXT list is naturally filtered out.
+ * `extractSectBody` spans subsections; the depth=1 `extractItemList` inside
+ * `parseParamSection` filters out the nested CONTEXT list.
  */
 export function parseWidgetParams(
   yo: string | YNodeSeq,
@@ -52,10 +58,7 @@ export function parseWidgetParams(
 
 /**
  * Parse completion-widget special parameters from `compwid.yo`
- * §"Completion Special Parameters". `compstate` is one record like the
- * others — its nested per-key documentation lands in `desc` as prose, in
- * keeping with how every other assoc/array parameter (`words`, `argv`,
- * `region_highlight`, ...) is handled.
+ * §"Completion Special Parameters".
  */
 export function parseCompletionParams(
   yo: string | YNodeSeq,
@@ -69,17 +72,17 @@ export function parseCompletionParams(
 
 function parseParamSection(
   body: YNodeSeq,
-  section: ShellParamSection,
+  scope: ShellParamScope,
   opts: { readonly allowTied: boolean },
 ): ShellParamDoc[] {
   const list = extractFirstList(body, "item")
   if (!list) return []
-  return emitParams(extractItemList(list), section, opts)
+  return emitParams(extractItemList(list), scope, opts)
 }
 
 function emitParams(
   items: ReturnType<typeof extractItemList>,
-  section: ShellParamSection,
+  scope: ShellParamScope,
   opts: { readonly allowTied: boolean },
 ): ShellParamDoc[] {
   const out: ShellParamDoc[] = []
@@ -96,20 +99,77 @@ function emitParams(
       continue
     }
 
-    const desc = normalizeBody(item.body)
+    const { desc, keys } = splitBody(item.body)
     for (const head of [...heads, ...pending]) {
       out.push({
         name: mkDocumented("special_param", head.name),
         sig: head.name,
         desc,
-        section,
+        scope,
         ...(head.tied && { tied: mkDocumented("special_param", head.tied) }),
+        ...(keys && { keys }),
       })
     }
     pending = []
   }
 
   return out
+}
+
+/**
+ * Split a parameter's item-body into intro prose and (if present) an
+ * enumerated nested key-list. Keys are emitted only when the body contains
+ * a depth-1 `startitem()`/`enditem()` block — i.e. the upstream documents
+ * a closed set of named members inline (e.g. an assoc-array's keys, the
+ * enumerated values of a colon-list parameter).
+ *
+ * Deeper Yodl nesting inside a member's body (depth >= 2 below the param)
+ * flattens through `normalizeBody` as before — only the immediate level is
+ * structured.
+ */
+function splitBody(body: YNodeSeq): {
+  desc: string
+  keys?: readonly ShellParamKey[]
+} {
+  const split = findNestedList(body)
+  if (!split) return { desc: normalizeBody(body) }
+  const keyEntries = extractItemList(body.slice(split.start, split.end + 1))
+  const keys: ShellParamKey[] = []
+  for (const entry of keyEntries) {
+    const rawName = ttTexts(entry.header)
+      .map(t => t.trim())
+      .filter(Boolean)[0]
+    if (!rawName || !entry.body) continue
+    keys.push({
+      name: mkShellParamKeyName(rawName),
+      desc: normalizeBody(entry.body),
+    })
+  }
+  const intro = body.slice(0, split.start)
+  return keys.length > 0
+    ? { desc: normalizeBody(intro), keys }
+    : { desc: normalizeBody(body) }
+}
+
+/** Find the outermost `startitem()`/`enditem()` pair in `body`; undefined if none. */
+function findNestedList(
+  body: YNodeSeq,
+): { start: number; end: number } | undefined {
+  let depth = 0
+  let start = -1
+  for (let i = 0; i < body.length; i++) {
+    const node = body[i]
+    if (isMacro(node, "startitem")) {
+      if (depth === 0) start = i
+      depth++
+      continue
+    }
+    if (isMacro(node, "enditem") && depth > 0) {
+      depth--
+      if (depth === 0 && start !== -1) return { start, end: i }
+    }
+  }
+  return undefined
 }
 
 function parseHeads(

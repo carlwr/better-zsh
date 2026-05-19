@@ -126,11 +126,11 @@ describe("parsePromptEscapes — typed subsection (enrichment)", () => {
   })
 })
 
-describe("parseShellParams — typed section (enrichment)", () => {
+describe("parseShellParams — typed scope (enrichment)", () => {
   const docs = parseShellParams(readVendoredYo("params.yo"))
-  test("every record lands on a shell-set or shell-used section", () => {
+  test("every record lands on a shell-set or shell-used scope", () => {
     for (const d of docs) {
-      expect(["shell-set", "shell-used"]).toContain(d.section)
+      expect(["shell-set", "shell-used"]).toContain(d.scope)
     }
   })
 })
@@ -145,9 +145,9 @@ describe("parseWidgetParams (ZLE widget-local parameters)", () => {
     }
   })
 
-  test("all records carry section: zle-widget and no tied pairing", () => {
+  test("all records carry scope: zle-widget and no tied pairing", () => {
     for (const d of docs) {
-      expect(d.section).toBe("zle-widget")
+      expect(d.scope).toBe("zle-widget")
       expect(d.tied).toBeUndefined()
     }
   })

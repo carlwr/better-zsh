@@ -137,7 +137,7 @@ const sec: ShellParamDoc = {
   name: mkDocumented("special_param", "SECONDS"),
   sig: "SECONDS",
   desc: "d:p",
-  section: "shell-set",
+  scope: "shell-set",
 }
 // Flag/key/op-shaped fixtures: TS can't propagate K↔idField through a computed key.
 const stub = <K extends DocCategory>(

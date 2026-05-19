@@ -275,7 +275,7 @@ export const docSubKind: {
   conditional_op: d => d.arity,
   builtin: _ => undefined,
   precmd_modifier: _ => undefined,
-  special_param: d => d.section,
+  special_param: d => d.scope,
   complex_command: _ => undefined,
   reserved_word: d => d.pos,
   redirection: _ => undefined,

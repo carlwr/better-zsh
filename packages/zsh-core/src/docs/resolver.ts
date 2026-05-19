@@ -260,21 +260,44 @@ function flagInnerKey(
 /**
  * Special-parameter resolver. Literal first; falls back to stripping a
  * trailing `[...]` subscript so live forms like `compstate[context]`,
- * `words[CURRENT]`, `pipestatus[1]` resolve to the parent record. This is
- * the same corpus-aware close-variant class as the parens-agnostic flag
- * resolvers — bridging documented identity to surface syntax, not parsing
- * user expressions. See PRINCIPLES.md §"Resolver scope balance".
+ * `words[CURRENT]`, `pipestatus[1]` resolve to the parent record. Stripping
+ * is lossy — the subscript is surfaced separately via `resolverFeedback`.
+ *
+ * Bridges documented identity to surface syntax; user-expression parsing
+ * stays out of scope (PRINCIPLES.md §"Resolver scope balance").
+ *
+ * Private to `resolvers.ts`: shared between `resolve` and
+ * `specialParamFeedback`. Public callers go through
+ * `resolve(corpus, "special_param", raw)` and
+ * `resolverFeedback(corpus, "special_param", raw)`.
  */
 function resolveSpecialParam(
   c: DocCorpus,
   raw: string,
-): Documented<"special_param"> | undefined {
+):
+  | {
+      readonly id: Documented<"special_param">
+      readonly subscript?: string
+    }
+  | undefined {
   const literal = mkDocumented("special_param", raw)
-  if (c.special_param.has(literal)) return literal
-  return resolveByKey(c, "special_param", raw, t => {
-    const m = t.match(/^([A-Za-z_][A-Za-z0-9_]*)\[.+\]$/)
-    return m?.[1]
-  })
+  if (c.special_param.has(literal)) return { id: literal }
+  const t = raw.trim()
+  const m = t.match(/^([A-Za-z_][A-Za-z0-9_]*)\[(.+)\]$/)
+  if (!m) return undefined
+  const base = mkDocumented("special_param", m[1] ?? "")
+  if (!c.special_param.has(base)) return undefined
+  return { id: base, subscript: m[2] ?? "" }
+}
+
+function specialParamFeedback(
+  c: DocCorpus,
+  raw: string,
+): ResolverFeedback | undefined {
+  const r = resolveSpecialParam(c, raw)
+  return r?.subscript !== undefined
+    ? { kind: "subscripted", subscript: r.subscript }
+    : undefined
 }
 
 /**
@@ -371,7 +394,7 @@ const resolvers: { [K in DocCategory]: Resolver<K> } = {
   conditional_op: simpleResolver("conditional_op"),
   builtin: simpleResolver("builtin"),
   precmd_modifier: simpleResolver("precmd_modifier"),
-  special_param: resolveSpecialParam,
+  special_param: (c, raw) => resolveSpecialParam(c, raw)?.id,
   complex_command: simpleResolver("complex_command"),
   reserved_word: simpleResolver("reserved_word"),
   redirection: resolveRedir,
@@ -449,10 +472,9 @@ export function lookupRaw<K extends DocCategory>(
 // bits surface via this parametric `resolverFeedback` channel.
 //
 // Closed kind-tagged union, parametric over `DocCategory` via the
-// `feedbackResolvers` dispatch table. Today only `option` emits feedback;
-// other categories' entries are `() => undefined`. Adding a feedback kind is
-// a single zsh-core-side change that consumers (tooldef, schema) pick up
-// automatically.
+// `feedbackResolvers` dispatch table. Categories without lossy paths use
+// `() => undefined`. Adding a feedback kind is a single zsh-core-side
+// change that consumers (tooldef, schema) pick up automatically.
 //
 // See DESIGN.md §"Resolver feedback channel" and PRINCIPLES.md §"Resolver
 // feedback (lossy normalization)".
@@ -465,8 +487,13 @@ export function lookupRaw<K extends DocCategory>(
  * - `input-negated`: the raw input was reached via the option resolver's
  *   `NO_`-stripping branch; canonical-form inputs (e.g. `AUTO_CD`,
  *   `autocd`) do not carry this feedback.
+ * - `subscripted`: the raw input carried a trailing `[...]` subscript that
+ *   was stripped to reach the parent record (e.g. `compstate[context]` →
+ *   `compstate`). `subscript` holds the inner-subscript text (the `...`).
  */
-export type ResolverFeedback = { readonly kind: "input-negated" }
+export type ResolverFeedback =
+  | { readonly kind: "input-negated" }
+  | { readonly kind: "subscripted"; readonly subscript: string }
 
 type FeedbackResolver = (
   corpus: DocCorpus,
@@ -488,7 +515,7 @@ const feedbackResolvers: { readonly [K in DocCategory]: FeedbackResolver } = {
   conditional_op: noFeedback,
   builtin: noFeedback,
   precmd_modifier: noFeedback,
-  special_param: noFeedback,
+  special_param: specialParamFeedback,
   complex_command: noFeedback,
   reserved_word: noFeedback,
   redirection: noFeedback,
@@ -516,9 +543,11 @@ const feedbackResolvers: { readonly [K in DocCategory]: FeedbackResolver } = {
  * (extended to closed zsh-core unions), feedback kind values come from this
  * canonical table.
  */
-export const resolverFeedbackKinds: readonly ["input-negated"] = [
-  "input-negated",
-] as const satisfies readonly ResolverFeedback["kind"][]
+export const resolverFeedbackKinds: readonly ["input-negated", "subscripted"] =
+  [
+    "input-negated",
+    "subscripted",
+  ] as const satisfies readonly ResolverFeedback["kind"][]
 
 type _AssertResolverFeedbackKindsComplete = Assert<
   Eq<
@@ -526,6 +555,31 @@ type _AssertResolverFeedbackKindsComplete = Assert<
     never
   >
 >
+
+/**
+ * JSON Schema fragment per `ResolverFeedback` kind. Source of truth for the
+ * `Feedback` `$def` consumed by tooldef's output-schema builder; per-kind
+ * extra fields (e.g. `subscript`) live here, not in the consumer.
+ */
+export const resolverFeedbackKindSchemas: {
+  readonly [K in ResolverFeedback["kind"]]: Readonly<Record<string, unknown>>
+} = {
+  "input-negated": {
+    type: "object",
+    additionalProperties: false,
+    required: ["kind"],
+    properties: { kind: { const: "input-negated" } },
+  },
+  subscripted: {
+    type: "object",
+    additionalProperties: false,
+    required: ["kind", "subscript"],
+    properties: {
+      kind: { const: "subscripted" },
+      subscript: { type: "string", minLength: 1 },
+    },
+  },
+}
 
 /**
  * Resolve a raw user-code token against the corpus and return optional

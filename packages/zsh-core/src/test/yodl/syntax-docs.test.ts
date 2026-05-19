@@ -177,7 +177,7 @@ enditem()`
           minCount: 80,
           keyOf: doc => doc.name,
           descOf: doc => doc.desc,
-          sectionOf: doc => doc.section,
+          sectionOf: doc => doc.scope,
           known: [
             "SECONDS",
             "argv",

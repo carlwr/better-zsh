@@ -34,7 +34,11 @@ export interface DocsInput {
 
 export interface DocsMatch extends BaseMatch {
   readonly mdBody: string
-  /** Optional per-category resolver feedback (e.g. `{ kind: "input-negated" }` when an option was reached via `NO_`-stripping). Absent when there is nothing to surface. */
+  /**
+   * Optional per-category resolver feedback surfacing lossy normalization the
+   * resolved identity does not carry. Closed kind-tagged union; consumers
+   * route on `kind`. Absent when there is nothing to surface.
+   */
   readonly feedback?: ResolverFeedback
 }
 

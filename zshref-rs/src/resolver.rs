@@ -27,18 +27,28 @@ pub fn normalize_option(raw: &str) -> String {
 }
 
 /// Lossy-resolution feedback from a per-category resolver. Mirrors the TS
-/// `ResolverFeedback` union in `resolvers.ts`. Only the option resolver emits
-/// today (`InputNegated` via `NO_`-stripping).
-#[derive(Clone, Copy, Debug)]
+/// `ResolverFeedback` union in `resolvers.ts`.
+///
+/// - `InputNegated`: option name reached via `NO_`-stripping.
+/// - `Subscripted(inner)`: special-parameter name reached by stripping a
+///   trailing `[inner]` subscript (e.g. `compstate[context]` → `compstate`).
+#[derive(Clone, Debug)]
 pub enum ResolverFeedback {
     InputNegated,
+    Subscripted(String),
 }
 
 impl ResolverFeedback {
-    /// Must match the TS literal in `ResolverFeedback["kind"]`.
-    pub fn kind(self) -> &'static str {
+    /// Serialize to the JSON object shape required by the bundled
+    /// `outputSchema`'s `$defs.Feedback`. Mirrors `resolverFeedbackKindSchemas`
+    /// in TS — kind values must match `ResolverFeedback["kind"]` literals.
+    pub fn to_json(&self) -> serde_json::Value {
         match self {
-            ResolverFeedback::InputNegated => "input-negated",
+            ResolverFeedback::InputNegated => serde_json::json!({ "kind": "input-negated" }),
+            ResolverFeedback::Subscripted(s) => serde_json::json!({
+                "kind": "subscripted",
+                "subscript": s,
+            }),
         }
     }
 }
@@ -148,15 +158,21 @@ fn resolve_job_spec<'c>(corpus: &'c Corpus, raw: &str) -> Option<ResolvedHit<'c>
 }
 
 /// Special-parameter resolver. Direct lookup happens in `resolve_in`; this
-/// path handles the close-variant case `IDENT[...]` → `IDENT` (e.g.
+/// path handles the close-variant case `IDENT[inner]` → `IDENT` (e.g.
 /// `compstate[context]` → `compstate`, `words[CURRENT]` → `words`).
+/// Stripping is lossy; the inner-subscript text surfaces as
+/// `ResolverFeedback::Subscripted`.
 fn resolve_special_param<'c>(corpus: &'c Corpus, raw: &str) -> Option<ResolvedHit<'c>> {
     let t = raw.trim();
     let open = t.find('[')?;
-    if !t.ends_with(']') || open == 0 || open + 1 == t.len() - 1 {
+    if !t.ends_with(']') || open == 0 || open + 1 >= t.len() - 1 {
         return None;
     }
     let ident = &t[..open];
+    let inner = &t[open + 1..t.len() - 1];
+    if inner.is_empty() {
+        return None;
+    }
     let bytes = ident.as_bytes();
     let first_ok = matches!(bytes[0], b'A'..=b'Z' | b'a'..=b'z' | b'_');
     if !first_ok {
@@ -168,7 +184,12 @@ fn resolve_special_param<'c>(corpus: &'c Corpus, raw: &str) -> Option<ResolvedHi
     {
         return None;
     }
-    find_by_id(corpus, "special_param", ident, None)
+    find_by_id(
+        corpus,
+        "special_param",
+        ident,
+        Some(ResolverFeedback::Subscripted(inner.to_string())),
+    )
 }
 
 fn resolve_special_function<'c>(corpus: &'c Corpus, raw: &str) -> Option<ResolvedHit<'c>> {

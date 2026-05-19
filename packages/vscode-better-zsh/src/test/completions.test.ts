@@ -68,7 +68,7 @@ suite("CompletionProvider", () => {
       name: mkDocumented("special_param", "SECONDS"),
       sig: "SECONDS",
       desc: "",
-      section: "shell-set" as const,
+      scope: "shell-set" as const,
     }
     const option = {
       name: mkDocumented("option", "AUTO_CD"),

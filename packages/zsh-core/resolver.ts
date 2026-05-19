@@ -8,5 +8,6 @@ export {
   type ResolverFeedback,
   resolve,
   resolverFeedback,
+  resolverFeedbackKindSchemas,
   resolverFeedbackKinds,
 } from "./src/docs/resolver.ts"

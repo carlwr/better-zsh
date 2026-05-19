@@ -71,7 +71,7 @@ const p = (name: string, desc: string): ShellParamDoc => ({
   name: mkDocumented("special_param", name),
   sig: name,
   desc,
-  section: "shell-set",
+  scope: "shell-set",
 })
 
 const c = (

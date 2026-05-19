@@ -31,7 +31,10 @@
  * Rationale for owning schemas here: `DESIGN.md` (output schemas).
  */
 
-import { resolverFeedbackKinds } from "@carlwr/zsh-core/resolver"
+import {
+  resolverFeedbackKindSchemas,
+  resolverFeedbackKinds,
+} from "@carlwr/zsh-core/resolver"
 import {
   type DocCategory,
   docCategories,
@@ -124,12 +127,9 @@ function mkDefs(shape: MatchShape): Readonly<Record<string, unknown>> {
   }
   if (shape.feedback === "optional") {
     defs.Feedback = {
-      oneOf: resolverFeedbackKinds.map(kind => ({
-        type: "object",
-        additionalProperties: false,
-        required: ["kind"],
-        properties: { kind: { const: kind } },
-      })),
+      oneOf: resolverFeedbackKinds.map(
+        kind => resolverFeedbackKindSchemas[kind],
+      ),
     }
   }
   return defs

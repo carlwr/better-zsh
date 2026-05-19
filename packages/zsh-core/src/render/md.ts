@@ -115,10 +115,16 @@ export function mdCondOp(cop: CondOpDoc, corpus: DocCorpus): string {
 export function mdShellParam(doc: ShellParamDoc): string {
   return docBlock(
     mdFmt.code(doc.name),
-    doc.desc,
+    shellParamBody(doc),
     ...(doc.tied ? [`_Tied with:_ ${mdFmt.code(doc.tied)}`] : []),
-    `_Category:_ Special Parameter — ${doc.section}`,
+    `_Category:_ Special Parameter — ${doc.scope}`,
   )
+}
+
+function shellParamBody(doc: ShellParamDoc): string {
+  if (!doc.keys || doc.keys.length === 0) return doc.desc
+  const tail = doc.keys.map(k => `${k.name} ${k.desc}`).join("\n\n")
+  return doc.desc ? `${doc.desc}\n\n${tail}` : tail
 }
 
 /** Render one parameter-expansion flag doc block as markdown. */
