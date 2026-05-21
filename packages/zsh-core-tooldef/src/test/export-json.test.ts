@@ -2,24 +2,12 @@ import { existsSync, readFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { describe, expect, test } from "vitest"
+import type { ToolDefsJson } from "../export-json.ts"
 import { TOOL_SUITE_PREAMBLE, toolDefs } from "../tool-defs.ts"
+import { ENVELOPE_REQUIRED_KEYS } from "../tools/shared/envelope.ts"
 
 const pkgDir = join(dirname(fileURLToPath(import.meta.url)), "..", "..")
 const tooldefJsonPath = join(pkgDir, "dist", "json", "tooldef.json")
-
-interface ToolJson {
-  name: string
-  brief: string
-  description: string
-  flagBriefs: Record<string, string>
-  inputSchema: Record<string, unknown>
-  outputSchema: Record<string, unknown>
-}
-interface ToolDefsJson {
-  version: 1
-  tools: ToolJson[]
-  preamble: string
-}
 
 describe.runIf(existsSync(tooldefJsonPath))(
   "tooldef.json export artifact",
@@ -70,11 +58,7 @@ describe.runIf(existsSync(tooldefJsonPath))(
           required?: readonly string[]
           properties?: Record<string, unknown>
         }
-        expect(schema.required).toEqual([
-          "matches",
-          "matchesReturned",
-          "matchesTotal",
-        ])
+        expect(schema.required).toEqual([...ENVELOPE_REQUIRED_KEYS])
         expect(schema.properties).toBeTypeOf("object")
       }
     })

@@ -14,6 +14,7 @@
  */
 
 import { describe, expect, test } from "vitest"
+import { mkDocumented } from "../docs/brands.ts"
 import { loadCorpus } from "../docs/corpus.ts"
 import { augmentWithMarkdown } from "../docs/json-projection.ts"
 import { docCategories } from "../docs/taxonomy.ts"
@@ -66,6 +67,21 @@ describe("corpus string-field invariants", () => {
           violations.push(`${cat}: sig ${JSON.stringify(sig)}`)
       }
     expect(violations, violations.join("\n  ")).toEqual([])
+  })
+
+  // Catches an extractor minting a record from a non-canonical raw form
+  // (e.g. lowercase "auto_cd" instead of "autocd"): every corpus id must
+  // already be its own brand-normalized form. `docId`-keyed corpus maps make
+  // `corpus[cat].keys()` the canonical id list.
+  test("every corpus id is idempotent under mkDocumented", () => {
+    const violations: string[] = []
+    for (const cat of docCategories)
+      for (const id of corpus[cat].keys()) {
+        const s = id as string
+        if ((mkDocumented(cat, s) as string) !== s)
+          violations.push(`${cat}: ${s}`)
+      }
+    expect(violations).toEqual([])
   })
 
   test("every desc / mdBody / section is printable ASCII (space, \\n, \\t)", () => {

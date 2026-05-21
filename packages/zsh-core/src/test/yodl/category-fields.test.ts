@@ -107,8 +107,9 @@ describe("parseSpecialFunctions", () => {
     ["TRAPZERR", "trap-literal"],
     ["TRAPNAL", "trap-template"],
   ] as const)("%s is %s", (name, kind) => {
-    expect(map.get(sfn(name))?.kind).toBe(kind)
-    expect(map.get(sfn(name))?.hookArray).toBeUndefined()
+    const d = map.get(sfn(name))
+    expect(d?.kind).toBe(kind)
+    expect(d?.hookArray).toBeUndefined()
   })
 })
 

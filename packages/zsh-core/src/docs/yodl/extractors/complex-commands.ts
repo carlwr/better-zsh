@@ -84,19 +84,15 @@ function classifyHead(sig: string): HeadKey | undefined {
 }
 
 function bodyKeywords(header: YNodeSeq): readonly string[] {
-  const seen = new Set<string>()
-  const out: string[] = []
+  const out = new Set<string>()
   for (const tok of extractTokens(header)) {
     if (tok.kind !== "tt") continue
     for (const part of tok.text.split(/\s+/)) {
       const kw = part.toLowerCase()
-      if (BODY_KW_SET.has(kw) && !seen.has(kw)) {
-        seen.add(kw)
-        out.push(kw)
-      }
+      if (BODY_KW_SET.has(kw)) out.add(kw)
     }
   }
-  return out
+  return [...out]
 }
 
 function altForm(item: YodlEntry): AlternateForm | undefined {

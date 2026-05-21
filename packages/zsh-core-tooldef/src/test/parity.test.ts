@@ -20,11 +20,12 @@ import { spawnSync } from "node:child_process"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { loadCorpus } from "@carlwr/zsh-core"
-import Ajv2020, { type ValidateFunction } from "ajv/dist/2020.js"
 import fc from "fast-check"
 import { afterAll, beforeAll, describe, expect, test } from "vitest"
 import { type ToolDef, toolDefs } from "../tool-defs.ts"
-import { compact, inputArbFor } from "./_helpers/input-arbs.ts"
+import type { SearchResult } from "../tools/search.ts"
+import { assertOutputValid } from "./_helpers/ajv.ts"
+import { inputArbFor } from "./_helpers/input-arbs.ts"
 import { ZshrefBatch } from "./_helpers/zshref-batch.ts"
 import { compareZshrefFingerprint } from "./_helpers/zshref-fingerprint.ts"
 import { parityToolDefNames } from "./parity-units.ts"
@@ -66,17 +67,6 @@ describe("parity units vs toolDefs", () => {
     )
   })
 })
-
-const ajv = new Ajv2020({ allErrors: true, strict: false })
-const validators = new Map<string, ValidateFunction>()
-function validatorFor(td: ToolDef): ValidateFunction {
-  let v = validators.get(td.name)
-  if (!v) {
-    v = ajv.compile(td.outputSchema)
-    validators.set(td.name, v)
-  }
-  return v
-}
 
 interface Case {
   readonly tool: string
@@ -174,14 +164,12 @@ const PINNED_CASES: readonly Case[] = [
 
 const NUM_RUNS = Number(process.env.BZ_PARITY_RUNS ?? 500)
 
-const DROPPED_KEYS = new Set(["score"])
-
 function stripScores(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(stripScores)
   if (value && typeof value === "object") {
     const out: Record<string, unknown> = {}
     for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
-      if (DROPPED_KEYS.has(k)) continue
+      if (k === "score") continue
       out[k] = stripScores(v)
     }
     return out
@@ -189,15 +177,7 @@ function stripScores(value: unknown): unknown {
   return value
 }
 
-interface SearchEnvelope {
-  readonly matches: ReadonlyArray<{
-    readonly category: string
-    readonly id: string
-    readonly score: number
-  }>
-}
-
-function topTierKeys(env: SearchEnvelope): string[] {
+function topTierKeys(env: SearchResult): string[] {
   return env.matches
     .filter(m => m.score === 1)
     .map(m => `${m.category}\0${m.id}`)
@@ -211,8 +191,8 @@ function topTierKeys(env: SearchEnvelope): string[] {
  * reaches `matches`, `matchesTotal` may still differ.
  */
 function compareSearch(ts: unknown, rust: unknown): void {
-  expect(topTierKeys(rust as SearchEnvelope)).toEqual(
-    topTierKeys(ts as SearchEnvelope),
+  expect(topTierKeys(rust as SearchResult)).toEqual(
+    topTierKeys(ts as SearchResult),
   )
 }
 
@@ -230,17 +210,7 @@ function getTool(name: string): ToolDef {
   return td
 }
 
-function validateOutput(td: ToolDef, output: unknown): void {
-  const validate = validatorFor(td)
-  if (!validate(output)) {
-    throw new Error(
-      `outputSchema validation failed for ${td.name}: ${JSON.stringify(validate.errors)}`,
-    )
-  }
-}
-
 if (!cliFresh) {
-  // eslint-disable-next-line no-console
   console.warn(
     `[parity.test] ${cliBanner}; ${parityRequired ? "failing because BZ_REQUIRE_PARITY=1" : "skipping parity tests"}.`,
   )
@@ -261,20 +231,19 @@ describe.runIf(cliFresh)("parity: TS execute() vs zshref batch", () => {
     const td = getTool(c.tool)
     const tsOutput = td.execute(corpus, c.input)
     const rustOutput = await zsh.call(c.tool, c.input)
-    validateOutput(td, tsOutput)
-    validateOutput(td, rustOutput)
+    assertOutputValid(td, tsOutput)
+    assertOutputValid(td, rustOutput)
     compareEnvelopes(c.tool, tsOutput, rustOutput)
   })
 
   for (const td of toolDefs) {
     test(`${td.name}: random inputs match (numRuns=${NUM_RUNS})`, async () => {
       await fc.assert(
-        fc.asyncProperty(inputArbFor(td.name, corpus), async sample => {
-          const input = compact(sample)
+        fc.asyncProperty(inputArbFor(td.name, corpus), async input => {
           const tsOutput = td.execute(corpus, input)
           const rustOutput = await zsh.call(td.name, input)
-          validateOutput(td, tsOutput)
-          validateOutput(td, rustOutput)
+          assertOutputValid(td, tsOutput)
+          assertOutputValid(td, rustOutput)
           compareEnvelopes(td.name, tsOutput, rustOutput)
         }),
         { numRuns: NUM_RUNS },

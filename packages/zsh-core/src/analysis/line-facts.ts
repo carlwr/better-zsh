@@ -465,8 +465,12 @@ function matchRedirection(
   if (ch === ">") {
     pos++
     if (pos < len && s[pos] === ">") pos++
-    if (pos < len && s[pos] === "|") pos++
-    if (pos < len && s[pos] === "&") pos++
+    if (pos < len && s[pos] === "&") {
+      pos++
+      if (pos < len && s[pos] === "|") pos++
+    } else if (pos < len && s[pos] === "|") {
+      pos++
+    }
     return { start: i, end: pos }
   }
   if (ch === "<") {

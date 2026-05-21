@@ -5,6 +5,7 @@ import {
   type DocRecordMap,
   docCategories,
   docSubKind,
+  subKindOf,
 } from "../docs/taxonomy"
 
 const corpus = loadCorpus()
@@ -14,13 +15,6 @@ function firstRec<K extends DocCategory>(cat: K): DocRecordMap[K] {
   if (!rec) throw new Error(`empty corpus[${cat}]`)
   return rec as DocRecordMap[K]
 }
-
-// Parametric `docSubKind[cat](rec)` — single dispatch-cast site.
-const subKindOf = <K extends DocCategory>(
-  cat: K,
-  rec: DocRecordMap[K],
-): string | undefined =>
-  (docSubKind[cat] as (d: DocRecordMap[K]) => string | undefined)(rec)
 
 describe("docSubKind", () => {
   test("history doc surfaces its kind string", () => {
@@ -42,8 +36,11 @@ describe("docSubKind", () => {
   })
 
   test("every category resolves without throwing on a sample record", () => {
-    for (const cat of docCategories)
+    for (const cat of docCategories) {
+      // Skip stub categories with no records yet (e.g. mathfunc pending extractor).
+      if (corpus[cat].size === 0) continue
       expect(() => subKindOf(cat, firstRec(cat))).not.toThrow()
+    }
   })
 
   // Specific instance of a broader future invariant: per-category structural

@@ -36,25 +36,27 @@ export function emptyCorpus(): DocCorpus {
 }
 
 export function wordDoc(text: string, scope = "doc") {
+  const base = lineDoc(text, scope)
   return {
-    ...lineDoc(text, scope),
+    ...base,
     getText(range?: {
-      start: { character: number }
-      end: { character: number }
+      start: { line: number; character: number }
+      end: { line: number; character: number }
     }) {
-      return range
-        ? text.slice(range.start.character, range.end.character)
-        : text
+      if (!range) return text
+      const line = base.lineAt(range.start.line).text
+      return line.slice(range.start.character, range.end.character)
     },
-    getWordRangeAtPosition(pos: { character: number }) {
-      if (!WORD.test(text[pos.character] ?? "")) return
+    getWordRangeAtPosition(pos: { line: number; character: number }) {
+      const line = base.lineAt(pos.line).text
+      if (!WORD.test(line[pos.character] ?? "")) return
       let start = pos.character
-      while (WORD.test(text[start - 1] ?? "")) start--
+      while (WORD.test(line[start - 1] ?? "")) start--
       let end = pos.character + 1
-      while (WORD.test(text[end] ?? "")) end++
+      while (WORD.test(line[end] ?? "")) end++
       return {
-        start: { line: 0, character: start },
-        end: { line: 0, character: end },
+        start: { line: pos.line, character: start },
+        end: { line: pos.line, character: end },
       }
     },
   } as unknown as import("vscode").TextDocument

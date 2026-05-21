@@ -1,20 +1,14 @@
 import { mkDocumented } from "../../brands.ts"
 import { escapeRegExp } from "../../regex.ts"
-import {
-  mkShellParamKeyName,
-  type ShellParamDoc,
-  type ShellParamKey,
-  type ShellParamKeyValue,
-  type ShellParamScope,
-} from "../../types.ts"
+import type { ShellParamDoc, ShellParamScope } from "../../types.ts"
 import {
   extractFirstItemList,
   extractSectBody,
   extractSectionBody,
-  splitBodyAtNestedList,
 } from "../core/doc.ts"
 import type { YNodeSeq, YodlSrc } from "../core/nodes.ts"
-import { normalizeBody, stripYodl, trimmedTtTexts } from "../core/text.ts"
+import { stripYodl, trimmedTtTexts } from "../core/text.ts"
+import { splitParamBody } from "./param-keys.ts"
 
 // Upstream section name → typed scope. Scope is what record consumers
 // read; the upstream-section string is only used to find the section in
@@ -82,7 +76,7 @@ function emitParams(
       continue
     }
 
-    const split = splitBody(item.body)
+    const split = splitParamBody(item.body)
     for (const head of [...heads, ...pending]) {
       out.push({
         name: mkDocumented("special_param", head.name),
@@ -98,58 +92,6 @@ function emitParams(
   }
 
   return out
-}
-
-/**
- * Split a parameter's item-body into intro prose, an enumerated nested
- * key-list (if present), and any post-list outro prose. Keys are emitted
- * only when the body contains a depth-1 `startitem()`/`enditem()` block.
- *
- * Records observed in the vendored corpus have only intro+list (no outro);
- * the outro path is precautionary so the renderer can place the key
- * headings between intro and outro consistently with builtins / comp-utils.
- */
-function splitBody(body: YNodeSeq): {
-  desc: string
-  keys?: readonly ShellParamKey[]
-  outro?: string
-} {
-  const split = splitBodyAtNestedList(body)
-  if (!split) return { desc: normalizeBody(body) }
-  const keys: ShellParamKey[] = []
-  for (const entry of split.entries) {
-    const name = trimmedTtTexts(entry.header)[0]
-    if (!name || !entry.body) continue
-    keys.push(buildKey(name, entry.body))
-  }
-  if (keys.length === 0) return { desc: normalizeBody(body) }
-  const desc = normalizeBody(split.intro)
-  const outro = normalizeBody(split.outro)
-  return outro ? { desc, keys, outro } : { desc, keys }
-}
-
-/**
- * Build one `ShellParamKey` from a name + body. If the body contains its
- * own depth-1 nested item list (depth-2 from the param's POV — e.g.
- * `compstate.context` whose value enumerates `array_value`, ...), capture
- * the inner items as `values` and use the pre-list prose as `desc`.
- * Deeper nesting is not captured.
- */
-function buildKey(rawName: string, body: YNodeSeq): ShellParamKey {
-  const name = mkShellParamKeyName(rawName)
-  const inner = splitBodyAtNestedList(body)
-  if (!inner) return { name, desc: normalizeBody(body) }
-  const values: ShellParamKeyValue[] = []
-  for (const entry of inner.entries) {
-    const vName = trimmedTtTexts(entry.header)[0]
-    if (!vName || !entry.body) continue
-    values.push({
-      name: mkShellParamKeyName(vName),
-      desc: normalizeBody(entry.body),
-    })
-  }
-  if (values.length === 0) return { name, desc: normalizeBody(body) }
-  return { name, desc: normalizeBody(inner.intro), values }
 }
 
 function parseHeads(header: YodlSrc, allowTied: boolean): ParamHead[] {

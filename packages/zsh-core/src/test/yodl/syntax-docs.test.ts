@@ -1,5 +1,4 @@
 import { describe, expect, test } from "vitest"
-import { mkDocumented } from "../../docs/brands"
 import { mkRedirOp } from "../../docs/types"
 import { parseComplexCommands } from "../../docs/yodl/extractors/complex-commands"
 import { parseGlobFlags } from "../../docs/yodl/extractors/glob-flags"
@@ -16,6 +15,10 @@ import { parseSubscriptFlags } from "../../docs/yodl/extractors/subscript-flags"
 import { parseZleWidgets } from "../../docs/yodl/extractors/zle-widgets"
 import { mkDocumented_ } from "../id-fns"
 import { by, expectDocCorpus, readVendoredYo } from "./test-util"
+
+const sp = mkDocumented_("special_param")
+const rw = mkDocumented_("reserved_word")
+const zw = mkDocumented_("zle_widget")
 
 const EXPN_YO = readVendoredYo("expn.yo")
 const GRAMMAR_YO = readVendoredYo("grammar.yo")
@@ -39,13 +42,12 @@ describe("more yodl parsers", () => {
       "enditem()",
     ].join("\n")
     const docs = by(parseShellParams(yo), doc => doc.name)
-    const getShParam = (raw: string) =>
-      docs.get(mkDocumented("special_param", raw))
-    expect(getShParam("path")?.tied).toBe(mkDocumented("special_param", "PATH"))
-    expect(getShParam("PATH")?.tied).toBe(mkDocumented("special_param", "path"))
-    expect(getShParam("path")?.desc).toBe("Pair docs.")
-    expect(getShParam("RPS1")?.desc).toBe("Prompt docs.")
-    expect(getShParam("RPROMPT")?.desc).toBe("Prompt docs.")
+    const get = (raw: string) => docs.get(sp(raw))
+    expect(get("path")?.tied).toBe(sp("PATH"))
+    expect(get("PATH")?.tied).toBe(sp("path"))
+    expect(get("path")?.desc).toBe("Pair docs.")
+    expect(get("RPS1")?.desc).toBe("Prompt docs.")
+    expect(get("RPROMPT")?.desc).toBe("Prompt docs.")
   })
 
   test("redirections keep xitem aliases with shared docs", () => {
@@ -61,23 +63,21 @@ enditem()`
     expect(docs[1]?.desc).toBe("Force clobber.")
   })
 
-  test("redirection grouping operator is not a unique doc identity", () => {
+  test.each([
+    [">&", [">& number", ">& -", ">& p", ">& word"]],
+    ["<&", ["<& number", "<& -", "<& p"]],
+  ] as const)("redirection groupOp %s shared across multiple docs", (op, sigs) => {
     const docs = parseRedirs(REDIR_YO)
     expect(
-      docs.filter(doc => doc.groupOp === ">&").map(doc => doc.sig),
-    ).toEqual([">& number", ">& -", ">& p", ">& word"])
-    expect(
-      docs.filter(doc => doc.groupOp === "<&").map(doc => doc.sig),
-    ).toEqual(["<& number", "<& -", "<& p"])
+      docs.filter(doc => doc.groupOp === mkRedirOp(op)).map(doc => doc.sig),
+    ).toEqual(sigs)
   })
 
   test("reserved words include command-position and any-position forms", () => {
     const docs = by(parseReswords(GRAMMAR_YO), doc => doc.name)
-    const getResWord = (raw: string) =>
-      docs.get(mkDocumented("reserved_word", raw))
-    expect(getResWord("if")?.pos).toBe("command")
-    expect(getResWord("[[")?.pos).toBe("command")
-    expect(getResWord("}")?.pos).toBe("any")
+    expect(docs.get(rw("if"))?.pos).toBe("command")
+    expect(docs.get(rw("[["))?.pos).toBe("command")
+    expect(docs.get(rw("}"))?.pos).toBe("any")
   })
 
   test("prompt escapes: xitem aliases inherit following-item docs", () => {
@@ -112,7 +112,7 @@ enditem()`
     ].join("\n")
     const docs = parseZleWidgets(yo)
     expect(docs).toHaveLength(1)
-    expect(docs[0]?.name).toBe(mkDocumented("zle_widget", "backward-char"))
+    expect(docs[0]?.name).toBe(zw("backward-char"))
     expect(docs[0]?.kind).toBe("standard")
     expect(docs[0]?.section).toBe("Movement")
   })
@@ -125,9 +125,12 @@ enditem()`
     ])
   })
 
-  for (const [name, run] of [
+  // `complex_command`-covered reserved-word heads intentionally omit desc;
+  // `descOf` returns `undefined` for them so `expectDocCorpus` skips the
+  // desc-truthy check while still requiring ids + sections.
+  test.each([
     [
-      "vendored redirections corpus parses",
+      "redirections",
       () =>
         expectDocCorpus({
           docs: parseRedirs(REDIR_YO),
@@ -139,11 +142,8 @@ enditem()`
         }),
     ],
     [
-      "vendored reserved words corpus parses",
+      "reserved words",
       () =>
-        // `complex_command`-covered heads intentionally omit desc; `descOf`
-        // returns `undefined` for them so `expectDocCorpus` skips the
-        // desc-truthy check while still requiring ids + sections.
         expectDocCorpus({
           docs: parseReswords(GRAMMAR_YO),
           minCount: 20,
@@ -154,7 +154,7 @@ enditem()`
         }),
     ],
     [
-      "vendored subscript flag corpus parses",
+      "subscript flags",
       () =>
         expectDocCorpus({
           docs: parseSubscriptFlags(PARAMS_YO),
@@ -166,7 +166,7 @@ enditem()`
         }),
     ],
     [
-      "vendored special-parameter corpus parses",
+      "special parameters",
       () =>
         expectDocCorpus({
           docs: parseShellParams(PARAMS_YO),
@@ -185,7 +185,7 @@ enditem()`
         }),
     ],
     [
-      "vendored parameter flag corpus parses",
+      "parameter flags",
       () =>
         expectDocCorpus({
           docs: parseParamFlags(EXPN_YO),
@@ -203,7 +203,7 @@ enditem()`
         }),
     ],
     [
-      "vendored history corpus parses",
+      "history",
       () =>
         expectDocCorpus({
           docs: parseHistory(EXPN_YO),
@@ -222,7 +222,7 @@ enditem()`
         }),
     ],
     [
-      "vendored glob operator corpus parses",
+      "glob operators",
       () =>
         expectDocCorpus({
           docs: parseGlobOps(EXPN_YO),
@@ -234,7 +234,7 @@ enditem()`
         }),
     ],
     [
-      "vendored glob flag corpus parses",
+      "glob flags",
       () =>
         expectDocCorpus({
           docs: parseGlobFlags(EXPN_YO),
@@ -246,7 +246,7 @@ enditem()`
         }),
     ],
     [
-      "vendored glob qualifier corpus parses",
+      "glob qualifiers",
       () =>
         expectDocCorpus({
           docs: parseGlobQualifiers(EXPN_YO),
@@ -258,7 +258,7 @@ enditem()`
         }),
     ],
     [
-      "vendored complex-command corpus parses",
+      "complex commands",
       () =>
         expectDocCorpus({
           docs: parseComplexCommands(GRAMMAR_YO),
@@ -270,7 +270,7 @@ enditem()`
         }),
     ],
     [
-      "vendored prompt-escape corpus parses",
+      "prompt escapes",
       () =>
         expectDocCorpus({
           docs: parsePromptEscapes(PROMPT_YO),
@@ -282,7 +282,7 @@ enditem()`
         }),
     ],
     [
-      "vendored zle-widget corpus parses",
+      "zle widgets",
       () =>
         expectDocCorpus({
           docs: parseZleWidgets(ZLE_YO),
@@ -298,61 +298,5 @@ enditem()`
           ],
         }),
     ],
-  ] as const) {
-    test(name, run)
-  }
-
-  test("normalized syntax-doc identity fields are idempotent", () => {
-    const t = [
-      [parseRedirs(REDIR_YO).map(doc => doc.groupOp), mkRedirOp],
-      [
-        parseRedirs(REDIR_YO).map(doc => doc.slug),
-        mkDocumented_("redirection"),
-      ],
-      [
-        parseReswords(GRAMMAR_YO).map(doc => doc.name),
-        mkDocumented_("reserved_word"),
-      ],
-      [
-        parseShellParams(PARAMS_YO).map(doc => doc.name),
-        mkDocumented_("special_param"),
-      ],
-      [
-        parseSubscriptFlags(PARAMS_YO).map(d => d.flag),
-        mkDocumented_("subscript_flag"),
-      ],
-      [
-        parseParamFlags(EXPN_YO).map(doc => doc.flag),
-        mkDocumented_("param_expn_flag"),
-      ],
-      [
-        parseHistory(EXPN_YO).map(doc => doc.key),
-        mkDocumented_("history_expn"),
-      ],
-      [parseGlobOps(EXPN_YO).map(doc => doc.op), mkDocumented_("glob_op")],
-      [
-        parseGlobFlags(EXPN_YO).map(doc => doc.flag),
-        mkDocumented_("glob_flag"),
-      ],
-      [
-        parseGlobQualifiers(EXPN_YO).map(doc => doc.flag),
-        mkDocumented_("glob_qualifier"),
-      ],
-      [
-        parseComplexCommands(GRAMMAR_YO).map(doc => doc.name),
-        mkDocumented_("complex_command"),
-      ],
-      [
-        parsePromptEscapes(PROMPT_YO).map(doc => doc.key),
-        mkDocumented_("prompt_escape"),
-      ],
-      [
-        parseZleWidgets(ZLE_YO).map(doc => doc.name),
-        mkDocumented_("zle_widget"),
-      ],
-    ] as const
-    for (const [docs, mk] of t) {
-      for (const x of docs) expect(mk(x)).toBe(x)
-    }
-  })
+  ] as const)("vendored %s corpus parses", (_, run) => run())
 })

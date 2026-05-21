@@ -3,7 +3,6 @@ import {
   type ZleWidgetDoc,
   type ZleWidgetKind,
   type ZleWidgetSubItem,
-  type ZleWidgetSubsection,
   zleWidgetSubsections,
 } from "../../types.ts"
 import {
@@ -11,13 +10,16 @@ import {
   extractItems,
   extractSectBody,
   extractSectionBody,
-  parseClosedUnion,
+  mkClosedUnionParser,
   splitBodyAtNestedList,
 } from "../core/doc.ts"
 import type { YNodeSeq, YodlSrc } from "../core/nodes.ts"
 import { firstTt, normalizeBody, normalizeHeader } from "../core/text.ts"
 
-const WIDGET_SUBSECTION_SET: ReadonlySet<string> = new Set(zleWidgetSubsections)
+const parseSubsection = mkClosedUnionParser(
+  zleWidgetSubsections,
+  "ZLE widget subsection",
+)
 const STANDARD_SECTION = "Standard Widgets"
 const SPECIAL_SECTION = "Special Widgets"
 
@@ -110,8 +112,4 @@ function splitWidgetBody(body: YNodeSeq): {
   const desc = normalizeBody(split.intro)
   const outro = normalizeBody(split.outro)
   return outro ? { desc, subItems, outro } : { desc, subItems }
-}
-
-function parseSubsection(raw: string): ZleWidgetSubsection {
-  return parseClosedUnion(raw, WIDGET_SUBSECTION_SET, "ZLE widget subsection")
 }

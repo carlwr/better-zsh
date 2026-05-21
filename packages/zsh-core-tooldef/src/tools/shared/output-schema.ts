@@ -41,6 +41,7 @@ import {
   subKindEnums,
 } from "@carlwr/zsh-core/taxonomy"
 import type { ToolInputSchema } from "../../tool-defs.ts"
+import { ENVELOPE_REQUIRED_KEYS } from "./envelope.ts"
 import { MAX_LIMIT } from "./limits.ts"
 
 /** Per-tool match-shape choices passed to `mkMatchSchema`. */
@@ -141,7 +142,7 @@ export function mkOutputSchema(shape: MatchShape): ToolInputSchema {
     $schema: "https://json-schema.org/draft/2020-12/schema",
     type: "object",
     additionalProperties: false,
-    required: ["matches", "matchesReturned", "matchesTotal"],
+    required: ENVELOPE_REQUIRED_KEYS,
     $defs: mkDefs(shape),
     properties: {
       matches: {

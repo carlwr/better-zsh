@@ -63,6 +63,8 @@ For ordinary code-change tasks, do one broad pass before returning, covering:
 
 Skip for precisely-scoped tasks unless clearly worth raising.
 
+Documented rationale defending a verbose or duplicated form (inline comment, design-doc paragraph, the mere existence of a drift-catcher) is a snapshot of a past tradeoff, not a force field. Re-weigh when scale or cost has shifted: is the cited benefit still proportional to the duplication and ceremony? Existing rationale raises the bar for refactoring; it does not move it out of reach. When the re-weigh changes the verdict, update the rationale at the same time.
+
 After introducing shared infrastructure or parametric types, revisit consumer call sites once — ROI often appears there. Consumer-side composition helpers belong in the consumer, not in the shared library's public API.
 
 ## Renames, removals, and behavior changes

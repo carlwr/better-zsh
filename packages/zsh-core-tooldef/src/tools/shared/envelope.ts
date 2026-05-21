@@ -10,6 +10,16 @@ export function isValidCategory(cat: unknown): cat is DocCategory {
   return typeof cat === "string" && VALID_CATEGORIES.has(cat)
 }
 
+/**
+ * `required` keys on every envelope schema. Single source of truth for
+ * `mkOutputSchema` and the export-artifact drift test.
+ */
+export const ENVELOPE_REQUIRED_KEYS = [
+  "matches",
+  "matchesReturned",
+  "matchesTotal",
+] as const
+
 /** Result envelope: match list + returned/total counts. Rust CLI emits the same shape. */
 export interface Envelope<M> {
   readonly matches: readonly M[]

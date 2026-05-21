@@ -73,10 +73,17 @@ export const knownOffenders: Readonly<
   //   `em(The )tt(-M)em( and )tt(+M)em( flags)` as a fake heading. The
   //   chained shape skips the standalone-em promotion path (em is not
   //   blank-line bounded). Acceptable.
+  // - `builtin:sysread` — "The possible return statuses are" introduces a
+  //   nested return-code item list; the sentence renders as a standalone
+  //   paragraph before the list. Acceptable rendering of upstream structure.
+  // - `builtin:zstyle` — an `example()` fragment generates a standalone
+  //   snippet that looks like a heading. Acceptable.
   // - `param_expn_flag:I` — "Hence with the string" is a real sentence
   //   that intros a code example; not a heading.
   "title-shape-para": [
     pid("builtin", "functions"),
+    pid("builtin", "sysread"),
+    pid("builtin", "zstyle"),
     pid("param_expn_flag", "I"),
   ],
 
@@ -89,7 +96,14 @@ export const knownOffenders: Readonly<
   // Bare `zsh/<modname>` references in prose — records mentioning a known
   // module without the upstream `tt(...)` wrap. Backticking is a future
   // renderer concern; the check captures them today.
+  //
+  // - `builtin:sched` — desc contains "in the zsh/datetime module" from an
+  //   `ifzman()` conditional that renders as plain prose.
+  // - `builtin:zpty` — desc contains "The zsh/system Module" from an
+  //   `ifzman()` conditional rendered as plain prose.
   "module-not-coded": [
+    pid("builtin", "sched"),
+    pid("builtin", "zpty"),
     pid("comp_utility", "_widgets"),
     pid("special_param", "ZBEEP"),
     pid("special_param", "zsh_scheduled_events"),

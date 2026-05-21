@@ -12,7 +12,7 @@ import {
   type DocCategory,
   type DocPieceId,
   type DocRecordMap,
-  docSubKind,
+  subKindOf,
 } from "@carlwr/zsh-core/taxonomy"
 import type { Documented } from "@carlwr/zsh-core/types"
 import { buildToolDef, type SchemaShape, type ToolDef } from "../tool-defs.ts"
@@ -57,10 +57,7 @@ function formatMatch(
       `docs: corpus lookup miss for ${pid.category}:${pid.id} — resolver returned an id not present in the corpus map.`,
     )
   }
-  const getSubKind = docSubKind[pid.category] as (
-    d: DocRecordMap[typeof pid.category],
-  ) => string | undefined
-  const subKind = getSubKind(rec)
+  const subKind = subKindOf(pid.category, rec)
   const fb = resolverFeedback(corpus, pid.category, key)
   return {
     category: pid.category,

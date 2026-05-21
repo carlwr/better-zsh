@@ -2,7 +2,13 @@ import { describe, expect, test } from "vitest"
 import { mkOptFlag, optSections } from "../../docs/types"
 import { parseOptions } from "../../docs/yodl/extractors/options"
 import { mkDocumented_ } from "../id-fns"
-import { by, only, readVendoredYo } from "./test-util"
+import {
+  by,
+  expectDocCorpus,
+  expectNoYodlLeaks,
+  only,
+  readVendoredYo,
+} from "./test-util"
 
 const OPTS_YO = readVendoredYo("options.yo")
 const opt = mkDocumented_("option")
@@ -72,96 +78,78 @@ endsitem()`
     const opts = parseOptions(OPTS_YO)
     const byName = by(opts, o => o.name)
 
-    test("parses a non-trivial number of options", () => {
-      expect(opts.length).toBeGreaterThan(100)
-    })
+    test("corpus parses", () =>
+      expectDocCorpus({
+        docs: opts,
+        minCount: 100,
+        keyOf: o => o.name,
+        descOf: o => o.desc,
+        sectionOf: o => o.category,
+        known: [opt("AUTO_CD"), opt("EXTENDED_GLOB"), opt("GLOB_DOTS")],
+      }))
 
-    test("every option: non-empty name+desc, idempotent under brand mint", () => {
-      for (const o of opts) {
-        expect(o.name).toBeTruthy()
-        expect(o.desc).toBeTruthy()
-        // Catches a record minted from a non-canonical raw form: every
-        // emitted `name` must already be the normalized brand key.
-        expect(opt(o.name)).toBe(o.name)
-      }
-    })
-
-    test("no duplicate names", () => {
-      const names = opts.map(o => o.name)
-      expect(new Set(names).size).toBe(names.length)
-    })
-
+    // Closed-union check: every observed category is in `optSections` AND
+    // every `optSections` value appears (no orphan literals).
     test("category set equals optSections", () => {
       expect([...new Set(opts.map(o => o.category))].sort()).toEqual(
         [...optSections].sort(),
       )
     })
 
-    test("known options exist", () => {
-      expect(byName.has(opt("EXTENDED_GLOB"))).toBe(true)
-      expect(byName.has(opt("AUTO_CD"))).toBe(true)
-      expect(byName.has(opt("GLOB_DOTS"))).toBe(true)
+    test.each([
+      ["ERR_EXIT", [["e", "-"]]],
+      ["RCS", [["f", "+"]]],
+      ["GLOBAL_RCS", [["d", "+"]]],
+      [
+        "MARK_DIRS",
+        [
+          ["8", "-"],
+          ["X", "-"],
+        ],
+      ],
+      [
+        "NOTIFY",
+        [
+          ["5", "-"],
+          ["b", "-"],
+        ],
+      ],
+    ] as const)("short-flag polarity: %s", (name, want) => {
+      expect(byName.get(opt(name))?.flags).toEqual(
+        want.map(([char, on]) => ({ char: mkOptFlag(char), on })),
+      )
     })
 
-    test("captures short-flag polarity from vendored docs", () => {
-      expect(byName.get(opt("ERR_EXIT"))?.flags).toEqual([
-        { char: mkOptFlag("e"), on: "-" },
-      ])
-      expect(byName.get(opt("RCS"))?.flags).toEqual([
-        { char: mkOptFlag("f"), on: "+" },
-      ])
-      expect(byName.get(opt("GLOBAL_RCS"))?.flags).toEqual([
-        { char: mkOptFlag("d"), on: "+" },
-      ])
-      expect(byName.get(opt("MARK_DIRS"))?.flags).toEqual([
-        { char: mkOptFlag("8"), on: "-" },
-        { char: mkOptFlag("X"), on: "-" },
-      ])
-      expect(byName.get(opt("NOTIFY"))?.flags).toEqual([
-        { char: mkOptFlag("5"), on: "-" },
-        { char: mkOptFlag("b"), on: "-" },
-      ])
-    })
-
-    test("keeps known one-to-many short flags explicit", () => {
+    // Two long options share one short flag (`-X` for listtypes+markdirs,
+    // `+f` for glob+rcs); the extractor must preserve both, not dedupe.
+    test("known one-to-many short flags stay explicit", () => {
       const byFlag = new Map<string, string[]>()
-      for (const o of opts) {
-        for (const flag of o.flags) {
-          const key = `${flag.on}${flag.char}`
+      for (const o of opts)
+        for (const f of o.flags) {
+          const key = `${f.on}${f.char}`
           byFlag.set(key, [...(byFlag.get(key) ?? []), o.name])
         }
-      }
       expect(byFlag.get("-X")).toEqual(["listtypes", "markdirs"])
       expect(byFlag.get("+f")).toEqual(["glob", "rcs"])
     })
 
     test("descriptions strip raw yodl macros", () => {
-      for (const o of opts) {
-        expect(o.desc).not.toContain("example(")
-        expect(o.desc).not.toContain("manref(")
-      }
+      for (const o of opts) expectNoYodlLeaks(o.desc)
     })
 
-    test("option-alias records carry aliasOf with normalized target + negation", () => {
-      const map = by(opts, o => o.name)
-      // BRACE_EXPAND aliases `em(NO_)IGNORE_BRACES` — negated alias.
-      const brace = map.get(opt("BRACE_EXPAND"))
-      expect(brace?.category).toBe("Option Aliases")
-      expect(brace?.aliasOf).toEqual({
-        target: opt("IGNORE_BRACES"),
-        negated: true,
-      })
-      // DOT_GLOB aliases `tt(GLOB_DOTS)` — non-negated.
-      const dot = map.get(opt("DOT_GLOB"))
-      expect(dot?.aliasOf).toEqual({
-        target: opt("GLOB_DOTS"),
-        negated: false,
-      })
+    // BRACE_EXPAND aliases `em(NO_)IGNORE_BRACES` — negated.
+    // DOT_GLOB aliases `tt(GLOB_DOTS)` — non-negated.
+    test.each([
+      ["BRACE_EXPAND", "IGNORE_BRACES", true],
+      ["DOT_GLOB", "GLOB_DOTS", false],
+    ] as const)("alias %s → %s (negated=%s)", (name, target, negated) => {
+      const rec = byName.get(opt(name))
+      expect(rec?.category).toBe("Option Aliases")
+      expect(rec?.aliasOf).toEqual({ target: opt(target), negated })
     })
 
     test("non-alias options have no aliasOf", () => {
-      const map = by(opts, o => o.name)
-      expect(map.get(opt("AUTO_CD"))?.aliasOf).toBeUndefined()
+      expect(byName.get(opt("AUTO_CD"))?.aliasOf).toBeUndefined()
     })
   })
 })

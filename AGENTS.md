@@ -82,7 +82,7 @@ Hand-written category lists drift. Same posture for other closed zsh-core unions
 - In JSDoc, comments, docs: give examples, not exhaustive lists.
 - No hard-coded category counts in prose.
 - Runtime strings and JSON Schema `enum` values interpolate from canonical zsh-core exports — never hand-typed.
-- Category-indexed tables belong in zsh-core with structural completeness guards; consumers import them.
+- Category-indexed tables belong in zsh-core, structurally complete; consumers import them. Prefer mapped types so structure enforces completeness by construction. A compile-time guard is the fallback for tables that can't be derived (e.g. runtime order tuples).
 
 Rationale: `DESIGN.md`, `PRINCIPLES.md`.
 
@@ -242,12 +242,31 @@ _Any SUBAGENTS that may commit **must** be given the above instructions._
 - https://fbb-git.gitlab.io/yodl/yodl-doc/yodl.html
 - The zsh repo defines custom Yodl macros.
 
-### zsh manuals
+### references from local (system) zsh
 
+manual(s):
 ```sh
 man zshall | col -b
 
 # subsections (all are included in zshall):
 man zshexpn | col -b  # example
 echo /usr/share/man/man1/zsh*  # list all subpages
+```
+
+modules:
+```sh
+mods=( $( print -l $module_path/zsh/**/*.so \
+          | perl -pe "s|${module_path}/(.*)\.so|\1|" \
+          | sort ) )
+
+# list modules:
+print -l $mods
+
+# list features, per module:
+print 'prefixes: (b)uiltin, (cC)ondition, (p)arameter, math(f)unc'
+( zmodload $mods
+  for m ($mods) {
+    print "\n$m" && printf '  %s\n' $(zmodload -lF $m | sed 's/^.//')
+  }
+)
 ```

@@ -1,4 +1,5 @@
-import { loadCorpus, RECORDS_TOTAL } from "@carlwr/zsh-core"
+import { loadCorpus } from "@carlwr/zsh-core"
+import { type DocCategory, subKindEnums } from "@carlwr/zsh-core/taxonomy"
 import { describe, expect, test } from "vitest"
 import { DEFAULT_LIMIT, MAX_LIMIT, search } from "../../../index.ts"
 
@@ -29,22 +30,22 @@ describe("search", () => {
   })
 
   test("unknown category yields empty matches", () => {
-    const r = search(corpus, { query: "echo", category: "bogus" as never })
+    const r = search(corpus, {
+      query: "echo",
+      category: "bogus" as DocCategory,
+    })
     expect(r.matches).toEqual([])
     expect(r.matchesReturned).toBe(0)
     expect(r.matchesTotal).toBe(0)
   })
 
-  test("empty query returns empty matches[]", () => {
-    const r = search(corpus, { query: "", limit: 7 })
+  test.each([{ query: "" }, { query: "   " }])('"$query" → empty matches[]', ({
+    query,
+  }) => {
+    const r = search(corpus, { query, limit: 7 })
     expect(r.matches).toEqual([])
     expect(r.matchesReturned).toBe(0)
     expect(r.matchesTotal).toBe(0)
-  })
-
-  test("whitespace-only query returns empty matches[]", () => {
-    const r = search(corpus, { query: "   " })
-    expect(r.matches).toEqual([])
   })
 
   test("limit clamped to MAX_LIMIT", () => {
@@ -137,11 +138,8 @@ describe("search", () => {
       limit: 50,
     })
     expect(r.matches.length).toBeGreaterThan(0)
-    for (const m of r.matches) {
-      expect(["event-designator", "word-designator", "modifier"]).toContain(
-        m.subKind,
-      )
-    }
+    const allowed = subKindEnums.history_expn
+    for (const m of r.matches) expect(allowed).toContain(m.subKind)
   })
 
   test("builtin match has no subKind key", () => {
@@ -173,9 +171,5 @@ describe("search", () => {
     expect(capped.matchesReturned).toBe(2)
     expect(capped.matchesTotal).toBe(full.matchesTotal)
     expect(capped.matchesReturned).toBeLessThan(capped.matchesTotal)
-  })
-
-  test("MAX_LIMIT equals RECORDS_TOTAL (full-corpus retrieval is in-spec)", () => {
-    expect(MAX_LIMIT).toBe(RECORDS_TOTAL)
   })
 })

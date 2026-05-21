@@ -1,7 +1,10 @@
-import { describe, expect, test } from "vitest"
-import { parseBuiltins } from "../../docs/yodl/extractors/builtins"
+import { beforeAll, describe, expect, test } from "vitest"
+import {
+  MODULES_WITH_REAL_RECORDS,
+  parseBuiltins,
+} from "../../docs/yodl/extractors/builtins"
 import { mkDocumented_ } from "../id-fns"
-import { by, only, readVendoredYo } from "./test-util"
+import { by, expectNoYodlLeaks, only, readVendoredYo } from "./test-util"
 
 const BUILTINS_YO = readVendoredYo("builtins.yo")
 const bi = mkDocumented_("builtin")
@@ -21,15 +24,22 @@ enditem()`
     expect(doc.desc).toBe("Write text.")
   })
 
+  // Tests below depend on `zsh/zftp` NOT being in `MODULES_WITH_REAL_RECORDS`,
+  // so the `module(zftp)(zsh/zftp)` stub in builtins.yo is kept (not displaced
+  // by a richer per-module extractor). Fail loud if upstream landscape shifts.
+  beforeAll(() => {
+    expect(MODULES_WITH_REAL_RECORDS.has("zsh/zftp")).toBe(false)
+  })
+
   test("parses alias and module macro invocations", () => {
     const yo = `startitem()
 alias(bye)(exit)
-module(zstyle)(zsh/zutil)
+module(zftp)(zsh/zftp)
 enditem()`
     const docs = parseBuiltins(yo)
-    expect(docs.map(d => d.name)).toEqual([bi("bye"), bi("zstyle")])
+    expect(docs.map(d => d.name)).toEqual([bi("bye"), bi("zftp")])
     expect(docs[0]?.aliasOf).toBe(bi("exit"))
-    expect(docs[1]?.module).toBe("zsh/zutil")
+    expect(docs[1]?.module).toBe("zsh/zftp")
   })
 
   test("attaches continuation xitems to each synopsis head", () => {
@@ -74,20 +84,16 @@ enditem()`
 
     test("includes macro-defined builtins", () => {
       const names = new Set(docs.map(d => d.name))
+      // bindkey — from zlecmd() macro; always present regardless of module displacement
       expect(names.has(bi("bindkey"))).toBe(true)
-      expect(names.has(bi("compctl"))).toBe(true)
-      expect(names.has(bi("zstyle"))).toBe(true)
+      // zftp — from module(zftp)(zsh/zftp) stub (assumption asserted in beforeAll)
+      expect(names.has(bi("zftp"))).toBe(true)
+      // displaced modules are NOT present (zstyle, compctl etc. come from their module extractors)
+      expect(names.has(bi("zstyle"))).toBe(false)
     })
 
     test("descriptions strip index macros and raw yodl", () => {
-      for (const doc of docs) {
-        expect(doc.desc).not.toContain("vindex(")
-        expect(doc.desc).not.toContain("tt(")
-        expect(doc.desc).not.toContain("var(")
-        expect(doc.desc).not.toContain("startsitem(")
-        expect(doc.desc).not.toContain("sitem(")
-        expect(doc.desc).not.toContain("\u0007")
-      }
+      for (const doc of docs) expectNoYodlLeaks(doc.desc)
     })
   })
 })

@@ -1,4 +1,5 @@
 import { loadCorpus } from "@carlwr/zsh-core"
+import type { DocCategory } from "@carlwr/zsh-core/taxonomy"
 import { describe, expect, test } from "vitest"
 import { docs } from "../../../index.ts"
 
@@ -6,9 +7,10 @@ const corpus = loadCorpus()
 
 describe("docs — single-category lookups (no `category` set)", () => {
   test.each([
-    { key: "AUTO_CD", category: "option", id: "autocd" },
-    { key: "autocd", category: "option", id: "autocd" },
-    { key: "echo", category: "builtin", id: "echo" },
+    { key: "AUTO_CD", category: "option", id: "autocd", display: "AUTO_CD" },
+    { key: "auto_cd", category: "option", id: "autocd", display: "AUTO_CD" },
+    { key: "autocd", category: "option", id: "autocd", display: "AUTO_CD" },
+    { key: "echo", category: "builtin", id: "echo", display: "echo" },
     { key: "errRET_urn", category: "option", id: "errreturn" },
     { key: "%n", category: "prompt_escape", id: "%n" },
     {
@@ -16,30 +18,26 @@ describe("docs — single-category lookups (no `category` set)", () => {
       category: "zle_widget",
       id: "backward-kill-word",
     },
-  ])("$key → $category:$id", ({ key, category, id }) => {
+  ])("$key → $category:$id", ({ key, category, id, display }) => {
     const r = docs(corpus, { key })
     const m = r.matches[0]
     expect(m).toBeDefined()
     expect(m?.category).toBe(category)
     expect(m?.id).toBe(id)
     expect(m?.mdBody.length).toBeGreaterThan(0)
-    expect(m?.display.length).toBeGreaterThan(0)
+    if (display !== undefined) expect(m?.display).toBe(display)
+    else expect(m?.display.length).toBeGreaterThan(0)
   })
 
-  test("display preserves option human form", () => {
-    expect(docs(corpus, { key: "auto_cd" }).matches[0]?.display).toBe("AUTO_CD")
-  })
-
-  test("no match returns empty matches[]", () => {
-    const r = docs(corpus, { key: "definitely_not_a_zsh_thing_qq" })
+  test.each([
+    { key: "definitely_not_a_zsh_thing_qq" },
+    { key: "" },
+    { key: "   " },
+  ])('"$key" → empty matches[]', ({ key }) => {
+    const r = docs(corpus, { key })
     expect(r.matches).toEqual([])
     expect(r.matchesReturned).toBe(0)
     expect(r.matchesTotal).toBe(0)
-  })
-
-  test("empty/whitespace key returns empty matches[]", () => {
-    expect(docs(corpus, { key: "" }).matches).toEqual([])
-    expect(docs(corpus, { key: "   " }).matches).toEqual([])
   })
 })
 
@@ -91,7 +89,7 @@ describe("docs — `category` constrains the lookup", () => {
   })
 
   test("unknown category returns empty (untrusted input)", () => {
-    const r = docs(corpus, { key: "echo", category: "bogus" as never })
+    const r = docs(corpus, { key: "echo", category: "bogus" as DocCategory })
     expect(r.matches).toEqual([])
   })
 
@@ -108,29 +106,16 @@ describe("docs — `category` constrains the lookup", () => {
 })
 
 describe("docs — direct ∥ resolver, direct preferred (template-key categories)", () => {
-  test("job_spec: direct hit on `%number` does NOT round-trip through `%string` resolver fallback", () => {
-    const r = docs(corpus, { key: "%number", category: "job_spec" })
-    expect(r.matches[0]?.id).toBe("%number")
-  })
-
-  test("job_spec: direct hit on `%string`", () => {
-    const r = docs(corpus, { key: "%string", category: "job_spec" })
-    expect(r.matches[0]?.id).toBe("%string")
-  })
-
-  test("job_spec: resolver fallback handles literal `%5`", () => {
-    const r = docs(corpus, { key: "%5", category: "job_spec" })
-    expect(r.matches[0]?.id).toBe("%number")
-  })
-
-  test("history expansion direct hit does NOT fall through to resolver", () => {
-    const r = docs(corpus, { key: "!n", category: "history_expn" })
-    expect(r.matches[0]?.id).toBe("!n")
-  })
-
-  test("history expansion resolver fallback handles literal `!42`", () => {
-    const r = docs(corpus, { key: "!42", category: "history_expn" })
-    expect(r.matches[0]?.id).toBe("!n")
+  // tier=direct: literal corpus key wins; tier=resolver: template-key fallback.
+  test.each([
+    { tier: "direct", category: "job_spec", key: "%number", id: "%number" },
+    { tier: "direct", category: "job_spec", key: "%string", id: "%string" },
+    { tier: "resolver", category: "job_spec", key: "%5", id: "%number" },
+    { tier: "direct", category: "history_expn", key: "!n", id: "!n" },
+    { tier: "resolver", category: "history_expn", key: "!42", id: "!n" },
+  ] as const)("$category $tier: $key → $id", ({ category, key, id }) => {
+    const r = docs(corpus, { key, category })
+    expect(r.matches[0]?.id).toBe(id)
   })
 })
 
@@ -168,18 +153,20 @@ describe("docs — option matches reached via NO_-stripping carry input-negated 
 })
 
 describe("docs — subKind on category branches", () => {
-  test("reserved_word match carries `subKind` reflecting `pos`", () => {
-    const r = docs(corpus, { key: "do", category: "reserved_word" })
-    const m = r.matches[0]
+  // subKind is always-or-never per category; `undefined` row asserts absence.
+  test.each([
+    { key: "do", category: "reserved_word", subKind: "command" },
+    { key: "%number", category: "job_spec", subKind: "number" },
+    { key: "AUTO_CD", category: "option", subKind: undefined },
+  ] as const)("$category:$key subKind=$subKind", ({
+    key,
+    category,
+    subKind,
+  }) => {
+    const m = docs(corpus, { key, category }).matches[0]
     expect(m).toBeDefined()
-    expect(m?.subKind).toBe("command")
-  })
-
-  test("job_spec match carries `subKind` reflecting `kind`", () => {
-    const r = docs(corpus, { key: "%number", category: "job_spec" })
-    const m = r.matches[0]
-    expect(m).toBeDefined()
-    expect(m?.subKind).toBe("number")
+    if (subKind !== undefined) expect(m?.subKind).toBe(subKind)
+    else expect(m).not.toHaveProperty("subKind")
   })
 
   test("multi-match: reserved_word branch carries subKind, complex_command branch does not", () => {
@@ -190,13 +177,6 @@ describe("docs — subKind on category branches", () => {
     expect(rw).toBeDefined()
     expect(cc).not.toHaveProperty("subKind")
     expect(rw?.subKind).toBe("command")
-  })
-
-  test("option match has no subKind key (option category has no sub-facet)", () => {
-    const r = docs(corpus, { key: "AUTO_CD", category: "option" })
-    const m = r.matches[0]
-    expect(m).toBeDefined()
-    expect(m).not.toHaveProperty("subKind")
   })
 })
 

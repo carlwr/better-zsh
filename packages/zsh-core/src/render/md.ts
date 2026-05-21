@@ -14,6 +14,7 @@ import type {
   HistoryDoc,
   JobSpecDoc,
   KeymapDoc,
+  MathfuncDoc,
   OptFlagAlias,
   OptState,
   ParamExpnDoc,
@@ -49,6 +50,10 @@ const nonEmpty = (s: string | undefined): readonly string[] => (s ? [s] : [])
 /** `items` when `cond`, otherwise `[]`. Eager — see `maybe` for value-gated parts. */
 const when = (cond: boolean, ...items: readonly string[]): readonly string[] =>
   cond ? items : []
+
+/** `_Module:_ \`mod\`` line — present iff the record carries a module tag. */
+const modulePart = (mod: string | undefined): readonly string[] =>
+  maybe(mod, m => `_Module:_ ${bt(m)}`)
 
 // --- nested member-list helpers --------------------------------------------
 
@@ -204,7 +209,11 @@ function aliasTargetDisplay(
 }
 
 export function mdCondOp(cop: CondOpDoc, corpus: DocCorpus): string {
-  return docBlock(sigCond(cop), fmtOptRefsInMd(cop.desc, corpus))
+  return docBlock(
+    sigCond(cop),
+    fmtOptRefsInMd(cop.desc, corpus),
+    ...modulePart(cop.module),
+  )
 }
 
 function sigCond(cop: CondOpDoc): string {
@@ -226,6 +235,7 @@ export function mdShellParam(doc: ShellParamDoc): string {
     bt(doc.name),
     renderMemberList(doc.desc, keys, doc.outro),
     ...maybe(doc.tied, t => `_Tied with:_ ${bt(t)}`),
+    ...modulePart(doc.module),
     `_Category:_ Special Parameter — ${doc.scope}`,
   )
 }
@@ -289,7 +299,11 @@ export function mdBuiltin(doc: BuiltinDoc): string {
     codeBlock("zsh", ...doc.synopsis),
     renderFlagGroupBody(doc.desc, doc.flagGroups, doc.outro),
     ...maybe(doc.aliasOf, a => `_Alias of:_ ${bt(a)}`),
-    ...maybe(doc.module, m => `_Module:_ ${bt(m)}`),
+    ...when(
+      doc.deprecated === true,
+      "_Deprecated:_ not recommended for new code",
+    ),
+    ...modulePart(doc.module),
   )
 }
 
@@ -427,6 +441,7 @@ export function mdZleWidget(doc: ZleWidgetDoc): string {
     bt(doc.name),
     codeBlock("zsh", doc.sig),
     renderMemberList(doc.desc, doc.subItems, doc.outro),
+    ...modulePart(doc.module),
     `_Role:_ ZLE ${doc.kind} widget`,
     `_Subsection:_ ${doc.section}`,
   )
@@ -438,6 +453,15 @@ export function mdCompUtility(doc: CompUtilityDoc): string {
     codeBlock("zsh", ...doc.synopsis),
     renderFlagGroupBody(doc.desc, doc.flagGroups, doc.outro),
     "_Category:_ Completion Utility",
+  )
+}
+
+export function mdMathfunc(doc: MathfuncDoc): string {
+  return docBlock(
+    bt(doc.name),
+    codeBlock("zsh", ...doc.sig),
+    doc.desc,
+    ...modulePart(doc.module),
   )
 }
 
@@ -486,6 +510,7 @@ const mdRenderer: {
   keymap: mdKeymap,
   job_spec: mdJobSpec,
   arith_op: mdArithOp,
+  mathfunc: mdMathfunc,
   special_function: mdSpecialFunction,
   comp_utility: mdCompUtility,
 }

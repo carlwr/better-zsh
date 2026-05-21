@@ -6,7 +6,7 @@ import { docCategoryPreamble } from "../../docs/category-preamble"
 import type { DocCorpus } from "../../docs/corpus"
 import * as zd from "../../docs/corpus"
 import type { DocCategory, DocRecordMap } from "../../docs/taxonomy"
-import { docCategories, docId } from "../../docs/taxonomy"
+import { docCategories, idOf } from "../../docs/taxonomy"
 import type {
   ArithOpDoc,
   BuiltinDoc,
@@ -245,6 +245,7 @@ const baseArrays: DocArrays = {
   keymap: [km],
   job_spec: [js],
   arith_op: [ao],
+  mathfunc: [],
   special_function: [sfn],
   comp_utility: [cuu],
 }
@@ -253,8 +254,7 @@ function mkTestCorpus(overrides: Partial<DocArrays> = {}): DocCorpus {
   const all = { ...baseArrays, ...overrides }
   const out: Record<string, unknown> = {}
   for (const k of docCategories) {
-    const getId = docId[k] as (d: unknown) => string
-    out[k] = new Map(all[k].map(d => [getId(d), d]))
+    out[k] = new Map(all[k].map(d => [idOf(k, d), d]))
   }
   return out as unknown as DocCorpus
 }

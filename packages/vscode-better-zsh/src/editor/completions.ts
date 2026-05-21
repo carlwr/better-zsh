@@ -87,10 +87,12 @@ export class CompletionProvider implements vscode.CompletionItemProvider {
   }
 
   private condCompletions() {
+    // `CompletionItemKind.Operator`'s codicon is a stacked `%/x` glyph; `Keyword`'s
+    // icon reads cleaner and is semantically close (test/cond keywords).
     const items = this.conditionalOps.map(cop => {
       const item = new vscode.CompletionItem(
         cop.op,
-        vscode.CompletionItemKind.Operator,
+        vscode.CompletionItemKind.Keyword,
       )
       item.detail = cop.desc
       item.documentation = new vscode.MarkdownString(condSig(cop))

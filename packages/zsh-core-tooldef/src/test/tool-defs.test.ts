@@ -1,10 +1,6 @@
 import { loadCorpus } from "@carlwr/zsh-core"
 import { ZSH_UPSTREAM } from "@carlwr/zsh-core/meta"
-import {
-  classifyOrder,
-  docCategories,
-  docCategoryLabels,
-} from "@carlwr/zsh-core/taxonomy"
+import { docCategories, docCategoryLabels } from "@carlwr/zsh-core/taxonomy"
 import { describe, expect, test } from "vitest"
 import {
   BRIEF_MAX_LEN,
@@ -22,41 +18,36 @@ import {
 
 const corpus = loadCorpus()
 
-function limitHelp(def: ToolDef): string {
-  const props = def.inputSchema.properties as
-    | Record<string, { description?: string }>
-    | undefined
-  return props?.limit?.description ?? ""
-}
-
-function categoryHelp(def: ToolDef): string {
-  const props = def.inputSchema.properties as
-    | Record<string, { description?: string }>
-    | undefined
-  return props?.category?.description ?? ""
+function flagDesc(def: ToolDef, key: string): string {
+  const props = def.inputSchema.properties as Record<
+    string,
+    { description?: string }
+  >
+  const desc = props[key]?.description
+  if (desc === undefined) {
+    throw new Error(
+      `${def.name}.inputSchema.properties.${key} has no description`,
+    )
+  }
+  return desc
 }
 
 const eachTool = test.each(toolDefs.map(d => [d.name, d] as const))
 
 describe("toolDefs metadata", () => {
-  test("names are stable, unique, snake_case, zsh_-prefixed", () => {
+  test("names are stable, snake_case, zsh_-prefixed", () => {
     const names = toolDefs.map(def => def.name)
+    // Pinned list pins order AND uniqueness; regex pins shape for future entries.
     expect(names).toEqual(["zsh_docs", "zsh_search", "zsh_list"])
-    expect(new Set(names).size).toBe(names.length)
     for (const name of names) expect(name).toMatch(/^zsh_[a-z][a-z0-9_]*$/)
   })
 
-  test("inputSchema is always a JSON object schema", () => {
-    for (const def of toolDefs) {
-      expect(def.inputSchema).toMatchObject({ type: "object" })
-    }
+  eachTool("%s.inputSchema is a JSON object schema", (_n, def) => {
+    expect(def.inputSchema).toMatchObject({ type: "object" })
   })
 
-  test("outputSchema is always a JSON object schema", () => {
-    for (const def of toolDefs) {
-      expect(typeof def.outputSchema).toBe("object")
-      expect(def.outputSchema).toMatchObject({ type: "object" })
-    }
+  eachTool("%s.outputSchema is a JSON object schema", (_n, def) => {
+    expect(def.outputSchema).toMatchObject({ type: "object" })
   })
 
   test.each([
@@ -67,9 +58,7 @@ describe("toolDefs metadata", () => {
   })
 
   test("zsh_list has no required fields", () => {
-    expect(
-      (listToolDef.inputSchema as { required?: readonly string[] }).required,
-    ).toBeUndefined()
+    expect(listToolDef.inputSchema).not.toHaveProperty("required")
   })
 
   test("execute wires corpus through", () => {
@@ -118,7 +107,7 @@ describe("toolDefs brief shape", () => {
     expect(def.brief.length).toBeGreaterThan(0)
     expect(def.brief.length).toBeLessThanOrEqual(BRIEF_MAX_LEN)
     expect(def.brief).not.toMatch(/\n/)
-    expect(def.brief[0]).toBe(def.brief[0]?.toLowerCase())
+    expect(def.brief).not.toMatch(/^[A-Z]/) // phrase, not sentence
     expect(def.brief).not.toMatch(/\.$/)
   })
 })
@@ -135,9 +124,15 @@ describe("toolDefs description shape", () => {
     },
   )
 
-  test("zsh_docs mentions every DocCategory (via branded string)", () => {
-    const d = docsToolDef.description + JSON.stringify(docsToolDef.inputSchema)
-    for (const cat of classifyOrder) expect(d).toContain(cat)
+  // Every tool exposes the full DocCategory set on its `category` enum.
+  // Driven by `categoryShape` from canonical zsh-core tables; the test
+  // catches accidental hand-list drift.
+  eachTool("%s.category enum equals docCategories", (_n, def) => {
+    const props = def.inputSchema.properties as Record<
+      string,
+      { enum?: readonly string[] }
+    >
+    expect(props.category?.enum).toEqual([...docCategories])
   })
 
   test("zsh_docs description mentions option negation semantics", () => {
@@ -152,83 +147,64 @@ describe("toolDefs description shape", () => {
     expect(d).toContain("`category`")
   })
 
-  test("no `--option` references in tooldef-emitted prose", () => {
-    // Tooldef prose reaches MCP/LM verbatim; CLI shows real flags.
+  // Tooldef prose reaches MCP/LM verbatim; CLI shows real flags.
+  eachTool("%s prose has no `--option` references", (_n, td) => {
     const FLAG_RE = /--\w/
-    for (const td of toolDefs) {
-      expect(td.description).not.toMatch(FLAG_RE)
-      expect(td.brief).not.toMatch(FLAG_RE)
-      for (const v of Object.values(td.flagBriefs)) {
-        expect(v).not.toMatch(FLAG_RE)
-      }
-      const props =
-        (
-          td.inputSchema as {
-            properties?: Record<string, { description?: string }>
-          }
-        ).properties ?? {}
-      for (const spec of Object.values(props)) {
-        if (typeof spec.description === "string") {
-          expect(spec.description).not.toMatch(FLAG_RE)
-        }
-      }
+    expect(td.description).not.toMatch(FLAG_RE)
+    expect(td.brief).not.toMatch(FLAG_RE)
+    for (const [key, brief] of Object.entries(td.flagBriefs)) {
+      expect(brief).not.toMatch(FLAG_RE)
+      expect(flagDesc(td, key)).not.toMatch(FLAG_RE)
     }
-  })
-
-  test("zsh_search lists every DocCategory (via branded string)", () => {
-    const d =
-      searchToolDef.description + JSON.stringify(searchToolDef.inputSchema)
-    for (const cat of docCategories) expect(d).toContain(cat)
   })
 
   test("zsh_search mentions ranking/limit and points at follow-up", () => {
     expect(searchToolDef.description).toMatch(/fuzzy/i)
-    expect(limitHelp(searchToolDef)).toMatch(/limit|maximum/i)
+    expect(flagDesc(searchToolDef, "limit")).toMatch(/limit|maximum/i)
     expect(searchToolDef.description).toContain("zsh_docs")
   })
 
   test("zsh_docs category help documents resolver cardinality", () => {
-    const help = categoryHelp(docsToolDef)
+    const help = flagDesc(docsToolDef, "category")
     expect(help).toMatch(/At most one match/i)
     expect(help).toMatch(/one match per category/i)
   })
 
-  test("search/list category help does not promise one-match output", () => {
-    for (const def of [searchToolDef, listToolDef]) {
-      expect(categoryHelp(def)).not.toMatch(/one match|at most/i)
-    }
+  test.each([
+    ["zsh_search", searchToolDef],
+    ["zsh_list", listToolDef],
+  ] as const)("%s category help does not promise one-match output", (_n, def) => {
+    expect(flagDesc(def, "category")).not.toMatch(/one match|at most/i)
   })
 
-  test("zsh_search and zsh_list output schema documents truncation counts", () => {
-    for (const def of [searchToolDef, listToolDef]) {
-      const s = JSON.stringify(def.outputSchema)
-      expect(s).toContain("matchesReturned")
-      expect(s).toContain("matchesTotal")
-    }
-  })
-
-  test("zsh_list lists every DocCategory (via branded string)", () => {
-    const d = listToolDef.description + JSON.stringify(listToolDef.inputSchema)
-    for (const cat of docCategories) expect(d).toContain(cat)
+  test.each([
+    ["zsh_search", searchToolDef],
+    ["zsh_list", listToolDef],
+  ] as const)("%s outputSchema declares truncation counts", (_n, def) => {
+    const schema = def.outputSchema as { required?: readonly string[] }
+    expect(schema.required).toEqual(
+      expect.arrayContaining(["matchesReturned", "matchesTotal"]),
+    )
   })
 
   test("zsh_list points at zsh_docs for the markdown body", () => {
     expect(listToolDef.description).toContain("zsh_docs")
   })
 
-  // Sanity: human-readable category labels make it into the docs option help.
-  test("zsh_docs surfaces human-readable category labels", () => {
-    const d = JSON.stringify(docsToolDef.inputSchema)
-    for (const cat of classifyOrder) expect(d).toContain(docCategoryLabels[cat])
+  // The category help surfaces a human-readable label per category.
+  test("zsh_docs category help surfaces every category label", () => {
+    const help = flagDesc(docsToolDef, "category")
+    for (const cat of docCategories)
+      expect(help).toContain(docCategoryLabels[cat])
   })
 
   // Entry-point tools name the vendored zsh tag; follow-ups do not.
-  test("entry-point tools name the vendored zsh tag", () => {
-    expect(docsToolDef.description).toContain(ZSH_UPSTREAM.tag)
-    expect(searchToolDef.description).toContain(ZSH_UPSTREAM.tag)
-  })
-  test("zsh_list does NOT repeat the vendored zsh tag", () => {
-    expect(listToolDef.description).not.toContain(ZSH_UPSTREAM.tag)
+  test.each([
+    ["zsh_docs", docsToolDef, true],
+    ["zsh_search", searchToolDef, true],
+    ["zsh_list", listToolDef, false],
+  ] as const)("%s description names vendored zsh tag: %s", (_n, def, expected) => {
+    expect(def.description.includes(ZSH_UPSTREAM.tag)).toBe(expected)
   })
 })
 

@@ -20,6 +20,20 @@ export function by<T, K extends PropertyKey>(
   return new Map(xs.map(x => [keyOf(x), x]))
 }
 
+// Single source of truth for "no raw yodl leaked" assertions; each entry is a
+// macro signature or sentinel that `stripYodl` / `normalizeBody` should have
+// consumed in normalized output.
+const YODL_LEAK_MARKERS: readonly string[] = [
+  ..."tt var em bf item xitem sitem sxitem startitem enditem startsitem endsitem vindex findex cindex pindex tindex example manref noderef zmanref"
+    .split(" ")
+    .map(m => `${m}(`),
+  "\u0007", // sitem internal sentinel
+]
+
+export function expectNoYodlLeaks(s: string): void {
+  for (const m of YODL_LEAK_MARKERS) expect(s).not.toContain(m)
+}
+
 export function expectDocCorpus<T>({
   docs,
   minCount,
@@ -46,7 +60,7 @@ export function expectDocCorpus<T>({
     const desc = descOf(doc)
     if (desc !== undefined) {
       expect(desc).toBeTruthy()
-      expect(desc).not.toMatch(/\b(?:tt|var|item|xitem|sitem)\(/)
+      expectNoYodlLeaks(desc)
     }
     if (sectionOf) expect(sectionOf(doc).trim()).toBeTruthy()
   }

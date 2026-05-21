@@ -187,16 +187,20 @@ function resolveHistory(
   return resolveByKey(c, "history_expn", raw, matchHistoryKey)
 }
 
+// First match wins; order matters (e.g. `!!` before `!str`).
+const HISTORY_KEYS: readonly (readonly [RegExp, string])[] = [
+  [/^!!$/, "!!"],
+  [/^!#$/, "!#"],
+  [/^!\{.+\}$/, "!{...}"],
+  [/^!\?.+\??$/, "!?str[?]"],
+  [/^!-\d+$/, "!-n"],
+  [/^!\d+$/, "!n"],
+  [/^![^!$^%*\s]+$/, "!str"],
+  [/^\^[^^]+\^[^^]+?\^?$/, "!!"], // documented synonym of `!!:s^foo^bar^`
+]
+
 function matchHistoryKey(t: string): string | undefined {
-  if (/^!!$/.test(t)) return "!!"
-  if (/^!#$/.test(t)) return "!#"
-  if (/^!\{.+\}$/.test(t)) return "!{...}"
-  if (/^!\?.+\??$/.test(t)) return "!?str[?]"
-  if (/^!-\d+$/.test(t)) return "!-n"
-  if (/^!\d+$/.test(t)) return "!n"
-  if (/^![^!$^%*\s]+$/.test(t)) return "!str"
-  if (/^\^[^^]+\^[^^]+?\^?$/.test(t)) return "!!"
-  return undefined
+  return HISTORY_KEYS.find(([re]) => re.test(t))?.[1]
 }
 
 // Single-letter flag categories: corpus keys are letters (`e`, `U`, `i`, ...),
@@ -278,6 +282,8 @@ function flagInnerKey(cat: FlagCategory, t: string): string | undefined {
  * `resolve(corpus, "special_param", raw)` and
  * `resolverFeedback(corpus, "special_param", raw)`.
  */
+const SUBSCRIPTED_PARAM_RE = /^([A-Za-z_][A-Za-z0-9_]*)\[(.+)\]$/
+
 function resolveSpecialParam(
   c: DocCorpus,
   raw: string,
@@ -289,8 +295,7 @@ function resolveSpecialParam(
   | undefined {
   const literal = mkDocumented("special_param", raw)
   if (c.special_param.has(literal)) return { id: literal }
-  const t = raw.trim()
-  const m = t.match(/^([A-Za-z_][A-Za-z0-9_]*)\[(.+)\]$/)
+  const m = raw.trim().match(SUBSCRIPTED_PARAM_RE)
   if (!m) return undefined
   const base = mkDocumented("special_param", m[1] ?? "")
   if (!c.special_param.has(base)) return undefined
@@ -320,11 +325,16 @@ function resolveJobSpec(
   )
 }
 
+const JOB_LITERAL_RE = /^%(?:%|\+|-)$/
+const JOB_NUMBER_RE = /^%\d+$/
+const JOB_CONTAINS_RE = /^%\?.+$/
+const JOB_STRING_RE = /^%.+$/
+
 function jobSpecKey(t: string): string | undefined {
-  if (/^%(?:%|\+|-)$/.test(t)) return t
-  if (/^%\d+$/.test(t)) return "%number"
-  if (/^%\?.+$/.test(t)) return "%?string"
-  if (t !== "%?" && /^%.+$/.test(t)) return "%string"
+  if (JOB_LITERAL_RE.test(t)) return t
+  if (JOB_NUMBER_RE.test(t)) return "%number"
+  if (JOB_CONTAINS_RE.test(t)) return "%?string"
+  if (t !== "%?" && JOB_STRING_RE.test(t)) return "%string"
   return undefined
 }
 
@@ -361,10 +371,13 @@ function resolveSpecialFunction(
   return resolveByKey(c, "special_function", raw, matchSpecialFunctionKey)
 }
 
+const HOOK_FN_RE = /^(\w+)_functions$/
+const TRAP_TEMPLATE_RE = /^TRAP[A-Z0-9]+$/
+
 function matchSpecialFunctionKey(t: string): string | undefined {
-  const hook = t.match(/^(\w+)_functions$/)?.[1]
+  const hook = t.match(HOOK_FN_RE)?.[1]
   if (hook && HOOK_FN_SET.has(hook)) return hook
-  if (/^TRAP[A-Z0-9]+$/.test(t)) return "TRAPNAL"
+  if (TRAP_TEMPLATE_RE.test(t)) return "TRAPNAL"
   return undefined
 }
 
@@ -378,6 +391,8 @@ function matchSpecialFunctionKey(t: string): string | undefined {
  * Public callers go through `resolve(corpus, "option", raw)` for identity and
  * `resolverFeedback(corpus, "option", raw)` for the negation bit.
  */
+const NO_PREFIX_RE = /^no_?/i
+
 function resolveOption(
   corpus: DocCorpus,
   raw: string,
@@ -387,7 +402,7 @@ function resolveOption(
   const literal = mkDocumented("option", raw)
   if (corpus.option.has(literal)) return { id: literal, negated: false }
   const trimmed = raw.trim()
-  const m = trimmed.match(/^no_?/i)
+  const m = trimmed.match(NO_PREFIX_RE)
   if (!m) return undefined
   const stripped = mkDocumented("option", trimmed.slice(m[0].length))
   return corpus.option.has(stripped)

@@ -11,8 +11,6 @@ const readJson = (file: string) =>
 const pkg = readJson("package.json")
 const deno = readJson("deno.json")
 
-const SHARED_EXPORTS = ["."] as const
-
 describe("pkg-info constants stay in sync with manifests", () => {
   test("PKG_NAME matches package.json.name and deno.json.name", () => {
     expect(PKG_NAME).toBe(pkg.name)
@@ -30,12 +28,10 @@ describe("pkg-info constants stay in sync with manifests", () => {
 })
 
 describe("shared-surface exports stay in sync", () => {
-  test("every shared subpath appears in package.json.exports", () => {
-    for (const key of SHARED_EXPORTS) {
-      expect(Object.keys(pkg.exports)).toContain(key)
-    }
+  test("`.` subpath appears in package.json.exports", () => {
+    expect(pkg.exports).toHaveProperty(".")
   })
-  test("deno.json.exports is exactly the shared subpaths", () => {
-    expect(Object.keys(deno.exports).sort()).toEqual([...SHARED_EXPORTS].sort())
+  test("deno.json.exports is exactly `.`", () => {
+    expect(Object.keys(deno.exports)).toEqual(["."])
   })
 })

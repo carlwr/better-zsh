@@ -54,7 +54,9 @@ Same value (literal, shape, behaviour) in two places: declare once and reference
 + export const countKey = base
 ```
 
-Where N entries follow a rule from one per-row input, derive — don't hand-list shape. Where most rows share a default, list deviations only and fall through. When such a table needs to be materialized in full, iterate the canonical key source (e.g. the union's literal list), not the table's own keys — otherwise default-bearing keys are silently absent.
+Where N entries follow a rule from one per-row input, derive — don't hand-list shape. Same for type shapes: when fields follow a rule from a closed key set, prefer a mapped type over a hand-listed interface. Where most rows share a default, list deviations only and fall through. When such a table needs to be materialized in full, iterate the canonical key source (e.g. the union's literal list), not the table's own keys — otherwise default-bearing keys are silently absent.
+
+A drift-catcher (completeness guard, parity test, "must stay in sync" comment) next to a hand-listed table is itself the signal: the structure is derivable. Remove the duplication; the guard becomes unnecessary. Reserve guards for shapes the type system can't enforce by construction (e.g. a runtime tuple whose ordering matters).
 
 Accidental similarity of conceptually-different values may stay duplicated; when the *implementation* must match but the *meaning* differs, share a helper, not the name.
 

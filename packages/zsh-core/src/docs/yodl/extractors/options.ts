@@ -5,7 +5,6 @@ import type {
   Emulation,
   OptFlagAlias,
   OptFlagSign,
-  OptSection,
   ZshOption,
 } from "../../types.ts"
 import { flipOptFlagSign, mkOptFlag, optSections } from "../../types.ts"
@@ -13,7 +12,7 @@ import {
   extractFirstSitemList,
   extractItems,
   extractSectionBody,
-  parseClosedUnion,
+  mkClosedUnionParser,
   withBody,
 } from "../core/doc.ts"
 import { asNodes, type YodlSrc } from "../core/nodes.ts"
@@ -35,7 +34,10 @@ const DEFAULT_EMULATIONS: Record<DefaultMarker, readonly Emulation[]> = {
   Z: ["zsh"],
 }
 
-const OPTION_SECTION_SET: ReadonlySet<string> = new Set(optSections)
+const parseOptionCategory = mkClosedUnionParser(
+  optSections,
+  "zsh option category",
+)
 
 /**
  * Narrow pre-parse patch for a known upstream typo in options.yo.
@@ -92,10 +94,6 @@ function parseAliasTarget(body: YodlSrc): ZshOption["aliasOf"] {
     target: mkDocumented("option", target),
     negated,
   }
-}
-
-function parseOptionCategory(raw: string): OptSection {
-  return parseClosedUnion(raw, OPTION_SECTION_SET, "zsh option category")
 }
 
 function parseOptHeader(header: YodlSrc):

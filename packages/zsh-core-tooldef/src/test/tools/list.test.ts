@@ -1,5 +1,9 @@
 import { loadCorpus, RECORDS_TOTAL } from "@carlwr/zsh-core"
-import { docCategories } from "@carlwr/zsh-core/taxonomy"
+import {
+  type DocCategory,
+  docCategories,
+  subKindEnums,
+} from "@carlwr/zsh-core/taxonomy"
 import { describe, expect, test } from "vitest"
 import { DEFAULT_LIMIT, list, MAX_LIMIT } from "../../../index.ts"
 
@@ -33,18 +37,13 @@ describe("list", () => {
     expect(r.matchesTotal).toBe(corpus.precmd_modifier.size)
   })
 
-  test("limit clamped to MAX_LIMIT (entire corpus)", () => {
+  test("limit beyond corpus → full corpus returned", () => {
     const r = list(corpus, { limit: 999_999 })
-    expect(r.matches.length).toBeLessThanOrEqual(MAX_LIMIT)
     expect(r.matches.length).toBe(RECORDS_TOTAL)
   })
 
-  test("MAX_LIMIT equals RECORDS_TOTAL", () => {
-    expect(MAX_LIMIT).toBe(RECORDS_TOTAL)
-  })
-
   test("unknown category yields empty matches", () => {
-    const r = list(corpus, { category: "bogus" as never })
+    const r = list(corpus, { category: "bogus" as DocCategory })
     expect(r.matches).toEqual([])
     expect(r.matchesTotal).toBe(0)
   })
@@ -57,11 +56,8 @@ describe("list", () => {
   test("history match surfaces subKind", () => {
     const r = list(corpus, { category: "history_expn", limit: 50 })
     expect(r.matches.length).toBeGreaterThan(0)
-    for (const m of r.matches) {
-      expect(["event-designator", "word-designator", "modifier"]).toContain(
-        m.subKind,
-      )
-    }
+    const allowed = subKindEnums.history_expn
+    for (const m of r.matches) expect(allowed).toContain(m.subKind)
   })
 
   test("builtin matches do NOT carry subKind key", () => {

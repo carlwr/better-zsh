@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest"
 import { parseCondOps } from "../../docs/yodl/extractors/cond-ops"
 import { mkDocumented_ } from "../id-fns"
-import { by, only, readVendoredYo } from "./test-util"
+import { by, expectDocCorpus, only, readVendoredYo } from "./test-util"
 
 const COND_YO = readVendoredYo("cond.yo")
 const cond = mkDocumented_("conditional_op")
@@ -43,22 +43,14 @@ true if string matches pattern.
     const ops = parseCondOps(COND_YO)
     const byOp = by(ops, o => o.op)
 
-    test("parses a reasonable number of operators", () => {
-      expect(ops.length).toBeGreaterThan(20)
-    })
-
-    test("all ops have non-empty desc", () => {
-      for (const o of ops) {
-        expect(o.desc).toBeTruthy()
-      }
-    })
-
-    test("contains known operators", () => {
-      expect(byOp.has(cond("-a"))).toBe(true)
-      expect(byOp.has(cond("-f"))).toBe(true)
-      expect(byOp.has(cond("-nt"))).toBe(true)
-      expect(byOp.has(cond("=~"))).toBe(true)
-    })
+    test("corpus parses", () =>
+      expectDocCorpus({
+        docs: ops,
+        minCount: 20,
+        keyOf: o => o.op,
+        descOf: o => o.desc,
+        known: [cond("-a"), cond("-f"), cond("-nt"), cond("=~")],
+      }))
 
     test.each([
       ["-a", "unary"],

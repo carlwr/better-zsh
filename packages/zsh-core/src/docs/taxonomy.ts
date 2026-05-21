@@ -12,6 +12,7 @@ import type {
   HistoryDoc,
   JobSpecDoc,
   KeymapDoc,
+  MathfuncDoc,
   ParamExpnDoc,
   ParamFlagDoc,
   PrecmdDoc,
@@ -49,6 +50,7 @@ export const docCategories = [
   "keymap",
   "job_spec",
   "arith_op",
+  "mathfunc",
   "special_function",
   "comp_utility",
 ] as const
@@ -95,6 +97,9 @@ const classifyOrderTuple = [
   // the more common conditional_op interpretation; bare arith ops (`**`, `<<`, `%`, ...)
   // still route here.
   "arith_op",
+  // mathfunc after arith_op: callable names resolved in arith context, lower
+  // shadowing priority than operators.
+  "mathfunc",
   "option",
   "redirection",
   "comp_utility",
@@ -142,6 +147,7 @@ export const docCategoryLabels: Readonly<Record<DocCategory, string>> = {
   keymap: "ZLE keymap",
   job_spec: "job spec",
   arith_op: "arithmetic operator",
+  mathfunc: "math function",
   special_function: "special function",
   comp_utility: "completion utility",
 }
@@ -168,6 +174,7 @@ export interface DocRecordMap {
   keymap: KeymapDoc
   job_spec: JobSpecDoc
   arith_op: ArithOpDoc
+  mathfunc: MathfuncDoc
   special_function: SpecialFunctionDoc
   comp_utility: CompUtilityDoc
 }
@@ -201,12 +208,12 @@ export const docId: {
   option: d => d.name,
   conditional_op: d => d.op,
   builtin: d => d.name,
-  precmd_modifier: d => d.name as Documented<"precmd_modifier">,
+  precmd_modifier: d => d.name,
   special_param: d => d.name,
   complex_command: d => d.name,
   reserved_word: d => d.name,
   redirection: d => d.slug,
-  process_subst: d => d.op as Documented<"process_subst">,
+  process_subst: d => d.op,
   param_expn: d => d.sig,
   subscript_flag: d => d.flag,
   param_expn_flag: d => d.flag,
@@ -219,6 +226,7 @@ export const docId: {
   keymap: d => d.name,
   job_spec: d => d.key,
   arith_op: d => d.op,
+  mathfunc: d => d.name,
   special_function: d => d.name,
   comp_utility: d => d.name,
 }
@@ -298,3 +306,84 @@ const subKindOverrides: Partial<SubKindFnMap> = {
 export const docSubKind: SubKindFnMap = Object.fromEntries(
   docCategories.map(cat => [cat, subKindOverrides[cat] ?? noSub]),
 ) as SubKindFnMap
+
+/**
+ * Parametric `docId[cat](doc)`. Single dispatch-cast site — prefer this over
+ * indexing `docId` directly when `cat` is a generic `K`.
+ */
+export const idOf = <K extends DocCategory>(
+  cat: K,
+  doc: DocRecordMap[K],
+): Documented<K> => (docId[cat] as (d: DocRecordMap[K]) => Documented<K>)(doc)
+
+/**
+ * Parametric `docSubKind[cat](doc)`. Single dispatch-cast site — prefer this
+ * over indexing `docSubKind` directly when `cat` is a generic `K`.
+ */
+export const subKindOf = <K extends DocCategory>(
+  cat: K,
+  doc: DocRecordMap[K],
+): string | undefined =>
+  (docSubKind[cat] as (d: DocRecordMap[K]) => string | undefined)(doc)
+
+/**
+ * Canonical zsh loadable-module string set. Values of any `module?:` field
+ * across the corpus must come from this list.
+ */
+export const moduleNames = [
+  "zsh/attr",
+  "zsh/cap",
+  "zsh/clone",
+  "zsh/compctl",
+  "zsh/complete",
+  "zsh/complist",
+  "zsh/computil",
+  "zsh/curses",
+  "zsh/datetime",
+  "zsh/db/gdbm",
+  "zsh/deltochar",
+  "zsh/example",
+  "zsh/files",
+  "zsh/langinfo",
+  "zsh/mapfile",
+  "zsh/mathfunc",
+  "zsh/nearcolor",
+  "zsh/net/socket",
+  "zsh/net/tcp",
+  "zsh/newuser",
+  "zsh/param/private",
+  "zsh/parameter",
+  "zsh/pcre",
+  "zsh/regex",
+  "zsh/rlimits",
+  "zsh/sched",
+  "zsh/stat",
+  "zsh/system",
+  "zsh/termcap",
+  "zsh/terminfo",
+  "zsh/watch",
+  "zsh/zftp",
+  "zsh/zle",
+  "zsh/zleparameter",
+  "zsh/zprof",
+  "zsh/zpty",
+  "zsh/zselect",
+  "zsh/zutil",
+] as const
+
+export type ModuleName = (typeof moduleNames)[number]
+
+const moduleNameSet: ReadonlySet<string> = new Set(moduleNames)
+
+/**
+ * Validate a raw string against the canonical `moduleNames`. Returns the
+ * value narrowed to `ModuleName` when known, `undefined` otherwise. Use at
+ * trust boundaries (parsing upstream prose, deserialising external input) to
+ * avoid unchecked `as ModuleName` casts.
+ */
+export const parseModuleName = (raw: string): ModuleName | undefined =>
+  moduleNameSet.has(raw) ? (raw as ModuleName) : undefined
+
+/** Type-guard form of `parseModuleName`. */
+export const isModuleName = (raw: string): raw is ModuleName =>
+  moduleNameSet.has(raw)

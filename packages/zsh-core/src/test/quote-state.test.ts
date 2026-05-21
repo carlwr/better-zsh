@@ -18,19 +18,13 @@ describe("advanceQuote", () => {
     expect(isQuoted(mkQuoteState())).toBe(false)
   })
 
-  test("single quote opens and closes", () => {
-    expect(isQuoted(scan("'"))).toBe(true)
-    expect(isQuoted(scan("''"))).toBe(false)
-  })
-
-  test("double quote opens and closes", () => {
-    expect(isQuoted(scan('"'))).toBe(true)
-    expect(isQuoted(scan('""'))).toBe(false)
-  })
-
-  test("backtick opens and closes", () => {
-    expect(isQuoted(scan("`"))).toBe(true)
-    expect(isQuoted(scan("``"))).toBe(false)
+  test.each([
+    ["'", "''"],
+    ['"', '""'],
+    ["`", "``"],
+  ])("%s opens then closes", (q, pair) => {
+    expect(isQuoted(scan(q))).toBe(true)
+    expect(isQuoted(scan(pair))).toBe(false)
   })
 
   test("backslash escapes next char", () => {
@@ -46,13 +40,15 @@ describe("advanceQuote", () => {
   })
 
   test("single quote inside double quotes is literal", () => {
-    expect(scan("\"'").dq).toBe(true)
-    expect(scan("\"'").sq).toBe(false)
+    const st = scan("\"'")
+    expect(st.dq).toBe(true)
+    expect(st.sq).toBe(false)
   })
 
   test("double quote inside single quotes is literal", () => {
-    expect(scan("'\"").sq).toBe(true)
-    expect(scan("'\"").dq).toBe(false)
+    const st = scan("'\"")
+    expect(st.sq).toBe(true)
+    expect(st.dq).toBe(false)
   })
 
   test("backslash inside single quotes is literal", () => {
@@ -69,10 +65,19 @@ describe("advanceQuote", () => {
     )
   })
 
-  test("matched single-quote pairs leave unquoted", () => {
+  // Matched-pair property holds for each quote style: a body with the active
+  // quote's char replaced (so the pair is the only closing token) round-trips
+  // to unquoted. Backslashes are also replaced, otherwise they'd escape the
+  // closing quote in double/backtick contexts.
+  test.each([
+    ["'", "\\'"],
+    ['"', '\\"'],
+    ["`", "\\`"],
+  ] as const)("matched %s pairs leave unquoted", (q, escapes) => {
+    const escRe = new RegExp(`[${escapes}\\\\]`, "g")
     fc.assert(
       fc.property(fc.string(), s => {
-        expect(isQuoted(scan(`'${s.replace(/'/g, "x")}'`))).toBe(false)
+        expect(isQuoted(scan(`${q}${s.replace(escRe, "x")}${q}`))).toBe(false)
       }),
     )
   })

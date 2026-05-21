@@ -3,9 +3,8 @@
 import type { DocCorpus } from "@carlwr/zsh-core"
 import {
   type DocCategory,
-  type DocRecordMap,
   docCategories,
-  docSubKind,
+  subKindOf,
 } from "@carlwr/zsh-core/taxonomy"
 import { display } from "./doc-display.ts"
 import { isValidCategory } from "./envelope.ts"
@@ -26,15 +25,11 @@ export function entries(corpus: DocCorpus, cat?: DocCategory): BaseMatch[] {
   const cats = cat ? [cat] : docCategories
   const out: BaseMatch[] = []
   for (const c of cats) {
-    const map = corpus[c] as ReadonlyMap<string, DocRecordMap[DocCategory]>
-    const getSubKind = docSubKind[c] as (
-      d: DocRecordMap[DocCategory],
-    ) => string | undefined
-    for (const [id, rec] of map) {
-      const subKind = getSubKind(rec)
+    for (const [id, rec] of corpus[c]) {
+      const subKind = subKindOf(c, rec)
       out.push({
         category: c,
-        id,
+        id: id as string,
         display: display(c, rec),
         ...(subKind !== undefined ? { subKind } : {}),
       })

@@ -42,6 +42,7 @@ vi.mock("../zsh", () => ({
 
 import type { DocCorpus } from "@carlwr/zsh-core"
 import { mkDocumented, optSections } from "@carlwr/zsh-core/types"
+import * as vscode from "vscode"
 import { CompletionProvider } from "../editor/completions"
 import { emptyCorpus, wordDoc } from "./test-util"
 
@@ -98,5 +99,35 @@ suite("CompletionProvider", () => {
     assert.ok(labels.includes("if"))
     assert.ok(labels.includes("noglob"))
     assert.ok(labels.includes("SECONDS"))
+  })
+
+  // The VS Code `Operator` codicon renders as a stacked `%/x` glyph that
+  // reads oddly. Conditional operators should use the cleaner `Keyword`
+  // icon (they are test/cond keywords).
+  test("conditional operators use Keyword icon, not Operator", async () => {
+    const cop = {
+      op: mkDocumented("conditional_op", "=="),
+      arity: "binary" as const,
+      operands: ["s1", "s2"] as const,
+      desc: "string equality",
+    }
+    const corpus: DocCorpus = {
+      ...emptyCorpus(),
+      conditional_op: new Map([[cop.op, cop]]),
+    }
+    const provider = new CompletionProvider(corpus)
+    const result = await provider.provideCompletionItems(wordDoc("[[ a  ]]"), {
+      line: 0,
+      character: 5,
+    } as import("vscode").Position)
+    const items = (
+      Array.isArray(result)
+        ? result
+        : (result as import("vscode").CompletionList).items
+    ) as import("vscode").CompletionItem[]
+    const eq = items.find(i => i.label === "==")
+    assert.ok(eq, "expected == cond completion")
+    assert.strictEqual(eq.kind, vscode.CompletionItemKind.Keyword)
+    assert.notStrictEqual(eq.kind, vscode.CompletionItemKind.Operator)
   })
 })

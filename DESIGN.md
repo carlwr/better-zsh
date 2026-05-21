@@ -173,9 +173,8 @@ Authoritative homes:
 - `DocCategory = typeof docCategories[number]`
 - compile-time completeness guards (next to the tables they protect):
   - `_AssertClassifyOrder*` — `taxonomy.ts`
-  - `_AssertDocCorpusKeys*` — `corpus.ts`
   - `_AssertResolverFeedbackKindsComplete` — `resolver.ts`
-- `DocCorpus` — explicit interface (not just a mapped type) so IDE hover shows concrete fields
+- `DocCorpus` is `{ readonly [K in DocCategory]: DocMap<K> }` — structural completeness, no explicit guard needed
 
 ### Category-indexed artifacts belong in zsh-core
 

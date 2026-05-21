@@ -1,41 +1,41 @@
 import { describe, expect, test } from "vitest"
+import { mkDocumented } from "../docs/brands"
 import { loadCorpus } from "../docs/corpus"
-import { resolve } from "../docs/resolver"
-import { mkPieceId } from "../docs/taxonomy"
-import { mkDocumented_ } from "./id-fns"
+import { lookupRaw, resolve } from "../docs/resolver"
+import { type DocCategory, docCategories, mkPieceId } from "../docs/taxonomy"
 
 const corpus = loadCorpus()
 
-const hist = mkDocumented_("history_expn")
-const subFlag = mkDocumented_("subscript_flag")
-const parFlag = mkDocumented_("param_expn_flag")
-const glFlag = mkDocumented_("glob_flag")
-const glQual = mkDocumented_("glob_qualifier")
-const jobSpec = mkDocumented_("job_spec")
-const redir = mkDocumented_("redirection")
-const specFn = mkDocumented_("special_function")
-const promptEsc = mkDocumented_("prompt_escape")
+// Per-category resolver-case helpers. Each pair `[raw, expectedId]` is asserted
+// via `cases(cat).hit`; each `raw` is asserted unresolved via `cases(cat).miss`.
+function cases<K extends DocCategory>(cat: K) {
+  return {
+    hit: (raw: string, id: string) =>
+      expect(resolve(corpus, cat, raw)).toEqual(
+        mkPieceId(cat, mkDocumented(cat, id)),
+      ),
+    miss: (raw: string) => expect(resolve(corpus, cat, raw)).toBeUndefined(),
+  }
+}
 
 describe("resolveHistory (event designators)", () => {
+  const hist = cases("history_expn")
   test.each([
-    ["!!", hist("!!")],
-    ["!42", hist("!n")],
-    ["!-3", hist("!-n")],
-    ["!foo", hist("!str")],
-    ["!?bar", hist("!?str[?]")],
-    ["!?bar?", hist("!?str[?]")],
-    ["!#", hist("!#")],
-    ["!{...}", hist("!{...}")],
+    ["!!", "!!"],
+    ["!42", "!n"],
+    ["!-3", "!-n"],
+    ["!foo", "!str"],
+    ["!?bar", "!?str[?]"],
+    ["!?bar?", "!?str[?]"],
+    ["!#", "!#"],
+    ["!{...}", "!{...}"],
+    ["!{foo}", "!{...}"],
     // ^old^new shorthand resolves to the `!!` record
-    ["^old^new", hist("!!")],
-    ["^old^new^", hist("!!")],
+    ["^old^new", "!!"],
+    ["^old^new^", "!!"],
     // whitespace is trimmed
-    ["  !42  ", hist("!n")],
-  ] as const)("%s -> %s", (raw, expected) => {
-    expect(resolve(corpus, "history_expn", raw)).toEqual(
-      mkPieceId("history_expn", expected),
-    )
-  })
+    ["  !42  ", "!n"],
+  ])("%s -> %s", hist.hit)
 
   test.each([
     // word-designators / modifiers in isolation must NOT resolve
@@ -52,58 +52,36 @@ describe("resolveHistory (event designators)", () => {
     "!",
     // `!!` with extra chars is not a bare designator
     "!!bogus",
+    // `!$` is a word-designator, not `!str`
+    "!$",
     // unrelated tokens
     "unrelated",
     "",
     "   ",
-  ])("%s -> undefined", raw => {
-    expect(resolve(corpus, "history_expn", raw)).toBeUndefined()
-  })
-
-  test.each([
-    ["!{foo}", hist("!{...}")],
-  ] as const)("%s resolves as braced history", (raw, expected) => {
-    expect(resolve(corpus, "history_expn", raw)).toEqual(
-      mkPieceId("history_expn", expected),
-    )
-  })
-
-  test.each(["!$"])("%s does not resolve as `!str`", raw => {
-    expect(resolve(corpus, "history_expn", raw)).toBeUndefined()
-  })
+  ])("%s -> undefined", hist.miss)
 })
 
 describe("resolveRedir", () => {
+  const redir = cases("redirection")
   test.each([
-    ["> file", redir(">_word")],
-    ["2>& 1", redir(">&_number")],
-    ["<<EOF", redir("<<[-]_word")],
-    ["<< EOF", redir("<<[-]_word")],
-    ["<<-EOF", redir("<<[-]_word")],
-    ["2<<EOF", redir("<<[-]_word")],
-    ["2<<-EOF", redir("<<[-]_word")],
-  ] as const)("%s resolves to the matching redirection doc", (raw, expected) => {
-    expect(resolve(corpus, "redirection", raw)).toEqual(
-      mkPieceId("redirection", expected),
-    )
-  })
+    // operator + tail
+    ["> file", ">_word"],
+    ["2>& 1", ">&_number"],
+    ["<<EOF", "<<[-]_word"],
+    ["<< EOF", "<<[-]_word"],
+    ["<<-EOF", "<<[-]_word"],
+    ["2<<EOF", "<<[-]_word"],
+    ["2<<-EOF", "<<[-]_word"],
+    // full sig form maps to the slug id
+    ["> word", ">_word"],
+    [">& number", ">&_number"],
+    ["<<[-] word", "<<[-]_word"],
+  ])("%s -> %s", redir.hit)
 
-  test.each([
-    "<<",
-    "<<-",
-  ])("incomplete here-document %s does not resolve", raw => {
-    expect(resolve(corpus, "redirection", raw)).toBeUndefined()
-  })
-
-  test.each([
-    ["> word", redir(">_word")],
-    [">& number", redir(">&_number")],
-    ["<<[-] word", redir("<<[-]_word")],
-  ] as const)("full sig form %s resolves to the slug id", (raw, expected) => {
-    expect(resolve(corpus, "redirection", raw)).toEqual(
-      mkPieceId("redirection", expected),
-    )
-  })
+  test.each(["<<", "<<-"])(
+    "incomplete here-doc %s does not resolve",
+    redir.miss,
+  )
 })
 
 describe("parens-agnostic flag resolvers", () => {
@@ -112,133 +90,95 @@ describe("parens-agnostic flag resolvers", () => {
   // the corpus-key form and the user-code parenthesized form.
 
   describe("subscript_flag", () => {
+    const sub = cases("subscript_flag")
     test.each([
-      ["w", subFlag("w")],
-      ["(w)", subFlag("w")],
-      ["e", subFlag("e")],
-      ["(e)", subFlag("e")],
+      ["w", "w"],
+      ["(w)", "w"],
+      ["e", "e"],
+      ["(e)", "e"],
       // full-sig close-variant: strip args down to the bare flag letter
-      ["e:string:", subFlag("e")],
-      ["(e:string:)", subFlag("e")],
-    ] as const)("%s -> %s", (raw, expected) => {
-      expect(resolve(corpus, "subscript_flag", raw)).toEqual(
-        mkPieceId("subscript_flag", expected),
-      )
-    })
-
-    test.each(["Z", "(Z)", "()", "(", ")", ""])("%s -> undefined", raw => {
-      expect(resolve(corpus, "subscript_flag", raw)).toBeUndefined()
-    })
+      ["e:string:", "e"],
+      ["(e:string:)", "e"],
+    ])("%s -> %s", sub.hit)
+    test.each(["Z", "(Z)", "()", "(", ")", ""])("%s -> undefined", sub.miss)
   })
 
   describe("param_expn_flag", () => {
+    const par = cases("param_expn_flag")
     test.each([
-      ["@", parFlag("@")],
-      ["(@)", parFlag("@")],
-      ["U", parFlag("U")],
-      ["(U)", parFlag("U")],
-      // full-sig close-variant: strip args down to the bare flag letter
-      ["j:string:", parFlag("j")],
-      ["(j:string:)", parFlag("j")],
-    ] as const)("%s -> %s", (raw, expected) => {
-      expect(resolve(corpus, "param_expn_flag", raw)).toEqual(
-        mkPieceId("param_expn_flag", expected),
-      )
-    })
-
-    test.each(["Y", "(Y)", ""])("%s -> undefined", raw => {
-      expect(resolve(corpus, "param_expn_flag", raw)).toBeUndefined()
-    })
+      ["@", "@"],
+      ["(@)", "@"],
+      ["U", "U"],
+      ["(U)", "U"],
+      ["j:string:", "j"],
+      ["(j:string:)", "j"],
+    ])("%s -> %s", par.hit)
+    test.each(["Y", "(Y)", ""])("%s -> undefined", par.miss)
   })
 
   describe("glob_flag", () => {
+    const gl = cases("glob_flag")
     test.each([
-      ["i", glFlag("i")],
-      ["(i)", glFlag("i")],
-      ["(#i)", glFlag("i")],
-      ["I", glFlag("I")],
-      ["(#I)", glFlag("I")],
-    ] as const)("%s -> %s", (raw, expected) => {
-      expect(resolve(corpus, "glob_flag", raw)).toEqual(
-        mkPieceId("glob_flag", expected),
-      )
-    })
-
-    test.each(["Z", "(Z)", "(#Z)", "(#)", ""])("%s -> undefined", raw => {
-      expect(resolve(corpus, "glob_flag", raw)).toBeUndefined()
-    })
+      ["i", "i"],
+      ["(i)", "i"],
+      ["(#i)", "i"],
+      ["I", "I"],
+      ["(#I)", "I"],
+    ])("%s -> %s", gl.hit)
+    test.each(["Z", "(Z)", "(#Z)", "(#)", ""])("%s -> undefined", gl.miss)
   })
 
   describe("glob_qualifier", () => {
+    const gq = cases("glob_qualifier")
     test.each([
-      ["/", glQual("/")],
-      ["(/)", glQual("/")],
-      ["(#q/)", glQual("/")],
-      ["@", glQual("@")],
-      ["(#q@)", glQual("@")],
-    ] as const)("%s -> %s", (raw, expected) => {
-      expect(resolve(corpus, "glob_qualifier", raw)).toEqual(
-        mkPieceId("glob_qualifier", expected),
-      )
-    })
-
-    test.each(["Z", "(Z)", "(#qZ)", "(#q)", ""])("%s -> undefined", raw => {
-      expect(resolve(corpus, "glob_qualifier", raw)).toBeUndefined()
-    })
+      ["/", "/"],
+      ["(/)", "/"],
+      ["(#q/)", "/"],
+      ["@", "@"],
+      ["(#q@)", "@"],
+    ])("%s -> %s", gq.hit)
+    test.each(["Z", "(Z)", "(#qZ)", "(#q)", ""])("%s -> undefined", gq.miss)
   })
 })
 
 describe("resolveJobSpec", () => {
+  const job = cases("job_spec")
   test.each([
-    ["%%", jobSpec("%%")],
-    ["%+", jobSpec("%+")],
-    ["%-", jobSpec("%-")],
-    ["%1", jobSpec("%number")],
-    ["%42", jobSpec("%number")],
-    ["%bash", jobSpec("%string")],
-    ["%?foo", jobSpec("%?string")],
-    ["  %1  ", jobSpec("%number")],
-  ] as const)("%s -> %s", (raw, expected) => {
-    expect(resolve(corpus, "job_spec", raw)).toEqual(
-      mkPieceId("job_spec", expected),
-    )
-  })
+    ["%%", "%%"],
+    ["%+", "%+"],
+    ["%-", "%-"],
+    ["%1", "%number"],
+    ["%42", "%number"],
+    ["%bash", "%string"],
+    ["%?foo", "%?string"],
+    ["  %1  ", "%number"],
+  ])("%s -> %s", job.hit)
 
-  test.each([
-    "",
-    "   ",
-    "foo",
-    "1",
-    "%",
-    "%?",
-    "not-a-spec",
-  ])("%s -> undefined", raw => {
-    expect(resolve(corpus, "job_spec", raw)).toBeUndefined()
-  })
+  test.each(["", "   ", "foo", "1", "%", "%?", "not-a-spec"])(
+    "%s -> undefined",
+    job.miss,
+  )
 })
 
 describe("resolveSpecialFunction", () => {
+  const fn = cases("special_function")
   test.each([
-    ["chpwd", specFn("chpwd")],
-    ["precmd", specFn("precmd")],
-    ["TRAPDEBUG", specFn("TRAPDEBUG")],
-    ["TRAPEXIT", specFn("TRAPEXIT")],
-    ["TRAPZERR", specFn("TRAPZERR")],
+    ["chpwd", "chpwd"],
+    ["precmd", "precmd"],
+    ["TRAPDEBUG", "TRAPDEBUG"],
+    ["TRAPEXIT", "TRAPEXIT"],
+    ["TRAPZERR", "TRAPZERR"],
     // hook array → hook record
-    ["precmd_functions", specFn("precmd")],
-    ["chpwd_functions", specFn("chpwd")],
+    ["precmd_functions", "precmd"],
+    ["chpwd_functions", "chpwd"],
     // TRAP* template fallback — any uncategorized signal name
-    ["TRAPHUP", specFn("TRAPNAL")],
-    ["TRAPUSR1", specFn("TRAPNAL")],
-    ["TRAPINT", specFn("TRAPNAL")],
+    ["TRAPHUP", "TRAPNAL"],
+    ["TRAPUSR1", "TRAPNAL"],
+    ["TRAPINT", "TRAPNAL"],
     // TRAPERR: not a literal corpus record (upstream treats it as xindex on
     // TRAPZERR), so it lands on the template.
-    ["TRAPERR", specFn("TRAPNAL")],
-  ] as const)("%s -> %s", (raw, expected) => {
-    expect(resolve(corpus, "special_function", raw)).toEqual(
-      mkPieceId("special_function", expected),
-    )
-  })
+    ["TRAPERR", "TRAPNAL"],
+  ])("%s -> %s", fn.hit)
 
   test.each([
     "",
@@ -250,9 +190,7 @@ describe("resolveSpecialFunction", () => {
     "TRAP",
     "TRAPfoo",
     "unrelated",
-  ])("%s -> undefined", raw => {
-    expect(resolve(corpus, "special_function", raw)).toBeUndefined()
-  })
+  ])("%s -> undefined", fn.miss)
 })
 
 describe("prompt_escape paired sigs (corpus-wide property)", () => {
@@ -262,16 +200,41 @@ describe("prompt_escape paired sigs (corpus-wide property)", () => {
   // legitimately include parentheses (e.g. `%)`, `%(x.true.false)`), so a
   // blanket `%\S+` scan over all sigs would be ambiguous.
   test("every paired '%X (%x)' sig has both glyphs resolvable", () => {
-    const pairs = [...corpus.prompt_escape.values()].flatMap(doc => {
-      const m = doc.sig.match(/^(%\S+)\s+\(\s*(%\S+)\s*\)\s*$/)
-      return m ? [[doc.sig, m[1] ?? "", m[2] ?? ""] as const] : []
-    })
-    expect(pairs.length).toBeGreaterThan(0)
-    for (const [sig, a, b] of pairs)
-      for (const tok of [a, b])
-        expect(
-          resolve(corpus, "prompt_escape", tok),
-          `sig=${sig} token=${tok}`,
-        ).toEqual(mkPieceId("prompt_escape", promptEsc(tok)))
+    const pair = /^(%\S+)\s+\(\s*(%\S+)\s*\)\s*$/
+    const pe = cases("prompt_escape")
+    let n = 0
+    for (const doc of corpus.prompt_escape.values()) {
+      const m = pair.exec(doc.sig)
+      // Both groups are mandatory in the regex; guard each to narrow TS.
+      if (!m?.[1] || !m[2]) continue
+      n++
+      for (const tok of [m[1], m[2]]) {
+        try {
+          pe.hit(tok, tok)
+        } catch (err) {
+          throw new Error(
+            `sig=${doc.sig} token=${tok}: ${(err as Error).message}`,
+          )
+        }
+      }
+    }
+    expect(n).toBeGreaterThan(0)
+  })
+})
+
+describe("lookupRaw round-trip (corpus-wide)", () => {
+  // Every documented id round-trips through `lookupRaw` to itself. Catches
+  // resolvers whose template-key matching shadows the literal id (e.g. a
+  // history `!n` corpus key getting recognized as `!str` instead).
+  test.each(docCategories)("%s ids are stable under lookupRaw", cat => {
+    const map = corpus[cat] as ReadonlyMap<string, unknown>
+    if (map.size === 0) return
+    const mismatched: { id: string; got: string | undefined }[] = []
+    for (const id of map.keys()) {
+      const pid = lookupRaw(corpus, cat, id)
+      if (pid?.id !== id)
+        mismatched.push({ id, got: pid?.id as string | undefined })
+    }
+    expect(mismatched).toEqual([])
   })
 })

@@ -32,6 +32,7 @@ export type {
   ReservedWordFact,
 } from "./fact-types.ts"
 export {
+  isCmdHeadFact,
   isCtxFact,
   isFuncDeclFact,
   isPrecmdFact,

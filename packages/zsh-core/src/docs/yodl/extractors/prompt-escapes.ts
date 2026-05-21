@@ -1,20 +1,19 @@
 import type { NonEmpty } from "@carlwr/typescript-extra"
 
 import { mkDocumented } from "../../brands.ts"
-import {
-  type PromptEscapeDoc,
-  type PromptSubsection,
-  promptSubsections,
-} from "../../types.ts"
+import { type PromptEscapeDoc, promptSubsections } from "../../types.ts"
 import {
   collectAliasedEntries,
   extractItems,
-  parseClosedUnion,
+  mkClosedUnionParser,
 } from "../core/doc.ts"
 import type { YodlSrc } from "../core/nodes.ts"
 import { normalizeBody, normalizeHeader } from "../core/text.ts"
 
-const PROMPT_SUBSECTION_SET: ReadonlySet<string> = new Set(promptSubsections)
+const parsePromptSubsection = mkClosedUnionParser(
+  promptSubsections,
+  "prompt-escape subsection",
+)
 
 interface PromptHead {
   readonly sig: string
@@ -58,14 +57,6 @@ export function parsePromptEscapes(yo: YodlSrc): readonly PromptEscapeDoc[] {
     }
   }
   return out
-}
-
-function parsePromptSubsection(raw: string): PromptSubsection {
-  return parseClosedUnion(
-    raw,
-    PROMPT_SUBSECTION_SET,
-    "prompt-escape subsection",
-  )
 }
 
 /**

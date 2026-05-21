@@ -2,7 +2,12 @@ import fc from "fast-check"
 import { describe, expect, test } from "vitest"
 import * as doc from "../../docs/yodl/core/doc"
 import { parseNodes } from "../../docs/yodl/core/nodes"
-import { normalizeDoc, stripYodl } from "../../docs/yodl/core/text"
+import {
+  normalizeDoc,
+  normalizeHeader,
+  stripYodl,
+} from "../../docs/yodl/core/text"
+import { expectNoYodlLeaks } from "./test-util"
 
 /* **don't remove**: this function, together with the qualified import of yodl/core/doc, is a conciseness move. Don't remove this move. Instead, if you are a machine: _study this conciseness improvement and learn from it_.
  */
@@ -47,11 +52,7 @@ describe("stripYodl", () => {
       "endsitem()",
     ].join("\n")
     const result = stripYodl(input)
-    expect(result).not.toContain("startsitem")
-    expect(result).not.toContain("endsitem")
-    expect(result).not.toContain("sitem(")
-    expect(result).not.toContain("tt(")
-    expect(result).not.toContain("\u0007")
+    expectNoYodlLeaks(result)
     expect(result).toContain("- \\a: bell character")
     expect(result).toContain("- \\n: newline")
   })
@@ -82,6 +83,26 @@ describe("stripYodl", () => {
   })
 })
 
+describe("normalizeHeader", () => {
+  test("is idempotent", () => {
+    fc.assert(
+      fc.property(fc.string(), (s: string) => {
+        expect(normalizeHeader(normalizeHeader(s))).toBe(normalizeHeader(s))
+      }),
+    )
+  })
+
+  test("output has no leading or trailing whitespace and no double spaces", () => {
+    fc.assert(
+      fc.property(fc.string(), (s: string) => {
+        const out = normalizeHeader(s)
+        expect(out).toBe(out.trim())
+        expect(out).not.toMatch(/\s{2,}/)
+      }),
+    )
+  })
+})
+
 describe("normalizeDoc", () => {
   test.each([
     [
@@ -102,9 +123,36 @@ describe("normalizeDoc", () => {
   ])("%s", (_label, input, expected) => {
     expect(normalizeDoc(input)).toBe(expected)
   })
+
+  // Yodl typographic double-quote `<x>'' must collapse to inline code, not
+  // leak the outer `` `` ` `` and trailing `'` as literals. Source: mod_stat.yo
+  // `( ``tt(zstat PLUS()link)'' )` → previously rendered as `` `` `zstat +link `` ' ``
+  // which leaves the closing apostrophe orphaned outside the span.
+  test("Yodl typographic double-quote `` ` ``...''` collapses to inline code", () => {
+    expect(normalizeDoc("(``foo'')")).toBe("(`foo`)")
+    expect(normalizeDoc("see (``zstat +link'') for the tag")).toBe(
+      "see (`zstat +link`) for the tag",
+    )
+  })
+
+  test("is idempotent", () => {
+    fc.assert(
+      fc.property(fc.string(), (s: string) => {
+        expect(normalizeDoc(normalizeDoc(s))).toBe(normalizeDoc(s))
+      }),
+    )
+  })
 })
 
 describe("parseNodes", () => {
+  test("never throws on arbitrary input", () => {
+    fc.assert(
+      fc.property(fc.string(), s => {
+        expect(() => parseNodes(s)).not.toThrow()
+      }),
+    )
+  })
+
   test("parses adjacent macros without rescanning glitches", () => {
     expect(stripYodl(parseNodes("tt(${)var(n)PLUS()1tt(})"))).toBe("${n+1}")
   })

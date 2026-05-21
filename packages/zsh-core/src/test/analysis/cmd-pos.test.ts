@@ -21,9 +21,10 @@ describe("cmdPositions", () => {
     ])
   })
 
-  for (const line of ["! echo hi", "2>&1 echo hi | fg"]) {
-    test(`stays aligned with command-head facts for ${line}`, () => {
-      expect(cmdPositions(line)).toEqual(factSpans(line))
-    })
-  }
+  test.each([
+    "! echo hi",
+    "2>&1 echo hi | fg",
+  ])("stays aligned with command-head facts: %s", line => {
+    expect(cmdPositions(line)).toEqual(factSpans(line))
+  })
 })

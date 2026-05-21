@@ -15,7 +15,8 @@ export const buildTasks = {
   test: "pnpm format:check && pnpm test:unit",
   "test:unit": verifiedRecursive("test"),
   "test:scripts": "node --test 'scripts/build/*.test.mjs'",
-  qa: "pnpm check && pnpm test:unit && pnpm test:scripts && pnpm cli:qa",
+  // `lint:slowtypes` runs `deno publish --dry-run --no-check` on zsh-core: registry-independent, catches JSR slow-types regressions in seconds.
+  qa: `pnpm check && ${pkg("@carlwr/zsh-core")} run lint:slowtypes && pnpm test:unit && pnpm test:scripts && pnpm cli:qa`,
   "test:integration": verifiedRecursive("test:integration"),
   vsix: `${pkg("better-zsh")} vsix`,
   "test:smoke": [

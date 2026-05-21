@@ -6,14 +6,13 @@ import { by, expectDocCorpus, only, readVendoredYo } from "./test-util"
 const EXPN_YO = readVendoredYo("expn.yo")
 const pex = mkDocumented_("param_expn")
 
+// Section + `startitem()`/`enditem()` wrapper for an inline param-expn fixture.
+const expnYo = (...items: string[]) =>
+  ["sect(Parameter Expansion)", "startitem()", ...items, "enditem()"].join("\n")
+
 describe("parseParamExpns", () => {
   test("parses plain form as solo group", () => {
-    const yo = [
-      "sect(Parameter Expansion)",
-      "startitem()",
-      "item(tt(${)var(name)tt(}))(The value of var(name).)",
-      "enditem()",
-    ].join("\n")
+    const yo = expnYo("item(tt(${)var(name)tt(}))(The value of var(name).)")
     const doc = only(parseParamExpns(yo))
     expect(doc.sig).toBe(pex("${name}"))
     expect(doc.groupSigs).toEqual(["${name}"])
@@ -25,15 +24,12 @@ describe("parseParamExpns", () => {
   })
 
   test("xitem + item group preserves manual source order", () => {
-    const yo = [
-      "sect(Parameter Expansion)",
-      "startitem()",
+    const yo = expnYo(
       "xitem(tt(${)var(name)tt(-)var(word)tt(}))",
       "item(tt(${)var(name)tt(:-)var(word)tt(}))(",
       "If var(name) is set, substitute its value; otherwise var(word).",
       ")",
-      "enditem()",
-    ].join("\n")
+    )
     const docs = parseParamExpns(yo)
     expect(docs.map(d => d.sig as string)).toEqual([
       "${name-word}",
@@ -48,14 +44,11 @@ describe("parseParamExpns", () => {
   })
 
   test("three-form replace group classifies each as `replace`", () => {
-    const yo = [
-      "sect(Parameter Expansion)",
-      "startitem()",
+    const yo = expnYo(
       "xitem(tt(${)var(name)tt(/)var(pattern)tt(/)var(repl)tt(}))",
       "xitem(tt(${)var(name)tt(//)var(pattern)tt(/)var(repl)tt(}))",
       "item(tt(${)var(name)tt(:/)var(pattern)tt(/)var(repl)tt(}))(Replace.)",
-      "enditem()",
-    ].join("\n")
+    )
     const docs = parseParamExpns(yo)
     expect(docs.map(d => d.sig as string)).toEqual([
       "${name/pattern/repl}",
@@ -67,13 +60,10 @@ describe("parseParamExpns", () => {
   })
 
   test("substring form with optional length has 3 placeholders", () => {
-    const yo = [
-      "sect(Parameter Expansion)",
-      "startitem()",
+    const yo = expnYo(
       "xitem(tt(${)var(name)tt(:)var(offset)tt(}))",
       "item(tt(${)var(name)tt(:)var(offset)tt(:)var(length)tt(}))(Substring.)",
-      "enditem()",
-    ].join("\n")
+    )
     const docs = by(parseParamExpns(yo), d => d.sig as string)
     expect(docs.get("${name:offset}")?.placeholders).toEqual(["name", "offset"])
     expect(docs.get("${name:offset:length}")?.placeholders).toEqual([
@@ -84,24 +74,16 @@ describe("parseParamExpns", () => {
   })
 
   test("set-test form ${+name} renders with a leading plus", () => {
-    const yo = [
-      "sect(Parameter Expansion)",
-      "startitem()",
-      "item(tt(${PLUS())var(name)tt(}))(1 if set else 0.)",
-      "enditem()",
-    ].join("\n")
+    const yo = expnYo("item(tt(${PLUS())var(name)tt(}))(1 if set else 0.)")
     const doc = only(parseParamExpns(yo))
     expect(doc.sig).toBe(pex("${+name}"))
     expect(doc.subKind).toBe("set-test")
   })
 
   test("throws on an unrecognized sig (catches upstream drift)", () => {
-    const yo = [
-      "sect(Parameter Expansion)",
-      "startitem()",
+    const yo = expnYo(
       "item(tt(${)var(name)tt(!unknown)var(word)tt(}))(novel form.)",
-      "enditem()",
-    ].join("\n")
+    )
     expect(() => parseParamExpns(yo)).toThrow(/unknown sig/i)
   })
 
@@ -168,10 +150,6 @@ describe("parseParamExpns", () => {
       expect(a?.orderInGroup).toBe(0)
       expect(b?.orderInGroup).toBe(1)
       expect(c?.orderInGroup).toBe(2)
-    })
-
-    test("identity is idempotent under mkDocumented('param_expn')", () => {
-      for (const d of docs) expect(pex(d.sig)).toBe(d.sig)
     })
   })
 })

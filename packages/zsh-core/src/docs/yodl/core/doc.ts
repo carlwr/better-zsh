@@ -8,18 +8,19 @@ import {
 import { normalizeBody, stripYodl } from "./text.ts"
 
 /**
- * Narrow a raw section/subsection string to a closed union, throwing on
- * unknown. Used by extractors that want to fail loud when upstream Yodl
- * introduces a new subsection name the type system hasn't been taught about.
- * Precedent: `parseOptionCategory` in options.ts.
+ * Closure that narrows a raw section/subsection string to a member of `values`
+ * — throwing on unknown so extractors fail loud when upstream Yodl introduces
+ * a subsection name the type system hasn't been taught about.
  */
-export function parseClosedUnion<T extends string>(
-  raw: string,
-  set: ReadonlySet<string>,
+export function mkClosedUnionParser<T extends string>(
+  values: readonly T[],
   label: string,
-): T {
-  if (set.has(raw)) return raw as T
-  throw new Error(`Unknown ${label}: ${raw}`)
+): (raw: string) => T {
+  const set: ReadonlySet<string> = new Set(values)
+  return raw => {
+    if (set.has(raw)) return raw as T
+    throw new Error(`Unknown ${label}: ${raw}`)
+  }
 }
 
 type YodlListKind = "item" | "sitem"

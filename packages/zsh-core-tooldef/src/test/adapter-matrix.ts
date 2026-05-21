@@ -52,28 +52,22 @@ export function carlwrBraceImports(
 ): readonly { readonly names: readonly string[]; readonly module: string }[] {
   const brace =
     /import\s+(?:type\s+)?\{([^}]+)\}\s+from\s+["'](@carlwr\/zsh-core[^"']*)["']/g
-  const out: { names: string[]; module: string }[] = []
-  for (const m of src.matchAll(brace)) {
-    const inner = m[1] ?? ""
-    const names = inner
+  return [...src.matchAll(brace)].map(m => ({
+    names: (m[1] ?? "")
       .split(",")
-      .map(part => {
-        const t = part.trim().replace(/^type\s+/, "")
-        return (t.split(/\s+as\s+/)[0] ?? "").trim()
-      })
-      .filter(Boolean)
-    out.push({ names, module: m[2] ?? "" })
-  }
-  return out
+      .map(s =>
+        s
+          .trim()
+          .replace(/^type\s+/, "")
+          .replace(/\s+as\s+.*$/, ""),
+      )
+      .filter(Boolean),
+    module: m[2] ?? "",
+  }))
 }
 
 /** Every `from "@carlwr/..."` specifier in `src` (any import shape). */
 export function carlwrFromSpecifiers(src: string): readonly string[] {
   const fromPkg = /from\s+["'](@carlwr\/[^"']+)["']/g
-  const specs: string[] = []
-  for (const m of src.matchAll(fromPkg)) {
-    const s = m[1]
-    if (s !== undefined) specs.push(s)
-  }
-  return specs
+  return [...src.matchAll(fromPkg)].map(m => m[1] ?? "").filter(Boolean)
 }

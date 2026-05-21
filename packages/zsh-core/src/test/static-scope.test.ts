@@ -80,12 +80,13 @@ function reachable(entries: readonly string[]): Set<string> {
   return seen
 }
 
+const reached = reachable(STATIC_ENTRIES)
+
 describe("static-entrypoint scope fence", () => {
   test("reachable files from static entrypoints avoid execution/network/env", () => {
-    const files = reachable(STATIC_ENTRIES)
-    expect(files.size).toBeGreaterThan(10)
+    expect(reached.size).toBeGreaterThan(10)
     const violations: string[] = []
-    for (const file of files) {
+    for (const file of reached) {
       const body = readFileSync(file, "utf8")
       for (const pat of forbidden) {
         if (pat.test(body)) violations.push(`${file}: ${pat}`)
@@ -95,10 +96,9 @@ describe("static-entrypoint scope fence", () => {
   })
 
   test("static entrypoints do not reach ./exec", () => {
-    const files = reachable(STATIC_ENTRIES)
     const execFile = resolve(pkgDir, "exec.ts")
     const zshFile = resolve(pkgDir, "src", "exec", "zsh.ts")
-    expect(files.has(execFile)).toBe(false)
-    expect(files.has(zshFile)).toBe(false)
+    expect(reached.has(execFile)).toBe(false)
+    expect(reached.has(zshFile)).toBe(false)
   })
 })

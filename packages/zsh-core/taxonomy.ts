@@ -15,5 +15,7 @@ export {
   docCategoryLabels,
   docDisplay,
   docSubKind,
+  idOf,
   mkPieceId,
+  subKindOf,
 } from "./src/docs/taxonomy.ts"

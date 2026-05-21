@@ -4,6 +4,7 @@ import type {
   BuiltinDoc,
   CompUtilityDoc,
   CondOpDoc,
+  MathfuncDoc,
   ParamExpnDoc,
   PrecmdDoc,
 } from "./types.ts"
@@ -41,6 +42,7 @@ type JsonCondOpDoc = FlatField<CondOpDoc, "operands">
 type JsonPrecmdDoc = FlatField<PrecmdDoc, "synopsis">
 type JsonParamExpnDoc = FlatField<ParamExpnDoc, "groupSigs">
 type JsonCompUtilityDoc = FlatField<CompUtilityDoc, "synopsis">
+type JsonMathfuncDoc = FlatField<MathfuncDoc, "sig">
 
 /**
  * Generated fields attached to every JSON record at build time. The
@@ -50,7 +52,7 @@ type JsonCompUtilityDoc = FlatField<CompUtilityDoc, "synopsis">
  * `_id` / `_display` patterns mirror `ID_RE` / `SURFACE_RE` in
  * `src/test/corpus-ascii.test.ts` — keep aligned.
  */
-type WithMarkdown<T> = T & {
+export type WithMarkdown<T> = T & {
   readonly mdBody: string
   /**
    * Shell-safe identity slug: printable ASCII, no whitespace, non-empty.
@@ -74,6 +76,7 @@ type FlatOverrides = {
   precmd_modifier: JsonPrecmdDoc
   param_expn: JsonParamExpnDoc
   comp_utility: JsonCompUtilityDoc
+  mathfunc: JsonMathfuncDoc
 }
 
 export type JsonRecordMap = {
@@ -111,6 +114,7 @@ export type ZleWidgetsJson = JsonDocArrayMap["zle_widget"]
 export type KeymapsJson = JsonDocArrayMap["keymap"]
 export type JobSpecsJson = JsonDocArrayMap["job_spec"]
 export type ArithOpsJson = JsonDocArrayMap["arith_op"]
+export type MathfuncsJson = JsonDocArrayMap["mathfunc"]
 export type SpecialFunctionsJson = JsonDocArrayMap["special_function"]
 export type CompUtilsJson = JsonDocArrayMap["comp_utility"]
 
@@ -132,6 +136,8 @@ export interface JsonIndex {
   readonly classifyOrder: readonly string[]
   /** Per-category JSON filename — pairs each `docCategories` entry with the file holding its records. */
   readonly categoryFiles: { readonly [K in DocCategory]: JsonDataFile }
+  /** Human-readable per-category labels — SoT for display in out-of-process consumers. */
+  readonly docCategoryLabels: { readonly [K in DocCategory]: string }
   /** Hook base names used by the special-function resolver. */
   readonly hookNames: readonly string[]
 }

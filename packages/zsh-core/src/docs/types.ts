@@ -1,6 +1,6 @@
 import type { NonEmpty } from "@carlwr/typescript-extra"
 
-import type { DocCategory } from "./taxonomy.ts"
+import type { DocCategory, ModuleName } from "./taxonomy.ts"
 
 /** Phantom-branded type for nominal-ish typing with zero runtime cost. */
 export type Brand<T, B extends string> = T & { readonly __brand: B }
@@ -173,6 +173,7 @@ export interface UnaryCondOpDoc {
   readonly operands: UnaryCondOperands
   readonly desc: string
   readonly arity: "unary"
+  readonly module?: ModuleName
 }
 
 /** Parsed binary `[[ ... ]]` conditional operator docs. */
@@ -181,6 +182,7 @@ export interface BinaryCondOpDoc {
   readonly operands: BinaryCondOperands
   readonly desc: string
   readonly arity: "binary"
+  readonly module?: ModuleName
 }
 
 /** Parsed `[[ ... ]]` conditional operator docs. */
@@ -223,9 +225,11 @@ export interface BuiltinDoc {
    */
   readonly desc: string
   /** present when builtin requires a loaded module */
-  readonly module?: string
+  readonly module?: ModuleName
   /** present when this is an alias of another builtin */
   readonly aliasOf?: Documented<"builtin">
+  /** true when upstream zsh recommends against new use */
+  readonly deprecated?: boolean
   /**
    * Per-group flag entries when upstream documents one or more depth-1
    * nested item lists inside the builtin body. Absent when upstream uses
@@ -326,6 +330,7 @@ export interface ShellParamDoc {
   readonly keys?: readonly ShellParamKey[]
   /** Prose after the key list. Present only when `keys` is and upstream has trailing content. */
   readonly outro?: string
+  readonly module?: ModuleName
 }
 
 /**
@@ -549,6 +554,7 @@ export interface ZleWidgetDoc extends SyntaxDocBase {
   readonly subItems?: readonly ZleWidgetSubItem[]
   /** Prose after the sub-item list. Present only when `subItems` is. */
   readonly outro?: string
+  readonly module?: ModuleName
 }
 
 /**
@@ -633,4 +639,21 @@ export interface CompUtilityDoc extends SyntaxDocBase {
   readonly flagGroups?: readonly FlagGroup[]
   /** Prose after the last flag group. */
   readonly outro?: string
+}
+
+/**
+ * Math function provided by `zsh/mathfunc` — callable inside arithmetic
+ * expressions (e.g. `$(( cos(0) ))`).
+ *
+ * `sig` is an array for parity with `BuiltinDoc.synopsis`; multiple forms
+ * render as multiple lines in a code block (e.g. `sin(x)` and `cos(x)` are
+ * separate records but share the same sig shape). `module` is always set:
+ * mathfuncs only exist inside modules.
+ */
+export interface MathfuncDoc {
+  readonly name: Documented<"mathfunc">
+  /** Call signature(s), e.g. `["cos(x)"]`. Multiple forms render as separate lines. */
+  readonly sig: NonEmpty<string>
+  readonly desc: string
+  readonly module: ModuleName
 }

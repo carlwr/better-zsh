@@ -135,9 +135,9 @@ export function parseParamExpns(yo: YodlSrc): readonly ParamExpnDoc[] {
     normalizeHeader,
   )) {
     const desc = normalizeBody(entry.body ?? [])
-    // Source order is `aliases` first (the preceding xitems) then `head` (the
-    // item carrying the body); the runtime invariant `head` is defined means
-    // the tuple is non-empty, but TS can't track the spread-tail.
+    // Source order is `aliases` first (preceding xitems) then `head` (the
+    // item carrying the body). `head` is defined → non-empty, but TS only
+    // tracks `[T, ...T[]]`, not the `[...T[], T]` shape we have here.
     const groupSigs = [...aliases, head] as unknown as NonEmpty<string>
     groupSigs.forEach((sig, i) => {
       const cls = SIG_CLASSIFICATION[sig]

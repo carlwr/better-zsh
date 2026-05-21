@@ -21,7 +21,7 @@ const repoRoot = join(
   "..",
 )
 
-const ignoredDirs = new Set([
+const ignoredDirs: ReadonlySet<string> = new Set([
   ".git",
   "dist",
   "node_modules",
@@ -75,23 +75,8 @@ function collectMarkers(): readonly Marker[] {
 
 const markers = collectMarkers()
 
-const markerKey = (m: Marker) => `${m.source}\0${m.target}`
-
-function countBy<T>(items: readonly T[], keyOf: (item: T) => string) {
-  const counts = new Map<string, number>()
-  for (const item of items) {
-    const k = keyOf(item)
-    counts.set(k, (counts.get(k) ?? 0) + 1)
-  }
-  return counts
-}
-
-function serialCounts(m: Map<string, number>): string {
-  return [...m.entries()]
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([k, v]) => `${k}=${v}`)
-    .join("|")
-}
+const multiset = (ms: readonly Marker[]): readonly string[] =>
+  ms.map(m => `${m.source}\0${m.target}`).sort()
 
 function markersFromUnits(): { ins: Marker[]; ofs: Marker[] } {
   const ins: Marker[] = []
@@ -135,13 +120,8 @@ describe("mirror-pairs", () => {
       )
     }
 
-    expect(
-      serialCounts(countBy(actIn, markerKey)),
-      "MIRRORED-IN multiset",
-    ).toBe(serialCounts(countBy(expIn, markerKey)))
-    expect(serialCounts(countBy(actOf, markerKey)), "MIRROR-OF multiset").toBe(
-      serialCounts(countBy(expOf, markerKey)),
-    )
+    expect(multiset(actIn), "MIRRORED-IN multiset").toEqual(multiset(expIn))
+    expect(multiset(actOf), "MIRROR-OF multiset").toEqual(multiset(expOf))
   })
 
   test("each TS file starts with MIRRORED-IN to its unit rs", () => {

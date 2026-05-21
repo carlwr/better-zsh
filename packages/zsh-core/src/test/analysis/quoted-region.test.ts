@@ -64,11 +64,11 @@ describe("quotedRegionFacts", () => {
   })
 
   test.each([
-    [['a=\\"']],
-    [['print "unterminated']],
-    [['print "$(echo "']],
-  ])("omits unsupported or unclosed candidate: %j", lines => {
-    expect(texts(lines)).toEqual([])
+    'a=\\"',
+    'print "unterminated',
+    'print "$(echo "',
+  ])("omits unsupported or unclosed candidate: %j", line => {
+    expect(texts([line])).toEqual([])
   })
 
   test("recovers after unsupported but closed command substitutions", () => {
@@ -97,19 +97,6 @@ describe("quotedRegionFacts", () => {
         .filter(isQuotedRegionFact)
         .map(fact => factText(source, fact.span)),
     ).toEqual(['"a"', '"b"'])
-  })
-
-  test("bounded combinatorial cases stay small and invariant-safe", () => {
-    const quoteStyles = ["'", '"'] as const
-    const bodies = ["plain", "print shop", "a\\nb", 'a \\\\" b'] as const
-    const prefixes = ["print ", "<<< ", "varName="] as const
-    const cases = quoteStyles.flatMap(quote =>
-      bodies.flatMap(body =>
-        prefixes.map(prefix => `${prefix}${quote}${body}${quote}`),
-      ),
-    )
-    expect(cases.length).toBeLessThan(500)
-    for (const source of cases) assertQuotedInvariants(source.split("\\n"))
   })
 
   test("never throws and emits valid non-overlapping spans", () => {

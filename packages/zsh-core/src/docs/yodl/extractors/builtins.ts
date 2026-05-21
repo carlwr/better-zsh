@@ -1,5 +1,6 @@
 import type { NonEmpty } from "@carlwr/typescript-extra"
 import { mkDocumented } from "../../brands.ts"
+import { type ModuleName, parseModuleName } from "../../taxonomy.ts"
 import type { BuiltinDoc } from "../../types.ts"
 import { collectAliasedEntries, extractItems } from "../core/doc.ts"
 import { asNodes, isMacro, type YNodeSeq, type YodlSrc } from "../core/nodes.ts"
@@ -10,6 +11,38 @@ interface SynopsisLine {
   text: string
   continuation: boolean
 }
+
+/**
+ * Module names for which real records exist in the corpus (parsed from their
+ * dedicated mod_*.yo files). The `module(name)(modname)` macro in builtins.yo
+ * emits stubs for these — those stubs are skipped to avoid duplicates.
+ *
+ * After module corpus extraction, any module listed here has real parsed
+ * records; the builtins.yo stub would be a lower-quality duplicate.
+ */
+export const MODULES_WITH_REAL_RECORDS: ReadonlySet<ModuleName> =
+  new Set<ModuleName>([
+    "zsh/attr",
+    "zsh/cap",
+    "zsh/clone",
+    "zsh/computil",
+    "zsh/datetime",
+    "zsh/db/gdbm",
+    "zsh/net/socket",
+    "zsh/param/private",
+    "zsh/pcre",
+    "zsh/regex",
+    "zsh/sched",
+    "zsh/stat",
+    "zsh/system",
+    "zsh/termcap",
+    "zsh/terminfo",
+    "zsh/watch",
+    "zsh/zprof",
+    "zsh/zpty",
+    "zsh/zselect",
+    "zsh/zutil",
+  ])
 
 export function parseBuiltins(
   yo: YodlSrc,
@@ -74,8 +107,12 @@ function macroDocs(nodes: YNodeSeq): BuiltinDoc[] {
 
     if (isMacro(node, "module")) {
       const name = normalizeHeader(node.args[0] ?? [])
-      const module = normalizeHeader(node.args[1] ?? [])
+      const module = parseModuleName(normalizeHeader(node.args[1] ?? []))
       if (!name || !module) continue
+      // Skip stub when the module has real parsed records — the extractor in
+      // modules/ already emits a full record for this builtin; the stub
+      // would produce a low-quality duplicate with no synopsis or desc.
+      if (MODULES_WITH_REAL_RECORDS.has(module)) continue
       docs.push({
         name: mkDocumented("builtin", name),
         synopsis: [name],
@@ -118,6 +155,60 @@ function parseSynopsisLine(raw: YNodeSeq): SynopsisLine | undefined {
   return { text, continuation: isMacro(raw[0], "SPACES") }
 }
 
+/**
+ * Post-process tagging: apply `module` and `deprecated` fields to builtins
+ * that are documented in builtins.yo / compwid.yo without their module tags.
+ *
+ * These are builtins defined by specific modules but whose yodl sources do
+ * not use the `module()` macro (they're documented inline). This post-pass
+ * ensures the module field is set without duplicating the record parsing.
+ */
+export function applyBuiltinTags(
+  docs: readonly BuiltinDoc[],
+): readonly BuiltinDoc[] {
+  return docs.map(doc => {
+    const override = BUILTIN_MODULE_TAGS[doc.name]
+    if (!override) return doc
+    return {
+      ...doc,
+      ...(override.module && { module: override.module }),
+      ...(override.deprecated !== undefined && {
+        deprecated: override.deprecated,
+      }),
+    }
+  })
+}
+
+interface BuiltinTag {
+  readonly module?: ModuleName
+  readonly deprecated?: boolean
+}
+
+/**
+ * Builtin-name → module (and optional deprecated flag) overrides.
+ * Applied by `applyBuiltinTags` after all builtins are collected.
+ *
+ * `Partial<…>` so lookup is correctly typed as possibly `undefined`; the
+ * phantom-branded `Documented<"builtin">` is just a string at runtime, so
+ * indexing with `doc.name` matches by ordinary string equality.
+ */
+const BUILTIN_MODULE_TAGS: Readonly<Partial<Record<string, BuiltinTag>>> = {
+  // zsh/compctl — deprecated completion system
+  compctl: { module: "zsh/compctl", deprecated: true },
+  compcall: { module: "zsh/compctl", deprecated: true },
+  // zsh/complete — modern completion builtins
+  compadd: { module: "zsh/complete" },
+  compset: { module: "zsh/complete" },
+  // zsh/zle — line editor builtins
+  bindkey: { module: "zsh/zle" },
+  vared: { module: "zsh/zle" },
+  zle: { module: "zsh/zle" },
+  // zsh/rlimits
+  limit: { module: "zsh/rlimits" },
+  ulimit: { module: "zsh/rlimits" },
+  unlimit: { module: "zsh/rlimits" },
+}
+
 function extractAlias(body: YNodeSeq) {
   // Match the name in `Same as X' / `Same as `tt(X)' ` upstream forms.
   // `stripYodl` in code mode gives us the raw extracted text — no markdown
@@ -127,8 +218,9 @@ function extractAlias(body: YNodeSeq) {
   return name ? mkDocumented("builtin", name) : undefined
 }
 
-function extractModule(body: YNodeSeq): string | undefined {
-  return stripYodl(body, "code")
+function extractModule(body: YNodeSeq): ModuleName | undefined {
+  const raw = stripYodl(body, "code")
     .replace(/\s+/g, " ")
     .match(/\bThe (\S+) Module\b/)?.[1]
+  return raw ? parseModuleName(raw) : undefined
 }

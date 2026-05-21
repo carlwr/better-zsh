@@ -24,9 +24,8 @@ export interface SigDescBody {
 /**
  * Collect `{sig, desc}` pairs from a flat list of `YodlEntry`s. Consecutive
  * `xitem(...)` headers preceding an `item(...)(body)` are folded onto the
- * body-bearing item — their normalized headers are joined into the sig with
- * a space separator. Entries with empty normalized headers are skipped
- * (they're not sig-bearing aliases).
+ * body-bearing item — each alias and the head become a separate entry sharing
+ * the same desc. Entries with empty normalized headers are skipped.
  *
  * Shared by builtins and completion utilities — both surface the same
  * structural shape (depth-1 nested item lists whose entries are flag-shaped).
@@ -34,13 +33,17 @@ export interface SigDescBody {
 export function collectSigDescPairs(
   entries: readonly YodlEntry[],
 ): FlagEntry[] {
-  return collectAliasedEntries(
+  const out: FlagEntry[] = []
+  for (const grp of collectAliasedEntries(
     entries,
     h => normalizeHeader(h) || undefined,
-  ).map(grp => ({
-    sig: [...grp.aliases, grp.head].join(" "),
-    desc: normalizeBody(grp.entry.body ?? []),
-  }))
+  )) {
+    const desc = normalizeBody(grp.entry.body ?? [])
+    for (const sig of [...grp.aliases, grp.head]) {
+      out.push({ sig, desc })
+    }
+  }
+  return out
 }
 
 /**

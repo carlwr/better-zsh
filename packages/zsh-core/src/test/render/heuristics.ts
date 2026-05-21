@@ -11,6 +11,7 @@
  * no longer matching → test also fails (positive drift prompts list shrink).
  */
 
+import { moduleNames } from "../../docs/taxonomy.ts"
 import { proseLines, stripInlineCode } from "../../render/prose-walk.ts"
 
 /** One render-quality heuristic. `detects` returns matched lines (or snippets). */
@@ -192,36 +193,13 @@ const paramShouldBeCoded = {
   },
 } satisfies Heuristic
 
-// Hard-coded set of zsh loadable-module short-names. The corpus tracks
-// modules only on builtins, so modules without an exposed builtin
-// (`complist`, `mathfunc`, `zle`, …) wouldn't appear if we queried the
-// corpus. Kept local; if upstream adds one, extend this set.
-const ZSH_MODULES: ReadonlySet<string> = new Set([
-  "cap",
-  "clone",
-  "compctl",
-  "complist",
-  "computil",
-  "mapfile",
-  "mathfunc",
-  "nearcolor",
-  "net",
-  "parameter",
-  "pcre",
-  "regex",
-  "rlimits",
-  "sched",
-  "stat",
-  "system",
-  "termcap",
-  "terminfo",
-  "zftp",
-  "zle",
-  "zleparameter",
-  "zprof",
-  "zpty",
-  "zutil",
-])
+// Module-path tails for the bare-prefix regex below: every entry is what
+// follows `zsh/` in a canonical `ModuleName`. Multi-segment paths like
+// `db/gdbm` and `net/socket` are preserved verbatim so the regex (which
+// matches `/`-separated segments after `zsh/`) can hit them.
+const ZSH_MODULES: ReadonlySet<string> = new Set(
+  moduleNames.map(m => m.slice("zsh/".length)),
+)
 
 /**
  * Paragraph that begins with a lone terminal-punctuation character followed
@@ -282,10 +260,12 @@ const moduleShouldBeCoded = {
   name: "module-not-coded",
   describe: "naked `zsh/<module>` reference in prose — should be backticked",
   detects(md) {
+    // Match the full `zsh/<tail>` form including any further `/`-separated
+    // segments so multi-part canonical names like `zsh/db/gdbm`,
+    // `zsh/net/socket`, `zsh/param/private` are captured intact.
+    const re = /\bzsh\/([a-z][a-z0-9_-]*(?:\/[a-z][a-z0-9_-]*)*)\b/g
     return [...proseLines(md)].filter(line => {
-      for (const m of stripInlineCode(line).matchAll(
-        /\bzsh\/([a-z][a-z0-9_-]*)\b/g,
-      )) {
+      for (const m of stripInlineCode(line).matchAll(re)) {
         if (ZSH_MODULES.has(m[1] ?? "")) return true
       }
       return false

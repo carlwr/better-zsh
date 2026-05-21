@@ -9,24 +9,22 @@ import {
 import type { Documented } from "../docs/types.ts"
 import { renderRecord } from "./md.ts"
 
-export interface RefDocBase<K extends DocCategory, I extends string> {
+interface RefDocK<K extends DocCategory> {
   readonly kind: K
-  readonly id: I
+  readonly id: Documented<K>
   /** Display heading used in dump output; may differ from the typed `id`. */
   readonly heading: string
   readonly md: string
 }
 
 /** Rendered reference markdown for one logical zsh item. */
-export type RefDoc = {
-  [K in DocCategory]: RefDocBase<K, Documented<K>>
-}[DocCategory]
+export type RefDoc = { [K in DocCategory]: RefDocK<K> }[DocCategory]
 
 function mkRefDocs<K extends DocCategory>(
   kind: K,
   docs: readonly DocRecordMap[K][],
   corpus: DocCorpus,
-): RefDocBase<K, Documented<K>>[] {
+): RefDocK<K>[] {
   return docs.map(doc => ({
     kind,
     id: docId[kind](doc),
@@ -39,11 +37,7 @@ function corpusDocs<K extends DocCategory>(
   corpus: DocCorpus,
   kind: K,
 ): readonly DocRecordMap[K][] {
-  // The ReadonlyMap value type for each category is exactly DocRecordMap[K];
-  // spreading Map.values() erases the specific key so we re-assert here.
-  const vals = [
-    ...(corpus[kind] as ReadonlyMap<unknown, DocRecordMap[K]>).values(),
-  ]
+  const vals = [...corpus[kind].values()]
   // `special_param` records arrive grouped by source file (shell-set →
   // zle-widget → completion-widget); alphabetize for a stable, predictable
   // consumer-visible ordering.

@@ -2,14 +2,14 @@
 
 import { renderRecord } from "../render/md.ts"
 import type { DocCorpus } from "./corpus.ts"
+import type { WithMarkdown } from "./json-types.ts"
 import {
   type DocCategory,
   type DocRecordMap,
   docDisplay,
-  docId,
-  docSubKind,
+  idOf,
+  subKindOf,
 } from "./taxonomy.ts"
-import type { Documented } from "./types.ts"
 
 /**
  * Augment each record with its rendered markdown body (`mdBody`) and the
@@ -21,20 +21,14 @@ import type { Documented } from "./types.ts"
 export function augmentWithMarkdown<K extends DocCategory>(
   corpus: DocCorpus,
   cat: K,
-): readonly (DocRecordMap[K] & {
-  readonly mdBody: string
-  readonly _id: string
-  readonly _display: string
-  readonly _subKind?: string
-})[] {
-  const map = corpus[cat] as ReadonlyMap<Documented<K>, DocRecordMap[K]>
-  return [...map.values()].map(rec => {
-    const subKind = docSubKind[cat](rec as never)
+): readonly WithMarkdown<DocRecordMap[K]>[] {
+  return [...corpus[cat].values()].map(rec => {
+    const subKind = subKindOf(cat, rec)
     return {
       ...rec,
       mdBody: renderRecord(corpus, cat, rec),
-      _id: docId[cat](rec as never) as string,
-      _display: docDisplay(cat, rec as never),
+      _id: idOf(cat, rec) as string,
+      _display: docDisplay(cat, rec),
       ...(subKind !== undefined ? { _subKind: subKind } : {}),
     }
   })

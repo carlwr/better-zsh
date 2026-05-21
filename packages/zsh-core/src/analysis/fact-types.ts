@@ -86,34 +86,22 @@ export type CmdFact = CmdHeadFact | PrecmdFact
 /** All fact types produced by single-line scanning. */
 export type LineFact = CmdFact | RedirFact | ProcessSubstFact | ReservedWordFact
 
-export function isCmdHeadFact(fact: Fact): fact is CmdHeadFact {
-  return fact.kind === "cmd-head"
-}
+const guardFor =
+  <K extends FactKind>(kind: K) =>
+  (fact: Fact): fact is Extract<Fact, { kind: K }> =>
+    fact.kind === kind
 
-export function isCtxFact(fact: Fact): fact is CtxFact {
-  return fact.kind === "ctx"
-}
+// Explicit return types are required for JSR slow-types compliance.
+type FactGuard<F extends Fact> = (fact: Fact) => fact is F
 
-export function isFuncDeclFact(fact: Fact): fact is FuncDeclFact {
-  return fact.kind === "func-decl"
-}
-
-export function isPrecmdFact(fact: Fact): fact is PrecmdFact {
-  return fact.kind === "precmd"
-}
-
-export function isRedirFact(fact: Fact): fact is RedirFact {
-  return fact.kind === "redir"
-}
-
-export function isProcessSubstFact(fact: Fact): fact is ProcessSubstFact {
-  return fact.kind === "process-subst"
-}
-
-export function isReservedWordFact(fact: Fact): fact is ReservedWordFact {
-  return fact.kind === "reserved-word"
-}
-
-export function isQuotedRegionFact(fact: Fact): fact is QuotedRegionFact {
-  return fact.kind === "quoted-region"
-}
+export const isCmdHeadFact: FactGuard<CmdHeadFact> = guardFor("cmd-head")
+export const isCtxFact: FactGuard<CtxFact> = guardFor("ctx")
+export const isFuncDeclFact: FactGuard<FuncDeclFact> = guardFor("func-decl")
+export const isPrecmdFact: FactGuard<PrecmdFact> = guardFor("precmd")
+export const isRedirFact: FactGuard<RedirFact> = guardFor("redir")
+export const isProcessSubstFact: FactGuard<ProcessSubstFact> =
+  guardFor("process-subst")
+export const isReservedWordFact: FactGuard<ReservedWordFact> =
+  guardFor("reserved-word")
+export const isQuotedRegionFact: FactGuard<QuotedRegionFact> =
+  guardFor("quoted-region")

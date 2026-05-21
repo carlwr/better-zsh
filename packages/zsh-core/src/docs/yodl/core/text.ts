@@ -464,6 +464,14 @@ const YODL_QUOTED_PAIR_RE = new RegExp(
   `\`((?:[^\\n'${TT_OPEN}${ITAL_OPEN}]|${TT_OPEN}[^${TT_CLOSE}]*${TT_CLOSE}|${ITAL_OPEN}[^${ITAL_CLOSE}]*${ITAL_CLOSE})*)'`,
   "g",
 )
+// Yodl ``<x>'' typographic double-quote: double-tick open + body + double-apos
+// close. Body may contain single apostrophes; lazy matching anchors to the
+// FIRST `''` so adjacent pairs don't merge. Apply BEFORE the single-quote
+// pass — otherwise the outer `` `` ` `` would be consumed as a stray.
+const YODL_DOUBLE_QUOTED_RE = new RegExp(
+  `\`\`((?:[^\\n${TT_OPEN}${ITAL_OPEN}]|${TT_OPEN}[^${TT_CLOSE}]*${TT_CLOSE}|${ITAL_OPEN}[^${ITAL_CLOSE}]*${ITAL_CLOSE})*?)''`,
+  "g",
+)
 // Coalesce two adjacent tt-spans separated by ≤8 non-whitespace, non-sentinel
 // chars. Upstream writes `tt(${)LPAR()tt(SI:)var(N)tt(:)RPAR()` to compose one
 // shell-syntax token from many macros; merging gives one continuous code span
@@ -486,6 +494,9 @@ const ITAL_PROMOTE_RE = new RegExp(
 function renderInlineMd(s: string): string {
   return tightenPunctuation(
     s
+      .replace(YODL_DOUBLE_QUOTED_RE, (_m, inner) =>
+        mdInlineCode(stripSentinels(inner)),
+      )
       .replace(YODL_QUOTED_PAIR_RE, (_m, inner) =>
         mdInlineCode(stripSentinels(inner)),
       )

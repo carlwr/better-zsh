@@ -5,6 +5,7 @@ import {
   cmdHeadFactsOnLine,
   factsAt,
   factText,
+  isCmdHeadFact,
   isCtxFact,
   isFuncDeclFact,
   isPrecmdFact,
@@ -16,29 +17,17 @@ import {
 } from "../../analysis/facts"
 import { mockDoc } from "./test-util"
 
-function cmdTexts(line: string): string[] {
-  return cmdHeadFactsOnLine(line)
-    .filter(fact => fact.kind === "cmd-head")
-    .map(fact => fact.text)
-}
+const textsOf =
+  <F extends LineFact & { text: string }>(is: (f: LineFact) => f is F) =>
+  (line: string): string[] =>
+    cmdHeadFactsOnLine(line)
+      .filter(is)
+      .map(f => f.text)
 
-function redirTexts(line: string): string[] {
-  return cmdHeadFactsOnLine(line)
-    .filter(isRedirFact)
-    .map(fact => fact.text)
-}
-
-function rwTexts(line: string): string[] {
-  return cmdHeadFactsOnLine(line)
-    .filter(isReservedWordFact)
-    .map(fact => fact.text)
-}
-
-function psTexts(line: string): string[] {
-  return cmdHeadFactsOnLine(line)
-    .filter(isProcessSubstFact)
-    .map(fact => fact.text)
-}
+const cmdTexts = textsOf(isCmdHeadFact)
+const redirTexts = textsOf(isRedirFact)
+const rwTexts = textsOf(isReservedWordFact)
+const psTexts = textsOf(isProcessSubstFact)
 
 function expectTexts(
   get: (line: string) => string[],
@@ -155,6 +144,12 @@ describe("redirection facts", () => {
     ["cat <<< word", ["<<<"]],
     ["cat << EOF", ["<<"]],
     ["echo 2>&1 > file", ["2>&", ">"]],
+    // Clobber-override forms: `|` belongs to the operator, not the next word.
+    ["echo hi >| file", [">|"]],
+    ["echo hi >>| log", [">>|"]],
+    ["echo hi >&| file", [">&|"]],
+    ["echo hi >>&| log", [">>&|"]],
+    ["echo hi &>| file", ["&>|"]],
   ])
 
   test("no redir inside single quotes", () => {

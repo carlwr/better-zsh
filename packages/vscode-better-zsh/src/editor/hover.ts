@@ -29,6 +29,8 @@ import { activeWordRangeAt, commentStart, funcDocs } from "./funcs"
 // at the UX level (e.g. "AUTO_CD is being turned OFF") using
 // `resolverFeedback(corpus, "option", token)?.kind === "input-negated"`.
 
+const PUNCT_PARAM = /[$?@*!#-]/
+
 interface OptFlagHit {
   readonly opt: ZshOption
   readonly alias: OptFlagAlias
@@ -97,17 +99,39 @@ export class HoverProvider implements vscode.HoverProvider {
   private funcHover(doc: vscode.TextDocument, pos: vscode.Position) {
     const range = activeWordRangeAt(doc, pos)
     if (!range) return
-    const d = funcDocs(doc).get(doc.getText(range))
-    if (d)
-      return new vscode.Hover(
-        new vscode.MarkdownString().appendCodeblock(d, ""),
-      )
+    const name = doc.getText(range)
+    const d = funcDocs(doc).get(name)
+    if (!d) return
+    // Two trailing spaces keep multi-line docstrings as hard line breaks in markdown.
+    const md = new vscode.MarkdownString()
+    md.appendCodeblock(`function ${name}() { ... }`, "zsh")
+    md.appendMarkdown(`\n\n${d.replace(/\n/g, "  \n")}`)
+    return new vscode.Hover(md, range)
   }
 
   private paramHover(doc: vscode.TextDocument, pos: vscode.Position) {
     const range = activeWordRangeAt(doc, pos)
-    if (!range) return
-    return this.hoverFor("special_param", doc.getText(range), range)
+    if (range) return this.hoverFor("special_param", doc.getText(range), range)
+    return this.punctParamHover(doc, pos)
+  }
+
+  // Punctuation-named special params (`$$`, `$@`, `$?`, …) miss `activeWordRangeAt`'s `\w`-only token. Match a `$X` or `${X` anchor instead.
+  private punctParamHover(doc: vscode.TextDocument, pos: vscode.Position) {
+    const line = doc.lineAt(pos.line).text
+    const cut = commentStart(line) ?? line.length
+    if (pos.character >= cut) return
+    const tryAt = (idx: number) => {
+      if (idx < 0 || idx >= cut) return
+      const ch = line[idx]
+      if (!ch || !PUNCT_PARAM.test(ch)) return
+      const anchored =
+        line[idx - 1] === "$" ||
+        (line[idx - 1] === "{" && line[idx - 2] === "$")
+      if (!anchored) return
+      const range = new vscode.Range(pos.line, idx, pos.line, idx + 1)
+      return this.hoverFor("special_param", ch, range)
+    }
+    return tryAt(pos.character) ?? tryAt(pos.character + 1)
   }
 
   private factBasedHover(doc: vscode.TextDocument, pos: vscode.Position) {
