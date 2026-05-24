@@ -10,7 +10,7 @@
 
 import { describe, expect, test } from "vitest"
 import { resolve, resolverFeedback } from "../docs/resolver"
-import { docCategories } from "../docs/taxonomy"
+import { docCategories, mkPieceId } from "../docs/taxonomy"
 import { membershipCorpus, mkDocumented_ } from "./id-fns"
 
 const opt = mkDocumented_("option")
@@ -30,10 +30,9 @@ describe("resolve(corpus, 'option', raw) — option identity", () => {
     // literal "nonotify" not in corpus → fallback: stripped "notify"
     ["NO_NOTIFY", "notify"],
   ])("%s -> %s", (raw, id) => {
-    expect(resolve(optCorpus, "option", raw)).toEqual({
-      category: "option",
-      id: opt(id),
-    })
+    expect(resolve(optCorpus, "option", raw)).toEqual(
+      mkPieceId("option", opt(id)),
+    )
   })
 
   test.each(["bogus", "no_bogus"])("%s → undefined", raw => {
@@ -75,12 +74,10 @@ describe("resolverFeedback(corpus, 'special_param', raw) — subscripted", () =>
       kind: "subscripted",
       subscript,
     })
-    // resolved id is the parent (subscript stripped)
     const parent = raw.slice(0, raw.indexOf("["))
-    expect(resolve(spCorpus, "special_param", raw)).toEqual({
-      category: "special_param",
-      id: sp(parent),
-    })
+    expect(resolve(spCorpus, "special_param", raw)).toEqual(
+      mkPieceId("special_param", sp(parent)),
+    )
   })
 
   test.each([

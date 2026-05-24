@@ -1,3 +1,4 @@
+import { hasAtleastTwo, isSingle, trim } from "@carlwr/typescript-extra"
 import {
   asNodes,
   isMacro,
@@ -49,9 +50,8 @@ export function stripYodl(src: YodlSrc, mode: RenderMode = "code"): string {
 }
 
 /**
- * Normalize a yodl-derived header to a single trimmed line. Bare-mode —
- * headers feed sig fields, IDs, and code-block lines, none of which
- * want embedded markdown markup.
+ * Yodl-derived header collapsed to a single trimmed line. Bare-mode — sig
+ * fields, IDs, and code-block lines reject embedded markdown markup.
  */
 export function normalizeHeader(src: YodlSrc): string {
   return stripYodl(src).replace(/\s+/g, " ").trim()
@@ -111,8 +111,7 @@ function foldAliasItems(nodes: YNodeSeq): YNodeSeq {
     if (
       (node.name === "sitem" || node.name === "item") &&
       aliasRun.length > 0 &&
-      node.args.length >= 2 &&
-      node.args[0]
+      hasAtleastTwo(node.args)
     ) {
       const newMarker: YNode[] = []
       for (const alias of aliasRun) {
@@ -183,9 +182,8 @@ const STRUCTURAL_EMPTY_MACROS: readonly string[] = [
 
 /**
  * True iff `nodes[i]` is bracketed by paragraph-break whitespace on both
- * sides — looking through invisible-macro neighbors and accumulating
- * intervening whitespace text. Reaches the sequence boundary counts as a
- * paragraph break (the start/end of an item-body is naturally a boundary).
+ * sides, looking through invisible-macro neighbors. Sequence boundary
+ * counts as a paragraph break — item-body start/end is naturally a boundary.
  */
 function isParagraphStandalone(nodes: YNodeSeq, i: number): boolean {
   return (
@@ -200,18 +198,14 @@ function hasParaBreak(
   step: -1 | 1,
   rxEdge: RegExp,
 ): boolean {
-  // Accumulate adjacent text content in the chosen direction, skipping
-  // invisible macros. Stop on any other macro (it counts as visible content
-  // that breaks the para boundary). Treat sequence edge as a para break.
+  // Sequence edge counts as a para break; any visible content (non-whitespace
+  // text or a non-invisible macro) before the edge regex matches does not.
   let acc = ""
   for (let j = i + step; j >= 0 && j < nodes.length; j += step) {
     const n = nodes[j] as YNode
     if (n.kind === "text") {
       acc = step < 0 ? n.text + acc : acc + n.text
       if (rxEdge.test(acc)) return true
-      // Any non-whitespace char means we've passed visible content without
-      // crossing a para break. Re-check just for the edge regex (already
-      // covered above) and bail.
       if (/\S/.test(n.text)) return false
       continue
     }
@@ -294,9 +288,7 @@ export function varTexts(src: YodlSrc): string[] {
  * (option display names, parameter names, …).
  */
 export function trimmedTtTexts(src: YodlSrc): string[] {
-  return ttTexts(src)
-    .map(t => t.trim())
-    .filter(Boolean)
+  return ttTexts(src).map(trim).filter(Boolean)
 }
 
 function tokensOfKind(src: YodlSrc, kind: YodlToken["kind"]): string[] {
@@ -358,7 +350,7 @@ function renderNode(node: YNode, mode: RenderMode): string {
 }
 
 function hasEmptyArg(node: Extract<YNode, { kind: "macro" }>): boolean {
-  return node.args.length === 1 && (node.args[0]?.length ?? 0) === 0
+  return isSingle(node.args) && node.args[0].length === 0
 }
 
 /**
@@ -404,16 +396,14 @@ const TT_OPEN = "\x01"
 const TT_CLOSE = "\x02"
 const ITAL_OPEN = "\x03"
 const ITAL_CLOSE = "\x04"
-// Char-class body listing every sentinel (no brackets). Reuse this in regex
-// templates so adding a new sentinel pair is one edit.
+// Reused in regex templates so adding a new sentinel pair is one edit.
 const SENTINEL_CHARS = `${TT_OPEN}${TT_CLOSE}${ITAL_OPEN}${ITAL_CLOSE}`
 const ALL_SENTINEL_RE = new RegExp(`[${SENTINEL_CHARS}]`, "g")
 
 /**
- * Render `tt(...)` content as a marked-up code span in text mode; bare in
- * code mode (the result will itself be placed in a fenced block, or wrapped
- * in backticks externally). Empty content stays empty — never emits a
- * degenerate marker pair.
+ * `tt(...)` content as marked-up code span in text mode; bare in code mode
+ * (result will be placed in a fenced block or backtick-wrapped externally).
+ * Empty content stays empty — never emits a degenerate marker pair.
  */
 function wrapTt(inner: string, mode: RenderMode): string {
   if (mode === "code" || inner === "") return inner
@@ -455,13 +445,16 @@ function finishPlain(s: string): string {
     .trim()
 }
 
+// A sentinel-wrapped tt/var span — shared body alternative of both Yodl-quote
+// regexes.
+const SENTINEL_SPAN_ALT = `${TT_OPEN}[^${TT_CLOSE}]*${TT_CLOSE}|${ITAL_OPEN}[^${ITAL_CLOSE}]*${ITAL_CLOSE}`
 // Yodl `<x>' quoted-code: backtick-open + body + closing-apostrophe. Body
 // is either ordinary non-special chars OR a sentinel-wrapped tt/var span;
 // apostrophes inside a sentinel span don't prematurely close the pair. The
 // outer backtick wrapper subsumes both code and italics, so all sentinels
 // are stripped from the capture before re-wrapping.
 const YODL_QUOTED_PAIR_RE = new RegExp(
-  `\`((?:[^\\n'${TT_OPEN}${ITAL_OPEN}]|${TT_OPEN}[^${TT_CLOSE}]*${TT_CLOSE}|${ITAL_OPEN}[^${ITAL_CLOSE}]*${ITAL_CLOSE})*)'`,
+  `\`((?:[^\\n'${TT_OPEN}${ITAL_OPEN}]|${SENTINEL_SPAN_ALT})*)'`,
   "g",
 )
 // Yodl ``<x>'' typographic double-quote: double-tick open + body + double-apos
@@ -469,7 +462,7 @@ const YODL_QUOTED_PAIR_RE = new RegExp(
 // FIRST `''` so adjacent pairs don't merge. Apply BEFORE the single-quote
 // pass — otherwise the outer `` `` ` `` would be consumed as a stray.
 const YODL_DOUBLE_QUOTED_RE = new RegExp(
-  `\`\`((?:[^\\n${TT_OPEN}${ITAL_OPEN}]|${TT_OPEN}[^${TT_CLOSE}]*${TT_CLOSE}|${ITAL_OPEN}[^${ITAL_CLOSE}]*${ITAL_CLOSE})*?)''`,
+  `\`\`((?:[^\\n${TT_OPEN}${ITAL_OPEN}]|${SENTINEL_SPAN_ALT})*?)''`,
   "g",
 )
 // Coalesce two adjacent tt-spans separated by ≤8 non-whitespace, non-sentinel
@@ -536,11 +529,9 @@ const REF_PROSE_BREAK = new RegExp(
 )
 
 /**
- * Merge consecutive paragraphs when the first ends with a ref-prose
- * connective (`see`, `in`, …) — operates on the per-line/per-paragraph
- * intermediate before `normalizeDoc` joins back to a single string.
- * `finishDoc` runs the same fix on the joined string, catching cases the
- * paragraph-level pass missed.
+ * Joins paragraphs when the first ends with a ref-prose connective (`see`,
+ * `in`, …). Operates on the per-paragraph intermediate; `finishDoc` runs the
+ * same fix on the joined string for cases this pass misses.
  */
 function mergeReferenceParas(parts: readonly string[]): string[] {
   const out: string[] = []

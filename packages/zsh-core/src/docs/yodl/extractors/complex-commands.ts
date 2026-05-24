@@ -1,3 +1,4 @@
+import { type NonEmpty, nonEmpty } from "@carlwr/typescript-extra"
 import { mkDocumented } from "../../brands.ts"
 import type { AlternateForm, ComplexCommandDoc } from "../../types.ts"
 import {
@@ -9,12 +10,8 @@ import {
 import type { YNodeSeq, YodlSrc } from "../core/nodes.ts"
 import { extractTokens, normalizeBody, normalizeHeader } from "../core/text.ts"
 
-/**
- * Head-keyword set used to drive `alternateForms` attachment and record
- * naming. A dedicated `for-arith` key separates the C-style `for (( … ))`
- * loop from the word-list `for name in … do … done` — structurally distinct
- * enough that collapsing them costs clarity.
- */
+// `for-arith` is a dedicated key: the C-style `for (( … ))` is structurally
+// distinct enough from word-list `for name in …` that collapsing costs clarity.
 type HeadKey =
   | "if"
   | "for"
@@ -95,31 +92,43 @@ function bodyKeywords(header: YNodeSeq): readonly string[] {
   return [...out]
 }
 
-function altForm(item: YodlEntry): AlternateForm | undefined {
-  const template = normalizeHeader(item.header)
-  if (!template) return undefined
-  return { template, keywords: bodyKeywords(item.header) }
+/**
+ * Per the upstream `grammar.yo` preamble of "Alternate Forms For Complex
+ * Commands", every form is enabled by either a braced `sublist` or the
+ * `SHORT_LOOPS` option; `repeat` additionally accepts the narrower
+ * `SHORT_REPEAT` (which enables only repeat's short form).
+ *
+ * Hard-coded vs preamble-parsed: closed two-case table, and upstream embeds
+ * the rationale in prose rather than per-item.
+ */
+function altRequires(head: HeadKey): NonEmpty<string> {
+  return head === "repeat"
+    ? nonEmpty("SHORT_LOOPS", "SHORT_REPEAT")
+    : nonEmpty("SHORT_LOOPS")
 }
 
-/**
- * Parse the "Complex Commands" section into `ComplexCommandDoc` records, then
- * attach each "Alternate Forms for Complex Commands" item to the matching
- * base record via `classifyHead`.
- *
- * Items whose head does not classify (rare corpus edge cases) are dropped
- * silently; classification is intentionally a closed enumeration so drift in
- * the upstream grammar surfaces as missing records, not as silent mis-routing.
- */
+function altForm(item: YodlEntry, head: HeadKey): AlternateForm | undefined {
+  const template = normalizeHeader(item.header)
+  if (!template) return undefined
+  return {
+    template,
+    keywords: bodyKeywords(item.header),
+    requires: altRequires(head),
+  }
+}
+
+// Items whose head doesn't classify (rare corpus edge cases) are dropped
+// silently — classification is a closed enumeration so upstream-grammar drift
+// surfaces as missing records, not silent mis-routing.
 export function parseComplexCommands(
   yo: YodlSrc,
 ): readonly ComplexCommandDoc[] {
   const out = new Map<HeadKey, ComplexCommandDoc>()
 
-  // Capture every header — xitems that precede a body-bearing item share
-  // that body (e.g. the `function` synopsis has two xitems before its
-  // `item(...)(body)`). Return a non-undefined value unconditionally so
-  // `collectAliasedEntries` doesn't reset the pending-head run on headers
-  // whose first word isn't a known head keyword.
+  // Returns unconditionally so `collectAliasedEntries` doesn't reset the
+  // pending-head run on headers whose first word isn't a known keyword —
+  // xitems preceding a body-bearing item share that body (e.g. `function`
+  // has two xitems before its `item(...)(body)`).
   const parseHead = (header: YodlEntry["header"]) => {
     const sig = normalizeHeader(header)
     return { head: classifyHead(sig), sig, header }
@@ -148,7 +157,7 @@ export function parseComplexCommands(
     const head = classifyHead(normalizeHeader(item.header))
     if (!head) continue
     const base = out.get(head)
-    const af = altForm(item)
+    const af = altForm(item, head)
     if (!base || !af) continue
     out.set(head, { ...base, alternateForms: [...base.alternateForms, af] })
   }

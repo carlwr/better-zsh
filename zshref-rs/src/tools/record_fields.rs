@@ -28,6 +28,11 @@ pub fn record_display(_cat_name: &str, rec: &Rec) -> String {
     str_field(rec, "_display").to_string()
 }
 
+/// Reads the baked `_title` field (rendered record title); falls back to `""`.
+pub fn record_title(_cat_name: &str, rec: &Rec) -> String {
+    str_field(rec, "_title").to_string()
+}
+
 /// Reads the baked `_subKind` field. `None` for categories where `docSubKind` is undefined.
 pub fn record_sub_kind(_cat_name: &str, rec: &Rec) -> Option<String> {
     let s = str_field(rec, "_subKind");

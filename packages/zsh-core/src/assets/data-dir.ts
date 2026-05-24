@@ -3,7 +3,7 @@ import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 import { corpusYodlFiles } from "../docs/source-files.ts"
 
-// Directory containing this module file — resolved for CJS (__dirname) and ESM (import.meta.url).
+// Dual CJS/ESM resolution for the module's own directory.
 const thisDir: string =
   typeof __dirname !== "undefined"
     ? resolve(__dirname)

@@ -6,7 +6,7 @@ import { docCategoryPreamble } from "../../docs/category-preamble"
 import type { DocCorpus } from "../../docs/corpus"
 import * as zd from "../../docs/corpus"
 import type { DocCategory, DocRecordMap } from "../../docs/taxonomy"
-import { docCategories, idOf } from "../../docs/taxonomy"
+import { docCategories, idOf, mkPieceId } from "../../docs/taxonomy"
 import type {
   ArithOpDoc,
   BuiltinDoc,
@@ -26,11 +26,14 @@ import type {
   ZleWidgetDoc,
   ZshOption,
 } from "../../docs/types"
-import { mkOptFlag, mkRedirOp } from "../../docs/types"
+import { mkOptFlag, mkRedirOp, mkShellParamKeyName } from "../../docs/types"
 import { dumpFile, dumpText, writeRefDump } from "../../render/dump"
 import {
   defaultStateIn,
   fmtOptRefsInMd,
+  headFor,
+  isDocoptSig,
+  isSynonymList,
   mdArithOp,
   mdBuiltin,
   mdComplexCommand,
@@ -54,6 +57,8 @@ import {
   mdSpecialFunction,
   mdSubscriptFlag,
   mdZleWidget,
+  recordTitle,
+  renderDocWithTitle,
 } from "../../render/md"
 import { refDocs } from "../../render/refs"
 import { withTmpDirAsync } from "../tmp-dir"
@@ -155,11 +160,11 @@ const stub = <K extends DocCategory>(
     ...extra,
   }) as unknown as DocRecordMap[K]
 
-const sf = stub("subscript_flag", "flag", "(w)", {
+const sf = stub("subscript_flag", "flag", "w", {
   desc: "d:sf",
   args: ["string"],
 })
-const pf = stub("param_expn_flag", "flag", "(U)", { desc: "d:pf" })
+const pf = stub("param_expn_flag", "flag", "U", { desc: "d:pf" })
 const hi = stub("history_expn", "key", "!!", {
   kind: "event-designator",
   desc: "d:hi",
@@ -269,38 +274,27 @@ const headings = (t: string | undefined) => (t?.match(/^## /gm) ?? []).length
 
 // --- case tables ------------------------------------------------------------
 
+const noOpts = mkTestCorpus({ option: [] })
+const cdCorpus = mkTestCorpus({ option: [cd] })
+
+// Title is composed downstream by `recordTitle` — body assertions below
+// deliberately exclude the title line. See the `recordTitle` and
+// `renderDocWithTitle` tests further down for title-related coverage.
+
 const renderedMarkdownCases = [
-  [
-    "special_param",
-    mdShellParam(sec),
-    ["`SECONDS`", "d:p", "Special Parameter"],
-  ],
-  [
-    "builtin",
-    mdBuiltin(bi),
-    ["`echo`", "```zsh", "echo [ -n ] [ arg ... ]", "d:bi"],
-  ],
-  [
-    "precmd_modifier",
-    mdPrecmd(pc),
-    ["`noglob`", "_Role:_ precommand modifier"],
-  ],
-  [
-    "redirection",
-    mdRedir(rd),
-    ["`>>`", "```zsh", ">> word", "d:r", "Redirection"],
-  ],
+  ["special_param", mdShellParam(sec), ["d:p", "Special Parameter"]],
+  ["builtin", mdBuiltin(bi), ["```docopt", "echo [ -n ] [ arg ... ]", "d:bi"]],
+  ["precmd_modifier", mdPrecmd(pc), ["_Role:_ precommand modifier"]],
+  ["redirection", mdRedir(rd), ["```docopt", ">> word", "d:r", "Redirection"]],
   [
     "process_subst",
     mdProcessSubst(sub),
-    ["`<(...)`", "d:ps", "_Category:_ Process Substitution"],
+    ["d:ps", "_Category:_ Process Substitution"],
   ],
   [
     "param_expn",
     mdParamExpn(px),
     [
-      "`${name:-word}`",
-      "_(default, form 2 of 2)_",
       "```zsh",
       "${name-word}",
       "${name:-word}    # <- this form",
@@ -311,7 +305,7 @@ const renderedMarkdownCases = [
   [
     "reserved_word",
     mdReservedWord(word),
-    ["`if`", "d:rw", "_Role:_ reserved word (command position)"],
+    ["d:rw", "_Role:_ reserved word (command position)"],
   ],
   [
     "reserved_word no-desc",
@@ -321,14 +315,13 @@ const renderedMarkdownCases = [
       section: "Reserved Words",
       pos: "command",
     }),
-    ["`for`", "_Role:_ reserved word (command position)"],
+    ["_Role:_ reserved word (command position)"],
   ],
   [
     "complex_command",
-    mdComplexCommand(cc, mkTestCorpus({ option: [] })),
+    mdComplexCommand(cc, noOpts),
     [
-      "`if`",
-      "```zsh",
+      "```docopt",
       "if list then list fi",
       "d:cc",
       "_Alternate forms:_",
@@ -340,14 +333,18 @@ const renderedMarkdownCases = [
   [
     "prompt_escape",
     mdPromptEscape(pe),
-    ["`%n`", "d:pe", "_Category:_ Prompt Escape — Login information"],
+    [
+      "```zsh",
+      "print -P '%n'",
+      "d:pe",
+      "_Category:_ Prompt Escape — Login information",
+    ],
   ],
   [
     "zle_widget",
     mdZleWidget(zw),
     [
-      "`backward-kill-word`",
-      "```zsh",
+      "```docopt",
       "backward-kill-word (^W ESC-^H ESC-^?) (unbound) (unbound)",
       "d:zw",
       "_Role:_ ZLE standard widget",
@@ -357,65 +354,63 @@ const renderedMarkdownCases = [
   [
     "keymap",
     mdKeymap(km),
-    ["`emacs`", "d:km", "_Role:_ ZLE keymap", "_Linked from:_ `main`"],
+    ["d:km", "_Role:_ ZLE keymap", "_Linked from:_ `main`"],
   ],
-  ["job_spec", mdJobSpec(js), ["`%%`", "d:js", "_Role:_ job spec (current)"]],
+  ["job_spec", mdJobSpec(js), ["d:js", "_Role:_ job spec (current)"]],
   [
     "arith_op",
     mdArithOp(ao),
-    ["`+`", "d:ao", "_Role:_ arithmetic operator (overloaded)"],
+    ["d:ao", "_Role:_ arithmetic operator (overloaded)"],
   ],
   [
     "special_function",
     mdSpecialFunction(sfn),
     [
-      "`chpwd`",
       "d:sfn",
       "```zsh",
       "chpwd_functions=( funcname1 funcname2 ... )",
       "_Role:_ hook function",
     ],
   ],
-] as const
-
-const noOpts = mkTestCorpus({ option: [] })
-const cdCorpus = mkTestCorpus({ option: [cd] })
-
-const compactMarkdownCases = [
   [
     "subscript_flag",
     mdSubscriptFlag(sf, noOpts),
-    ["`(w)`", "d:sf", "_Role:_ parameter-subscript flag (args: string)"],
+    [
+      "```zsh",
+      "${name[(w)exp]}",
+      "d:sf",
+      "_Role:_ parameter-subscript flag (args: string)",
+    ],
   ],
   [
     "param_expn_flag",
     mdParamFlag(pf, noOpts),
-    ["`(U)`", "d:pf", "_Role:_ parameter-expansion flag"],
+    ["```zsh", "${(U)spec}", "d:pf", "_Role:_ parameter-expansion flag"],
   ],
   [
     "history_expn",
     mdHistory(hi, noOpts),
-    ["`!!`", "d:hi", "_Role:_ history event designator"],
+    ["d:hi", "_Role:_ history event designator"],
   ],
   [
     "glob_op",
     mdGlobOp(go, noOpts),
-    ["`*`", "d:go", "_Role:_ glob operator (standard)"],
+    ["d:go", "_Role:_ glob operator (standard)"],
   ],
   [
     "glob_flag",
     mdGlobFlag(gf, noOpts),
-    ["`i`", "d:gf", "_Role:_ glob flag (args: expr)"],
+    ["```zsh", "(#i)pat", "d:gf", "_Role:_ glob flag (args: expr)"],
   ],
   [
     "glob_qualifier",
     mdGlobQualifier(gq, noOpts),
-    ["`@`", "d:gq", "_Role:_ glob qualifier"],
+    ["```zsh", "*(@)", "d:gq", "_Role:_ glob qualifier"],
   ],
   [
     "comp_utility",
     mdCompUtility(cuu),
-    ["`_all_labels`", "d:cuu", "_Category:_ Completion Utility"],
+    ["d:cuu", "_Category:_ Completion Utility"],
   ],
 ] as const
 
@@ -424,7 +419,6 @@ const compactMarkdownCases = [
 describe("render markdown", () => {
   test("option markdown", () => {
     containsAll(mdOpt(cd, noOpts), [
-      "`AUTO_CD`",
       "```zsh",
       "setopt auto_cd",
       "unsetopt auto_cd",
@@ -435,41 +429,35 @@ describe("render markdown", () => {
     ])
   })
 
-  test("option refs — prose variants", () => {
-    expect(fmtOptRefsInMd("AUTO_CD AUTOCD NO_AUTO_CD NOAUTOCD", cdCorpus)).toBe(
+  // Backticked option references (e.g. from `tt(AUTO_CD)` upstream) are
+  // bold-promoted the same as bare ones; fenced code and `$VAR`/`${VAR}`
+  // expansions are untouched. Unknown option names pass through.
+  test.each([
+    [
+      "prose variants",
+      "AUTO_CD AUTOCD NO_AUTO_CD NOAUTOCD",
       "**`AUTO_CD`** **`AUTOCD`** **`NO_AUTO_CD`** **`NOAUTOCD`**",
-    )
-  })
-
-  test("option refs — skip vars and code fences", () => {
-    // prettier-ignore
-    const input =
+    ],
+    [
+      "skip vars and code fences",
       "$AUTO_CD ${AUTO_CD} $NO_AUTO_CD ${NOAUTOCD}\n" +
-      "`AUTO_CD` AUTO_CD\n```zsh\nAUTO_CD\n```\nAUTOCD"
-    // Backticked option references (e.g. from `tt(AUTO_CD)` upstream) are
-    // bold-promoted the same as bare ones; fenced code is untouched.
-    const want =
+        "`AUTO_CD` AUTO_CD\n```zsh\nAUTO_CD\n```\nAUTOCD",
       "$AUTO_CD ${AUTO_CD} $NO_AUTO_CD ${NOAUTOCD}\n" +
-      "**`AUTO_CD`** **`AUTO_CD`**\n```zsh\nAUTO_CD\n```\n**`AUTOCD`**"
+        "**`AUTO_CD`** **`AUTO_CD`**\n```zsh\nAUTO_CD\n```\n**`AUTOCD`**",
+    ],
+    ["only known", "AUTO_CD CDPATH POSIX", "**`AUTO_CD`** CDPATH POSIX"],
+  ])("option refs — %s", (_label, input, want) => {
     expect(fmtOptRefsInMd(input, cdCorpus)).toBe(want)
   })
 
-  test("option refs — only known", () => {
-    expect(fmtOptRefsInMd("AUTO_CD CDPATH POSIX", cdCorpus)).toBe(
-      "**`AUTO_CD`** CDPATH POSIX",
-    )
-  })
-
-  test("cond op markdown", () => {
-    expect(mdCondOp(cu, noOpts)).toBe("`-a` *file*\n\nd:u")
-    expect(mdCondOp(cb, noOpts)).toBe("*left* `-nt` *right*\n\nd:b")
+  test.each([
+    [cu, "```zsh\n[[ -a file ]]\n```\n\nd:u"],
+    [cb, "```zsh\n[[ left -nt right ]]\n```\n\nd:b"],
+  ] as const)("cond op markdown — body only ($arity)", (op, want) => {
+    expect(mdCondOp(op, noOpts)).toBe(want)
   })
 
   test.each(renderedMarkdownCases)("%s markdown", (_, md, parts) => {
-    containsAll(md, parts)
-  })
-
-  test.each(compactMarkdownCases)("%s markdown", (_, md, parts) => {
     containsAll(md, parts)
   })
 
@@ -510,6 +498,179 @@ describe("render markdown", () => {
     expect(opt?.id).toBe(mkDocumented("option", "AUTO_CD"))
     expect(opt?.heading).toBe("AUTO_CD")
     expect(docs.find(d => d.kind === "redirection")?.heading).toBe(">> word")
+  })
+
+  test.each([
+    // brackets / braces / pipe
+    "zmodload [ -is ] name ...",
+    "-o [ order ]",
+    "foo | bar",
+    "{a,b,c}",
+    // ellipses
+    "name ...",
+    "arg…",
+    // *meta* placeholders
+    "*pattern*",
+    // bare whitespace separator
+    "-A pat",
+    "-M matchspec",
+  ])("isDocoptSig accepts docopt-shaped %j", sig => {
+    expect(isDocoptSig(sig)).toBe(true)
+  })
+
+  // bare flag / key / escape
+  test.each([
+    "-a",
+    "--long",
+    "-1",
+    "nosort",
+    "%n",
+    "HOME",
+  ])("isDocoptSig rejects %j", sig => {
+    expect(isDocoptSig(sig)).toBe(false)
+  })
+
+  // comma-separated bare identifiers (widget synonym lists) carve out from docopt
+  test.each([
+    ["foo, bar", true],
+    ["history-incremental-search-backward, foo", true],
+    // single item / non-identifier / brackets / spaces → not a synonym list
+    ["foo", false],
+    ["foo, [bar]", false],
+    ["foo bar", false],
+  ] as const)("isSynonymList(%j) → %s", (sig, want) => {
+    expect(isSynonymList(sig)).toBe(want)
+  })
+
+  test("isDocoptSig rejects synonym list", () => {
+    expect(isDocoptSig("foo, bar")).toBe(false)
+  })
+
+  test("recordTitle — per-category formatting", () => {
+    expect(recordTitle("option", cd)).toBe("`AUTO_CD`")
+    expect(recordTitle("conditional_op", cu)).toBe("`-a` *file*")
+    expect(recordTitle("conditional_op", cb)).toBe("*left* `-nt` *right*")
+    expect(recordTitle("builtin", bi)).toBe("`echo`")
+    expect(recordTitle("precmd_modifier", pc)).toBe("`noglob`")
+    expect(recordTitle("special_param", sec)).toBe("`SECONDS`")
+    expect(recordTitle("complex_command", cc)).toBe("`if`")
+    expect(recordTitle("reserved_word", word)).toBe("`if`")
+    expect(recordTitle("redirection", rd)).toBe("`>>`")
+    expect(recordTitle("process_subst", sub)).toBe("`<(...)`")
+    expect(recordTitle("param_expn", px)).toBe(
+      "`${name:-word}`    _(default, form 2 of 2)_",
+    )
+    expect(recordTitle("subscript_flag", sf)).toBe("`w`")
+    expect(recordTitle("param_expn_flag", pf)).toBe("`U`")
+    expect(recordTitle("history_expn", hi)).toBe("`!!`")
+    expect(recordTitle("glob_op", go)).toBe("`*`")
+    expect(recordTitle("glob_flag", gf)).toBe("`i`")
+    expect(recordTitle("glob_qualifier", gq)).toBe("`@`")
+    expect(recordTitle("prompt_escape", pe)).toBe("`%n`")
+    expect(recordTitle("zle_widget", zw)).toBe("`backward-kill-word`")
+    expect(recordTitle("keymap", km)).toBe("`emacs`")
+    expect(recordTitle("job_spec", js)).toBe("`%%`")
+    expect(recordTitle("arith_op", ao)).toBe("`+`")
+    expect(recordTitle("special_function", sfn)).toBe("`chpwd`")
+    expect(recordTitle("comp_utility", cuu)).toBe("`_all_labels`")
+  })
+
+  test("recordTitle — param_expn solo sig drops form-index decoration", () => {
+    const solo: ParamExpnDoc = {
+      ...px,
+      sig: mkDocumented("param_expn", "${name}"),
+      groupSigs: ["${name}"],
+      orderInGroup: 0,
+    }
+    expect(recordTitle("param_expn", solo)).toBe("`${name}`    _(default)_")
+  })
+
+  test("renderDocWithTitle — composes title + body", () => {
+    const docs = mkTestCorpus()
+    const pid = mkPieceId("builtin", bi.name)
+    const out = renderDocWithTitle(docs, pid)
+    // Title is on the first line, body follows after a blank line.
+    expect(out).toMatch(/^`echo`\n\n/)
+    expect(out).toContain("d:bi")
+  })
+
+  test("headFor — returns structured head for head-emitting categories", () => {
+    const builtinHead = headFor("builtin", bi)
+    expect(builtinHead).toEqual({
+      lang: "docopt",
+      lines: ["echo [ -n ] [ arg ... ]"],
+    })
+    const condHead = headFor("conditional_op", cu)
+    expect(condHead).toEqual({ lang: "zsh", lines: ["[[ -a file ]]"] })
+    const arithHead = headFor("arith_op", ao)
+    expect(arithHead).toEqual({
+      lang: "zsh",
+      lines: ["$(( + a ))", "$(( a + b ))"],
+    })
+  })
+
+  test("headFor — head-less categories return undefined", () => {
+    expect(headFor("keymap", km)).toBeUndefined()
+    expect(headFor("job_spec", js)).toBeUndefined()
+    expect(headFor("process_subst", sub)).toBeUndefined()
+  })
+
+  test("renderDocWithTitle — missing record returns empty string", () => {
+    const docs = mkTestCorpus({ builtin: [] })
+    const pid = mkPieceId("builtin", mkDocumented("builtin", "missing"))
+    expect(renderDocWithTitle(docs, pid)).toBe("")
+  })
+
+  test("alternate-form requires annotation rendered as trailing comment", () => {
+    const docWithReq: ComplexCommandDoc = {
+      ...cc,
+      alternateForms: [
+        {
+          template: "if list { list }",
+          keywords: [],
+          requires: ["SHORT_LOOPS"],
+        },
+        {
+          template: "repeat word sublist",
+          keywords: [],
+          requires: ["SHORT_LOOPS", "SHORT_REPEAT"],
+        },
+        { template: "plain form", keywords: [] },
+      ],
+    }
+    const md = mdComplexCommand(docWithReq, mkTestCorpus({ option: [] }))
+    expect(md).toContain("if list { list }    # requires SHORT_LOOPS")
+    expect(md).toContain(
+      "repeat word sublist    # requires SHORT_LOOPS or SHORT_REPEAT",
+    )
+    // Forms without requires render bare — no trailing comment.
+    expect(md).toMatch(/^plain form$/m)
+  })
+
+  test("member-list bullet — docopt sig becomes fenced docopt block", () => {
+    // ShellParamDoc.keys feed renderMemberList; use a docopt-shaped key to
+    // exercise the fenced-bullet path end to end.
+    const doc: ShellParamDoc = {
+      ...sec,
+      name: mkDocumented("special_param", "PSEUDO"),
+      sig: "PSEUDO",
+      desc: "intro",
+      keys: [
+        {
+          name: mkShellParamKeyName("[ key ] ..."),
+          desc: "first para\n\nsecond para",
+        },
+        { name: mkShellParamKeyName("plainkey"), desc: "leaf desc" },
+      ],
+    }
+    containsAll(mdShellParam(doc), [
+      // docopt key: fenced bullet block, indented multi-paragraph desc
+      "- ```docopt\n  [ key ] ...\n  ```",
+      "  first para",
+      "  second para",
+      // plain key: inline form
+      "- `plainkey`: leaf desc",
+    ])
   })
 })
 
@@ -577,14 +738,12 @@ describe("render dump", () => {
     const docs = refDocs(vendored)
     const files = dumpText(docs)
 
-    for (const kind of docCategories) {
+    test.each(docCategories)("%s dump covers every vendored record", kind => {
       const file = dumpFile.forCat(kind)
       const src = [...vendored[kind].values()]
-      test(`${file} covers ${kind}`, () => {
-        expect(docs.filter(d => d.kind === kind)).toHaveLength(src.length)
-        expect(headings(files.get(file))).toBe(src.length)
-      })
-    }
+      expect(docs.filter(d => d.kind === kind)).toHaveLength(src.length)
+      expect(headings(files.get(file))).toBe(src.length)
+    })
 
     // Vendored-option lookup that throws on miss; mdOpt rendered inline.
     const renderOpt = (name: string): string => {

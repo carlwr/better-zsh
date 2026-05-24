@@ -18,9 +18,9 @@ describe("docCategoryPreamble", () => {
     }
   })
 
+  // Type system already constrains keys to DocCategory; this guards against
+  // a stray cast at the declaration site.
   test("no extraneous keys outside DocCategory", () => {
-    // Type system already constrains keys to DocCategory; this guards
-    // against a stray cast at the declaration site.
     const extraneous = Object.keys(docCategoryPreamble).filter(
       k => !(docCategories as readonly string[]).includes(k),
     )

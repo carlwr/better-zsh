@@ -1,6 +1,6 @@
 import type { DocCorpus } from "@carlwr/zsh-core"
 import { syntacticContext } from "@carlwr/zsh-core/analysis"
-import { renderDoc } from "@carlwr/zsh-core/render"
+import { recordTitle, renderDocWithTitle } from "@carlwr/zsh-core/render"
 import { type DocPieceId, mkPieceId } from "@carlwr/zsh-core/taxonomy"
 import type { CondOpDoc, Documented, ZshOption } from "@carlwr/zsh-core/types"
 import * as vscode from "vscode"
@@ -95,17 +95,13 @@ export class CompletionProvider implements vscode.CompletionItemProvider {
         vscode.CompletionItemKind.Keyword,
       )
       item.detail = cop.desc
-      item.documentation = new vscode.MarkdownString(condSig(cop))
+      item.documentation = new vscode.MarkdownString(
+        recordTitle("conditional_op", cop),
+      )
       return item
     })
     return new vscode.CompletionList(items, false)
   }
-}
-
-function condSig(cop: CondOpDoc): string {
-  return cop.arity === "unary"
-    ? `\`${cop.op}\` *${cop.operands[0]}*`
-    : `*${cop.operands[0]}* \`${cop.op}\` *${cop.operands[1]}*`
 }
 
 function isWordName<T extends { name: string }>(doc: T): boolean {
@@ -125,6 +121,8 @@ function mkCompletionItem<T extends { name: string; desc?: string }>(
 ): vscode.CompletionItem {
   const item = new vscode.CompletionItem(doc.name, kind)
   if (doc.desc) item.detail = doc.desc
-  item.documentation = new vscode.MarkdownString(renderDoc(corpus, pieceId))
+  item.documentation = new vscode.MarkdownString(
+    renderDocWithTitle(corpus, pieceId),
+  )
   return item
 }

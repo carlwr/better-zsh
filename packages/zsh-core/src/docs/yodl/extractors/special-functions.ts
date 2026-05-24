@@ -13,19 +13,15 @@ import {
   normalizeHeader,
 } from "../core/text.ts"
 
-// `func.yo` §"Special Functions" has two subsections; items live in each.
 const HOOK_SECTION = "Hook Functions"
 const TRAP_SECTION = "Trap Functions"
 
 /**
- * Parse zsh "special functions" from `func.yo` §"Special Functions".
- *
  * Two subsections contribute:
- * - `Hook Functions`: chpwd, periodic, precmd, preexec, zshaddhistory, zshexit.
- *   Each has a companion `${name}_functions` array; populated into `hookArray`.
- * - `Trap Functions`: the `TRAPNAL` template plus TRAPDEBUG, TRAPEXIT,
- *   TRAPZERR, TRAPERR. The template header is `tt(TRAP)var(NAL)`; its
- *   corpus id is the literal string `TRAPNAL`.
+ * - `Hook Functions`: each has a companion `${name}_functions` array,
+ *   populated into `hookArray`.
+ * - `Trap Functions`: the template header is `tt(TRAP)var(NAL)`; its corpus
+ *   id is the literal string `TRAPNAL`.
  */
 export function parseSpecialFunctions(
   yo: YodlSrc,

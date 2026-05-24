@@ -7,21 +7,10 @@ import { firstTt, normalizeBody } from "../core/text.ts"
 const SECTION = "Arithmetic Evaluation"
 
 /**
- * Parse zsh arithmetic operators from `arith.yo`.
- *
- * The file contains two precedence tables: the native-precedence one and the
- * `C_PRECEDENCES` variant. We use only the first — both define the same
- * operator set, and agents don't benefit from duplicates. Precedence numbers
- * are deliberately not captured (high maintenance, low value).
- *
- * Each `sitem(tt(OPS))(DESC)` row contains space-separated ops in the header.
- * Rows like `+ - ! ~ ++ --` list unary ops; the `+ -` row later is the binary
- * forms. `+` and `-` appear in both: we emit one record each, with
- * `arity: "overloaded"`, and concatenate the unary/binary descriptions.
- *
- * Uses `extractFirstSitemList` directly: the section heading lives inside an
- * `ifzman(...)` wrapper so `extractSectBody` misses it, and there is only one
- * operator table in the file anyway (the first one). Precedent: cond-ops.ts.
+ * `arith.yo` has two precedence tables (native, `C_PRECEDENCES`); we use the
+ * first only — same operator set, no value in duplicates. Precedence numbers
+ * intentionally not captured (high maintenance, low value). Section heading
+ * lives inside `ifzman(...)` so `extractSectBody` misses it — go direct.
  */
 export function parseArithOps(yo: YodlSrc): readonly ArithOpDoc[] {
   const byOp = new Map<string, { arity: ArithOpArity; desc: string }>()
@@ -32,8 +21,8 @@ export function parseArithOps(yo: YodlSrc): readonly ArithOpDoc[] {
     const arity = rowArity(desc)
     for (const op of ops) {
       const prev = byOp.get(op)
-      // Same op seen twice — only true for `+` and `-` in the native table.
-      // Mark as overloaded, concat descriptions for reader context.
+      // Same op seen twice — only `+` and `-` in the native table. Mark
+      // overloaded, concat descriptions.
       byOp.set(
         op,
         prev

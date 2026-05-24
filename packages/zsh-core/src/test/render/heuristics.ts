@@ -107,11 +107,14 @@ const emptyFenceInfo = {
   name: "empty-fence-info",
   describe: "fence-open line carries trailing content (info-string overflow)",
   detects(md) {
-    // A clean fence-open line is either ``` or ```<lang>. Anything else
+    // A clean fence-open line is either ``` or ```<lang>, where <lang> is a
+    // word with optional hyphens (e.g. `zsh`, `docopt`). Anything else
     // means content leaked into the info string. Walk every line: fence
     // detection here is local because we explicitly want to read fence-open
     // lines themselves (the `proseLines` helper skips them).
-    return md.split("\n").filter(line => /^```(?!$)(?!\w+$)/.test(line))
+    return md
+      .split("\n")
+      .filter(line => /^```(?!$)(?![A-Za-z][A-Za-z0-9-]*$)/.test(line))
   },
 } satisfies Heuristic
 
@@ -129,11 +132,12 @@ const lcKeyedDefText = {
     "lowercase identifier(s) followed by capitalized sentence — flat key-list",
   detects(md) {
     // Optional surrounding backticks accommodate upstream `tt(<key>)` markup.
-    // Up to 4 leading spaces tolerate the bullet-list continuation indent:
-    // flag descs are rendered as bullets so a nested flat key-list lands one
-    // level deeper.
+    // Anchored at column 0: real flag rows are bullets (rendered with `- `
+    // prefix) or column-0 prose (when the extractor failed to capture them
+    // as a structured list). Indented lines are bullet-continuation content,
+    // not real flag rows.
     const re =
-      /^ {0,4}`?([a-z][a-z0-9_]*)`?(?: `?[a-z][a-z0-9_]*`?)? +[A-Z][^.\n]{20,}/
+      /^`?([a-z][a-z0-9_]*)`?(?: `?[a-z][a-z0-9_]*`?)? +[A-Z][^.\n]{20,}/
     return [...proseLines(md)].filter(line => re.test(line))
   },
 } satisfies Heuristic
@@ -147,8 +151,12 @@ const flagKeyedDefText = {
   name: "flag-keyed-deftext",
   describe: "option-flag-like line followed by capitalized sentence",
   detects(md) {
+    // Anchored at column 0: real flag rows are bullets (rendered with `- `
+    // prefix) or column-0 prose (when the extractor failed to capture them
+    // as a structured list). Indented lines are bullet-continuation content,
+    // not real flag rows.
     const re =
-      /^ {0,4}`?(-{1,2}[A-Za-z][A-Za-z0-9-]*)`?(?: `?[a-z][a-z0-9-]*`?)? +[A-Z][^.\n]{20,}/
+      /^`?(-{1,2}[A-Za-z][A-Za-z0-9-]*)`?(?: `?[a-z][a-z0-9-]*`?)? +[A-Z][^.\n]{20,}/
     return [...proseLines(md)].filter(line => re.test(line))
   },
 } satisfies Heuristic

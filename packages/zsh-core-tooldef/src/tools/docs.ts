@@ -1,7 +1,8 @@
 // MIRRORED-IN: zshref-rs/src/tools/docs.rs
 
+import { isDefined, trim } from "@carlwr/typescript-extra"
 import type { DocCorpus } from "@carlwr/zsh-core"
-import { renderDoc } from "@carlwr/zsh-core/render"
+import { recordTitle, renderDoc } from "@carlwr/zsh-core/render"
 import {
   lookupRaw,
   type ResolverFeedback,
@@ -33,6 +34,8 @@ export interface DocsInput {
 }
 
 export interface DocsMatch extends BaseMatch {
+  /** Rendered record title (short inline markdown); split out of `mdBody`. */
+  readonly title: string
   readonly mdBody: string
   /**
    * Optional per-category resolver feedback surfacing lossy normalization the
@@ -63,9 +66,10 @@ function formatMatch(
     category: pid.category,
     id: pid.id as string,
     display: display(pid.category, rec),
+    title: recordTitle(pid.category, rec),
     mdBody: renderDoc(corpus, pid),
-    ...(subKind !== undefined ? { subKind } : {}),
-    ...(fb !== undefined ? { feedback: fb } : {}),
+    ...(isDefined(subKind) ? { subKind } : {}),
+    ...(isDefined(fb) ? { feedback: fb } : {}),
   }
 }
 
@@ -79,7 +83,7 @@ function formatMatch(
  */
 export function docs(corpus: DocCorpus, input: DocsInput): DocsResult {
   const key = input.key
-  if (key.trim().length === 0) return mkEnvelope<DocsMatch>([])
+  if (trim(key).length === 0) return mkEnvelope<DocsMatch>([])
 
   if (input.category !== undefined) {
     if (!isValidCategory(input.category)) return mkEnvelope<DocsMatch>([])
@@ -117,7 +121,11 @@ export const docsToolDef: ToolDef = buildToolDef<"key" | "category">({
   name: "zsh_docs",
   prose: docsProse,
   shape: docsShape,
-  outputSchema: mkOutputSchema({ mdBody: "required", feedback: "optional" }),
+  outputSchema: mkOutputSchema({
+    title: "required",
+    mdBody: "required",
+    feedback: "optional",
+  }),
   execute: (corpus, input): DocsResult =>
     docs(corpus, input as unknown as DocsInput),
 })

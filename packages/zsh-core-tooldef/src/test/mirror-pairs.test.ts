@@ -10,6 +10,7 @@
 import { readdirSync, readFileSync } from "node:fs"
 import { dirname, extname, join, relative } from "node:path"
 import { fileURLToPath } from "node:url"
+import { allUnique, isDefined } from "@carlwr/typescript-extra"
 import { describe, expect, test } from "vitest"
 import { parityUnits } from "./parity-units.ts"
 
@@ -99,14 +100,14 @@ function firstSourceLine(rel: string): string {
 describe("mirror-pairs", () => {
   test("parity unit names are unique", () => {
     const names = parityUnits.map(u => u.name)
-    expect(new Set(names).size).toBe(names.length)
+    expect(allUnique(names)).toBe(true)
   })
 
   test("parity unit toolName values are unique", () => {
     const names = parityUnits.flatMap(u =>
-      u.toolName !== undefined ? [u.toolName] : [],
+      isDefined(u.toolName) ? [u.toolName] : [],
     )
-    expect(new Set(names).size).toBe(names.length)
+    expect(allUnique(names)).toBe(true)
   })
 
   test("declared TS↔RS edges match repo markers exactly", () => {

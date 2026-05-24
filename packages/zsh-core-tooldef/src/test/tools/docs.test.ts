@@ -25,6 +25,7 @@ describe("docs — single-category lookups (no `category` set)", () => {
     expect(m?.category).toBe(category)
     expect(m?.id).toBe(id)
     expect(m?.mdBody.length).toBeGreaterThan(0)
+    expect(m?.title.length).toBeGreaterThan(0)
     if (display !== undefined) expect(m?.display).toBe(display)
     else expect(m?.display.length).toBeGreaterThan(0)
   })

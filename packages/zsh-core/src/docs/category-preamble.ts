@@ -7,11 +7,10 @@ Many corpus keys are templates, not literals: \`n\` stands for any non-negative 
 Word-designators and modifiers are only meaningful inside a history expansion (after the event designator); in isolation they are not zsh tokens.`
 
 /**
- * Optional category-level preamble for consumers that surface a category as a
- * whole (e.g. rendered dump files, category overviews in tool descriptions).
- * Absent for most categories; present only where the records cannot be
- * meaningfully interpreted on their own. Composable with per-record markdown;
- * not a substitute for it.
+ * Optional category-level preamble for consumers that surface a category as
+ * a whole (rendered dump files, category overviews in tool descriptions).
+ * Present only where records cannot be meaningfully interpreted on their
+ * own; composes with per-record markdown, never replaces it.
  */
 export const docCategoryPreamble: Readonly<
   Partial<Record<DocCategory, string>>

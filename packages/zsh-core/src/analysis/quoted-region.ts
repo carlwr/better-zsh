@@ -1,11 +1,15 @@
 import type { TextSpan } from "./doc.ts"
-import type { QuotedRegionFact, QuoteStyle } from "./fact-types.ts"
+import {
+  type QuotedRegionFact,
+  type QuoteStyle,
+  quoteStyles,
+} from "./fact-types.ts"
 
 type ScanResult =
   | { readonly kind: "closed"; readonly end: number }
   | { readonly kind: "aborted"; readonly resume: number }
 
-const QUOTES: ReadonlySet<string> = new Set(["'", '"'])
+const QUOTES: ReadonlySet<string> = new Set(quoteStyles)
 
 export function quotedRegionFacts(
   lines: readonly string[],
@@ -29,12 +33,13 @@ export function quotedRegionFacts(
       continue
     }
 
-    const scanned = scanQuoted(text, i, ch as QuoteStyle)
+    const quote = ch as QuoteStyle
+    const scanned = scanQuoted(text, i, quote)
     if (scanned.kind === "aborted") {
       i = scanned.resume
       continue
     }
-    out.push(regionFact(text, { start: i, end: scanned.end }, ch as QuoteStyle))
+    out.push(regionFact(text, { start: i, end: scanned.end }, quote))
     i = scanned.end
   }
 

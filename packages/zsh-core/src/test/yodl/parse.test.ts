@@ -163,37 +163,42 @@ describe("parseNodes", () => {
   })
 
   describe("yodl `+macro()` separator marker", () => {
-    test("`+LPAR()` parses as a single macro node (no leading +)", () => {
-      const nodes = parseNodes("+LPAR()")
-      expect(nodes).toHaveLength(1)
-      expect(nodes[0]).toMatchObject({ kind: "macro", name: "LPAR" })
-    })
-
-    test("`+LPAR()+RPAR()` parses as two macro nodes", () => {
-      const nodes = parseNodes("+LPAR()+RPAR()")
-      expect(nodes).toHaveLength(2)
-      expect(nodes[0]).toMatchObject({ kind: "macro", name: "LPAR" })
-      expect(nodes[1]).toMatchObject({ kind: "macro", name: "RPAR" })
-    })
-
-    test("`foo+LPAR()bar` yields [text foo, macro LPAR, text bar]", () => {
-      const nodes = parseNodes("foo+LPAR()bar")
-      expect(nodes).toHaveLength(3)
-      expect(nodes[0]).toMatchObject({ kind: "text", text: "foo" })
-      expect(nodes[1]).toMatchObject({ kind: "macro", name: "LPAR" })
-      expect(nodes[2]).toMatchObject({ kind: "text", text: "bar" })
-    })
-
-    test("digit before `+` still parses the macro", () => {
-      const nodes = parseNodes("1+LPAR()")
-      expect(nodes).toHaveLength(2)
-      expect(nodes[0]).toMatchObject({ kind: "text", text: "1" })
-      expect(nodes[1]).toMatchObject({ kind: "macro", name: "LPAR" })
+    test.each([
+      // `+LPAR()`: single macro node, no leading +
+      ["+LPAR()", [{ kind: "macro", name: "LPAR" }]],
+      [
+        "+LPAR()+RPAR()",
+        [
+          { kind: "macro", name: "LPAR" },
+          { kind: "macro", name: "RPAR" },
+        ],
+      ],
+      [
+        "foo+LPAR()bar",
+        [
+          { kind: "text", text: "foo" },
+          { kind: "macro", name: "LPAR" },
+          { kind: "text", text: "bar" },
+        ],
+      ],
+      // digit before `+` still parses the macro
+      [
+        "1+LPAR()",
+        [
+          { kind: "text", text: "1" },
+          { kind: "macro", name: "LPAR" },
+        ],
+      ],
+    ])("parseNodes(%j) → expected nodes", (input, want) => {
+      const nodes = parseNodes(input)
+      expect(nodes).toHaveLength(want.length)
+      for (const [i, shape] of want.entries()) {
+        expect(nodes[i]).toMatchObject(shape)
+      }
     })
 
     test("`+(` where `(` is not a macro-name start stays literal", () => {
       const nodes = parseNodes("$+(foo)")
-      // No macro node; `+` is kept as literal text.
       expect(nodes.every(n => n.kind === "text")).toBe(true)
       const joined = nodes.map(n => (n.kind === "text" ? n.text : "")).join("")
       expect(joined).toBe("$+(foo)")

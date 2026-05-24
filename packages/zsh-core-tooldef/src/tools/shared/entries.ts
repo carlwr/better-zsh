@@ -1,5 +1,6 @@
 // MIRRORED-IN: zshref-rs/src/tools/envelope.rs
 
+import { isDefined } from "@carlwr/typescript-extra"
 import type { DocCorpus } from "@carlwr/zsh-core"
 import {
   type DocCategory,
@@ -31,7 +32,7 @@ export function entries(corpus: DocCorpus, cat?: DocCategory): BaseMatch[] {
         category: c,
         id: id as string,
         display: display(c, rec),
-        ...(subKind !== undefined ? { subKind } : {}),
+        ...(isDefined(subKind) ? { subKind } : {}),
       })
     }
   }

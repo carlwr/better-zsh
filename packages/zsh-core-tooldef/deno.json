@@ -8,6 +8,7 @@
     ".": "./index.ts"
   },
   "imports": {
+    "@carlwr/typescript-extra": "jsr:@carlwr/typescript-extra@^0.10.0",
     "@carlwr/zsh-core": "jsr:@carlwr/zsh-core@^0.1.0-alpha.0",
     "@carlwr/zsh-core/render": "jsr:@carlwr/zsh-core@^0.1.0-alpha.0/render",
     "@carlwr/zsh-core/resolver": "jsr:@carlwr/zsh-core@^0.1.0-alpha.0/resolver",

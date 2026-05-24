@@ -8,9 +8,9 @@ import {
 import { normalizeBody, stripYodl } from "./text.ts"
 
 /**
- * Closure that narrows a raw section/subsection string to a member of `values`
- * — throwing on unknown so extractors fail loud when upstream Yodl introduces
- * a subsection name the type system hasn't been taught about.
+ * Narrows a raw string to a member of `values`; throws on unknown so
+ * extractors fail loud when upstream Yodl introduces a name the type system
+ * hasn't been taught about.
  */
 export function mkClosedUnionParser<T extends string>(
   values: readonly T[],
@@ -49,7 +49,6 @@ export function extractItems(src: YodlSrc, depth?: number): YodlEntry[] {
   return extractEntries(asNodes(src), ["xitem", "item"], depth)
 }
 
-/** Narrow a list of entries to those carrying a body. Type-guarded. */
 export function withBody(
   entries: readonly YodlEntry[],
 ): (YodlEntry & { body: YNodeSeq })[] {
@@ -58,7 +57,7 @@ export function withBody(
   )
 }
 
-/** Convenience: only the top-level (depth-1) `item`/`xitem` entries. */
+/** `extractItems(src, 1)` — top-level `item`/`xitem` entries. */
 export function extractItemList(src: YodlSrc): YodlEntry[] {
   return extractItems(src, 1)
 }
@@ -138,19 +137,18 @@ export function splitBodyAtAllNestedLists(
 }
 
 /**
- * Locate the first balanced top-level `open()` / `close()` pair in `nodes`,
- * returning the indices of the opener and matching closer. Nested pairs of
- * the same kind nest by depth count. Returns `undefined` if no balanced
- * pair exists.
+ * First balanced top-level `open()`/`close()` pair in `nodes`, by depth
+ * count. `undefined` if no balanced pair exists.
  */
 function findBracketRange(
   nodes: YNodeSeq,
   open: string,
   close: string,
+  from = 0,
 ): { start: number; end: number } | undefined {
   let depth = 0
   let start = -1
-  for (let i = 0; i < nodes.length; i++) {
+  for (let i = from; i < nodes.length; i++) {
     const node = nodes[i]
     if (isMacro(node, open)) {
       if (depth === 0) start = i
@@ -165,18 +163,33 @@ function findBracketRange(
   return undefined
 }
 
+/** Every balanced top-level `open()`/`close()` range in `nodes`, in source order. */
+export function findAllBracketRanges(
+  nodes: YNodeSeq,
+  open: string,
+  close: string,
+): { start: number; end: number }[] {
+  const ranges: { start: number; end: number }[] = []
+  let from = 0
+  for (;;) {
+    const range = findBracketRange(nodes, open, close, from)
+    if (!range) return ranges
+    ranges.push(range)
+    from = range.end + 1
+  }
+}
+
 /**
- * The depth-1 `item`/`xitem` entries inside the first
- * `startitem()`/`enditem()` block of `src`. Empty when no such block exists
- * (matches the historical "guard the list, iterate it" pattern in extractors).
+ * Depth-1 `item`/`xitem` entries inside `src`'s first
+ * `startitem()`/`enditem()` block; empty when absent.
  */
 export function extractFirstItemList(src: YodlSrc): YodlEntry[] {
   return extractFirstList(src, "item", ["xitem", "item"])
 }
 
 /**
- * The depth-1 `sitem` entries inside the first
- * `startsitem()`/`endsitem()` block of `src`. Empty when no such block exists.
+ * Depth-1 `sitem` entries inside `src`'s first `startsitem()`/`endsitem()`
+ * block; empty when absent.
  */
 export function extractFirstSitemList(src: YodlSrc): YodlEntry[] {
   return extractFirstList(src, "sitem", ["sitem"])
@@ -236,8 +249,7 @@ function extractFirstList(
       1,
     )
   }
-  // Unbalanced: take the tail from the first opener if any (matches the
-  // historical behavior of the inline walker).
+  // Unbalanced: take the tail from the first opener if any.
   const openIdx = nodes.findIndex(n => isMacro(n, open))
   return openIdx === -1
     ? []
@@ -283,10 +295,8 @@ export function collectAliasedEntries<T>(
 }
 
 /**
- * Maps every list-bracket macro to the list family it bounds and the depth
- * delta it applies. Derived from `LIST_BRACKETS` so adding a list kind is one
- * edit. `extractEntries` walks these to track current nesting depth per
- * family without parallel counters.
+ * Bracket-macro -> (family, depth delta). `extractEntries` walks these to
+ * track per-family nesting depth without parallel counters.
  */
 const BRACKET_FAMILY: Readonly<
   Record<string, readonly [YodlListKind, 1 | -1]>

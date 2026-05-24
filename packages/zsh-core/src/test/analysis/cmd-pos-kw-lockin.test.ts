@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest"
-import { cmdHeadFactsOnLine } from "../../analysis/line-facts"
+import { cmdHeadFactsOnLine } from "../../analysis/facts"
 import { loadCorpus } from "../../docs/corpus"
 
 const corpus = loadCorpus()
@@ -21,8 +21,6 @@ describe("analysis layer: command-position keyword set lock-in", () => {
     return facts.some(f => f.kind === "reserved-word" && f.text === word)
   }
 
-  // Words the analyzer currently treats as command-position keywords and that
-  // this test guards directly.
   const EXPECTED: ReadonlySet<string> = new Set([
     "if",
     "then",

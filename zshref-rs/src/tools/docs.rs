@@ -9,7 +9,7 @@
 use crate::corpus::{Corpus, CLASSIFY_ORDER};
 use crate::resolver::{resolve_in, ResolvedHit};
 use crate::tools::envelope::mk_envelope;
-use crate::tools::record_fields::{record_sub_kind, str_field, str_input};
+use crate::tools::record_fields::{record_sub_kind, record_title, str_field, str_input};
 use anyhow::Result;
 use serde_json::{Map, Value};
 
@@ -49,6 +49,10 @@ fn hit_to_match(h: &ResolvedHit<'_>) -> Value {
     m.insert("category".into(), Value::String(h.category.to_string()));
     m.insert("id".into(), Value::String(h.id.clone()));
     m.insert("display".into(), Value::String(h.display.clone()));
+    m.insert(
+        "title".into(),
+        Value::String(record_title(h.category, h.rec)),
+    );
     m.insert(
         "mdBody".into(),
         Value::String(str_field(h.rec, "mdBody").to_string()),

@@ -1,18 +1,17 @@
 /**
  * @module
- * Walk the *prose* portions of a markdown string — the parts outside fenced
- * code blocks and inline code spans. Shared primitive so that option-ref
- * bolding and the render-quality heuristics agree on what "in code" means.
+ * Walk prose portions of markdown — outside fenced code blocks and inline
+ * code spans. Shared so option-ref bolding and render-quality heuristics
+ * agree on what "in code" means.
  */
 
 // CommonMark allows ≤3 spaces of leading indent on a fence marker — that
-// also covers fence blocks nested inside 2-space-indented list items.
-const FENCE = /^ {0,3}```/
+// also covers fence blocks nested inside 2-space-indented list items. The
+// `(?:- )?` lets a fence open on the same line as a list-item marker
+// (renderer produces this shape for docopt-shaped member-list bullets); the
+// fence-close on a separate line is already covered by the plain indent.
+const FENCE = /^ {0,3}(?:- )?```/
 
-/**
- * Tag each line of `md` as prose, fence-marker, or inside-fence. Tagging is
- * the shared primitive behind `proseLines`, `anyProseLine`, `walkProseLines`.
- */
 function* classifyLines(
   md: string,
 ): Generator<readonly [line: string, isProse: boolean]> {
@@ -27,15 +26,11 @@ function* classifyLines(
   }
 }
 
-/**
- * Iterate over the lines of `md` that are NOT inside a fenced code block.
- * Fence-open / fence-close lines themselves are skipped.
- */
+/** Lines of `md` outside fenced code blocks; fence markers themselves skipped. */
 export function* proseLines(md: string): Generator<string> {
   for (const [line, isProse] of classifyLines(md)) if (isProse) yield line
 }
 
-/** True iff any prose line in `md` satisfies `predicate`. */
 export function anyProseLine(
   md: string,
   predicate: (line: string) => boolean,
@@ -47,8 +42,7 @@ export function anyProseLine(
 }
 
 /**
- * Transform every prose line of `md` with `transformLine`. Fenced lines pass
- * through unchanged. The transform sees one complete line at a time; inline
+ * Transform every prose line; fenced lines pass through unchanged. Inline
  * code spans inside a prose line are not split — use `splitInlineCode` if
  * needed.
  */
@@ -64,7 +58,7 @@ export function walkProseLines(
 }
 
 /**
- * Split a line into alternating non-code (even indices) and inline-code (odd
+ * Split into alternating non-code (even indices) and inline-code (odd
  * indices) segments. Doubled-tick spans (`` `<x>` ``) match as one unit.
  */
 export function splitInlineCode(line: string): readonly string[] {
@@ -75,7 +69,6 @@ export function splitInlineCode(line: string): readonly string[] {
 // comes first so we don't eat its outer ticks as two single-tick spans.
 const INLINE_CODE_SPLIT = /(``[^\n]*?``|`[^`\n]+?`)/
 
-/** Strip every inline-code span from `line`. */
 export function stripInlineCode(line: string): string {
   return line.replace(/``[^\n]*?``/g, "").replace(/`[^`\n]+?`/g, "")
 }

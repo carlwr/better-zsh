@@ -9,6 +9,8 @@ import {
   type PrecmdFact,
 } from "./fact-types.ts"
 
+// Keyword heads after which the next word is still a command head ("transparent").
+// ⊆ `KEYWORD_HEADS` — `TRANSPARENT.has` is consulted only inside that branch.
 const TRANSPARENT: ReadonlySet<string> = new Set([
   "do",
   "then",
@@ -22,32 +24,21 @@ const TRANSPARENT: ReadonlySet<string> = new Set([
   "time",
 ])
 
-// Tokens that, when seen in command position, are syntactic keywords —
-// `cmdHeadFactsOnLine` emits a `reserved-word` fact for them and (when
-// `TRANSPARENT`) keeps `expectCmd` true so a following word becomes the
-// next command head.
+// Syntactic keywords in command position — `cmdHeadFactsOnLine` emits a
+// `reserved-word` fact, and (when `TRANSPARENT`) keeps `expectCmd` true.
 //
-// Deliberately *not* the same as `corpus.reserved_word` (the zsh manual's
-// reserved-word list). Two intentional differences:
-//
-//   - Adds `]]` and includes `in` for defensive positions. `in` is also in
-//     `corpus.reserved_word`; `]]` is analyzer-only. Including them here keeps
-//     the analyzer robust if they ever appear in command position.
+// Deliberately *not* `corpus.reserved_word`:
+//   - Adds `]]` (analyzer-only) and keeps `in` for defensive positions.
 //   - Omits `declare`/`typeset`/`local`/`export`/`integer`/`float`/
-//     `readonly`/`foreach`/`repeat`/`end`/`nocorrect`. The manual lists
-//     these as reserved, but the analyzer treats them as ordinary command
-//     heads (or precmd modifiers, in the case of `nocorrect`) — past tests
-//     have shaped this distinction and it is the load-bearing behaviour
-//     for command-position-driven features.
+//     `readonly`/`foreach`/`repeat`/`end`/`nocorrect` — the analyzer treats
+//     them as ordinary command heads (or precmd modifiers, for `nocorrect`);
+//     past tests pinned this as load-bearing for command-position features.
 //
-// Reserved-word painting in the VS Code extension is a separate concern;
-// it consumes `corpus.reserved_word` directly and is therefore broader
-// than this set. See DESIGN.md §"Reserved word: an enumeration-primary
-// doc category" and `packages/vscode-better-zsh/src/editor/semantic-tokens.ts`.
+// Extension reserved-word painting is broader (consumes `corpus.reserved_word`
+// directly). See DESIGN.md §"Reserved word: an enumeration-primary doc category"
+// and `packages/vscode-better-zsh/src/editor/semantic-tokens.ts`.
 //
-// The companion lock-in test
-// (`src/test/analysis/cmd-position-keywords-lockin.test.ts`) pins the
-// exact membership; update both together if a deliberate change is made.
+// Exact membership pinned by `src/test/analysis/cmd-position-keywords-lockin.test.ts`.
 const KEYWORD_HEADS: ReadonlySet<string> = new Set([
   "if",
   "then",
@@ -75,6 +66,12 @@ const KEYWORD_HEADS: ReadonlySet<string> = new Set([
 
 const PRECMDS: ReadonlySet<string> = new Set<string>(precmdNames)
 
+/** `command` precommand modifier as an observed brand; for detecting `command`-wrapped heads. */
+export const COMMAND_PRECMD: Observed<"precmd_modifier"> = mkObserved(
+  "precmd_modifier",
+  "command",
+)
+
 const FUNC_DECL = /^(\s*)([\w][\w-]*)\s*\(\)/
 const FUNC_KW = /^(\s*)function\s+([\w][\w-]*)/
 
@@ -85,16 +82,15 @@ export function cmdHeadFactsOnLine(
   const len = commentAt ?? line.length
   const out: LineFact[] = []
   let i = 0
+  // expectCmd: next word is in command position
+  // precmds: precommand modifiers accumulated before the current head
   let expectCmd = true
   let precmds: readonly Observed<"precmd_modifier">[] = []
 
-  // expectCmd: true when the next word should be in command position
-  // precmds:   precommand modifiers accumulated before the current command head
   while (i < len) {
     i = skipWhitespace(line, i, len)
     if (i >= len) break
 
-    // Separators that reset command position: ; ( \n | || &&
     const sepAdv = separatorAdvance(line, i, len)
     if (sepAdv !== undefined) {
       expectCmd = true
@@ -193,12 +189,6 @@ export function cmdHeadFactsOnLine(
 
 export function firstCmdHeadOnLine(line: string): CmdHeadFact | undefined {
   return cmdHeadFactsOnLine(activeText(line)).find(isCmdHeadFact)
-}
-
-export function isSetoptHead(head: CmdHeadFact, line: string): boolean {
-  if (head.text === "setopt" || head.text === "unsetopt") return true
-  if (head.text !== "set") return false
-  return /\s+[+-][A-Za-z0-9]/.test(line.slice(head.span.end))
 }
 
 /** Detect a function declaration at the start of a line (both `f() {}` and `function f` forms). */

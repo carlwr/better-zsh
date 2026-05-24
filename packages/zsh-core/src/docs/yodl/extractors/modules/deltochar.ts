@@ -1,9 +1,5 @@
-/**
- * mod_deltochar.yo: 2 ZLE widgets (delete-to-char, zap-to-char).
- *
- * Standard (bindable) widgets; section "Miscellaneous" is the closest fit
- * from the closed union for module-provided editing widgets.
- */
+// Standard (bindable) widgets; "Miscellaneous" is the closest fit from the
+// closed-union of subsections for module-provided editing widgets.
 import { mkDocumented } from "../../../brands.ts"
 import type { ZleWidgetDoc } from "../../../types.ts"
 import { collectAliasedEntries, extractItems } from "../../core/doc.ts"

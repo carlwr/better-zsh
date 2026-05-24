@@ -171,10 +171,11 @@ Authoritative homes:
 
 - `docCategories` — runtime list
 - `DocCategory = typeof docCategories[number]`
-- compile-time completeness guards (next to the tables they protect):
+- compile-time completeness guard (for a runtime tuple, which can't be a mapped type):
   - `_AssertClassifyOrder*` — `taxonomy.ts`
-  - `_AssertResolverFeedbackKindsComplete` — `resolver.ts`
-- `DocCorpus` is `{ readonly [K in DocCategory]: DocMap<K> }` — structural completeness, no explicit guard needed
+- structural completeness via mapped types (no explicit guard):
+  - `DocCorpus` — `{ readonly [K in DocCategory]: DocMap<K> }`
+  - `resolverFeedbackKindSchemas` — keyed by `ResolverFeedback["kind"]` (`resolver.ts`)
 
 ### Category-indexed artifacts belong in zsh-core
 

@@ -1,13 +1,7 @@
 /**
- * Table-driven extractors for module .yo files whose extraction composes from
- * `parseModuleByRegions` or `mergeBuiltinsByName(parseModuleBuiltins(...))`.
- * The wiring here replaces what would otherwise be ~9 near-identical tiny
- * files (datetime, pcre, regex, sched, socket, termcap, terminfo, watch,
- * zpty).
- *
- * Non-trivial modules (mod_mathfunc, mod_system, mod_stat, mod_deltochar)
- * keep their own per-module files for explicit per-module logic. Truly flat
- * one-region modules live in the parallel `trivial.ts` tables.
+ * Table-driven extractors composing `parseModuleByRegions` or
+ * `mergeBuiltinsByName(parseModuleBuiltins(...))`. Non-trivial modules keep
+ * their own files; truly flat ones live in `trivial.ts`.
  */
 import type { CorpusYodlFile } from "../../../source-files.ts"
 import type { ModuleName } from "../../../taxonomy.ts"
@@ -40,10 +34,6 @@ const params = {
 const builtins = { kind: "builtins" } as const satisfies RegionSpec
 const condOps = { kind: "condOps" } as const satisfies RegionSpec
 
-/**
- * Modules whose mod_*.yo has multiple top-level `startitem()/enditem()`
- * regions, each carrying a single doc category. See `parseModuleByRegions`.
- */
 const REGION_MODULES: readonly RegionModule[] = [
   {
     file: "mod_datetime.yo",
@@ -66,11 +56,8 @@ const REGION_MODULES: readonly RegionModule[] = [
   { file: "mod_watch.yo", module: "zsh/watch", regions: [params, builtins] },
 ]
 
-/**
- * Modules whose mod_*.yo documents one builtin name spread across sibling
- * item blocks; `mergeBuiltinsByName` folds them into one multi-synopsis
- * record.
- */
+// One builtin name spread across sibling item blocks; `mergeBuiltinsByName`
+// folds them into one multi-synopsis record.
 const MERGED_BUILTIN_MODULES: readonly MergedBuiltinModule[] = [
   { file: "mod_socket.yo", module: "zsh/net/socket" },
   { file: "mod_zpty.yo", module: "zsh/zpty" },

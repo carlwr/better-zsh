@@ -45,6 +45,7 @@
   },
   "dependencies": {
     "fuzzysort": "^3.1.0",
+    "@carlwr/typescript-extra": "0.10.0",
     "@carlwr/zsh-core": "workspace:*"
   },
   "devDependencies": {

@@ -7,13 +7,9 @@ import { firstTt, normalizeBody } from "../core/text.ts"
 const SECTION = "Keymaps"
 
 /**
- * Parse ZLE keymaps from `zle.yo` §"Keymaps".
- *
- * Records are the eight initial keymaps declared in a `startsitem()` block:
- * `emacs`, `viins`, `vicmd`, `viopp`, `visual`, `isearch`, `command`,
- * `.safe`. `main` is not its own keymap but an alias to `emacs` (default) or
- * `viins` (vi emulation); represented via `linkedFrom: ["main"]` on `emacs`.
- * `.safe` gets `isSpecial: true` — upstream prose marks it as immutable.
+ * `main` is not its own keymap but an alias to `emacs` (default) or `viins`
+ * (vi emulation); represented via `linkedFrom: ["main"]` on `emacs`. `.safe`
+ * gets `isSpecial: true` — upstream prose marks it as immutable.
  */
 export function parseKeymaps(yo: YodlSrc): readonly KeymapDoc[] {
   const out: KeymapDoc[] = []

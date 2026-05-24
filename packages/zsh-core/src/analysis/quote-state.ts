@@ -18,10 +18,7 @@ export function isQuoted(st: QuoteState): boolean {
   return st.sq || st.dq || st.bq || st.esc
 }
 
-/**
- * Advance quote state by one character. Returns a new state.
- * Handles: single quotes, double quotes, backticks, backslash escapes.
- */
+/** Advance quote state by one character. Handles `'`, `"`, backticks, backslash escapes. */
 export function advanceQuote(st: QuoteState, ch: string): QuoteState {
   if (st.esc) return { ...st, esc: false }
   if (st.sq) return ch === "'" ? { ...st, sq: false } : st

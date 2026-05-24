@@ -22,11 +22,7 @@ const COMPLEX_HEADS: ReadonlySet<string> = new Set([
   "{",
 ])
 
-// Per-word prose — terse, honest, and avoids reiterating what lives more
-// fully in `complex_command`. Missing keys fall back to `undefined` (desc
-// omitted). `then` is an ordinary zsh reserved word here, not a thenable.
 const ROLE: Readonly<Record<string, string>> = {
-  // body keywords of complex commands
   do: "Body keyword delimiting the action block of `for`, `while`, `until`, `repeat`, `select`.",
   done: "Body keyword closing the action block of `for`, `while`, `until`, `repeat`, `select`.",
   // biome-ignore lint/suspicious/noThenProperty: zsh reserved-word name, not a thenable
@@ -36,15 +32,12 @@ const ROLE: Readonly<Record<string, string>> = {
   fi: "Body keyword closing an `if` construct.",
   esac: "Body keyword closing a `case` construct.",
   in: "Body keyword marking the value list of `for`, `case`, or `select`.",
-  // alternate-form keywords
   foreach:
     "Alternate-form head for `for`; used with the `foreach name (word ...) list end` syntax.",
   end: "Alternate-form closing keyword for the `foreach` construct.",
-  // pipeline / negation / block bounds
   "!": "Pipeline negation modifier — inverts the exit status of the following pipeline.",
   coproc:
     "Runs the following command as a coprocess connected via bidirectional pipes.",
-  // typeset family (scope / type declaration builtins reserved at parse time)
   declare: "Reserved-word alias for the `typeset` builtin.",
   typeset:
     "Declares scope / attributes for variables; reserved so it parses like an assignment.",
@@ -54,7 +47,6 @@ const ROLE: Readonly<Record<string, string>> = {
   integer: "Reserved-word alias for `typeset -i` (integer variables).",
   float:
     "Reserved-word alias for `typeset -F` / `-E` (floating-point variables).",
-  // misc / completion bypass
   nocorrect:
     "Precommand-modifier-shaped reserved word that disables spelling correction for the command.",
 }

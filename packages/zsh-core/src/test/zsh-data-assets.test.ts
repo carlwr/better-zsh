@@ -38,12 +38,11 @@ describe("vendored zsh data assets", () => {
 
   test("parses vendored builtins docs", () => {
     expect(corpus.builtin.size).toBeGreaterThan(0)
-
     const autoload = corpus.builtin.get(bi("autoload"))
-    expect(autoload).toBeTruthy()
     expect(autoload?.synopsis.length).toBeGreaterThan(0)
     expect(autoload?.desc.length).toBeGreaterThan(0)
     expect(corpus.builtin.has(bi("bindkey"))).toBe(true)
+    // macro template placeholder name must not leak
     expect(corpus.builtin.has(bi("ARG1"))).toBe(false)
   })
 
@@ -80,9 +79,7 @@ describe("vendored zsh data assets", () => {
       "=(...)",
     ])
     expect(
-      [...corpus.param_expn.values()].some(
-        doc => (doc.sig as string) === "${name:-word}",
-      ),
+      [...corpus.param_expn.values()].some(doc => doc.sig === "${name:-word}"),
     ).toBe(true)
     expect(
       [...corpus.prompt_escape.values()].some(doc => doc.key === "%n"),

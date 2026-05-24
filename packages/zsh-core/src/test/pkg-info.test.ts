@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
+import { escapeRegExp } from "@carlwr/typescript-extra"
 import { describe, expect, test } from "vitest"
 import { loadCorpus } from "../docs/corpus.ts"
 import { RECORDS_TOTAL } from "../docs/corpus-meta.ts"
@@ -37,22 +38,16 @@ const SHARED_EXPORTS = [
 ] as const
 
 describe("pkg-info constants stay in sync with manifests", () => {
-  test("PKG_NAME matches package.json.name", () => {
-    expect(PKG_NAME).toBe(pkg.name)
-  })
-  test("PKG_NAME_JSR matches deno.json.name", () => {
-    expect(PKG_NAME_JSR).toBe(deno.name)
-  })
-  test("PKG_VERSION matches package.json.version and deno.json.version", () => {
-    expect(PKG_VERSION).toBe(pkg.version)
-    expect(PKG_VERSION).toBe(deno.version)
-  })
-  test("PKG_REPO_URL matches package.json.repository.url", () => {
-    expect(PKG_REPO_URL).toBe(pkg.repository?.url)
-  })
-  test("PKG_LICENSE matches package.json.license and deno.json.license", () => {
-    expect(PKG_LICENSE).toBe(pkg.license)
-    expect(PKG_LICENSE).toBe(deno.license)
+  test.each([
+    ["PKG_NAME", PKG_NAME, pkg.name],
+    ["PKG_NAME_JSR", PKG_NAME_JSR, deno.name],
+    ["PKG_VERSION (npm)", PKG_VERSION, pkg.version],
+    ["PKG_VERSION (jsr)", PKG_VERSION, deno.version],
+    ["PKG_REPO_URL", PKG_REPO_URL, pkg.repository?.url],
+    ["PKG_LICENSE (npm)", PKG_LICENSE, pkg.license],
+    ["PKG_LICENSE (jsr)", PKG_LICENSE, deno.license],
+  ])("%s matches manifest", (_label, constant, manifest) => {
+    expect(constant).toBe(manifest)
   })
 })
 
@@ -80,7 +75,9 @@ describe("ZSH_UPSTREAM stays in sync with vendored markdown", () => {
   // `Key: value` block (SOURCE.md) and a `- Key: \`value\`` bullet list
   // (THIRD_PARTY_NOTICES.md). This pattern matches both.
   const pick = (text: string, key: string): string | undefined =>
-    text.match(new RegExp(`${key}:\\s*\`?([^\`\\n]+)\`?`))?.[1]?.trim()
+    text
+      .match(new RegExp(`${escapeRegExp(key)}:\\s*\`?([^\`\\n]+)\`?`))?.[1]
+      ?.trim()
 
   const source = readText("src/data/zsh-docs/SOURCE.md")
   const notices = readText("src/data/zsh-docs/THIRD_PARTY_NOTICES.md")

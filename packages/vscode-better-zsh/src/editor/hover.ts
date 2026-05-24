@@ -6,7 +6,7 @@ import {
   type RedirFact,
   syntacticContext,
 } from "@carlwr/zsh-core/analysis"
-import { renderDoc } from "@carlwr/zsh-core/render"
+import { renderDocWithTitle } from "@carlwr/zsh-core/render"
 import { resolve } from "@carlwr/zsh-core/resolver"
 import {
   type DocCategory,
@@ -189,7 +189,9 @@ export class HoverProvider implements vscode.HoverProvider {
   }
 
   private renderHover(pieceId: DocPieceId, range?: vscode.Range) {
-    const md = new vscode.MarkdownString(renderDoc(this.corpus, pieceId))
+    const md = new vscode.MarkdownString(
+      renderDocWithTitle(this.corpus, pieceId),
+    )
     return new vscode.Hover(md, range)
   }
 

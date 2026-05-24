@@ -78,12 +78,18 @@ describeIfBuilt("MCP stdio integration", () => {
     const result = await callTool("zsh_docs", { key: "echo" })
     expect(result.isError).toBeFalsy()
     const parsed = parseText(result) as {
-      matches: Array<{ category: string; id: string; mdBody: string }>
+      matches: Array<{
+        category: string
+        id: string
+        title: string
+        mdBody: string
+      }>
       matchesReturned: number
       matchesTotal: number
     }
     expect(parsed.matches[0]?.category).toBe("builtin")
     expect(parsed.matches[0]?.id).toBe("echo")
+    expect(parsed.matches[0]?.title).toMatch(/echo/i)
     expect(parsed.matches[0]?.mdBody).toMatch(/echo/i)
     expect(parsed.matchesReturned).toBe(parsed.matchesTotal)
   })

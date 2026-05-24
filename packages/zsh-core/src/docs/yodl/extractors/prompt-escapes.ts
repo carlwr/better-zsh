@@ -1,4 +1,4 @@
-import type { NonEmpty } from "@carlwr/typescript-extra"
+import { type NonEmpty, nonEmpty } from "@carlwr/typescript-extra"
 
 import { mkDocumented } from "../../brands.ts"
 import { type PromptEscapeDoc, promptSubsections } from "../../types.ts"
@@ -21,17 +21,10 @@ interface PromptHead {
 }
 
 /**
- * Parse prompt expansion escapes from `prompt.yo`.
- *
- * Entries are `item(tt(%X))(desc)` / `xitem(tt(%X))` pairs across several
- * subsections (Special characters, Login information, Shell state, Date and
- * time, Visual effects, Conditional Substrings in Prompts). Header-sig is the
- * rendered header text (e.g. `%n`, `%D{string}`, `%B (%b)`); lookup key is
- * the first whitespace-separated run starting at `%`.
- *
- * "Visual effects" entries pair a starter and stopper glyph in one header,
- * e.g. `item(tt(%F) LPAR()tt(%f)RPAR())`. Both glyphs are emitted as
- * separate records sharing one body chunk and the full `%X (%x)` sig.
+ * Lookup key is the first whitespace-separated run starting at `%`. "Visual
+ * effects" entries pair a starter and stopper glyph in one header (e.g.
+ * `item(tt(%F) LPAR()tt(%f)RPAR())`); both glyphs are emitted as separate
+ * records sharing one body and the full `%X (%x)` sig.
  */
 export function parsePromptEscapes(yo: YodlSrc): readonly PromptEscapeDoc[] {
   const out: PromptEscapeDoc[] = []
@@ -59,15 +52,9 @@ export function parsePromptEscapes(yo: YodlSrc): readonly PromptEscapeDoc[] {
   return out
 }
 
-/**
- * Extract the `%X` lookup keys from a rendered prompt-escape header.
- *
- * Returns one key for solo headers, two for the inline-paired
- * `%X (%x)` form used in "Visual effects".
- */
 function promptKeys(sig: string): NonEmpty<string> | undefined {
   const paired = sig.match(/^(%\S+)\s+\(\s*(%\S+)\s*\)\s*$/)
-  if (paired?.[1] && paired[2]) return [paired[1], paired[2]]
+  if (paired?.[1] && paired[2]) return nonEmpty(paired[1], paired[2])
   const single = sig.match(/^%\S+/)?.[0]
-  return single ? [single] : undefined
+  return single ? nonEmpty(single) : undefined
 }

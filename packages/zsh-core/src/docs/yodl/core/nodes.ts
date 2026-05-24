@@ -13,14 +13,12 @@ export type YNode = YText | YMacro
 export type YNodeSeq = readonly YNode[]
 
 /**
- * Yodl source accepted by parsers and extractors: either raw text (parsed on
- * the fly) or an already-parsed node sequence. Lets callers compose without
- * re-parsing while keeping the one-shot string form available for tests and
- * direct extractor calls.
+ * Yodl source: raw text or pre-parsed nodes. Lets callers compose without
+ * re-parsing while keeping the string form for tests and direct extractor
+ * calls.
  */
 export type YodlSrc = string | YNodeSeq
 
-/** Coerce a `YodlSrc` to nodes, parsing strings lazily. */
 export function asNodes(src: YodlSrc): YNodeSeq {
   return typeof src === "string" ? parseNodes(src) : src
 }

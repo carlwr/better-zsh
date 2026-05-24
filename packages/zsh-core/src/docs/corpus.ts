@@ -2,7 +2,7 @@
  * @module
  * Parsed zsh doc corpus — eager, cached, immutable.
  *
- * Resolver layer (raw → `Documented<K>`) lives next door in `resolvers.ts`.
+ * Resolver layer (raw → `Documented<K>`) lives next door in `resolver.ts`.
  */
 
 import { readFileSync } from "node:fs"
@@ -75,10 +75,9 @@ type CategoryLoader = {
   [K in DocCategory]: (gn: GetNodes) => readonly DocRecordMap[K][]
 }
 
-// Pre-parse fixups for known upstream-doc typos live next to the extractor
-// that relies on the fixed text; `loadCorpus` dispatches through this table
-// so the shared-file parse sees the patched source, and direct extractor
-// callers (tests) get the same input via each extractor's own string branch.
+// Pre-parse fixups for known upstream-doc typos, applied to the shared-file
+// parse. Direct extractor callers (tests) get the same input via each
+// extractor's own string branch.
 const fileFixups: Readonly<
   Partial<Record<CorpusYodlFile, (yo: string) => string>>
 > = {
@@ -86,12 +85,8 @@ const fileFixups: Readonly<
   "expn.yo": fixupExpnYo,
 }
 
-// `special_param` spans three files; `builtin` spans two (compwid.yo carries
-// completion-builtin entries interleaved with other constructs, so only the
-// "Completion Builtin Commands" section is extracted at depth 1). Both stay
-// in-table so dispatch remains parametric over `DocCategory`. Categories
-// whose loaders compose contributions from several module extractors are
-// extracted into named helpers below to keep the dispatch table scannable.
+// Multi-file / multi-extractor categories use named helpers below to keep the
+// table scannable; dispatch remains parametric over `DocCategory`.
 const categoryLoader: CategoryLoader = {
   option: gn => parseOptions(gn("options.yo")),
   conditional_op: loadCondOps,
@@ -195,27 +190,23 @@ export const loadCorpus: () => DocCorpus = cached(() => {
     const raw = readFileSync(join(dataDir, file), "utf8")
     return parseNodes(fileFixups[file]?.(raw) ?? raw)
   })
-  const out: { [K in DocCategory]?: DocMap<K> } = {}
-  for (const cat of docCategories) {
-    ;(out as Record<DocCategory, unknown>)[cat] = buildCategoryMap(
-      cat,
-      categoryLoader[cat](getNodes),
-    )
-  }
-  return Object.freeze(out) as DocCorpus
+  return Object.freeze(
+    Object.fromEntries(
+      docCategories.map(cat => [
+        cat,
+        buildCategoryMap(cat, categoryLoader[cat](getNodes)),
+      ]),
+    ),
+  ) as DocCorpus
 })
 
 /**
- * Per-category sorted, de-duplicated `subKind` values observed in the
- * corpus. `undefined` for categories whose `docSubKind[c]` returns
- * `undefined` for every record (no meaningful sub-facet).
+ * Per-category sorted, de-duplicated `subKind` values in the corpus;
+ * `undefined` when `docSubKind[c]` is `undefined` for every record.
  *
- * Consumers (tooldef output schemas) interpolate these into JSON Schema
- * `enum` keywords; per AGENTS.md §"Never enumerate or count
- * `DocCategory`", closed-union enum values come from canonical tables.
- *
- * Eager, cached, immutable. Total over `DocCategory`, mirroring
- * `docSubKind` in `taxonomy.ts`.
+ * Tooldef output schemas interpolate these into JSON Schema `enum` keywords
+ * (AGENTS.md §"Never enumerate or count `DocCategory`"). Eager, cached, total
+ * over `DocCategory`.
  */
 type SubKindEnums = Readonly<{
   [K in DocCategory]: readonly string[] | undefined

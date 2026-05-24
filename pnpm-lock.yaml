@@ -15,8 +15,8 @@ importers:
         specifier: ^0.5.1
         version: 0.5.1(fast-check@4.7.0)
       '@carlwr/typescript-extra':
-        specifier: 0.9.0
-        version: 0.9.0
+        specifier: 0.11.0
+        version: 0.11.0
       '@fast-check/vitest':
         specifier: ^0.4.0
         version: 0.4.0(vitest@4.1.4(@types/node@22.19.15)(vite@8.0.3(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(@types/node@22.19.15)(esbuild@0.27.5)(tsx@4.21.0)(yaml@2.8.3)))
@@ -85,8 +85,8 @@ importers:
   packages/zsh-core:
     dependencies:
       '@carlwr/typescript-extra':
-        specifier: 0.9.0
-        version: 0.9.0
+        specifier: 0.10.0
+        version: 0.10.0
     devDependencies:
       ajv:
         specifier: ^8.17.1
@@ -100,6 +100,9 @@ importers:
 
   packages/zsh-core-tooldef:
     dependencies:
+      '@carlwr/typescript-extra':
+        specifier: 0.10.0
+        version: 0.10.0
       '@carlwr/zsh-core':
         specifier: workspace:*
         version: link:../zsh-core
@@ -259,8 +262,12 @@ packages:
     peerDependencies:
       fast-check: ^4.6.0
 
-  '@carlwr/typescript-extra@0.9.0':
-    resolution: {integrity: sha512-yG4gqGREHFo/iID/FyBJc+nMTSPLTLrel1GT6ByYl49w8sFTzfSUhuL5KbADCro8XRBK9jld/qy8qk4aM6Ldbg==}
+  '@carlwr/typescript-extra@0.10.0':
+    resolution: {integrity: sha512-4Y+HDU08ostZPzoioEqKIWqchVkvRVEZON/NDGWwimRr6DrX/u8R/IefHe+ISGnT33B4c38GPkzJ9euIdtgddg==}
+    engines: {node: '>=20.0.0'}
+
+  '@carlwr/typescript-extra@0.11.0':
+    resolution: {integrity: sha512-3/HxCdJiDdP1Ckrh8EPbe3vW6uQ9/zBLdV9uRNVu9bDf07qn7rMAH9fQFg70d1gLSmUy62yTHmbLdm7tAtt8uw==}
     engines: {node: '>=20.0.0'}
 
   '@emnapi/core@1.9.2':
@@ -3098,7 +3105,9 @@ snapshots:
     dependencies:
       fast-check: 4.7.0
 
-  '@carlwr/typescript-extra@0.9.0': {}
+  '@carlwr/typescript-extra@0.10.0': {}
+
+  '@carlwr/typescript-extra@0.11.0': {}
 
   '@emnapi/core@1.9.2':
     dependencies:

@@ -4,7 +4,8 @@ import type { TextSpan } from "./doc.ts"
 /** Confidence level: "hard" for structural syntax, "heuristic" for best-effort detection. */
 export type FactStrength = "hard" | "heuristic"
 export type FactCtx = "setopt" | "cond" | "arith"
-export type QuoteStyle = "'" | '"'
+export const quoteStyles = ["'", '"'] as const
+export type QuoteStyle = (typeof quoteStyles)[number]
 export type FactKind =
   | "ctx"
   | "cmd-head"

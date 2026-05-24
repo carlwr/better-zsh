@@ -24,19 +24,11 @@ const STANDARD_SECTION = "Standard Widgets"
 const SPECIAL_SECTION = "Special Widgets"
 
 /**
- * Parse ZLE widget names from `zle.yo`.
- *
- * Scoping: only named widgets are surfaced — the "Standard Widgets" section
- * (bindable editing widgets, in subsections Movement / History Control / …)
- * and the "Special Widgets" subsection under "User-Defined Widgets" (shell-
- * invoked hooks like `zle-line-init`). Zle-related builtins (`zle`, `bindkey`,
- * `vared`) are already documented via `zlecmd(...)` macros picked up by the
- * builtin extractor; re-emitting them here would duplicate records.
- *
- * Each item header has shape `item(tt(widget-name) [binding-spec...])` where
- * the widget name is the first tt() token. Lookup key = widget name; sig = the
- * rendered header (including the default-bindings-per-keymap triple when
- * present).
+ * Surfaces only named widgets: "Standard Widgets" (bindable editing widgets)
+ * and "Special Widgets" under "User-Defined Widgets" (shell-invoked hooks
+ * like `zle-line-init`). Zle-related builtins (`zle`, `bindkey`, `vared`)
+ * are documented via `zlecmd(...)` macros picked up by the builtin extractor
+ * — re-emitting here would duplicate.
  */
 export function parseZleWidgets(yo: YodlSrc): readonly ZleWidgetDoc[] {
   return [
@@ -80,13 +72,8 @@ function parseWidgetSection(
   return out
 }
 
-/**
- * Split a widget's item-body into intro prose, an enumerated nested item
- * list (if present), and any post-list outro prose. Mirrors the pattern in
- * `shell-params.ts:splitBody` / `builtins.ts:splitBuiltinBody`: structural
- * lift only happens when upstream has a depth-1 `startitem()` block;
- * otherwise the whole body stays flat in `desc`.
- */
+// Structural lift only when upstream has a depth-1 `startitem()` block;
+// otherwise the whole body stays flat in `desc`.
 function splitWidgetBody(body: YNodeSeq): {
   desc: string
   subItems?: readonly ZleWidgetSubItem[]

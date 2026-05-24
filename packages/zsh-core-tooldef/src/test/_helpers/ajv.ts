@@ -1,22 +1,17 @@
 /**
  * Shared Ajv setup for `outputSchema` validation. Memoizes a compiled
- * validator per `ToolDef.name` so property tests don't re-compile per case.
+ * validator per `ToolDef` so property tests don't re-compile per case.
  */
 
-import Ajv2020, { type ValidateFunction } from "ajv/dist/2020.js"
+import { cachedUnary } from "@carlwr/typescript-extra"
+import Ajv2020 from "ajv/dist/2020.js"
 import type { ToolDef } from "../../tool-defs.ts"
 
 const ajv = new Ajv2020({ allErrors: true, strict: false })
-const cache = new Map<string, ValidateFunction>()
 
-export function validatorFor(td: ToolDef): ValidateFunction {
-  let v = cache.get(td.name)
-  if (!v) {
-    v = ajv.compile(td.outputSchema)
-    cache.set(td.name, v)
-  }
-  return v
-}
+export const validatorFor = cachedUnary((td: ToolDef) =>
+  ajv.compile(td.outputSchema),
+)
 
 /** Throws with a tool-tagged message when validation fails. */
 export function assertOutputValid(td: ToolDef, output: unknown): void {

@@ -1,3 +1,4 @@
+import { isNonEmpty, type NonEmpty, nonEmpty } from "@carlwr/typescript-extra"
 import type { FlagEntry, FlagGroup } from "../../types.ts"
 import {
   collectAliasedEntries,
@@ -10,26 +11,17 @@ import {
 import type { YNodeSeq, YodlSrc } from "../core/nodes.ts"
 import { normalizeBody, normalizeHeader } from "../core/text.ts"
 
-/**
- * Body split into intro `desc` + (optional) per-group flag lists + outro.
- * Shape shared by every record category whose body carries flag-style nested
- * lists; `flagGroups` reuses the canonical `FlagGroup` type.
- */
+// Shape shared by every record category whose body carries flag-style nested
+// lists.
 export interface SigDescBody {
   readonly desc: string
   readonly flagGroups?: readonly FlagGroup[]
   readonly outro?: string
 }
 
-/**
- * Collect `{sig, desc}` pairs from a flat list of `YodlEntry`s. Consecutive
- * `xitem(...)` headers preceding an `item(...)(body)` are folded onto the
- * body-bearing item — each alias and the head become a separate entry sharing
- * the same desc. Entries with empty normalized headers are skipped.
- *
- * Shared by builtins and completion utilities — both surface the same
- * structural shape (depth-1 nested item lists whose entries are flag-shaped).
- */
+// Consecutive `xitem(...)` headers preceding an `item(...)(body)` fold onto
+// the body-bearing item; each alias plus the head becomes an entry sharing
+// the same desc.
 export function collectSigDescPairs(
   entries: readonly YodlEntry[],
 ): FlagEntry[] {
@@ -38,24 +30,24 @@ export function collectSigDescPairs(
     entries,
     h => normalizeHeader(h) || undefined,
   )) {
-    const desc = normalizeBody(grp.entry.body ?? [])
-    for (const sig of [...grp.aliases, grp.head]) {
-      out.push({ sig, desc })
-    }
+    // branch narrows for `NonEmpty`; `[...aliases, head]` alone isn't
+    // provably non-empty to TS even though `head` is always present.
+    const sigs: NonEmpty<string> = isNonEmpty(grp.aliases)
+      ? [...grp.aliases, grp.head]
+      : nonEmpty(grp.head)
+    out.push({ sigs, desc: normalizeBody(grp.entry.body ?? []) })
   }
   return out
 }
 
 /**
- * Split a record body at each top-level depth-1 nested item list. Most
- * builtins / comp-utils document one flag set; a few (`typeset`,
- * `_arguments`) document multiple sibling lists in the same body. Each list
- * becomes a `FlagGroup` carrying its `{sig, desc}` entries plus the
- * inter-list intro prose (empty for the first group, whose preceding prose
- * is in the returned `desc`).
+ * Splits a body at each top-level depth-1 nested item list. Most builtins /
+ * comp-utils document one flag set; a few (`typeset`, `_arguments`) document
+ * multiple sibling lists. The first group's intro is empty (its preceding
+ * prose lives in the returned `desc`).
  *
- * Falls back to a flat `desc` (no flagGroups) when no nested list exists or
- * none of the captured lists contain any sig-bearing entries.
+ * Falls back to a flat `desc` when no nested list exists or none of the
+ * captured lists contain sig-bearing entries.
  */
 export function splitFlagBody(body: YNodeSeq): SigDescBody {
   const split = splitBodyAtAllNestedLists(body)

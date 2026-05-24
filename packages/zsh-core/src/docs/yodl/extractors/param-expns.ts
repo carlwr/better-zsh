@@ -1,4 +1,4 @@
-import type { NonEmpty } from "@carlwr/typescript-extra"
+import { isNonEmpty, type NonEmpty, nonEmpty } from "@carlwr/typescript-extra"
 import { mkDocumented } from "../../brands.ts"
 import type { ParamExpnDoc, ParamExpnSubKind } from "../../types.ts"
 import {
@@ -10,11 +10,9 @@ import type { YodlSrc } from "../core/nodes.ts"
 import { normalizeBody, normalizeHeader } from "../core/text.ts"
 
 // Sigs here are literal doc templates — e.g. `${name:-word}` — not live
-// user-code tokens. The `name`, `word`, `pattern`, `repl`, `spec`,
-// `arrayname`, `offset`, `length` identifiers match the operand names the
-// upstream manual uses in those templates; an exact-string table means a
-// silent change in the upstream docs (e.g. `pattern` → `patn`) is caught on
-// the next corpus parse rather than producing a silently wrong classification.
+// user-code tokens. Placeholder names mirror the upstream manual; an
+// exact-string table means upstream identifier drift (e.g. `pattern` →
+// `patn`) is caught on next corpus parse rather than silently mis-classifying.
 type SigClassification = {
   readonly subKind: ParamExpnSubKind
   readonly placeholders: readonly string[]
@@ -92,20 +90,17 @@ const SIG_CLASSIFICATION: Readonly<Record<string, SigClassification>> = {
 }
 
 /**
- * Narrow pre-parse patch for a known upstream typo in zshexpn's PARAMETER
- * EXPANSION section.
+ * Pre-parse patch for a known upstream typo in zshexpn's PARAMETER EXPANSION
+ * section. Removing becomes a no-op once upstream fixes the typo.
  *
- * Current entries:
- * - `replace` doc body: source has `` `tt(#%) are not active `` — missing
- *   the closing `'` that the paired tick-apostrophe idiom needs (cf. the
- *   preceding `` `tt(#)' `` and `` `tt(%)' `` in the same sentence). Without
- *   the fix, `renderInlineMd` leaves a lone backtick in the rendered desc
- *   and the `#%` never becomes an inline-code span like its siblings.
- *   Removing becomes a no-op once upstream fixes the typo.
+ * - `replace` doc body: `` `tt(#%) are not active `` missing the closing `'`
+ *   that the paired tick-apostrophe idiom needs (cf. the preceding
+ *   `` `tt(#)' `` and `` `tt(%)' `` in the same sentence). Without the fix,
+ *   `renderInlineMd` leaves a lone backtick and `#%` never becomes an
+ *   inline-code span like its siblings.
  *
- * Exported so `loadCorpus` can apply it before parsing the shared file once;
- * also applied here when `parseParamExpns` receives a raw string, so direct
- * callers (tests, one-off tools) see the same fixed input as production.
+ * Exported so `loadCorpus` patches the shared file once; also applied here
+ * for direct string callers (tests, one-off tools).
  */
 export function fixupExpnYo(yo: string): string {
   return yo.replace(
@@ -117,12 +112,9 @@ export function fixupExpnYo(yo: string): string {
 const SECTION = "Parameter Expansion"
 
 /**
- * Parse the `Parameter Expansion` section of zshexpn into one record per sig.
- *
- * Groups of related sigs (e.g. the three `replace` forms) share a single doc
- * chunk in the manual via `xitem`/`item`. Each record in the output carries
- * its own sig but lists every sibling in `groupSigs` (manual source order) so
- * renderers can show the family together.
+ * One record per sig. Groups of related sigs (e.g. the three `replace` forms)
+ * share a single doc chunk via `xitem`/`item`; each record lists every sibling
+ * in `groupSigs` (source order) so renderers can show the family together.
  */
 export function parseParamExpns(yo: YodlSrc): readonly ParamExpnDoc[] {
   const section = extractSectionBody(
@@ -135,10 +127,10 @@ export function parseParamExpns(yo: YodlSrc): readonly ParamExpnDoc[] {
     normalizeHeader,
   )) {
     const desc = normalizeBody(entry.body ?? [])
-    // Source order is `aliases` first (preceding xitems) then `head` (the
-    // item carrying the body). `head` is defined → non-empty, but TS only
-    // tracks `[T, ...T[]]`, not the `[...T[], T]` shape we have here.
-    const groupSigs = [...aliases, head] as unknown as NonEmpty<string>
+    // Source order: preceding xitems (`aliases`) first, then body-carrying head.
+    const groupSigs: NonEmpty<string> = isNonEmpty(aliases)
+      ? [...aliases, head]
+      : nonEmpty(head)
     groupSigs.forEach((sig, i) => {
       const cls = SIG_CLASSIFICATION[sig]
       if (!cls) {

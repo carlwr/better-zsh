@@ -1,14 +1,8 @@
 /**
- * mod_system.yo: builtins (syserror, sysopen, sysread, syswrite, sysseek,
- * zsystem flock, zsystem supports), special params (errnos, sysparams), and
- * mathfunc systell.
- *
- * Three top-level item regions: Builtins, Math Functions, Parameters
- * (under `subsect()` headings; `extractSectionBody` doesn't see them so we
- * use `extractTopLevelItemRegions`).
- *
- * `zsystem flock` / `zsystem supports` are documented as separate items
- * sharing the head name `zsystem`; `mergeBuiltinsByName` folds them.
+ * Three top-level item regions (Builtins, Math Functions, Parameters) under
+ * `subsect()` headings — `extractSectionBody` doesn't see those, so use
+ * `extractTopLevelItemRegions`. `zsystem flock` / `zsystem supports` are
+ * separate items sharing head name `zsystem`; `mergeBuiltinsByName` folds them.
  */
 import { mkDocumented } from "../../../brands.ts"
 import type { BuiltinDoc, MathfuncDoc, ShellParamDoc } from "../../../types.ts"

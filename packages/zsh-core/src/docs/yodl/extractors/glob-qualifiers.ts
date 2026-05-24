@@ -15,12 +15,6 @@ import {
 
 const SECTION = "Glob Qualifiers"
 
-/**
- * Parse the "Glob Qualifiers" subsection from `expn.yo`. Shape mirrors
- * `parseGlobFlags` — same `extractFirstItemList`/`extractTokens` machinery —
- * since both categories describe single-letter parametrised flags with
- * optional `var(…)` operand slots.
- */
 export function parseGlobQualifiers(yo: YodlSrc): readonly GlobQualifierDoc[] {
   return withBody(extractFirstItemList(extractSectionBody(yo, SECTION))).map(
     item => {

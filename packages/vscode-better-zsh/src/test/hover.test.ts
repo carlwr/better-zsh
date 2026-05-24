@@ -1,6 +1,6 @@
 import * as assert from "node:assert"
 import { type DocCorpus, loadCorpus } from "@carlwr/zsh-core"
-import { renderDoc } from "@carlwr/zsh-core/render"
+import { renderDocWithTitle } from "@carlwr/zsh-core/render"
 import { mkPieceId } from "@carlwr/zsh-core/taxonomy"
 import type {
   BuiltinDoc,
@@ -171,7 +171,10 @@ suite("HoverProvider", () => {
   }
 
   for (const name of realCorpus.special_param.keys()) {
-    const expected = renderDoc(realCorpus, mkPieceId("special_param", name))
+    const expected = renderDocWithTitle(
+      realCorpus,
+      mkPieceId("special_param", name),
+    )
     test(`hovers $${name}`, () => {
       assert.strictEqual(hoverValueAt(`echo $${name}`, 6), expected)
     })
@@ -187,7 +190,7 @@ suite("HoverProvider", () => {
     test(`hovers cond ${cop.op} (${cop.arity})`, () => {
       assert.strictEqual(
         hoverValueAt(line, opStart),
-        renderDoc(realCorpus, mkPieceId("conditional_op", cop.op)),
+        renderDocWithTitle(realCorpus, mkPieceId("conditional_op", cop.op)),
       )
     })
   }
@@ -207,14 +210,14 @@ suite("HoverProvider", () => {
     test(`hovers redir ${redir.sig}`, () => {
       assert.strictEqual(
         hoverValueAt(`echo ${concrete}`, 5),
-        renderDoc(realCorpus, mkPieceId("redirection", redir.slug)),
+        renderDocWithTitle(realCorpus, mkPieceId("redirection", redir.slug)),
       )
     })
   }
 
   // Builtin head wins over a trailing redir token on the same line.
   test("echo thing >&2 prefers builtin", () => {
-    const expected = renderDoc(
+    const expected = renderDocWithTitle(
       realCorpus,
       mkPieceId("builtin", mkDocumented("builtin", "echo")),
     )

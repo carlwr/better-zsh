@@ -40,29 +40,25 @@ export const knownOffenders: Readonly<
   // --- calibrated: known imperfect rendering accepted for now --------------
 
   // Records documenting enumerated key/option sets as flat
-  // "<key> <Description sentence>" lines. Remaining offenders are
-  // deeper-nested lists not yet captured by the depth-1 nested-list pass:
-  //
-  // - `builtin:compadd` — its `-o order` flag has a depth-2 nested value
-  //   list (`match`, `nosort`, `numeric`, `reverse`) that flattens inside
-  //   the `-o` flag's `desc`. Depth-2 capture is deferred.
-  "lc-keyed-deftext": [pid("builtin", "compadd")],
+  // "<key> <Description sentence>" lines. After tightening the heuristic to
+  // anchor at column 0, depth-2 nested value lists inside parent prose
+  // blocks (indented 2-4 spaces) no longer false-positive.
+  "lc-keyed-deftext": [],
 
   // Flag-style "<-x> <Description sentence>" residuals after the depth-1
-  // capture. Remaining hits:
+  // capture. After tightening the heuristic to anchor at column 0, depth-2
+  // nested forms (indented bullet-continuation content) no longer
+  // false-positive — `comp_utility:_arguments` was cleared by this. Remaining
+  // hits are real flat-prose flag rows at column 0 (extractor limitations,
+  // not heuristic bugs):
   //
   // - `builtin:zcompile` — documents its flag set as flat prose, no
   //   upstream `startitem()` block.
   // - `complex_command:function` — parsed by a different extractor with
   //   no nested-list capture.
-  // - `comp_utility:_arguments` — depth-2 nested forms within several of
-  //   its sibling top-level lists (e.g. `*optspec`, `-optname`,
-  //   `-optname-`, `-optname=` documented inside the `optspec optspec:...`
-  //   desc). Depth-2 capture is deferred.
   "flag-keyed-deftext": [
     pid("builtin", "zcompile"),
     pid("complex_command", "function"),
-    pid("comp_utility", "_arguments"),
   ],
 
   // Standalone short paragraphs that look like headings. After single-em()

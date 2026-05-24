@@ -1,5 +1,5 @@
+import { escapeRegExp } from "@carlwr/typescript-extra"
 import { mkDocumented } from "../../brands.ts"
-import { escapeRegExp } from "../../regex.ts"
 import type { ShellParamDoc, ShellParamScope } from "../../types.ts"
 import {
   extractFirstItemList,
@@ -10,9 +10,6 @@ import type { YNodeSeq, YodlSrc } from "../core/nodes.ts"
 import { stripYodl, trimmedTtTexts } from "../core/text.ts"
 import { splitParamBody } from "./param-keys.ts"
 
-// Upstream section name → typed scope. Scope is what record consumers
-// read; the upstream-section string is only used to find the section in
-// the Yodl.
 const PARAM_SECTIONS: Readonly<Record<string, ShellParamScope>> = {
   "Parameters Set By The Shell": "shell-set",
   "Parameters Used By The Shell": "shell-used",
@@ -27,28 +24,20 @@ interface SectionOpts {
   readonly allowTied: boolean
 }
 
-/** Parse zsh shell parameters from `params.yo`. */
 export function parseShellParams(yo: YodlSrc): readonly ShellParamDoc[] {
   return Object.entries(PARAM_SECTIONS).flatMap(([long, scope]) =>
     emitParams(extractSectionBody(yo, long), scope, { allowTied: true }),
   )
 }
 
-/**
- * Parse ZLE widget-local parameters from `zle.yo` §"User-Defined Widgets".
- * `extractSectBody` spans subsections; the depth=1 `extractFirstItemList`
- * inside filters out the nested CONTEXT list.
- */
+// `extractSectBody` spans subsections; the depth=1 `extractFirstItemList`
+// inside filters out the nested CONTEXT list.
 export function parseWidgetParams(yo: YodlSrc): readonly ShellParamDoc[] {
   return emitParams(extractSectBody(yo, "User-Defined Widgets"), "zle-widget", {
     allowTied: false,
   })
 }
 
-/**
- * Parse completion-widget special parameters from `compwid.yo`
- * §"Completion Special Parameters".
- */
 export function parseCompletionParams(yo: YodlSrc): readonly ShellParamDoc[] {
   return emitParams(
     extractSectionBody(yo, "Completion Special Parameters"),

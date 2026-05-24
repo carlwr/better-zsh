@@ -90,25 +90,17 @@ describe("command/precommand analysis", () => {
     expect(cmdTexts(line)).toEqual(["echo"])
   })
 
-  test("builtin precommand keeps builtin head", () => {
-    expect(cmdTexts("builtin read var")).toEqual(["read"])
-  })
-
-  test("command -v suppresses command head", () => {
-    expect(cmdTexts("command -v echo")).toEqual([])
-  })
-
-  test("exec -a skips argv0", () => {
-    expect(cmdTexts("exec -a demo zsh -f")).toEqual(["zsh"])
+  test.each([
+    ["builtin precommand keeps builtin head", "builtin read var", ["read"]],
+    ["command -v suppresses command head", "command -v echo", []],
+    ["exec -a skips argv0", "exec -a demo zsh -f", ["zsh"]],
+  ] as const)("%s", (_label, line, want) => {
+    expect(cmdTexts(line)).toEqual(want)
   })
 })
 
-// Known limitations — not yet handled, recorded for future improvement.
-// Move to active test cases when the heuristic is extended.
-//
-// - Subshell command substitution: $(echo hi) — the echo inside $() is in cmd position
-// - Backtick substitution: `echo hi`
-// - Multi-line: while ...\n do — "do" on next line resets cmd position (line-local heuristic)
+// Known limitations (line-local heuristic): subshell `$(...)`, backtick
+// substitution, and multi-line `while ...\n do` reset cmd position.
 
 describe("arithmetic condition handling", () => {
   expectTexts(cmdTexts, [
@@ -152,12 +144,8 @@ describe("redirection facts", () => {
     ["echo hi &>| file", ["&>|"]],
   ])
 
-  test("no redir inside single quotes", () => {
-    expect(redirTexts("echo '>'")).toEqual([])
-  })
-
-  test("no redir inside double quotes", () => {
-    expect(redirTexts('echo ">"')).toEqual([])
+  test.each(["echo '>'", 'echo ">"'])("no redir inside quotes: %j", line => {
+    expect(redirTexts(line)).toEqual([])
   })
 })
 

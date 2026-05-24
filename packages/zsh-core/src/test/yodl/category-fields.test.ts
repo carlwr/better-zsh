@@ -1,3 +1,4 @@
+import { allUnique } from "@carlwr/typescript-extra"
 import { describe, expect, test } from "vitest"
 import { promptSubsections, zleWidgetSubsections } from "../../docs/types"
 import { parseArithOps } from "../../docs/yodl/extractors/arith-ops"
@@ -39,14 +40,18 @@ describe("parseKeymaps", () => {
     )
   })
 
-  test(".safe is marked special; others are not", () => {
-    expect(map.get(km(".safe"))?.isSpecial).toBe(true)
-    expect(map.get(km("emacs"))?.isSpecial).toBe(false)
+  test.each([
+    [".safe", true],
+    ["emacs", false],
+  ])("isSpecial: %s → %s", (name, want) => {
+    expect(map.get(km(name))?.isSpecial).toBe(want)
   })
 
-  test("emacs carries `main` link", () => {
-    expect(map.get(km("emacs"))?.linkedFrom).toEqual(["main"])
-    expect(map.get(km("viins"))?.linkedFrom).toEqual([])
+  test.each([
+    ["emacs", ["main"]],
+    ["viins", []],
+  ] as const)("linkedFrom: %s → %j", (name, want) => {
+    expect(map.get(km(name))?.linkedFrom).toEqual(want)
   })
 })
 
@@ -213,6 +218,6 @@ describe("parseCompUtils", () => {
   })
 
   test("no function names appear more than once", () => {
-    expect(new Set(docs.map(d => d.name)).size).toBe(docs.length)
+    expect(allUnique(docs.map(d => d.name))).toBe(true)
   })
 })

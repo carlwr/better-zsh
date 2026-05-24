@@ -96,6 +96,7 @@ describe("corpus string-field invariants", () => {
       for (const rec of recs) {
         checkProse(cat, "desc", strField(rec, "desc"))
         checkProse(cat, "section", strField(rec, "section"))
+        checkProse(cat, "_title", strField(rec, "_title"))
         const md = strField(rec, "mdBody")
         if (md === undefined) continue
         if (!md) violations.push(`${cat}: mdBody empty`)

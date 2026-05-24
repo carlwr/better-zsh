@@ -1,3 +1,4 @@
+import { allUnique } from "@carlwr/typescript-extra"
 import { loadCorpus } from "@carlwr/zsh-core"
 import { type DocCategory, subKindEnums } from "@carlwr/zsh-core/taxonomy"
 import { describe, expect, test } from "vitest"
@@ -114,7 +115,7 @@ describe("search", () => {
     for (const query of queries) {
       const r = search(corpus, { query, limit: 200 })
       const keys = r.matches.map(m => `${m.category}\0${m.id}`)
-      expect(new Set(keys).size).toBe(keys.length)
+      expect(allUnique(keys)).toBe(true)
     }
   })
 

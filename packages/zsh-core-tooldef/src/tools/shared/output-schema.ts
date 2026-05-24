@@ -10,6 +10,8 @@
  *   spaces); referenced by `display`.
  * - `$defs.MdBodyString` — minLength only; Unicode prose may carry
  *   non-ASCII (em-dashes etc.); referenced by `mdBody`.
+ * - `$defs.TitleString` — minLength only; short inline markdown (the record
+ *   title); referenced by `title`.
  * - `$defs.SubKind.<cat>` — closed enum of subKind values per category that
  *   has a meaningful sub-facet; referenced from the per-category match branch.
  * - `$defs.Feedback` — closed `oneOf` over `ResolverFeedback` kinds; referenced
@@ -47,6 +49,8 @@ import { MAX_LIMIT } from "./limits.ts"
 /** Per-tool match-shape choices passed to `mkMatchSchema`. */
 export interface MatchShape {
   readonly score?: "required" | "absent"
+  /** `"required"`: each category branch declares `title` (short inline markdown). */
+  readonly title?: "required" | "absent"
   readonly mdBody?: "required" | "absent"
   /**
    * `"optional"`: each category branch may declare optional `feedback`
@@ -58,6 +62,7 @@ export interface MatchShape {
 const idStringRef = { $ref: "#/$defs/IdString" } as const
 const displayStringRef = { $ref: "#/$defs/DisplayString" } as const
 const mdBodyStringRef = { $ref: "#/$defs/MdBodyString" } as const
+const titleStringRef = { $ref: "#/$defs/TitleString" } as const
 const feedbackRef = { $ref: "#/$defs/Feedback" } as const
 
 const subKindRef = (cat: DocCategory): { readonly $ref: string } => ({
@@ -85,6 +90,10 @@ function mkMatchSchema(
   if (subEnum !== undefined) {
     properties.subKind = subKindRef(cat)
     required.push("subKind")
+  }
+  if (shape.title === "required") {
+    properties.title = titleStringRef
+    required.push("title")
   }
   if (shape.mdBody === "required") {
     properties.mdBody = mdBodyStringRef
@@ -119,6 +128,7 @@ function mkDefs(shape: MatchShape): Readonly<Record<string, unknown>> {
       pattern: "^[\\x20-\\x7E]+$",
     },
     MdBodyString: { type: "string", minLength: 1 },
+    TitleString: { type: "string", minLength: 1 },
   }
   for (const cat of docCategories) {
     const subEnum = subKindEnums[cat]

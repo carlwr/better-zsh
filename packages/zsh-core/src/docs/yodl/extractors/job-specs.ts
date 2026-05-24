@@ -18,14 +18,8 @@ const SPEC_TABLE: readonly { key: string; kind: JobSpecKind }[] = [
   { key: "%-", kind: "previous" },
 ]
 
-/**
- * Parse zsh job-spec forms from `jobs.yo` §"Jobs".
- *
- * Entries live in the first `startsitem()` block of the section. Header shapes
- * mix literal (`%%`, `%-`) and templated (`%)var(number)`, `%?)var(string)`)
- * forms. We map each entry to its canonical corpus key by header position —
- * the set of six forms is closed and stable.
- */
+// Header shapes mix literal (`%%`, `%-`) and templated (`%)var(number)`)
+// forms; map to canonical key by header position — six-form set is closed.
 export function parseJobSpecs(yo: YodlSrc): readonly JobSpecDoc[] {
   return extractFirstSitemList(extractSectBody(yo, SECTION)).flatMap(
     (item, i) => {

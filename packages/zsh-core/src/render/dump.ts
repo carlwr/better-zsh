@@ -4,14 +4,11 @@ import { docCategoryPreamble } from "../docs/category-preamble.ts"
 import { type DocCategory, docCategories } from "../docs/taxonomy.ts"
 import type { RefDoc } from "./refs.ts"
 
-/** Canonical dump filenames — the single source of truth. */
 export const dumpFile = {
   all: "all.md",
-  /** Per-category dump filename. */
   forCat: (cat: DocCategory): `${DocCategory}.md` => `${cat}.md`,
 } as const
 
-/** Filename variants emitted by the reference-dump writer. */
 export type RefDumpFile =
   | typeof dumpFile.all
   | ReturnType<typeof dumpFile.forCat>
@@ -55,8 +52,7 @@ function renderDumpText(
 ): string {
   const selected = kind === "all" ? docs : (byKind.get(kind) ?? [])
   const body = `${selected.map(section).join("\n\n---\n\n")}\n`
-  // Preambles are per-category context; `all.md` intermixes categories and
-  // would fragment if each section were prefixed.
+  // `all.md` intermixes categories — a per-category preamble would fragment it.
   if (kind === "all") return body
   const preamble = docCategoryPreamble[kind]
   if (preamble === undefined) return body

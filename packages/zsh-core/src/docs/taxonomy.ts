@@ -105,9 +105,8 @@ const classifyOrderTuple = [
   "comp_utility",
 ] as const satisfies readonly DocCategory[]
 
-// Bidirectional set-equality of `docCategories` and `classifyOrderTuple`:
-// (1) every `DocCategory` is in `classifyOrderTuple` (no missed categories);
-// (2) every `classifyOrderTuple` entry is a `DocCategory` (no extras).
+// Set-equality of `docCategories` and `classifyOrderTuple`: no missed
+// categories, no extras.
 type _AssertClassifyOrderComplete = Assert<
   Eq<Exclude<DocCategory, (typeof classifyOrderTuple)[number]>, never>
 >
@@ -116,15 +115,12 @@ type _AssertClassifyOrderNoExtras = Assert<
 >
 
 /**
- * `DocCategory` list ordered for resolver walks. Consumers may stop on the
- * first match or collect every resolving category.
+ * `DocCategory` list in resolver-walk order. Consumers stop on first match
+ * or collect all.
  */
 export const classifyOrder: readonly DocCategory[] = classifyOrderTuple
 
-/**
- * Human-readable singular label per `DocCategory`. Prefer interpolating
- * from this table over hand-typing category names.
- */
+/** Human-readable singular label per `DocCategory`. */
 export const docCategoryLabels: Readonly<Record<DocCategory, string>> = {
   option: "option",
   conditional_op: "conditional operator",
@@ -180,22 +176,20 @@ export interface DocRecordMap {
 }
 
 /**
- * Discriminated-union identity for a documented corpus element.
- * `category` narrows `id` to the corresponding Documented brand.
+ * Discriminated-union identity for a documented corpus element. `category`
+ * narrows `id` to the matching Documented brand.
  *
- * The only sanctioned ways to obtain a `DocPieceId` are: the return of
- * `resolve(corpus, cat, raw)`, assembling one from a corpus record's id field
- * via `mkPieceId(cat, record-id)`, or iterating the corpus internally.
+ * Sanctioned acquisitions: `resolve(corpus, cat, raw)`, `mkPieceId(cat,
+ * record-id)` from a corpus record, or internal corpus iteration.
  */
 export type DocPieceId = {
   [K in DocCategory]: { readonly category: K; readonly id: Documented<K> }
 }[DocCategory]
 
 /**
- * Construct a `DocPieceId` from a category and a documented id. Centralizes
- * the correlated-union cast that TS cannot propagate through a generic
- * helper. Valid to call only when the id genuinely is a corpus key (typically
- * because it was read off a corpus record).
+ * Construct a `DocPieceId`. Centralizes the correlated-union cast TS cannot
+ * propagate through a generic. Valid only when the id is genuinely a corpus
+ * key (typically read off a corpus record).
  */
 export const mkPieceId = <K extends DocCategory>(
   category: K,
@@ -232,23 +226,17 @@ export const docId: {
 }
 
 /**
- * Display heading for a doc record; may differ from the typed id.
+ * Display heading for a doc record; may differ from the typed id (a
+ * shell-safe slug). Divergent categories:
  *
- * The id is a shell-safe slug (printable ASCII, no whitespace) suitable as a
- * stable lookup key; the display is the human-readable surface form. Most
- * categories collapse the two — display equals id verbatim. Divergent
- * categories:
+ * - `option`: id `autocd`, display `AUTO_CD` (preserves upstream case/underscores).
+ * - `redirection`: id `slug` (`>_word`), display `sig` (`> word`).
+ * - `param_expn_flag`, `subscript_flag`: id `j`, display `j:string:`.
+ * - `history_expn`: id `h` for modifiers, display `h [ digits ]`. Event/word
+ *   designators unchanged.
  *
- * - `option`: id is the normalized lookup key (`autocd`); display preserves
- *   upstream case and underscores (`AUTO_CD`).
- * - `redirection`: id is `slug` (`>_word`); display is `sig` (`> word`).
- * - `param_expn_flag`, `subscript_flag`: id is the bare flag letter (`j`);
- *   display is the full sig with placeholders (`j:string:`).
- * - `history_expn`: id is the bare letter for modifiers (`h`); display is
- *   the full sig (`h [ digits ]`). Event/word designators are unchanged.
- *
- * Consumers that render doc records to users (hover UIs, MCP tool responses,
- * dumps) should prefer this function over reading identity fields directly.
+ * User-facing renderers (hover, MCP tool responses, dumps) should prefer
+ * this over reading identity fields directly.
  */
 export const docDisplay = <K extends DocCategory>(
   cat: K,
@@ -263,23 +251,17 @@ export const docDisplay = <K extends DocCategory>(
     case "history_expn":
       return (doc as { readonly sig: string }).sig
     default:
-      return docId[cat](doc as never) as string
+      return idOf(cat, doc) as string
   }
 }
 
 /**
  * Optional typed sub-facet of a doc record; `undefined` when a category has
- * no meaningful subKind.
- *
- * Surfaces record-level fields such as `HistoryKind`, `ZleWidgetKind`,
- * `ParamExpnSubKind`, `CondArity`, `ReservedWordPos`, and `GlobOpKind`.
- * Consumers (e.g. MCP search results) can forward this to give agents and
- * humans more structure than a bare id list.
+ * no meaningful subKind. Surfaces record-level fields (`HistoryKind`,
+ * `ParamExpnSubKind`, `CondArity`, ...) so consumers (MCP search results) can
+ * give more structure than a bare id list.
  */
-// Categories without a meaningful subKind fall through to `noSub` (returns
-// `undefined`); only those that DO expose a sub-facet appear below. The
-// per-category table is materialized from these overrides so consumers can
-// access `docSubKind[cat](doc)` uniformly.
+// Categories with a sub-facet override `noSub`; `docSubKind` materializes all.
 const noSub = (_: unknown) => undefined
 
 type SubKindFn<K extends DocCategory> = (

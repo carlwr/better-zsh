@@ -1,3 +1,5 @@
+import { nonEmpty } from "@carlwr/typescript-extra"
+
 import type { PrecmdDoc } from "../../types.ts"
 import { type PrecmdName, precmdNames } from "../../types.ts"
 import { extractItems } from "../core/doc.ts"
@@ -17,7 +19,7 @@ export function parsePrecmds(yo: YodlSrc): readonly PrecmdDoc[] {
     return [
       {
         name,
-        synopsis: [synopsis],
+        synopsis: nonEmpty(synopsis),
         desc: normalizeBody(item.body),
       } satisfies PrecmdDoc,
     ]

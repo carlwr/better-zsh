@@ -73,11 +73,15 @@ enditem()`
     ).toEqual(sigs)
   })
 
-  test("reserved words include command-position and any-position forms", () => {
+  describe("reserved words command-position and any-position forms", () => {
     const docs = by(parseReswords(GRAMMAR_YO), doc => doc.name)
-    expect(docs.get(rw("if"))?.pos).toBe("command")
-    expect(docs.get(rw("[["))?.pos).toBe("command")
-    expect(docs.get(rw("}"))?.pos).toBe("any")
+    test.each([
+      ["if", "command"],
+      ["[[", "command"],
+      ["}", "any"],
+    ] as const)("%s pos=%s", (word, pos) => {
+      expect(docs.get(rw(word))?.pos).toBe(pos)
+    })
   })
 
   test("prompt escapes: xitem aliases inherit following-item docs", () => {

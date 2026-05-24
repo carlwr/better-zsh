@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs"
 import { resolve } from "node:path"
+import { allUnique } from "@carlwr/typescript-extra"
 import { expect } from "vitest"
 
 export function readVendoredYo(name: string): string {
@@ -53,7 +54,7 @@ export function expectDocCorpus<T>({
   expect(docs.length).toBeGreaterThanOrEqual(minCount)
 
   const keys = docs.map(keyOf)
-  expect(new Set(keys).size).toBe(keys.length)
+  expect(allUnique(keys)).toBe(true)
 
   for (const doc of docs) {
     expect(keyOf(doc)).toBeTruthy()

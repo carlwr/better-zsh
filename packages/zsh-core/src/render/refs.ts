@@ -39,16 +39,13 @@ function corpusDocs<K extends DocCategory>(
 ): readonly DocRecordMap[K][] {
   const vals = [...corpus[kind].values()]
   // `special_param` records arrive grouped by source file (shell-set →
-  // zle-widget → completion-widget); alphabetize for a stable, predictable
-  // consumer-visible ordering.
+  // zle-widget → completion-widget); alphabetize for stable consumer ordering.
   if (kind === "special_param") {
-    const name = (d: DocRecordMap[K]) => (d as { name: string }).name
-    vals.sort((a, b) => name(a).localeCompare(name(b)))
+    vals.sort((a, b) => docId[kind](a).localeCompare(docId[kind](b)))
   }
   return vals
 }
 
-/** Generate the full static reference corpus from a `DocCorpus`. */
 export function refDocs(corpus: DocCorpus): readonly RefDoc[] {
   return docCategories.flatMap(
     kind => mkRefDocs(kind, corpusDocs(corpus, kind), corpus) as RefDoc[],

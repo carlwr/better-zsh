@@ -27,21 +27,16 @@ import type { YNodeSeq, YodlSrc } from "../../core/nodes.ts"
 const MODULE = "zsh/mathfunc" as const
 
 export function extractMathfunc(yo: YodlSrc): readonly MathfuncDoc[] {
-  // Work from the raw yodl text (with tt(...) macros intact) so that the
-  // tt()-token extractor and the regex anchors agree on content.
-  // When yo arrives as a YNodeSeq (the corpus path), re-serialise via the
-  // raw file read; fall back to the string form used by tests.
+  // Need raw yodl text (tt(...) macros intact) so tt()-token extractor and
+  // regex anchors agree. YNodeSeq (corpus path) re-serialises; string form
+  // (tests) passes through.
   const raw = typeof yo === "string" ? yo : rawYodlText(yo)
   return parseMathfuncSource(raw)
 }
 
-/**
- * Re-serialise a YNodeSeq back to a raw-Yodl-like string for regex-based
- * extraction. Text nodes are emitted verbatim; macro nodes are rendered as
- * `macroname(arg0)` (single-arg form, which covers all macros used here:
- * `tt(name)`, `var(...)`, etc.). This is a lossy round-trip but is
- * sufficient for pattern matching against known arity-class sentences.
- */
+// Re-serialise to raw-Yodl-like string for regex matching. Single-arg form
+// `macroname(arg0)` covers all macros used here (`tt(name)`, `var(...)`).
+// Lossy round-trip, sufficient for known arity-class sentences.
 function rawYodlText(nodes: YNodeSeq): string {
   let out = ""
   for (const node of nodes) {
@@ -55,7 +50,6 @@ function rawYodlText(nodes: YNodeSeq): string {
   return out
 }
 
-/** Build a `MathfuncDoc` with module pre-filled. */
 function rec(name: string, sig: NonEmpty<string>, desc: string): MathfuncDoc {
   return {
     name: mkDocumented("mathfunc", name),
@@ -94,7 +88,6 @@ function parseMathfuncSource(src: string): MathfuncDoc[] {
 
   // --- arity-1 float ---
   // Paragraph ends with the sentence about atan's optional second argument.
-  // atan/atan2/ilogb are mentioned here but get special treatment below.
   const arity1Names = pushArityClass(
     out,
     src,
@@ -196,7 +189,6 @@ function parseMathfuncSource(src: string): MathfuncDoc[] {
   return out
 }
 
-/** Extract `tt(name)` token texts from a raw yodl fragment. */
 function extractTtNames(fragment: string): string[] {
   const names: string[] = []
   const rx = /tt\(([^)]+)\)/g

@@ -5,12 +5,6 @@ import { extractItems, flattenAliasedEntries } from "../core/doc.ts"
 import type { YodlSrc } from "../core/nodes.ts"
 import { extractTokens } from "../core/text.ts"
 
-/**
- * Parsed cond-op header — `op` (tt-token), `operands` (var-tokens), and the
- * arity derived from the var-token position relative to `op`. Module variants
- * share the shape; the only difference is which leading chars qualify a token
- * as the operator, controlled per-call via `opCharRe`.
- */
 export type CondHeader =
   | { op: string; operands: readonly [string]; arity: "unary" }
   | { op: string; operands: readonly [string, string]; arity: "binary" }
@@ -20,10 +14,6 @@ export type CondHeader =
 // modules pass a narrower regex (`/^[-\w]/`).
 const CORE_OP_CHAR_RE = /^(?:[-=!<>~|&]|\w)/
 
-/**
- * Parse a cond-op item header. The leading-char regex selects what counts as
- * a candidate operator token; pass a narrower one to limit accepted ops.
- */
 export function parseCondHeader(
   header: YodlSrc,
   opCharRe: RegExp = CORE_OP_CHAR_RE,
@@ -47,11 +37,7 @@ export function parseCondHeader(
   return arg ? { op, operands: [arg], arity: "unary" } : undefined
 }
 
-/**
- * Build a `CondOpDoc` from a parsed header + desc, optionally tagged with a
- * module. Constructs the discriminated union member matching `parsed.arity` so
- * `operands` and `arity` stay correlated.
- */
+// Branches per arity so `operands` and `arity` stay correlated.
 export function buildCondOpDoc(
   parsed: CondHeader,
   desc: string,
@@ -75,7 +61,6 @@ export function buildCondOpDoc(
       }
 }
 
-/** Parse cond.yo → CondOpDoc[] */
 export function parseCondOps(yo: YodlSrc): readonly CondOpDoc[] {
   return flattenAliasedEntries(extractItems(yo), parseCondHeader, (h, desc) =>
     buildCondOpDoc(h, desc),

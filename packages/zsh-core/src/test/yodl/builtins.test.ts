@@ -20,7 +20,6 @@ enditem()`
     const doc = only(parseBuiltins(yo))
     expect(doc.name).toBe(bi("echo"))
     expect(doc.synopsis).toEqual(["echo [ -n ]"])
-    expect(doc.synopsis).toHaveLength(1)
     expect(doc.desc).toBe("Write text.")
   })
 
@@ -69,9 +68,11 @@ enditem()`
     const docs = parseBuiltins(BUILTINS_YO)
     const byName = by(docs, d => d.name)
 
-    test("parses xitem aliases for test and [", () => {
-      expect(byName.get(bi("test"))?.synopsis[0]).toBe("test [ arg ... ]")
-      expect(byName.get(bi("["))?.synopsis[0]).toBe("[ [ arg ... ] ]")
+    test.each([
+      ["test", "test [ arg ... ]"],
+      ["[", "[ [ arg ... ] ]"],
+    ])("xitem alias %s → synopsis %j", (name, sig) => {
+      expect(byName.get(bi(name))?.synopsis[0]).toBe(sig)
     })
 
     test("all builtins keep non-empty synopsis", () => {
@@ -82,14 +83,16 @@ enditem()`
       expect(docs.some(d => d.name === bi("ARG1"))).toBe(false)
     })
 
-    test("includes macro-defined builtins", () => {
-      const names = new Set(docs.map(d => d.name))
+    const names = new Set(docs.map(d => d.name))
+    test.each([
       // bindkey — from zlecmd() macro; always present regardless of module displacement
-      expect(names.has(bi("bindkey"))).toBe(true)
+      ["bindkey", true],
       // zftp — from module(zftp)(zsh/zftp) stub (assumption asserted in beforeAll)
-      expect(names.has(bi("zftp"))).toBe(true)
-      // displaced modules are NOT present (zstyle, compctl etc. come from their module extractors)
-      expect(names.has(bi("zstyle"))).toBe(false)
+      ["zftp", true],
+      // displaced modules absent (zstyle, compctl etc. come from their module extractors)
+      ["zstyle", false],
+    ] as const)("macro-defined builtin %s present=%s", (name, present) => {
+      expect(names.has(bi(name))).toBe(present)
     })
 
     test("descriptions strip index macros and raw yodl", () => {

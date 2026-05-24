@@ -2,16 +2,16 @@ import type { NonEmpty } from "@carlwr/typescript-extra"
 
 import type { DocCategory, ModuleName } from "./taxonomy.ts"
 
-/** Phantom-branded type for nominal-ish typing with zero runtime cost. */
+/** Phantom-branded type. */
 export type Brand<T, B extends string> = T & { readonly __brand: B }
 
 // --- Auxiliary lookup brands ------------------------------------------------
-// Outside the observed/documented split; used as secondary-index brands.
+// Secondary-index brands outside the observed/documented split.
 
-/** Single-letter option flag char. Well-formed; secondary index brand, not a doc-piece identity. */
+/** Single-letter option flag char. Secondary-index brand, not a doc-piece identity. */
 export type OptFlag = Brand<string, "OptFlag">
 
-/** Redirection operator token. Well-formed; secondary index brand, not a doc-piece identity. */
+/** Redirection operator token. Secondary-index brand, not a doc-piece identity. */
 export type RedirOp = Brand<string, "RedirOp">
 
 export const mkOptFlag = (raw: string): OptFlag => raw.trim() as OptFlag
@@ -24,45 +24,35 @@ export const redirSlugFromSig = (sig: string): string =>
 
 // --- Parametric observed/documented brands ---------------------------------
 //
-// Two phantom brands, both indexed on DocCategory. The distinction is PURELY
-// provenance at this layer — neither brand carries corpus-membership proof on
-// its own; that's what the resolver layer does.
+// Two phantom brands indexed on DocCategory. Distinction is provenance only —
+// neither carries corpus-membership proof; that's the resolver layer's job.
 //
-//   Observed<K>    "a normalized, well-formed K-shaped token I observed in
-//                   user code or other untrusted source". Produced by
-//                   `mkObserved` or by fact extraction.
+//   Observed<K>    Normalized K-shaped token from user code / untrusted
+//                  source. Produced by `mkObserved` or fact extraction.
+//   Documented<K>  Normalized K-shaped identifier that is a key in
+//                  `corpus[K]`. Produced by Yodl extractors via
+//                  `mkDocumented` and by the resolver layer.
 //
-//   Documented<K>  "a normalized, well-formed K-shaped identifier that is a
-//                   key in `corpus[K]`". Produced by Yodl extractors via
-//                   `mkDocumented` and by the resolver layer.
+// Normalization is shared (one `norm[K]` table); the brand split prevents
+// conflating user-code tokens with corpus identities.
 //
-// The normalization policy is identical for Observed<K> and Documented<K>
-// (one `norm[K]` table). The brand split exists so the type system refuses to
-// confuse user-code tokens with corpus identities.
-//
-// Corpus-aware parse concerns (e.g. `setopt NO_AUTO_CD` referring to the same
-// option as `setopt AUTO_CD`, or a redirection token like `1>&2` decomposing
-// into a group operator + tail) do NOT live in the smart constructors here —
-// they live in the per-category resolver layer. See DESIGN.md,
-// "Three phases: raw / observed / documented".
+// Corpus-aware parsing (`NO_AUTO_CD` ≡ `AUTO_CD`, `1>&2` decomposition) lives
+// in the per-category resolver layer, not in the smart constructors here.
+// See DESIGN.md §"Three phases: raw / observed / documented".
 
 /**
  * Phantom-branded identifier of a documented zsh element for category K.
- * Holding a `Documented<K>` expresses the *claim* "this string is a key in
- * `corpus[K]`." Two ways to obtain one honestly:
+ * Holding one is a *claim* that the string is a key in `corpus[K]`. Honest
+ * acquisition paths:
  *
- * 1. The resolver layer (`resolve`) — **checked**: membership is verified
- *    against the corpus. This is the path for untrusted input. Lossy bits
- *    (e.g. option negation reached via `NO_`-stripping) surface separately
- *    via `resolverFeedback`.
- * 2. `mkDocumented(cat, raw)` — **trusted**: no corpus check. Intended for
- *    corpus construction (Yodl extractors) and test-corpus builders, where the
- *    caller vouches for membership. Misuse is detectable only indirectly
- *    (subsequent `Map.get` returning `undefined`).
+ * 1. `resolve` — **checked** against the corpus; the path for untrusted input.
+ *    Lossy bits (e.g. option `NO_`-stripping) surface via `resolverFeedback`.
+ * 2. `mkDocumented(cat, raw)` — **trusted**, no corpus check. Reserved for
+ *    corpus construction (Yodl extractors) and test-corpus builders. Misuse
+ *    surfaces only as later `Map.get` returning `undefined`.
  *
- * `precmd_modifier` and `process_subst` collapse via conditional type to their closed
- * literal unions (every valid string is a corpus member); all other categories
- * use phantom brands.
+ * `precmd_modifier` and `process_subst` collapse to their closed literal
+ * unions (every valid string is a corpus member); other categories phantom-brand.
  */
 export type Documented<K extends DocCategory> = K extends "precmd_modifier"
   ? PrecmdName
@@ -71,14 +61,12 @@ export type Documented<K extends DocCategory> = K extends "precmd_modifier"
     : string & { readonly __documented: K }
 
 /**
- * Phantom-branded well-formed, normalized K-shaped token observed in user
- * code (or other untrusted source). An `Observed<K>` is NOT a membership
- * proof — it only claims that the string has been normalized per category K's
- * policy. The boundary crossing to `Documented<K>` is `resolve(corpus, K,
- * raw)`, which applies category-specific corpus-aware parsing.
+ * Phantom-branded normalized K-shaped token observed in user code (or other
+ * untrusted source). NOT a membership proof — only claims category-K
+ * normalization. Cross to `Documented<K>` via `resolve(corpus, K, raw)`.
  *
- * `precmd_modifier` and `process_subst` resolve to their literal unions
- * (symmetric with `Documented<K>`).
+ * `precmd_modifier` / `process_subst` collapse to literal unions, symmetric
+ * with `Documented<K>`.
  */
 export type Observed<K extends DocCategory> = K extends "precmd_modifier"
   ? PrecmdName
@@ -86,9 +74,8 @@ export type Observed<K extends DocCategory> = K extends "precmd_modifier"
     ? ProcessSubstOp
     : string & { readonly __observed: K }
 
-// Brand-minting smart constructors (`mkObserved`, `mkDocumented`) live in
-// `brands.ts`; `normalizeOptName` lives in `normalize-option.ts` (mirrored
-// in zshref-rs).
+// Smart constructors (`mkObserved`, `mkDocumented`) live in `brands.ts`;
+// `normalizeOptName` in `normalize-option.ts` (mirrored in zshref-rs).
 
 // --- Closed literal unions --------------------------------------------------
 
@@ -103,26 +90,26 @@ export const precmdNames = [
 
 export type PrecmdName = (typeof precmdNames)[number]
 
-/** Default-on marker from zshoptions: <D>=default, <K>=ksh, <S>=sh, <C>=csh, <Z>=zsh */
+/** zshoptions default-on marker: D=default, K=ksh, S=sh, C=csh, Z=zsh. */
 export type DefaultMarker = "D" | "K" | "S" | "C" | "Z"
 
-/** Conditional expression: unary (-a file) vs binary (f1 -nt f2) */
+/** Conditional expression arity (`-a file` vs `f1 -nt f2`). */
 export type CondArity = "unary" | "binary"
 export type UnaryCondOperands = readonly [string]
 export type BinaryCondOperands = readonly [string, string]
 
-export type Emulation = "csh" | "ksh" | "sh" | "zsh"
+export const emulations = ["csh", "ksh", "sh", "zsh"] as const
+export type Emulation = (typeof emulations)[number]
 
 export type OptState = "on" | "off"
 
-/** Sign of an option flag: `-` turns the option on, `+` turns it off (zsh convention). */
+/** Option-flag sign — zsh convention: `-` enables, `+` disables. */
 export type OptFlagSign = "+" | "-"
 
-/** Toggle an `OptFlagSign` to its complement (`-` ↔ `+`). */
 export const flipOptFlagSign = (sign: OptFlagSign): OptFlagSign =>
   sign === "-" ? "+" : "-"
 
-/** Where zsh recognizes the word as reserved, not just as an ordinary word. */
+/** Position where zsh treats the word as reserved. */
 export type ReservedWordPos = "command" | "any"
 
 export type HistoryKind = "event-designator" | "word-designator" | "modifier"
@@ -189,24 +176,20 @@ export interface BinaryCondOpDoc {
 export type CondOpDoc = UnaryCondOpDoc | BinaryCondOpDoc
 
 /**
- * One row in a `{sig, desc}` nested item list. Captured when upstream documents
- * a depth-1 nested list inside a builtin/comp-utility body. `sig` is the
- * normalized header (e.g. `-V group-name`); `desc` is normalized prose.
- *
- * Shared shape (`BuiltinDoc.flagGroups[*].flags`, `CompUtilityDoc.flagGroups[*].flags`)
- * — both categories model the same upstream pattern; see `[[records-are-self-contained]]`.
+ * One row in a nested item list inside a builtin/comp-utility body. `sigs`
+ * carries every header sharing the row's body — upstream `xitem` chains
+ * terminating in `item(...)(body)` fold into one entry, not one per alias.
  */
 export interface FlagEntry {
-  readonly sig: string
+  readonly sigs: NonEmpty<string>
   readonly desc: string
 }
 
 /**
- * One sibling nested item list inside a record body. Most records have a
- * single group; a few (notably `typeset`, `_arguments`) document two or more
- * separate flag-set sections in the same body. Each group renders as its own
- * bullet list. `intro` is the prose between the previous group's `enditem()`
- * and this group's `startitem()` — empty for the first group.
+ * One sibling nested item list inside a record body. Most records have one
+ * group; a few (notably `typeset`, `_arguments`) carry several. `intro` is
+ * the prose between the previous group's `enditem()` and this group's
+ * `startitem()` — empty for the first group.
  */
 export interface FlagGroup {
   readonly intro: string
@@ -218,25 +201,18 @@ export interface BuiltinDoc {
   readonly name: Documented<"builtin">
   readonly synopsis: NonEmpty<string>
   /**
-   * Body prose. When `flagGroups` is present this is the prose appearing
-   * before the first flag list; the renderer composes the visible body as
-   * desc → (group intro → flag list)+ → `outro`. When `flagGroups` is
-   * absent `desc` is the full body.
+   * Body prose. With `flagGroups`, the intro before the first group; the
+   * renderer composes desc → (group intro → flag list)+ → `outro`. Without
+   * `flagGroups`, the full body.
    */
   readonly desc: string
-  /** present when builtin requires a loaded module */
   readonly module?: ModuleName
-  /** present when this is an alias of another builtin */
   readonly aliasOf?: Documented<"builtin">
-  /** true when upstream zsh recommends against new use */
+  /** Upstream zsh recommends against new use. */
   readonly deprecated?: boolean
-  /**
-   * Per-group flag entries when upstream documents one or more depth-1
-   * nested item lists inside the builtin body. Absent when upstream uses
-   * flat prose for the flags.
-   */
+  /** Per-group flags when upstream documents nested item lists inside the body. */
   readonly flagGroups?: readonly FlagGroup[]
-  /** Prose after the last flag group. Present only when `flagGroups` is and upstream has trailing content. */
+  /** Prose after the last flag group. */
   readonly outro?: string
 }
 
@@ -247,7 +223,7 @@ export interface PrecmdDoc {
   readonly desc: string
 }
 
-/** Base interface for syntax-element doc records parsed from upstream Yodl sources. */
+/** Base interface for syntax-element doc records. */
 export interface SyntaxDocBase<Sig extends string = string> {
   /** Usage signature from the upstream zsh manual. */
   readonly sig: Sig
@@ -257,14 +233,13 @@ export interface SyntaxDocBase<Sig extends string = string> {
 }
 
 /**
- * Typed scope of a special-parameter record.
+ * Special-parameter scope. Values are internal identifiers, not man-page
+ * section titles.
  *
- * - `shell-set`: global parameters the shell assigns to.
- * - `shell-used`: global parameters the shell reads.
- * - `zle-widget`: widget-local parameters visible inside user-defined ZLE widgets (BUFFER, CURSOR, ...).
- * - `completion-widget`: parameters visible inside completion widgets (CURRENT, PREFIX, compstate, ...).
- *
- * Values are internal identifiers, not man-page section titles.
+ * - `shell-set`: globals the shell assigns to.
+ * - `shell-used`: globals the shell reads.
+ * - `zle-widget`: widget-local (BUFFER, CURSOR, ...).
+ * - `completion-widget`: completion-widget-local (CURRENT, PREFIX, compstate, ...).
  */
 export type ShellParamScope =
   | "shell-set"
@@ -273,9 +248,8 @@ export type ShellParamScope =
   | "completion-widget"
 
 /**
- * Branded name of one enumerated sub-key inside a special-parameter record's
- * `keys` payload (e.g. an associative-array's documented key set, or the
- * enumerated values of a colon-list parameter).
+ * Branded sub-key name inside a `ShellParamDoc.keys` payload (associative-array
+ * keys, colon-list enumerated values, ...).
  */
 export type ShellParamKeyName = Brand<string, "ShellParamKeyName">
 
@@ -283,10 +257,8 @@ export const mkShellParamKeyName = (raw: string): ShellParamKeyName =>
   raw.trim() as ShellParamKeyName
 
 /**
- * One sub-value documented under a `ShellParamKey` whose body itself
- * contains a nested item list (e.g. `compstate.context`, where the key's
- * value is one of `array_value`, `brace_parameter`, ...). `desc` is the
- * sub-value's normalized prose; no further nesting is captured.
+ * One sub-value under a `ShellParamKey` whose body itself carries a nested
+ * item list (e.g. `compstate.context`). No further nesting is captured.
  */
 export interface ShellParamKeyValue {
   readonly name: ShellParamKeyName
@@ -294,10 +266,9 @@ export interface ShellParamKeyValue {
 }
 
 /**
- * One member of a `ShellParamDoc.keys` payload. `desc` is the member's
- * normalized intro prose. When `values` is present the upstream Yodl
- * documents an enumerated sub-list inside this key's body (depth-2 from
- * the parameter's POV); the renderer emits it as a nested bullet list.
+ * One member of `ShellParamDoc.keys`. `desc` is the member's intro prose;
+ * `values`, when present, holds an enumerated sub-list (depth-2 from the
+ * parameter) rendered as a nested bullet list.
  */
 export interface ShellParamKey {
   readonly name: ShellParamKeyName
@@ -309,26 +280,22 @@ export interface ShellParamKey {
  * Special-parameter doc record. Does not extend `SyntaxDocBase`: this category
  * carries a typed `scope` instead of a generic `section: string` prose field.
  *
- * `keys` is present only when the upstream documentation lists an enumerated
- * nested set under the parameter (e.g. an associative-array's keys). `desc`
- * is then just the intro prose; the renderer composes the visible body from
- * `desc` plus `keys`. Pattern fits PRINCIPLES.md §"Records are self-contained":
- * intra-record structure replaces flattened prose; no cross-record navigation
- * is introduced.
+ * `keys` captures an upstream-documented enumerated nested set (e.g. an
+ * associative-array's keys); the renderer composes the visible body from
+ * `desc` plus `keys`. See PRINCIPLES.md §"Records are self-contained".
  */
 export interface ShellParamDoc {
   readonly name: Documented<"special_param">
   /**
-   * Body prose. When `keys` is present this is the intro (text before the
-   * key list); the renderer composes intro → key headings → `outro`. When
-   * `keys` is absent `desc` is the full body.
+   * Body prose. With `keys`, the intro before the key list; the renderer
+   * composes intro → key headings → `outro`. Without `keys`, the full body.
    */
   readonly sig: string
   readonly desc: string
   readonly scope: ShellParamScope
   readonly tied?: Documented<"special_param">
   readonly keys?: readonly ShellParamKey[]
-  /** Prose after the key list. Present only when `keys` is and upstream has trailing content. */
+  /** Prose after the key list. */
   readonly outro?: string
   readonly module?: ModuleName
 }
@@ -336,13 +303,12 @@ export interface ShellParamDoc {
 /**
  * Reserved word.
  *
- * `desc` is optional (deliberately unlike other `SyntaxDocBase`-shaped records,
- * which is why `ReservedWordDoc` does not extend `SyntaxDocBase`). Heads
- * covered by `complex_command` (e.g. `for`, `while`, `[[`) omit it entirely
- * — a fixed generic "this is a reserved word" string would be an epistemic
- * trap, pushing agents toward the cheapest record when the richer one lives
- * elsewhere. Body words (`do`, `then`, …) and standalone entries (`!`,
- * `coproc`, typeset family) keep enriched per-word prose.
+ * `desc` is optional (hence no `SyntaxDocBase` extension). Heads covered by
+ * `complex_command` (`for`, `while`, `[[`, ...) omit it — a generic "this is a
+ * reserved word" string would be an epistemic trap, drawing agents to the
+ * cheapest record when the richer one lives elsewhere. Body words (`do`,
+ * `then`, ...) and standalones (`!`, `coproc`, typeset family) keep enriched
+ * per-word prose.
  */
 export interface ReservedWordDoc {
   readonly name: Documented<"reserved_word">
@@ -358,38 +324,39 @@ export interface AlternateForm {
   readonly template: string
   /** Keyword-position tt tokens within the alternate-form synopsis. */
   readonly keywords: readonly string[]
-  /** Optional shell-option dependency noted by the manual, e.g. `SHORT_LOOPS`. */
-  readonly requires?: string
+  /**
+   * Shell options that gate this form — **disjunctive**: enabling any one
+   * activates the form (e.g. `["SHORT_LOOPS", "SHORT_REPEAT"]` for `repeat`).
+   * Absent when the form is always available.
+   */
+  readonly requires?: NonEmpty<string>
 }
 
 /**
- * Complex command -- zsh's structured control-flow constructs from
- * `grammar.yo`'s "Complex Commands" section, augmented with any matching
- * entries from "Alternate Forms for Complex Commands".
+ * Complex command — `grammar.yo` "Complex Commands" section plus matching
+ * "Alternate Forms for Complex Commands" entries.
  *
- * Overlap with `reserved_word` on head keywords (`for`, `if`, `while`, ...)
- * and `[[`, `{`, `time` is deliberate. `classifyOrder` places
- * `complex_command` before `reserved_word`: a raw `for` resolves to the
- * structured doc, not the reserved-word boilerplate. See PRINCIPLES.md
- * §"Overlap between categories is accepted".
+ * Overlap with `reserved_word` on head keywords (`for`, `if`, `while`, ...,
+ * `[[`, `{`, `time`) is deliberate; `classifyOrder` places this category
+ * first. See PRINCIPLES.md §"Overlap between categories is accepted".
  */
 export interface ComplexCommandDoc extends SyntaxDocBase {
   readonly name: Documented<"complex_command">
-  /** Alternate synopses the manual lists for this head keyword; may be empty. */
+  /** Alternate synopses; may be empty. */
   readonly alternateForms: readonly AlternateForm[]
-  /** Body-position tt tokens in the canonical synopsis (e.g. `do`, `done`, `esac`). */
+  /** Body-position tt tokens in the canonical synopsis (`do`, `done`, `esac`, ...). */
   readonly bodyKeywords: readonly string[]
 }
 
 export interface RedirDoc extends SyntaxDocBase {
   /**
-   * Shell-safe doc identity (lookup key). Derived from `sig` by replacing
-   * spaces with `_` (e.g. `"> word"` → `">_word"`, `"<<[-] word"` → `"<<[-]_word"`).
+   * Shell-safe identity. Derived from `sig` by replacing spaces with `_`
+   * (`"> word"` → `">_word"`, `"<<[-] word"` → `"<<[-]_word"`).
    */
   readonly slug: Documented<"redirection">
-  /** Human-readable signature from the upstream manual; not the identity. */
+  /** Human-readable signature; not the identity. */
   readonly sig: string
-  /** Grouping token only; multiple redirection docs share the same `groupOp`. */
+  /** Grouping token; multiple redirection docs share a `groupOp`. */
   readonly groupOp: RedirOp
 }
 
@@ -399,12 +366,10 @@ export interface ProcessSubstDoc extends SyntaxDocBase {
 }
 
 /**
- * Semantic kind of a parameter-expansion form.
- *
- * One literal per logical operation; sigs that differ only in "null-check"
- * (`-` vs `:-`), match-scope (`#` vs `##`), or similar scope modifiers
- * collapse to the same subKind and are distinguished at the record level by
- * the sig itself.
+ * Semantic kind of a parameter-expansion form. One literal per logical
+ * operation; sigs differing only in null-check (`-` vs `:-`), match scope
+ * (`#` vs `##`), or similar collapse to one subKind, distinguished at the
+ * record level by the sig itself.
  */
 export type ParamExpnSubKind =
   | "plain"
@@ -427,12 +392,11 @@ export type ParamExpnSubKind =
   | "glob-subst"
 
 /**
- * Parameter-expansion form -- e.g. `${name:-word}`, `${name/pattern/repl}`.
+ * Parameter-expansion form (`${name:-word}`, `${name/pattern/repl}`, ...).
  *
- * One record per sig. Related sigs that share a doc chunk in the upstream
- * manual (e.g. the three `replace` variants) carry identical `desc`; each
- * record also knows every sibling in its group via `groupSigs` (manual source
- * order) and its own position via `orderInGroup`.
+ * One record per sig. Sigs sharing an upstream doc chunk (e.g. the three
+ * `replace` variants) carry identical `desc`; each record knows its siblings
+ * via `groupSigs` (manual source order) and its own position via `orderInGroup`.
  */
 export interface ParamExpnDoc extends SyntaxDocBase<Documented<"param_expn">> {
   readonly sig: Documented<"param_expn">
@@ -441,7 +405,7 @@ export interface ParamExpnDoc extends SyntaxDocBase<Documented<"param_expn">> {
   /** Zero-based position of `sig` within `groupSigs`. */
   readonly orderInGroup: number
   readonly subKind: ParamExpnSubKind
-  /** Named operand slots in `sig` (e.g. `["name","word"]`). */
+  /** Named operand slots in `sig` (`["name","word"]`, ...). */
   readonly placeholders: readonly string[]
 }
 
@@ -465,32 +429,29 @@ export interface HistoryDoc extends SyntaxDocBase {
 export type GlobOpKind = "standard" | "ksh-like"
 
 /**
- * Globbing operators -- e.g. `*`, `?`, `[...]`.
+ * Globbing operators (`*`, `?`, `[...]`, ...).
  *
- * No `requires` field by design: `ksh-like` operators depend on `KSH_GLOB`,
- * but surfacing that as a structured hint would invite a wider expectation
- * ("zshref tells me when anything requires an option") that the corpus can't
- * meet generally — many forms depend on shell state we don't model. The
- * `kind` discriminator is what consumers have; option-dependency lookup is
- * left to the rendered prose.
+ * No `requires` field: `ksh-like` depends on `KSH_GLOB`, but a structured
+ * hint would invite an expectation the corpus can't meet generally — many
+ * forms depend on shell state we don't model. `kind` is the discriminator;
+ * option-dependency lookup stays in rendered prose.
  */
 export interface GlobOpDoc extends SyntaxDocBase {
   readonly op: Documented<"glob_op">
   readonly kind: GlobOpKind
 }
 
-/** Glob flags -- e.g. `(#i)`, `(#b)` inside glob patterns. */
+/** Glob flags (`(#i)`, `(#b)`, ...) — in-pattern. */
 export interface GlobFlagDoc extends SyntaxDocBase {
   readonly flag: Documented<"glob_flag">
   readonly args: readonly string[]
 }
 
 /**
- * Glob qualifiers -- pattern-trailer single-letter flags used with
- * `BARE_GLOB_QUAL` / `EXTENDED_GLOB`, e.g. `*(.)`, `*(/)`, `*(#q@)`. Distinct
- * syntactic category from `glob_op` (in-pattern) and `glob_flag` (in-pattern
- * `(#...)`): qualifiers are the trailing parenthesised form that filters the
- * match list after globbing.
+ * Glob qualifiers — pattern-trailing single-letter flags under
+ * `BARE_GLOB_QUAL` / `EXTENDED_GLOB` (`*(.)`, `*(/)`, `*(#q@)`, ...). Distinct
+ * from `glob_op` (in-pattern) and `glob_flag` (in-pattern `(#...)`): qualifiers
+ * trail the pattern and filter the match list.
  */
 export interface GlobQualifierDoc extends SyntaxDocBase {
   readonly flag: Documented<"glob_qualifier">
@@ -530,46 +491,44 @@ export type ZleWidgetSubsection = (typeof zleWidgetSubsections)[number]
 export type ZleWidgetKind = "standard" | "special"
 
 /**
- * One nested entry within a ZLE widget's body (e.g. the editing functions
- * documented inside `history-incremental-search-backward`'s mini-buffer
- * support list). `sig` is the normalized full header (with any
- * `xitem`-aliased markers folded into it); `desc` is the entry's prose.
+ * One nested entry within a ZLE widget's body (e.g. inside
+ * `history-incremental-search-backward`'s mini-buffer support list). `sig` is
+ * the normalized full header with `xitem` aliases folded in.
  */
 export interface ZleWidgetSubItem {
   readonly sig: string
   readonly desc: string
 }
 
-/** Zsh Line Editor widget names -- standard and special widgets from `zle.yo`. */
+/** ZLE widget — standard and special widgets from `zle.yo`. */
 export interface ZleWidgetDoc extends SyntaxDocBase {
   readonly name: Documented<"zle_widget">
   /** `"standard"` for bindable editing widgets; `"special"` for shell-called hooks. */
   readonly kind: ZleWidgetKind
   readonly section: ZleWidgetSubsection
   /**
-   * Present when the widget's body contains a depth-1 nested item list
-   * (currently just `history-incremental-search-backward`). `desc` is then
-   * the intro prose; the renderer composes intro → sub-items → `outro`.
+   * Nested item list inside the widget body (currently just
+   * `history-incremental-search-backward`). When present, `desc` is the
+   * intro; renderer composes intro → sub-items → `outro`.
    */
   readonly subItems?: readonly ZleWidgetSubItem[]
-  /** Prose after the sub-item list. Present only when `subItems` is. */
+  /** Prose after the sub-item list. */
   readonly outro?: string
   readonly module?: ModuleName
 }
 
 /**
- * ZLE keymap entry -- one of the fixed initial keymaps (`emacs`, `viins`,
- * `vicmd`, `viopp`, `visual`, `isearch`, `command`, `.safe`).
+ * ZLE keymap — one of the fixed initial keymaps (`emacs`, `viins`, `vicmd`,
+ * `viopp`, `visual`, `isearch`, `command`, `.safe`).
  *
- * `main` is not a keymap in its own right but an alias to `emacs` or `viins`
- * depending on `$VISUAL`/`$EDITOR`; it is tracked via `linkedFrom` on the
- * default target (emacs).
+ * `main` is not a keymap, but an alias to `emacs`/`viins` depending on
+ * `$VISUAL`/`$EDITOR`; tracked via `linkedFrom` on the default target (emacs).
  */
 export interface KeymapDoc extends SyntaxDocBase {
   readonly name: Documented<"keymap">
   /** `.safe` is special — immutable and always present. */
   readonly isSpecial: boolean
-  /** Aliases from other names (e.g. `main` onto `emacs`). Empty when none. */
+  /** Aliases onto this keymap (e.g. `main` onto `emacs`). */
   readonly linkedFrom: readonly string[]
 }
 
@@ -586,10 +545,10 @@ export interface JobSpecDoc extends SyntaxDocBase {
   readonly kind: JobSpecKind
 }
 
-/** Arithmetic operator arity. `overloaded` means the same op serves as both unary and binary (`+`, `-`). */
+/** Arithmetic operator arity; `overloaded` = same op as both unary and binary (`+`, `-`). */
 export type ArithOpArity = "unary" | "binary" | "ternary" | "overloaded"
 
-/** Arithmetic operator — one record per unique op from `arith.yo` native-precedence table. */
+/** Arithmetic operator — one record per op from `arith.yo`'s native-precedence table. */
 export interface ArithOpDoc extends SyntaxDocBase {
   readonly op: Documented<"arith_op">
   readonly arity: ArithOpArity
@@ -598,61 +557,46 @@ export interface ArithOpDoc extends SyntaxDocBase {
 /**
  * Special-function kind.
  *
- * - `hook`: user-defined callback with a companion `${name}_functions` array (chpwd, periodic, precmd, preexec, zshaddhistory, zshexit).
- * - `trap-literal`: specifically named trap function (TRAPDEBUG, TRAPEXIT, TRAPZERR, TRAPERR).
- * - `trap-template`: the `TRAPNAL` template where `NAL` is any signal name (see `man 7 signal`).
+ * - `hook`: companion-array callback (chpwd, periodic, precmd, preexec, zshaddhistory, zshexit).
+ * - `trap-literal`: specifically named trap (TRAPDEBUG, TRAPEXIT, TRAPZERR, TRAPERR).
+ * - `trap-template`: `TRAPNAL` template where NAL is any signal name (`man 7 signal`).
  */
 export type SpecialFunctionKind = "hook" | "trap-literal" | "trap-template"
 
-/** Zsh "special function" — hook functions and TRAP* functions from `func.yo` §Special Functions. */
+/** Special function — hooks and TRAP* from `func.yo` §Special Functions. */
 export interface SpecialFunctionDoc extends SyntaxDocBase {
   readonly name: Documented<"special_function">
   readonly kind: SpecialFunctionKind
-  /** For hooks: the companion `${name}_functions` array name. Absent on TRAP* records. */
+  /** Hook's companion `${name}_functions` array name. Absent on TRAP*. */
   readonly hookArray?: string
 }
 
 /**
- * Completion utility function — completion-system helper functions from
- * `compsys.yo` §"Utility Functions": `_absolute_command_paths`,
- * `_all_labels`, `_arguments`, and others. One record per function.
+ * Completion utility — `compsys.yo` §"Utility Functions"
+ * (`_absolute_command_paths`, `_all_labels`, `_arguments`, ...).
  *
- * `desc` / `flagGroups` / `outro` follow the same pattern as `BuiltinDoc`:
- * when `flagGroups` is present, `desc` is the intro before the first list
- * and `outro` (if any) is the post-last-list prose.
- *
- * `sig` carries the canonical first synopsis line (single-line for the
- * `SyntaxDocBase` surface-form invariant); `synopsis` carries every
- * synopsis line, with upstream `SPACES()` continuations folded onto the
- * preceding line. The renderer emits `synopsis` as a multi-line code
- * block — mirrors `BuiltinDoc.synopsis`.
+ * `desc` / `flagGroups` / `outro` mirror `BuiltinDoc`. `sig` is the canonical
+ * first synopsis line; `synopsis` carries every synopsis line with upstream
+ * `SPACES()` continuations folded onto the preceding line — rendered as a
+ * multi-line code block.
  */
 export interface CompUtilityDoc extends SyntaxDocBase {
   readonly name: Documented<"comp_utility">
   readonly synopsis: NonEmpty<string>
-  /**
-   * Per-group flag entries captured when the upstream documents one or
-   * more depth-1 nested item lists inside the function body (e.g.
-   * `_arguments`'s sibling flag / spec-form lists). Same posture as
-   * `BuiltinDoc.flagGroups`.
-   */
+  /** Per-group flags; same posture as `BuiltinDoc.flagGroups`. */
   readonly flagGroups?: readonly FlagGroup[]
   /** Prose after the last flag group. */
   readonly outro?: string
 }
 
 /**
- * Math function provided by `zsh/mathfunc` — callable inside arithmetic
- * expressions (e.g. `$(( cos(0) ))`).
- *
- * `sig` is an array for parity with `BuiltinDoc.synopsis`; multiple forms
- * render as multiple lines in a code block (e.g. `sin(x)` and `cos(x)` are
- * separate records but share the same sig shape). `module` is always set:
- * mathfuncs only exist inside modules.
+ * Math function from `zsh/mathfunc` — callable in arithmetic expressions
+ * (`$(( cos(0) ))`). `module` is always set: mathfuncs only exist inside
+ * modules. `sig` mirrors `BuiltinDoc.synopsis` — multi-line rendered.
  */
 export interface MathfuncDoc {
   readonly name: Documented<"mathfunc">
-  /** Call signature(s), e.g. `["cos(x)"]`. Multiple forms render as separate lines. */
+  /** Call signature(s) — multiple forms render as separate lines. */
   readonly sig: NonEmpty<string>
   readonly desc: string
   readonly module: ModuleName

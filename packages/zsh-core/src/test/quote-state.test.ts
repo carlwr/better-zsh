@@ -39,22 +39,24 @@ describe("advanceQuote", () => {
     expect(isQuoted(scan('"\\n'))).toBe(true) // still in dq
   })
 
-  test("single quote inside double quotes is literal", () => {
-    const st = scan("\"'")
-    expect(st.dq).toBe(true)
-    expect(st.sq).toBe(false)
-  })
-
-  test("double quote inside single quotes is literal", () => {
-    const st = scan("'\"")
-    expect(st.sq).toBe(true)
-    expect(st.dq).toBe(false)
-  })
-
-  test("backslash inside single quotes is literal", () => {
-    const st = scan("'\\")
-    expect(st.sq).toBe(true)
-    expect(st.esc).toBe(false)
+  test.each([
+    [
+      "single quote inside double quotes is literal",
+      "\"'",
+      { dq: true, sq: false },
+    ],
+    [
+      "double quote inside single quotes is literal",
+      "'\"",
+      { sq: true, dq: false },
+    ],
+    [
+      "backslash inside single quotes is literal",
+      "'\\",
+      { sq: true, esc: false },
+    ],
+  ] as const)("%s", (_desc, input, want) => {
+    expect(scan(input)).toMatchObject(want)
   })
 
   test("scan never throws on arbitrary input", () => {

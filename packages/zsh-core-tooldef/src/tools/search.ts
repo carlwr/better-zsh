@@ -1,5 +1,6 @@
 // MIRRORED-IN: zshref-rs/src/tools/search.rs
 
+import { isDefined, trim } from "@carlwr/typescript-extra"
 import type { DocCorpus } from "@carlwr/zsh-core"
 import { resolve } from "@carlwr/zsh-core/resolver"
 import { classifyOrder, type DocCategory } from "@carlwr/zsh-core/taxonomy"
@@ -42,7 +43,7 @@ export function search(corpus: DocCorpus, input: SearchInput): SearchResult {
 
   const limit = clampLimit(input.limit)
   const pool = entries(corpus, input.category)
-  const q = input.query.trim()
+  const q = trim(input.query)
   if (!q) return mkEnvelope<SearchMatch>([])
 
   const qLow = q.toLowerCase()
@@ -121,7 +122,7 @@ function toMatch(e: BaseMatch, score: number): SearchMatch {
     category: e.category,
     id: e.id,
     display: e.display,
-    ...(e.subKind !== undefined ? { subKind: e.subKind } : {}),
+    ...(isDefined(e.subKind) ? { subKind: e.subKind } : {}),
     score,
   }
 }

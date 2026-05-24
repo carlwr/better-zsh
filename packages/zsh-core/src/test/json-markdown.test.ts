@@ -25,6 +25,7 @@ describe.runIf(existsSync(jsonDir))(
   () => {
     interface MdRec {
       readonly mdBody: string
+      readonly _title: string
     }
     interface NamedMdRec extends MdRec {
       readonly name: string
@@ -40,18 +41,24 @@ describe.runIf(existsSync(jsonDir))(
       for (const r of recs) {
         expect(typeof r.mdBody).toBe("string")
         expect(r.mdBody.length).toBeGreaterThan(0)
+        // The title now travels as its own field (split out of mdBody).
+        expect(typeof r._title).toBe("string")
+        expect(r._title.length).toBeGreaterThan(0)
       }
     })
 
     test.each([
-      ["options.json", "autocd", 100, ["AUTO_CD", "setopt"]],
-      ["builtins.json", "echo", 50, []],
-    ] as const)("%s:%s mdBody contains rendered content", (file, name, minLen, parts) => {
+      ["options.json", "autocd", 100, ["AUTO_CD"], ["setopt"]],
+      ["builtins.json", "echo", 50, ["echo"], ["echo"]],
+    ] as const)("%s:%s splits title from body", (file, name, minLen, titleParts, bodyParts) => {
       const rec = loadRecs<NamedMdRec>(file).find(r => r.name === name)
       expect(rec).toBeDefined()
       const md = rec?.mdBody ?? ""
+      const title = rec?._title ?? ""
       expect(md.length).toBeGreaterThan(minLen)
-      for (const p of parts) expect(md).toContain(p)
+      // Title text (e.g. the option name) now lives in `_title`, not mdBody.
+      for (const p of titleParts) expect(title).toContain(p)
+      for (const p of bodyParts) expect(md).toContain(p)
     })
   },
 )

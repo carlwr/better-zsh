@@ -6,8 +6,7 @@ import { type DocCategory, docCategories, mkPieceId } from "../docs/taxonomy"
 
 const corpus = loadCorpus()
 
-// Per-category resolver-case helpers. Each pair `[raw, expectedId]` is asserted
-// via `cases(cat).hit`; each `raw` is asserted unresolved via `cases(cat).miss`.
+// Per-cat helpers: `.hit(raw, id)` asserts resolve; `.miss(raw)` asserts unresolved.
 function cases<K extends DocCategory>(cat: K) {
   return {
     hit: (raw: string, id: string) =>

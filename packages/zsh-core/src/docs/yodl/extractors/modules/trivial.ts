@@ -1,10 +1,6 @@
 /**
- * Trivial module extractors — modules whose entire .yo file is a single flat
- * builtin-list or special-param-list with no per-module quirks. The wiring
- * here replaces what would otherwise be ~13 near-identical 7-line files.
- *
- * Non-trivial modules (multi-region, custom synopsis collapsing, mathfunc,
- * etc.) keep their own per-module files for explicit per-module logic.
+ * Modules whose entire .yo file is a single flat builtin-list or
+ * special-param-list with no quirks. Non-trivial modules keep their own.
  */
 import type { CorpusYodlFile } from "../../../source-files.ts"
 import type { ModuleName } from "../../../taxonomy.ts"
@@ -29,10 +25,6 @@ interface TrivialParamModule {
   readonly scope: ShellParamScope
 }
 
-/**
- * Modules whose mod_*.yo file is a single `startitem()/enditem()` block of
- * builtins with no per-module quirks.
- */
 const TRIVIAL_BUILTIN_MODULES: readonly TrivialBuiltinModule[] = [
   { file: "mod_attr.yo", module: "zsh/attr" },
   { file: "mod_cap.yo", module: "zsh/cap" },
@@ -45,10 +37,6 @@ const TRIVIAL_BUILTIN_MODULES: readonly TrivialBuiltinModule[] = [
   { file: "mod_zutil.yo", module: "zsh/zutil" },
 ]
 
-/**
- * Modules whose mod_*.yo file is a single `startitem()/enditem()` block of
- * special-params with no per-module quirks.
- */
 const TRIVIAL_PARAM_MODULES: readonly TrivialParamModule[] = [
   { file: "mod_langinfo.yo", module: "zsh/langinfo", scope: "shell-set" },
   { file: "mod_mapfile.yo", module: "zsh/mapfile", scope: "shell-set" },

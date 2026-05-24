@@ -1,4 +1,3 @@
-import { mkObserved } from "../docs/brands.ts"
 import {
   absSpan,
   activeText,
@@ -7,7 +6,11 @@ import {
   type TextSpan,
 } from "./doc.ts"
 import type { CtxFact, FactCtx } from "./fact-types.ts"
-import { cmdHeadFactsOnLine, firstCmdHeadOnLine } from "./line-facts.ts"
+import {
+  COMMAND_PRECMD,
+  cmdHeadFactsOnLine,
+  firstCmdHeadOnLine,
+} from "./line-facts.ts"
 import { advanceQuote, isQuoted, mkQuoteState } from "./quote-state.ts"
 import { isSetoptCommandText } from "./setopt-cmd.ts"
 
@@ -94,11 +97,7 @@ function scanSetoptCtx(
 
     const headLine = activeText(lines[block.start] ?? "")
     const head = firstCmdHeadOnLine(headLine)
-    if (
-      !head ||
-      head.precmds.includes(mkObserved("precmd_modifier", "command"))
-    )
-      continue
+    if (!head || head.precmds.includes(COMMAND_PRECMD)) continue
     const text = continuedText(lines, block.start, block.end).slice(
       head.span.start,
     )

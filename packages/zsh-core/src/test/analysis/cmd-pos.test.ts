@@ -1,7 +1,6 @@
 import { describe, expect, test } from "vitest"
 import { cmdPositions } from "../../analysis/cmd-position"
-import { isCmdHeadFact } from "../../analysis/fact-types"
-import { cmdHeadFactsOnLine } from "../../analysis/facts"
+import { cmdHeadFactsOnLine, isCmdHeadFact } from "../../analysis/facts"
 
 function factSpans(line: string, commentAt?: number) {
   return cmdHeadFactsOnLine(line, commentAt)

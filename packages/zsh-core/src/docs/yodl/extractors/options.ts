@@ -7,7 +7,12 @@ import type {
   OptFlagSign,
   ZshOption,
 } from "../../types.ts"
-import { flipOptFlagSign, mkOptFlag, optSections } from "../../types.ts"
+import {
+  emulations,
+  flipOptFlagSign,
+  mkOptFlag,
+  optSections,
+} from "../../types.ts"
 import {
   extractFirstSitemList,
   extractItems,
@@ -23,16 +28,19 @@ import {
   trimmedTtTexts,
 } from "../core/text.ts"
 
-const DEFAULT_RE = /<([DKSCZ])>/g
 const HEADER_FLAG_RE = /^[+-][A-Za-z0-9]$/
-const ALL_EMULATIONS: readonly Emulation[] = ["csh", "ksh", "sh", "zsh"]
 const DEFAULT_EMULATIONS: Record<DefaultMarker, readonly Emulation[]> = {
   C: ["csh"],
-  D: ALL_EMULATIONS,
+  D: emulations,
   K: ["ksh"],
   S: ["sh"],
   Z: ["zsh"],
 }
+// Marker char class derived from the table — can't drift from `DefaultMarker`.
+const DEFAULT_RE = new RegExp(
+  `<([${Object.keys(DEFAULT_EMULATIONS).join("")}])>`,
+  "g",
+)
 
 const parseOptionCategory = mkClosedUnionParser(
   optSections,
@@ -40,16 +48,14 @@ const parseOptionCategory = mkClosedUnionParser(
 )
 
 /**
- * Narrow pre-parse patch for a known upstream typo in options.yo.
+ * Pre-parse patch for a known upstream typo in options.yo. Removing becomes
+ * a no-op once upstream fixes the typo.
  *
- * Current entries:
- * - GLOB_ASSIGN: `` `var(name)tt(=)var(pattern) `` is missing its closing `'`,
+ * - GLOB_ASSIGN: `` `var(name)tt(=)var(pattern) `` missing its closing `'`,
  *   leaving an unclosed backtick-quote span that renders as a lone backtick.
- *   Removing becomes a no-op once upstream fixes the typo.
  *
- * Exported so `loadCorpus` can apply it before parsing the shared file once;
- * also applied here when `parseOptions` receives a raw string, so direct
- * callers (tests, one-off tools) see the same fixed input as production.
+ * Exported so `loadCorpus` patches the shared file once; also applied here
+ * for direct string callers (tests, one-off tools).
  */
 export function fixupOptionsYo(yo: string): string {
   return yo.replace(
@@ -58,7 +64,6 @@ export function fixupOptionsYo(yo: string): string {
   )
 }
 
-/** Parse options.yo → ZshOption[] */
 export function parseOptions(yo: YodlSrc): readonly ZshOption[] {
   const nodes = asNodes(typeof yo === "string" ? fixupOptionsYo(yo) : yo)
   const flagMap = parseDefaultFlagAliases(nodes)
@@ -130,32 +135,32 @@ function parseDefaultFlagAliases(
   return out
 }
 
+/** Parse a `+X`/`-X` flag token into an alias; the sole `OptFlagSign` narrowing point. */
+function parseFlagToken(s: string): OptFlagAlias | undefined {
+  if (!HEADER_FLAG_RE.test(s)) return undefined
+  const char = s[1]
+  return char ? { on: s[0] as OptFlagSign, char: mkOptFlag(char) } : undefined
+}
+
 function aliasFrom(
   flag: string,
   target: string,
 ): { display: string; flag: OptFlagAlias } | undefined {
-  if (!HEADER_FLAG_RE.test(flag)) return undefined
-  const listed = flag[0] as OptFlagSign
-  const char = flag[1]
-  if (!char) return undefined
-
-  const positive = target.startsWith("NO_") ? flipOptFlagSign(listed) : listed
-  const display = target.replace(/^NO_/, "")
-
+  const parsed = parseFlagToken(flag)
+  if (!parsed) return undefined
+  const negated = target.startsWith("NO_")
   return {
-    display,
+    display: target.replace(/^NO_/, ""),
     flag: {
-      char: mkOptFlag(char),
-      on: positive,
+      char: parsed.char,
+      on: negated ? flipOptFlagSign(parsed.on) : parsed.on,
     },
   }
 }
 
 function toFlagAlias(raw: string): OptFlagAlias[] {
-  if (!HEADER_FLAG_RE.test(raw)) return []
-  const on = raw[0] as OptFlagSign
-  const char = raw[1]
-  return char ? [{ char: mkOptFlag(char), on }] : []
+  const flag = parseFlagToken(raw)
+  return flag ? [flag] : []
 }
 
 function mergeFlags(

@@ -65,6 +65,30 @@ enditem()`
     expect(doc.synopsis[1]).toContain("strftime -r")
   })
 
+  test("expands `<name> ...` abbreviated head from sibling's full sig (mod_stat.yo)", () => {
+    // mod_stat.yo writes `item(tt(stat) var(...))(body)` after the full
+    // `xitem(tt(zstat ...) ...)` head. `var(...)` renders as the literal
+    // three dots, leaving `stat`'s sig as the bare `stat ...`. The
+    // abbreviated head must inherit `zstat`'s longer sig with the leading
+    // token swapped to `stat`.
+    const yo = `startitem()
+findex(zstat)
+findex(stat)
+xitem(tt(zstat) [ tt(-gnNol) ] [ tt(-f) var(fd) ])
+xitem(SPACES()[ tt(PLUS())var(element) ] [ var(file) ... ])
+item(tt(stat) var(...))(
+Shared body.
+)
+enditem()`
+    const docs = parseModuleBuiltins(yo, "zsh/stat")
+    const stat = docs.find(d => d.name === bi("stat"))
+    const zstat = docs.find(d => d.name === bi("zstat"))
+    expect(zstat?.synopsis[0]).toBe("zstat [ -gnNol ] [ -f fd ]")
+    expect(stat?.synopsis[0]).toBe("stat [ -gnNol ] [ -f fd ]")
+    // Continuation lines still apply to both.
+    expect(stat?.synopsis[1]).toContain("[ +element ]")
+  })
+
   test("emits separate records when aliased headers have different names", () => {
     const yo = `startitem()
 findex(comptags)

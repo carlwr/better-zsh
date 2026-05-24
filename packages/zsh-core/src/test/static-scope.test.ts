@@ -95,10 +95,10 @@ describe("static-entrypoint scope fence", () => {
     expect(violations).toEqual([])
   })
 
-  test("static entrypoints do not reach ./exec", () => {
-    const execFile = resolve(pkgDir, "exec.ts")
-    const zshFile = resolve(pkgDir, "src", "exec", "zsh.ts")
-    expect(reached.has(execFile)).toBe(false)
-    expect(reached.has(zshFile)).toBe(false)
+  test.each([
+    ["exec.ts"],
+    ["src/exec/zsh.ts"],
+  ])("static entrypoints do not reach %s", relPath => {
+    expect(reached.has(resolve(pkgDir, relPath))).toBe(false)
   })
 })

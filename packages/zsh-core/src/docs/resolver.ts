@@ -32,9 +32,9 @@
  * (lossy normalization)".
  */
 
+import { escapeRegExp, isDefined, isSingle } from "@carlwr/typescript-extra"
 import { mkDocumented } from "./brands.ts"
 import type { DocCorpus } from "./corpus.ts"
-import { escapeRegExp } from "./regex.ts"
 import {
   type DocCategory,
   type DocPieceId,
@@ -44,12 +44,7 @@ import {
 import { type Documented, type RedirDoc, redirSlugFromSig } from "./types.ts"
 
 // --- Resolvers --------------------------------------------------------------
-//
-// Each resolver is free to do category-specific work — option negation
-// (`no_` stripping), redirection group-op + tail matching, future custom
-// categories — inside its own function. The uniform interface is
-// `(corpus, raw: string) => Documented<K> | undefined`. The public
-// `resolve(corpus, cat, raw)` dispatches through the table.
+// `resolve(corpus, cat, raw)` dispatches through `resolverOverrides` below.
 
 type Resolver<K extends DocCategory> = (
   c: DocCorpus,
@@ -58,7 +53,7 @@ type Resolver<K extends DocCategory> = (
 
 /**
  * Membership check against `corpus[cat]`. Centralizes the brand-peel cast
- * needed when `cat` is generic (TS can't narrow `c[cat]` through the union).
+ * needed when `cat` is generic.
  */
 function hasId<K extends DocCategory>(
   c: DocCorpus,
@@ -68,7 +63,7 @@ function hasId<K extends DocCategory>(
   return (c[cat] as ReadonlyMap<string, unknown>).has(id as string)
 }
 
-/** Resolver for categories whose raw-to-lookup-key mapping is pure normalization. */
+/** Resolver for categories whose raw-to-key mapping is pure normalization. */
 function simpleResolver<K extends DocCategory>(cat: K): Resolver<K> {
   return (c, raw) => {
     const id = mkDocumented(cat, raw)
@@ -77,9 +72,8 @@ function simpleResolver<K extends DocCategory>(cat: K): Resolver<K> {
 }
 
 /**
- * Common envelope for resolvers whose raw-to-key step is a pure string
- * projection: trim → match → corpus lookup. `matchKey` returns `undefined`
- * to opt out (e.g. category-specific shape rejection).
+ * Envelope for resolvers whose raw-to-key step is a pure string projection:
+ * trim → match → corpus lookup. `matchKey` returns `undefined` to opt out.
  */
 function resolveByKey<K extends DocCategory>(
   c: DocCorpus,
@@ -96,13 +90,9 @@ function resolveByKey<K extends DocCategory>(
 }
 
 /**
- * Redirection resolver. Decomposes a raw token (e.g. `"1>&2"`) into a
- * group-op prefix and a tail; disambiguates docs that share the same group-op
- * by matching the user-input tail shape against the doc's literal tail word.
- *
- * Doc sigs use special tail words — "number" for a numeric operand,
- * "word" for a non-numeric one, plus literal tails like `-` and `p`.
- * We identify the user-input tail shape and match it to one of those literal words.
+ * Redirection resolver. Decomposes a raw token (`"1>&2"`) into group-op +
+ * tail; disambiguates shared group-ops by matching the user-input tail shape
+ * against the doc's literal tail word ("number", "word", `-`, `p`, ...).
  */
 function resolveRedir(
   c: DocCorpus,
@@ -110,8 +100,7 @@ function resolveRedir(
 ): Documented<"redirection"> | undefined {
   const literal = mkDocumented("redirection", raw)
   if (c.redirection.has(literal)) return literal
-  // Sig-form close-variant: the documented sig (e.g. `> word`) maps to its
-  // shell-safe slug (`>_word`) — see `redirSlugFromSig`.
+  // Sig-form close-variant: doc sig (`> word`) → slug (`>_word`).
   const sigSlug = mkDocumented("redirection", redirSlugFromSig(raw.trim()))
   if (c.redirection.has(sigSlug)) return sigSlug
   return resolveByKey(c, "redirection", raw, t => matchRedirKey(c, t))
@@ -128,11 +117,11 @@ function matchRedirKey(c: DocCorpus, t: string): string | undefined {
 
   const matches = [...c.redirection.values()]
     .map(doc => redirMatch(doc, text))
-    .filter((m): m is RedirMatch => m !== undefined)
+    .filter(isDefined)
 
   const longest = Math.max(...matches.map(m => m.groupLen), -1)
   const hit = matches.filter(m => m.groupLen === longest)
-  return hit.length === 1 ? hit[0]?.slug : undefined
+  return isSingle(hit) ? hit[0].slug : undefined
 }
 
 interface RedirMatch {
@@ -160,25 +149,12 @@ function redirTailPattern(groupOp: string, tail: string): string {
 }
 
 /**
- * History resolver -- event-designator forms only.
+ * History resolver — event-designators only.
  *
  * Word-designators (`0`, `a`, `n`, `x-y`, ...) and modifiers (`h`, `s/l/r[/]`,
- * ...) are grammatical components that only have meaning after an event
- * designator; they are NOT independent user-code tokens. A bare `0` or `a`
- * in isolation is never a history token. Search is context-free, so this
- * resolver stays out of those forms on the same "totality, not utility"
- * grounds as `param_expn`'s resolver (see DESIGN.md §"History: grammar
- * components, not independent tokens").
- *
- * Recognized forms (first match wins):
- * - `!!`                     -> `!!`
- * - `!#`                     -> `!#`
- * - `!{...}`                 -> `!{...}` (literal corpus template)
- * - `!?str` / `!?str?`       -> `!?str[?]`
- * - `!-n` (digits)           -> `!-n`
- * - `!n`  (digits)           -> `!n`
- * - `!str` (no whitespace or `!$^%*`) -> `!str`
- * - `^foo^bar` / `^foo^bar^` -> `!!` (documented synonym of `!!:s^foo^bar^`)
+ * ...) only carry meaning after an event designator; a bare `0` or `a` is
+ * never a history token. Same "totality, not utility" posture as `param_expn`
+ * (DESIGN.md §"History: grammar components, not independent tokens").
  */
 function resolveHistory(
   c: DocCorpus,
@@ -191,7 +167,7 @@ function resolveHistory(
 const HISTORY_KEYS: readonly (readonly [RegExp, string])[] = [
   [/^!!$/, "!!"],
   [/^!#$/, "!#"],
-  [/^!\{.+\}$/, "!{...}"],
+  [/^!\{.+\}$/, "!{...}"], // literal corpus template
   [/^!\?.+\??$/, "!?str[?]"],
   [/^!-\d+$/, "!-n"],
   [/^!\d+$/, "!n"],
@@ -203,16 +179,16 @@ function matchHistoryKey(t: string): string | undefined {
   return HISTORY_KEYS.find(([re]) => re.test(t))?.[1]
 }
 
-// Single-letter flag categories: corpus keys are letters (`e`, `U`, `i`, ...),
-// user tokens may wrap them in parens (`(e)`, `(#i)`, `(#qX)`) or trail args
-// (`j:string:`). One union; helpers below narrow further when behaviour diverges.
+// Single-letter flag categories. Corpus keys are letters (`e`, `U`, `i`);
+// user tokens may wrap in parens (`(e)`, `(#i)`, `(#qX)`) or trail args
+// (`j:string:`). Helpers narrow further when behaviour diverges.
 type FlagCategory =
   | "subscript_flag"
   | "param_expn_flag"
   | "glob_flag"
   | "glob_qualifier"
 
-// Subset of `FlagCategory` whose sigs carry colon-delimited operand markers.
+// Subset whose sigs carry colon-delimited operand markers.
 const COLON_ARG_FLAG_CATS: ReadonlySet<FlagCategory> = new Set([
   "param_expn_flag",
   "subscript_flag",
@@ -220,14 +196,12 @@ const COLON_ARG_FLAG_CATS: ReadonlySet<FlagCategory> = new Set([
 
 /**
  * Resolver factory for flag categories whose corpus keys are single letters
- * but whose user-code tokens may appear wrapped in parentheses or with a
- * category-specific marker prefix (`#` for `glob_flag`, `#q` for
- * `glob_qualifier`).
+ * but whose user tokens may appear wrapped in parens or with a category-
+ * specific marker prefix (`#` for `glob_flag`, `#q` for `glob_qualifier`).
  *
- * Tries the raw-trimmed form verbatim; if that misses and the raw token is
- * wrapped, retries the inner form after stripping the marker prefix. Falls
- * back to undefined — a bare letter that is NOT a documented flag never
- * cross-resolves to an unrelated category entry.
+ * Tries raw verbatim; on miss, retries the inner form after stripping the
+ * marker prefix. A bare letter that is NOT a documented flag never
+ * cross-resolves into an unrelated category.
  */
 function parensAgnosticFlagResolver<K extends FlagCategory>(
   cat: K,
@@ -243,8 +217,7 @@ function parensAgnosticFlagResolver<K extends FlagCategory>(
 
 /**
  * Try a key against the flag map. For `COLON_ARG_FLAG_CATS`, also accepts
- * the full sig form (`j:string:`) by stripping args down to the bare flag
- * letter (`j`).
+ * the full sig form (`j:string:`) by stripping to the bare letter (`j`).
  */
 function tryFlagKey<K extends FlagCategory>(
   c: DocCorpus,
@@ -270,17 +243,13 @@ function flagInnerKey(cat: FlagCategory, t: string): string | undefined {
 
 /**
  * Special-parameter resolver. Literal first; falls back to stripping a
- * trailing `[...]` subscript so live forms like `compstate[context]`,
- * `words[CURRENT]`, `pipestatus[1]` resolve to the parent record. Stripping
- * is lossy — the subscript is surfaced separately via `resolverFeedback`.
+ * trailing `[...]` subscript (`compstate[context]`, `words[CURRENT]`, ...).
+ * Stripping is lossy — the subscript surfaces via `resolverFeedback`. Wider
+ * user-expression parsing stays out of scope (PRINCIPLES.md §"Resolver scope
+ * balance").
  *
- * Bridges documented identity to surface syntax; user-expression parsing
- * stays out of scope (PRINCIPLES.md §"Resolver scope balance").
- *
- * Private to `resolvers.ts`: shared between `resolve` and
- * `specialParamFeedback`. Public callers go through
- * `resolve(corpus, "special_param", raw)` and
- * `resolverFeedback(corpus, "special_param", raw)`.
+ * Module-private; shared with `specialParamFeedback`. Public path:
+ * `resolve` + `resolverFeedback`.
  */
 const SUBSCRIPTED_PARAM_RE = /^([A-Za-z_][A-Za-z0-9_]*)\[(.+)\]$/
 
@@ -313,8 +282,8 @@ function specialParamFeedback(
 }
 
 /**
- * Job-spec resolver. Literal-first for `%%`, `%+`, `%-`; template matches for
- * `%n` (digits), `%?str`, `%str`.
+ * Job-spec resolver. Literal first for `%%`, `%+`, `%-`; template matches
+ * for `%n`, `%?str`, `%str`.
  */
 function resolveJobSpec(
   c: DocCorpus,
@@ -350,17 +319,15 @@ export const hookNames: readonly string[] = [
 const HOOK_FN_SET: ReadonlySet<string> = new Set(hookNames)
 
 /**
- * Special-function resolver.
+ * Special-function resolver. Literal first for hook names and literal TRAP*
+ * names. Two compositional fallbacks for the patterns zsh exposes:
  *
- * Literal-first: hook names (`chpwd`, `precmd`, ...) and literal TRAP* names
- * (`TRAPDEBUG`, `TRAPEXIT`, `TRAPZERR`, `TRAPERR`) hit their own records.
- * Compositional fallbacks close the two identifier-composition patterns zsh
- * exposes for this category:
  * - `^(chpwd|periodic|precmd|preexec|zshaddhistory|zshexit)_functions$` →
- *   the matching hook record (the companion array is the same concept).
- * - `^TRAP[A-Z0-9]+$` → the TRAPNAL template record.
- * Deliberately no signal-name validation: host-level `kill -l` contents are
- * not baked (zsh-aware, not environment-aware).
+ *   matching hook record (companion array is the same concept).
+ * - `^TRAP[A-Z0-9]+$` → `TRAPNAL` template record.
+ *
+ * No signal-name validation: `kill -l` is host-level (zsh-aware, not
+ * environment-aware).
  */
 function resolveSpecialFunction(
   c: DocCorpus,
@@ -382,14 +349,12 @@ function matchSpecialFunctionKey(t: string): string | undefined {
 }
 
 /**
- * Option resolver. Literal first (so `NOTIFY` resolves to `notify`, not to
- * stripped `tify`); falls back to `no_`-stripped form when the literal is
- * absent. The negated pathway is what `resolverFeedback` reports as
- * `{ kind: "input-negated" }`.
+ * Option resolver. Literal first (so `NOTIFY` → `notify`, not stripped
+ * `tify`); falls back to `no_`-stripped form. Negated pathway surfaces via
+ * `resolverFeedback` as `{ kind: "input-negated" }`.
  *
- * Private to `resolvers.ts`: shared between `resolve` and `optionFeedback`.
- * Public callers go through `resolve(corpus, "option", raw)` for identity and
- * `resolverFeedback(corpus, "option", raw)` for the negation bit.
+ * Module-private; shared with `optionFeedback`. Public path: `resolve` +
+ * `resolverFeedback`.
  */
 const NO_PREFIX_RE = /^no_?/i
 
@@ -410,13 +375,12 @@ function resolveOption(
     : undefined
 }
 
-// Default is `simpleResolver(cat)` — trim + normalize + corpus lookup.
-// Only categories with corpus-aware parsing appear as overrides.
+// Default: `simpleResolver(cat)` — trim + normalize + corpus lookup. Only
+// corpus-aware categories override.
 //
-// Note on `param_expn`: ids are literal doc-template strings (e.g.
-// `${name:-word}`), so the default `simpleResolver` will essentially never
-// match a live user-code token. The category is reached via search/docs
-// rather than raw-token resolution; the default path is harmless.
+// `param_expn`: ids are literal template strings (`${name:-word}`), so the
+// default will essentially never match a live token. Reached via search/docs;
+// the default path is harmless.
 const resolverOverrides: { readonly [K in DocCategory]?: Resolver<K> } = {
   option: (c, raw) => resolveOption(c, raw)?.id,
   special_param: (c, raw) => resolveSpecialParam(c, raw)?.id,
@@ -440,21 +404,14 @@ const resolvers: { [K in DocCategory]: Resolver<K> } = Object.fromEntries(
 /**
  * Resolve a raw user-code token against the corpus.
  *
- * Dispatches through an internal per-category resolver table; each category
- * may apply corpus-aware parsing (`option` handles `no_`-prefix negation;
- * redirections decompose group-op + tail; most others just normalize + `Map.has`).
+ * Dispatches through a per-category resolver table; each category may apply
+ * corpus-aware parsing (`option` handles `no_`-stripping; redirections
+ * decompose group-op + tail; most others normalize + `Map.has`).
  *
- * Returns the matching `DocPieceId` (i.e. `{ category, id }` where `id` is
- * `Documented<K>`) or `undefined` if the token does not identify a corpus
- * element. The `| undefined` makes non-membership explicit at the value level.
- *
- * Returns identity only. Lossy bits (e.g. whether an option was reached via
- * `NO_`-stripping) surface separately via `resolverFeedback`.
- *
- * This is the sole public brand-boundary crossing point for untrusted raw
- * strings. The other legitimate routes to a `DocPieceId` are: assembling one
- * via `mkPieceId(cat, record.id)` from a corpus-iterated record, or internal
- * iteration inside zsh-core.
+ * Identity only — lossy bits surface via `resolverFeedback`. The sole public
+ * brand-boundary crossing for untrusted raw strings; the other legitimate
+ * routes to a `DocPieceId` are `mkPieceId(cat, record.id)` from a
+ * corpus-iterated record, or internal iteration inside zsh-core.
  */
 export function resolve<K extends DocCategory>(
   corpus: DocCorpus,
@@ -481,22 +438,18 @@ export function lookupRaw<K extends DocCategory>(
 }
 
 // --- Resolver feedback ------------------------------------------------------
-// Lossy bits (e.g. `NO_AUTO_CD` → `autocd` discards the `NO_` prefix) surface
-// here, not on `Documented<K>`. Closed kind-tagged union, parametric over
-// `DocCategory` via `feedbackOverrides` (fallback `noFeedback`). See DESIGN.md
-// §"Resolver feedback channel" and PRINCIPLES.md §"Resolver feedback".
+// Closed kind-tagged union, parametric over `DocCategory` via
+// `feedbackOverrides` (fallback `noFeedback`). See DESIGN.md §"Resolver
+// feedback channel" and PRINCIPLES.md §"Resolver feedback".
 
 /**
- * Lossy-resolution feedback emitted by per-category resolvers. Closed
- * kind-tagged union so consumers route programmatically; wording is not API
- * surface.
+ * Lossy-resolution feedback. Closed kind-tagged union; consumers route
+ * programmatically (wording is not API surface).
  *
- * - `input-negated`: the raw input was reached via the option resolver's
- *   `NO_`-stripping branch; canonical-form inputs (e.g. `AUTO_CD`,
- *   `autocd`) do not carry this feedback.
- * - `subscripted`: the raw input carried a trailing `[...]` subscript that
- *   was stripped to reach the parent record (e.g. `compstate[context]` →
- *   `compstate`). `subscript` holds the inner-subscript text (the `...`).
+ * - `input-negated`: input reached via option resolver's `NO_`-stripping
+ *   branch (canonical-form inputs do not carry this).
+ * - `subscripted`: input had a trailing `[...]` stripped to reach the parent
+ *   record (`compstate[context]` → `compstate`). `subscript` holds the inner.
  */
 export type ResolverFeedback =
   | { readonly kind: "input-negated" }
@@ -517,18 +470,16 @@ function optionFeedback(
 
 const noFeedback: FeedbackResolver = () => undefined
 
-// Categories without a lossy path fall through to `noFeedback`. Only entries
-// here override that default — keeps the table the SoT for "which categories
-// actually emit feedback."
+// Non-lossy categories fall through to `noFeedback`. This table is the SoT
+// for which categories actually emit feedback.
 const feedbackOverrides: { readonly [K in DocCategory]?: FeedbackResolver } = {
   option: optionFeedback,
   special_param: specialParamFeedback,
 }
 
 /**
- * JSON Schema fragment per `ResolverFeedback` kind. Source of truth for the
- * `Feedback` `$def` consumed by tooldef's output-schema builder; per-kind
- * extra fields (e.g. `subscript`) live here, not in the consumer.
+ * JSON Schema fragment per `ResolverFeedback` kind. Source of truth for
+ * tooldef's `Feedback` `$def`; per-kind extra fields (`subscript`) live here.
  */
 const kindSchema = (
   kind: ResolverFeedback["kind"],
@@ -552,18 +503,15 @@ export const resolverFeedbackKindSchemas: ResolverFeedbackKindSchemas = {
 }
 
 /**
- * Closed list of `ResolverFeedback` kinds emitted by any category resolver.
- * Derived from `resolverFeedbackKindSchemas`, the typed source of truth for
- * closed feedback-kind values and per-kind schema shape.
+ * Closed list of `ResolverFeedback` kinds. Derived from
+ * `resolverFeedbackKindSchemas`, the typed SoT.
  */
 export const resolverFeedbackKinds: readonly ResolverFeedback["kind"][] =
   Object.keys(resolverFeedbackKindSchemas) as ResolverFeedback["kind"][]
 
 /**
- * Resolve a raw user-code token against the corpus and return optional
- * lossy-normalization feedback emitted by the per-category resolver. Returns
- * `undefined` when no feedback applies — either the input did not resolve, or
- * resolution was loss-free (canonical form).
+ * Lossy-normalization feedback for a raw user-code token. `undefined` when
+ * the input did not resolve or resolution was loss-free (canonical form).
  *
  * Parametric over `DocCategory`: tooldef and schema layers stay free of
  * per-category branches.

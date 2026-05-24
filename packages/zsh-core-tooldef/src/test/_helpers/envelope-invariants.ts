@@ -7,6 +7,7 @@
  * strings on every match.
  */
 
+import { allUnique } from "@carlwr/typescript-extra"
 import type { Envelope } from "../../tools/shared/envelope.ts"
 
 interface Match {
@@ -36,8 +37,7 @@ export function assertEnvelopeInvariants(
   // Dedup invariant: no two matches share `(category, id)`. Enforced in
   // `zsh_search`'s tier walk; asserted for every tool here.
   const keys = env.matches.map(m => `${m.category}\0${m.id}`)
-  if (new Set(keys).size !== keys.length)
-    fail("duplicate (category, id) in matches")
+  if (!allUnique(keys)) fail("duplicate (category, id) in matches")
   // Category-filter purity: with `input.category` set, every match must
   // carry that category. Catches filter-leakage regressions.
   if (typeof input.category === "string") {

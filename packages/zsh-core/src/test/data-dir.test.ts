@@ -10,17 +10,12 @@ import {
 import { withTmpDir } from "./tmp-dir"
 
 describe("resolveZshDataDir", () => {
-  test("prefers packaged data dir", () => {
+  test.each([
+    ["packaged", join("data", "zsh-docs")],
+    ["bundled runtime", runtimeZshDataDir],
+  ])("resolves %s data dir", (_label, sub) => {
     withTmpDir("better-zsh-zsh-core-", dir => {
-      const dataDir = join(dir, "data", "zsh-docs")
-      mkdirSync(dataDir, { recursive: true })
-      expect(resolveZshDataDir(dir)).toBe(dataDir)
-    })
-  })
-
-  test("falls back to bundled runtime data dir", () => {
-    withTmpDir("better-zsh-zsh-core-", dir => {
-      const dataDir = join(dir, runtimeZshDataDir)
+      const dataDir = join(dir, sub)
       mkdirSync(dataDir, { recursive: true })
       expect(resolveZshDataDir(dir)).toBe(dataDir)
     })

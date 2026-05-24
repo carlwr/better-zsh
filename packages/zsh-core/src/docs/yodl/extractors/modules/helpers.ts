@@ -1,10 +1,5 @@
-/**
- * Shared helpers for module yodl extractors.
- *
- * Thin wrappers over core Yodl machinery (doc.ts / text.ts) tuned to the
- * patterns in mod_*.yo files. Per-module files stay thin by calling these.
- */
 import {
+  assertNever,
   isNonEmpty,
   mapNonEmpty,
   type NonEmpty,
@@ -22,6 +17,7 @@ import {
   collectAliasedEntries,
   extractFirstItemList,
   extractItems,
+  findAllBracketRanges,
 } from "../../core/doc.ts"
 import type { YNodeSeq, YodlSrc } from "../../core/nodes.ts"
 import { asNodes, isMacro } from "../../core/nodes.ts"
@@ -38,12 +34,7 @@ import { splitParamBody } from "../param-keys.ts"
 // op-char alphabet than core cond.yo.
 const MODULE_OP_CHAR_RE = /^[-\w]/
 
-/**
- * Parse builtins from a module .yo source.
- *
- * Handles `findex(name) item(tt(sig))(body)` plus xitem continuation lines.
- * Sets `module` on every produced record.
- */
+// Handles `findex(name) item(tt(sig))(body)` plus xitem continuation lines.
 export function parseModuleBuiltins(
   yo: YodlSrc,
   moduleName: ModuleName,
@@ -57,8 +48,14 @@ export function parseModuleBuiltins(
     const body = aliased.entry.body ?? []
     const { desc, flagGroups, outro } = splitFlagBody(body)
     const lines = [...aliased.aliases, aliased.head]
-    const heads = lines.filter(l => !l.continuation && l.name !== "")
-    if (!isNonEmpty(heads)) continue
+    const headsRaw = lines.filter(l => !l.continuation && l.name !== "")
+    if (!isNonEmpty(headsRaw)) continue
+    // Expand `<name> ...` abbreviation: mod_stat.yo writes
+    // `item(tt(stat) var(...))(...)` after a sibling `xitem(tt(zstat)...)` —
+    // the `var(...)` Yodl arg renders as the literal three dots `...`. When
+    // a head's sig is exactly `<name> ...`, swap in the first sibling's
+    // (longer) sig with the leading name token replaced.
+    const heads = expandAbbreviatedHeads(headsRaw)
     const [head, ...rest] = heads
     const synopsisTail = lines
       .filter(l => l.continuation)
@@ -97,11 +94,9 @@ interface BuiltinHeader {
   readonly continuation: boolean
 }
 
-/**
- * Classify one item header. `SPACES()`-prefixed and leading-whitespace
- * headers are continuation lines for the preceding head; everything else
- * carries a command name (first whitespace-separated token of the sig).
- */
+// `SPACES()`-prefixed and leading-whitespace headers are continuations of
+// the preceding head; everything else is a new command (first ws-separated
+// token of the sig).
 function parseBuiltinHeader(header: YNodeSeq): BuiltinHeader | undefined {
   const isSpacesCont = isMacro(header[0], "SPACES")
   const text = normalizeHeader(header)
@@ -113,13 +108,26 @@ function parseBuiltinHeader(header: YNodeSeq): BuiltinHeader | undefined {
   return { sig: text, name, continuation }
 }
 
+function expandAbbreviatedHeads(
+  heads: NonEmpty<BuiltinHeader>,
+): NonEmpty<BuiltinHeader> {
+  const isAbbrev = (h: BuiltinHeader): boolean =>
+    h.sig.trim() === `${h.name} ...`
+  if (!heads.some(isAbbrev)) return heads
+  const full = heads.find(h => !isAbbrev(h) && h.name !== "")
+  if (!full) return heads
+  return mapNonEmpty(heads, h => {
+    if (!isAbbrev(h) || h.name === full.name) return h
+    const swapped = full.sig.replace(/^\S+/, h.name)
+    return { ...h, sig: swapped }
+  })
+}
+
 /**
- * Merge builtins sharing a name into one record. Synopses concatenate (in
- * input order); descs join with paragraph breaks. Optional fields fall back
- * to the later record only when the earlier record lacks them.
- *
- * Use for modules whose .yo documents one command across several subsect
- * blocks — `zpty`, `zsocket`, `zsystem` subcommands.
+ * Synopses concatenate (input order); descs join with paragraph breaks;
+ * later optional fields win only when earlier lacks them. Use for modules
+ * whose .yo documents one command across several subsect blocks — `zpty`,
+ * `zsocket`, `zsystem`.
  */
 export function mergeBuiltinsByName(
   docs: readonly BuiltinDoc[],
@@ -144,13 +152,9 @@ export function mergeBuiltinsByName(
 }
 
 /**
- * Parse special parameters from the first `startitem()/enditem()` block in
- * a yodl source. Sets `module` on every record.
- *
- * Supports the full ShellParamDoc shape including nested key-lists (e.g.
- * `sysparams` in mod_system.yo). For tied-param notation `tt(X) (tt(Y))`
- * use `parseShellParams` (from shell-params.ts) directly — not needed for
- * module files where params aren't tied.
+ * Supports nested key-lists (e.g. `sysparams` in mod_system.yo). For tied-param
+ * notation `tt(X) (tt(Y))` use `parseShellParams` directly — module files
+ * don't tie params.
  */
 export function parseModuleParams(
   yo: YodlSrc,
@@ -160,10 +164,6 @@ export function parseModuleParams(
   return parseModuleParamsFromList(extractFirstItemList(yo), moduleName, scope)
 }
 
-/**
- * Parse special params from a pre-extracted item list (call this when the
- * caller has already extracted the right item-list slice from a larger body).
- */
 export function parseModuleParamsFromList(
   items: ReturnType<typeof extractFirstItemList>,
   moduleName: ModuleName,
@@ -201,36 +201,12 @@ export function parseModuleParamsFromList(
   return out
 }
 
-/**
- * Split a node sequence into the bodies of all top-level
- * `startitem()/enditem()` ranges. Returns one slice per balanced range.
- * Used by modules whose .yo file has multiple sibling item blocks.
- */
 export function extractTopLevelItemRegions(nodes: YNodeSeq): YNodeSeq[] {
-  const regions: YNodeSeq[] = []
-  let depth = 0
-  let start = -1
-  for (let i = 0; i < nodes.length; i++) {
-    const node = nodes[i]
-    if (!node) continue
-    if (isMacro(node, "startitem")) {
-      if (depth === 0) start = i
-      depth++
-    } else if (isMacro(node, "enditem") && depth > 0) {
-      depth--
-      if (depth === 0 && start !== -1) {
-        regions.push(nodes.slice(start, i + 1))
-        start = -1
-      }
-    }
-  }
-  return regions
+  return findAllBracketRanges(nodes, "startitem", "enditem").map(r =>
+    nodes.slice(r.start, r.end + 1),
+  )
 }
 
-/**
- * Spec for one top-level `startitem()/enditem()` region in a module file.
- * Each region carries exactly one doc category.
- */
 export type RegionSpec =
   | { readonly kind: "builtins" }
   | { readonly kind: "params"; readonly scope: ShellParamScope }
@@ -243,16 +219,11 @@ export interface ModuleRegionResult {
 }
 
 /**
- * Parse a module .yo file with multiple top-level item regions, where each
- * region holds a single doc category. The `regions` array's index matches the
- * region's source-order position.
+ * `regions[i]` matches the region at source-order index `i`. Missing regions
+ * (file has fewer than the spec implies) are silently tolerated.
  *
- * Example: mod_termcap.yo has `echotc` builtin in region 0 and `termcap`
- * param in region 1 — spec is
- * `[{ kind: "builtins" }, { kind: "params", scope: "shell-set" }]`.
- *
- * Missing regions (file has fewer than the spec implies) are silently
- * tolerated and contribute empty arrays.
+ * Example: mod_termcap.yo has `echotc` in region 0 and `termcap` param in
+ * region 1 — spec is `[{ kind: "builtins" }, { kind: "params", scope: "shell-set" }]`.
  */
 export function parseModuleByRegions(
   yo: YodlSrc,
@@ -276,19 +247,16 @@ export function parseModuleByRegions(
           spec.scope,
         ),
       )
-    } else {
+    } else if (spec.kind === "condOps") {
       condOps.push(...parseModuleCondOps(region, moduleName))
+    } else {
+      assertNever(spec)
     }
   })
   return { builtins, params, condOps }
 }
 
-/**
- * Parse conditional operators from a module .yo source.
- *
- * Handles `item(var(expr) tt(-op-name) var(operand))(desc)`.
- * Used by pcre and regex modules.
- */
+// Handles `item(var(expr) tt(-op-name) var(operand))(desc)`.
 export function parseModuleCondOps(
   yo: YodlSrc,
   moduleName: ModuleName,

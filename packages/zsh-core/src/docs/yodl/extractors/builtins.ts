@@ -1,4 +1,4 @@
-import type { NonEmpty } from "@carlwr/typescript-extra"
+import { nonEmpty } from "@carlwr/typescript-extra"
 import { mkDocumented } from "../../brands.ts"
 import { type ModuleName, parseModuleName } from "../../taxonomy.ts"
 import type { BuiltinDoc } from "../../types.ts"
@@ -10,15 +10,21 @@ import { splitFlagBody } from "./flag-section.ts"
 interface SynopsisLine {
   text: string
   continuation: boolean
+  /**
+   * True when the upstream header's first significant token is a `var(...)`
+   * metavariable rather than a `tt(...)` literal — i.e. the head reads as a
+   * continuation of the preceding builtin's synopsis, not a self-named form.
+   * `bg`/`fg`/`disown` body items are written as `var(job) ... tt(&)`; without
+   * this flag they would create spurious `## job` records and lose their
+   * intended association.
+   */
+  metaPrefix: boolean
 }
 
 /**
- * Module names for which real records exist in the corpus (parsed from their
- * dedicated mod_*.yo files). The `module(name)(modname)` macro in builtins.yo
- * emits stubs for these — those stubs are skipped to avoid duplicates.
- *
- * After module corpus extraction, any module listed here has real parsed
- * records; the builtins.yo stub would be a lower-quality duplicate.
+ * Modules with real records parsed from their dedicated mod_*.yo files.
+ * `module(name)(modname)` stubs in builtins.yo are skipped for these to avoid
+ * lower-quality duplicates.
  */
 export const MODULES_WITH_REAL_RECORDS: ReadonlySet<ModuleName> =
   new Set<ModuleName>([
@@ -69,12 +75,43 @@ export function parseBuiltins(
     const aliasOf = extractAlias(body)
     const module = extractModule(body)
 
+    // Two grouping patterns in this corpus:
+    //
+    // (a) one builtin, multiple forms — all heads start with the same name
+    //     (e.g. `cd` with 3 xitems, `fc` with 5+). Heads whose upstream
+    //     macro is `var(...)` (`bg`/`fg`/`disown` body items) are also
+    //     variant-forms of the preceding `tt(...)`-named builtin.
+    //
+    // (b) shared body, distinct names — `tt(test)` xitem + `tt([)` item; two
+    //     findex declarations; each gets its own record with its own
+    //     synopsis but the same body.
+    //
+    // Strategy: walk heads in order; a `metaPrefix` head folds into the
+    // current group, a `tt(...)`-named head with a NEW first token opens a
+    // new group. All groups share the same body (`desc`/`flagGroups`/etc.).
+    interface HeadGroup {
+      readonly name: string
+      readonly synopses: string[]
+    }
+    const groups: HeadGroup[] = []
     for (const head of heads) {
+      const last = groups[groups.length - 1]
+      if (head.metaPrefix && last) {
+        last.synopses.push(head.text)
+        continue
+      }
       const name = head.text.match(/^(\S+)/)?.[1]
       if (!name) continue
-      const synopsis: NonEmpty<string> = [head.text, ...synopsisTail]
-      byName.set(name, {
-        name: mkDocumented("builtin", name),
+      const existing = groups.find(g => g.name === name)
+      if (existing) existing.synopses.push(head.text)
+      else groups.push({ name, synopses: [head.text] })
+    }
+    for (const g of groups) {
+      const [first, ...rest] = g.synopses
+      if (!first) continue
+      const synopsis = nonEmpty(first, ...rest, ...synopsisTail)
+      byName.set(g.name, {
+        name: mkDocumented("builtin", g.name),
         synopsis,
         desc,
         ...(aliasOf && { aliasOf }),
@@ -109,9 +146,8 @@ function macroDocs(nodes: YNodeSeq): BuiltinDoc[] {
       const name = normalizeHeader(node.args[0] ?? [])
       const module = parseModuleName(normalizeHeader(node.args[1] ?? []))
       if (!name || !module) continue
-      // Skip stub when the module has real parsed records — the extractor in
-      // modules/ already emits a full record for this builtin; the stub
-      // would produce a low-quality duplicate with no synopsis or desc.
+      // Skip the stub when modules/ already emits a full record — the stub
+      // would be a low-quality duplicate (no synopsis or desc).
       if (MODULES_WITH_REAL_RECORDS.has(module)) continue
       docs.push({
         name: mkDocumented("builtin", name),
@@ -139,30 +175,36 @@ function macroDocs(nodes: YNodeSeq): BuiltinDoc[] {
 function normalizeSynopsis(raw: YNodeSeq): string {
   // Synopsis ends up inside a fenced ```zsh code block — strip tt/var
   // markup to plain text so the code block stays clean.
-  return stripYodl(raw, "code")
-    .replace(/\\\n/g, "\n")
-    .replace(/\\$/gm, "")
-    .replace(/\n{2,}/g, "\n")
-    .split("\n")
-    .map(line => line.replace(/[ \t]+/g, " ").trim())
-    .join("\n")
-    .trim()
+  return (
+    stripYodl(raw, "code")
+      .replace(/\\\n/g, "\n")
+      .replace(/\\$/gm, "")
+      .replace(/\n{2,}/g, "\n")
+      .split("\n")
+      .map(line => line.replace(/[ \t]+/g, " ").trim())
+      .join("\n")
+      .trim()
+      // Upstream `compadd` synopsis continuation lines are written as
+      // `SPACES()[tt(-X)...]` — no space inside the opening `[`. After tt
+      // stripping that yields `[-X`, which deviates from the man-page
+      // convention used everywhere else in the same synopsis. Restore the
+      // inner space so the rendered block looks uniform.
+      .replace(/\[(-[A-Za-z])/g, "[ $1")
+  )
 }
 
 function parseSynopsisLine(raw: YNodeSeq): SynopsisLine | undefined {
   const text = normalizeSynopsis(raw)
   if (!text) return undefined
-  return { text, continuation: isMacro(raw[0], "SPACES") }
+  return {
+    text,
+    continuation: isMacro(raw[0], "SPACES"),
+    metaPrefix: isMacro(raw[0], "var"),
+  }
 }
 
-/**
- * Post-process tagging: apply `module` and `deprecated` fields to builtins
- * that are documented in builtins.yo / compwid.yo without their module tags.
- *
- * These are builtins defined by specific modules but whose yodl sources do
- * not use the `module()` macro (they're documented inline). This post-pass
- * ensures the module field is set without duplicating the record parsing.
- */
+// Tags builtins documented in builtins.yo / compwid.yo whose yodl sources
+// don't use the `module()` macro (inlined). Avoids duplicating record parsing.
 export function applyBuiltinTags(
   docs: readonly BuiltinDoc[],
 ): readonly BuiltinDoc[] {
@@ -184,26 +226,16 @@ interface BuiltinTag {
   readonly deprecated?: boolean
 }
 
-/**
- * Builtin-name → module (and optional deprecated flag) overrides.
- * Applied by `applyBuiltinTags` after all builtins are collected.
- *
- * `Partial<…>` so lookup is correctly typed as possibly `undefined`; the
- * phantom-branded `Documented<"builtin">` is just a string at runtime, so
- * indexing with `doc.name` matches by ordinary string equality.
- */
+// Phantom-branded `Documented<"builtin">` is a plain string at runtime, so
+// `doc.name` matches keys by ordinary string equality.
 const BUILTIN_MODULE_TAGS: Readonly<Partial<Record<string, BuiltinTag>>> = {
-  // zsh/compctl — deprecated completion system
   compctl: { module: "zsh/compctl", deprecated: true },
   compcall: { module: "zsh/compctl", deprecated: true },
-  // zsh/complete — modern completion builtins
   compadd: { module: "zsh/complete" },
   compset: { module: "zsh/complete" },
-  // zsh/zle — line editor builtins
   bindkey: { module: "zsh/zle" },
   vared: { module: "zsh/zle" },
   zle: { module: "zsh/zle" },
-  // zsh/rlimits
   limit: { module: "zsh/rlimits" },
   ulimit: { module: "zsh/rlimits" },
   unlimit: { module: "zsh/rlimits" },
@@ -211,8 +243,6 @@ const BUILTIN_MODULE_TAGS: Readonly<Partial<Record<string, BuiltinTag>>> = {
 
 function extractAlias(body: YNodeSeq) {
   // Match the name in `Same as X' / `Same as `tt(X)' ` upstream forms.
-  // `stripYodl` in code mode gives us the raw extracted text — no markdown
-  // markup to disambiguate against.
   const m = stripYodl(body, "code").match(/\bSame as (?:`([^']*)'|([^.\s]+))/)
   const name = m?.[1] ?? m?.[2]
   return name ? mkDocumented("builtin", name) : undefined

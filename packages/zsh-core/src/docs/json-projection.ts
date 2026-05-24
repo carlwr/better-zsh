@@ -1,6 +1,8 @@
 // MIRRORED-IN: zshref-rs/src/tools/record_fields.rs
 
-import { renderRecord } from "../render/md.ts"
+import { isDefined, isEmpty } from "@carlwr/typescript-extra"
+
+import { recordTitle, renderRecord } from "../render/md.ts"
 import type { DocCorpus } from "./corpus.ts"
 import type { WithMarkdown } from "./json-types.ts"
 import {
@@ -12,11 +14,12 @@ import {
 } from "./taxonomy.ts"
 
 /**
- * Augment each record with its rendered markdown body (`mdBody`) and the
- * projected identity fields consumed by out-of-process consumers (the Rust
- * CLI). `_id`/`_display`/`_subKind` use underscore-prefixed names to avoid
- * collisions with existing record fields (`display` on ZshOption,
- * `subKind` on ParamExpnDoc).
+ * Augment each record with `mdBody` plus projected identity fields for
+ * out-of-process consumers (the Rust CLI). Underscore-prefixed
+ * `_id`/`_display`/`_title`/`_subKind` avoid collisions with existing record
+ * fields (`display` on ZshOption, `subKind` on ParamExpnDoc). `_title` (the
+ * rendered record title) is split out of `mdBody` so each consumer decides
+ * whether to show it.
  */
 export function augmentWithMarkdown<K extends DocCategory>(
   corpus: DocCorpus,
@@ -29,15 +32,16 @@ export function augmentWithMarkdown<K extends DocCategory>(
       mdBody: renderRecord(corpus, cat, rec),
       _id: idOf(cat, rec) as string,
       _display: docDisplay(cat, rec),
-      ...(subKind !== undefined ? { _subKind: subKind } : {}),
+      _title: recordTitle(cat, rec),
+      ...(isDefined(subKind) ? { _subKind: subKind } : {}),
     }
   })
 }
 
 /**
- * Strong gate: `_id`/`_display` must be ASCII. The Rust CLI's fuzzy scorer
- * is ASCII-only — non-ASCII would silently degrade search for the
- * affected records. Mirrors the corpus-load test on the Rust side.
+ * `_id`/`_display` must be ASCII — the Rust CLI's fuzzy scorer is
+ * ASCII-only, and non-ASCII silently degrades search for those records.
+ * Mirrors the corpus-load test on the Rust side.
  */
 export function assertAsciiIdentity(
   cat: DocCategory,
@@ -50,7 +54,7 @@ export function assertAsciiIdentity(
     if (!isAscii(rec._display))
       violations.push(`${cat}: _display ${JSON.stringify(rec._display)}`)
   }
-  if (violations.length > 0) {
+  if (!isEmpty(violations)) {
     throw new Error(
       `non-ASCII _id/_display in corpus (Rust fuzzy scorer is ASCII-only):\n  ${violations.join("\n  ")}`,
     )
