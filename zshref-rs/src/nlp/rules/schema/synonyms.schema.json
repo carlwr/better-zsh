@@ -1,0 +1,52 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Synonyms",
+  "description": "Generic zsh/English synonym data. Two disjoint mechanisms — see `synonyms.yaml` for the contract. Authored blind to the eval sets (see `NLP.md`).",
+  "type": "object",
+  "properties": {
+    "index_groups": {
+      "description": "Symmetric, index-time. If any member matches a record (whole word / phrase), the others are appended to its `expanded` view before embedding (see `retrieval_text.rs`). May be empty.",
+      "default": [],
+      "type": "array",
+      "items": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      }
+    },
+    "query_expansions": {
+      "description": "Directional, query-time, embedding-only. Maps colloquial query vocabulary onto the corpus's canonical term (see `query_expand.rs`).",
+      "default": [],
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/QueryExpansion"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "QueryExpansion": {
+      "description": "One directional query rule: when any `when` trigger matches the query, the single canonical `add` term is appended to the *embedded* query string only (never the lexical-overlap bag — keeps short queries from being swamped).",
+      "type": "object",
+      "required": [
+        "add",
+        "when"
+      ],
+      "properties": {
+        "when": {
+          "description": "Colloquial trigger words / phrases (matched whole word / phrase). Any casing; normalized to lowercase at load.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "add": {
+          "description": "Canonical term appended for embedding. One term by design; any casing, normalized to lowercase at load.",
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

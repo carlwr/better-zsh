@@ -38,6 +38,13 @@ include = [
 name = "zshref"
 path = "src/main.rs"
 
+# Opt-in NLP subsystem (`src/nlp/`). Default builds: small, no ONNX,
+# minimal trust surface. `--features nlp` adds local semantic search;
+# CI publishes both as separate release artifacts (`zshref`, `zshref-nlp`).
+[features]
+default = []
+nlp = ["dep:fastembed", "dep:sha2", "dep:serde_yaml_ng", "dep:schemars"]
+
 [dependencies]
 clap = { version = "4.5", features = ["string", "wrap_help", "color", "suggestions"] }
 clap_complete = "4.5"
@@ -45,6 +52,10 @@ serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["preserve_order"] }
 anyhow = "1"
 indoc = "2"
+fastembed = { version = "5.13", default-features = false, features = ["ort-download-binaries-native-tls"], optional = true }
+sha2 = { version = "0.10", optional = true }
+serde_yaml_ng = { version = "0.10", optional = true }
+schemars = { version = "0.8", features = ["preserve_order"], optional = true }
 
 [dev-dependencies]
 proptest = "1"

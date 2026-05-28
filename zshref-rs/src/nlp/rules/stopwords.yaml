@@ -1,0 +1,32 @@
+# yaml-language-server: $schema=./schema/stopwords.schema.json
+#
+# Query stopwords. `generic` is filtered from any tokenization of the
+# query. `discriminating_extra` is filtered _additionally_ when deciding
+# whether a query word is distinctive enough to qualify a record for the
+# exact-word boost — common-noun query terms like "command" or "option"
+# shouldn't fire a name-match boost just because some record happens to
+# be named that.
+#
+# Rank-time: applied during scoring; no re-embed needed.
+
+generic:
+  - that
+  - with
+  - from
+  - they
+  - were
+  - when
+  - what
+  - have
+  - does
+  - this
+  - than
+  - into
+  - just
+
+# These are stopped only by `is_discriminating_word`, on top of `generic`.
+discriminating_extra:
+  - command
+  - option
+  - parameter
+  - shell

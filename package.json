@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.1",
   "license": "MIT",
-  "packageManager": "pnpm@10.23.0",
+  "packageManager": "pnpm@11.5.2+sha512.71c631e382066efc25625d5cf029075de07b61b37f6e27350fbd84b1bda5864c8c1967adc280776b45c30a715c0359a3be08fef42d5bb09e2b99029979692916",
   "repository": {
     "type": "git",
     "url": "https://github.com/carlwr/better-zsh"
@@ -72,14 +72,8 @@
     "typedoc": "^0.28.19",
     "typescript": "^5.8.0",
     "vitest": "^4.1.4",
+    "yaml": "^2.9.0",
     "zod": "^4.3.6",
     "zzz_LAST_dummy": "npm:empty-npm-package@1.0.0"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "@vscode/vsce-sign",
-      "esbuild",
-      "keytar"
-    ]
   }
 }

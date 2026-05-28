@@ -1,0 +1,101 @@
+{
+  "version": 1,
+  "categories": [
+    {
+      "id": "option",
+      "label": "option"
+    },
+    {
+      "id": "conditional_op",
+      "label": "conditional operator"
+    },
+    {
+      "id": "builtin",
+      "label": "builtin"
+    },
+    {
+      "id": "precmd_modifier",
+      "label": "precommand modifier"
+    },
+    {
+      "id": "special_param",
+      "label": "special parameter"
+    },
+    {
+      "id": "complex_command",
+      "label": "complex command"
+    },
+    {
+      "id": "reserved_word",
+      "label": "reserved word"
+    },
+    {
+      "id": "redirection",
+      "label": "redirection"
+    },
+    {
+      "id": "process_subst",
+      "label": "process substitution"
+    },
+    {
+      "id": "param_expn",
+      "label": "parameter-expansion form"
+    },
+    {
+      "id": "subscript_flag",
+      "label": "parameter-subscript flag"
+    },
+    {
+      "id": "param_expn_flag",
+      "label": "parameter-expansion flag"
+    },
+    {
+      "id": "history_expn",
+      "label": "history-expansion component"
+    },
+    {
+      "id": "glob_op",
+      "label": "glob operator"
+    },
+    {
+      "id": "glob_flag",
+      "label": "glob flag"
+    },
+    {
+      "id": "glob_qualifier",
+      "label": "glob qualifier"
+    },
+    {
+      "id": "prompt_escape",
+      "label": "prompt escape"
+    },
+    {
+      "id": "zle_widget",
+      "label": "ZLE widget"
+    },
+    {
+      "id": "keymap",
+      "label": "ZLE keymap"
+    },
+    {
+      "id": "job_spec",
+      "label": "job spec"
+    },
+    {
+      "id": "arith_op",
+      "label": "arithmetic operator"
+    },
+    {
+      "id": "mathfunc",
+      "label": "math function"
+    },
+    {
+      "id": "special_function",
+      "label": "special function"
+    },
+    {
+      "id": "comp_utility",
+      "label": "completion utility"
+    }
+  ]
+}

@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "nlp-qa-corpus",
+  "title": "NLP QA Corpus",
+  "description": "A corpus of natural-language queries with expected record matches and scores for steering NLP retrieval quality.",
+  "type": "object",
+  "required": ["entries"],
+  "properties": {
+    "entries": {
+      "type": "array",
+      "description": "Corpus entries, each a query with expected record matches.",
+      "items": { "$ref": "#/$defs/entry" }
+    }
+  },
+  "$defs": {
+    "entry": {
+      "type": "object",
+      "required": ["query", "expected"],
+      "properties": {
+        "query": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Natural-language query to search for."
+        },
+        "category": {
+          "type": "string",
+          "description": "Optional category to restrict search to."
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 20,
+          "description": "How many results to fetch from the CLI (default 20)."
+        },
+        "topN": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Score expected records against the first topN results. Defaults to limit."
+        },
+        "weight": {
+          "type": "number",
+          "minimum": 0,
+          "default": 1.0,
+          "description": "Per-entry weight in aggregate score (default 1.0)."
+        },
+        "expected": {
+          "type": "array",
+          "description": "Records expected to appear (positive score) or not appear (negative score) in top results.",
+          "items": { "$ref": "#/$defs/expected" },
+          "minItems": 1
+        }
+      }
+    },
+    "expected": {
+      "type": "object",
+      "required": ["category", "id", "score"],
+      "properties": {
+        "category": {
+          "type": "string",
+          "description": "DocCategory id (e.g. 'option', 'builtin', 'conditional_op')."
+        },
+        "id": {
+          "type": "string",
+          "description": "Record id within the category."
+        },
+        "score": {
+          "type": "number",
+          "description": "Positive score = desired match, negative = regression to penalize. Magnitude = importance."
+        }
+      }
+    }
+  }
+}

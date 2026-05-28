@@ -1,0 +1,155 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Tuning",
+  "description": "Rank-time scalar constants for the ranker (no re-embed on change). Serialized downstream for non-Rust rankers.",
+  "type": "object",
+  "required": [
+    "boosts",
+    "lexical",
+    "penalties",
+    "semantic_weights"
+  ],
+  "properties": {
+    "semantic_weights": {
+      "$ref": "#/definitions/SemanticWeights"
+    },
+    "boosts": {
+      "$ref": "#/definitions/BoostWeights"
+    },
+    "penalties": {
+      "$ref": "#/definitions/PenaltyWeights"
+    },
+    "lexical": {
+      "$ref": "#/definitions/LexicalThresholds"
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "SemanticWeights": {
+      "type": "object",
+      "required": [
+        "body",
+        "short_body",
+        "structured"
+      ],
+      "properties": {
+        "body": {
+          "description": "Mix over the embedding views. Only these two are stored; `expanded` is derived as `1 − body − structured` (on the simplex by construction). See `rank::semantic_weights`.",
+          "type": "number",
+          "format": "float"
+        },
+        "structured": {
+          "type": "number",
+          "format": "float"
+        },
+        "short_body": {
+          "$ref": "#/definitions/ShortBodyDeform"
+        }
+      },
+      "additionalProperties": false
+    },
+    "ShortBodyDeform": {
+      "description": "Sparse-body deformation: shifts mass body → expanded as a body shortens, so short records lean on structured/expanded text. See `rank::semantic_weights`.",
+      "type": "object",
+      "required": [
+        "length_scale",
+        "strength"
+      ],
+      "properties": {
+        "strength": {
+          "description": "Max shift, at body length 0.",
+          "type": "number",
+          "format": "float"
+        },
+        "length_scale": {
+          "description": "Body length at/above which the shift is zero.",
+          "type": "number",
+          "format": "float"
+        }
+      },
+      "additionalProperties": false
+    },
+    "BoostWeights": {
+      "type": "object",
+      "required": [
+        "category",
+        "exact_word_increment",
+        "resolver_increment",
+        "word_overlap"
+      ],
+      "properties": {
+        "category": {
+          "description": "Weakest signal: query names the record's category.",
+          "type": "number",
+          "format": "float"
+        },
+        "exact_word_increment": {
+          "description": "Non-negative increment for a query word equal to id/display (`exact_word = category + this`).",
+          "type": "number",
+          "format": "float"
+        },
+        "resolver_increment": {
+          "description": "Non-negative increment for a corpus-aware resolver hit (`resolver = exact_word + this`); the increments keep `category ≤ exact_word ≤ resolver` by construction.",
+          "type": "number",
+          "format": "float"
+        },
+        "word_overlap": {
+          "$ref": "#/definitions/WordOverlap"
+        }
+      },
+      "additionalProperties": false
+    },
+    "WordOverlap": {
+      "description": "Smooth saturating overlap boost; see `rank::overlap_boost`.",
+      "type": "object",
+      "required": [
+        "half_sat",
+        "scale"
+      ],
+      "properties": {
+        "scale": {
+          "type": "number",
+          "format": "float"
+        },
+        "half_sat": {
+          "type": "number",
+          "format": "float"
+        }
+      },
+      "additionalProperties": false
+    },
+    "PenaltyWeights": {
+      "type": "object",
+      "required": [
+        "category_rarity_max"
+      ],
+      "properties": {
+        "category_rarity_max": {
+          "type": "number",
+          "format": "float"
+        }
+      },
+      "additionalProperties": false
+    },
+    "LexicalThresholds": {
+      "type": "object",
+      "required": [
+        "min_discriminating_word_len",
+        "min_significant_word_len"
+      ],
+      "properties": {
+        "min_discriminating_word_len": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "min_significant_word_len": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0.0
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

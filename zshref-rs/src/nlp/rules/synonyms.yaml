@@ -1,0 +1,34 @@
+# yaml-language-server: $schema=./schema/synonyms.schema.json
+#
+# Two synonym mechanisms. Keep BOTH lists short — the embedding model already
+# bridges most generic English synonymy, so extra entries mostly add noise.
+# Restraint rationale + measurements: NLP.md, nlp-observations.md. Authored
+# blind to the eval sets (see NLP.md).
+#
+# index_groups — symmetric, INDEX-TIME. If any member matches a record (whole
+#   word / phrase), the others are appended to its `expanded` view before
+#   embedding. Machinery kept; intentionally empty — the model already clusters
+#   these, and symmetric injection dilutes a disciplined corpus.
+#
+# query_expansions — directional, QUERY-TIME, EMBEDDING-ONLY. If any `when`
+#   trigger matches the query, the single canonical `add` term is appended to
+#   the string that gets embedded — never to the lexical-overlap bag. Maps
+#   colloquial user vocabulary onto the corpus's canonical term.
+
+index_groups: []
+
+query_expansions:
+  - { when: [setting, settings], add: option }
+  - { when: [folder, folders], add: directory }
+  - { when: [wildcard, wildcards], add: glob }
+  - { when: [variable, variables], add: parameter }
+  - { when: [regex, regexp], add: pattern }
+  - { when: [subroutine], add: function }
+  - { when: [PID], add: 'process ID' }
+  - { when: [stdin], add: 'standard input' }
+  - { when: [stdout], add: 'standard output' }
+  - { when: [stderr], add: 'standard error' }
+
+  # mostly to hit the signatures of complex_commands - TODO A/B test with and without the below once the other rank parameters are well-tuned:
+  - { when: [command, commands], add: list }
+  - { when: [command, commands], add: pipeline }

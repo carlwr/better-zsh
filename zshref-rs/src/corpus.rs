@@ -221,6 +221,12 @@ pub struct Index {
     pub classify_order: Vec<String>,
     #[serde(rename = "categoryFiles")]
     pub category_files: BTreeMap<String, String>,
+    /// Human-readable per-category labels. SoT: `docCategoryLabels` in
+    /// `packages/zsh-core/src/docs/taxonomy.ts`. Consumed only by the
+    /// cfg(test) `categories.json` emitter today.
+    #[allow(dead_code)]
+    #[serde(rename = "docCategoryLabels")]
+    pub doc_category_labels: BTreeMap<String, String>,
     /// Hook base names for the special_function resolver (`*_functions` suffix
     /// pattern). Sourced from `packages/zsh-core/src/docs/resolvers.ts`.
     #[serde(rename = "hookNames")]

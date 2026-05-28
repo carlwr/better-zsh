@@ -1,0 +1,68 @@
+#! /usr/bin/env zsh
+emulate -LR zsh
+set -eu -o pipefail
+#
+# Stage local zshref outputs for the SPA build (pre-release only).
+# Post-extraction: flip to release-asset download.
+
+me=${0:t}
+webDir=${0:A:h:h}
+zshrefRs=$webDir:h/zshref-rs
+dst=$webDir/.artifacts
+bin=${ZSHREF_BIN-$zshrefRs/target/release/zshref}
+
+modelDir=$zshrefRs/data-nlp/model
+indexJson=$zshrefRs/data-nlp/index.json
+nlpQa=$zshrefRs/tests/nlp-qa
+
+# Keep staging to SPA runtime artifacts; release-only and test-only files stay out.
+# RELEASE TODO: download release assets, then deploy this same subset.
+
+msg() { print -u2 -- "$me: $@" }
+die() {
+  msg "ERROR: $1" ; shift
+  for hint in "$@" ; do msg "       $hint" ; done
+  exit 1
+}
+stage() {
+  [[ -f $1 ]] || die "missing $1" "regenerate the missing artifact before staging"
+  cp $1 $2
+}
+
+[[ -x $bin ]] || die "zshref binary missing: $bin" "build with 'make cli-nlp'"
+
+# Probe the NLP surface before using hidden checks.
+$bin nlp-search --help >/dev/null 2>&1 \
+  || die "zshref binary lacks 'nlp-search' (not built with --features nlp)" "rebuild: make cli-nlp"
+
+[[ -d $modelDir && -s $indexJson ]] || die "NLP assets missing under $zshrefRs/data-nlp/"
+
+# The binary is the staging oracle; verify it predates no source input.
+$bin _selfcheck --check-build-fresh >/dev/null \
+  || die "zshref binary is stale w.r.t. source" "rebuild: make cli-nlp"
+
+# Index must match the corpus embedded in the same binary.
+$bin _selfcheck --validate-index --index $indexJson >/dev/null \
+  || die "index stale w.r.t. current zshref binary" \
+         "regenerate: nlp-search --rebuild-index"
+
+msg "source = $zshrefRs"
+msg "dest   = $dst"
+
+# Rebuild from scratch so stale members cannot linger.
+rm -rf $dst
+mkdir -p $dst/rules
+
+# Expose staged artifacts via static/artifacts. Created here, not committed: a
+# committed symlink dangles pre-stage and breaks SvelteKit's static walk
+# (cryptic ENOENT). `-n`: replace an existing link, don't follow into it.
+ln -sfn ../.artifacts $webDir/static/artifacts
+
+stage $indexJson             $dst/index.json
+stage $nlpQa/categories.json $dst/categories.json
+stage $nlpQa/lookup-map.json $dst/lookup-map.json
+
+$bin _selfcheck --emit-rules --out $dst/rules >/dev/null \
+  || die "failed to emit rule JSON" "rebuild: make cli-nlp"
+
+msg "staged → $dst"

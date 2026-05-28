@@ -37,7 +37,15 @@ pub fn run_raw(args: &[&str]) -> std::process::Output {
     Command::new(BIN).args(args).output().expect("spawn zshref")
 }
 
-const NON_TOOL_SUBCOMMANDS: &[&str] = &["batch", "info", "schema", "completions", "help"];
+const NON_TOOL_SUBCOMMANDS: &[&str] = &[
+    "batch",
+    "info",
+    "schema",
+    #[cfg(feature = "nlp")]
+    "nlp-search",
+    "completions",
+    "help",
+];
 
 pub fn tool_full_names() -> &'static [String] {
     static NAMES: OnceLock<Vec<String>> = OnceLock::new();

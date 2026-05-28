@@ -18,3 +18,7 @@ zshref-rs/target/
 # Vendored JSON snapshot; populated by `make vendor` at release-prep time.
 # Gitignored pre-extraction; committed post-extraction (see zshref-rs/DATA-SYNC.md).
 zshref-rs/data/
+# Local NLP prototype assets: model weights and generated vector indexes.
+zshref-rs/data-nlp/
+# Playwright MCP browser-inspection output (snapshots/screenshots).
+.playwright-mcp/

@@ -1,0 +1,6 @@
+# Self-rooting marker: makes `pnpm install` here treat zshref-web as its own
+# workspace root instead of walking up to the monorepo's pnpm-workspace.yaml
+# and operating on that workspace. (`.npmrc ignore-workspace` is NOT honored by
+# `pnpm install` — the flag `--ignore-workspace` is, but a file needs no flag.)
+# No sub-packages — zshref-web is the lone project. Drop post-extraction.
+packages: []

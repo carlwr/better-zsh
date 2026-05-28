@@ -1,0 +1,274 @@
+$schema: ./schema.json
+entries:
+  - query: "compare files by modification time"
+    expected:
+      - { category: conditional_op, id: "-N", score: 5 }
+      - { category: conditional_op, id: "-nt", score: 4 }
+      - { category: conditional_op, id: "-ot", score: 3 }
+      - { category: glob_qualifier, id: "m", score: 2 }
+
+  - query: "how do I change directory without typing cd"
+    expected:
+      - { category: option, id: "autocd", score: 5 }
+      - { category: option, id: "cdablevars", score: 2 }
+
+  - query: "prevent aliases from expanding during completion"
+    expected:
+      - { category: option, id: "completealiases", score: 5 }
+      - { category: option, id: "aliases", score: -1 }
+
+  - query: "what does the null command do"
+    expected:
+      - { category: special_param, id: "NULLCMD", score: 5 }
+      - { category: special_param, id: "READNULLCMD", score: 2 }
+      - { category: option, id: "cshnullcmd", score: -1 }
+      - { category: option, id: "shnullcmd", score: -1 }
+
+  - query: "get exit status of most recent command"
+    expected:
+      - { category: special_param, id: "?", score: 5 }
+      - { category: special_param, id: "status", score: 4 }
+      - { category: special_param, id: "pipestatus", score: 3 }
+      - { category: builtin, id: "exit", score: -15 }
+      - { category: builtin, id: "return", score: -15 }
+
+  - query: "get the most recent exit code"
+    expected:
+      - { category: special_param, id: "?", score: 3 }
+      - { category: special_param, id: "status", score: 2 }
+      - { category: special_param, id: "pipestatus", score: 1 }
+      - { category: builtin, id: "exit", score: -15 }
+      - { category: builtin, id: "return", score: -15 }
+
+
+  - query: "get exit status of first command in a pipeline"
+    expected:
+      - { category: special_param, id: "pipestatus", score: 5 }
+      - { category: special_param, id: "?", score: -3 }
+      - { category: special_param, id: "status", score: -2 }
+      - { category: builtin, id: "exit", score: -5 }
+      - { category: builtin, id: "return", score: -5 }
+
+  - query: "check if a file exists"
+    expected:
+      - { category: conditional_op, id: "-e", score: 5 }
+      - { category: conditional_op, id: "-a", score: 5 }
+      - { category: conditional_op, id: "-f", score: 3 }
+
+  - query: "run a command in the background"
+    expected:
+      - { category: builtin, id: "bg", score: 5 }
+
+  - query: "how to define an alias"
+    expected:
+      - { category: builtin, id: "alias", score: 5 }
+      - { category: option, id: "aliases", score: 2 }
+
+  - query: "list all currently set options"
+    expected:
+      - { category: builtin, id: "setopt", score: 5 }
+
+  - query: "search command history"
+    expected:
+      - { category: builtin, id: "fc", score: 5 }
+
+  - query: "toggle an option on or off"
+    expected:
+      - { category: builtin, id: "setopt", score: 4 }
+      - { category: builtin, id: "set", score: 4 }
+      - { category: builtin, id: "unsetopt", score: 3 }
+      - { category: builtin, id: "unset", score: -4 }
+
+  - query: "match files by extension in a glob"
+    expected:
+      - { category: glob_op, id: "x#", score: 3 }
+      - { category: option, id: "extendedglob", score: 1 }
+
+  - query: "kill a background job"
+    expected:
+      - { category: builtin, id: "kill", score: 5 }
+
+  - query: "redirect stdout and stderr to a file"
+    expected:
+      - { category: redirection, id: ">&_word", score: 4 }
+      - { category: redirection, id: ">_word", score: 3 }
+
+  - query: "how to use for loops in zsh"
+    expected:
+      - { category: complex_command, id: "for", score: 5 }
+      - { category: complex_command, id: "for-arith", score: 4 }
+      - { category: complex_command, id: "foreach", score: 1 }
+
+  - query: "read input from the user"
+    expected:
+      - { category: builtin, id: "read", score: 5 }
+      - { category: complex_command, id: "select", score: 4 }
+
+  - query: "what is the null glob qualifier"
+    expected:
+      - { category: glob_qualifier, id: "N", score: 5 }
+
+  - query: "how do I make zsh autocomplete case-insensitively"
+    expected:
+      - { category: option, id: "casematch", score: 5 }
+      - { category: option, id: "caseglob", score: 2 }
+
+  - query: "set a local variable in a function"
+    expected:
+      - { category: builtin, id: "local", score: 5 }
+      - { category: builtin, id: "typeset", score: 3 }
+      - { category: builtin, id: "integer", score: 1 }
+      - { category: builtin, id: "readonly", score: 1 }
+
+  - query: "prompt for confirmation before overwriting files"
+    expected:
+      - { category: option, id: "clobber", score: 5 }
+
+  - query: "how to handle signals like SIGINT"
+    expected:
+      - { category: builtin, id: "trap", score: 5 }
+
+  - query: "how to suspend a running job"
+    expected:
+      - { category: builtin, id: "suspend", score: 5 }
+
+  - query: "use a subshell to isolate side effects"
+    expected:
+      - { category: complex_command, id: "(", score: 5 }
+
+  - query: "run a command multiple times"
+    expected:
+      - { category: complex_command, id: "for", score: 5 }
+      - { category: complex_command, id: "for-arith", score: 5 }
+      - { category: complex_command, id: "foreach", score: 1 }
+      - { category: complex_command, id: "repeat", score: 5 }
+      - { category: history_expn, id: "!!", score: 2 }
+      - { category: history_expn, id: "!#", score: 1 }
+
+  - query: "how to print the current working directory"
+    expected:
+      - { category: builtin, id: "pwd", score: 5 }
+      - { category: special_param, id: "PWD", score: 4 }
+
+  - query: "how to do arithmetic in zsh"
+    expected:
+      - { category: builtin, id: "let", score: 3 }
+      - { category: complex_command, id: "for-arith", score: 1 }
+
+  - query: "how can I add two numbers"
+    expected:
+      - { category: arith_op, id: "+", score: 5 }
+      - { category: arith_op, id: "+=", score: 5 }
+      - { category: builtin, id: "let", score: 3 }
+
+  - query: "how do I get the product of two numbers"
+    expected:
+      - { category: arith_op, id: "*", score: 5 }
+      - { category: arith_op, id: "*=", score: 5 }
+      - { category: builtin, id: "let", score: 3 }
+
+  - query: "how do I multiply"
+    expected:
+      - { category: arith_op, id: "*", score: 4 }
+      - { category: arith_op, id: "*=", score: 4 }
+      - { category: builtin, id: "let", score: 2 }
+
+
+  - query: "how to check if a variable is set"
+    expected:
+      - { category: conditional_op, id: "-v", score: 6 }
+      - { category: param_expn, id: "${+name}", score: 4 }
+      - { category: param_expn, id: "${name+word}", score: 2 }
+      - { category: param_expn, id: "${name:+word}", score: -1 }
+      - { category: param_expn, id: "${name?word}", score: 2 }
+      - { category: param_expn, id: "${name:?word}", score: 1 }
+
+  - query: "how to check if an env var is set"
+    expected:
+      - { category: special_param, id: "ENV", score: -4 }
+      - { category: conditional_op, id: "-v", score: 6 }
+      - { category: param_expn, id: "${+name}", score: 4 }
+      - { category: param_expn, id: "${name+word}", score: 2 }
+      - { category: param_expn, id: "${name:+word}", score: -1 }
+      - { category: param_expn, id: "${name?word}", score: 2 }
+      - { category: param_expn, id: "${name:?word}", score: 1 }
+
+  - query: "how to check if a parameter exists or not"
+    expected:
+      - { category: conditional_op, id: "-v", score: 6 }
+      - { category: conditional_op, id: "-e", score: -4 }
+      - { category: conditional_op, id: "-a", score: -4 }
+      - { category: conditional_op, id: "-f", score: -4 }
+      - { category: param_expn, id: "${+name}", score: 4 }
+      - { category: param_expn, id: "${name+word}", score: 2 }
+      - { category: param_expn, id: "${name:+word}", score: -1 }
+      - { category: param_expn, id: "${name?word}", score: 2 }
+      - { category: param_expn, id: "${name:?word}", score: 1 }
+
+  - query: "how to source a custom file after the other startup files"
+    expected:
+      - { category: special_param, id: "ENV", score: 2 }
+
+  - query: "how to source a custom file after the other startup files (sh or ksh emulation modes)"
+    expected:
+      - { category: special_param, id: "ENV", score: 5 }
+
+  - query: "expand a variable but remove whatever matches a pattern from its beginning"
+    expected:
+      - { category: param_expn, id: "${name#pattern}", score: 4 }
+      - { category: param_expn, id: "${name##pattern}", score: 4 }
+
+  - query: "expand a variable while deleting a matched portion from its beginning"
+    expected:
+      - { category: param_expn, id: "${name#pattern}", score: 4 }
+      - { category: param_expn, id: "${name##pattern}", score: 4 }
+
+  - query: "remove a prefix from a parameter while it is expanded"
+    expected:
+      - { category: param_expn, id: "${name#pattern}", score: 3 }
+      - { category: param_expn, id: "${name##pattern}", score: 3 }
+
+  - query: "expand a parameter while expanding prompt escapes / prompt sequences"
+    expected:
+      - { category: param_expn_flag, id: "%", score: 5 }
+      - { category: param_expn_flag, id: "g", score: -2 }
+        # g:opts: is about escape sequences, but _not_ prompt escape sequences
+
+  - query: "capitalize all words in a parameter"
+    expected:
+      - { category: param_expn_flag, id: "C", score: 5 }
+
+  - query: "make a string lowercase"
+    expected:
+      - { category: param_expn_flag, id: "l", score: 5 }
+
+  - query: "when is the chpwd hook called"
+    expected:
+      - { category: special_function, id: "chpwd", score: 5 }
+      - { category: builtin, id: "cd", score: 1 }
+
+  - query: "how to limit core dump size"
+    expected:
+      - { category: builtin, id: "limit", score: 5 }
+
+  - query: "how does filename generation work"
+    expected:
+      - { category: option, id: "glob", score: 2 }
+      - { category: option, id: "extendedglob", score: 2 }
+
+  - query: "how to pass arguments to a sourced file"
+    expected:
+      - { category: builtin, id: "source", score: 5 }
+      - { category: builtin, id: ".", score: 5 }
+
+  - query: "disable a widget key binding"
+    expected:
+      - { category: builtin, id: "bindkey", score: 5 }
+
+  - query: "what is the difference between single and double quotes"
+    expected:
+      - { category: option, id: "rcquotes", score: 3 }
+
+  - query: "how to handle command not found errors"
+    expected:
+      - { category: option, id: "correct", score: 3 }

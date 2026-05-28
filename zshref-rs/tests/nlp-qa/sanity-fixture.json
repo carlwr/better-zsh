@@ -1,0 +1,74 @@
+{
+  "version": 1,
+  "invariants": {
+    "absoluteFloor": 0.7,
+    "minMargin": 0.03
+  },
+  "entries": [
+    {
+      "query": "kshoptionprint option",
+      "topMatch": {
+        "category": "option",
+        "id": "kshoptionprint",
+        "score": 0.9402452
+      },
+      "runnerUp": {
+        "category": "option",
+        "id": "shoptionletters",
+        "score": 0.7894927
+      }
+    },
+    {
+      "query": "autopushd option",
+      "topMatch": {
+        "category": "option",
+        "id": "autopushd",
+        "score": 0.90670764
+      },
+      "runnerUp": {
+        "category": "option",
+        "id": "autolist",
+        "score": 0.7849939
+      }
+    },
+    {
+      "query": "zmodload builtin",
+      "topMatch": {
+        "category": "builtin",
+        "id": "zmodload",
+        "score": 0.9919893
+      },
+      "runnerUp": {
+        "category": "builtin",
+        "id": "builtin",
+        "score": 0.8756907
+      }
+    },
+    {
+      "query": "rcexpandparam option",
+      "topMatch": {
+        "category": "option",
+        "id": "rcexpandparam",
+        "score": 0.8891202
+      },
+      "runnerUp": {
+        "category": "option",
+        "id": "shfileexpansion",
+        "score": 0.7838428
+      }
+    },
+    {
+      "query": "promptbang option",
+      "topMatch": {
+        "category": "option",
+        "id": "promptbang",
+        "score": 0.95158255
+      },
+      "runnerUp": {
+        "category": "option",
+        "id": "promptvars",
+        "score": 0.8458258
+      }
+    }
+  ]
+}

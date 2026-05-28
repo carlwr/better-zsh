@@ -99,7 +99,7 @@
     "verifyREGISTRY": "pnpm run testREGISTRY:install && pnpm run jsrREGISTRY:check"
   },
   "dependencies": {
-    "@carlwr/typescript-extra": "0.10.0"
+    "@carlwr/typescript-extra": "0.11.0"
   },
   "devDependencies": {
     "ajv": "^8.17.1",

@@ -52,6 +52,10 @@ directory is committed. See `DATA-SYNC.md`.
   - Remove `actions/setup-node`, `corepack enable`, `pnpm install` steps — unless the extracted repo vendored-JSON sync still drives a Node checkout.
   - Keep the `dtolnay/rust-toolchain`, cargo cache, fmt/clippy, test, and `cli-vendored-test` + `cli-package` steps unchanged.
 
+### NLP QA harness (Node)
+
+`tests/nlp-qa/run-qa.mjs` imports `yaml`, resolved today from the monorepo-root `node_modules`; the standalone crate ships no `package.json` providing it. Either add a dev-only `package.json` (`yaml` dep) to the extracted repo, or author the QA corpus as JSON to drop the dep.
+
 ### Homebrew
 
 - `Formula/zshref.rb` is already positioned for the default Homebrew tap scan (repo-root `Formula/`) and already pulls from the crates.io-published `.crate`. On each new release, bump `url` + `sha256` to the new version's tarball. No structural changes needed at extraction.

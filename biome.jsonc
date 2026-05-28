@@ -17,7 +17,13 @@
     "includes": [
       "**",
       "!syntaxes",
-      "!test-fixtures"
+      "!test-fixtures",
+      // Sibling projects, not workspace members — each owns its tooling
+      // (zshref-web: own Biome root; zshref-rs: Rust + drift-checked JSON).
+      // Excluded so a bare root run / LSP won't hit the nested root or
+      // reformat that JSON.
+      "!zshref-web",
+      "!zshref-rs"
     ]
   },
   "formatter": {

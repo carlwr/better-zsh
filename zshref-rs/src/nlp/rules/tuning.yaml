@@ -1,0 +1,35 @@
+# yaml-language-server: $schema=./schema/tuning.schema.json
+#
+# Rank-time constants (no re-embed on change). The math + prior-encoding live
+# in rank.rs; the structure encodes the priors: the third semantic weight is
+# derived (sum 1 by construction), boosts are an ordered base+increments chain,
+# overlap saturates smoothly.
+
+semantic_weights:
+  # Mix over the embedding views. `expanded` is derived as 1 − body − structured
+  # (so only these two are stored; require body + structured ≤ 1).
+  body: 0.70
+  structured: 0.20
+  # Sparse-body deformation: shift mass body → expanded the shorter the body.
+  short_body:
+    strength: 0.24     # max shift, at body length 0
+    length_scale: 24   # body length at/above which the shift is zero
+
+boosts:
+  # Ordered by reliability via non-negative increments, keeping
+  # category ≤ exact_word ≤ resolver.
+  category: 0.01             # query names the record's category
+  exact_word_increment: 0.06 # query word equals id/display → exact_word 0.07
+  resolver_increment: 0.02   # corpus-aware resolver hit    → resolver   0.09
+  # Lexical overlap, smoothly saturated (asymptote `scale`, half at `half_sat`).
+  word_overlap:
+    scale: 0.30
+    half_sat: 4.0
+
+penalties:
+  # 0 disables; the rarity penalty net-hurt the tuned objective. Kept as a knob.
+  category_rarity_max: 0.0 # smaller categories would need a higher score
+
+lexical:
+  min_discriminating_word_len: 3 # below this, a query word can't drive exact-word
+  min_significant_word_len: 2     # below this, a query word is dropped from overlap

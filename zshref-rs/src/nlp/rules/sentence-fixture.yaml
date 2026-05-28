@@ -1,0 +1,1133 @@
+# yaml-language-server: $schema=./schema/sentence-fixture.schema.json
+# Hand-curated natural-language queries for evaluating semantic search.
+# Each entry: a paraphrased question and the canonical record(s) it
+# should retrieve.
+
+version: 4
+default-weight: 1.0      # to override: 'w: <weight>'
+default-target-depth: 3  # to override: 'd: <depth>'
+
+# Note: this file is carefully hand-curated, often by humans. Agents must edit with care, and not remove comments, unless instructed by the user to do so.
+
+entries:
+
+- query: "what shell option avoids typing cd to change directory"
+  want:
+  - { cat: option, id: autocd }
+
+- query: "what shell option avoids typing the cd builtin to change directory"
+  want:
+  - { cat: option, id: autocd }
+  # using 'builtin' in the sentence; harder for the nlp
+
+- query: "what zsh setting for just typing a directory name to change to it"
+  want:
+  - { cat: option, id: autocd, w: 0.7 }
+  holdout: true
+
+- query: "what option lets the prompt expand parameters and command substitutions"
+  want:
+  - { cat: option, id: promptsubst }
+
+- query: "how can I insert value of a parameter in the prompt"
+  want:
+  - { cat: option, id: promptsubst, d: 5, w: 0.7 }
+  holdout: true
+
+- query: "how can I insert output of a command into the prompt"
+  want:
+  - { cat: option, id: promptsubst, d: 5, w: 0.7 }
+
+- query: "to change directory without using the cd builtin, what shell option can I use?"
+  want:
+  - { cat: option, id: autocd, w: 0.5 }
+  # some pressure on the nlp here, suspecting a query like this might be likely to give builtin/cd as the answer
+
+- query: "I want to make the displayed list of completions more compact"
+  want:
+  - { cat: option, id: listpacked }
+
+- query: "how indicate file type when file completions are shown"
+  want:
+  - { cat: option, id: listtypes }
+  holdout: true
+
+- query: "automatically accept a completion if it matches exactly"
+  want:
+  - { cat: option, id: recexact }
+  holdout: true
+
+- query: "make globbing case insensitive"
+  want:
+  - { cat: option, id: caseglob }
+  - { cat: option, id: casepaths, w: 0.7 }
+
+- query: "how to disable brace expansion"
+  want:
+  - { cat: option, id: ignorebraces }
+
+- query: "an option so that parameters that don't exist are treated as empty strings"
+  want:
+  - { cat: option, id: unset }
+
+- query: "treat parameters that don't exist as empty strings"
+  want:
+  - { cat: option, id: unset, w: 0.7 }
+
+- query: "treat non-exising variables the same as if they were empty"
+  want:
+  - { cat: option, id: unset, w: 0.7 }
+  holdout: true
+
+- query: "how do I make zsh automatically push directories onto the stack"
+  want:
+  - { cat: option, id: autopushd }
+
+- query: "how do I prevent the shell from overwriting existing files"
+  want:
+  - { cat: option, id: clobber, d: 8 }
+  holdout: true
+
+- query: "how exit immediately with a failure on non-zero exit codes"
+  want:
+  - { cat: option, id: errexit, d: 1 }
+
+- query: "how immediately return from a function on non-zero exit codes"
+  want:
+  - { cat: option, id: errreturn, d: 1 }
+
+- query: "how can I check zsh code for syntax errors without running the commands"
+  # -> `setopt no_exec`
+  want:
+  - { cat: option, id: exec }
+
+- query: "how make options set in a function local to the function"
+  want:
+  - { cat: option, id: localoptions, d: 3 }
+  - { cat: builtin, id: emulate, d: 3 }
+    # `emulate -L ..`
+
+- query: "I want traps set in functions to be restored when function returns"
+  want:
+  - { cat: option, id: localtraps, d: 3 }
+  - { cat: builtin, id: emulate, d: 3 }
+  holdout: true
+
+- query: "what builtin changes the current working directory"
+  want:
+  - { cat: builtin, id: cd }
+
+- query: "how can I enable execution tracing"
+  want:
+  - { cat: option         , id: xtrace   , d: 1 }
+  - { cat: builtin        , id: set      , w: 0.5, d: 5 }
+  - { cat: builtin        , id: setopt   , w: 0.5, d: 5 }
+  - { cat: builtin        , id: functions, w: 0.3, d: 5 }
+  - { cat: complex_command, id: function , w: 0.3, d: 5 }
+
+- query: "how to get tracing for a specific function"
+  want:
+  - { cat: complex_command, id: function, d: 1 }
+  - { cat: option         , id: xtrace  , w: 0.2, d: 5 }
+  - { cat: builtin        , id: set     , w: 0.1, d: 5 }
+  - { cat: builtin        , id: setopt  , w: 0.1, d: 5 }
+
+- query: "how do I bind a key sequence to a widget in zsh"
+  want:
+  - { cat: builtin, id: bindkey }
+  holdout: true
+
+- query: "how do I list all currently running background jobs"
+  want:
+  - { cat: builtin, id: jobs }
+
+- query: "how do I replace the current shell process with another command"
+  want:
+  - { cat: builtin, id: exec }
+  holdout: true
+
+- query: "how do I evaluate a string as if it were zsh code"
+  want:
+  - { cat: builtin, id: eval }
+
+- query: "how do I run the zsh commands listed in a file in the current shell"
+  want:
+  - { cat: builtin, id: source, d: 5 }
+  - { cat: builtin, id: "."   , d: 5 }
+  holdout: true
+
+- query: "how do I run a script in the current shell instead of a subshell"
+  want:
+  - { cat: builtin, id: source, d: 5, w: 0.5 }
+  - { cat: builtin, id: "."   , d: 5, w: 0.5 }
+  holdout: true
+
+- query: "what builtin lazy-loads a function definition"
+  want:
+  - { cat: builtin, id: autoload }
+
+- query: "how do I edit and re-execute a previous command from history"
+  want:
+  - { cat: builtin, id: fc, d: 5 }
+  holdout: true
+
+- query: "how do I set or unset a shell option from the command line"
+  want:
+  - { cat: builtin, id: setopt  , d: 4 }
+  - { cat: builtin, id: unsetopt, d: 4 }
+  - { cat: builtin, id: set     , d: 4 }
+
+- query: "how do I make zsh print all options including defaults"
+  want:
+  - { cat: builtin, id: setopt        , d: 4 }
+  - { cat: builtin, id: unsetopt      , d: 4 }
+  - { cat: builtin, id: set           , d: 4 }
+  - { cat: option,  id: kshoptionprint, d: 6, w: 0.5 }
+
+- query: "how do I load a zsh module at runtime"
+  want:
+  - { cat: builtin, id: zmodload }
+  holdout: true
+
+- query: "what is the syntax for a for loop in zsh"
+  want:
+  - { cat: complex_command, id: for      , d: 3 }
+  - { cat: complex_command, id: for-arith, d: 3 }
+
+- query: "how do for loops"
+  want:
+  - { cat: complex_command, id: for      , d: 3 }
+  - { cat: complex_command, id: for-arith, d: 3 }
+
+- query: "how execute something as long as an expression returns a zero exit status"
+  want:
+  - { cat: complex_command, id: while, d: 1 }
+  - { cat: complex_command, id: until, d: 3, w: 0.3 }
+
+- query: "how run only if the exit status is non-zero"
+  want:
+  - { cat: complex_command, id: until, d: 1 }
+
+- query: "run only when exit status is non-zero"
+  want:
+  - { cat: complex_command, id: until, d: 1 }
+  holdout: true
+
+- query: "how branch execution on the first pattern that matches"
+  want:
+  - { cat: complex_command, id: case, d: 1 }
+
+- query: "where is ;; ;& and ;| used"
+  want:
+  - { cat: complex_command, id: case, d: 1, w: 1.5 }
+
+- query: "where is elif and fi used"
+  want:
+  - { cat: complex_command, id: if, d: 1, w: 0.4 }
+  holdout: true
+
+- { query: "what is esac",want: [{cat: complex_command,id: case,d: 1,w: 1.5}]}
+- { query: "where use ;;",want: [{cat: complex_command,id: case,d: 1,w: 0.3}]}
+
+- query: "what does ;; mean"
+  want:
+  - { cat: complex_command, id: case, d: 1, w: 0.3 }
+  holdout: true
+
+- query: "how do I execute commands in a subshell"
+  want:
+  - { cat: complex_command, id: '(', d: 2 }
+
+- query: "what does always mean in zsh"
+  want:
+  - { cat: complex_command, id: '{try}always', d: 1, w: 0.3 }
+
+- query: "what does `always` mean in zsh"
+  want:
+  - { cat: complex_command, id: '{try}always', d: 1, w: 0.3 }
+
+- query: "what does 'always' mean in zsh"
+  want:
+  - { cat: complex_command, id: '{try}always', d: 1, w: 0.3 }
+
+- query: "meaning of the 'always' word"
+  want:
+  - { cat: complex_command, id: '{try}always', d: 1 }
+  holdout: true
+
+- query: "how do I define a function"
+  want:
+  - { cat: complex_command, id: 'function', d: 1 }
+
+- query: "create a function"
+  want:
+  - { cat: complex_command, id: 'function', d: 1 }
+  holdout: true
+
+- query: "how execute something with timing"
+  want:
+  - { cat: complex_command, id: 'time', d: 1 }
+
+- query: "how get timing reported for something that is executed"
+  want:
+  - { cat: complex_command, id: 'time', d: 1 }
+
+- query: "what is the TIMEFMT parameter used for"
+  want:
+  - { cat: special_param  , id: TIMEFMT     , d: 1, w: 1.0 }
+  - { cat: special_param  , id: REPORTMEMORY, d: 3, w: 0.7 }
+  - { cat: complex_command, id: time        , d: 3, w: 0.7 }
+
+- query: "evaluate a conditional expression"
+  want:
+  - { cat: complex_command, id: '[['  , d: 1 }
+  - { cat: builtin        , id: '['   , d: 1, w: 0.25 }
+  - { cat: builtin        , id: 'test', d: 1, w: 0.25 }
+  - { cat: conditional_op , id: '&&'  , d: 1, w: 0.10 }
+    # correct, but impossible to hit given its docs
+
+- query: "run something and exit with zero if true"
+  want:
+  - { cat: complex_command, id: '[['  , d: 1 }
+  - { cat: builtin        , id: '['   , d: 1, w: 0.25 }
+  - { cat: builtin        , id: 'test', d: 1, w: 0.25 }
+  - { cat: conditional_op , id: '&&'  , d: 1, w: 0.10 }
+
+- query: "evaluate to true if the two expressions are both true"
+  want:
+  - { cat: conditional_op, id: '&&', d: 1 }
+  holdout: true
+
+- query: "how do if statements"
+  want:
+  - { cat: complex_command, id: if, d: 2 }
+
+- query: "how execute a code block only when an expression returned zero exit status"
+  want:
+  - { cat: complex_command, id: if, d: 2 }
+
+- query: "how do if statements"
+  want:
+  - { cat: complex_command, id: if, d: 2 }
+
+- query: "what parameter holds the exit status of the last command"
+  want:
+  - { cat: special_param, id: '?', d: 5 }
+
+- query: "what variable holds the process id of the current shell"
+  want:
+  - { cat: special_param, id: '$', d: 5 }
+  holdout: true
+
+- query: "what is a no-op command I can use that still performs parameter expansion"
+  want:
+  - { cat: builtin, id: ':', d: 4 }
+  - { cat: builtin, id: 'true', d: 4 }
+
+- query: "how can I return early from a for loop"
+  want:
+  - { cat: builtin, id: break , d: 1 }
+  - { cat: builtin, id: return, d: 5, w: 0.2 }
+  - { cat: builtin, id: exit  , d: 5, w: 0.1 }
+  holdout: true
+
+- query: "within a for loop, how can I go directly to the next iteration of it"
+  want:
+  - { cat: builtin, id: continue, d: 1 }
+
+- query: "print all aliases that are defined"
+  want:
+  - { cat: builtin, id: alias, d: 2 }
+  holdout: true
+
+- query: "treat a command word as the name of an external command"
+  want:
+  - { cat: builtin, id: command, d: 4 }
+  - { cat: precmd_modifier, id: command, d: 4 }
+
+- query: "run something that only calls external command, never functions or builtins"
+  want:
+  - { cat: builtin        , id: command, d: 4, w: 0.5 }
+  - { cat: precmd_modifier, id: builtin, d: 4, w: 0.5 }
+
+- query: "treat a command word as the name of a builtin"
+  want:
+  - { cat: precmd_modifier, id: builtin, d: 3 }
+
+- query: "only interpret the command as referring to a builtin"
+  want:
+  - { cat: precmd_modifier, id: builtin, d: 3 }
+  holdout: true
+
+- query: "run something that only calls builtins"
+  want:
+  - { cat: precmd_modifier, id: builtin, d: 3, w: 0.5 }
+
+- query: "replace the current process with a command and its arguments without forking the shell"
+  want:
+  - { cat: precmd_modifier, id: exec, d: 1 }
+
+- query: "don't fork, instead replace the shell with the given command, in the same process"
+  want:
+  - { cat: precmd_modifier, id: exec, d: 1 }
+  holdout: true
+
+- query: "disable spelling correction for any of the words that follow"
+  want:
+  - { cat: precmd_modifier, id: nocorrect, d: 1 }
+
+- query: "disable globbing for any of the words that follow"
+  want:
+  - { cat: precmd_modifier, id: noglob, d: 1 }
+  holdout: true
+
+- query: "how disable a builtin"
+  want:
+  - { cat: builtin, id: disable, d: 3 }
+  holdout: true
+
+- query: "how disable an alias"
+  want:
+  - { cat: builtin, id: disable, d: 3 }
+  holdout: true
+
+- query: "how list which options would be set and which unset if I were to use some given emulation mode"
+  want:
+  - { cat: builtin, id: emulate, d: 1 }
+  # `emulate -l ..`
+
+- query: "how make a redirection take effect in the current shell, not just for some specific command"
+  want:
+  - { cat: builtin, id: exec, d: 1 }
+  # `exec 2>&3` etc.
+  holdout: true
+
+- query: "how set a parameter so it will still be available for subsequent external commands"
+  want:
+  - { cat: builtin, id: export , d: 1 }
+  - { cat: builtin, id: typeset, d: 2, w: 0.7 }
+
+- query: "declare an arithmetic functions"
+  # "arithmetic" rather than "math" is a deliberate slight misnomer
+  want:
+  - { cat: builtin, id: functions, d: 2, w: 0.5 }
+
+- query: "how to create a math functions"
+  want:
+  - { cat: builtin, id: functions, d: 2 }
+  holdout: true
+
+- query: "I want to list all the math functions that were created by the user"
+  # `function -M`; is documented far down in the documentation body
+  want:
+  - { cat: builtin, id: functions, d: 2 }
+  holdout: true
+
+- query: "what does the +M arg do if given to the function command"
+  # 'function command' is a deliberate slight mis-nomer
+  want:
+  - { cat: builtin, id: functions, d: 1, w: 0.7 }
+
+- query: "like echo, but don't interpret any escape sequences"
+  # `print -r ..`
+  want:
+  - { cat: builtin, id: print }
+  holdout: true
+
+- query: "print a string while interpreting its prompt escapes"
+  # `print -P ..`
+  want:
+  - { cat: builtin, id: print, d: 2 }
+  holdout: true
+
+- query: "how put a string on the editing buffer stack"
+  # `print -z ..`
+  # documented far down in the body of `print`; note that the query string avoids mentioning the id or the category
+  want:
+  - { cat: builtin, id: print, d: 2 }
+  - { cat: builtin, id: pushln, w: 0.3 }
+    # pushln == `print -nz`
+    # docs are just 'Equivalent to print -nz.' so this one will be almost impossible to hit
+
+- query: "how run a command only if a specific signal is received"
+  want:
+  - { cat: builtin, id: trap }
+  holdout: true
+
+- query: "I want to run something every time other commands exit non-zero"
+  # -> use a trap with the ZERR or ERR signal
+  want:
+  - { cat: builtin, id: trap, d: 2 }
+  - { cat: builtin, id: kill, w: 0.3, d: 5 }
+
+- query: "how know if the terminal is frozen or not"
+  want:
+  - { cat: builtin, id: ttyctl }
+  holdout: true
+
+- query: "how make a variable convert to lowercase when expanded"
+  want:
+  - { cat: builtin, id: typeset }
+  # far down in the long typeset docs
+
+- query: "get the uppercase version of a param whenever it is used"
+  want:
+  - { cat: builtin, id: typeset }
+  # far down in the long typeset docs
+  holdout: true
+
+- query: "how have the value of a parameter hidden when parameters are listed"
+  want:
+  - { cat: builtin, id: typeset }
+  # far down in the long typeset docs
+
+- query: "print the current working dir"
+  want:
+  - { cat: builtin, id: pwd }
+
+- query: "get current directory but without symbolic links"
+  want:
+  - { cat: builtin, id: pwd, d: 15 }
+  - { cat: option, id: chaselinks, d: 25, w: 0.5 }
+  holdout: true
+
+# ---//
+# `zle` is essentially multiple commands, each distinguished by arguments - the forms here give one vote per entry; this is deliberate.
+- query: "remove a widget"
+  want: [{ cat: builtin, id: zle }]
+- {query: "what's zle vichange",want: [{cat: builtin,id: zle}],holdout: true}
+- query: "what does zle -f vichange do"
+  want: [{ cat: builtin, id: zle }]
+- query: "what does zle -fvichange do"
+  want: [{ cat: builtin, id: zle }]
+- query: "create a custom completion widget"
+  want: [{ cat: builtin, id: zle }]
+  holdout: true
+- query: "create a custom completion widget and specify what function should provide the completions"
+  want: [{ cat: builtin, id: zle }]
+- query: "I want to create a completion that displays a string below the command line"
+  want: [{ cat: builtin, id: zle, d: 5 }]
+- query: "how to programmatically invoke some named zle widget"
+  want: [{ cat: builtin, id: zle, d: 5 }]
+  holdout: true
+# ---//
+
+- query: "use keybindings for emacs emulation"
+  want: [{ cat: keymap, id: emacs, d: 5 }]
+
+- query: "use keymap for emacs emulation"
+  want: [{ cat: keymap, id: emacs, d: 5 }]
+
+- query: "use keybindings for vi emulation"
+  want:
+  - { cat: keymap, id: viins , d: 4 }
+  - { cat: keymap, id: vicmd , d: 4 }
+  - { cat: keymap, id: viopp , d: 4 }
+  - { cat: keymap, id: visual, d: 4 }
+
+- query: "use keymap for vi emulation"
+  want:
+  - { cat: keymap, id: viins , d: 4 }
+  - { cat: keymap, id: vicmd , d: 4 }
+  - { cat: keymap, id: viopp , d: 4 }
+  - { cat: keymap, id: visual, d: 4 }
+
+- query: "use keymap for vi emulation, insert mode"
+  want: [{ cat: keymap, id: viins, d: 1 }]
+
+- query: "use keymap for vi emulation, command mode"
+  want: [{ cat: keymap, id: vicmd, d: 1 }]
+
+- query: "how get vi keys emulation, operator pending"
+  want: [{ cat: keymap, id: viopp, d: 1 }]
+  holdout: true
+
+- query: "what special parameters are set by the shell and are related to process ID"
+  want:
+  - { cat: special_param, id: '!'   , d: 3 }
+  - { cat: special_param, id: '$'   , d: 3 }
+  - { cat: special_param, id: 'PPID', d: 3 }
+
+- query: "what special parameters are set by the shell and are related to PID"
+  want:
+  - { cat: special_param, id: '!'   , d: 3 }
+  - { cat: special_param, id: '$'   , d: 3 }
+  - { cat: special_param, id: 'PPID', d: 3 }
+
+- query: "how get get the name used to invoke the current shell"
+  want:
+  - { cat: special_param, id: '0'                   , d: 1 }
+  - { cat: special_param, id: 'ZSH_NAME'            , d: 2, w: 0.6 }
+  - { cat: special_param, id: 'ZSH_EXECUTION_STRING', d: 3, w: 0.3 }
+
+# //---
+# would need to match the single-char punctuations in query AND the doc body to hit these:
+- query: "parameter set by the shell, same as #"
+  want: [{ cat: special_param, id: ARGC, d: 1 }]
+- query: "parameter set by the shell, same as *"
+  want: [{ cat: special_param, id: argv, d: 1 }]
+- query: "parameter set by the shell, same as ?"
+  want: [{ cat: special_param, id: status, d: 1 }]
+# ---//
+
+- query: "a parameter used by the shell, same as PS1"
+  want:
+  - { cat: special_param, id: PROMPT, d: 5 }
+  - { cat: special_param, id: prompt, d: 5 }
+
+- query: "param with primary prompt string"
+  want:
+  - { cat: special_param, id: PS1, d: 1 }
+
+- query: "parameter holding the secondary prompt string"
+  want:
+  - { cat: special_param, id: PS2, d: 1 }
+
+- query: "what is psvar"
+  want:
+  - { cat: special_param, id: psvar, d: 1 }
+
+- query: "how get a prompt displayed to the right of the screen"
+  want:
+  - { cat: special_param, id: RPS1    , d: 5 }
+  - { cat: special_param, id: RPS2    , d: 5 }
+  - { cat: special_param, id: RPROMPT , d: 5 }
+  - { cat: special_param, id: RPROMPT2, d: 5 }
+
+- {query: "the $! param",want: [{ cat: special_param, id: '!', d: 1 }]}
+- {query: "the $# param",want: [{ cat: special_param, id: '#', d: 1 }]}
+- {query: "the $$ param",want: [{ cat: special_param, id: '$', d: 1 }]}
+- {query: "the $- param",want: [{ cat: special_param, id: '-', d: 1 }]}
+- {query: "the $* param",want: [{ cat: special_param, id: '*', d: 1 }]}
+- {query: "the $@ param",want: [{ cat: special_param, id: '@', d: 1 }]}
+- {query: "the $? param",want: [{ cat: special_param, id: '?', d: 1 }]}
+- {query: "the $0 param",want: [{ cat: special_param, id: '0', d: 1 }]}
+
+- query: "what special parameters are set by the shell and are related to user- or group ID "
+  want:
+  - { cat: special_param, id: EGID    , d: 5 }
+  - { cat: special_param, id: EUID    , d: 5 }
+  - { cat: special_param, id: GID     , d: 5 }
+  - { cat: special_param, id: UID     , d: 5 }
+  - { cat: special_param, id: USERNAME, d: 5 }
+
+- {query: "the EGID param",want: [{ cat: special_param, id: EGID, d: 1}]}
+- {query: "the EUID param",want: [{ cat: special_param, id: EUID, d: 1}]}
+- {query: "the GID  param",want: [{ cat: special_param, id: GID , d: 1}]}
+- {query: "the UID  param",want: [{ cat: special_param, id: UID , d: 1}]}
+
+- query: "parameter set by the shell and is about positional parameters"
+  want:
+  - { cat: special_param, id: '#'   , d: 4 }
+  - { cat: special_param, id: 'ARGC', d: 4 }
+  - { cat: special_param, id: '*'   , d: 4 }
+  - { cat: special_param, id: 'argv', d: 4 }
+
+- query: "variable set by the shell dealing with positional arguments"
+  want:
+  - { cat: special_param, id: '#'   , d: 4 }
+  - { cat: special_param, id: 'ARGC', d: 4 }
+  - { cat: special_param, id: '*'   , d: 4 }
+  - { cat: special_param, id: 'argv', d: 4 }
+  holdout: true
+
+- query: "what special parameters used by the shell and affects spelling correction"
+  want:
+  - { cat: special_param, id: CORRECT_IGNORE     , d: 3 }
+  - { cat: special_param, id: CORRECT_IGNORE_FILE, d: 3 }
+  - { cat: special_param, id: SPROMPT            , d: 3 }
+
+- query: "what special parameters are related to the locale"
+  want:
+  # only enumerating entries with "locale" in the docs:
+  - { cat: special_param, id: LANG      , d: 8 }
+  - { cat: special_param, id: LC_COLLATE, d: 8 }
+  - { cat: special_param, id: LC_CTYPE  , d: 8 }
+  - { cat: special_param, id: LC_TIME   , d: 8 }
+
+# //---
+# scoring max on the below requires distinguishing "b" from "m" in the doc bodies:
+- query: "what parameters are set with the b globbing flag"
+  want:
+  - { cat: special_param, id: match , d: 4 }
+  - { cat: special_param, id: mbegin, d: 4 }
+  - { cat: special_param, id: mend  , d: 4 }
+- query: "what parameters are set with the m globbing flag"
+  want:
+  - { cat: special_param, id: MATCH , d: 4 }
+  - { cat: special_param, id: MBEGIN, d: 4 }
+  - { cat: special_param, id: MEND  , d: 4 }
+# ---//
+
+- query: "what special parameters has the name of the tty"
+  want:
+  - { cat: special_param, id: TTY, d: 3 }
+
+- query: "what is insubst and outsubst"
+  want:
+  - { cat: special_param, id: zsh_eval_context, d: 3 }
+  - { cat: special_param, id: ZSH_EVAL_CONTEXT, d: 3 }
+
+- query: "what is zregexparse-action"
+  want:
+  - { cat: special_param, id: zsh_eval_context, d: 3 }
+  - { cat: special_param, id: ZSH_EVAL_CONTEXT, d: 3 }
+
+- query: "parameters related to spelling correction"
+  want:
+  - { cat: special_param, id: CORRECT_IGNORE     , d: 5 }
+  - { cat: special_param, id: CORRECT_IGNORE_FILE, d: 5 }
+  - { cat: special_param, id: SPROMPT            , d: 5 }
+  holdout: true
+
+- query: "redirection that opens file for reading as standard input"
+  want:
+  - { cat: redirection, id: '<_word' , d: 2, w: 1.0 }
+  - { cat: redirection, id: '<>_word', d: 2, w: 0.7 }
+
+- query: "redirection that opens file for writing as standard input"
+  want:
+  - { cat: redirection, id: '>_word' , d: 3, w: 1.0 }
+  - { cat: redirection, id: '>>_word', d: 3, w: 1.0 }
+  - { cat: redirection, id: '<>_word', d: 3, w: 0.7 }
+  holdout: true
+
+- query: "open file for reading as standard input"
+  want:
+  - { cat: redirection, id: '<_word' , d: 2, w: 0.8 }
+  - { cat: redirection, id: '<>_word', d: 2, w: 0.5 }
+
+- query: "open file for writing as standard input"
+  want:
+  - { cat: redirection, id: '>_word' , d: 3, w: 0.8 }
+  - { cat: redirection, id: '>>_word', d: 3, w: 0.8 }
+  - { cat: redirection, id: '<>_word', d: 3, w: 0.5 }
+  holdout: true
+
+- query: "open file for reading as standard input"
+  want:
+  - { cat: redirection, id: '<_word' , d: 2, w: 0.8 }
+  - { cat: redirection, id: '<>_word', d: 2, w: 0.5 }
+
+- query: "open file for writing as standard input"
+  want:
+  - { cat: redirection, id: '>_word' , d: 3, w: 0.8 }
+  - { cat: redirection, id: '>>_word', d: 3, w: 0.8 }
+  - { cat: redirection, id: '<>_word', d: 3, w: 0.5 }
+  holdout: true
+
+# short and with punctuation - possibly similar to mechanical sentences, but include here regardless so there is a scoring of these robust to possible changes to the mechanical sentence creation logic. Some redirections disambiguated by sig; just use one in the want: set but increase 'd'.
+- {query:             "<>" ,want: [{cat: redirection,id: '<>_word'  ,d: 1}]}
+- {query:             ">!" ,want: [{cat: redirection,id: '>!_word'  ,d: 1}]}
+- {query:             ">|" ,want: [{cat: redirection,id: '>|_word'  ,d: 1}]}
+- {query:             ">>" ,want: [{cat: redirection,id: '>>_word'  ,d: 1}]}
+- {query:             ">&" ,want: [{cat: redirection,id: '>&_word'  ,d: 4}]}
+- {query:             "<&" ,want: [{cat: redirection,id: '<&_number',d: 3}]}
+- {query:             "&>" ,want: [{cat: redirection,id: '&>_word'  ,d: 1}]}
+- {query:             ">>!",want: [{cat: redirection,id: '>>!_word' ,d: 1}]}
+- {query:             "<<<",want: [{cat: redirection,id: '<<<_word' ,d: 1}]}
+# with category qualification:
+- {query: "redirection <>" ,want: [{cat: redirection,id: '<>_word'  ,d: 1}]}
+- {query: "redirection >!" ,want: [{cat: redirection,id: '>!_word'  ,d: 1}]}
+- {query: "redirection >|" ,want: [{cat: redirection,id: '>|_word'  ,d: 1}]}
+- {query: "redirection >>" ,want: [{cat: redirection,id: '>>_word'  ,d: 1}]}
+- {query: "redirection >&" ,want: [{cat: redirection,id: '>&_word'  ,d: 4}]}
+- {query: "redirection <&" ,want: [{cat: redirection,id: '<&_number',d: 3}]}
+- {query: "redirection &>" ,want: [{cat: redirection,id: '&>_word'  ,d: 1}]}
+- {query: "redirection >>!",want: [{cat: redirection,id: '>>!_word' ,d: 1}]}
+- {query: "redirection <<<",want: [{cat: redirection,id: '<<<_word' ,d: 1}]}
+# some holdouts:
+- {query: "&>!" ,want: [{cat: redirection,id: '&>!_word' ,d: 1}],holdout: true}
+- {query: ">&|" ,want: [{cat: redirection,id: '>&|_word' ,d: 1}],holdout: true}
+- {query: ">&!" ,want: [{cat: redirection,id: '>&!_word' ,d: 1}],holdout: true}
+- {query: ">>&" ,want: [{cat: redirection,id: '>>&_word' ,d: 1}],holdout: true}
+- {query: ">>&!",want: [{cat: redirection,id: '>>&!_word',d: 1}],holdout: true}
+- {query: ">>&|",want: [{cat: redirection,id: '>>&|_word',d: 1}],holdout: true}
+
+# some hook functions:
+- {query: "hook chpwd   ",want: [{cat: special_function,id: chpwd   ,d: 2}]}
+- {query: "hook periodic",want: [{cat: special_function,id: periodic,d: 2}]}
+- {query: "hook preexec ",want: [{cat: special_function,id: preexec ,d: 2}]}
+- {query: "hook zshexit ",want: [{cat: special_function,id: zshexit ,d: 2}]}
+
+- query: "what does zshaddhistory do"
+  want:
+  - { cat: special_function, id: zshaddhistory, d: 2 }
+
+# NO_-strip resolver-boost probe: collapsed form misses the lookup-map, so
+# only the resolver's negation-strip can surface the option
+- {query: "noautocd",   want: [{cat: option, id: autocd,   d: 1}]}
+- {query: "noclobber",  want: [{cat: option, id: clobber,  d: 1}]}
+- {query: "noglob",     want: [{cat: option, id: glob,     d: 1}]}
+- {query: "noerrexit",  want: [{cat: option, id: errexit,  d: 1}]}
+
+# ---
+# Body-paraphrase cases: phrased as a user would ask, deliberately AVOIDING the
+# record id / display / category words, so the hit must come from matching the
+# behaviour described in the doc body (the embedder's body view) rather than a
+# name echo. A few are genuine stretch cases (high d) kept for coverage.
+
+# math functions — only the few with a distinctive (non-boilerplate) body are
+# reachable by paraphrase; the trig/log family share an identical generic body.
+- query: "absolute value of a number"
+  want:
+  - { cat: mathfunc, id: abs, d: 2 }
+- query: "convert a number to an integer by chopping off the fractional part"
+  want:
+  - { cat: mathfunc, id: int, d: 3 }
+- query: "generate a pseudo-random floating point number between zero and one"
+  want:
+  - { cat: mathfunc, id: rand48, d: 2 }
+
+- query: "parameter holding the elapsed time since the shell started"
+  want:
+  - { cat: special_param, id: SECONDS, d: 3 }
+
+- query: "parameter that gives the terminal width in character columns"
+  want:
+  - { cat: special_param, id: COLUMNS, d: 2 }
+
+- query: "automatically report timing for commands that run longer than a threshold"
+  want:
+  - { cat: special_param, id: REPORTTIME,   d: 2 }
+  - { cat: special_param, id: REPORTMEMORY, d: 3, w: 0.5 }
+
+# builtins (behaviour buried in the body, name avoided)
+- query: "precompile a function file so it loads faster next time"
+  want:
+  - { cat: builtin, id: zcompile, d: 2 }
+- query: "schedule a command to run after a delay"
+  want:
+  - { cat: builtin, id: sched, d: 2 }
+- query: "stop tracking a background job so it keeps running after I log out"
+  want:
+  - { cat: builtin, id: disown, d: 2 }
+
+- query: "pause and warn before running rm with a wildcard"
+  want:
+  - { cat: option, id: rmstarwait,   d: 2 }
+  - { cat: option, id: rmstarsilent, d: 3, w: 0.7 }
+
+- query: "press tab again to cycle through completion candidates"
+  want:
+  - { cat: option, id: automenu,     d: 2 }
+  - { cat: option, id: menucomplete, d: 3, w: 0.7 }
+
+- query: "print an error when a wildcard pattern matches no files"
+  want:
+  - { cat: option, id: nomatch, d: 2 }
+
+- query: "review and edit the result of a history expansion before it runs"
+  want:
+  - { cat: option,     id: histverify,      d: 2 }
+  - { cat: zle_widget, id: expand-history,  d: 2, w: 0.5 }
+
+- query: "share command history between simultaneously running shell sessions"
+  # hard: the share/append/inc-append history options cluster tightly
+  want:
+  - { cat: option, id: sharehistory, d: 6, w: 0.7 }
+
+- query: "completion helper for parsing command options and operands"
+  want:
+  - { cat: comp_utility, id: _arguments, d: 3 }
+- query: "swap the two characters around the cursor"
+  want:
+  - { cat: zle_widget, id: transpose-chars, d: 1 }
+
+# ---
+# Resolver-boost probes: bare tokens the corpus-aware resolver canonicalizes but
+# that are NOT lookup-map keys (sig/template/subscript/hook forms), so only the
+# resolver hit (not the hard-promote) can surface the right record.
+- {query: "TRAPUSR1",want: [{cat: special_function,id: TRAPNAL,    d: 1}]}
+- {query: "2>&1",    want: [{cat: redirection,     id: '>&_number',d: 1}]}
+- {query: "%1",      want: [{cat: job_spec,        id: '%number',  d: 1}]}
+- {query: "(#i)",    want: [{cat: glob_flag,       id: i,          d: 1}]}
+- {query: "path[2]", want: [{cat: special_param,   id: path,       d: 1}]}
+
+# === additions authored from the zsh manual (under-covered categories) ===
+
+# conditional_op
+- query: "test that compares two numbers and is true when the first is the larger one"
+  want:
+  - { cat: conditional_op, id: '-gt', d: 1 }
+  - { cat: conditional_op, id: '-ge', d: 3, w: 0.5 }
+- query: "check whether a file is there at all, regardless of type"
+  want:
+  - { cat: conditional_op, id: '-e', d: 2 }
+  - { cat: conditional_op, id: '-a', d: 4, w: 0.6 }
+  holdout: true
+- query: "in a double-bracket test, how do I tell if a shell variable has been assigned"
+  want:
+  - { cat: conditional_op, id: '-v', d: 1 }
+- query: "true only when one path was modified more recently than another path"
+  want:
+  - { cat: conditional_op, id: '-nt', d: 1 }
+- query: "match a string against a regular expression inside an if condition"
+  want:
+  - { cat: conditional_op, id: '=~', d: 1 }
+- query: "test whether a given file descriptor is connected to a terminal"
+  want:
+  - { cat: conditional_op, id: '-t', d: 1 }
+  holdout: true
+- query: "two filenames that are actually the same file (hardlink to one inode)"
+  want:
+  - { cat: conditional_op, id: '-ef', d: 1 }
+
+# glob_qualifier
+- query: "in a filename pattern, only keep matches that are folders"
+  want:
+  - { cat: glob_qualifier, id: '/', d: 1 }
+- query: "expand a glob only to symlinks"
+  want:
+  - { cat: glob_qualifier, id: '@', d: 1 }
+- query: "select only directories that are not empty when globbing"
+  want:
+  - { cat: glob_qualifier, id: 'F', d: 1 }
+- query: "filter glob results by running shell code per file and keeping it when the code succeeds"
+  want:
+  - { cat: glob_qualifier, id: '+', d: 2 }
+  holdout: true
+- query: "after a pattern, restrict to files larger than a certain number of bytes"
+  want:
+  - { cat: glob_qualifier, id: 'L', d: 2 }
+- query: "stop a glob early once it has found a handful of matches instead of scanning everything"
+  want:
+  - { cat: glob_qualifier, id: 'Y', d: 2 }
+  holdout: true
+- query: "in a glob qualifier, put an option flag in front of every matched filename as its own argument"
+  want:
+  - { cat: glob_qualifier, id: 'P', d: 2 }
+
+# param_expn
+- query: "substitute a default value when a variable is empty or unset, without changing the variable"
+  want:
+  - { cat: param_expn, id: '${name:-word}', d: 1 }
+  - { cat: param_expn, id: '${name-word}' , d: 3, w: 0.7 }
+- query: "assign a fallback into the variable itself if it currently has no value"
+  want:
+  - { cat: param_expn, id: '${name:=word}', d: 2 }
+- query: "expansion that prints an error message and aborts the shell when a required variable is missing"
+  want:
+  - { cat: param_expn, id: '${name:?word}', d: 2 }
+  - { cat: param_expn, id: '${name?word}' , d: 4, w: 0.7 }
+  holdout: true
+- query: "strip the longest matching suffix off a variable's value"
+  want:
+  - { cat: param_expn, id: '${name%%pattern}', d: 1 }
+  - { cat: param_expn, id: '${name%pattern}' , d: 3, w: 0.6}
+- query: "replace every occurrence of a pattern inside a variable with something else"
+  want:
+  - { cat: param_expn, id: '${name//pattern/repl}', d: 1 }
+- query: "interleave two arrays element by element into one combined array"
+  want:
+  - { cat: param_expn, id: '${name:^arrayname}', d: 2 }
+  holdout: true
+- query: "remove from one array any elements that also appear in another array"
+  want:
+  - { cat: param_expn, id: '${name:|arrayname}', d: 2 }
+
+# param_expn_flag
+- query: "expansion flag that uppercases the value during parameter expansion"
+  want:
+  - { cat: param_expn_flag, id: 'U', d: 1 }
+- query: "in a parameter expansion, drop repeated entries and keep just the unique ones"
+  want:
+  - { cat: param_expn_flag, id: 'u', d: 2 }
+- query: "flag that splits an expansion into words honoring the quoting in the value, like the shell parser would"
+  want:
+  - { cat: param_expn_flag, id: 'z', d: 2 }
+  holdout: true
+- query: "treat the contents of a variable as the name of another variable and expand that"
+  want:
+  - { cat: param_expn_flag, id: 'P', d: 2 }
+- query: "expansion flag to safely quote a value so it can be reused as shell input"
+  want:
+  - { cat: param_expn_flag, id: 'q', d: 2 }
+- query: "join the elements of an array into one string using a chosen separator"
+  want:
+  - { cat: param_expn_flag, id: 'j', d: 1 }
+- query: "ask for a description of a variable's type and attributes instead of its value"
+  want:
+  - { cat: param_expn_flag, id: 't', d: 2 }
+  holdout: true
+
+# history_expn
+- query: "re-run the command I just typed"
+  want:
+  - { cat: history_expn, id: '!!', d: 1 }
+- query: "recall the most recent command that started with a given prefix"
+  want:
+  - { cat: history_expn, id: '!str', d: 1 }
+  holdout: true
+- query: "grab the last argument of the previous command line"
+  want:
+  - { cat: history_expn, id: '$', d: 2 }
+- query: "history modifier that keeps only the directory portion of a path, dropping the filename"
+  want:
+  - { cat: history_expn, id: 'h', d: 1 }
+- query: "history modifier that strips the file extension and leaves the rest"
+  want:
+  - { cat: history_expn, id: 'r', d: 1 }
+- query: "reuse an earlier command but substitute one piece of text for another before running"
+  want:
+  - { cat: history_expn, id: 's', d: 2 }
+  holdout: true
+
+# arith_op
+- query: "raise a number to a power inside an arithmetic expression"
+  want:
+  - { cat: arith_op, id: '**', d: 1 }
+- query: "get the remainder after integer division in math evaluation"
+  want:
+  - { cat: arith_op, id: '%', d: 2 }
+- query: "shift the bits of an integer to the left"
+  want:
+  - { cat: arith_op, id: '<<', d: 1 }
+  holdout: true
+- query: "pick one of two values based on a condition, all within double parentheses"
+  want:
+  - { cat: arith_op, id: '?', d: 2 }
+  - { cat: arith_op, id: ':', d: 4, w: 0.5 }
+- query: "add to a numeric variable and store the result back in one step"
+  want:
+  - { cat: arith_op, id: '+=', d: 2 }
+
+# prompt_escape
+- query: "show the exit code of the last command in my prompt"
+  want:
+  - { cat: prompt_escape, id: '%?', d: 1 }
+- query: "put the current working directory into the prompt with home shown as a tilde"
+  want:
+  - { cat: prompt_escape, id: '%~', d: 1 }
+  holdout: true
+- query: "display the short hostname up to the first dot in the prompt"
+  want:
+  - { cat: prompt_escape, id: '%m', d: 1 }
+  - { cat: prompt_escape, id: '%M', d: 3, w: 0.6 }
+- query: "prompt sequence that shows a hash for root and a percent for a normal user"
+  want:
+  - { cat: prompt_escape, id: '%#', d: 2 }
+- query: "wrap non-printing escape codes in the prompt so width is calculated correctly"
+  want:
+  - { cat: prompt_escape, id: '%{...%}', d: 2 }
+  holdout: true
+- query: "switch the prompt to a different foreground text color"
+  want:
+  - { cat: prompt_escape, id: '%F', d: 2 }
+- query: "conditional prompt section that shows one thing or another depending on shell state"
+  want:
+  - { cat: prompt_escape, id: '%(x.true-text.false-text)', d: 2 }
+
+# zle_widget
+- query: "line-editor command that clears the terminal and redraws the prompt"
+  want:
+  - { cat: zle_widget, id: 'clear-screen', d: 1 }
+- query: "in the line editor, delete everything from the cursor to the end of the line"
+  want:
+  - { cat: zle_widget, id: 'kill-line', d: 1 }
+- query: "paste back text that was just killed at the cursor"
+  want:
+  - { cat: zle_widget, id: 'yank', d: 1 }
+  holdout: true
+- query: "incrementally search backward through history as I type"
+  want:
+  - { cat: zle_widget, id: 'history-incremental-search-backward', d: 1 }
+- query: "insert the last word of the previous command at the cursor"
+  want:
+  - { cat: zle_widget, id: 'insert-last-word', d: 1 }
+  holdout: true
+- query: "widget that comments out the current line by prepending a hash, toggling it"
+  want:
+  - { cat: zle_widget, id: 'pound-insert', d: 2 }
+  - { cat: zle_widget, id: 'vi-pound-insert', w: 0.6, d: 4 }
+- query: "insert the next keystroke literally without it being interpreted"
+  want:
+  - { cat: zle_widget, id: 'quoted-insert', d: 2 }
+- query: "editor command to undo the last change to the line"
+  want:
+  - { cat: zle_widget, id: 'undo', d: 1 }
+  holdout: true
+
+# comp_utility
+- query: "completion helper for commands that follow standard unix option-and-argument syntax"
+  want:
+  - { cat: comp_utility, id: '_arguments', d: 1 }
+- query: "completion function that pairs each completion candidate with a description shown to the user"
+  want:
+  - { cat: comp_utility, id: '_describe', d: 2 }
+- query: "complete filenames and partial paths in a completion function"
+  want:
+  - { cat: comp_utility, id: '_files', d: 1 }
+  holdout: true
+- query: "auto-derive a command's long options from its help output for completion"
+  want:
+  - { cat: comp_utility, id: '_gnu_generic', d: 2 }
+- query: "store expensive completion data on disk and reuse it on later invocations"
+  want:
+  - { cat: comp_utility, id: '_store_cache'   , d: 3 }
+  - { cat: comp_utility, id: '_retrieve_cache', d: 4, w: 0.7 }
+  - { cat: comp_utility, id: '_cache_invalid' , d: 5, w: 0.5 }
+  holdout: true
+
+# reserved_word
+- query: "keyword that closes a case statement"
+  want:
+  - { cat: reserved_word, id: 'esac', d: 1 }
+- query: "run a command as a coprocess wired up with two-way pipes"
+  want:
+  - { cat: reserved_word, id: 'coproc', d: 1 }
+  holdout: true
+- query: "loop a fixed number of times without iterating over a list"
+  want:
+  - { cat: reserved_word, id: 'repeat', d: 1 }
+- query: "keyword to invert the success or failure status of a pipeline"
+  want:
+  - { cat: reserved_word, id: '!', d: 2 }
+  holdout: true
+- query: "interactive menu where the user picks from a numbered list of choices in a loop"
+  want:
+  - { cat: reserved_word, id: 'select', d: 1 }
+
+# process_subst
+- query: "feed the output of a command to a tool as if it were a file argument"
+  want:
+  - { cat: process_subst, id: '<(...)', d: 1 }
+- query: "give a program a filename to write to that actually pipes into another command's stdin"
+  want:
+  - { cat: process_subst, id: '>(...)', d: 1 }
+  holdout: true
+- query: "pass a command's output as a real temporary file so a tool that needs to seek can use it"
+  want:
+  - { cat: process_subst, id: '=(...)', d: 1 }
+
+# subscript_flag
+- query: "array subscript flag that finds the element matching a pattern instead of indexing by number"
+  want:
+  - { cat: subscript_flag, id: 'r', d: 2 }
+- query: "subscript flag to get the index of the first array element matching a pattern"
+  want:
+  - { cat: subscript_flag, id: 'i', d: 2 }
+  holdout: true
+- query: "subscript a scalar by words rather than by individual characters"
+  want:
+  - { cat: subscript_flag, id: 'w', d: 1 }
+- query: "make a subscript match literally rather than treating it as a pattern"
+  want:
+  - { cat: subscript_flag, id: 'e', d: 2 }
+  holdout: true
+
+# mathfunc (only the records distinct from the Phase-1 mathfunc cases)
+- query: "math function that returns the absolute value but keeps an int as int and a float as float"
+  want:
+  - { cat: mathfunc, id: 'abs', d: 1 }
+  holdout: true
+- query: "compute the length of the hypotenuse from the two shorter sides"
+  want:
+  - { cat: mathfunc, id: 'hypot', d: 1 }
+- query: "arctangent that can take two arguments to get the angle of a point"
+  want:
+  - { cat: mathfunc, id: 'atan', d: 2 }
+  holdout: true
+- query: "math function for the square root of a number"
+  want:
+  - { cat: mathfunc, id: 'sqrt', d: 4 }

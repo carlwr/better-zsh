@@ -1,0 +1,8255 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "raw": "!",
+      "category": "reserved_word",
+      "id": "!"
+    },
+    {
+      "raw": "#",
+      "category": "special_param",
+      "id": "#"
+    },
+    {
+      "raw": "$",
+      "category": "special_param",
+      "id": "$"
+    },
+    {
+      "raw": "(",
+      "category": "complex_command",
+      "id": "("
+    },
+    {
+      "raw": "*",
+      "category": "special_param",
+      "id": "*"
+    },
+    {
+      "raw": "-",
+      "category": "precmd_modifier",
+      "id": "-"
+    },
+    {
+      "raw": ".",
+      "category": "builtin",
+      "id": "."
+    },
+    {
+      "raw": ".safe",
+      "category": "keymap",
+      "id": ".safe"
+    },
+    {
+      "raw": "0",
+      "category": "special_param",
+      "id": "0"
+    },
+    {
+      "raw": ":",
+      "category": "builtin",
+      "id": ":"
+    },
+    {
+      "raw": "?",
+      "category": "special_param",
+      "id": "?"
+    },
+    {
+      "raw": "@",
+      "category": "special_param",
+      "id": "@"
+    },
+    {
+      "raw": "ALIASES",
+      "category": "option",
+      "id": "aliases"
+    },
+    {
+      "raw": "ALIAS_FUNC_DEF",
+      "category": "option",
+      "id": "aliasfuncdef"
+    },
+    {
+      "raw": "ALL_EXPORT",
+      "category": "option",
+      "id": "allexport"
+    },
+    {
+      "raw": "ALWAYS_LAST_PROMPT",
+      "category": "option",
+      "id": "alwayslastprompt"
+    },
+    {
+      "raw": "ALWAYS_TO_END",
+      "category": "option",
+      "id": "alwaystoend"
+    },
+    {
+      "raw": "APPEND_CREATE",
+      "category": "option",
+      "id": "appendcreate"
+    },
+    {
+      "raw": "APPEND_HISTORY",
+      "category": "option",
+      "id": "appendhistory"
+    },
+    {
+      "raw": "ARGC",
+      "category": "special_param",
+      "id": "ARGC"
+    },
+    {
+      "raw": "ARGV0",
+      "category": "special_param",
+      "id": "ARGV0"
+    },
+    {
+      "raw": "AUTO_CD",
+      "category": "option",
+      "id": "autocd"
+    },
+    {
+      "raw": "AUTO_CONTINUE",
+      "category": "option",
+      "id": "autocontinue"
+    },
+    {
+      "raw": "AUTO_LIST",
+      "category": "option",
+      "id": "autolist"
+    },
+    {
+      "raw": "AUTO_MENU",
+      "category": "option",
+      "id": "automenu"
+    },
+    {
+      "raw": "AUTO_NAME_DIRS",
+      "category": "option",
+      "id": "autonamedirs"
+    },
+    {
+      "raw": "AUTO_PARAM_KEYS",
+      "category": "option",
+      "id": "autoparamkeys"
+    },
+    {
+      "raw": "AUTO_PARAM_SLASH",
+      "category": "option",
+      "id": "autoparamslash"
+    },
+    {
+      "raw": "AUTO_PUSHD",
+      "category": "option",
+      "id": "autopushd"
+    },
+    {
+      "raw": "AUTO_REMOVE_SLASH",
+      "category": "option",
+      "id": "autoremoveslash"
+    },
+    {
+      "raw": "AUTO_RESUME",
+      "category": "option",
+      "id": "autoresume"
+    },
+    {
+      "raw": "BAD_PATTERN",
+      "category": "option",
+      "id": "badpattern"
+    },
+    {
+      "raw": "BANG_HIST",
+      "category": "option",
+      "id": "banghist"
+    },
+    {
+      "raw": "BARE_GLOB_QUAL",
+      "category": "option",
+      "id": "bareglobqual"
+    },
+    {
+      "raw": "BASH_AUTO_LIST",
+      "category": "option",
+      "id": "bashautolist"
+    },
+    {
+      "raw": "BASH_REMATCH",
+      "category": "option",
+      "id": "bashrematch"
+    },
+    {
+      "raw": "BAUD",
+      "category": "special_param",
+      "id": "BAUD"
+    },
+    {
+      "raw": "BEEP",
+      "category": "option",
+      "id": "beep"
+    },
+    {
+      "raw": "BG_NICE",
+      "category": "option",
+      "id": "bgnice"
+    },
+    {
+      "raw": "BRACE_CCL",
+      "category": "option",
+      "id": "braceccl"
+    },
+    {
+      "raw": "BRACE_EXPAND",
+      "category": "option",
+      "id": "braceexpand"
+    },
+    {
+      "raw": "BSD_ECHO",
+      "category": "option",
+      "id": "bsdecho"
+    },
+    {
+      "raw": "BUFFER",
+      "category": "special_param",
+      "id": "BUFFER"
+    },
+    {
+      "raw": "BUFFERLINES",
+      "category": "special_param",
+      "id": "BUFFERLINES"
+    },
+    {
+      "raw": "CASE_GLOB",
+      "category": "option",
+      "id": "caseglob"
+    },
+    {
+      "raw": "CASE_MATCH",
+      "category": "option",
+      "id": "casematch"
+    },
+    {
+      "raw": "CASE_PATHS",
+      "category": "option",
+      "id": "casepaths"
+    },
+    {
+      "raw": "CDABLE_VARS",
+      "category": "option",
+      "id": "cdablevars"
+    },
+    {
+      "raw": "CDPATH",
+      "category": "special_param",
+      "id": "CDPATH"
+    },
+    {
+      "raw": "CD_SILENT",
+      "category": "option",
+      "id": "cdsilent"
+    },
+    {
+      "raw": "CHASE_DOTS",
+      "category": "option",
+      "id": "chasedots"
+    },
+    {
+      "raw": "CHASE_LINKS",
+      "category": "option",
+      "id": "chaselinks"
+    },
+    {
+      "raw": "CHECK_JOBS",
+      "category": "option",
+      "id": "checkjobs"
+    },
+    {
+      "raw": "CHECK_RUNNING_JOBS",
+      "category": "option",
+      "id": "checkrunningjobs"
+    },
+    {
+      "raw": "CLOBBER",
+      "category": "option",
+      "id": "clobber"
+    },
+    {
+      "raw": "CLOBBER_EMPTY",
+      "category": "option",
+      "id": "clobberempty"
+    },
+    {
+      "raw": "COLUMNS",
+      "category": "special_param",
+      "id": "COLUMNS"
+    },
+    {
+      "raw": "COMBINING_CHARS",
+      "category": "option",
+      "id": "combiningchars"
+    },
+    {
+      "raw": "COMPLETE_ALIASES",
+      "category": "option",
+      "id": "completealiases"
+    },
+    {
+      "raw": "COMPLETE_IN_WORD",
+      "category": "option",
+      "id": "completeinword"
+    },
+    {
+      "raw": "CONTEXT",
+      "category": "special_param",
+      "id": "CONTEXT"
+    },
+    {
+      "raw": "CONTINUE_ON_ERROR",
+      "category": "option",
+      "id": "continueonerror"
+    },
+    {
+      "raw": "CORRECT",
+      "category": "option",
+      "id": "correct"
+    },
+    {
+      "raw": "CORRECT_ALL",
+      "category": "option",
+      "id": "correctall"
+    },
+    {
+      "raw": "CORRECT_IGNORE",
+      "category": "special_param",
+      "id": "CORRECT_IGNORE"
+    },
+    {
+      "raw": "CORRECT_IGNORE_FILE",
+      "category": "special_param",
+      "id": "CORRECT_IGNORE_FILE"
+    },
+    {
+      "raw": "CPUTYPE",
+      "category": "special_param",
+      "id": "CPUTYPE"
+    },
+    {
+      "raw": "CSH_JUNKIE_HISTORY",
+      "category": "option",
+      "id": "cshjunkiehistory"
+    },
+    {
+      "raw": "CSH_JUNKIE_LOOPS",
+      "category": "option",
+      "id": "cshjunkieloops"
+    },
+    {
+      "raw": "CSH_JUNKIE_QUOTES",
+      "category": "option",
+      "id": "cshjunkiequotes"
+    },
+    {
+      "raw": "CSH_NULLCMD",
+      "category": "option",
+      "id": "cshnullcmd"
+    },
+    {
+      "raw": "CSH_NULL_GLOB",
+      "category": "option",
+      "id": "cshnullglob"
+    },
+    {
+      "raw": "CURRENT",
+      "category": "special_param",
+      "id": "CURRENT"
+    },
+    {
+      "raw": "CURSOR",
+      "category": "special_param",
+      "id": "CURSOR"
+    },
+    {
+      "raw": "CUTBUFFER",
+      "category": "special_param",
+      "id": "CUTBUFFER"
+    },
+    {
+      "raw": "C_BASES",
+      "category": "option",
+      "id": "cbases"
+    },
+    {
+      "raw": "C_PRECEDENCES",
+      "category": "option",
+      "id": "cprecedences"
+    },
+    {
+      "raw": "DEBUG_BEFORE_CMD",
+      "category": "option",
+      "id": "debugbeforecmd"
+    },
+    {
+      "raw": "DIRSTACKSIZE",
+      "category": "special_param",
+      "id": "DIRSTACKSIZE"
+    },
+    {
+      "raw": "DOT_GLOB",
+      "category": "option",
+      "id": "dotglob"
+    },
+    {
+      "raw": "DVORAK",
+      "category": "option",
+      "id": "dvorak"
+    },
+    {
+      "raw": "EGID",
+      "category": "special_param",
+      "id": "EGID"
+    },
+    {
+      "raw": "EMACS",
+      "category": "option",
+      "id": "emacs"
+    },
+    {
+      "raw": "ENV",
+      "category": "special_param",
+      "id": "ENV"
+    },
+    {
+      "raw": "EPOCHREALTIME",
+      "category": "special_param",
+      "id": "EPOCHREALTIME"
+    },
+    {
+      "raw": "EPOCHSECONDS",
+      "category": "special_param",
+      "id": "EPOCHSECONDS"
+    },
+    {
+      "raw": "EQUALS",
+      "category": "option",
+      "id": "equals"
+    },
+    {
+      "raw": "ERRNO",
+      "category": "special_param",
+      "id": "ERRNO"
+    },
+    {
+      "raw": "ERR_EXIT",
+      "category": "option",
+      "id": "errexit"
+    },
+    {
+      "raw": "ERR_RETURN",
+      "category": "option",
+      "id": "errreturn"
+    },
+    {
+      "raw": "EUID",
+      "category": "special_param",
+      "id": "EUID"
+    },
+    {
+      "raw": "EVAL_LINENO",
+      "category": "option",
+      "id": "evallineno"
+    },
+    {
+      "raw": "EXEC",
+      "category": "option",
+      "id": "exec"
+    },
+    {
+      "raw": "EXTENDED_GLOB",
+      "category": "option",
+      "id": "extendedglob"
+    },
+    {
+      "raw": "EXTENDED_HISTORY",
+      "category": "option",
+      "id": "extendedhistory"
+    },
+    {
+      "raw": "FCEDIT",
+      "category": "special_param",
+      "id": "FCEDIT"
+    },
+    {
+      "raw": "FIGNORE",
+      "category": "special_param",
+      "id": "FIGNORE"
+    },
+    {
+      "raw": "FLOW_CONTROL",
+      "category": "option",
+      "id": "flowcontrol"
+    },
+    {
+      "raw": "FORCE_FLOAT",
+      "category": "option",
+      "id": "forcefloat"
+    },
+    {
+      "raw": "FPATH",
+      "category": "special_param",
+      "id": "FPATH"
+    },
+    {
+      "raw": "FUNCNEST",
+      "category": "special_param",
+      "id": "FUNCNEST"
+    },
+    {
+      "raw": "FUNCTION_ARGZERO",
+      "category": "option",
+      "id": "functionargzero"
+    },
+    {
+      "raw": "GID",
+      "category": "special_param",
+      "id": "GID"
+    },
+    {
+      "raw": "GLOB",
+      "category": "option",
+      "id": "glob"
+    },
+    {
+      "raw": "GLOBAL_EXPORT",
+      "category": "option",
+      "id": "globalexport"
+    },
+    {
+      "raw": "GLOBAL_RCS",
+      "category": "option",
+      "id": "globalrcs"
+    },
+    {
+      "raw": "GLOB_ASSIGN",
+      "category": "option",
+      "id": "globassign"
+    },
+    {
+      "raw": "GLOB_COMPLETE",
+      "category": "option",
+      "id": "globcomplete"
+    },
+    {
+      "raw": "GLOB_DOTS",
+      "category": "option",
+      "id": "globdots"
+    },
+    {
+      "raw": "GLOB_STAR_SHORT",
+      "category": "option",
+      "id": "globstarshort"
+    },
+    {
+      "raw": "GLOB_SUBST",
+      "category": "option",
+      "id": "globsubst"
+    },
+    {
+      "raw": "HASH_ALL",
+      "category": "option",
+      "id": "hashall"
+    },
+    {
+      "raw": "HASH_CMDS",
+      "category": "option",
+      "id": "hashcmds"
+    },
+    {
+      "raw": "HASH_DIRS",
+      "category": "option",
+      "id": "hashdirs"
+    },
+    {
+      "raw": "HASH_EXECUTABLES_ONLY",
+      "category": "option",
+      "id": "hashexecutablesonly"
+    },
+    {
+      "raw": "HASH_LIST_ALL",
+      "category": "option",
+      "id": "hashlistall"
+    },
+    {
+      "raw": "HISTCHARS",
+      "category": "special_param",
+      "id": "HISTCHARS"
+    },
+    {
+      "raw": "HISTCMD",
+      "category": "special_param",
+      "id": "HISTCMD"
+    },
+    {
+      "raw": "HISTFILE",
+      "category": "special_param",
+      "id": "HISTFILE"
+    },
+    {
+      "raw": "HISTNO",
+      "category": "special_param",
+      "id": "HISTNO"
+    },
+    {
+      "raw": "HISTORY_IGNORE",
+      "category": "special_param",
+      "id": "HISTORY_IGNORE"
+    },
+    {
+      "raw": "HISTSIZE",
+      "category": "special_param",
+      "id": "HISTSIZE"
+    },
+    {
+      "raw": "HIST_ALLOW_CLOBBER",
+      "category": "option",
+      "id": "histallowclobber"
+    },
+    {
+      "raw": "HIST_APPEND",
+      "category": "option",
+      "id": "histappend"
+    },
+    {
+      "raw": "HIST_BEEP",
+      "category": "option",
+      "id": "histbeep"
+    },
+    {
+      "raw": "HIST_EXPAND",
+      "category": "option",
+      "id": "histexpand"
+    },
+    {
+      "raw": "HIST_EXPIRE_DUPS_FIRST",
+      "category": "option",
+      "id": "histexpiredupsfirst"
+    },
+    {
+      "raw": "HIST_FCNTL_LOCK",
+      "category": "option",
+      "id": "histfcntllock"
+    },
+    {
+      "raw": "HIST_FIND_NO_DUPS",
+      "category": "option",
+      "id": "histfindnodups"
+    },
+    {
+      "raw": "HIST_IGNORE_ALL_DUPS",
+      "category": "option",
+      "id": "histignorealldups"
+    },
+    {
+      "raw": "HIST_IGNORE_DUPS",
+      "category": "option",
+      "id": "histignoredups"
+    },
+    {
+      "raw": "HIST_IGNORE_SPACE",
+      "category": "option",
+      "id": "histignorespace"
+    },
+    {
+      "raw": "HIST_LEX_WORDS",
+      "category": "option",
+      "id": "histlexwords"
+    },
+    {
+      "raw": "HIST_NO_FUNCTIONS",
+      "category": "option",
+      "id": "histnofunctions"
+    },
+    {
+      "raw": "HIST_NO_STORE",
+      "category": "option",
+      "id": "histnostore"
+    },
+    {
+      "raw": "HIST_REDUCE_BLANKS",
+      "category": "option",
+      "id": "histreduceblanks"
+    },
+    {
+      "raw": "HIST_SAVE_BY_COPY",
+      "category": "option",
+      "id": "histsavebycopy"
+    },
+    {
+      "raw": "HIST_SAVE_NO_DUPS",
+      "category": "option",
+      "id": "histsavenodups"
+    },
+    {
+      "raw": "HIST_SUBST_PATTERN",
+      "category": "option",
+      "id": "histsubstpattern"
+    },
+    {
+      "raw": "HIST_VERIFY",
+      "category": "option",
+      "id": "histverify"
+    },
+    {
+      "raw": "HOME",
+      "category": "special_param",
+      "id": "HOME"
+    },
+    {
+      "raw": "HOST",
+      "category": "special_param",
+      "id": "HOST"
+    },
+    {
+      "raw": "HUP",
+      "category": "option",
+      "id": "hup"
+    },
+    {
+      "raw": "IFS",
+      "category": "special_param",
+      "id": "IFS"
+    },
+    {
+      "raw": "IGNORE_BRACES",
+      "category": "option",
+      "id": "ignorebraces"
+    },
+    {
+      "raw": "IGNORE_CLOSE_BRACES",
+      "category": "option",
+      "id": "ignoreclosebraces"
+    },
+    {
+      "raw": "IGNORE_EOF",
+      "category": "option",
+      "id": "ignoreeof"
+    },
+    {
+      "raw": "INC_APPEND_HISTORY",
+      "category": "option",
+      "id": "incappendhistory"
+    },
+    {
+      "raw": "INC_APPEND_HISTORY_TIME",
+      "category": "option",
+      "id": "incappendhistorytime"
+    },
+    {
+      "raw": "INTERACTIVE",
+      "category": "option",
+      "id": "interactive"
+    },
+    {
+      "raw": "INTERACTIVE_COMMENTS",
+      "category": "option",
+      "id": "interactivecomments"
+    },
+    {
+      "raw": "IPREFIX",
+      "category": "special_param",
+      "id": "IPREFIX"
+    },
+    {
+      "raw": "ISEARCHMATCH_ACTIVE",
+      "category": "special_param",
+      "id": "ISEARCHMATCH_ACTIVE"
+    },
+    {
+      "raw": "ISEARCHMATCH_END",
+      "category": "special_param",
+      "id": "ISEARCHMATCH_END"
+    },
+    {
+      "raw": "ISEARCHMATCH_START",
+      "category": "special_param",
+      "id": "ISEARCHMATCH_START"
+    },
+    {
+      "raw": "ISUFFIX",
+      "category": "special_param",
+      "id": "ISUFFIX"
+    },
+    {
+      "raw": "KEYBOARD_HACK",
+      "category": "special_param",
+      "id": "KEYBOARD_HACK"
+    },
+    {
+      "raw": "KEYMAP",
+      "category": "special_param",
+      "id": "KEYMAP"
+    },
+    {
+      "raw": "KEYS",
+      "category": "special_param",
+      "id": "KEYS"
+    },
+    {
+      "raw": "KEYS_QUEUED_COUNT",
+      "category": "special_param",
+      "id": "KEYS_QUEUED_COUNT"
+    },
+    {
+      "raw": "KEYTIMEOUT",
+      "category": "special_param",
+      "id": "KEYTIMEOUT"
+    },
+    {
+      "raw": "KSH_ARRAYS",
+      "category": "option",
+      "id": "ksharrays"
+    },
+    {
+      "raw": "KSH_AUTOLOAD",
+      "category": "option",
+      "id": "kshautoload"
+    },
+    {
+      "raw": "KSH_GLOB",
+      "category": "option",
+      "id": "kshglob"
+    },
+    {
+      "raw": "KSH_OPTION_PRINT",
+      "category": "option",
+      "id": "kshoptionprint"
+    },
+    {
+      "raw": "KSH_TYPESET",
+      "category": "option",
+      "id": "kshtypeset"
+    },
+    {
+      "raw": "KSH_ZERO_SUBSCRIPT",
+      "category": "option",
+      "id": "kshzerosubscript"
+    },
+    {
+      "raw": "LANG",
+      "category": "special_param",
+      "id": "LANG"
+    },
+    {
+      "raw": "LASTABORTEDSEARCH",
+      "category": "special_param",
+      "id": "LASTABORTEDSEARCH"
+    },
+    {
+      "raw": "LASTSEARCH",
+      "category": "special_param",
+      "id": "LASTSEARCH"
+    },
+    {
+      "raw": "LASTWIDGET",
+      "category": "special_param",
+      "id": "LASTWIDGET"
+    },
+    {
+      "raw": "LBUFFER",
+      "category": "special_param",
+      "id": "LBUFFER"
+    },
+    {
+      "raw": "LC_ALL",
+      "category": "special_param",
+      "id": "LC_ALL"
+    },
+    {
+      "raw": "LC_COLLATE",
+      "category": "special_param",
+      "id": "LC_COLLATE"
+    },
+    {
+      "raw": "LC_CTYPE",
+      "category": "special_param",
+      "id": "LC_CTYPE"
+    },
+    {
+      "raw": "LC_MESSAGES",
+      "category": "special_param",
+      "id": "LC_MESSAGES"
+    },
+    {
+      "raw": "LC_NUMERIC",
+      "category": "special_param",
+      "id": "LC_NUMERIC"
+    },
+    {
+      "raw": "LC_TIME",
+      "category": "special_param",
+      "id": "LC_TIME"
+    },
+    {
+      "raw": "LINENO",
+      "category": "special_param",
+      "id": "LINENO"
+    },
+    {
+      "raw": "LINES",
+      "category": "special_param",
+      "id": "LINES"
+    },
+    {
+      "raw": "LISTMAX",
+      "category": "special_param",
+      "id": "LISTMAX"
+    },
+    {
+      "raw": "LIST_AMBIGUOUS",
+      "category": "option",
+      "id": "listambiguous"
+    },
+    {
+      "raw": "LIST_BEEP",
+      "category": "option",
+      "id": "listbeep"
+    },
+    {
+      "raw": "LIST_PACKED",
+      "category": "option",
+      "id": "listpacked"
+    },
+    {
+      "raw": "LIST_ROWS_FIRST",
+      "category": "option",
+      "id": "listrowsfirst"
+    },
+    {
+      "raw": "LIST_TYPES",
+      "category": "option",
+      "id": "listtypes"
+    },
+    {
+      "raw": "LOCAL_LOOPS",
+      "category": "option",
+      "id": "localloops"
+    },
+    {
+      "raw": "LOCAL_OPTIONS",
+      "category": "option",
+      "id": "localoptions"
+    },
+    {
+      "raw": "LOCAL_PATTERNS",
+      "category": "option",
+      "id": "localpatterns"
+    },
+    {
+      "raw": "LOCAL_TRAPS",
+      "category": "option",
+      "id": "localtraps"
+    },
+    {
+      "raw": "LOG",
+      "category": "option",
+      "id": "log"
+    },
+    {
+      "raw": "LOGCHECK",
+      "category": "special_param",
+      "id": "LOGCHECK"
+    },
+    {
+      "raw": "LOGIN",
+      "category": "option",
+      "id": "login"
+    },
+    {
+      "raw": "LOGNAME",
+      "category": "special_param",
+      "id": "LOGNAME"
+    },
+    {
+      "raw": "LONG_LIST_JOBS",
+      "category": "option",
+      "id": "longlistjobs"
+    },
+    {
+      "raw": "MACHTYPE",
+      "category": "special_param",
+      "id": "MACHTYPE"
+    },
+    {
+      "raw": "MAGIC_EQUAL_SUBST",
+      "category": "option",
+      "id": "magicequalsubst"
+    },
+    {
+      "raw": "MAIL",
+      "category": "special_param",
+      "id": "MAIL"
+    },
+    {
+      "raw": "MAILCHECK",
+      "category": "special_param",
+      "id": "MAILCHECK"
+    },
+    {
+      "raw": "MAILPATH",
+      "category": "special_param",
+      "id": "MAILPATH"
+    },
+    {
+      "raw": "MAIL_WARN",
+      "category": "option",
+      "id": "mailwarn"
+    },
+    {
+      "raw": "MAIL_WARNING",
+      "category": "option",
+      "id": "mailwarning"
+    },
+    {
+      "raw": "MANPATH",
+      "category": "special_param",
+      "id": "MANPATH"
+    },
+    {
+      "raw": "MARK",
+      "category": "special_param",
+      "id": "MARK"
+    },
+    {
+      "raw": "MARK_DIRS",
+      "category": "option",
+      "id": "markdirs"
+    },
+    {
+      "raw": "MATCH",
+      "category": "special_param",
+      "id": "MATCH"
+    },
+    {
+      "raw": "MBEGIN",
+      "category": "special_param",
+      "id": "MBEGIN"
+    },
+    {
+      "raw": "MEND",
+      "category": "special_param",
+      "id": "MEND"
+    },
+    {
+      "raw": "MENU_COMPLETE",
+      "category": "option",
+      "id": "menucomplete"
+    },
+    {
+      "raw": "MODULE_PATH",
+      "category": "special_param",
+      "id": "MODULE_PATH"
+    },
+    {
+      "raw": "MONITOR",
+      "category": "option",
+      "id": "monitor"
+    },
+    {
+      "raw": "MULTIBYTE",
+      "category": "option",
+      "id": "multibyte"
+    },
+    {
+      "raw": "MULTIOS",
+      "category": "option",
+      "id": "multios"
+    },
+    {
+      "raw": "MULTI_FUNC_DEF",
+      "category": "option",
+      "id": "multifuncdef"
+    },
+    {
+      "raw": "NOMATCH",
+      "category": "option",
+      "id": "nomatch"
+    },
+    {
+      "raw": "NOTIFY",
+      "category": "option",
+      "id": "notify"
+    },
+    {
+      "raw": "NO_ALIASES",
+      "category": "option",
+      "id": "aliases"
+    },
+    {
+      "raw": "NO_ALIAS_FUNC_DEF",
+      "category": "option",
+      "id": "aliasfuncdef"
+    },
+    {
+      "raw": "NO_ALL_EXPORT",
+      "category": "option",
+      "id": "allexport"
+    },
+    {
+      "raw": "NO_ALWAYS_LAST_PROMPT",
+      "category": "option",
+      "id": "alwayslastprompt"
+    },
+    {
+      "raw": "NO_ALWAYS_TO_END",
+      "category": "option",
+      "id": "alwaystoend"
+    },
+    {
+      "raw": "NO_APPEND_CREATE",
+      "category": "option",
+      "id": "appendcreate"
+    },
+    {
+      "raw": "NO_APPEND_HISTORY",
+      "category": "option",
+      "id": "appendhistory"
+    },
+    {
+      "raw": "NO_AUTO_CD",
+      "category": "option",
+      "id": "autocd"
+    },
+    {
+      "raw": "NO_AUTO_CONTINUE",
+      "category": "option",
+      "id": "autocontinue"
+    },
+    {
+      "raw": "NO_AUTO_LIST",
+      "category": "option",
+      "id": "autolist"
+    },
+    {
+      "raw": "NO_AUTO_MENU",
+      "category": "option",
+      "id": "automenu"
+    },
+    {
+      "raw": "NO_AUTO_NAME_DIRS",
+      "category": "option",
+      "id": "autonamedirs"
+    },
+    {
+      "raw": "NO_AUTO_PARAM_KEYS",
+      "category": "option",
+      "id": "autoparamkeys"
+    },
+    {
+      "raw": "NO_AUTO_PARAM_SLASH",
+      "category": "option",
+      "id": "autoparamslash"
+    },
+    {
+      "raw": "NO_AUTO_PUSHD",
+      "category": "option",
+      "id": "autopushd"
+    },
+    {
+      "raw": "NO_AUTO_REMOVE_SLASH",
+      "category": "option",
+      "id": "autoremoveslash"
+    },
+    {
+      "raw": "NO_AUTO_RESUME",
+      "category": "option",
+      "id": "autoresume"
+    },
+    {
+      "raw": "NO_BAD_PATTERN",
+      "category": "option",
+      "id": "badpattern"
+    },
+    {
+      "raw": "NO_BANG_HIST",
+      "category": "option",
+      "id": "banghist"
+    },
+    {
+      "raw": "NO_BARE_GLOB_QUAL",
+      "category": "option",
+      "id": "bareglobqual"
+    },
+    {
+      "raw": "NO_BASH_AUTO_LIST",
+      "category": "option",
+      "id": "bashautolist"
+    },
+    {
+      "raw": "NO_BASH_REMATCH",
+      "category": "option",
+      "id": "bashrematch"
+    },
+    {
+      "raw": "NO_BEEP",
+      "category": "option",
+      "id": "beep"
+    },
+    {
+      "raw": "NO_BG_NICE",
+      "category": "option",
+      "id": "bgnice"
+    },
+    {
+      "raw": "NO_BRACE_CCL",
+      "category": "option",
+      "id": "braceccl"
+    },
+    {
+      "raw": "NO_BRACE_EXPAND",
+      "category": "option",
+      "id": "braceexpand"
+    },
+    {
+      "raw": "NO_BSD_ECHO",
+      "category": "option",
+      "id": "bsdecho"
+    },
+    {
+      "raw": "NO_CASE_GLOB",
+      "category": "option",
+      "id": "caseglob"
+    },
+    {
+      "raw": "NO_CASE_MATCH",
+      "category": "option",
+      "id": "casematch"
+    },
+    {
+      "raw": "NO_CASE_PATHS",
+      "category": "option",
+      "id": "casepaths"
+    },
+    {
+      "raw": "NO_CDABLE_VARS",
+      "category": "option",
+      "id": "cdablevars"
+    },
+    {
+      "raw": "NO_CD_SILENT",
+      "category": "option",
+      "id": "cdsilent"
+    },
+    {
+      "raw": "NO_CHASE_DOTS",
+      "category": "option",
+      "id": "chasedots"
+    },
+    {
+      "raw": "NO_CHASE_LINKS",
+      "category": "option",
+      "id": "chaselinks"
+    },
+    {
+      "raw": "NO_CHECK_JOBS",
+      "category": "option",
+      "id": "checkjobs"
+    },
+    {
+      "raw": "NO_CHECK_RUNNING_JOBS",
+      "category": "option",
+      "id": "checkrunningjobs"
+    },
+    {
+      "raw": "NO_CLOBBER",
+      "category": "option",
+      "id": "clobber"
+    },
+    {
+      "raw": "NO_CLOBBER_EMPTY",
+      "category": "option",
+      "id": "clobberempty"
+    },
+    {
+      "raw": "NO_COMBINING_CHARS",
+      "category": "option",
+      "id": "combiningchars"
+    },
+    {
+      "raw": "NO_COMPLETE_ALIASES",
+      "category": "option",
+      "id": "completealiases"
+    },
+    {
+      "raw": "NO_COMPLETE_IN_WORD",
+      "category": "option",
+      "id": "completeinword"
+    },
+    {
+      "raw": "NO_CONTINUE_ON_ERROR",
+      "category": "option",
+      "id": "continueonerror"
+    },
+    {
+      "raw": "NO_CORRECT",
+      "category": "option",
+      "id": "correct"
+    },
+    {
+      "raw": "NO_CORRECT_ALL",
+      "category": "option",
+      "id": "correctall"
+    },
+    {
+      "raw": "NO_CSH_JUNKIE_HISTORY",
+      "category": "option",
+      "id": "cshjunkiehistory"
+    },
+    {
+      "raw": "NO_CSH_JUNKIE_LOOPS",
+      "category": "option",
+      "id": "cshjunkieloops"
+    },
+    {
+      "raw": "NO_CSH_JUNKIE_QUOTES",
+      "category": "option",
+      "id": "cshjunkiequotes"
+    },
+    {
+      "raw": "NO_CSH_NULLCMD",
+      "category": "option",
+      "id": "cshnullcmd"
+    },
+    {
+      "raw": "NO_CSH_NULL_GLOB",
+      "category": "option",
+      "id": "cshnullglob"
+    },
+    {
+      "raw": "NO_C_BASES",
+      "category": "option",
+      "id": "cbases"
+    },
+    {
+      "raw": "NO_C_PRECEDENCES",
+      "category": "option",
+      "id": "cprecedences"
+    },
+    {
+      "raw": "NO_DEBUG_BEFORE_CMD",
+      "category": "option",
+      "id": "debugbeforecmd"
+    },
+    {
+      "raw": "NO_DOT_GLOB",
+      "category": "option",
+      "id": "dotglob"
+    },
+    {
+      "raw": "NO_DVORAK",
+      "category": "option",
+      "id": "dvorak"
+    },
+    {
+      "raw": "NO_EMACS",
+      "category": "option",
+      "id": "emacs"
+    },
+    {
+      "raw": "NO_EQUALS",
+      "category": "option",
+      "id": "equals"
+    },
+    {
+      "raw": "NO_ERR_EXIT",
+      "category": "option",
+      "id": "errexit"
+    },
+    {
+      "raw": "NO_ERR_RETURN",
+      "category": "option",
+      "id": "errreturn"
+    },
+    {
+      "raw": "NO_EVAL_LINENO",
+      "category": "option",
+      "id": "evallineno"
+    },
+    {
+      "raw": "NO_EXEC",
+      "category": "option",
+      "id": "exec"
+    },
+    {
+      "raw": "NO_EXTENDED_GLOB",
+      "category": "option",
+      "id": "extendedglob"
+    },
+    {
+      "raw": "NO_EXTENDED_HISTORY",
+      "category": "option",
+      "id": "extendedhistory"
+    },
+    {
+      "raw": "NO_FLOW_CONTROL",
+      "category": "option",
+      "id": "flowcontrol"
+    },
+    {
+      "raw": "NO_FORCE_FLOAT",
+      "category": "option",
+      "id": "forcefloat"
+    },
+    {
+      "raw": "NO_FUNCTION_ARGZERO",
+      "category": "option",
+      "id": "functionargzero"
+    },
+    {
+      "raw": "NO_GLOB",
+      "category": "option",
+      "id": "glob"
+    },
+    {
+      "raw": "NO_GLOBAL_EXPORT",
+      "category": "option",
+      "id": "globalexport"
+    },
+    {
+      "raw": "NO_GLOBAL_RCS",
+      "category": "option",
+      "id": "globalrcs"
+    },
+    {
+      "raw": "NO_GLOB_ASSIGN",
+      "category": "option",
+      "id": "globassign"
+    },
+    {
+      "raw": "NO_GLOB_COMPLETE",
+      "category": "option",
+      "id": "globcomplete"
+    },
+    {
+      "raw": "NO_GLOB_DOTS",
+      "category": "option",
+      "id": "globdots"
+    },
+    {
+      "raw": "NO_GLOB_STAR_SHORT",
+      "category": "option",
+      "id": "globstarshort"
+    },
+    {
+      "raw": "NO_GLOB_SUBST",
+      "category": "option",
+      "id": "globsubst"
+    },
+    {
+      "raw": "NO_HASH_ALL",
+      "category": "option",
+      "id": "hashall"
+    },
+    {
+      "raw": "NO_HASH_CMDS",
+      "category": "option",
+      "id": "hashcmds"
+    },
+    {
+      "raw": "NO_HASH_DIRS",
+      "category": "option",
+      "id": "hashdirs"
+    },
+    {
+      "raw": "NO_HASH_EXECUTABLES_ONLY",
+      "category": "option",
+      "id": "hashexecutablesonly"
+    },
+    {
+      "raw": "NO_HASH_LIST_ALL",
+      "category": "option",
+      "id": "hashlistall"
+    },
+    {
+      "raw": "NO_HIST_ALLOW_CLOBBER",
+      "category": "option",
+      "id": "histallowclobber"
+    },
+    {
+      "raw": "NO_HIST_APPEND",
+      "category": "option",
+      "id": "histappend"
+    },
+    {
+      "raw": "NO_HIST_BEEP",
+      "category": "option",
+      "id": "histbeep"
+    },
+    {
+      "raw": "NO_HIST_EXPAND",
+      "category": "option",
+      "id": "histexpand"
+    },
+    {
+      "raw": "NO_HIST_EXPIRE_DUPS_FIRST",
+      "category": "option",
+      "id": "histexpiredupsfirst"
+    },
+    {
+      "raw": "NO_HIST_FCNTL_LOCK",
+      "category": "option",
+      "id": "histfcntllock"
+    },
+    {
+      "raw": "NO_HIST_FIND_NO_DUPS",
+      "category": "option",
+      "id": "histfindnodups"
+    },
+    {
+      "raw": "NO_HIST_IGNORE_ALL_DUPS",
+      "category": "option",
+      "id": "histignorealldups"
+    },
+    {
+      "raw": "NO_HIST_IGNORE_DUPS",
+      "category": "option",
+      "id": "histignoredups"
+    },
+    {
+      "raw": "NO_HIST_IGNORE_SPACE",
+      "category": "option",
+      "id": "histignorespace"
+    },
+    {
+      "raw": "NO_HIST_LEX_WORDS",
+      "category": "option",
+      "id": "histlexwords"
+    },
+    {
+      "raw": "NO_HIST_NO_FUNCTIONS",
+      "category": "option",
+      "id": "histnofunctions"
+    },
+    {
+      "raw": "NO_HIST_NO_STORE",
+      "category": "option",
+      "id": "histnostore"
+    },
+    {
+      "raw": "NO_HIST_REDUCE_BLANKS",
+      "category": "option",
+      "id": "histreduceblanks"
+    },
+    {
+      "raw": "NO_HIST_SAVE_BY_COPY",
+      "category": "option",
+      "id": "histsavebycopy"
+    },
+    {
+      "raw": "NO_HIST_SAVE_NO_DUPS",
+      "category": "option",
+      "id": "histsavenodups"
+    },
+    {
+      "raw": "NO_HIST_SUBST_PATTERN",
+      "category": "option",
+      "id": "histsubstpattern"
+    },
+    {
+      "raw": "NO_HIST_VERIFY",
+      "category": "option",
+      "id": "histverify"
+    },
+    {
+      "raw": "NO_HUP",
+      "category": "option",
+      "id": "hup"
+    },
+    {
+      "raw": "NO_IGNORE_BRACES",
+      "category": "option",
+      "id": "ignorebraces"
+    },
+    {
+      "raw": "NO_IGNORE_CLOSE_BRACES",
+      "category": "option",
+      "id": "ignoreclosebraces"
+    },
+    {
+      "raw": "NO_IGNORE_EOF",
+      "category": "option",
+      "id": "ignoreeof"
+    },
+    {
+      "raw": "NO_INC_APPEND_HISTORY",
+      "category": "option",
+      "id": "incappendhistory"
+    },
+    {
+      "raw": "NO_INC_APPEND_HISTORY_TIME",
+      "category": "option",
+      "id": "incappendhistorytime"
+    },
+    {
+      "raw": "NO_INTERACTIVE",
+      "category": "option",
+      "id": "interactive"
+    },
+    {
+      "raw": "NO_INTERACTIVE_COMMENTS",
+      "category": "option",
+      "id": "interactivecomments"
+    },
+    {
+      "raw": "NO_KSH_ARRAYS",
+      "category": "option",
+      "id": "ksharrays"
+    },
+    {
+      "raw": "NO_KSH_AUTOLOAD",
+      "category": "option",
+      "id": "kshautoload"
+    },
+    {
+      "raw": "NO_KSH_GLOB",
+      "category": "option",
+      "id": "kshglob"
+    },
+    {
+      "raw": "NO_KSH_OPTION_PRINT",
+      "category": "option",
+      "id": "kshoptionprint"
+    },
+    {
+      "raw": "NO_KSH_TYPESET",
+      "category": "option",
+      "id": "kshtypeset"
+    },
+    {
+      "raw": "NO_KSH_ZERO_SUBSCRIPT",
+      "category": "option",
+      "id": "kshzerosubscript"
+    },
+    {
+      "raw": "NO_LIST_AMBIGUOUS",
+      "category": "option",
+      "id": "listambiguous"
+    },
+    {
+      "raw": "NO_LIST_BEEP",
+      "category": "option",
+      "id": "listbeep"
+    },
+    {
+      "raw": "NO_LIST_PACKED",
+      "category": "option",
+      "id": "listpacked"
+    },
+    {
+      "raw": "NO_LIST_ROWS_FIRST",
+      "category": "option",
+      "id": "listrowsfirst"
+    },
+    {
+      "raw": "NO_LIST_TYPES",
+      "category": "option",
+      "id": "listtypes"
+    },
+    {
+      "raw": "NO_LOCAL_LOOPS",
+      "category": "option",
+      "id": "localloops"
+    },
+    {
+      "raw": "NO_LOCAL_OPTIONS",
+      "category": "option",
+      "id": "localoptions"
+    },
+    {
+      "raw": "NO_LOCAL_PATTERNS",
+      "category": "option",
+      "id": "localpatterns"
+    },
+    {
+      "raw": "NO_LOCAL_TRAPS",
+      "category": "option",
+      "id": "localtraps"
+    },
+    {
+      "raw": "NO_LOG",
+      "category": "option",
+      "id": "log"
+    },
+    {
+      "raw": "NO_LOGIN",
+      "category": "option",
+      "id": "login"
+    },
+    {
+      "raw": "NO_LONG_LIST_JOBS",
+      "category": "option",
+      "id": "longlistjobs"
+    },
+    {
+      "raw": "NO_MAGIC_EQUAL_SUBST",
+      "category": "option",
+      "id": "magicequalsubst"
+    },
+    {
+      "raw": "NO_MAIL_WARN",
+      "category": "option",
+      "id": "mailwarn"
+    },
+    {
+      "raw": "NO_MAIL_WARNING",
+      "category": "option",
+      "id": "mailwarning"
+    },
+    {
+      "raw": "NO_MARK_DIRS",
+      "category": "option",
+      "id": "markdirs"
+    },
+    {
+      "raw": "NO_MENU_COMPLETE",
+      "category": "option",
+      "id": "menucomplete"
+    },
+    {
+      "raw": "NO_MONITOR",
+      "category": "option",
+      "id": "monitor"
+    },
+    {
+      "raw": "NO_MULTIBYTE",
+      "category": "option",
+      "id": "multibyte"
+    },
+    {
+      "raw": "NO_MULTIOS",
+      "category": "option",
+      "id": "multios"
+    },
+    {
+      "raw": "NO_MULTI_FUNC_DEF",
+      "category": "option",
+      "id": "multifuncdef"
+    },
+    {
+      "raw": "NO_NOMATCH",
+      "category": "option",
+      "id": "nomatch"
+    },
+    {
+      "raw": "NO_NOTIFY",
+      "category": "option",
+      "id": "notify"
+    },
+    {
+      "raw": "NO_NULL_GLOB",
+      "category": "option",
+      "id": "nullglob"
+    },
+    {
+      "raw": "NO_NUMERIC_GLOB_SORT",
+      "category": "option",
+      "id": "numericglobsort"
+    },
+    {
+      "raw": "NO_OCTAL_ZEROES",
+      "category": "option",
+      "id": "octalzeroes"
+    },
+    {
+      "raw": "NO_ONE_CMD",
+      "category": "option",
+      "id": "onecmd"
+    },
+    {
+      "raw": "NO_OVERSTRIKE",
+      "category": "option",
+      "id": "overstrike"
+    },
+    {
+      "raw": "NO_PATH_DIRS",
+      "category": "option",
+      "id": "pathdirs"
+    },
+    {
+      "raw": "NO_PATH_SCRIPT",
+      "category": "option",
+      "id": "pathscript"
+    },
+    {
+      "raw": "NO_PHYSICAL",
+      "category": "option",
+      "id": "physical"
+    },
+    {
+      "raw": "NO_PIPE_FAIL",
+      "category": "option",
+      "id": "pipefail"
+    },
+    {
+      "raw": "NO_POSIX_ALIASES",
+      "category": "option",
+      "id": "posixaliases"
+    },
+    {
+      "raw": "NO_POSIX_ARGZERO",
+      "category": "option",
+      "id": "posixargzero"
+    },
+    {
+      "raw": "NO_POSIX_BUILTINS",
+      "category": "option",
+      "id": "posixbuiltins"
+    },
+    {
+      "raw": "NO_POSIX_CD",
+      "category": "option",
+      "id": "posixcd"
+    },
+    {
+      "raw": "NO_POSIX_IDENTIFIERS",
+      "category": "option",
+      "id": "posixidentifiers"
+    },
+    {
+      "raw": "NO_POSIX_JOBS",
+      "category": "option",
+      "id": "posixjobs"
+    },
+    {
+      "raw": "NO_POSIX_STRINGS",
+      "category": "option",
+      "id": "posixstrings"
+    },
+    {
+      "raw": "NO_POSIX_TRAPS",
+      "category": "option",
+      "id": "posixtraps"
+    },
+    {
+      "raw": "NO_PRINT_EIGHT_BIT",
+      "category": "option",
+      "id": "printeightbit"
+    },
+    {
+      "raw": "NO_PRINT_EXIT_VALUE",
+      "category": "option",
+      "id": "printexitvalue"
+    },
+    {
+      "raw": "NO_PRIVILEGED",
+      "category": "option",
+      "id": "privileged"
+    },
+    {
+      "raw": "NO_PROMPT_BANG",
+      "category": "option",
+      "id": "promptbang"
+    },
+    {
+      "raw": "NO_PROMPT_CR",
+      "category": "option",
+      "id": "promptcr"
+    },
+    {
+      "raw": "NO_PROMPT_PERCENT",
+      "category": "option",
+      "id": "promptpercent"
+    },
+    {
+      "raw": "NO_PROMPT_SP",
+      "category": "option",
+      "id": "promptsp"
+    },
+    {
+      "raw": "NO_PROMPT_SUBST",
+      "category": "option",
+      "id": "promptsubst"
+    },
+    {
+      "raw": "NO_PROMPT_VARS",
+      "category": "option",
+      "id": "promptvars"
+    },
+    {
+      "raw": "NO_PUSHD_IGNORE_DUPS",
+      "category": "option",
+      "id": "pushdignoredups"
+    },
+    {
+      "raw": "NO_PUSHD_MINUS",
+      "category": "option",
+      "id": "pushdminus"
+    },
+    {
+      "raw": "NO_PUSHD_SILENT",
+      "category": "option",
+      "id": "pushdsilent"
+    },
+    {
+      "raw": "NO_PUSHD_TO_HOME",
+      "category": "option",
+      "id": "pushdtohome"
+    },
+    {
+      "raw": "NO_RCS",
+      "category": "option",
+      "id": "rcs"
+    },
+    {
+      "raw": "NO_RC_EXPAND_PARAM",
+      "category": "option",
+      "id": "rcexpandparam"
+    },
+    {
+      "raw": "NO_RC_QUOTES",
+      "category": "option",
+      "id": "rcquotes"
+    },
+    {
+      "raw": "NO_REC_EXACT",
+      "category": "option",
+      "id": "recexact"
+    },
+    {
+      "raw": "NO_REMATCH_PCRE",
+      "category": "option",
+      "id": "rematchpcre"
+    },
+    {
+      "raw": "NO_RESTRICTED",
+      "category": "option",
+      "id": "restricted"
+    },
+    {
+      "raw": "NO_RM_STAR_SILENT",
+      "category": "option",
+      "id": "rmstarsilent"
+    },
+    {
+      "raw": "NO_RM_STAR_WAIT",
+      "category": "option",
+      "id": "rmstarwait"
+    },
+    {
+      "raw": "NO_SHARE_HISTORY",
+      "category": "option",
+      "id": "sharehistory"
+    },
+    {
+      "raw": "NO_SHIN_STDIN",
+      "category": "option",
+      "id": "shinstdin"
+    },
+    {
+      "raw": "NO_SHORT_LOOPS",
+      "category": "option",
+      "id": "shortloops"
+    },
+    {
+      "raw": "NO_SHORT_REPEAT",
+      "category": "option",
+      "id": "shortrepeat"
+    },
+    {
+      "raw": "NO_SH_FILE_EXPANSION",
+      "category": "option",
+      "id": "shfileexpansion"
+    },
+    {
+      "raw": "NO_SH_GLOB",
+      "category": "option",
+      "id": "shglob"
+    },
+    {
+      "raw": "NO_SH_NULLCMD",
+      "category": "option",
+      "id": "shnullcmd"
+    },
+    {
+      "raw": "NO_SH_OPTION_LETTERS",
+      "category": "option",
+      "id": "shoptionletters"
+    },
+    {
+      "raw": "NO_SH_WORD_SPLIT",
+      "category": "option",
+      "id": "shwordsplit"
+    },
+    {
+      "raw": "NO_SINGLE_COMMAND",
+      "category": "option",
+      "id": "singlecommand"
+    },
+    {
+      "raw": "NO_SINGLE_LINE_ZLE",
+      "category": "option",
+      "id": "singlelinezle"
+    },
+    {
+      "raw": "NO_SOURCE_TRACE",
+      "category": "option",
+      "id": "sourcetrace"
+    },
+    {
+      "raw": "NO_STDIN",
+      "category": "option",
+      "id": "stdin"
+    },
+    {
+      "raw": "NO_SUN_KEYBOARD_HACK",
+      "category": "option",
+      "id": "sunkeyboardhack"
+    },
+    {
+      "raw": "NO_TRACK_ALL",
+      "category": "option",
+      "id": "trackall"
+    },
+    {
+      "raw": "NO_TRANSIENT_RPROMPT",
+      "category": "option",
+      "id": "transientrprompt"
+    },
+    {
+      "raw": "NO_TRAPS_ASYNC",
+      "category": "option",
+      "id": "trapsasync"
+    },
+    {
+      "raw": "NO_TYPESET_SILENT",
+      "category": "option",
+      "id": "typesetsilent"
+    },
+    {
+      "raw": "NO_TYPESET_TO_UNSET",
+      "category": "option",
+      "id": "typesettounset"
+    },
+    {
+      "raw": "NO_UNSET",
+      "category": "option",
+      "id": "unset"
+    },
+    {
+      "raw": "NO_VERBOSE",
+      "category": "option",
+      "id": "verbose"
+    },
+    {
+      "raw": "NO_VI",
+      "category": "option",
+      "id": "vi"
+    },
+    {
+      "raw": "NO_WARN_CREATE_GLOBAL",
+      "category": "option",
+      "id": "warncreateglobal"
+    },
+    {
+      "raw": "NO_WARN_NESTED_VAR",
+      "category": "option",
+      "id": "warnnestedvar"
+    },
+    {
+      "raw": "NO_XTRACE",
+      "category": "option",
+      "id": "xtrace"
+    },
+    {
+      "raw": "NO_ZLE",
+      "category": "option",
+      "id": "zle"
+    },
+    {
+      "raw": "NULLCMD",
+      "category": "special_param",
+      "id": "NULLCMD"
+    },
+    {
+      "raw": "NULL_GLOB",
+      "category": "option",
+      "id": "nullglob"
+    },
+    {
+      "raw": "NUMERIC",
+      "category": "special_param",
+      "id": "NUMERIC"
+    },
+    {
+      "raw": "NUMERIC_GLOB_SORT",
+      "category": "option",
+      "id": "numericglobsort"
+    },
+    {
+      "raw": "OCTAL_ZEROES",
+      "category": "option",
+      "id": "octalzeroes"
+    },
+    {
+      "raw": "OLDPWD",
+      "category": "special_param",
+      "id": "OLDPWD"
+    },
+    {
+      "raw": "ONE_CMD",
+      "category": "option",
+      "id": "onecmd"
+    },
+    {
+      "raw": "OPTARG",
+      "category": "special_param",
+      "id": "OPTARG"
+    },
+    {
+      "raw": "OPTIND",
+      "category": "special_param",
+      "id": "OPTIND"
+    },
+    {
+      "raw": "OSTYPE",
+      "category": "special_param",
+      "id": "OSTYPE"
+    },
+    {
+      "raw": "OVERSTRIKE",
+      "category": "option",
+      "id": "overstrike"
+    },
+    {
+      "raw": "PATH",
+      "category": "special_param",
+      "id": "PATH"
+    },
+    {
+      "raw": "PATH_DIRS",
+      "category": "option",
+      "id": "pathdirs"
+    },
+    {
+      "raw": "PATH_SCRIPT",
+      "category": "option",
+      "id": "pathscript"
+    },
+    {
+      "raw": "PENDING",
+      "category": "special_param",
+      "id": "PENDING"
+    },
+    {
+      "raw": "PHYSICAL",
+      "category": "option",
+      "id": "physical"
+    },
+    {
+      "raw": "PIPE_FAIL",
+      "category": "option",
+      "id": "pipefail"
+    },
+    {
+      "raw": "POSIX_ALIASES",
+      "category": "option",
+      "id": "posixaliases"
+    },
+    {
+      "raw": "POSIX_ARGZERO",
+      "category": "option",
+      "id": "posixargzero"
+    },
+    {
+      "raw": "POSIX_BUILTINS",
+      "category": "option",
+      "id": "posixbuiltins"
+    },
+    {
+      "raw": "POSIX_CD",
+      "category": "option",
+      "id": "posixcd"
+    },
+    {
+      "raw": "POSIX_IDENTIFIERS",
+      "category": "option",
+      "id": "posixidentifiers"
+    },
+    {
+      "raw": "POSIX_JOBS",
+      "category": "option",
+      "id": "posixjobs"
+    },
+    {
+      "raw": "POSIX_STRINGS",
+      "category": "option",
+      "id": "posixstrings"
+    },
+    {
+      "raw": "POSIX_TRAPS",
+      "category": "option",
+      "id": "posixtraps"
+    },
+    {
+      "raw": "POSTDISPLAY",
+      "category": "special_param",
+      "id": "POSTDISPLAY"
+    },
+    {
+      "raw": "POSTEDIT",
+      "category": "special_param",
+      "id": "POSTEDIT"
+    },
+    {
+      "raw": "PPID",
+      "category": "special_param",
+      "id": "PPID"
+    },
+    {
+      "raw": "PREBUFFER",
+      "category": "special_param",
+      "id": "PREBUFFER"
+    },
+    {
+      "raw": "PREDISPLAY",
+      "category": "special_param",
+      "id": "PREDISPLAY"
+    },
+    {
+      "raw": "PREFIX",
+      "category": "special_param",
+      "id": "PREFIX"
+    },
+    {
+      "raw": "PRINT_EIGHT_BIT",
+      "category": "option",
+      "id": "printeightbit"
+    },
+    {
+      "raw": "PRINT_EXIT_VALUE",
+      "category": "option",
+      "id": "printexitvalue"
+    },
+    {
+      "raw": "PRIVILEGED",
+      "category": "option",
+      "id": "privileged"
+    },
+    {
+      "raw": "PROMPT",
+      "category": "special_param",
+      "id": "PROMPT"
+    },
+    {
+      "raw": "PROMPT2",
+      "category": "special_param",
+      "id": "PROMPT2"
+    },
+    {
+      "raw": "PROMPT3",
+      "category": "special_param",
+      "id": "PROMPT3"
+    },
+    {
+      "raw": "PROMPT4",
+      "category": "special_param",
+      "id": "PROMPT4"
+    },
+    {
+      "raw": "PROMPT_BANG",
+      "category": "option",
+      "id": "promptbang"
+    },
+    {
+      "raw": "PROMPT_CR",
+      "category": "option",
+      "id": "promptcr"
+    },
+    {
+      "raw": "PROMPT_EOL_MARK",
+      "category": "special_param",
+      "id": "PROMPT_EOL_MARK"
+    },
+    {
+      "raw": "PROMPT_PERCENT",
+      "category": "option",
+      "id": "promptpercent"
+    },
+    {
+      "raw": "PROMPT_SP",
+      "category": "option",
+      "id": "promptsp"
+    },
+    {
+      "raw": "PROMPT_SUBST",
+      "category": "option",
+      "id": "promptsubst"
+    },
+    {
+      "raw": "PROMPT_VARS",
+      "category": "option",
+      "id": "promptvars"
+    },
+    {
+      "raw": "PS1",
+      "category": "special_param",
+      "id": "PS1"
+    },
+    {
+      "raw": "PS2",
+      "category": "special_param",
+      "id": "PS2"
+    },
+    {
+      "raw": "PS3",
+      "category": "special_param",
+      "id": "PS3"
+    },
+    {
+      "raw": "PS4",
+      "category": "special_param",
+      "id": "PS4"
+    },
+    {
+      "raw": "PSVAR",
+      "category": "special_param",
+      "id": "PSVAR"
+    },
+    {
+      "raw": "PUSHD_IGNORE_DUPS",
+      "category": "option",
+      "id": "pushdignoredups"
+    },
+    {
+      "raw": "PUSHD_MINUS",
+      "category": "option",
+      "id": "pushdminus"
+    },
+    {
+      "raw": "PUSHD_SILENT",
+      "category": "option",
+      "id": "pushdsilent"
+    },
+    {
+      "raw": "PUSHD_TO_HOME",
+      "category": "option",
+      "id": "pushdtohome"
+    },
+    {
+      "raw": "PWD",
+      "category": "special_param",
+      "id": "PWD"
+    },
+    {
+      "raw": "QIPREFIX",
+      "category": "special_param",
+      "id": "QIPREFIX"
+    },
+    {
+      "raw": "QISUFFIX",
+      "category": "special_param",
+      "id": "QISUFFIX"
+    },
+    {
+      "raw": "RANDOM",
+      "category": "special_param",
+      "id": "RANDOM"
+    },
+    {
+      "raw": "RBUFFER",
+      "category": "special_param",
+      "id": "RBUFFER"
+    },
+    {
+      "raw": "RCS",
+      "category": "option",
+      "id": "rcs"
+    },
+    {
+      "raw": "RC_EXPAND_PARAM",
+      "category": "option",
+      "id": "rcexpandparam"
+    },
+    {
+      "raw": "RC_QUOTES",
+      "category": "option",
+      "id": "rcquotes"
+    },
+    {
+      "raw": "READNULLCMD",
+      "category": "special_param",
+      "id": "READNULLCMD"
+    },
+    {
+      "raw": "REC_EXACT",
+      "category": "option",
+      "id": "recexact"
+    },
+    {
+      "raw": "REGION_ACTIVE",
+      "category": "special_param",
+      "id": "REGION_ACTIVE"
+    },
+    {
+      "raw": "REMATCH_PCRE",
+      "category": "option",
+      "id": "rematchpcre"
+    },
+    {
+      "raw": "REPLY",
+      "category": "special_param",
+      "id": "REPLY"
+    },
+    {
+      "raw": "REPORTMEMORY",
+      "category": "special_param",
+      "id": "REPORTMEMORY"
+    },
+    {
+      "raw": "REPORTTIME",
+      "category": "special_param",
+      "id": "REPORTTIME"
+    },
+    {
+      "raw": "RESTRICTED",
+      "category": "option",
+      "id": "restricted"
+    },
+    {
+      "raw": "RM_STAR_SILENT",
+      "category": "option",
+      "id": "rmstarsilent"
+    },
+    {
+      "raw": "RM_STAR_WAIT",
+      "category": "option",
+      "id": "rmstarwait"
+    },
+    {
+      "raw": "RPROMPT",
+      "category": "special_param",
+      "id": "RPROMPT"
+    },
+    {
+      "raw": "RPROMPT2",
+      "category": "special_param",
+      "id": "RPROMPT2"
+    },
+    {
+      "raw": "RPS1",
+      "category": "special_param",
+      "id": "RPS1"
+    },
+    {
+      "raw": "RPS2",
+      "category": "special_param",
+      "id": "RPS2"
+    },
+    {
+      "raw": "SAVEHIST",
+      "category": "special_param",
+      "id": "SAVEHIST"
+    },
+    {
+      "raw": "SECONDS",
+      "category": "special_param",
+      "id": "SECONDS"
+    },
+    {
+      "raw": "SHARE_HISTORY",
+      "category": "option",
+      "id": "sharehistory"
+    },
+    {
+      "raw": "SHIN_STDIN",
+      "category": "option",
+      "id": "shinstdin"
+    },
+    {
+      "raw": "SHLVL",
+      "category": "special_param",
+      "id": "SHLVL"
+    },
+    {
+      "raw": "SHORT_LOOPS",
+      "category": "option",
+      "id": "shortloops"
+    },
+    {
+      "raw": "SHORT_REPEAT",
+      "category": "option",
+      "id": "shortrepeat"
+    },
+    {
+      "raw": "SH_FILE_EXPANSION",
+      "category": "option",
+      "id": "shfileexpansion"
+    },
+    {
+      "raw": "SH_GLOB",
+      "category": "option",
+      "id": "shglob"
+    },
+    {
+      "raw": "SH_NULLCMD",
+      "category": "option",
+      "id": "shnullcmd"
+    },
+    {
+      "raw": "SH_OPTION_LETTERS",
+      "category": "option",
+      "id": "shoptionletters"
+    },
+    {
+      "raw": "SH_WORD_SPLIT",
+      "category": "option",
+      "id": "shwordsplit"
+    },
+    {
+      "raw": "SINGLE_COMMAND",
+      "category": "option",
+      "id": "singlecommand"
+    },
+    {
+      "raw": "SINGLE_LINE_ZLE",
+      "category": "option",
+      "id": "singlelinezle"
+    },
+    {
+      "raw": "SOURCE_TRACE",
+      "category": "option",
+      "id": "sourcetrace"
+    },
+    {
+      "raw": "SPROMPT",
+      "category": "special_param",
+      "id": "SPROMPT"
+    },
+    {
+      "raw": "STDIN",
+      "category": "option",
+      "id": "stdin"
+    },
+    {
+      "raw": "STTY",
+      "category": "special_param",
+      "id": "STTY"
+    },
+    {
+      "raw": "SUFFIX",
+      "category": "special_param",
+      "id": "SUFFIX"
+    },
+    {
+      "raw": "SUFFIX_ACTIVE",
+      "category": "special_param",
+      "id": "SUFFIX_ACTIVE"
+    },
+    {
+      "raw": "SUFFIX_END",
+      "category": "special_param",
+      "id": "SUFFIX_END"
+    },
+    {
+      "raw": "SUFFIX_START",
+      "category": "special_param",
+      "id": "SUFFIX_START"
+    },
+    {
+      "raw": "SUN_KEYBOARD_HACK",
+      "category": "option",
+      "id": "sunkeyboardhack"
+    },
+    {
+      "raw": "TERM",
+      "category": "special_param",
+      "id": "TERM"
+    },
+    {
+      "raw": "TERMINFO",
+      "category": "special_param",
+      "id": "TERMINFO"
+    },
+    {
+      "raw": "TERMINFO_DIRS",
+      "category": "special_param",
+      "id": "TERMINFO_DIRS"
+    },
+    {
+      "raw": "TIMEFMT",
+      "category": "special_param",
+      "id": "TIMEFMT"
+    },
+    {
+      "raw": "TMOUT",
+      "category": "special_param",
+      "id": "TMOUT"
+    },
+    {
+      "raw": "TMPPREFIX",
+      "category": "special_param",
+      "id": "TMPPREFIX"
+    },
+    {
+      "raw": "TMPSUFFIX",
+      "category": "special_param",
+      "id": "TMPSUFFIX"
+    },
+    {
+      "raw": "TRACK_ALL",
+      "category": "option",
+      "id": "trackall"
+    },
+    {
+      "raw": "TRANSIENT_RPROMPT",
+      "category": "option",
+      "id": "transientrprompt"
+    },
+    {
+      "raw": "TRAPDEBUG",
+      "category": "special_function",
+      "id": "TRAPDEBUG"
+    },
+    {
+      "raw": "TRAPEXIT",
+      "category": "special_function",
+      "id": "TRAPEXIT"
+    },
+    {
+      "raw": "TRAPNAL",
+      "category": "special_function",
+      "id": "TRAPNAL"
+    },
+    {
+      "raw": "TRAPS_ASYNC",
+      "category": "option",
+      "id": "trapsasync"
+    },
+    {
+      "raw": "TRAPZERR",
+      "category": "special_function",
+      "id": "TRAPZERR"
+    },
+    {
+      "raw": "TRY_BLOCK_ERROR",
+      "category": "special_param",
+      "id": "TRY_BLOCK_ERROR"
+    },
+    {
+      "raw": "TRY_BLOCK_INTERRUPT",
+      "category": "special_param",
+      "id": "TRY_BLOCK_INTERRUPT"
+    },
+    {
+      "raw": "TTY",
+      "category": "special_param",
+      "id": "TTY"
+    },
+    {
+      "raw": "TTYIDLE",
+      "category": "special_param",
+      "id": "TTYIDLE"
+    },
+    {
+      "raw": "TYPESET_SILENT",
+      "category": "option",
+      "id": "typesetsilent"
+    },
+    {
+      "raw": "TYPESET_TO_UNSET",
+      "category": "option",
+      "id": "typesettounset"
+    },
+    {
+      "raw": "UID",
+      "category": "special_param",
+      "id": "UID"
+    },
+    {
+      "raw": "UNDO_CHANGE_NO",
+      "category": "special_param",
+      "id": "UNDO_CHANGE_NO"
+    },
+    {
+      "raw": "UNDO_LIMIT_NO",
+      "category": "special_param",
+      "id": "UNDO_LIMIT_NO"
+    },
+    {
+      "raw": "UNSET",
+      "category": "option",
+      "id": "unset"
+    },
+    {
+      "raw": "USERNAME",
+      "category": "special_param",
+      "id": "USERNAME"
+    },
+    {
+      "raw": "VENDOR",
+      "category": "special_param",
+      "id": "VENDOR"
+    },
+    {
+      "raw": "VERBOSE",
+      "category": "option",
+      "id": "verbose"
+    },
+    {
+      "raw": "VI",
+      "category": "option",
+      "id": "vi"
+    },
+    {
+      "raw": "WARN_CREATE_GLOBAL",
+      "category": "option",
+      "id": "warncreateglobal"
+    },
+    {
+      "raw": "WARN_NESTED_VAR",
+      "category": "option",
+      "id": "warnnestedvar"
+    },
+    {
+      "raw": "WATCH",
+      "category": "special_param",
+      "id": "WATCH"
+    },
+    {
+      "raw": "WATCHFMT",
+      "category": "special_param",
+      "id": "WATCHFMT"
+    },
+    {
+      "raw": "WIDGET",
+      "category": "special_param",
+      "id": "WIDGET"
+    },
+    {
+      "raw": "WIDGETFUNC",
+      "category": "special_param",
+      "id": "WIDGETFUNC"
+    },
+    {
+      "raw": "WIDGETSTYLE",
+      "category": "special_param",
+      "id": "WIDGETSTYLE"
+    },
+    {
+      "raw": "WORDCHARS",
+      "category": "special_param",
+      "id": "WORDCHARS"
+    },
+    {
+      "raw": "XTRACE",
+      "category": "option",
+      "id": "xtrace"
+    },
+    {
+      "raw": "YANK_ACTIVE",
+      "category": "special_param",
+      "id": "YANK_ACTIVE"
+    },
+    {
+      "raw": "YANK_END",
+      "category": "special_param",
+      "id": "YANK_END"
+    },
+    {
+      "raw": "YANK_START",
+      "category": "special_param",
+      "id": "YANK_START"
+    },
+    {
+      "raw": "ZBEEP",
+      "category": "special_param",
+      "id": "ZBEEP"
+    },
+    {
+      "raw": "ZDOTDIR",
+      "category": "special_param",
+      "id": "ZDOTDIR"
+    },
+    {
+      "raw": "ZLE",
+      "category": "option",
+      "id": "zle"
+    },
+    {
+      "raw": "ZLE_LINE_ABORTED",
+      "category": "special_param",
+      "id": "ZLE_LINE_ABORTED"
+    },
+    {
+      "raw": "ZLE_RECURSIVE",
+      "category": "special_param",
+      "id": "ZLE_RECURSIVE"
+    },
+    {
+      "raw": "ZLE_REMOVE_SUFFIX_CHARS",
+      "category": "special_param",
+      "id": "ZLE_REMOVE_SUFFIX_CHARS"
+    },
+    {
+      "raw": "ZLE_RPROMPT_INDENT",
+      "category": "special_param",
+      "id": "ZLE_RPROMPT_INDENT"
+    },
+    {
+      "raw": "ZLE_SPACE_SUFFIX_CHARS",
+      "category": "special_param",
+      "id": "ZLE_SPACE_SUFFIX_CHARS"
+    },
+    {
+      "raw": "ZLE_STATE",
+      "category": "special_param",
+      "id": "ZLE_STATE"
+    },
+    {
+      "raw": "ZSH_ARGZERO",
+      "category": "special_param",
+      "id": "ZSH_ARGZERO"
+    },
+    {
+      "raw": "ZSH_EVAL_CONTEXT",
+      "category": "special_param",
+      "id": "ZSH_EVAL_CONTEXT"
+    },
+    {
+      "raw": "ZSH_EXECUTION_STRING",
+      "category": "special_param",
+      "id": "ZSH_EXECUTION_STRING"
+    },
+    {
+      "raw": "ZSH_NAME",
+      "category": "special_param",
+      "id": "ZSH_NAME"
+    },
+    {
+      "raw": "ZSH_PATCHLEVEL",
+      "category": "special_param",
+      "id": "ZSH_PATCHLEVEL"
+    },
+    {
+      "raw": "ZSH_SCRIPT",
+      "category": "special_param",
+      "id": "ZSH_SCRIPT"
+    },
+    {
+      "raw": "ZSH_SUBSHELL",
+      "category": "special_param",
+      "id": "ZSH_SUBSHELL"
+    },
+    {
+      "raw": "ZSH_VERSION",
+      "category": "special_param",
+      "id": "ZSH_VERSION"
+    },
+    {
+      "raw": "[",
+      "category": "builtin",
+      "id": "["
+    },
+    {
+      "raw": "[[",
+      "category": "complex_command",
+      "id": "[["
+    },
+    {
+      "raw": "_",
+      "category": "special_param",
+      "id": "_"
+    },
+    {
+      "raw": "_absolute_command_paths",
+      "category": "comp_utility",
+      "id": "_absolute_command_paths"
+    },
+    {
+      "raw": "_all_labels",
+      "category": "comp_utility",
+      "id": "_all_labels"
+    },
+    {
+      "raw": "_alternative",
+      "category": "comp_utility",
+      "id": "_alternative"
+    },
+    {
+      "raw": "_arguments",
+      "category": "comp_utility",
+      "id": "_arguments"
+    },
+    {
+      "raw": "_cache_invalid",
+      "category": "comp_utility",
+      "id": "_cache_invalid"
+    },
+    {
+      "raw": "_call_function",
+      "category": "comp_utility",
+      "id": "_call_function"
+    },
+    {
+      "raw": "_call_program",
+      "category": "comp_utility",
+      "id": "_call_program"
+    },
+    {
+      "raw": "_combination",
+      "category": "comp_utility",
+      "id": "_combination"
+    },
+    {
+      "raw": "_command_names",
+      "category": "comp_utility",
+      "id": "_command_names"
+    },
+    {
+      "raw": "_comp_locale",
+      "category": "comp_utility",
+      "id": "_comp_locale"
+    },
+    {
+      "raw": "_completers",
+      "category": "comp_utility",
+      "id": "_completers"
+    },
+    {
+      "raw": "_default",
+      "category": "comp_utility",
+      "id": "_default"
+    },
+    {
+      "raw": "_describe",
+      "category": "comp_utility",
+      "id": "_describe"
+    },
+    {
+      "raw": "_description",
+      "category": "comp_utility",
+      "id": "_description"
+    },
+    {
+      "raw": "_dir_list",
+      "category": "comp_utility",
+      "id": "_dir_list"
+    },
+    {
+      "raw": "_dispatch",
+      "category": "comp_utility",
+      "id": "_dispatch"
+    },
+    {
+      "raw": "_email_addresses",
+      "category": "comp_utility",
+      "id": "_email_addresses"
+    },
+    {
+      "raw": "_files",
+      "category": "comp_utility",
+      "id": "_files"
+    },
+    {
+      "raw": "_gnu_generic",
+      "category": "comp_utility",
+      "id": "_gnu_generic"
+    },
+    {
+      "raw": "_guard",
+      "category": "comp_utility",
+      "id": "_guard"
+    },
+    {
+      "raw": "_message",
+      "category": "comp_utility",
+      "id": "_message"
+    },
+    {
+      "raw": "_multi_parts",
+      "category": "comp_utility",
+      "id": "_multi_parts"
+    },
+    {
+      "raw": "_next_label",
+      "category": "comp_utility",
+      "id": "_next_label"
+    },
+    {
+      "raw": "_normal",
+      "category": "comp_utility",
+      "id": "_normal"
+    },
+    {
+      "raw": "_numbers",
+      "category": "comp_utility",
+      "id": "_numbers"
+    },
+    {
+      "raw": "_options",
+      "category": "comp_utility",
+      "id": "_options"
+    },
+    {
+      "raw": "_options_set",
+      "category": "comp_utility",
+      "id": "_options_set"
+    },
+    {
+      "raw": "_options_unset",
+      "category": "comp_utility",
+      "id": "_options_unset"
+    },
+    {
+      "raw": "_parameters",
+      "category": "comp_utility",
+      "id": "_parameters"
+    },
+    {
+      "raw": "_path_files",
+      "category": "comp_utility",
+      "id": "_path_files"
+    },
+    {
+      "raw": "_pick_variant",
+      "category": "comp_utility",
+      "id": "_pick_variant"
+    },
+    {
+      "raw": "_regex_arguments",
+      "category": "comp_utility",
+      "id": "_regex_arguments"
+    },
+    {
+      "raw": "_regex_words",
+      "category": "comp_utility",
+      "id": "_regex_words"
+    },
+    {
+      "raw": "_requested",
+      "category": "comp_utility",
+      "id": "_requested"
+    },
+    {
+      "raw": "_retrieve_cache",
+      "category": "comp_utility",
+      "id": "_retrieve_cache"
+    },
+    {
+      "raw": "_sep_parts",
+      "category": "comp_utility",
+      "id": "_sep_parts"
+    },
+    {
+      "raw": "_sequence",
+      "category": "comp_utility",
+      "id": "_sequence"
+    },
+    {
+      "raw": "_setup",
+      "category": "comp_utility",
+      "id": "_setup"
+    },
+    {
+      "raw": "_store_cache",
+      "category": "comp_utility",
+      "id": "_store_cache"
+    },
+    {
+      "raw": "_tags",
+      "category": "comp_utility",
+      "id": "_tags"
+    },
+    {
+      "raw": "_tilde_files",
+      "category": "comp_utility",
+      "id": "_tilde_files"
+    },
+    {
+      "raw": "_values",
+      "category": "comp_utility",
+      "id": "_values"
+    },
+    {
+      "raw": "_wanted",
+      "category": "comp_utility",
+      "id": "_wanted"
+    },
+    {
+      "raw": "_widgets",
+      "category": "comp_utility",
+      "id": "_widgets"
+    },
+    {
+      "raw": "abs",
+      "category": "mathfunc",
+      "id": "abs"
+    },
+    {
+      "raw": "accept-and-hold",
+      "category": "zle_widget",
+      "id": "accept-and-hold"
+    },
+    {
+      "raw": "accept-and-infer-next-history",
+      "category": "zle_widget",
+      "id": "accept-and-infer-next-history"
+    },
+    {
+      "raw": "accept-and-menu-complete",
+      "category": "zle_widget",
+      "id": "accept-and-menu-complete"
+    },
+    {
+      "raw": "accept-line",
+      "category": "zle_widget",
+      "id": "accept-line"
+    },
+    {
+      "raw": "accept-line-and-down-history",
+      "category": "zle_widget",
+      "id": "accept-line-and-down-history"
+    },
+    {
+      "raw": "acos",
+      "category": "mathfunc",
+      "id": "acos"
+    },
+    {
+      "raw": "acosh",
+      "category": "mathfunc",
+      "id": "acosh"
+    },
+    {
+      "raw": "alias",
+      "category": "builtin",
+      "id": "alias"
+    },
+    {
+      "raw": "alias_func_def",
+      "category": "option",
+      "id": "aliasfuncdef"
+    },
+    {
+      "raw": "aliases",
+      "category": "special_param",
+      "id": "aliases"
+    },
+    {
+      "raw": "aliasfuncdef",
+      "category": "option",
+      "id": "aliasfuncdef"
+    },
+    {
+      "raw": "all_export",
+      "category": "option",
+      "id": "allexport"
+    },
+    {
+      "raw": "allexport",
+      "category": "option",
+      "id": "allexport"
+    },
+    {
+      "raw": "always_last_prompt",
+      "category": "option",
+      "id": "alwayslastprompt"
+    },
+    {
+      "raw": "always_to_end",
+      "category": "option",
+      "id": "alwaystoend"
+    },
+    {
+      "raw": "alwayslastprompt",
+      "category": "option",
+      "id": "alwayslastprompt"
+    },
+    {
+      "raw": "alwaystoend",
+      "category": "option",
+      "id": "alwaystoend"
+    },
+    {
+      "raw": "append_create",
+      "category": "option",
+      "id": "appendcreate"
+    },
+    {
+      "raw": "append_history",
+      "category": "option",
+      "id": "appendhistory"
+    },
+    {
+      "raw": "appendcreate",
+      "category": "option",
+      "id": "appendcreate"
+    },
+    {
+      "raw": "appendhistory",
+      "category": "option",
+      "id": "appendhistory"
+    },
+    {
+      "raw": "argument-base",
+      "category": "zle_widget",
+      "id": "argument-base"
+    },
+    {
+      "raw": "argv",
+      "category": "special_param",
+      "id": "argv"
+    },
+    {
+      "raw": "asin",
+      "category": "mathfunc",
+      "id": "asin"
+    },
+    {
+      "raw": "asinh",
+      "category": "mathfunc",
+      "id": "asinh"
+    },
+    {
+      "raw": "atan",
+      "category": "mathfunc",
+      "id": "atan"
+    },
+    {
+      "raw": "atanh",
+      "category": "mathfunc",
+      "id": "atanh"
+    },
+    {
+      "raw": "auto-suffix-remove",
+      "category": "zle_widget",
+      "id": "auto-suffix-remove"
+    },
+    {
+      "raw": "auto-suffix-retain",
+      "category": "zle_widget",
+      "id": "auto-suffix-retain"
+    },
+    {
+      "raw": "auto_cd",
+      "category": "option",
+      "id": "autocd"
+    },
+    {
+      "raw": "auto_continue",
+      "category": "option",
+      "id": "autocontinue"
+    },
+    {
+      "raw": "auto_list",
+      "category": "option",
+      "id": "autolist"
+    },
+    {
+      "raw": "auto_menu",
+      "category": "option",
+      "id": "automenu"
+    },
+    {
+      "raw": "auto_name_dirs",
+      "category": "option",
+      "id": "autonamedirs"
+    },
+    {
+      "raw": "auto_param_keys",
+      "category": "option",
+      "id": "autoparamkeys"
+    },
+    {
+      "raw": "auto_param_slash",
+      "category": "option",
+      "id": "autoparamslash"
+    },
+    {
+      "raw": "auto_pushd",
+      "category": "option",
+      "id": "autopushd"
+    },
+    {
+      "raw": "auto_remove_slash",
+      "category": "option",
+      "id": "autoremoveslash"
+    },
+    {
+      "raw": "auto_resume",
+      "category": "option",
+      "id": "autoresume"
+    },
+    {
+      "raw": "autocd",
+      "category": "option",
+      "id": "autocd"
+    },
+    {
+      "raw": "autocontinue",
+      "category": "option",
+      "id": "autocontinue"
+    },
+    {
+      "raw": "autolist",
+      "category": "option",
+      "id": "autolist"
+    },
+    {
+      "raw": "autoload",
+      "category": "builtin",
+      "id": "autoload"
+    },
+    {
+      "raw": "automenu",
+      "category": "option",
+      "id": "automenu"
+    },
+    {
+      "raw": "autonamedirs",
+      "category": "option",
+      "id": "autonamedirs"
+    },
+    {
+      "raw": "autoparamkeys",
+      "category": "option",
+      "id": "autoparamkeys"
+    },
+    {
+      "raw": "autoparamslash",
+      "category": "option",
+      "id": "autoparamslash"
+    },
+    {
+      "raw": "autopushd",
+      "category": "option",
+      "id": "autopushd"
+    },
+    {
+      "raw": "autoremoveslash",
+      "category": "option",
+      "id": "autoremoveslash"
+    },
+    {
+      "raw": "autoresume",
+      "category": "option",
+      "id": "autoresume"
+    },
+    {
+      "raw": "backward-char",
+      "category": "zle_widget",
+      "id": "backward-char"
+    },
+    {
+      "raw": "backward-delete-char",
+      "category": "zle_widget",
+      "id": "backward-delete-char"
+    },
+    {
+      "raw": "backward-delete-word",
+      "category": "zle_widget",
+      "id": "backward-delete-word"
+    },
+    {
+      "raw": "backward-kill-line",
+      "category": "zle_widget",
+      "id": "backward-kill-line"
+    },
+    {
+      "raw": "backward-kill-word",
+      "category": "zle_widget",
+      "id": "backward-kill-word"
+    },
+    {
+      "raw": "backward-word",
+      "category": "zle_widget",
+      "id": "backward-word"
+    },
+    {
+      "raw": "bad_pattern",
+      "category": "option",
+      "id": "badpattern"
+    },
+    {
+      "raw": "badpattern",
+      "category": "option",
+      "id": "badpattern"
+    },
+    {
+      "raw": "bang_hist",
+      "category": "option",
+      "id": "banghist"
+    },
+    {
+      "raw": "banghist",
+      "category": "option",
+      "id": "banghist"
+    },
+    {
+      "raw": "bare_glob_qual",
+      "category": "option",
+      "id": "bareglobqual"
+    },
+    {
+      "raw": "bareglobqual",
+      "category": "option",
+      "id": "bareglobqual"
+    },
+    {
+      "raw": "bash_auto_list",
+      "category": "option",
+      "id": "bashautolist"
+    },
+    {
+      "raw": "bash_rematch",
+      "category": "option",
+      "id": "bashrematch"
+    },
+    {
+      "raw": "bashautolist",
+      "category": "option",
+      "id": "bashautolist"
+    },
+    {
+      "raw": "bashrematch",
+      "category": "option",
+      "id": "bashrematch"
+    },
+    {
+      "raw": "beep",
+      "category": "zle_widget",
+      "id": "beep"
+    },
+    {
+      "raw": "beginning-of-buffer-or-history",
+      "category": "zle_widget",
+      "id": "beginning-of-buffer-or-history"
+    },
+    {
+      "raw": "beginning-of-history",
+      "category": "zle_widget",
+      "id": "beginning-of-history"
+    },
+    {
+      "raw": "beginning-of-line",
+      "category": "zle_widget",
+      "id": "beginning-of-line"
+    },
+    {
+      "raw": "beginning-of-line-hist",
+      "category": "zle_widget",
+      "id": "beginning-of-line-hist"
+    },
+    {
+      "raw": "bg",
+      "category": "builtin",
+      "id": "bg"
+    },
+    {
+      "raw": "bg_nice",
+      "category": "option",
+      "id": "bgnice"
+    },
+    {
+      "raw": "bgnice",
+      "category": "option",
+      "id": "bgnice"
+    },
+    {
+      "raw": "bindkey",
+      "category": "builtin",
+      "id": "bindkey"
+    },
+    {
+      "raw": "brace_ccl",
+      "category": "option",
+      "id": "braceccl"
+    },
+    {
+      "raw": "brace_expand",
+      "category": "option",
+      "id": "braceexpand"
+    },
+    {
+      "raw": "braceccl",
+      "category": "option",
+      "id": "braceccl"
+    },
+    {
+      "raw": "braceexpand",
+      "category": "option",
+      "id": "braceexpand"
+    },
+    {
+      "raw": "bracketed-paste",
+      "category": "zle_widget",
+      "id": "bracketed-paste"
+    },
+    {
+      "raw": "break",
+      "category": "builtin",
+      "id": "break"
+    },
+    {
+      "raw": "bsd_echo",
+      "category": "option",
+      "id": "bsdecho"
+    },
+    {
+      "raw": "bsdecho",
+      "category": "option",
+      "id": "bsdecho"
+    },
+    {
+      "raw": "builtin",
+      "category": "precmd_modifier",
+      "id": "builtin"
+    },
+    {
+      "raw": "builtins",
+      "category": "special_param",
+      "id": "builtins"
+    },
+    {
+      "raw": "bye",
+      "category": "builtin",
+      "id": "bye"
+    },
+    {
+      "raw": "c_bases",
+      "category": "option",
+      "id": "cbases"
+    },
+    {
+      "raw": "c_precedences",
+      "category": "option",
+      "id": "cprecedences"
+    },
+    {
+      "raw": "cap",
+      "category": "builtin",
+      "id": "cap"
+    },
+    {
+      "raw": "capitalize-word",
+      "category": "zle_widget",
+      "id": "capitalize-word"
+    },
+    {
+      "raw": "case",
+      "category": "complex_command",
+      "id": "case"
+    },
+    {
+      "raw": "case_glob",
+      "category": "option",
+      "id": "caseglob"
+    },
+    {
+      "raw": "case_match",
+      "category": "option",
+      "id": "casematch"
+    },
+    {
+      "raw": "case_paths",
+      "category": "option",
+      "id": "casepaths"
+    },
+    {
+      "raw": "caseglob",
+      "category": "option",
+      "id": "caseglob"
+    },
+    {
+      "raw": "casematch",
+      "category": "option",
+      "id": "casematch"
+    },
+    {
+      "raw": "casepaths",
+      "category": "option",
+      "id": "casepaths"
+    },
+    {
+      "raw": "cbases",
+      "category": "option",
+      "id": "cbases"
+    },
+    {
+      "raw": "cbrt",
+      "category": "mathfunc",
+      "id": "cbrt"
+    },
+    {
+      "raw": "cd",
+      "category": "builtin",
+      "id": "cd"
+    },
+    {
+      "raw": "cd_silent",
+      "category": "option",
+      "id": "cdsilent"
+    },
+    {
+      "raw": "cdable_vars",
+      "category": "option",
+      "id": "cdablevars"
+    },
+    {
+      "raw": "cdablevars",
+      "category": "option",
+      "id": "cdablevars"
+    },
+    {
+      "raw": "cdpath",
+      "category": "special_param",
+      "id": "cdpath"
+    },
+    {
+      "raw": "cdsilent",
+      "category": "option",
+      "id": "cdsilent"
+    },
+    {
+      "raw": "ceil",
+      "category": "mathfunc",
+      "id": "ceil"
+    },
+    {
+      "raw": "chase_dots",
+      "category": "option",
+      "id": "chasedots"
+    },
+    {
+      "raw": "chase_links",
+      "category": "option",
+      "id": "chaselinks"
+    },
+    {
+      "raw": "chasedots",
+      "category": "option",
+      "id": "chasedots"
+    },
+    {
+      "raw": "chaselinks",
+      "category": "option",
+      "id": "chaselinks"
+    },
+    {
+      "raw": "chdir",
+      "category": "builtin",
+      "id": "chdir"
+    },
+    {
+      "raw": "check_jobs",
+      "category": "option",
+      "id": "checkjobs"
+    },
+    {
+      "raw": "check_running_jobs",
+      "category": "option",
+      "id": "checkrunningjobs"
+    },
+    {
+      "raw": "checkjobs",
+      "category": "option",
+      "id": "checkjobs"
+    },
+    {
+      "raw": "checkrunningjobs",
+      "category": "option",
+      "id": "checkrunningjobs"
+    },
+    {
+      "raw": "chpwd",
+      "category": "special_function",
+      "id": "chpwd"
+    },
+    {
+      "raw": "clear-screen",
+      "category": "zle_widget",
+      "id": "clear-screen"
+    },
+    {
+      "raw": "clobber",
+      "category": "option",
+      "id": "clobber"
+    },
+    {
+      "raw": "clobber_empty",
+      "category": "option",
+      "id": "clobberempty"
+    },
+    {
+      "raw": "clobberempty",
+      "category": "option",
+      "id": "clobberempty"
+    },
+    {
+      "raw": "clone",
+      "category": "builtin",
+      "id": "clone"
+    },
+    {
+      "raw": "combining_chars",
+      "category": "option",
+      "id": "combiningchars"
+    },
+    {
+      "raw": "combiningchars",
+      "category": "option",
+      "id": "combiningchars"
+    },
+    {
+      "raw": "command",
+      "category": "precmd_modifier",
+      "id": "command"
+    },
+    {
+      "raw": "commands",
+      "category": "special_param",
+      "id": "commands"
+    },
+    {
+      "raw": "compadd",
+      "category": "builtin",
+      "id": "compadd"
+    },
+    {
+      "raw": "comparguments",
+      "category": "builtin",
+      "id": "comparguments"
+    },
+    {
+      "raw": "compcall",
+      "category": "builtin",
+      "id": "compcall"
+    },
+    {
+      "raw": "compctl",
+      "category": "builtin",
+      "id": "compctl"
+    },
+    {
+      "raw": "compdescribe",
+      "category": "builtin",
+      "id": "compdescribe"
+    },
+    {
+      "raw": "compfiles",
+      "category": "builtin",
+      "id": "compfiles"
+    },
+    {
+      "raw": "compgroups",
+      "category": "builtin",
+      "id": "compgroups"
+    },
+    {
+      "raw": "complete-word",
+      "category": "zle_widget",
+      "id": "complete-word"
+    },
+    {
+      "raw": "complete_aliases",
+      "category": "option",
+      "id": "completealiases"
+    },
+    {
+      "raw": "complete_in_word",
+      "category": "option",
+      "id": "completeinword"
+    },
+    {
+      "raw": "completealiases",
+      "category": "option",
+      "id": "completealiases"
+    },
+    {
+      "raw": "completeinword",
+      "category": "option",
+      "id": "completeinword"
+    },
+    {
+      "raw": "compquote",
+      "category": "builtin",
+      "id": "compquote"
+    },
+    {
+      "raw": "compset",
+      "category": "builtin",
+      "id": "compset"
+    },
+    {
+      "raw": "compstate",
+      "category": "special_param",
+      "id": "compstate"
+    },
+    {
+      "raw": "comptags",
+      "category": "builtin",
+      "id": "comptags"
+    },
+    {
+      "raw": "comptry",
+      "category": "builtin",
+      "id": "comptry"
+    },
+    {
+      "raw": "compvalues",
+      "category": "builtin",
+      "id": "compvalues"
+    },
+    {
+      "raw": "continue",
+      "category": "builtin",
+      "id": "continue"
+    },
+    {
+      "raw": "continue_on_error",
+      "category": "option",
+      "id": "continueonerror"
+    },
+    {
+      "raw": "continueonerror",
+      "category": "option",
+      "id": "continueonerror"
+    },
+    {
+      "raw": "coproc",
+      "category": "reserved_word",
+      "id": "coproc"
+    },
+    {
+      "raw": "copy-prev-shell-word",
+      "category": "zle_widget",
+      "id": "copy-prev-shell-word"
+    },
+    {
+      "raw": "copy-prev-word",
+      "category": "zle_widget",
+      "id": "copy-prev-word"
+    },
+    {
+      "raw": "copy-region-as-kill",
+      "category": "zle_widget",
+      "id": "copy-region-as-kill"
+    },
+    {
+      "raw": "copysign",
+      "category": "mathfunc",
+      "id": "copysign"
+    },
+    {
+      "raw": "correct",
+      "category": "option",
+      "id": "correct"
+    },
+    {
+      "raw": "correct_all",
+      "category": "option",
+      "id": "correctall"
+    },
+    {
+      "raw": "correctall",
+      "category": "option",
+      "id": "correctall"
+    },
+    {
+      "raw": "cos",
+      "category": "mathfunc",
+      "id": "cos"
+    },
+    {
+      "raw": "cosh",
+      "category": "mathfunc",
+      "id": "cosh"
+    },
+    {
+      "raw": "cprecedences",
+      "category": "option",
+      "id": "cprecedences"
+    },
+    {
+      "raw": "csh_junkie_history",
+      "category": "option",
+      "id": "cshjunkiehistory"
+    },
+    {
+      "raw": "csh_junkie_loops",
+      "category": "option",
+      "id": "cshjunkieloops"
+    },
+    {
+      "raw": "csh_junkie_quotes",
+      "category": "option",
+      "id": "cshjunkiequotes"
+    },
+    {
+      "raw": "csh_null_glob",
+      "category": "option",
+      "id": "cshnullglob"
+    },
+    {
+      "raw": "csh_nullcmd",
+      "category": "option",
+      "id": "cshnullcmd"
+    },
+    {
+      "raw": "cshjunkiehistory",
+      "category": "option",
+      "id": "cshjunkiehistory"
+    },
+    {
+      "raw": "cshjunkieloops",
+      "category": "option",
+      "id": "cshjunkieloops"
+    },
+    {
+      "raw": "cshjunkiequotes",
+      "category": "option",
+      "id": "cshjunkiequotes"
+    },
+    {
+      "raw": "cshnullcmd",
+      "category": "option",
+      "id": "cshnullcmd"
+    },
+    {
+      "raw": "cshnullglob",
+      "category": "option",
+      "id": "cshnullglob"
+    },
+    {
+      "raw": "deactivate-region",
+      "category": "zle_widget",
+      "id": "deactivate-region"
+    },
+    {
+      "raw": "debug_before_cmd",
+      "category": "option",
+      "id": "debugbeforecmd"
+    },
+    {
+      "raw": "debugbeforecmd",
+      "category": "option",
+      "id": "debugbeforecmd"
+    },
+    {
+      "raw": "declare",
+      "category": "reserved_word",
+      "id": "declare"
+    },
+    {
+      "raw": "delete-char",
+      "category": "zle_widget",
+      "id": "delete-char"
+    },
+    {
+      "raw": "delete-char-or-list",
+      "category": "zle_widget",
+      "id": "delete-char-or-list"
+    },
+    {
+      "raw": "delete-to-char",
+      "category": "zle_widget",
+      "id": "delete-to-char"
+    },
+    {
+      "raw": "delete-word",
+      "category": "zle_widget",
+      "id": "delete-word"
+    },
+    {
+      "raw": "describe-key-briefly",
+      "category": "zle_widget",
+      "id": "describe-key-briefly"
+    },
+    {
+      "raw": "digit-argument",
+      "category": "zle_widget",
+      "id": "digit-argument"
+    },
+    {
+      "raw": "dirs",
+      "category": "builtin",
+      "id": "dirs"
+    },
+    {
+      "raw": "dirstack",
+      "category": "special_param",
+      "id": "dirstack"
+    },
+    {
+      "raw": "dis_aliases",
+      "category": "special_param",
+      "id": "dis_aliases"
+    },
+    {
+      "raw": "dis_builtins",
+      "category": "special_param",
+      "id": "dis_builtins"
+    },
+    {
+      "raw": "dis_functions",
+      "category": "special_param",
+      "id": "dis_functions"
+    },
+    {
+      "raw": "dis_functions_source",
+      "category": "special_param",
+      "id": "dis_functions_source"
+    },
+    {
+      "raw": "dis_galiases",
+      "category": "special_param",
+      "id": "dis_galiases"
+    },
+    {
+      "raw": "dis_patchars",
+      "category": "special_param",
+      "id": "dis_patchars"
+    },
+    {
+      "raw": "dis_reswords",
+      "category": "special_param",
+      "id": "dis_reswords"
+    },
+    {
+      "raw": "dis_saliases",
+      "category": "special_param",
+      "id": "dis_saliases"
+    },
+    {
+      "raw": "disable",
+      "category": "builtin",
+      "id": "disable"
+    },
+    {
+      "raw": "disown",
+      "category": "builtin",
+      "id": "disown"
+    },
+    {
+      "raw": "do",
+      "category": "reserved_word",
+      "id": "do"
+    },
+    {
+      "raw": "done",
+      "category": "reserved_word",
+      "id": "done"
+    },
+    {
+      "raw": "dot_glob",
+      "category": "option",
+      "id": "dotglob"
+    },
+    {
+      "raw": "dotglob",
+      "category": "option",
+      "id": "dotglob"
+    },
+    {
+      "raw": "down-case-word",
+      "category": "zle_widget",
+      "id": "down-case-word"
+    },
+    {
+      "raw": "down-history",
+      "category": "zle_widget",
+      "id": "down-history"
+    },
+    {
+      "raw": "down-line",
+      "category": "zle_widget",
+      "id": "down-line"
+    },
+    {
+      "raw": "down-line-or-history",
+      "category": "zle_widget",
+      "id": "down-line-or-history"
+    },
+    {
+      "raw": "down-line-or-search",
+      "category": "zle_widget",
+      "id": "down-line-or-search"
+    },
+    {
+      "raw": "dvorak",
+      "category": "option",
+      "id": "dvorak"
+    },
+    {
+      "raw": "echo",
+      "category": "builtin",
+      "id": "echo"
+    },
+    {
+      "raw": "echotc",
+      "category": "builtin",
+      "id": "echotc"
+    },
+    {
+      "raw": "echoti",
+      "category": "builtin",
+      "id": "echoti"
+    },
+    {
+      "raw": "elif",
+      "category": "reserved_word",
+      "id": "elif"
+    },
+    {
+      "raw": "else",
+      "category": "reserved_word",
+      "id": "else"
+    },
+    {
+      "raw": "emacs",
+      "category": "keymap",
+      "id": "emacs"
+    },
+    {
+      "raw": "emacs-backward-word",
+      "category": "zle_widget",
+      "id": "emacs-backward-word"
+    },
+    {
+      "raw": "emacs-forward-word",
+      "category": "zle_widget",
+      "id": "emacs-forward-word"
+    },
+    {
+      "raw": "emulate",
+      "category": "builtin",
+      "id": "emulate"
+    },
+    {
+      "raw": "enable",
+      "category": "builtin",
+      "id": "enable"
+    },
+    {
+      "raw": "end",
+      "category": "reserved_word",
+      "id": "end"
+    },
+    {
+      "raw": "end-of-buffer-or-history",
+      "category": "zle_widget",
+      "id": "end-of-buffer-or-history"
+    },
+    {
+      "raw": "end-of-history",
+      "category": "zle_widget",
+      "id": "end-of-history"
+    },
+    {
+      "raw": "end-of-line",
+      "category": "zle_widget",
+      "id": "end-of-line"
+    },
+    {
+      "raw": "end-of-line-hist",
+      "category": "zle_widget",
+      "id": "end-of-line-hist"
+    },
+    {
+      "raw": "end-of-list",
+      "category": "zle_widget",
+      "id": "end-of-list"
+    },
+    {
+      "raw": "epochtime",
+      "category": "special_param",
+      "id": "epochtime"
+    },
+    {
+      "raw": "equals",
+      "category": "option",
+      "id": "equals"
+    },
+    {
+      "raw": "erf",
+      "category": "mathfunc",
+      "id": "erf"
+    },
+    {
+      "raw": "erfc",
+      "category": "mathfunc",
+      "id": "erfc"
+    },
+    {
+      "raw": "err_exit",
+      "category": "option",
+      "id": "errexit"
+    },
+    {
+      "raw": "err_return",
+      "category": "option",
+      "id": "errreturn"
+    },
+    {
+      "raw": "errexit",
+      "category": "option",
+      "id": "errexit"
+    },
+    {
+      "raw": "errnos",
+      "category": "special_param",
+      "id": "errnos"
+    },
+    {
+      "raw": "errreturn",
+      "category": "option",
+      "id": "errreturn"
+    },
+    {
+      "raw": "esac",
+      "category": "reserved_word",
+      "id": "esac"
+    },
+    {
+      "raw": "eval",
+      "category": "builtin",
+      "id": "eval"
+    },
+    {
+      "raw": "eval_lineno",
+      "category": "option",
+      "id": "evallineno"
+    },
+    {
+      "raw": "evallineno",
+      "category": "option",
+      "id": "evallineno"
+    },
+    {
+      "raw": "exchange-point-and-mark",
+      "category": "zle_widget",
+      "id": "exchange-point-and-mark"
+    },
+    {
+      "raw": "exec",
+      "category": "precmd_modifier",
+      "id": "exec"
+    },
+    {
+      "raw": "execute-last-named-cmd",
+      "category": "zle_widget",
+      "id": "execute-last-named-cmd"
+    },
+    {
+      "raw": "execute-named-cmd",
+      "category": "zle_widget",
+      "id": "execute-named-cmd"
+    },
+    {
+      "raw": "exit",
+      "category": "builtin",
+      "id": "exit"
+    },
+    {
+      "raw": "exp",
+      "category": "mathfunc",
+      "id": "exp"
+    },
+    {
+      "raw": "expand-cmd-path",
+      "category": "zle_widget",
+      "id": "expand-cmd-path"
+    },
+    {
+      "raw": "expand-history",
+      "category": "zle_widget",
+      "id": "expand-history"
+    },
+    {
+      "raw": "expand-or-complete",
+      "category": "zle_widget",
+      "id": "expand-or-complete"
+    },
+    {
+      "raw": "expand-or-complete-prefix",
+      "category": "zle_widget",
+      "id": "expand-or-complete-prefix"
+    },
+    {
+      "raw": "expand-word",
+      "category": "zle_widget",
+      "id": "expand-word"
+    },
+    {
+      "raw": "expm1",
+      "category": "mathfunc",
+      "id": "expm1"
+    },
+    {
+      "raw": "export",
+      "category": "reserved_word",
+      "id": "export"
+    },
+    {
+      "raw": "extended_glob",
+      "category": "option",
+      "id": "extendedglob"
+    },
+    {
+      "raw": "extended_history",
+      "category": "option",
+      "id": "extendedhistory"
+    },
+    {
+      "raw": "extendedglob",
+      "category": "option",
+      "id": "extendedglob"
+    },
+    {
+      "raw": "extendedhistory",
+      "category": "option",
+      "id": "extendedhistory"
+    },
+    {
+      "raw": "fabs",
+      "category": "mathfunc",
+      "id": "fabs"
+    },
+    {
+      "raw": "false",
+      "category": "builtin",
+      "id": "false"
+    },
+    {
+      "raw": "fc",
+      "category": "builtin",
+      "id": "fc"
+    },
+    {
+      "raw": "fg",
+      "category": "builtin",
+      "id": "fg"
+    },
+    {
+      "raw": "fi",
+      "category": "reserved_word",
+      "id": "fi"
+    },
+    {
+      "raw": "fignore",
+      "category": "special_param",
+      "id": "fignore"
+    },
+    {
+      "raw": "float",
+      "category": "reserved_word",
+      "id": "float"
+    },
+    {
+      "raw": "floor",
+      "category": "mathfunc",
+      "id": "floor"
+    },
+    {
+      "raw": "flow_control",
+      "category": "option",
+      "id": "flowcontrol"
+    },
+    {
+      "raw": "flowcontrol",
+      "category": "option",
+      "id": "flowcontrol"
+    },
+    {
+      "raw": "fmod",
+      "category": "mathfunc",
+      "id": "fmod"
+    },
+    {
+      "raw": "for",
+      "category": "complex_command",
+      "id": "for"
+    },
+    {
+      "raw": "for-arith",
+      "category": "complex_command",
+      "id": "for-arith"
+    },
+    {
+      "raw": "force_float",
+      "category": "option",
+      "id": "forcefloat"
+    },
+    {
+      "raw": "forcefloat",
+      "category": "option",
+      "id": "forcefloat"
+    },
+    {
+      "raw": "foreach",
+      "category": "reserved_word",
+      "id": "foreach"
+    },
+    {
+      "raw": "forward-char",
+      "category": "zle_widget",
+      "id": "forward-char"
+    },
+    {
+      "raw": "forward-word",
+      "category": "zle_widget",
+      "id": "forward-word"
+    },
+    {
+      "raw": "fpath",
+      "category": "special_param",
+      "id": "fpath"
+    },
+    {
+      "raw": "funcfiletrace",
+      "category": "special_param",
+      "id": "funcfiletrace"
+    },
+    {
+      "raw": "funcsourcetrace",
+      "category": "special_param",
+      "id": "funcsourcetrace"
+    },
+    {
+      "raw": "funcstack",
+      "category": "special_param",
+      "id": "funcstack"
+    },
+    {
+      "raw": "function",
+      "category": "complex_command",
+      "id": "function"
+    },
+    {
+      "raw": "function_argzero",
+      "category": "option",
+      "id": "functionargzero"
+    },
+    {
+      "raw": "functionargzero",
+      "category": "option",
+      "id": "functionargzero"
+    },
+    {
+      "raw": "functions",
+      "category": "builtin",
+      "id": "functions"
+    },
+    {
+      "raw": "functions_source",
+      "category": "special_param",
+      "id": "functions_source"
+    },
+    {
+      "raw": "functrace",
+      "category": "special_param",
+      "id": "functrace"
+    },
+    {
+      "raw": "galiases",
+      "category": "special_param",
+      "id": "galiases"
+    },
+    {
+      "raw": "gamma",
+      "category": "mathfunc",
+      "id": "gamma"
+    },
+    {
+      "raw": "get-line",
+      "category": "zle_widget",
+      "id": "get-line"
+    },
+    {
+      "raw": "getcap",
+      "category": "builtin",
+      "id": "getcap"
+    },
+    {
+      "raw": "getln",
+      "category": "builtin",
+      "id": "getln"
+    },
+    {
+      "raw": "getopts",
+      "category": "builtin",
+      "id": "getopts"
+    },
+    {
+      "raw": "glob",
+      "category": "option",
+      "id": "glob"
+    },
+    {
+      "raw": "glob_assign",
+      "category": "option",
+      "id": "globassign"
+    },
+    {
+      "raw": "glob_complete",
+      "category": "option",
+      "id": "globcomplete"
+    },
+    {
+      "raw": "glob_dots",
+      "category": "option",
+      "id": "globdots"
+    },
+    {
+      "raw": "glob_star_short",
+      "category": "option",
+      "id": "globstarshort"
+    },
+    {
+      "raw": "glob_subst",
+      "category": "option",
+      "id": "globsubst"
+    },
+    {
+      "raw": "global_export",
+      "category": "option",
+      "id": "globalexport"
+    },
+    {
+      "raw": "global_rcs",
+      "category": "option",
+      "id": "globalrcs"
+    },
+    {
+      "raw": "globalexport",
+      "category": "option",
+      "id": "globalexport"
+    },
+    {
+      "raw": "globalrcs",
+      "category": "option",
+      "id": "globalrcs"
+    },
+    {
+      "raw": "globassign",
+      "category": "option",
+      "id": "globassign"
+    },
+    {
+      "raw": "globcomplete",
+      "category": "option",
+      "id": "globcomplete"
+    },
+    {
+      "raw": "globdots",
+      "category": "option",
+      "id": "globdots"
+    },
+    {
+      "raw": "globstarshort",
+      "category": "option",
+      "id": "globstarshort"
+    },
+    {
+      "raw": "globsubst",
+      "category": "option",
+      "id": "globsubst"
+    },
+    {
+      "raw": "gosmacs-transpose-chars",
+      "category": "zle_widget",
+      "id": "gosmacs-transpose-chars"
+    },
+    {
+      "raw": "hash",
+      "category": "builtin",
+      "id": "hash"
+    },
+    {
+      "raw": "hash_all",
+      "category": "option",
+      "id": "hashall"
+    },
+    {
+      "raw": "hash_cmds",
+      "category": "option",
+      "id": "hashcmds"
+    },
+    {
+      "raw": "hash_dirs",
+      "category": "option",
+      "id": "hashdirs"
+    },
+    {
+      "raw": "hash_executables_only",
+      "category": "option",
+      "id": "hashexecutablesonly"
+    },
+    {
+      "raw": "hash_list_all",
+      "category": "option",
+      "id": "hashlistall"
+    },
+    {
+      "raw": "hashall",
+      "category": "option",
+      "id": "hashall"
+    },
+    {
+      "raw": "hashcmds",
+      "category": "option",
+      "id": "hashcmds"
+    },
+    {
+      "raw": "hashdirs",
+      "category": "option",
+      "id": "hashdirs"
+    },
+    {
+      "raw": "hashexecutablesonly",
+      "category": "option",
+      "id": "hashexecutablesonly"
+    },
+    {
+      "raw": "hashlistall",
+      "category": "option",
+      "id": "hashlistall"
+    },
+    {
+      "raw": "hist_allow_clobber",
+      "category": "option",
+      "id": "histallowclobber"
+    },
+    {
+      "raw": "hist_append",
+      "category": "option",
+      "id": "histappend"
+    },
+    {
+      "raw": "hist_beep",
+      "category": "option",
+      "id": "histbeep"
+    },
+    {
+      "raw": "hist_expand",
+      "category": "option",
+      "id": "histexpand"
+    },
+    {
+      "raw": "hist_expire_dups_first",
+      "category": "option",
+      "id": "histexpiredupsfirst"
+    },
+    {
+      "raw": "hist_fcntl_lock",
+      "category": "option",
+      "id": "histfcntllock"
+    },
+    {
+      "raw": "hist_find_no_dups",
+      "category": "option",
+      "id": "histfindnodups"
+    },
+    {
+      "raw": "hist_ignore_all_dups",
+      "category": "option",
+      "id": "histignorealldups"
+    },
+    {
+      "raw": "hist_ignore_dups",
+      "category": "option",
+      "id": "histignoredups"
+    },
+    {
+      "raw": "hist_ignore_space",
+      "category": "option",
+      "id": "histignorespace"
+    },
+    {
+      "raw": "hist_lex_words",
+      "category": "option",
+      "id": "histlexwords"
+    },
+    {
+      "raw": "hist_no_functions",
+      "category": "option",
+      "id": "histnofunctions"
+    },
+    {
+      "raw": "hist_no_store",
+      "category": "option",
+      "id": "histnostore"
+    },
+    {
+      "raw": "hist_reduce_blanks",
+      "category": "option",
+      "id": "histreduceblanks"
+    },
+    {
+      "raw": "hist_save_by_copy",
+      "category": "option",
+      "id": "histsavebycopy"
+    },
+    {
+      "raw": "hist_save_no_dups",
+      "category": "option",
+      "id": "histsavenodups"
+    },
+    {
+      "raw": "hist_subst_pattern",
+      "category": "option",
+      "id": "histsubstpattern"
+    },
+    {
+      "raw": "hist_verify",
+      "category": "option",
+      "id": "histverify"
+    },
+    {
+      "raw": "histallowclobber",
+      "category": "option",
+      "id": "histallowclobber"
+    },
+    {
+      "raw": "histappend",
+      "category": "option",
+      "id": "histappend"
+    },
+    {
+      "raw": "histbeep",
+      "category": "option",
+      "id": "histbeep"
+    },
+    {
+      "raw": "histchars",
+      "category": "special_param",
+      "id": "histchars"
+    },
+    {
+      "raw": "histexpand",
+      "category": "option",
+      "id": "histexpand"
+    },
+    {
+      "raw": "histexpiredupsfirst",
+      "category": "option",
+      "id": "histexpiredupsfirst"
+    },
+    {
+      "raw": "histfcntllock",
+      "category": "option",
+      "id": "histfcntllock"
+    },
+    {
+      "raw": "histfindnodups",
+      "category": "option",
+      "id": "histfindnodups"
+    },
+    {
+      "raw": "histignorealldups",
+      "category": "option",
+      "id": "histignorealldups"
+    },
+    {
+      "raw": "histignoredups",
+      "category": "option",
+      "id": "histignoredups"
+    },
+    {
+      "raw": "histignorespace",
+      "category": "option",
+      "id": "histignorespace"
+    },
+    {
+      "raw": "histlexwords",
+      "category": "option",
+      "id": "histlexwords"
+    },
+    {
+      "raw": "histnofunctions",
+      "category": "option",
+      "id": "histnofunctions"
+    },
+    {
+      "raw": "histnostore",
+      "category": "option",
+      "id": "histnostore"
+    },
+    {
+      "raw": "history",
+      "category": "builtin",
+      "id": "history"
+    },
+    {
+      "raw": "history-beginning-search-backward",
+      "category": "zle_widget",
+      "id": "history-beginning-search-backward"
+    },
+    {
+      "raw": "history-beginning-search-forward",
+      "category": "zle_widget",
+      "id": "history-beginning-search-forward"
+    },
+    {
+      "raw": "history-incremental-pattern-search-backward",
+      "category": "zle_widget",
+      "id": "history-incremental-pattern-search-backward"
+    },
+    {
+      "raw": "history-incremental-pattern-search-forward",
+      "category": "zle_widget",
+      "id": "history-incremental-pattern-search-forward"
+    },
+    {
+      "raw": "history-incremental-search-backward",
+      "category": "zle_widget",
+      "id": "history-incremental-search-backward"
+    },
+    {
+      "raw": "history-incremental-search-forward",
+      "category": "zle_widget",
+      "id": "history-incremental-search-forward"
+    },
+    {
+      "raw": "history-search-backward",
+      "category": "zle_widget",
+      "id": "history-search-backward"
+    },
+    {
+      "raw": "history-search-forward",
+      "category": "zle_widget",
+      "id": "history-search-forward"
+    },
+    {
+      "raw": "historywords",
+      "category": "special_param",
+      "id": "historywords"
+    },
+    {
+      "raw": "histreduceblanks",
+      "category": "option",
+      "id": "histreduceblanks"
+    },
+    {
+      "raw": "histsavebycopy",
+      "category": "option",
+      "id": "histsavebycopy"
+    },
+    {
+      "raw": "histsavenodups",
+      "category": "option",
+      "id": "histsavenodups"
+    },
+    {
+      "raw": "histsubstpattern",
+      "category": "option",
+      "id": "histsubstpattern"
+    },
+    {
+      "raw": "histverify",
+      "category": "option",
+      "id": "histverify"
+    },
+    {
+      "raw": "hup",
+      "category": "option",
+      "id": "hup"
+    },
+    {
+      "raw": "hypot",
+      "category": "mathfunc",
+      "id": "hypot"
+    },
+    {
+      "raw": "if",
+      "category": "complex_command",
+      "id": "if"
+    },
+    {
+      "raw": "ignore_braces",
+      "category": "option",
+      "id": "ignorebraces"
+    },
+    {
+      "raw": "ignore_close_braces",
+      "category": "option",
+      "id": "ignoreclosebraces"
+    },
+    {
+      "raw": "ignore_eof",
+      "category": "option",
+      "id": "ignoreeof"
+    },
+    {
+      "raw": "ignorebraces",
+      "category": "option",
+      "id": "ignorebraces"
+    },
+    {
+      "raw": "ignoreclosebraces",
+      "category": "option",
+      "id": "ignoreclosebraces"
+    },
+    {
+      "raw": "ignoreeof",
+      "category": "option",
+      "id": "ignoreeof"
+    },
+    {
+      "raw": "ilogb",
+      "category": "mathfunc",
+      "id": "ilogb"
+    },
+    {
+      "raw": "inc_append_history",
+      "category": "option",
+      "id": "incappendhistory"
+    },
+    {
+      "raw": "inc_append_history_time",
+      "category": "option",
+      "id": "incappendhistorytime"
+    },
+    {
+      "raw": "incappendhistory",
+      "category": "option",
+      "id": "incappendhistory"
+    },
+    {
+      "raw": "incappendhistorytime",
+      "category": "option",
+      "id": "incappendhistorytime"
+    },
+    {
+      "raw": "infer-next-history",
+      "category": "zle_widget",
+      "id": "infer-next-history"
+    },
+    {
+      "raw": "insert-last-word",
+      "category": "zle_widget",
+      "id": "insert-last-word"
+    },
+    {
+      "raw": "int",
+      "category": "mathfunc",
+      "id": "int"
+    },
+    {
+      "raw": "integer",
+      "category": "reserved_word",
+      "id": "integer"
+    },
+    {
+      "raw": "interactive",
+      "category": "option",
+      "id": "interactive"
+    },
+    {
+      "raw": "interactive_comments",
+      "category": "option",
+      "id": "interactivecomments"
+    },
+    {
+      "raw": "interactivecomments",
+      "category": "option",
+      "id": "interactivecomments"
+    },
+    {
+      "raw": "isearch",
+      "category": "keymap",
+      "id": "isearch"
+    },
+    {
+      "raw": "j0",
+      "category": "mathfunc",
+      "id": "j0"
+    },
+    {
+      "raw": "j1",
+      "category": "mathfunc",
+      "id": "j1"
+    },
+    {
+      "raw": "jn",
+      "category": "mathfunc",
+      "id": "jn"
+    },
+    {
+      "raw": "jobdirs",
+      "category": "special_param",
+      "id": "jobdirs"
+    },
+    {
+      "raw": "jobs",
+      "category": "builtin",
+      "id": "jobs"
+    },
+    {
+      "raw": "jobstates",
+      "category": "special_param",
+      "id": "jobstates"
+    },
+    {
+      "raw": "jobtexts",
+      "category": "special_param",
+      "id": "jobtexts"
+    },
+    {
+      "raw": "keymaps",
+      "category": "special_param",
+      "id": "keymaps"
+    },
+    {
+      "raw": "kill",
+      "category": "builtin",
+      "id": "kill"
+    },
+    {
+      "raw": "kill-buffer",
+      "category": "zle_widget",
+      "id": "kill-buffer"
+    },
+    {
+      "raw": "kill-line",
+      "category": "zle_widget",
+      "id": "kill-line"
+    },
+    {
+      "raw": "kill-region",
+      "category": "zle_widget",
+      "id": "kill-region"
+    },
+    {
+      "raw": "kill-whole-line",
+      "category": "zle_widget",
+      "id": "kill-whole-line"
+    },
+    {
+      "raw": "kill-word",
+      "category": "zle_widget",
+      "id": "kill-word"
+    },
+    {
+      "raw": "killring",
+      "category": "special_param",
+      "id": "killring"
+    },
+    {
+      "raw": "ksh_arrays",
+      "category": "option",
+      "id": "ksharrays"
+    },
+    {
+      "raw": "ksh_autoload",
+      "category": "option",
+      "id": "kshautoload"
+    },
+    {
+      "raw": "ksh_glob",
+      "category": "option",
+      "id": "kshglob"
+    },
+    {
+      "raw": "ksh_option_print",
+      "category": "option",
+      "id": "kshoptionprint"
+    },
+    {
+      "raw": "ksh_typeset",
+      "category": "option",
+      "id": "kshtypeset"
+    },
+    {
+      "raw": "ksh_zero_subscript",
+      "category": "option",
+      "id": "kshzerosubscript"
+    },
+    {
+      "raw": "ksharrays",
+      "category": "option",
+      "id": "ksharrays"
+    },
+    {
+      "raw": "kshautoload",
+      "category": "option",
+      "id": "kshautoload"
+    },
+    {
+      "raw": "kshglob",
+      "category": "option",
+      "id": "kshglob"
+    },
+    {
+      "raw": "kshoptionprint",
+      "category": "option",
+      "id": "kshoptionprint"
+    },
+    {
+      "raw": "kshtypeset",
+      "category": "option",
+      "id": "kshtypeset"
+    },
+    {
+      "raw": "kshzerosubscript",
+      "category": "option",
+      "id": "kshzerosubscript"
+    },
+    {
+      "raw": "langinfo",
+      "category": "special_param",
+      "id": "langinfo"
+    },
+    {
+      "raw": "ldexp",
+      "category": "mathfunc",
+      "id": "ldexp"
+    },
+    {
+      "raw": "let",
+      "category": "builtin",
+      "id": "let"
+    },
+    {
+      "raw": "lgamma",
+      "category": "mathfunc",
+      "id": "lgamma"
+    },
+    {
+      "raw": "limit",
+      "category": "builtin",
+      "id": "limit"
+    },
+    {
+      "raw": "list-choices",
+      "category": "zle_widget",
+      "id": "list-choices"
+    },
+    {
+      "raw": "list-expand",
+      "category": "zle_widget",
+      "id": "list-expand"
+    },
+    {
+      "raw": "list_ambiguous",
+      "category": "option",
+      "id": "listambiguous"
+    },
+    {
+      "raw": "list_beep",
+      "category": "option",
+      "id": "listbeep"
+    },
+    {
+      "raw": "list_packed",
+      "category": "option",
+      "id": "listpacked"
+    },
+    {
+      "raw": "list_rows_first",
+      "category": "option",
+      "id": "listrowsfirst"
+    },
+    {
+      "raw": "list_types",
+      "category": "option",
+      "id": "listtypes"
+    },
+    {
+      "raw": "listambiguous",
+      "category": "option",
+      "id": "listambiguous"
+    },
+    {
+      "raw": "listbeep",
+      "category": "option",
+      "id": "listbeep"
+    },
+    {
+      "raw": "listpacked",
+      "category": "option",
+      "id": "listpacked"
+    },
+    {
+      "raw": "listrowsfirst",
+      "category": "option",
+      "id": "listrowsfirst"
+    },
+    {
+      "raw": "listtypes",
+      "category": "option",
+      "id": "listtypes"
+    },
+    {
+      "raw": "local",
+      "category": "reserved_word",
+      "id": "local"
+    },
+    {
+      "raw": "local_loops",
+      "category": "option",
+      "id": "localloops"
+    },
+    {
+      "raw": "local_options",
+      "category": "option",
+      "id": "localoptions"
+    },
+    {
+      "raw": "local_patterns",
+      "category": "option",
+      "id": "localpatterns"
+    },
+    {
+      "raw": "local_traps",
+      "category": "option",
+      "id": "localtraps"
+    },
+    {
+      "raw": "localloops",
+      "category": "option",
+      "id": "localloops"
+    },
+    {
+      "raw": "localoptions",
+      "category": "option",
+      "id": "localoptions"
+    },
+    {
+      "raw": "localpatterns",
+      "category": "option",
+      "id": "localpatterns"
+    },
+    {
+      "raw": "localtraps",
+      "category": "option",
+      "id": "localtraps"
+    },
+    {
+      "raw": "log",
+      "category": "builtin",
+      "id": "log"
+    },
+    {
+      "raw": "log10",
+      "category": "mathfunc",
+      "id": "log10"
+    },
+    {
+      "raw": "log1p",
+      "category": "mathfunc",
+      "id": "log1p"
+    },
+    {
+      "raw": "log2",
+      "category": "mathfunc",
+      "id": "log2"
+    },
+    {
+      "raw": "logb",
+      "category": "mathfunc",
+      "id": "logb"
+    },
+    {
+      "raw": "login",
+      "category": "option",
+      "id": "login"
+    },
+    {
+      "raw": "logout",
+      "category": "builtin",
+      "id": "logout"
+    },
+    {
+      "raw": "long_list_jobs",
+      "category": "option",
+      "id": "longlistjobs"
+    },
+    {
+      "raw": "longlistjobs",
+      "category": "option",
+      "id": "longlistjobs"
+    },
+    {
+      "raw": "magic-space",
+      "category": "zle_widget",
+      "id": "magic-space"
+    },
+    {
+      "raw": "magic_equal_subst",
+      "category": "option",
+      "id": "magicequalsubst"
+    },
+    {
+      "raw": "magicequalsubst",
+      "category": "option",
+      "id": "magicequalsubst"
+    },
+    {
+      "raw": "mail_warn",
+      "category": "option",
+      "id": "mailwarn"
+    },
+    {
+      "raw": "mail_warning",
+      "category": "option",
+      "id": "mailwarning"
+    },
+    {
+      "raw": "mailpath",
+      "category": "special_param",
+      "id": "mailpath"
+    },
+    {
+      "raw": "mailwarn",
+      "category": "option",
+      "id": "mailwarn"
+    },
+    {
+      "raw": "mailwarning",
+      "category": "option",
+      "id": "mailwarning"
+    },
+    {
+      "raw": "manpath",
+      "category": "special_param",
+      "id": "manpath"
+    },
+    {
+      "raw": "mapfile",
+      "category": "special_param",
+      "id": "mapfile"
+    },
+    {
+      "raw": "mark_dirs",
+      "category": "option",
+      "id": "markdirs"
+    },
+    {
+      "raw": "markdirs",
+      "category": "option",
+      "id": "markdirs"
+    },
+    {
+      "raw": "match",
+      "category": "special_param",
+      "id": "match"
+    },
+    {
+      "raw": "mbegin",
+      "category": "special_param",
+      "id": "mbegin"
+    },
+    {
+      "raw": "mend",
+      "category": "special_param",
+      "id": "mend"
+    },
+    {
+      "raw": "menu-complete",
+      "category": "zle_widget",
+      "id": "menu-complete"
+    },
+    {
+      "raw": "menu-expand-or-complete",
+      "category": "zle_widget",
+      "id": "menu-expand-or-complete"
+    },
+    {
+      "raw": "menu_complete",
+      "category": "option",
+      "id": "menucomplete"
+    },
+    {
+      "raw": "menucomplete",
+      "category": "option",
+      "id": "menucomplete"
+    },
+    {
+      "raw": "module_path",
+      "category": "special_param",
+      "id": "module_path"
+    },
+    {
+      "raw": "modules",
+      "category": "special_param",
+      "id": "modules"
+    },
+    {
+      "raw": "monitor",
+      "category": "option",
+      "id": "monitor"
+    },
+    {
+      "raw": "multi_func_def",
+      "category": "option",
+      "id": "multifuncdef"
+    },
+    {
+      "raw": "multibyte",
+      "category": "option",
+      "id": "multibyte"
+    },
+    {
+      "raw": "multifuncdef",
+      "category": "option",
+      "id": "multifuncdef"
+    },
+    {
+      "raw": "multios",
+      "category": "option",
+      "id": "multios"
+    },
+    {
+      "raw": "nameddirs",
+      "category": "special_param",
+      "id": "nameddirs"
+    },
+    {
+      "raw": "neg-argument",
+      "category": "zle_widget",
+      "id": "neg-argument"
+    },
+    {
+      "raw": "nextafter",
+      "category": "mathfunc",
+      "id": "nextafter"
+    },
+    {
+      "raw": "no_aliases",
+      "category": "option",
+      "id": "aliases"
+    },
+    {
+      "raw": "no_aliasfuncdef",
+      "category": "option",
+      "id": "aliasfuncdef"
+    },
+    {
+      "raw": "no_allexport",
+      "category": "option",
+      "id": "allexport"
+    },
+    {
+      "raw": "no_alwayslastprompt",
+      "category": "option",
+      "id": "alwayslastprompt"
+    },
+    {
+      "raw": "no_alwaystoend",
+      "category": "option",
+      "id": "alwaystoend"
+    },
+    {
+      "raw": "no_appendcreate",
+      "category": "option",
+      "id": "appendcreate"
+    },
+    {
+      "raw": "no_appendhistory",
+      "category": "option",
+      "id": "appendhistory"
+    },
+    {
+      "raw": "no_autocd",
+      "category": "option",
+      "id": "autocd"
+    },
+    {
+      "raw": "no_autocontinue",
+      "category": "option",
+      "id": "autocontinue"
+    },
+    {
+      "raw": "no_autolist",
+      "category": "option",
+      "id": "autolist"
+    },
+    {
+      "raw": "no_automenu",
+      "category": "option",
+      "id": "automenu"
+    },
+    {
+      "raw": "no_autonamedirs",
+      "category": "option",
+      "id": "autonamedirs"
+    },
+    {
+      "raw": "no_autoparamkeys",
+      "category": "option",
+      "id": "autoparamkeys"
+    },
+    {
+      "raw": "no_autoparamslash",
+      "category": "option",
+      "id": "autoparamslash"
+    },
+    {
+      "raw": "no_autopushd",
+      "category": "option",
+      "id": "autopushd"
+    },
+    {
+      "raw": "no_autoremoveslash",
+      "category": "option",
+      "id": "autoremoveslash"
+    },
+    {
+      "raw": "no_autoresume",
+      "category": "option",
+      "id": "autoresume"
+    },
+    {
+      "raw": "no_badpattern",
+      "category": "option",
+      "id": "badpattern"
+    },
+    {
+      "raw": "no_banghist",
+      "category": "option",
+      "id": "banghist"
+    },
+    {
+      "raw": "no_bareglobqual",
+      "category": "option",
+      "id": "bareglobqual"
+    },
+    {
+      "raw": "no_bashautolist",
+      "category": "option",
+      "id": "bashautolist"
+    },
+    {
+      "raw": "no_bashrematch",
+      "category": "option",
+      "id": "bashrematch"
+    },
+    {
+      "raw": "no_beep",
+      "category": "option",
+      "id": "beep"
+    },
+    {
+      "raw": "no_bgnice",
+      "category": "option",
+      "id": "bgnice"
+    },
+    {
+      "raw": "no_braceccl",
+      "category": "option",
+      "id": "braceccl"
+    },
+    {
+      "raw": "no_braceexpand",
+      "category": "option",
+      "id": "braceexpand"
+    },
+    {
+      "raw": "no_bsdecho",
+      "category": "option",
+      "id": "bsdecho"
+    },
+    {
+      "raw": "no_caseglob",
+      "category": "option",
+      "id": "caseglob"
+    },
+    {
+      "raw": "no_casematch",
+      "category": "option",
+      "id": "casematch"
+    },
+    {
+      "raw": "no_casepaths",
+      "category": "option",
+      "id": "casepaths"
+    },
+    {
+      "raw": "no_cbases",
+      "category": "option",
+      "id": "cbases"
+    },
+    {
+      "raw": "no_cdablevars",
+      "category": "option",
+      "id": "cdablevars"
+    },
+    {
+      "raw": "no_cdsilent",
+      "category": "option",
+      "id": "cdsilent"
+    },
+    {
+      "raw": "no_chasedots",
+      "category": "option",
+      "id": "chasedots"
+    },
+    {
+      "raw": "no_chaselinks",
+      "category": "option",
+      "id": "chaselinks"
+    },
+    {
+      "raw": "no_checkjobs",
+      "category": "option",
+      "id": "checkjobs"
+    },
+    {
+      "raw": "no_checkrunningjobs",
+      "category": "option",
+      "id": "checkrunningjobs"
+    },
+    {
+      "raw": "no_clobber",
+      "category": "option",
+      "id": "clobber"
+    },
+    {
+      "raw": "no_clobberempty",
+      "category": "option",
+      "id": "clobberempty"
+    },
+    {
+      "raw": "no_combiningchars",
+      "category": "option",
+      "id": "combiningchars"
+    },
+    {
+      "raw": "no_completealiases",
+      "category": "option",
+      "id": "completealiases"
+    },
+    {
+      "raw": "no_completeinword",
+      "category": "option",
+      "id": "completeinword"
+    },
+    {
+      "raw": "no_continueonerror",
+      "category": "option",
+      "id": "continueonerror"
+    },
+    {
+      "raw": "no_correct",
+      "category": "option",
+      "id": "correct"
+    },
+    {
+      "raw": "no_correctall",
+      "category": "option",
+      "id": "correctall"
+    },
+    {
+      "raw": "no_cprecedences",
+      "category": "option",
+      "id": "cprecedences"
+    },
+    {
+      "raw": "no_cshjunkiehistory",
+      "category": "option",
+      "id": "cshjunkiehistory"
+    },
+    {
+      "raw": "no_cshjunkieloops",
+      "category": "option",
+      "id": "cshjunkieloops"
+    },
+    {
+      "raw": "no_cshjunkiequotes",
+      "category": "option",
+      "id": "cshjunkiequotes"
+    },
+    {
+      "raw": "no_cshnullcmd",
+      "category": "option",
+      "id": "cshnullcmd"
+    },
+    {
+      "raw": "no_cshnullglob",
+      "category": "option",
+      "id": "cshnullglob"
+    },
+    {
+      "raw": "no_debugbeforecmd",
+      "category": "option",
+      "id": "debugbeforecmd"
+    },
+    {
+      "raw": "no_dotglob",
+      "category": "option",
+      "id": "dotglob"
+    },
+    {
+      "raw": "no_dvorak",
+      "category": "option",
+      "id": "dvorak"
+    },
+    {
+      "raw": "no_emacs",
+      "category": "option",
+      "id": "emacs"
+    },
+    {
+      "raw": "no_equals",
+      "category": "option",
+      "id": "equals"
+    },
+    {
+      "raw": "no_errexit",
+      "category": "option",
+      "id": "errexit"
+    },
+    {
+      "raw": "no_errreturn",
+      "category": "option",
+      "id": "errreturn"
+    },
+    {
+      "raw": "no_evallineno",
+      "category": "option",
+      "id": "evallineno"
+    },
+    {
+      "raw": "no_exec",
+      "category": "option",
+      "id": "exec"
+    },
+    {
+      "raw": "no_extendedglob",
+      "category": "option",
+      "id": "extendedglob"
+    },
+    {
+      "raw": "no_extendedhistory",
+      "category": "option",
+      "id": "extendedhistory"
+    },
+    {
+      "raw": "no_flowcontrol",
+      "category": "option",
+      "id": "flowcontrol"
+    },
+    {
+      "raw": "no_forcefloat",
+      "category": "option",
+      "id": "forcefloat"
+    },
+    {
+      "raw": "no_functionargzero",
+      "category": "option",
+      "id": "functionargzero"
+    },
+    {
+      "raw": "no_glob",
+      "category": "option",
+      "id": "glob"
+    },
+    {
+      "raw": "no_globalexport",
+      "category": "option",
+      "id": "globalexport"
+    },
+    {
+      "raw": "no_globalrcs",
+      "category": "option",
+      "id": "globalrcs"
+    },
+    {
+      "raw": "no_globassign",
+      "category": "option",
+      "id": "globassign"
+    },
+    {
+      "raw": "no_globcomplete",
+      "category": "option",
+      "id": "globcomplete"
+    },
+    {
+      "raw": "no_globdots",
+      "category": "option",
+      "id": "globdots"
+    },
+    {
+      "raw": "no_globstarshort",
+      "category": "option",
+      "id": "globstarshort"
+    },
+    {
+      "raw": "no_globsubst",
+      "category": "option",
+      "id": "globsubst"
+    },
+    {
+      "raw": "no_hashall",
+      "category": "option",
+      "id": "hashall"
+    },
+    {
+      "raw": "no_hashcmds",
+      "category": "option",
+      "id": "hashcmds"
+    },
+    {
+      "raw": "no_hashdirs",
+      "category": "option",
+      "id": "hashdirs"
+    },
+    {
+      "raw": "no_hashexecutablesonly",
+      "category": "option",
+      "id": "hashexecutablesonly"
+    },
+    {
+      "raw": "no_hashlistall",
+      "category": "option",
+      "id": "hashlistall"
+    },
+    {
+      "raw": "no_histallowclobber",
+      "category": "option",
+      "id": "histallowclobber"
+    },
+    {
+      "raw": "no_histappend",
+      "category": "option",
+      "id": "histappend"
+    },
+    {
+      "raw": "no_histbeep",
+      "category": "option",
+      "id": "histbeep"
+    },
+    {
+      "raw": "no_histexpand",
+      "category": "option",
+      "id": "histexpand"
+    },
+    {
+      "raw": "no_histexpiredupsfirst",
+      "category": "option",
+      "id": "histexpiredupsfirst"
+    },
+    {
+      "raw": "no_histfcntllock",
+      "category": "option",
+      "id": "histfcntllock"
+    },
+    {
+      "raw": "no_histfindnodups",
+      "category": "option",
+      "id": "histfindnodups"
+    },
+    {
+      "raw": "no_histignorealldups",
+      "category": "option",
+      "id": "histignorealldups"
+    },
+    {
+      "raw": "no_histignoredups",
+      "category": "option",
+      "id": "histignoredups"
+    },
+    {
+      "raw": "no_histignorespace",
+      "category": "option",
+      "id": "histignorespace"
+    },
+    {
+      "raw": "no_histlexwords",
+      "category": "option",
+      "id": "histlexwords"
+    },
+    {
+      "raw": "no_histnofunctions",
+      "category": "option",
+      "id": "histnofunctions"
+    },
+    {
+      "raw": "no_histnostore",
+      "category": "option",
+      "id": "histnostore"
+    },
+    {
+      "raw": "no_histreduceblanks",
+      "category": "option",
+      "id": "histreduceblanks"
+    },
+    {
+      "raw": "no_histsavebycopy",
+      "category": "option",
+      "id": "histsavebycopy"
+    },
+    {
+      "raw": "no_histsavenodups",
+      "category": "option",
+      "id": "histsavenodups"
+    },
+    {
+      "raw": "no_histsubstpattern",
+      "category": "option",
+      "id": "histsubstpattern"
+    },
+    {
+      "raw": "no_histverify",
+      "category": "option",
+      "id": "histverify"
+    },
+    {
+      "raw": "no_hup",
+      "category": "option",
+      "id": "hup"
+    },
+    {
+      "raw": "no_ignorebraces",
+      "category": "option",
+      "id": "ignorebraces"
+    },
+    {
+      "raw": "no_ignoreclosebraces",
+      "category": "option",
+      "id": "ignoreclosebraces"
+    },
+    {
+      "raw": "no_ignoreeof",
+      "category": "option",
+      "id": "ignoreeof"
+    },
+    {
+      "raw": "no_incappendhistory",
+      "category": "option",
+      "id": "incappendhistory"
+    },
+    {
+      "raw": "no_incappendhistorytime",
+      "category": "option",
+      "id": "incappendhistorytime"
+    },
+    {
+      "raw": "no_interactive",
+      "category": "option",
+      "id": "interactive"
+    },
+    {
+      "raw": "no_interactivecomments",
+      "category": "option",
+      "id": "interactivecomments"
+    },
+    {
+      "raw": "no_ksharrays",
+      "category": "option",
+      "id": "ksharrays"
+    },
+    {
+      "raw": "no_kshautoload",
+      "category": "option",
+      "id": "kshautoload"
+    },
+    {
+      "raw": "no_kshglob",
+      "category": "option",
+      "id": "kshglob"
+    },
+    {
+      "raw": "no_kshoptionprint",
+      "category": "option",
+      "id": "kshoptionprint"
+    },
+    {
+      "raw": "no_kshtypeset",
+      "category": "option",
+      "id": "kshtypeset"
+    },
+    {
+      "raw": "no_kshzerosubscript",
+      "category": "option",
+      "id": "kshzerosubscript"
+    },
+    {
+      "raw": "no_listambiguous",
+      "category": "option",
+      "id": "listambiguous"
+    },
+    {
+      "raw": "no_listbeep",
+      "category": "option",
+      "id": "listbeep"
+    },
+    {
+      "raw": "no_listpacked",
+      "category": "option",
+      "id": "listpacked"
+    },
+    {
+      "raw": "no_listrowsfirst",
+      "category": "option",
+      "id": "listrowsfirst"
+    },
+    {
+      "raw": "no_listtypes",
+      "category": "option",
+      "id": "listtypes"
+    },
+    {
+      "raw": "no_localloops",
+      "category": "option",
+      "id": "localloops"
+    },
+    {
+      "raw": "no_localoptions",
+      "category": "option",
+      "id": "localoptions"
+    },
+    {
+      "raw": "no_localpatterns",
+      "category": "option",
+      "id": "localpatterns"
+    },
+    {
+      "raw": "no_localtraps",
+      "category": "option",
+      "id": "localtraps"
+    },
+    {
+      "raw": "no_log",
+      "category": "option",
+      "id": "log"
+    },
+    {
+      "raw": "no_login",
+      "category": "option",
+      "id": "login"
+    },
+    {
+      "raw": "no_longlistjobs",
+      "category": "option",
+      "id": "longlistjobs"
+    },
+    {
+      "raw": "no_magicequalsubst",
+      "category": "option",
+      "id": "magicequalsubst"
+    },
+    {
+      "raw": "no_mailwarn",
+      "category": "option",
+      "id": "mailwarn"
+    },
+    {
+      "raw": "no_mailwarning",
+      "category": "option",
+      "id": "mailwarning"
+    },
+    {
+      "raw": "no_markdirs",
+      "category": "option",
+      "id": "markdirs"
+    },
+    {
+      "raw": "no_menucomplete",
+      "category": "option",
+      "id": "menucomplete"
+    },
+    {
+      "raw": "no_monitor",
+      "category": "option",
+      "id": "monitor"
+    },
+    {
+      "raw": "no_multibyte",
+      "category": "option",
+      "id": "multibyte"
+    },
+    {
+      "raw": "no_multifuncdef",
+      "category": "option",
+      "id": "multifuncdef"
+    },
+    {
+      "raw": "no_multios",
+      "category": "option",
+      "id": "multios"
+    },
+    {
+      "raw": "no_nomatch",
+      "category": "option",
+      "id": "nomatch"
+    },
+    {
+      "raw": "no_notify",
+      "category": "option",
+      "id": "notify"
+    },
+    {
+      "raw": "no_nullglob",
+      "category": "option",
+      "id": "nullglob"
+    },
+    {
+      "raw": "no_numericglobsort",
+      "category": "option",
+      "id": "numericglobsort"
+    },
+    {
+      "raw": "no_octalzeroes",
+      "category": "option",
+      "id": "octalzeroes"
+    },
+    {
+      "raw": "no_onecmd",
+      "category": "option",
+      "id": "onecmd"
+    },
+    {
+      "raw": "no_overstrike",
+      "category": "option",
+      "id": "overstrike"
+    },
+    {
+      "raw": "no_pathdirs",
+      "category": "option",
+      "id": "pathdirs"
+    },
+    {
+      "raw": "no_pathscript",
+      "category": "option",
+      "id": "pathscript"
+    },
+    {
+      "raw": "no_physical",
+      "category": "option",
+      "id": "physical"
+    },
+    {
+      "raw": "no_pipefail",
+      "category": "option",
+      "id": "pipefail"
+    },
+    {
+      "raw": "no_posixaliases",
+      "category": "option",
+      "id": "posixaliases"
+    },
+    {
+      "raw": "no_posixargzero",
+      "category": "option",
+      "id": "posixargzero"
+    },
+    {
+      "raw": "no_posixbuiltins",
+      "category": "option",
+      "id": "posixbuiltins"
+    },
+    {
+      "raw": "no_posixcd",
+      "category": "option",
+      "id": "posixcd"
+    },
+    {
+      "raw": "no_posixidentifiers",
+      "category": "option",
+      "id": "posixidentifiers"
+    },
+    {
+      "raw": "no_posixjobs",
+      "category": "option",
+      "id": "posixjobs"
+    },
+    {
+      "raw": "no_posixstrings",
+      "category": "option",
+      "id": "posixstrings"
+    },
+    {
+      "raw": "no_posixtraps",
+      "category": "option",
+      "id": "posixtraps"
+    },
+    {
+      "raw": "no_printeightbit",
+      "category": "option",
+      "id": "printeightbit"
+    },
+    {
+      "raw": "no_printexitvalue",
+      "category": "option",
+      "id": "printexitvalue"
+    },
+    {
+      "raw": "no_privileged",
+      "category": "option",
+      "id": "privileged"
+    },
+    {
+      "raw": "no_promptbang",
+      "category": "option",
+      "id": "promptbang"
+    },
+    {
+      "raw": "no_promptcr",
+      "category": "option",
+      "id": "promptcr"
+    },
+    {
+      "raw": "no_promptpercent",
+      "category": "option",
+      "id": "promptpercent"
+    },
+    {
+      "raw": "no_promptsp",
+      "category": "option",
+      "id": "promptsp"
+    },
+    {
+      "raw": "no_promptsubst",
+      "category": "option",
+      "id": "promptsubst"
+    },
+    {
+      "raw": "no_promptvars",
+      "category": "option",
+      "id": "promptvars"
+    },
+    {
+      "raw": "no_pushdignoredups",
+      "category": "option",
+      "id": "pushdignoredups"
+    },
+    {
+      "raw": "no_pushdminus",
+      "category": "option",
+      "id": "pushdminus"
+    },
+    {
+      "raw": "no_pushdsilent",
+      "category": "option",
+      "id": "pushdsilent"
+    },
+    {
+      "raw": "no_pushdtohome",
+      "category": "option",
+      "id": "pushdtohome"
+    },
+    {
+      "raw": "no_rcexpandparam",
+      "category": "option",
+      "id": "rcexpandparam"
+    },
+    {
+      "raw": "no_rcquotes",
+      "category": "option",
+      "id": "rcquotes"
+    },
+    {
+      "raw": "no_rcs",
+      "category": "option",
+      "id": "rcs"
+    },
+    {
+      "raw": "no_recexact",
+      "category": "option",
+      "id": "recexact"
+    },
+    {
+      "raw": "no_rematchpcre",
+      "category": "option",
+      "id": "rematchpcre"
+    },
+    {
+      "raw": "no_restricted",
+      "category": "option",
+      "id": "restricted"
+    },
+    {
+      "raw": "no_rmstarsilent",
+      "category": "option",
+      "id": "rmstarsilent"
+    },
+    {
+      "raw": "no_rmstarwait",
+      "category": "option",
+      "id": "rmstarwait"
+    },
+    {
+      "raw": "no_sharehistory",
+      "category": "option",
+      "id": "sharehistory"
+    },
+    {
+      "raw": "no_shfileexpansion",
+      "category": "option",
+      "id": "shfileexpansion"
+    },
+    {
+      "raw": "no_shglob",
+      "category": "option",
+      "id": "shglob"
+    },
+    {
+      "raw": "no_shinstdin",
+      "category": "option",
+      "id": "shinstdin"
+    },
+    {
+      "raw": "no_shnullcmd",
+      "category": "option",
+      "id": "shnullcmd"
+    },
+    {
+      "raw": "no_shoptionletters",
+      "category": "option",
+      "id": "shoptionletters"
+    },
+    {
+      "raw": "no_shortloops",
+      "category": "option",
+      "id": "shortloops"
+    },
+    {
+      "raw": "no_shortrepeat",
+      "category": "option",
+      "id": "shortrepeat"
+    },
+    {
+      "raw": "no_shwordsplit",
+      "category": "option",
+      "id": "shwordsplit"
+    },
+    {
+      "raw": "no_singlecommand",
+      "category": "option",
+      "id": "singlecommand"
+    },
+    {
+      "raw": "no_singlelinezle",
+      "category": "option",
+      "id": "singlelinezle"
+    },
+    {
+      "raw": "no_sourcetrace",
+      "category": "option",
+      "id": "sourcetrace"
+    },
+    {
+      "raw": "no_stdin",
+      "category": "option",
+      "id": "stdin"
+    },
+    {
+      "raw": "no_sunkeyboardhack",
+      "category": "option",
+      "id": "sunkeyboardhack"
+    },
+    {
+      "raw": "no_trackall",
+      "category": "option",
+      "id": "trackall"
+    },
+    {
+      "raw": "no_transientrprompt",
+      "category": "option",
+      "id": "transientrprompt"
+    },
+    {
+      "raw": "no_trapsasync",
+      "category": "option",
+      "id": "trapsasync"
+    },
+    {
+      "raw": "no_typesetsilent",
+      "category": "option",
+      "id": "typesetsilent"
+    },
+    {
+      "raw": "no_typesettounset",
+      "category": "option",
+      "id": "typesettounset"
+    },
+    {
+      "raw": "no_unset",
+      "category": "option",
+      "id": "unset"
+    },
+    {
+      "raw": "no_verbose",
+      "category": "option",
+      "id": "verbose"
+    },
+    {
+      "raw": "no_vi",
+      "category": "option",
+      "id": "vi"
+    },
+    {
+      "raw": "no_warncreateglobal",
+      "category": "option",
+      "id": "warncreateglobal"
+    },
+    {
+      "raw": "no_warnnestedvar",
+      "category": "option",
+      "id": "warnnestedvar"
+    },
+    {
+      "raw": "no_xtrace",
+      "category": "option",
+      "id": "xtrace"
+    },
+    {
+      "raw": "no_zle",
+      "category": "option",
+      "id": "zle"
+    },
+    {
+      "raw": "nocorrect",
+      "category": "reserved_word",
+      "id": "nocorrect"
+    },
+    {
+      "raw": "noglob",
+      "category": "precmd_modifier",
+      "id": "noglob"
+    },
+    {
+      "raw": "nomatch",
+      "category": "option",
+      "id": "nomatch"
+    },
+    {
+      "raw": "notify",
+      "category": "option",
+      "id": "notify"
+    },
+    {
+      "raw": "null_glob",
+      "category": "option",
+      "id": "nullglob"
+    },
+    {
+      "raw": "nullglob",
+      "category": "option",
+      "id": "nullglob"
+    },
+    {
+      "raw": "numeric_glob_sort",
+      "category": "option",
+      "id": "numericglobsort"
+    },
+    {
+      "raw": "numericglobsort",
+      "category": "option",
+      "id": "numericglobsort"
+    },
+    {
+      "raw": "octal_zeroes",
+      "category": "option",
+      "id": "octalzeroes"
+    },
+    {
+      "raw": "octalzeroes",
+      "category": "option",
+      "id": "octalzeroes"
+    },
+    {
+      "raw": "one_cmd",
+      "category": "option",
+      "id": "onecmd"
+    },
+    {
+      "raw": "onecmd",
+      "category": "option",
+      "id": "onecmd"
+    },
+    {
+      "raw": "options",
+      "category": "special_param",
+      "id": "options"
+    },
+    {
+      "raw": "overstrike",
+      "category": "option",
+      "id": "overstrike"
+    },
+    {
+      "raw": "overwrite-mode",
+      "category": "zle_widget",
+      "id": "overwrite-mode"
+    },
+    {
+      "raw": "parameters",
+      "category": "special_param",
+      "id": "parameters"
+    },
+    {
+      "raw": "patchars",
+      "category": "special_param",
+      "id": "patchars"
+    },
+    {
+      "raw": "path",
+      "category": "special_param",
+      "id": "path"
+    },
+    {
+      "raw": "path_dirs",
+      "category": "option",
+      "id": "pathdirs"
+    },
+    {
+      "raw": "path_script",
+      "category": "option",
+      "id": "pathscript"
+    },
+    {
+      "raw": "pathdirs",
+      "category": "option",
+      "id": "pathdirs"
+    },
+    {
+      "raw": "pathscript",
+      "category": "option",
+      "id": "pathscript"
+    },
+    {
+      "raw": "pcre_compile",
+      "category": "builtin",
+      "id": "pcre_compile"
+    },
+    {
+      "raw": "pcre_match",
+      "category": "builtin",
+      "id": "pcre_match"
+    },
+    {
+      "raw": "pcre_study",
+      "category": "builtin",
+      "id": "pcre_study"
+    },
+    {
+      "raw": "periodic",
+      "category": "special_function",
+      "id": "periodic"
+    },
+    {
+      "raw": "physical",
+      "category": "option",
+      "id": "physical"
+    },
+    {
+      "raw": "pipe_fail",
+      "category": "option",
+      "id": "pipefail"
+    },
+    {
+      "raw": "pipefail",
+      "category": "option",
+      "id": "pipefail"
+    },
+    {
+      "raw": "pipestatus",
+      "category": "special_param",
+      "id": "pipestatus"
+    },
+    {
+      "raw": "popd",
+      "category": "builtin",
+      "id": "popd"
+    },
+    {
+      "raw": "posix_aliases",
+      "category": "option",
+      "id": "posixaliases"
+    },
+    {
+      "raw": "posix_argzero",
+      "category": "option",
+      "id": "posixargzero"
+    },
+    {
+      "raw": "posix_builtins",
+      "category": "option",
+      "id": "posixbuiltins"
+    },
+    {
+      "raw": "posix_cd",
+      "category": "option",
+      "id": "posixcd"
+    },
+    {
+      "raw": "posix_identifiers",
+      "category": "option",
+      "id": "posixidentifiers"
+    },
+    {
+      "raw": "posix_jobs",
+      "category": "option",
+      "id": "posixjobs"
+    },
+    {
+      "raw": "posix_strings",
+      "category": "option",
+      "id": "posixstrings"
+    },
+    {
+      "raw": "posix_traps",
+      "category": "option",
+      "id": "posixtraps"
+    },
+    {
+      "raw": "posixaliases",
+      "category": "option",
+      "id": "posixaliases"
+    },
+    {
+      "raw": "posixargzero",
+      "category": "option",
+      "id": "posixargzero"
+    },
+    {
+      "raw": "posixbuiltins",
+      "category": "option",
+      "id": "posixbuiltins"
+    },
+    {
+      "raw": "posixcd",
+      "category": "option",
+      "id": "posixcd"
+    },
+    {
+      "raw": "posixidentifiers",
+      "category": "option",
+      "id": "posixidentifiers"
+    },
+    {
+      "raw": "posixjobs",
+      "category": "option",
+      "id": "posixjobs"
+    },
+    {
+      "raw": "posixstrings",
+      "category": "option",
+      "id": "posixstrings"
+    },
+    {
+      "raw": "posixtraps",
+      "category": "option",
+      "id": "posixtraps"
+    },
+    {
+      "raw": "pound-insert",
+      "category": "zle_widget",
+      "id": "pound-insert"
+    },
+    {
+      "raw": "precmd",
+      "category": "special_function",
+      "id": "precmd"
+    },
+    {
+      "raw": "preexec",
+      "category": "special_function",
+      "id": "preexec"
+    },
+    {
+      "raw": "print",
+      "category": "builtin",
+      "id": "print"
+    },
+    {
+      "raw": "print_eight_bit",
+      "category": "option",
+      "id": "printeightbit"
+    },
+    {
+      "raw": "print_exit_value",
+      "category": "option",
+      "id": "printexitvalue"
+    },
+    {
+      "raw": "printeightbit",
+      "category": "option",
+      "id": "printeightbit"
+    },
+    {
+      "raw": "printexitvalue",
+      "category": "option",
+      "id": "printexitvalue"
+    },
+    {
+      "raw": "printf",
+      "category": "builtin",
+      "id": "printf"
+    },
+    {
+      "raw": "private",
+      "category": "builtin",
+      "id": "private"
+    },
+    {
+      "raw": "privileged",
+      "category": "option",
+      "id": "privileged"
+    },
+    {
+      "raw": "prompt",
+      "category": "special_param",
+      "id": "prompt"
+    },
+    {
+      "raw": "prompt_bang",
+      "category": "option",
+      "id": "promptbang"
+    },
+    {
+      "raw": "prompt_cr",
+      "category": "option",
+      "id": "promptcr"
+    },
+    {
+      "raw": "prompt_percent",
+      "category": "option",
+      "id": "promptpercent"
+    },
+    {
+      "raw": "prompt_sp",
+      "category": "option",
+      "id": "promptsp"
+    },
+    {
+      "raw": "prompt_subst",
+      "category": "option",
+      "id": "promptsubst"
+    },
+    {
+      "raw": "prompt_vars",
+      "category": "option",
+      "id": "promptvars"
+    },
+    {
+      "raw": "promptbang",
+      "category": "option",
+      "id": "promptbang"
+    },
+    {
+      "raw": "promptcr",
+      "category": "option",
+      "id": "promptcr"
+    },
+    {
+      "raw": "promptpercent",
+      "category": "option",
+      "id": "promptpercent"
+    },
+    {
+      "raw": "promptsp",
+      "category": "option",
+      "id": "promptsp"
+    },
+    {
+      "raw": "promptsubst",
+      "category": "option",
+      "id": "promptsubst"
+    },
+    {
+      "raw": "promptvars",
+      "category": "option",
+      "id": "promptvars"
+    },
+    {
+      "raw": "psvar",
+      "category": "special_param",
+      "id": "psvar"
+    },
+    {
+      "raw": "push-input",
+      "category": "zle_widget",
+      "id": "push-input"
+    },
+    {
+      "raw": "push-line",
+      "category": "zle_widget",
+      "id": "push-line"
+    },
+    {
+      "raw": "push-line-or-edit",
+      "category": "zle_widget",
+      "id": "push-line-or-edit"
+    },
+    {
+      "raw": "pushd",
+      "category": "builtin",
+      "id": "pushd"
+    },
+    {
+      "raw": "pushd_ignore_dups",
+      "category": "option",
+      "id": "pushdignoredups"
+    },
+    {
+      "raw": "pushd_minus",
+      "category": "option",
+      "id": "pushdminus"
+    },
+    {
+      "raw": "pushd_silent",
+      "category": "option",
+      "id": "pushdsilent"
+    },
+    {
+      "raw": "pushd_to_home",
+      "category": "option",
+      "id": "pushdtohome"
+    },
+    {
+      "raw": "pushdignoredups",
+      "category": "option",
+      "id": "pushdignoredups"
+    },
+    {
+      "raw": "pushdminus",
+      "category": "option",
+      "id": "pushdminus"
+    },
+    {
+      "raw": "pushdsilent",
+      "category": "option",
+      "id": "pushdsilent"
+    },
+    {
+      "raw": "pushdtohome",
+      "category": "option",
+      "id": "pushdtohome"
+    },
+    {
+      "raw": "pushln",
+      "category": "builtin",
+      "id": "pushln"
+    },
+    {
+      "raw": "put-replace-selection",
+      "category": "zle_widget",
+      "id": "put-replace-selection"
+    },
+    {
+      "raw": "pwd",
+      "category": "builtin",
+      "id": "pwd"
+    },
+    {
+      "raw": "quote-line",
+      "category": "zle_widget",
+      "id": "quote-line"
+    },
+    {
+      "raw": "quote-region",
+      "category": "zle_widget",
+      "id": "quote-region"
+    },
+    {
+      "raw": "quoted-insert",
+      "category": "zle_widget",
+      "id": "quoted-insert"
+    },
+    {
+      "raw": "r",
+      "category": "builtin",
+      "id": "r"
+    },
+    {
+      "raw": "rand48",
+      "category": "mathfunc",
+      "id": "rand48"
+    },
+    {
+      "raw": "rc_expand_param",
+      "category": "option",
+      "id": "rcexpandparam"
+    },
+    {
+      "raw": "rc_quotes",
+      "category": "option",
+      "id": "rcquotes"
+    },
+    {
+      "raw": "rcexpandparam",
+      "category": "option",
+      "id": "rcexpandparam"
+    },
+    {
+      "raw": "rcquotes",
+      "category": "option",
+      "id": "rcquotes"
+    },
+    {
+      "raw": "rcs",
+      "category": "option",
+      "id": "rcs"
+    },
+    {
+      "raw": "read",
+      "category": "builtin",
+      "id": "read"
+    },
+    {
+      "raw": "read-command",
+      "category": "zle_widget",
+      "id": "read-command"
+    },
+    {
+      "raw": "readonly",
+      "category": "reserved_word",
+      "id": "readonly"
+    },
+    {
+      "raw": "rec_exact",
+      "category": "option",
+      "id": "recexact"
+    },
+    {
+      "raw": "recexact",
+      "category": "option",
+      "id": "recexact"
+    },
+    {
+      "raw": "recursive-edit",
+      "category": "zle_widget",
+      "id": "recursive-edit"
+    },
+    {
+      "raw": "redisplay",
+      "category": "zle_widget",
+      "id": "redisplay"
+    },
+    {
+      "raw": "redo",
+      "category": "zle_widget",
+      "id": "redo"
+    },
+    {
+      "raw": "region_highlight",
+      "category": "special_param",
+      "id": "region_highlight"
+    },
+    {
+      "raw": "registers",
+      "category": "special_param",
+      "id": "registers"
+    },
+    {
+      "raw": "rehash",
+      "category": "builtin",
+      "id": "rehash"
+    },
+    {
+      "raw": "rematch_pcre",
+      "category": "option",
+      "id": "rematchpcre"
+    },
+    {
+      "raw": "rematchpcre",
+      "category": "option",
+      "id": "rematchpcre"
+    },
+    {
+      "raw": "repeat",
+      "category": "complex_command",
+      "id": "repeat"
+    },
+    {
+      "raw": "reply",
+      "category": "special_param",
+      "id": "reply"
+    },
+    {
+      "raw": "reset-prompt",
+      "category": "zle_widget",
+      "id": "reset-prompt"
+    },
+    {
+      "raw": "restricted",
+      "category": "option",
+      "id": "restricted"
+    },
+    {
+      "raw": "reswords",
+      "category": "special_param",
+      "id": "reswords"
+    },
+    {
+      "raw": "return",
+      "category": "builtin",
+      "id": "return"
+    },
+    {
+      "raw": "reverse-menu-complete",
+      "category": "zle_widget",
+      "id": "reverse-menu-complete"
+    },
+    {
+      "raw": "rm_star_silent",
+      "category": "option",
+      "id": "rmstarsilent"
+    },
+    {
+      "raw": "rm_star_wait",
+      "category": "option",
+      "id": "rmstarwait"
+    },
+    {
+      "raw": "rmstarsilent",
+      "category": "option",
+      "id": "rmstarsilent"
+    },
+    {
+      "raw": "rmstarwait",
+      "category": "option",
+      "id": "rmstarwait"
+    },
+    {
+      "raw": "run-help",
+      "category": "zle_widget",
+      "id": "run-help"
+    },
+    {
+      "raw": "saliases",
+      "category": "special_param",
+      "id": "saliases"
+    },
+    {
+      "raw": "scalb",
+      "category": "mathfunc",
+      "id": "scalb"
+    },
+    {
+      "raw": "sched",
+      "category": "builtin",
+      "id": "sched"
+    },
+    {
+      "raw": "select",
+      "category": "complex_command",
+      "id": "select"
+    },
+    {
+      "raw": "select-a-blank-word",
+      "category": "zle_widget",
+      "id": "select-a-blank-word"
+    },
+    {
+      "raw": "select-a-shell-word",
+      "category": "zle_widget",
+      "id": "select-a-shell-word"
+    },
+    {
+      "raw": "select-a-word",
+      "category": "zle_widget",
+      "id": "select-a-word"
+    },
+    {
+      "raw": "select-in-blank-word",
+      "category": "zle_widget",
+      "id": "select-in-blank-word"
+    },
+    {
+      "raw": "select-in-shell-word",
+      "category": "zle_widget",
+      "id": "select-in-shell-word"
+    },
+    {
+      "raw": "select-in-word",
+      "category": "zle_widget",
+      "id": "select-in-word"
+    },
+    {
+      "raw": "self-insert",
+      "category": "zle_widget",
+      "id": "self-insert"
+    },
+    {
+      "raw": "self-insert-unmeta",
+      "category": "zle_widget",
+      "id": "self-insert-unmeta"
+    },
+    {
+      "raw": "send-break",
+      "category": "zle_widget",
+      "id": "send-break"
+    },
+    {
+      "raw": "set",
+      "category": "builtin",
+      "id": "set"
+    },
+    {
+      "raw": "set-local-history",
+      "category": "zle_widget",
+      "id": "set-local-history"
+    },
+    {
+      "raw": "set-mark-command",
+      "category": "zle_widget",
+      "id": "set-mark-command"
+    },
+    {
+      "raw": "setcap",
+      "category": "builtin",
+      "id": "setcap"
+    },
+    {
+      "raw": "setopt",
+      "category": "builtin",
+      "id": "setopt"
+    },
+    {
+      "raw": "sh_file_expansion",
+      "category": "option",
+      "id": "shfileexpansion"
+    },
+    {
+      "raw": "sh_glob",
+      "category": "option",
+      "id": "shglob"
+    },
+    {
+      "raw": "sh_nullcmd",
+      "category": "option",
+      "id": "shnullcmd"
+    },
+    {
+      "raw": "sh_option_letters",
+      "category": "option",
+      "id": "shoptionletters"
+    },
+    {
+      "raw": "sh_word_split",
+      "category": "option",
+      "id": "shwordsplit"
+    },
+    {
+      "raw": "share_history",
+      "category": "option",
+      "id": "sharehistory"
+    },
+    {
+      "raw": "sharehistory",
+      "category": "option",
+      "id": "sharehistory"
+    },
+    {
+      "raw": "shfileexpansion",
+      "category": "option",
+      "id": "shfileexpansion"
+    },
+    {
+      "raw": "shglob",
+      "category": "option",
+      "id": "shglob"
+    },
+    {
+      "raw": "shift",
+      "category": "builtin",
+      "id": "shift"
+    },
+    {
+      "raw": "shin_stdin",
+      "category": "option",
+      "id": "shinstdin"
+    },
+    {
+      "raw": "shinstdin",
+      "category": "option",
+      "id": "shinstdin"
+    },
+    {
+      "raw": "shnullcmd",
+      "category": "option",
+      "id": "shnullcmd"
+    },
+    {
+      "raw": "shoptionletters",
+      "category": "option",
+      "id": "shoptionletters"
+    },
+    {
+      "raw": "short_loops",
+      "category": "option",
+      "id": "shortloops"
+    },
+    {
+      "raw": "short_repeat",
+      "category": "option",
+      "id": "shortrepeat"
+    },
+    {
+      "raw": "shortloops",
+      "category": "option",
+      "id": "shortloops"
+    },
+    {
+      "raw": "shortrepeat",
+      "category": "option",
+      "id": "shortrepeat"
+    },
+    {
+      "raw": "shwordsplit",
+      "category": "option",
+      "id": "shwordsplit"
+    },
+    {
+      "raw": "signals",
+      "category": "special_param",
+      "id": "signals"
+    },
+    {
+      "raw": "signgam",
+      "category": "mathfunc",
+      "id": "signgam"
+    },
+    {
+      "raw": "sin",
+      "category": "mathfunc",
+      "id": "sin"
+    },
+    {
+      "raw": "single_command",
+      "category": "option",
+      "id": "singlecommand"
+    },
+    {
+      "raw": "single_line_zle",
+      "category": "option",
+      "id": "singlelinezle"
+    },
+    {
+      "raw": "singlecommand",
+      "category": "option",
+      "id": "singlecommand"
+    },
+    {
+      "raw": "singlelinezle",
+      "category": "option",
+      "id": "singlelinezle"
+    },
+    {
+      "raw": "sinh",
+      "category": "mathfunc",
+      "id": "sinh"
+    },
+    {
+      "raw": "source",
+      "category": "builtin",
+      "id": "source"
+    },
+    {
+      "raw": "source_trace",
+      "category": "option",
+      "id": "sourcetrace"
+    },
+    {
+      "raw": "sourcetrace",
+      "category": "option",
+      "id": "sourcetrace"
+    },
+    {
+      "raw": "spell-word",
+      "category": "zle_widget",
+      "id": "spell-word"
+    },
+    {
+      "raw": "split-undo",
+      "category": "zle_widget",
+      "id": "split-undo"
+    },
+    {
+      "raw": "sqrt",
+      "category": "mathfunc",
+      "id": "sqrt"
+    },
+    {
+      "raw": "stat",
+      "category": "builtin",
+      "id": "stat"
+    },
+    {
+      "raw": "status",
+      "category": "special_param",
+      "id": "status"
+    },
+    {
+      "raw": "stdin",
+      "category": "option",
+      "id": "stdin"
+    },
+    {
+      "raw": "strftime",
+      "category": "builtin",
+      "id": "strftime"
+    },
+    {
+      "raw": "sun_keyboard_hack",
+      "category": "option",
+      "id": "sunkeyboardhack"
+    },
+    {
+      "raw": "sunkeyboardhack",
+      "category": "option",
+      "id": "sunkeyboardhack"
+    },
+    {
+      "raw": "suspend",
+      "category": "builtin",
+      "id": "suspend"
+    },
+    {
+      "raw": "syserror",
+      "category": "builtin",
+      "id": "syserror"
+    },
+    {
+      "raw": "sysopen",
+      "category": "builtin",
+      "id": "sysopen"
+    },
+    {
+      "raw": "sysparams",
+      "category": "special_param",
+      "id": "sysparams"
+    },
+    {
+      "raw": "sysread",
+      "category": "builtin",
+      "id": "sysread"
+    },
+    {
+      "raw": "sysseek",
+      "category": "builtin",
+      "id": "sysseek"
+    },
+    {
+      "raw": "systell",
+      "category": "mathfunc",
+      "id": "systell"
+    },
+    {
+      "raw": "syswrite",
+      "category": "builtin",
+      "id": "syswrite"
+    },
+    {
+      "raw": "tan",
+      "category": "mathfunc",
+      "id": "tan"
+    },
+    {
+      "raw": "tanh",
+      "category": "mathfunc",
+      "id": "tanh"
+    },
+    {
+      "raw": "termcap",
+      "category": "special_param",
+      "id": "termcap"
+    },
+    {
+      "raw": "terminfo",
+      "category": "special_param",
+      "id": "terminfo"
+    },
+    {
+      "raw": "test",
+      "category": "builtin",
+      "id": "test"
+    },
+    {
+      "raw": "then",
+      "category": "reserved_word",
+      "id": "then"
+    },
+    {
+      "raw": "time",
+      "category": "complex_command",
+      "id": "time"
+    },
+    {
+      "raw": "times",
+      "category": "builtin",
+      "id": "times"
+    },
+    {
+      "raw": "track_all",
+      "category": "option",
+      "id": "trackall"
+    },
+    {
+      "raw": "trackall",
+      "category": "option",
+      "id": "trackall"
+    },
+    {
+      "raw": "transient_rprompt",
+      "category": "option",
+      "id": "transientrprompt"
+    },
+    {
+      "raw": "transientrprompt",
+      "category": "option",
+      "id": "transientrprompt"
+    },
+    {
+      "raw": "transpose-chars",
+      "category": "zle_widget",
+      "id": "transpose-chars"
+    },
+    {
+      "raw": "transpose-words",
+      "category": "zle_widget",
+      "id": "transpose-words"
+    },
+    {
+      "raw": "trap",
+      "category": "builtin",
+      "id": "trap"
+    },
+    {
+      "raw": "traps_async",
+      "category": "option",
+      "id": "trapsasync"
+    },
+    {
+      "raw": "trapsasync",
+      "category": "option",
+      "id": "trapsasync"
+    },
+    {
+      "raw": "true",
+      "category": "builtin",
+      "id": "true"
+    },
+    {
+      "raw": "ttyctl",
+      "category": "builtin",
+      "id": "ttyctl"
+    },
+    {
+      "raw": "type",
+      "category": "builtin",
+      "id": "type"
+    },
+    {
+      "raw": "typeset",
+      "category": "reserved_word",
+      "id": "typeset"
+    },
+    {
+      "raw": "typeset_silent",
+      "category": "option",
+      "id": "typesetsilent"
+    },
+    {
+      "raw": "typeset_to_unset",
+      "category": "option",
+      "id": "typesettounset"
+    },
+    {
+      "raw": "typesetsilent",
+      "category": "option",
+      "id": "typesetsilent"
+    },
+    {
+      "raw": "typesettounset",
+      "category": "option",
+      "id": "typesettounset"
+    },
+    {
+      "raw": "ulimit",
+      "category": "builtin",
+      "id": "ulimit"
+    },
+    {
+      "raw": "umask",
+      "category": "builtin",
+      "id": "umask"
+    },
+    {
+      "raw": "unalias",
+      "category": "builtin",
+      "id": "unalias"
+    },
+    {
+      "raw": "undefined-key",
+      "category": "zle_widget",
+      "id": "undefined-key"
+    },
+    {
+      "raw": "undo",
+      "category": "zle_widget",
+      "id": "undo"
+    },
+    {
+      "raw": "unfunction",
+      "category": "builtin",
+      "id": "unfunction"
+    },
+    {
+      "raw": "unhash",
+      "category": "builtin",
+      "id": "unhash"
+    },
+    {
+      "raw": "universal-argument",
+      "category": "zle_widget",
+      "id": "universal-argument"
+    },
+    {
+      "raw": "unlimit",
+      "category": "builtin",
+      "id": "unlimit"
+    },
+    {
+      "raw": "unset",
+      "category": "builtin",
+      "id": "unset"
+    },
+    {
+      "raw": "unsetopt",
+      "category": "builtin",
+      "id": "unsetopt"
+    },
+    {
+      "raw": "until",
+      "category": "complex_command",
+      "id": "until"
+    },
+    {
+      "raw": "up-case-word",
+      "category": "zle_widget",
+      "id": "up-case-word"
+    },
+    {
+      "raw": "up-history",
+      "category": "zle_widget",
+      "id": "up-history"
+    },
+    {
+      "raw": "up-line",
+      "category": "zle_widget",
+      "id": "up-line"
+    },
+    {
+      "raw": "up-line-or-history",
+      "category": "zle_widget",
+      "id": "up-line-or-history"
+    },
+    {
+      "raw": "up-line-or-search",
+      "category": "zle_widget",
+      "id": "up-line-or-search"
+    },
+    {
+      "raw": "userdirs",
+      "category": "special_param",
+      "id": "userdirs"
+    },
+    {
+      "raw": "usergroups",
+      "category": "special_param",
+      "id": "usergroups"
+    },
+    {
+      "raw": "vared",
+      "category": "builtin",
+      "id": "vared"
+    },
+    {
+      "raw": "verbose",
+      "category": "option",
+      "id": "verbose"
+    },
+    {
+      "raw": "vi",
+      "category": "option",
+      "id": "vi"
+    },
+    {
+      "raw": "vi-add-eol",
+      "category": "zle_widget",
+      "id": "vi-add-eol"
+    },
+    {
+      "raw": "vi-add-next",
+      "category": "zle_widget",
+      "id": "vi-add-next"
+    },
+    {
+      "raw": "vi-backward-blank-word",
+      "category": "zle_widget",
+      "id": "vi-backward-blank-word"
+    },
+    {
+      "raw": "vi-backward-blank-word-end",
+      "category": "zle_widget",
+      "id": "vi-backward-blank-word-end"
+    },
+    {
+      "raw": "vi-backward-char",
+      "category": "zle_widget",
+      "id": "vi-backward-char"
+    },
+    {
+      "raw": "vi-backward-delete-char",
+      "category": "zle_widget",
+      "id": "vi-backward-delete-char"
+    },
+    {
+      "raw": "vi-backward-kill-word",
+      "category": "zle_widget",
+      "id": "vi-backward-kill-word"
+    },
+    {
+      "raw": "vi-backward-word",
+      "category": "zle_widget",
+      "id": "vi-backward-word"
+    },
+    {
+      "raw": "vi-backward-word-end",
+      "category": "zle_widget",
+      "id": "vi-backward-word-end"
+    },
+    {
+      "raw": "vi-beginning-of-line",
+      "category": "zle_widget",
+      "id": "vi-beginning-of-line"
+    },
+    {
+      "raw": "vi-caps-lock-panic",
+      "category": "zle_widget",
+      "id": "vi-caps-lock-panic"
+    },
+    {
+      "raw": "vi-change",
+      "category": "zle_widget",
+      "id": "vi-change"
+    },
+    {
+      "raw": "vi-change-eol",
+      "category": "zle_widget",
+      "id": "vi-change-eol"
+    },
+    {
+      "raw": "vi-change-whole-line",
+      "category": "zle_widget",
+      "id": "vi-change-whole-line"
+    },
+    {
+      "raw": "vi-cmd-mode",
+      "category": "zle_widget",
+      "id": "vi-cmd-mode"
+    },
+    {
+      "raw": "vi-delete",
+      "category": "zle_widget",
+      "id": "vi-delete"
+    },
+    {
+      "raw": "vi-delete-char",
+      "category": "zle_widget",
+      "id": "vi-delete-char"
+    },
+    {
+      "raw": "vi-digit-or-beginning-of-line",
+      "category": "zle_widget",
+      "id": "vi-digit-or-beginning-of-line"
+    },
+    {
+      "raw": "vi-down-case",
+      "category": "zle_widget",
+      "id": "vi-down-case"
+    },
+    {
+      "raw": "vi-down-line-or-history",
+      "category": "zle_widget",
+      "id": "vi-down-line-or-history"
+    },
+    {
+      "raw": "vi-end-of-line",
+      "category": "zle_widget",
+      "id": "vi-end-of-line"
+    },
+    {
+      "raw": "vi-fetch-history",
+      "category": "zle_widget",
+      "id": "vi-fetch-history"
+    },
+    {
+      "raw": "vi-find-next-char",
+      "category": "zle_widget",
+      "id": "vi-find-next-char"
+    },
+    {
+      "raw": "vi-find-next-char-skip",
+      "category": "zle_widget",
+      "id": "vi-find-next-char-skip"
+    },
+    {
+      "raw": "vi-find-prev-char",
+      "category": "zle_widget",
+      "id": "vi-find-prev-char"
+    },
+    {
+      "raw": "vi-find-prev-char-skip",
+      "category": "zle_widget",
+      "id": "vi-find-prev-char-skip"
+    },
+    {
+      "raw": "vi-first-non-blank",
+      "category": "zle_widget",
+      "id": "vi-first-non-blank"
+    },
+    {
+      "raw": "vi-forward-blank-word",
+      "category": "zle_widget",
+      "id": "vi-forward-blank-word"
+    },
+    {
+      "raw": "vi-forward-blank-word-end",
+      "category": "zle_widget",
+      "id": "vi-forward-blank-word-end"
+    },
+    {
+      "raw": "vi-forward-char",
+      "category": "zle_widget",
+      "id": "vi-forward-char"
+    },
+    {
+      "raw": "vi-forward-word",
+      "category": "zle_widget",
+      "id": "vi-forward-word"
+    },
+    {
+      "raw": "vi-forward-word-end",
+      "category": "zle_widget",
+      "id": "vi-forward-word-end"
+    },
+    {
+      "raw": "vi-goto-column",
+      "category": "zle_widget",
+      "id": "vi-goto-column"
+    },
+    {
+      "raw": "vi-goto-mark",
+      "category": "zle_widget",
+      "id": "vi-goto-mark"
+    },
+    {
+      "raw": "vi-goto-mark-line",
+      "category": "zle_widget",
+      "id": "vi-goto-mark-line"
+    },
+    {
+      "raw": "vi-history-search-backward",
+      "category": "zle_widget",
+      "id": "vi-history-search-backward"
+    },
+    {
+      "raw": "vi-history-search-forward",
+      "category": "zle_widget",
+      "id": "vi-history-search-forward"
+    },
+    {
+      "raw": "vi-indent",
+      "category": "zle_widget",
+      "id": "vi-indent"
+    },
+    {
+      "raw": "vi-insert",
+      "category": "zle_widget",
+      "id": "vi-insert"
+    },
+    {
+      "raw": "vi-insert-bol",
+      "category": "zle_widget",
+      "id": "vi-insert-bol"
+    },
+    {
+      "raw": "vi-join",
+      "category": "zle_widget",
+      "id": "vi-join"
+    },
+    {
+      "raw": "vi-kill-eol",
+      "category": "zle_widget",
+      "id": "vi-kill-eol"
+    },
+    {
+      "raw": "vi-kill-line",
+      "category": "zle_widget",
+      "id": "vi-kill-line"
+    },
+    {
+      "raw": "vi-match-bracket",
+      "category": "zle_widget",
+      "id": "vi-match-bracket"
+    },
+    {
+      "raw": "vi-open-line-above",
+      "category": "zle_widget",
+      "id": "vi-open-line-above"
+    },
+    {
+      "raw": "vi-open-line-below",
+      "category": "zle_widget",
+      "id": "vi-open-line-below"
+    },
+    {
+      "raw": "vi-oper-swap-case",
+      "category": "zle_widget",
+      "id": "vi-oper-swap-case"
+    },
+    {
+      "raw": "vi-pound-insert",
+      "category": "zle_widget",
+      "id": "vi-pound-insert"
+    },
+    {
+      "raw": "vi-put-after",
+      "category": "zle_widget",
+      "id": "vi-put-after"
+    },
+    {
+      "raw": "vi-put-before",
+      "category": "zle_widget",
+      "id": "vi-put-before"
+    },
+    {
+      "raw": "vi-quoted-insert",
+      "category": "zle_widget",
+      "id": "vi-quoted-insert"
+    },
+    {
+      "raw": "vi-repeat-change",
+      "category": "zle_widget",
+      "id": "vi-repeat-change"
+    },
+    {
+      "raw": "vi-repeat-find",
+      "category": "zle_widget",
+      "id": "vi-repeat-find"
+    },
+    {
+      "raw": "vi-repeat-search",
+      "category": "zle_widget",
+      "id": "vi-repeat-search"
+    },
+    {
+      "raw": "vi-replace",
+      "category": "zle_widget",
+      "id": "vi-replace"
+    },
+    {
+      "raw": "vi-replace-chars",
+      "category": "zle_widget",
+      "id": "vi-replace-chars"
+    },
+    {
+      "raw": "vi-rev-repeat-find",
+      "category": "zle_widget",
+      "id": "vi-rev-repeat-find"
+    },
+    {
+      "raw": "vi-rev-repeat-search",
+      "category": "zle_widget",
+      "id": "vi-rev-repeat-search"
+    },
+    {
+      "raw": "vi-set-buffer",
+      "category": "zle_widget",
+      "id": "vi-set-buffer"
+    },
+    {
+      "raw": "vi-set-mark",
+      "category": "zle_widget",
+      "id": "vi-set-mark"
+    },
+    {
+      "raw": "vi-substitute",
+      "category": "zle_widget",
+      "id": "vi-substitute"
+    },
+    {
+      "raw": "vi-swap-case",
+      "category": "zle_widget",
+      "id": "vi-swap-case"
+    },
+    {
+      "raw": "vi-undo-change",
+      "category": "zle_widget",
+      "id": "vi-undo-change"
+    },
+    {
+      "raw": "vi-unindent",
+      "category": "zle_widget",
+      "id": "vi-unindent"
+    },
+    {
+      "raw": "vi-up-case",
+      "category": "zle_widget",
+      "id": "vi-up-case"
+    },
+    {
+      "raw": "vi-up-line-or-history",
+      "category": "zle_widget",
+      "id": "vi-up-line-or-history"
+    },
+    {
+      "raw": "vi-yank",
+      "category": "zle_widget",
+      "id": "vi-yank"
+    },
+    {
+      "raw": "vi-yank-eol",
+      "category": "zle_widget",
+      "id": "vi-yank-eol"
+    },
+    {
+      "raw": "vi-yank-whole-line",
+      "category": "zle_widget",
+      "id": "vi-yank-whole-line"
+    },
+    {
+      "raw": "vicmd",
+      "category": "keymap",
+      "id": "vicmd"
+    },
+    {
+      "raw": "viins",
+      "category": "keymap",
+      "id": "viins"
+    },
+    {
+      "raw": "viopp",
+      "category": "keymap",
+      "id": "viopp"
+    },
+    {
+      "raw": "visual",
+      "category": "keymap",
+      "id": "visual"
+    },
+    {
+      "raw": "visual-line-mode",
+      "category": "zle_widget",
+      "id": "visual-line-mode"
+    },
+    {
+      "raw": "visual-mode",
+      "category": "zle_widget",
+      "id": "visual-mode"
+    },
+    {
+      "raw": "wait",
+      "category": "builtin",
+      "id": "wait"
+    },
+    {
+      "raw": "warn_create_global",
+      "category": "option",
+      "id": "warncreateglobal"
+    },
+    {
+      "raw": "warn_nested_var",
+      "category": "option",
+      "id": "warnnestedvar"
+    },
+    {
+      "raw": "warncreateglobal",
+      "category": "option",
+      "id": "warncreateglobal"
+    },
+    {
+      "raw": "warnnestedvar",
+      "category": "option",
+      "id": "warnnestedvar"
+    },
+    {
+      "raw": "watch",
+      "category": "special_param",
+      "id": "watch"
+    },
+    {
+      "raw": "what-cursor-position",
+      "category": "zle_widget",
+      "id": "what-cursor-position"
+    },
+    {
+      "raw": "whence",
+      "category": "builtin",
+      "id": "whence"
+    },
+    {
+      "raw": "where",
+      "category": "builtin",
+      "id": "where"
+    },
+    {
+      "raw": "where-is",
+      "category": "zle_widget",
+      "id": "where-is"
+    },
+    {
+      "raw": "which",
+      "category": "builtin",
+      "id": "which"
+    },
+    {
+      "raw": "which-command",
+      "category": "zle_widget",
+      "id": "which-command"
+    },
+    {
+      "raw": "while",
+      "category": "complex_command",
+      "id": "while"
+    },
+    {
+      "raw": "widgets",
+      "category": "special_param",
+      "id": "widgets"
+    },
+    {
+      "raw": "words",
+      "category": "special_param",
+      "id": "words"
+    },
+    {
+      "raw": "xtrace",
+      "category": "option",
+      "id": "xtrace"
+    },
+    {
+      "raw": "y0",
+      "category": "mathfunc",
+      "id": "y0"
+    },
+    {
+      "raw": "y1",
+      "category": "mathfunc",
+      "id": "y1"
+    },
+    {
+      "raw": "yank",
+      "category": "zle_widget",
+      "id": "yank"
+    },
+    {
+      "raw": "yank-pop",
+      "category": "zle_widget",
+      "id": "yank-pop"
+    },
+    {
+      "raw": "yn",
+      "category": "mathfunc",
+      "id": "yn"
+    },
+    {
+      "raw": "zap-to-char",
+      "category": "zle_widget",
+      "id": "zap-to-char"
+    },
+    {
+      "raw": "zcompile",
+      "category": "builtin",
+      "id": "zcompile"
+    },
+    {
+      "raw": "zdelattr",
+      "category": "builtin",
+      "id": "zdelattr"
+    },
+    {
+      "raw": "zformat",
+      "category": "builtin",
+      "id": "zformat"
+    },
+    {
+      "raw": "zftp",
+      "category": "builtin",
+      "id": "zftp"
+    },
+    {
+      "raw": "zgdbm_tied",
+      "category": "builtin",
+      "id": "zgdbm_tied"
+    },
+    {
+      "raw": "zgdbmpath",
+      "category": "builtin",
+      "id": "zgdbmpath"
+    },
+    {
+      "raw": "zgetattr",
+      "category": "builtin",
+      "id": "zgetattr"
+    },
+    {
+      "raw": "zle",
+      "category": "builtin",
+      "id": "zle"
+    },
+    {
+      "raw": "zle-history-line-set",
+      "category": "zle_widget",
+      "id": "zle-history-line-set"
+    },
+    {
+      "raw": "zle-isearch-exit",
+      "category": "zle_widget",
+      "id": "zle-isearch-exit"
+    },
+    {
+      "raw": "zle-isearch-update",
+      "category": "zle_widget",
+      "id": "zle-isearch-update"
+    },
+    {
+      "raw": "zle-keymap-select",
+      "category": "zle_widget",
+      "id": "zle-keymap-select"
+    },
+    {
+      "raw": "zle-line-finish",
+      "category": "zle_widget",
+      "id": "zle-line-finish"
+    },
+    {
+      "raw": "zle-line-init",
+      "category": "zle_widget",
+      "id": "zle-line-init"
+    },
+    {
+      "raw": "zle-line-pre-redraw",
+      "category": "zle_widget",
+      "id": "zle-line-pre-redraw"
+    },
+    {
+      "raw": "zle_bracketed_paste",
+      "category": "special_param",
+      "id": "zle_bracketed_paste"
+    },
+    {
+      "raw": "zle_highlight",
+      "category": "special_param",
+      "id": "zle_highlight"
+    },
+    {
+      "raw": "zlistattr",
+      "category": "builtin",
+      "id": "zlistattr"
+    },
+    {
+      "raw": "zmodload",
+      "category": "builtin",
+      "id": "zmodload"
+    },
+    {
+      "raw": "zparseopts",
+      "category": "builtin",
+      "id": "zparseopts"
+    },
+    {
+      "raw": "zprof",
+      "category": "builtin",
+      "id": "zprof"
+    },
+    {
+      "raw": "zpty",
+      "category": "builtin",
+      "id": "zpty"
+    },
+    {
+      "raw": "zregexparse",
+      "category": "builtin",
+      "id": "zregexparse"
+    },
+    {
+      "raw": "zselect",
+      "category": "builtin",
+      "id": "zselect"
+    },
+    {
+      "raw": "zsetattr",
+      "category": "builtin",
+      "id": "zsetattr"
+    },
+    {
+      "raw": "zsh_eval_context",
+      "category": "special_param",
+      "id": "zsh_eval_context"
+    },
+    {
+      "raw": "zsh_scheduled_events",
+      "category": "special_param",
+      "id": "zsh_scheduled_events"
+    },
+    {
+      "raw": "zshaddhistory",
+      "category": "special_function",
+      "id": "zshaddhistory"
+    },
+    {
+      "raw": "zshexit",
+      "category": "special_function",
+      "id": "zshexit"
+    },
+    {
+      "raw": "zsocket",
+      "category": "builtin",
+      "id": "zsocket"
+    },
+    {
+      "raw": "zstat",
+      "category": "builtin",
+      "id": "zstat"
+    },
+    {
+      "raw": "zstyle",
+      "category": "builtin",
+      "id": "zstyle"
+    },
+    {
+      "raw": "zsystem",
+      "category": "builtin",
+      "id": "zsystem"
+    },
+    {
+      "raw": "ztcp",
+      "category": "builtin",
+      "id": "ztcp"
+    },
+    {
+      "raw": "ztie",
+      "category": "builtin",
+      "id": "ztie"
+    },
+    {
+      "raw": "zuntie",
+      "category": "builtin",
+      "id": "zuntie"
+    },
+    {
+      "raw": "{",
+      "category": "complex_command",
+      "id": "{"
+    },
+    {
+      "raw": "{try}always",
+      "category": "complex_command",
+      "id": "{try}always"
+    },
+    {
+      "raw": "}",
+      "category": "reserved_word",
+      "id": "}"
+    }
+  ]
+}

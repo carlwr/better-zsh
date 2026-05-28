@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Stopwords",
+  "type": "object",
+  "required": [
+    "discriminating_extra",
+    "generic"
+  ],
+  "properties": {
+    "generic": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "discriminating_extra": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "additionalProperties": false
+}

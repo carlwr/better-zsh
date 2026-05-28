@@ -1,16 +1,15 @@
-//! Dynamic clap::Command assembly driven by `tooldef.json`.
-//!
-//! Subcommand names are the tool names with the leading `zsh_` stripped
-//! (matches the TS adapters). Value parsers are inferred from each
-//! property's JSON Schema fragment: enum (`category`) → PossibleValues,
-//! integer with bounds → u32 range, everything else → String.
+//! Dynamic `clap::Command` assembly for the CLI surface.
 
 mod prose;
 
 use crate::corpus::{Corpus, ToolDef, ToolDefs, DOC_CATEGORIES};
+#[cfg(feature = "nlp")]
+use crate::nlp;
 use crate::output;
 use crate::tools;
 use anyhow::Result;
+#[cfg(feature = "nlp")]
+use clap::ArgGroup;
 use clap::{Arg, ArgAction, ArgMatches, Command, ValueHint};
 use serde_json::{json, Map, Value};
 
@@ -29,10 +28,10 @@ struct Ctx<'a> {
 /// 2. Tab-completion: only offer `--pretty` on subcommands where it
 ///    actually changes output.
 ///
-/// `Arg::hide(true)` solves (1) for `--help` rendering but `clap_complete`
-/// (AOT generators, ≤4.6.5) does not filter hidden args from generated
-/// shell completions. So we build two trees from the same source: `Parsing`
-/// adds hidden `--pretty` to no-op subcommands; `Completions` omits them.
+/// `Arg::hide(true)` solves (1) for `--help` rendering, but completion
+/// generation still sees hidden args. So we build two trees from the same
+/// source: `Parsing` adds hidden `--pretty` to no-op subcommands;
+/// `Completions` omits them.
 #[derive(Clone, Copy, Debug)]
 pub enum BuildMode {
     Parsing,
@@ -53,9 +52,7 @@ fn with_noop_pretty(cmd: Command, mode: BuildMode) -> Command {
 }
 
 pub fn build_cli(tool_defs: &ToolDefs, corpus: &Corpus, mode: BuildMode) -> Command {
-    // Preamble uses MCP-primary `zsh_*` names; `prose::rewrite_refs` rewrites
-    // them to `zshref *`. WARNING in `packages/zsh-core-tooldef/src/tool-defs.ts`
-    // applies here too — tone/length drift on that source affects terminal help.
+    // The shared preamble is rendered in terminal help, so width matters here.
     let root_after_help = format!(
         "\n{}\n{}",
         prose::rewrite_refs(&tool_defs.preamble, &tool_defs.tools),
@@ -68,9 +65,7 @@ pub fn build_cli(tool_defs: &ToolDefs, corpus: &Corpus, mode: BuildMode) -> Comm
         .long_about(prose::ROOT_LONG)
         .override_usage(prose::ROOT_USAGE)
         .after_long_help(root_after_help)
-        // Bare `zshref` is treated as an implicit help request:
-        // `dispatch` routes the no-subcommand branch through `render_help`,
-        // matching `zshref --help` byte-for-byte (CLI-POLICY.md).
+        // Bare `zshref` should match the explicit help path byte-for-byte.
         .disable_help_subcommand(true)
         .disable_help_flag(true)
         .disable_version_flag(true)
@@ -109,6 +104,88 @@ pub fn build_cli(tool_defs: &ToolDefs, corpus: &Corpus, mode: BuildMode) -> Comm
             .arg(help_arg()),
         mode,
     ));
+
+    #[cfg(feature = "nlp")]
+    {
+        root = root.subcommand(
+            Command::new("nlp-search")
+                .about("experimental local semantic search over zsh records")
+                .after_long_help(
+                    "Embeds the query with a local model and ranks bundled zsh-core records.\n\n\
+                     Required local model files under --model-dir:\n\
+                       model.onnx or onnx/model.onnx\n\
+                       tokenizer.json\n\
+                       config.json\n\
+                       special_tokens_map.json\n\
+                       tokenizer_config.json\n\n\
+                     Pass --rebuild-index to (re)generate the local index (the only mode that writes to disk); a missing index otherwise errors.",
+                )
+                .disable_help_flag(true)
+                .arg(
+                    Arg::new("query")
+                        .value_name("QUERY")
+                        .required(true)
+                        .help("natural-language query")
+                        .value_hint(ValueHint::Other),
+                )
+                .arg(
+                    Arg::new("limit")
+                        .long("limit")
+                        .value_name("LIMIT")
+                        .default_value("10")
+                        .hide_default_value(true)
+                        .value_parser(clap::value_parser!(u32).range(0..))
+                        .help("maximum matches to return (default: 10)"),
+                )
+                .arg(
+                    Arg::new("category")
+                        .long("category")
+                        .value_name("CATEGORY")
+                        .value_parser(clap::builder::PossibleValuesParser::new(
+                            DOC_CATEGORIES.as_slice(),
+                        ))
+                        .hide_possible_values(true)
+                        .help("restrict matches to one category"),
+                )
+                .arg(
+                    Arg::new("debug")
+                        .long("debug")
+                        .action(ArgAction::SetTrue)
+                        .help("include score components and retrieval text"),
+                )
+                .arg(
+                    Arg::new("model-dir")
+                        .long("model-dir")
+                        .value_name("DIR")
+                        .default_value(nlp::search::DEFAULT_MODEL_DIR)
+                        .hide_default_value(true)
+                        .value_hint(ValueHint::DirPath)
+                        .help("local fastembed model directory"),
+                )
+                .arg(
+                    Arg::new("index")
+                        .long("index")
+                        .value_name("FILE")
+                        .default_value(nlp::search::DEFAULT_INDEX_PATH)
+                        .hide_default_value(true)
+                        .value_hint(ValueHint::FilePath)
+                        .help("local JSON vector index path"),
+                )
+                .arg(
+                    Arg::new("rebuild-index")
+                        .long("rebuild-index")
+                        .action(ArgAction::SetTrue)
+                        .help("regenerate the local vector index before searching"),
+                )
+                .arg(pretty_arg())
+                .arg(help_arg()),
+        );
+
+        // Parser-only: completions and help must not expose internal checks.
+        if matches!(mode, BuildMode::Parsing) {
+            root = root.subcommand(build_selfcheck());
+        }
+    }
 
     let (words, leaves) = tools::schema::size_hint(tool_defs);
     root = root.subcommand(
@@ -159,6 +236,55 @@ pub fn build_cli(tool_defs: &ToolDefs, corpus: &Corpus, mode: BuildMode) -> Comm
     ));
 
     root
+}
+
+#[cfg(feature = "nlp")]
+fn build_selfcheck() -> Command {
+    Command::new("_selfcheck")
+        .hide(true)
+        .about("internal freshness/drift self-checks (not user-facing)")
+        .disable_help_flag(true)
+        .arg(
+            Arg::new("check-build-fresh")
+                .long("check-build-fresh")
+                .action(ArgAction::SetTrue)
+                .help("verify this binary's embedded data matches the current source tree"),
+        )
+        .arg(
+            Arg::new("validate-index")
+                .long("validate-index")
+                .action(ArgAction::SetTrue)
+                .help("validate the on-disk index against this binary (no model load)"),
+        )
+        .arg(
+            Arg::new("emit-rules")
+                .long("emit-rules")
+                .action(ArgAction::SetTrue)
+                .help("emit downstream rule-data JSON to --out"),
+        )
+        .group(
+            ArgGroup::new("check")
+                .args(["check-build-fresh", "validate-index", "emit-rules"])
+                .required(true),
+        )
+        .arg(
+            Arg::new("index")
+                .long("index")
+                .value_name("FILE")
+                .default_value(nlp::search::DEFAULT_INDEX_PATH)
+                .hide_default_value(true)
+                .value_hint(ValueHint::FilePath)
+                .help("on-disk index path checked by --validate-index"),
+        )
+        .arg(
+            Arg::new("out")
+                .long("out")
+                .value_name("DIR")
+                .required_if_eq("emit-rules", "true")
+                .value_hint(ValueHint::DirPath)
+                .help("output directory for --emit-rules"),
+        )
+        .arg(help_arg())
 }
 
 /// Multi-line `--version` string: pkg version, zsh upstream, corpus totals.
@@ -234,11 +360,8 @@ fn tool_after_help(td: &ToolDef, tools: &[ToolDef], corpus: &Corpus) -> String {
 }
 
 fn tool_cli_example(td: &ToolDef, corpus: &Corpus) -> Option<String> {
-    // Three examples for `docs`: `(.)` shows the resolver doing visible
-    // work (key="(.)" → id="."; mdBody short, no elision); ALIASES /
-    // NO_ALIASES make the resolver-table mapping concrete and show the
-    // `feedback.kind` channel. Both ALIASES examples elide `mdBody`
-    // (option records exceed the 80-col help budget by construction).
+    // Keep examples compact while exercising resolver normalization,
+    // resolver feedback, and help-output elision.
     let pairs: Vec<(&str, Value)> = match td.name.as_str() {
         "zsh_docs" => vec![
             ("zshref docs --key='(.)' --pretty", json!({ "key": "(.)" })),
@@ -279,11 +402,8 @@ fn tool_cli_example(td: &ToolDef, corpus: &Corpus) -> Option<String> {
         })
         .collect();
     let block = prose::shell_examples(&items);
-    // `docs` carries a trailing `jq -r` recipe: the JSON output of `docs` has
-    // exactly one field most CLI users actually want piped into a `.md` file
-    // (`mdBody`), and `jq -r` is the JSON-spec-correct interpreter of its
-    // embedded escapes (`\n`, `\"`, `\\`, …) — saving callers from
-    // hand-patching quoting.
+    // A shell recipe belongs here because raw JSON strings are easy to
+    // mis-handle at the terminal.
     if td.name == "zsh_docs" {
         Some(format!("{block}\n\n{}", docs_md_recipe(td, corpus)))
     } else {
@@ -291,12 +411,8 @@ fn tool_cli_example(td: &ToolDef, corpus: &Corpus) -> Option<String> {
     }
 }
 
-/// `!` (`conditional_op`) is the ideal record for this recipe: its `mdBody`
-/// is 3 lines — short enough to render inline without help-block reflow —
-/// and pairing with `--category` forces a single match (`!` overlaps 5
-/// categories) which doubles as a demo of the narrowing idiom the recipe
-/// needs anyway. Re-uses the same record as the root-level workflow example
-/// so the worked example stays consistent across help surfaces.
+/// Uses a compact record that needs category narrowing, so the recipe shows
+/// the intended filter without bloating help output.
 fn docs_md_recipe(td: &ToolDef, corpus: &Corpus) -> String {
     let input = json!({ "key": "!", "category": "conditional_op" });
     let out = tools::dispatch(td, &input, corpus).expect("docs md recipe must run");
@@ -482,6 +598,18 @@ pub fn dispatch(cmd: Command, tool_defs: &ToolDefs, corpus: &Corpus) -> Result<i
             output::emit(&tools::schema::run(ctx.tool_defs)?, ctx.pretty);
             Ok(0)
         }
+        #[cfg(feature = "nlp")]
+        "nlp-search" => {
+            let input = nlp_search_input(sub_matches);
+            output::emit(&nlp::search::run(input, ctx.corpus)?, ctx.pretty);
+            Ok(0)
+        }
+        #[cfg(feature = "nlp")]
+        "_selfcheck" => {
+            let check = selfcheck_check(sub_matches);
+            output::emit(&nlp::selfcheck::run(check, ctx.corpus)?, ctx.pretty);
+            Ok(0)
+        }
         "batch" => crate::batch::run(ctx.tool_defs, ctx.corpus),
         "help" => {
             let command = sub_matches.get_one::<String>("command").map(String::as_str);
@@ -501,6 +629,49 @@ pub fn dispatch(cmd: Command, tool_defs: &ToolDefs, corpus: &Corpus) -> Result<i
             Ok(0)
         }
     }
+}
+
+#[cfg(feature = "nlp")]
+fn nlp_search_input(matches: &ArgMatches) -> nlp::search::Input {
+    nlp::search::Input {
+        query: matches
+            .get_one::<String>("query")
+            .cloned()
+            .unwrap_or_default(),
+        limit: *matches
+            .get_one::<u32>("limit")
+            .expect("clap applies default") as usize,
+        category: matches.get_one::<String>("category").cloned(),
+        debug: matches.get_flag("debug"),
+        model_dir: nlp_path(matches, "model-dir", nlp::search::DEFAULT_MODEL_DIR),
+        index_path: nlp_path(matches, "index", nlp::search::DEFAULT_INDEX_PATH),
+        rebuild_index: matches.get_flag("rebuild-index"),
+    }
+}
+
+#[cfg(feature = "nlp")]
+fn selfcheck_check(matches: &ArgMatches) -> nlp::selfcheck::Check {
+    use nlp::selfcheck::Check;
+    if matches.get_flag("validate-index") {
+        Check::Index {
+            index_path: nlp_path(matches, "index", nlp::search::DEFAULT_INDEX_PATH),
+        }
+    } else if matches.get_flag("emit-rules") {
+        Check::EmitRules {
+            out_dir: nlp_path(matches, "out", "."),
+        }
+    } else {
+        // `check` is a required group, so build-fresh is the remaining arm.
+        Check::BuildFresh
+    }
+}
+
+#[cfg(feature = "nlp")]
+fn nlp_path(matches: &ArgMatches, key: &str, default: &str) -> std::path::PathBuf {
+    let raw = matches
+        .get_one::<String>(key)
+        .expect("clap applies default");
+    nlp::search::resolve_path(raw, default)
 }
 
 fn render_help(mut cmd: Command, subcommand: Option<&str>) -> i32 {

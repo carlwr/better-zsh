@@ -1,3 +1,5 @@
+<!-- Not maintained during pre-release dev; re-derive at release time. -->
+
 # Development — zshref
 
 ## Note: pre-release, monorepo

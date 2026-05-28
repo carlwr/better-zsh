@@ -8,27 +8,65 @@
 //! stdin, and a parent that completes stdin before reading stdout deadlocks.
 
 use crate::corpus::{Corpus, ToolDef, ToolDefs};
+#[cfg(feature = "nlp")]
+use crate::nlp;
 use crate::tools;
 use anyhow::Result;
 use serde_json::{json, Value};
 use std::io::{BufRead, Write};
 
+/// Per-`batch` state. NLP searcher is included only under `--features nlp`;
+/// memoizing it keeps the model load cost amortized across many requests.
+struct State<'a> {
+    corpus: &'a Corpus,
+    #[cfg(feature = "nlp")]
+    nlp: nlp::search::Searcher<'a>,
+}
+
+impl<'a> State<'a> {
+    fn new(corpus: &'a Corpus) -> Self {
+        Self {
+            corpus,
+            #[cfg(feature = "nlp")]
+            nlp: nlp::search::Searcher::new(corpus),
+        }
+    }
+
+    #[cfg(feature = "nlp")]
+    fn dispatch_nlp(&mut self, input: &Value) -> Value {
+        let input = match nlp::search::input_from_json(input) {
+            Ok(input) => input,
+            Err(e) => return err(format!("{e:#}")),
+        };
+        match self.nlp.run(input) {
+            Ok(output) => json!({ "ok": true, "output": output }),
+            Err(e) => err(format!("{e:#}")),
+        }
+    }
+
+    #[cfg(not(feature = "nlp"))]
+    fn dispatch_nlp(&mut self, _input: &Value) -> Value {
+        err("`nlp_search` is not available in this build (compile with --features nlp)")
+    }
+}
+
 pub fn run(tool_defs: &ToolDefs, corpus: &Corpus) -> Result<i32> {
     let stdin = std::io::stdin().lock();
     let mut stdout = std::io::stdout().lock();
+    let mut state = State::new(corpus);
     for line in stdin.lines() {
         let line = line?;
         if line.trim().is_empty() {
             continue;
         }
-        let response = handle_request(&line, tool_defs, corpus);
+        let response = handle_request(&line, tool_defs, &mut state);
         let s = serde_json::to_string(&response).unwrap_or_else(|_| "null".into());
         writeln!(stdout, "{s}")?;
     }
     Ok(0)
 }
 
-fn handle_request(line: &str, tool_defs: &ToolDefs, corpus: &Corpus) -> Value {
+fn handle_request(line: &str, tool_defs: &ToolDefs, state: &mut State<'_>) -> Value {
     let req: Value = match serde_json::from_str(line) {
         Ok(v) => v,
         Err(e) => return err(format!("invalid JSON: {e}")),
@@ -37,18 +75,21 @@ fn handle_request(line: &str, tool_defs: &ToolDefs, corpus: &Corpus) -> Value {
         Some(s) => s,
         None => return err("missing `tool` field"),
     };
+    let empty = Value::Object(Default::default());
+    let raw_input = req.get("input").unwrap_or(&empty);
+    if tool == "nlp_search" {
+        return state.dispatch_nlp(raw_input);
+    }
     let td = match tool_defs.tools.iter().find(|t| t.name == tool) {
         Some(t) => t,
         None => return err(format!("unknown tool: {tool}")),
     };
-    let empty = Value::Object(Default::default());
-    let raw_input = req.get("input").unwrap_or(&empty);
     if let Err(msg) = validate_input(td, raw_input) {
         return err(msg);
     }
     // Inject schema defaults so omitted fields (e.g. `limit`) behave as in CLI mode.
     let input = fill_defaults_from_schema(td, raw_input);
-    match tools::dispatch(td, &input, corpus) {
+    match tools::dispatch(td, &input, state.corpus) {
         Ok(output) => json!({ "ok": true, "output": output }),
         Err(e) => err(format!("{e:#}")),
     }

@@ -1,13 +1,14 @@
-//! `zshref` — Rust CLI for the bundled static zsh reference.
-//!
-//! Loads TS-emitted corpus + tool-def JSON at compile time via `include_bytes!`,
-//! builds the `clap` command tree from `tooldef.json`, and dispatches to
-//! tool impls under `tools/`. See DEVELOPMENT.md for the src layout.
+//! Rust CLI entry point for the bundled zsh reference.
 
 mod batch;
 mod cli;
 mod corpus;
+// NLP-only: fingerprinting pulls in `sha2` and is only used by internal checks.
+#[cfg(feature = "nlp")]
+mod data_fingerprint;
 mod fuzzy;
+#[cfg(feature = "nlp")]
+mod nlp;
 mod output;
 mod resolver;
 mod tools;

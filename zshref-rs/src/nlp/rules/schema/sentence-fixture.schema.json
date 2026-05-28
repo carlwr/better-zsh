@@ -1,0 +1,91 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "SentenceFixture",
+  "type": "object",
+  "required": [
+    "entries",
+    "version"
+  ],
+  "properties": {
+    "version": {
+      "type": "integer",
+      "format": "uint32",
+      "minimum": 0.0
+    },
+    "default-weight": {
+      "description": "Weight applied to items that omit `w`; defaults to 1.0 when the fixture omits the field too.",
+      "default": 1.0,
+      "type": "number",
+      "format": "float"
+    },
+    "default-target-depth": {
+      "description": "Target depth applied to items that omit `d`; defaults to 3.0 when the fixture omits the field too.",
+      "default": 3.0,
+      "type": "number",
+      "format": "float"
+    },
+    "entries": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/SentenceEntry"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "SentenceEntry": {
+      "type": "object",
+      "required": [
+        "query",
+        "want"
+      ],
+      "properties": {
+        "query": {
+          "type": "string"
+        },
+        "want": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ExpectedItem"
+          }
+        },
+        "holdout": {
+          "description": "Held out from tuning when `true`; absent (the default) ⇒ `Train`. `false` is accepted but redundant.",
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "ExpectedItem": {
+      "description": "One scored item within an entry's `want` set. Each item is ranked on its OWN rank and contributes one vote; an N-item entry carries N votes. `d`/`w` override the fixture-level defaults when present; [`load`] resolves them to concrete values, so callers should read them via [`ExpectedItem::effective_depth`] / [`ExpectedItem::effective_weight`].",
+      "type": "object",
+      "required": [
+        "cat",
+        "id"
+      ],
+      "properties": {
+        "cat": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "d": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "format": "float"
+        },
+        "w": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "format": "float"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

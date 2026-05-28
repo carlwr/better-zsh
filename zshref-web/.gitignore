@@ -1,0 +1,13 @@
+node_modules
+.svelte-kit
+build
+dist
+.vite
+.env*
+!.env.example
+.artifacts
+# created by scripts/fetch-artifacts (committing it would dangle pre-stage and
+# break SvelteKit's static walk)
+static/artifacts
+.DS_Store
+*.log

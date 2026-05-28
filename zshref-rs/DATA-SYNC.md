@@ -16,7 +16,7 @@ Two lifecycles to satisfy:
 - **Monorepo (today).** TS source and Rust crate are siblings inside one tree. "Latest TS output" is always reachable on disk.
 - **Post-extraction.** End users run `cargo install zshref` with no Node, no pnpm, no TS checkout. Data must already live inside the published `.crate`.
 
-The design has to be sane at both ends and at every point between them.
+The design must be sane at both ends and in between.
 
 ## Two views, both legitimate
 
@@ -40,7 +40,9 @@ A monorepo gives A for free; a package ecosystem gives B for free. The chosen de
 
 The vendored half of (5) for post-extraction, combined with monorepo-path auto-detection for today. Published `.crate` files ship with `data/` populated, so vendored mode kicks in at install time without configuration.
 
-Pre-release today: nothing changes for dev — monorepo path auto-detected, no `data/` needed. Pre-release at publish time: the vendor target populates `data/` and `cargo publish` ships it. Post-extraction: the monorepo branch becomes dead code and can be deleted; the vendored branch stays.
+- Pre-release, dev: nothing changes — monorepo path auto-detected, no `data/` needed.
+- Pre-release, publish: the vendor target populates `data/`; `cargo publish` ships it.
+- Post-extraction: the monorepo branch becomes dead code (deletable); the vendored branch stays.
 
 ### Why auto-detect, not a feature flag?
 
@@ -48,7 +50,7 @@ A feature flag (`--features vendored`) would need `default-features = ["vendored
 
 ### Mechanics — see code
 
-- `build.rs` top doc-comment summarises the data-source selection rules; the implementation enforces them. The build script also emits a semantic input hash for cache busting.
+- `build.rs` top doc-comment summarises the data-source selection rules; the implementation enforces them. It also emits a semantic input hash (`ZSHREF_BUILD_INPUT_HASH`): cache busting, plus the `_selfcheck --check-build-fresh` staleness gate (shared `data_fingerprint`).
 - `src/corpus.rs` uses `cfg`-gated path macros so the final binary contains bytes from exactly one source.
 - The vendor target refreshes the local `data/` from TS output and forces vendored mode for downstream checks.
 - The package target runs `cargo package --allow-dirty` to prove the publishable tarball builds standalone with no monorepo visible.
