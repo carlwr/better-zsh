@@ -158,11 +158,31 @@ fn resolve_job_spec<'c>(corpus: &'c Corpus, raw: &str) -> Option<ResolvedHit<'c>
 }
 
 /// Special-parameter resolver. Direct lookup happens in `resolve_in`; this
-/// path handles the close-variant case `IDENT[inner]` → `IDENT` (e.g.
-/// `compstate[context]` → `compstate`, `words[CURRENT]` → `words`).
-/// Stripping is lossy; the inner-subscript text surfaces as
-/// `ResolverFeedback::Subscripted`.
+/// path strips the `$`/`${…}` parameter sigil and handles the close-variant
+/// `IDENT[inner]` subscript (see [`resolve_param_subscript`]).
 fn resolve_special_param<'c>(corpus: &'c Corpus, raw: &str) -> Option<ResolvedHit<'c>> {
+    let t = raw.trim();
+    // `$NAME` / `${NAME}` is how parameters are written in shell; strip the
+    // sigil and resolve the bare name. This is the only path that reaches the
+    // punctuation params (`$#`, `$?`, `$!`, …), which have no leading letter to
+    // anchor a direct id lookup, and it also accepts `$PATH`, `${HOME}`, etc.
+    if let Some(name) = t.strip_prefix('$') {
+        let name = name
+            .strip_prefix('{')
+            .and_then(|r| r.strip_suffix('}'))
+            .unwrap_or(name);
+        if !name.is_empty() {
+            return find_by_id(corpus, "special_param", name, None)
+                .or_else(|| resolve_param_subscript(corpus, name));
+        }
+    }
+    resolve_param_subscript(corpus, t)
+}
+
+/// Close-variant `IDENT[inner]` → `IDENT` (e.g. `compstate[context]` →
+/// `compstate`, `words[CURRENT]` → `words`). Stripping is lossy; the
+/// inner-subscript text surfaces as `ResolverFeedback::Subscripted`.
+fn resolve_param_subscript<'c>(corpus: &'c Corpus, raw: &str) -> Option<ResolvedHit<'c>> {
     let t = raw.trim();
     let open = t.find('[')?;
     if !t.ends_with(']') || open == 0 || open + 1 >= t.len() - 1 {

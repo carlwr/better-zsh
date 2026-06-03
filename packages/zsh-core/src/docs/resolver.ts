@@ -241,34 +241,66 @@ function flagInnerKey(cat: FlagCategory, t: string): string | undefined {
   return inner
 }
 
-/**
- * Special-parameter resolver. Literal first; falls back to stripping a
- * trailing `[...]` subscript (`compstate[context]`, `words[CURRENT]`, ...).
- * Stripping is lossy — the subscript surfaces via `resolverFeedback`. Wider
- * user-expression parsing stays out of scope (PRINCIPLES.md §"Resolver scope
- * balance").
- *
- * Module-private; shared with `specialParamFeedback`. Public path:
- * `resolve` + `resolverFeedback`.
- */
 const SUBSCRIPTED_PARAM_RE = /^([A-Za-z_][A-Za-z0-9_]*)\[(.+)\]$/
 
-function resolveSpecialParam(
+type SpecialParamHit = {
+  readonly id: Documented<"special_param">
+  readonly subscript?: string
+}
+
+/**
+ * Strip a `$` / `${…}` parameter sigil, returning the bare name. `undefined`
+ * when `t` is not sigiled or the sigil wraps nothing (`$`, `${}`). Mirrors the
+ * `strip_prefix('$')` branch of resolver.rs `resolve_special_param`.
+ */
+function stripParamSigil(t: string): string | undefined {
+  if (!t.startsWith("$")) return undefined
+  const rest = t.slice(1)
+  const inner =
+    rest.startsWith("{") && rest.endsWith("}") ? rest.slice(1, -1) : rest
+  return inner === "" ? undefined : inner
+}
+
+/**
+ * Close-variant `IDENT[inner]` → `IDENT` (`compstate[context]` → `compstate`,
+ * `words[CURRENT]` → `words`). Lossy — the subscript surfaces via
+ * `resolverFeedback`. Mirrors resolver.rs `resolve_param_subscript`.
+ */
+function resolveParamSubscript(
   c: DocCorpus,
   raw: string,
-):
-  | {
-      readonly id: Documented<"special_param">
-      readonly subscript?: string
-    }
-  | undefined {
-  const literal = mkDocumented("special_param", raw)
-  if (c.special_param.has(literal)) return { id: literal }
+): SpecialParamHit | undefined {
   const m = raw.trim().match(SUBSCRIPTED_PARAM_RE)
   if (!m) return undefined
   const base = mkDocumented("special_param", m[1] ?? "")
   if (!c.special_param.has(base)) return undefined
   return { id: base, subscript: m[2] ?? "" }
+}
+
+/**
+ * Special-parameter resolver. A `$NAME` / `${NAME}` sigil is stripped and the
+ * bare name resolved — the only path that reaches the punctuation params
+ * (`$#`, `$?`, `$!`, …), which have no leading letter to anchor a literal
+ * lookup, and which also accepts `$PATH`, `${HOME}`, etc. Otherwise literal
+ * first, then the `[...]` subscript close-variant. Wider user-expression
+ * parsing stays out of scope (PRINCIPLES.md §"Resolver scope balance").
+ *
+ * Module-private; shared with `specialParamFeedback`. Public path:
+ * `resolve` + `resolverFeedback`.
+ */
+function resolveSpecialParam(
+  c: DocCorpus,
+  raw: string,
+): SpecialParamHit | undefined {
+  const name = stripParamSigil(raw.trim())
+  if (name !== undefined) {
+    const id = mkDocumented("special_param", name)
+    if (c.special_param.has(id)) return { id }
+    return resolveParamSubscript(c, name)
+  }
+  const literal = mkDocumented("special_param", raw)
+  if (c.special_param.has(literal)) return { id: literal }
+  return resolveParamSubscript(c, raw)
 }
 
 function specialParamFeedback(

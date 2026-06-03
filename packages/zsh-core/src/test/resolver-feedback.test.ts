@@ -17,6 +17,13 @@ const opt = mkDocumented_("option")
 const sp = mkDocumented_("special_param")
 const optCorpus = membershipCorpus("option", ["AUTO_CD", "NOTIFY"])
 const spCorpus = membershipCorpus("special_param", ["compstate", "pipestatus"])
+// Punctuation + named params for the `$`/`${…}` sigil-strip path.
+const sigilCorpus = membershipCorpus("special_param", [
+  "#",
+  "?",
+  "PATH",
+  "compstate",
+])
 
 describe("resolve(corpus, 'option', raw) — option identity", () => {
   test.each([
@@ -92,6 +99,43 @@ describe("resolverFeedback(corpus, 'special_param', raw) — subscripted", () =>
     "anything",
   ])("%s → undefined", raw => {
     expect(resolverFeedback(spCorpus, "special_param", raw)).toBeUndefined()
+  })
+})
+
+describe("resolve(corpus, 'special_param', raw) — $/${…} sigil strip", () => {
+  test.each([
+    // punctuation params: no leading letter, only reachable via the sigil
+    ["$#", "#"],
+    ["$?", "?"],
+    ["${#}", "#"],
+    // named params and braces
+    ["$PATH", "PATH"],
+    ["${PATH}", "PATH"],
+    ["  $PATH  ", "PATH"],
+  ])("%s -> %s", (raw, id) => {
+    expect(resolve(sigilCorpus, "special_param", raw)).toEqual(
+      mkPieceId("special_param", sp(id)),
+    )
+  })
+
+  test("sigiled subscript strips both sigil and `[...]`, with feedback", () => {
+    expect(
+      resolve(sigilCorpus, "special_param", "$compstate[context]"),
+    ).toEqual(mkPieceId("special_param", sp("compstate")))
+    expect(
+      resolverFeedback(sigilCorpus, "special_param", "$compstate[context]"),
+    ).toEqual({ kind: "subscripted", subscript: "context" })
+  })
+
+  test.each([
+    // sigil wrapping nothing
+    "$",
+    "${}",
+    // unknown bare name after stripping
+    "$bogus",
+    "${bogus}",
+  ])("%s → undefined", raw => {
+    expect(resolve(sigilCorpus, "special_param", raw)).toBeUndefined()
   })
 })
 
