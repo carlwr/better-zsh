@@ -58,7 +58,7 @@ Edit `claude_desktop_config.json` (macOS: `~/Library/Application Support/Claude/
 ```json
 {
   "mcpServers": {
-    "zsh-ref": {
+    "zshref": {
       "command": "npx",
       "args": ["-y", "@carlwr/zshref-mcp"]
     }
@@ -73,7 +73,7 @@ Restart Claude Desktop to pick up the new server.
 Register the server with the `claude mcp add` command:
 
 ```sh
-claude mcp add zsh-ref -- npx -y @carlwr/zshref-mcp
+claude mcp add zshref -- npx -y @carlwr/zshref-mcp
 ```
 
 This writes an entry equivalent to the Claude Desktop snippet above into the CLI's MCP config.
@@ -85,7 +85,7 @@ Add an entry to `~/.cursor/mcp.json` (global) or `.cursor/mcp.json` (per-project
 ```json
 {
   "mcpServers": {
-    "zsh-ref": {
+    "zshref": {
       "command": "npx",
       "args": ["-y", "@carlwr/zshref-mcp"]
     }
@@ -102,7 +102,7 @@ VS Code's built-in MCP support reads `.vscode/mcp.json` in the workspace (or the
 ```json
 {
   "servers": {
-    "zsh-ref": {
+    "zshref": {
       "command": "npx",
       "args": ["-y", "@carlwr/zshref-mcp"]
     }
@@ -117,11 +117,27 @@ Add the server to `settings.json` under `context_servers`:
 ```json
 {
   "context_servers": {
-    "zsh-ref": {
+    "zshref": {
       "command": {
         "path": "npx",
         "args": ["-y", "@carlwr/zshref-mcp"]
       }
+    }
+  }
+}
+```
+
+### opencode
+
+opencode reads `opencode.json` (per-project) or `~/.config/opencode/opencode.json` (global). Its shape differs from the entries above: the server lives under `mcp`, `command` is a single array, and the entry carries `type` and `enabled`.
+
+```json
+{
+  "mcp": {
+    "zshref": {
+      "type": "local",
+      "command": ["npx", "-y", "@carlwr/zshref-mcp"],
+      "enabled": true
     }
   }
 }
