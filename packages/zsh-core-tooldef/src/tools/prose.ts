@@ -129,14 +129,24 @@ const flag_query: FlagProse = {
   long: "search string matched against ids and display headings\n\nEmpty or whitespace returns no matches; use `zsh_list` to enumerate.",
 }
 
+// `docs` is the one tool whose category order is real and observable: it
+// walks `classifyOrder` (the order the value list below is rendered in) and
+// returns at most one match per category. The order claim here is therefore
+// correct — unlike the generic help, which must not make it (see below).
 const flag_docs_category: FlagProse = {
   brief: "restrict to one category",
-  long: `restrict to one doc category\n\nAt most one match will be returned.\n\nIf omitted, all categories are tried, in the order given below. There will be at most one match per category.\n\nValid values:\n\n${renderedCategoryList}`,
+  long: `restrict to one doc category\n\nWith a category set, at most one match is returned.\n\nIf omitted, all categories are tried in the order given below, yielding at most one match per category.\n\nValid values:\n\n${renderedCategoryList}`,
 }
 
+// Generic category help for the ranked-search and enumeration tools, and
+// the common denominator the CLI reuses for top-level `--help`. Deliberately
+// makes NO claim about category order: `search` ranks by relevance and
+// `list` enumerates in corpus order (`docCategories`), neither of which is
+// the resolver order the value list below is rendered in. Only `docs` (its
+// own `flag_docs_category`) walks that order, so only it documents it.
 const flag_filter_category: FlagProse = {
   brief: "restrict to one category",
-  long: `restrict to one doc category\n\nIf omitted, all categories are tried in the order given below.\n\nValid values:\n\n${renderedCategoryList}`,
+  long: `restrict to one doc category\n\nIf omitted, all categories are included.\n\nValid values:\n\n${renderedCategoryList}`,
 }
 
 const flag_limit: FlagProse = {

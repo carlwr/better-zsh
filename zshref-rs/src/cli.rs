@@ -81,6 +81,11 @@ pub fn build_cli(tool_defs: &ToolDefs, corpus: &Corpus, mode: BuildMode) -> Comm
         // Subcommands without native `--pretty` get a hidden no-op variant
         // in `Parsing` mode — see `BuildMode`.
         .arg(pretty_arg())
+        // Root-position `--category`, mirroring root `--pretty`: documented
+        // in `Options:` (the override `Usage:` block shows `[--category=C]`
+        // per subcommand, conveying where it applies); `dispatch` forwards a
+        // root-position value to the tool subcommand.
+        .arg(root_category_arg(&tool_defs.tools))
         .arg(help_arg())
         .arg(version_arg());
 
@@ -374,6 +379,48 @@ fn pretty_arg() -> Arg {
         .long_help(prose::ROOT_PRETTY_HELP)
 }
 
+/// Root-level `--category`. The brief and the (valid-values-listing) long
+/// help are single-sourced from the embedded tooldef so the category list
+/// can't drift from the subcommands. The generic (search/list) wording is
+/// used deliberately: it is the common denominator across tools — `docs`
+/// adds a one-match-per-category note only in its own subcommand help,
+/// which would read as inaccurate at the root where `search`/`list` also
+/// take `--category`.
+fn root_category_arg(tools: &[ToolDef]) -> Arg {
+    let cat = |name: &str| {
+        tools.iter().find(|t| t.name == name).and_then(|t| {
+            t.input_schema
+                .get("properties")
+                .and_then(|p| p.get("category"))
+        })
+    };
+    // `zsh_list` carries the generic category description; `zsh_docs` would
+    // carry the docs-specific (one-match) variant.
+    let spec = cat("zsh_list").expect("zsh_list tooldef must expose a `category` property");
+    let long_help = spec
+        .get("description")
+        .and_then(Value::as_str)
+        .unwrap_or_default()
+        .to_string();
+    let brief = tools
+        .iter()
+        .find(|t| t.name == "zsh_list")
+        .and_then(|t| t.flag_briefs.get("category").cloned())
+        .unwrap_or_default();
+    Arg::new("category")
+        .long("category")
+        .value_name("CATEGORY")
+        .help(brief)
+        .long_help(long_help)
+        .action(ArgAction::Set)
+        .value_parser(clap::builder::PossibleValuesParser::new(
+            DOC_CATEGORIES.as_slice(),
+        ))
+        // Description already lists categories; the inline block is redundant
+        // and wraps badly at narrow widths (matches the subcommand arg).
+        .hide_possible_values(true)
+}
+
 fn help_arg() -> Arg {
     // `-h` and `--help` share one row and show the same (long) help; the
     // short/long distinction adds no value here and lets `-h` look truncated.
@@ -448,7 +495,8 @@ pub fn dispatch(cmd: Command, tool_defs: &ToolDefs, corpus: &Corpus) -> Result<i
                 .iter()
                 .find(|t| t.name == tool_name)
                 .expect("subcommand registered from tool_defs");
-            let input = matches_to_input_value(td, sub_matches);
+            let mut input = matches_to_input_value(td, sub_matches);
+            forward_root_category(&mut input, td, &matches);
             output::emit(&tools::dispatch(td, &input, ctx.corpus)?, ctx.pretty);
             Ok(0)
         }
@@ -463,6 +511,30 @@ fn render_help(mut cmd: Command, subcommand: Option<&str>) -> i32 {
     match cmd.try_get_matches_from_mut(args) {
         Ok(_) => 0,
         Err(err) => output::handle_clap_error(err, &mut cmd),
+    }
+}
+
+/// Forward a root-position `--category` onto the tool input, mirroring the
+/// root-position `--pretty` handling: a value given before the subcommand
+/// (`zshref --category=C docs …`) applies when the tool accepts `category`
+/// and the subcommand position did not set it. `matches_to_input_value`
+/// (sub position) wins on conflict; clap binds a post-subcommand
+/// `--category` to the sub, so this only fires for the pre-subcommand form.
+fn forward_root_category(input: &mut Value, td: &ToolDef, root: &ArgMatches) {
+    let Ok(Some(category)) = root.try_get_one::<String>("category") else {
+        return;
+    };
+    let accepts_category = td
+        .input_schema
+        .get("properties")
+        .and_then(Value::as_object)
+        .is_some_and(|props| props.contains_key("category"));
+    if !accepts_category {
+        return;
+    }
+    if let Value::Object(map) = input {
+        map.entry("category".to_string())
+            .or_insert_with(|| Value::String(category.clone()));
     }
 }
 
