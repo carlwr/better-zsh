@@ -2,19 +2,22 @@ import { constants, existsSync } from "node:fs"
 import { access } from "node:fs/promises"
 import * as path from "node:path"
 import { memoized } from "@carlwr/typescript-extra"
-import {
-  parseZshError,
-  runZshVersion,
-  ZSH_BASE_ARGS,
-  ZSH_VERSION_ARGS,
-  type ZshRunReq,
-  type ZshRunResult,
-  zshTokenize as zshTokenizeCore,
-} from "@carlwr/zsh-core/exec"
 import type { ZshBinary } from "./ids"
 import { log, warn } from "./log"
 import type { ZshPathConfig } from "./settings"
-import { buildZshEnv, execZsh } from "./zsh-exec"
+import {
+  buildZshEnv,
+  execZsh,
+  type ZshRunReq,
+  type ZshRunResult,
+} from "./zsh-exec"
+import {
+  parseZshError,
+  splitLines,
+  syntaxCheckReq,
+  tokenizeReq,
+  versionReq,
+} from "./zsh-protocol"
 
 // ── Domain types ──
 
@@ -164,8 +167,8 @@ export function configureZsh(config: ZshPathConfig) {
     const mode = deriveMode(config.binary, probe)
     logResolution(config, mode)
     if (mode.kind === "available") {
-      // Fire-and-forget version check
-      void runZshWithMode(mode, { args: [...ZSH_VERSION_ARGS] }).then(r => {
+      // Fire-and-forget version log.
+      void runZsh(versionReq).then(r => {
         if (!r.errCode) logVersion(r)
       })
     }
@@ -179,22 +182,18 @@ function unavailableResult(errCode = "ENOENT"): ZshRunResult {
   return { stdout: "", stderr: "", code: 1, errCode }
 }
 
-// ── Core runner ──
-
-async function runZshWithMode(
-  mode: ZshMode & { kind: "available" },
-  req: ZshRunReq,
-): Promise<ZshRunResult> {
-  return execZsh(mode.binary as string, req)
-}
-
+// ── The single gate for executing the system zsh ──
+//
+// SECURITY: every editor feature reaches the binary through here, and only the
+// `available` mode spawns — disabled/invalid/unavailable modes short-circuit
+// before `execZsh`.
 async function runZsh(req: ZshRunReq): Promise<ZshRunResult> {
   const mode = await getMode()
   if (mode.kind === "disabled") return unavailableResult("DISABLED")
   if (mode.kind === "invalid-config") return unavailableResult("EINVAL")
   if (mode.kind === "unavailable") return unavailableResult(mode.errCode)
 
-  const result = await runZshWithMode(mode, req)
+  const result = await execZsh(mode.binary as string, req)
   if (result.errCode === "ENOENT" || result.errCode === "EACCES") {
     // Binary disappeared after probe — invalidate
     const errCode = result.errCode as "ENOENT" | "EACCES"
@@ -211,14 +210,14 @@ async function runZsh(req: ZshRunReq): Promise<ZshRunResult> {
 // ── Public API ──
 
 export async function zshAvailable(): Promise<boolean> {
-  const r = await runZshVersion(runZsh)
+  const r = await runZsh(versionReq)
   if (r.code === 0) return true
   if (!r.errCode) warn(`zsh unavailable (zsh --version exited ${r.code})`)
   return false
 }
 
 export async function zshCheck(text: string): Promise<ZshCheckResult> {
-  const r = await runZsh({ args: [...ZSH_BASE_ARGS, "-n"], stdin: text })
+  const r = await runZsh(syntaxCheckReq(text))
   if (r.errCode) return { ok: "unavailable" }
   if (r.code === 0) return { ok: true }
   const parsed = parseZshError(r.stderr)
@@ -228,5 +227,6 @@ export async function zshCheck(text: string): Promise<ZshCheckResult> {
 }
 
 export async function zshTokenize(text: string): Promise<readonly string[]> {
-  return (await zshTokenizeCore(runZsh, text)) ?? []
+  const r = await runZsh(tokenizeReq(text))
+  return r.code === 0 ? splitLines(r.stdout) : []
 }

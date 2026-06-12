@@ -14,7 +14,6 @@ const tmp = mkdtempSync(join(tmpdir(), "better-zsh-zsh-core-pack-"))
 const publicEntries = [
   "analysis",
   "assets",
-  "exec",
   "index",
   "meta",
   "render",
@@ -98,7 +97,7 @@ try {
     [/^src\//, "source file"],
     [/^scripts\//, "script file"],
     [
-      /^(?:analysis|assets|build|exec|index|meta|render|resolver|taxonomy|types)\.ts$/,
+      /^(?:analysis|assets|build|index|meta|render|resolver|taxonomy|types)\.ts$/,
       "top-level TypeScript source",
     ],
     [/\.test\./, "test artifact"],

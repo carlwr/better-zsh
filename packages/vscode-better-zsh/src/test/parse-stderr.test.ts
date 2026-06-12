@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest"
-import { parseZshError } from "../exec/zsh"
+import { parseZshError } from "../zsh-protocol"
 
 describe("parseZshError", () => {
   test.each([

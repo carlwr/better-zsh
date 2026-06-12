@@ -29,7 +29,6 @@ const llms = [
   "Key entry points:",
   "- .",
   "- ./render",
-  "- ./exec",
   "- ./assets",
   "",
   "Structured data files:",

@@ -29,7 +29,6 @@ const SHARED_EXPORTS = [
   ".",
   "./analysis",
   "./render",
-  "./exec",
   "./assets",
   "./meta",
   "./resolver",

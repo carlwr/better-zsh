@@ -3,7 +3,6 @@
   "entryPoints": [
     "./analysis.ts",
     "./assets.ts",
-    "./exec.ts",
     "./index.ts",
     "./meta.ts",
     "./render.ts",

@@ -80,7 +80,6 @@ function writeJsonArtifacts() {
     entry: [
       resolve(pkgDir, "analysis.ts"),
       resolve(pkgDir, "assets.ts"),
-      resolve(pkgDir, "exec.ts"),
       resolve(pkgDir, "index.ts"),
       resolve(pkgDir, "meta.ts"),
       resolve(pkgDir, "render.ts"),

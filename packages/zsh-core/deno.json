@@ -8,7 +8,6 @@
     ".": "./index.ts",
     "./analysis": "./analysis.ts",
     "./assets": "./assets.ts",
-    "./exec": "./exec.ts",
     "./meta": "./meta.ts",
     "./render": "./render.ts",
     "./resolver": "./resolver.ts",
@@ -22,7 +21,6 @@
       "THIRD_PARTY_NOTICES.md",
       "analysis.ts",
       "assets.ts",
-      "exec.ts",
       "index.ts",
       "meta.ts",
       "render.ts",
@@ -38,7 +36,6 @@
     "include": [
       "analysis.ts",
       "assets.ts",
-      "exec.ts",
       "index.ts",
       "meta.ts",
       "render.ts",

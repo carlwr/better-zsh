@@ -4,23 +4,21 @@ import { fileURLToPath } from "node:url"
 import { describe, expect, test } from "vitest"
 
 /**
- * Structural scope fence for zsh-core's **static** public surface.
+ * Structural scope fence for zsh-core's public surface.
  *
- * Every non-glob `package.json` `exports` subpath (excluding `./exec`) is
- * advertised as execution-free, network-free, and env-agnostic: it parses
- * bundled Yodl sources and renders markdown. `./exec` is excluded — it
- * exposes a `ZshRunner` type; actual shell execution lives in the
- * *consumer*-injected runner, never inside this package. This test walks
- * the import graph from each static entrypoint and greps reached files.
+ * Every non-glob `package.json` `exports` subpath is advertised as
+ * execution-free, network-free, and env-agnostic: it parses bundled Yodl
+ * sources and renders markdown. zsh-core never executes a shell — hosts that
+ * run a zsh binary own that code (see the extension's `zsh-exec.ts`). This test
+ * walks the import graph from each static entrypoint and greps reached files.
  */
 
 const here = dirname(fileURLToPath(import.meta.url))
 const pkgDir = resolve(here, "..", "..")
 
 // Derive static entrypoints from package.json so new shared subpaths are
-// auto-checked. Excludes: `./exec` (ZshRunner injection), glob patterns
-// (data/schema JSON), and the manifest itself.
-const EXCLUDED_KEYS: ReadonlySet<string> = new Set(["./exec", "./package.json"])
+// auto-checked. Excludes glob patterns (data/schema JSON) and the manifest.
+const EXCLUDED_KEYS: ReadonlySet<string> = new Set(["./package.json"])
 const pkgExports = (
   JSON.parse(readFileSync(resolve(pkgDir, "package.json"), "utf8")) as {
     exports: Record<string, unknown>
@@ -93,12 +91,5 @@ describe("static-entrypoint scope fence", () => {
       }
     }
     expect(violations).toEqual([])
-  })
-
-  test.each([
-    ["exec.ts"],
-    ["src/exec/zsh.ts"],
-  ])("static entrypoints do not reach %s", relPath => {
-    expect(reached.has(resolve(pkgDir, relPath))).toBe(false)
   })
 })

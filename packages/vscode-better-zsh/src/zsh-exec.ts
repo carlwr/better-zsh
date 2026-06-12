@@ -1,5 +1,20 @@
 import { execFile } from "node:child_process"
-import type { ZshRunner, ZshRunReq, ZshRunResult } from "@carlwr/zsh-core/exec"
+
+/** Request shape for a single zsh process invocation. */
+export interface ZshRunReq {
+  readonly args: readonly string[]
+  readonly env?: NodeJS.ProcessEnv
+  readonly stdin?: string
+}
+
+/** Normalized zsh process result. */
+export interface ZshRunResult {
+  readonly stdout: string
+  readonly stderr: string
+  readonly code: number
+  /** Symbolic spawn/OS error code (e.g. `"ENOENT"`, `"EACCES"`) when the process could not run. */
+  readonly errCode?: string
+}
 
 const ZSH_ENV_KEEP = [
   "HOME",
@@ -51,6 +66,12 @@ export function buildZshEnv(
   return out
 }
 
+/**
+ * Spawn the system zsh and normalize its result.
+ *
+ * SECURITY: no gating here — the only caller is the gate `runZsh` (zsh.ts),
+ * which decides whether zsh may run at all.
+ */
 export function execZsh(
   zshBinary: string,
   { args, env, stdin }: ZshRunReq,
@@ -76,8 +97,4 @@ export function execZsh(
     )
     if (stdin !== undefined) proc.stdin?.end(stdin)
   })
-}
-
-export function makeExecZshRunner(zshBinary: string): ZshRunner {
-  return req => execZsh(zshBinary, req)
 }

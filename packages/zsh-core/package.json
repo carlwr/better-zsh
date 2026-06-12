@@ -37,12 +37,6 @@
       "require": "./dist/assets.js",
       "default": "./dist/assets.mjs"
     },
-    "./exec": {
-      "types": "./dist/types/exec.d.ts",
-      "import": "./dist/exec.mjs",
-      "require": "./dist/exec.js",
-      "default": "./dist/exec.mjs"
-    },
     "./meta": {
       "types": "./dist/types/meta.d.ts",
       "import": "./dist/meta.mjs",
@@ -89,8 +83,8 @@
     "jsrREGISTRY:check": "deno publish --dry-run --allow-dirty",
     "lint:slowtypes": "deno publish --dry-run --allow-dirty --no-check",
     "typecheck": "tsc --noEmit",
-    "format": "biome check --error-on-warnings --write analysis.ts assets.ts build.ts deno.json exec.ts index.ts meta.ts render.ts resolver.ts taxonomy.ts types.ts scripts src tsconfig.build.json tsconfig.json typedoc.json vitest.config.ts package.json",
-    "lint": "biome check --error-on-warnings analysis.ts assets.ts build.ts deno.json exec.ts index.ts meta.ts render.ts resolver.ts taxonomy.ts types.ts scripts src tsconfig.build.json tsconfig.json typedoc.json vitest.config.ts package.json",
+    "format": "biome check --error-on-warnings --write analysis.ts assets.ts build.ts deno.json index.ts meta.ts render.ts resolver.ts taxonomy.ts types.ts scripts src tsconfig.build.json tsconfig.json typedoc.json vitest.config.ts package.json",
+    "lint": "biome check --error-on-warnings analysis.ts assets.ts build.ts deno.json index.ts meta.ts render.ts resolver.ts taxonomy.ts types.ts scripts src tsconfig.build.json tsconfig.json typedoc.json vitest.config.ts package.json",
     "check": "pnpm typecheck && pnpm lint",
     "test": "vitest run",
     "test:smoke": "pnpm build && tsx scripts/test-smoke.ts",

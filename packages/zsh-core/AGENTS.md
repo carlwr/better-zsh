@@ -26,9 +26,7 @@ Canonical subpath list: `package.json` `exports`; per-subpath surface: `dist/typ
 
 **Yodl macro detection allows digit-adjacent macros:** vendored docs contain forms like `1tt(})`, so a preceding digit must not suppress macro parsing even though a preceding letter or underscore should.
 
-**Static entrypoint fence:** a test in `src/test/` walks the import graph from the static entrypoints and rejects reached files that import execution/network/env APIs.
-
-`./exec` is excluded (exposes a `ZshRunner` injection type). Prophylactic — keeps static-reference consumers structurally execution-free even when zsh-core gains new internal helpers.
+**Static entrypoint fence:** a test in `src/test/` walks the import graph from the static entrypoints and rejects reached files that import execution/network/env APIs. The whole public surface is execution-free — hosts that run a zsh binary own that code (the extension's `zsh-exec.ts`), never zsh-core.
 
 ## Reference-dump review workflow
 
