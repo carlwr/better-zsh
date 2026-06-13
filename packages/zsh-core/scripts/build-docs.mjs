@@ -7,7 +7,13 @@ const pkgDir = resolve(here, "..")
 const distDir = join(pkgDir, "dist")
 // Keep the published site outside dist/ so docs builds cannot accidentally
 // leak HTML into the npm tarball.
-const siteDir = join(pkgDir, ".aux", "docs", "site")
+//
+// publishDir is the GitHub Pages root (served at /better-zsh/); the zsh-core
+// docs live one level down under /better-zsh/zsh-core/ so the URL names the
+// package rather than the repo. publishDir itself only carries a redirect +
+// .nojekyll — slot future per-package sites in as siblings of zsh-core/.
+const publishDir = join(pkgDir, ".aux", "docs", "site")
+const siteDir = join(publishDir, "zsh-core")
 const apiDir = join(distDir, "api")
 const dataDir = join(distDir, "json")
 
@@ -36,10 +42,24 @@ const llms = [
   "",
 ].join("\n")
 
+// Forward the bare Pages URL (/better-zsh/) to the package docs so visitors
+// don't land on a 404; generated, not a hand-maintained landing page.
+const redirect = [
+  "<!doctype html>",
+  '<html lang="en">',
+  '<meta charset="utf-8">',
+  `<title>${pkg.name} documentation</title>`,
+  '<meta http-equiv="refresh" content="0; url=./zsh-core/">',
+  '<link rel="canonical" href="./zsh-core/">',
+  `<a href="./zsh-core/">${pkg.name} API documentation</a>`,
+  "",
+].join("\n")
+
 mkdirSync(siteDir, { recursive: true })
 rmSync(join(siteDir, "api"), { recursive: true, force: true })
 rmSync(join(siteDir, "data"), { recursive: true, force: true })
 cpSync(apiDir, join(siteDir, "api"), { recursive: true })
 cpSync(dataDir, join(siteDir, "data"), { recursive: true })
 writeFileSync(join(siteDir, "llms.txt"), llms)
-writeFileSync(join(siteDir, ".nojekyll"), "")
+writeFileSync(join(publishDir, "index.html"), redirect)
+writeFileSync(join(publishDir, ".nojekyll"), "")

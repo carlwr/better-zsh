@@ -12,13 +12,17 @@
   ],
   "entryPointStrategy": "resolve",
   "tsconfig": "./tsconfig.build.json",
-  "out": "./.aux/docs/site",
-  "json": "./.aux/docs/site/typedoc.json",
+  "out": "./.aux/docs/site/zsh-core",
+  "json": "./.aux/docs/site/zsh-core/typedoc.json",
   "readme": "none",
   "sort": ["source-order"],
   "categorizeByGroup": false,
+  "excludeReferences": true,
   "excludePrivate": true,
   "excludeProtected": true,
   "excludeInternal": true,
+  "navigation": {
+    "excludeReferences": true
+  },
   "githubPages": false
 }
