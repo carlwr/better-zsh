@@ -30,7 +30,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       # TS artifacts first: the Rust crate `include_bytes!`-embeds
       # dist/json/*.json from packages/zsh-core and zsh-core-tooldef.
