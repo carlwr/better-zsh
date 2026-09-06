@@ -3,7 +3,9 @@
 // (`defaultColor: false`) so one HTML reacts to the `data-theme` attribute.
 
 import { memoized } from '@carlwr/typescript-extra';
-import MarkdownIt from 'markdown-it';
+// markdown-it v15 bundles its own types: the default export is a callable
+// back-compat wrapper (a value), so the class type is the named export.
+import MarkdownIt, { type MarkdownIt as Md } from 'markdown-it';
 import { createHighlighter, type LanguageRegistration } from 'shiki';
 import docoptGrammar from '@carlwr/docopt-tmlanguage/grammar.json';
 
@@ -12,7 +14,7 @@ const THEMES = { light: 'github-light', dark: 'github-dark' } as const;
 // Loading `shellscript` also registers its zsh/sh/bash/shell aliases.
 const LANGS = ['shellscript', docoptGrammar as unknown as LanguageRegistration];
 
-async function build(): Promise<MarkdownIt> {
+async function build(): Promise<Md> {
   const hl = await createHighlighter({ themes: Object.values(THEMES), langs: LANGS });
   const known = new Set(hl.getLoadedLanguages());
   return new MarkdownIt({

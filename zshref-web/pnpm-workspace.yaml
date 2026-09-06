@@ -4,3 +4,13 @@
 # `pnpm install` — the flag `--ignore-workspace` is, but a file needs no flag.)
 # No sub-packages — zshref-web is the lone project. Drop post-extraction.
 packages: []
+
+# pnpm >=11: `allowBuilds` replaces the old `onlyBuiltDependencies` list; an
+# unlisted build script is a hard install error, so every one is decided here.
+# `onnxruntime-node` (native ORT for the local-model sanity test) and its
+# transitive `protobufjs`/`sharp` come in via @huggingface/transformers.
+allowBuilds:
+  esbuild: true
+  onnxruntime-node: true
+  protobufjs: true
+  sharp: true

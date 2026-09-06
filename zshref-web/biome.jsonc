@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.4.15/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.5.12/schema.json",
   // Lints the .ts logic only. .svelte components are checked by svelte-check
   // (template-aware); Biome parses <script> in isolation and would
   // false-flag template-referenced symbols as unused. Formatter is off —
