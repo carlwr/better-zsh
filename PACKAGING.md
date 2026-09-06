@@ -52,6 +52,8 @@ pnpm dlx jsr publish --allow-dirty
 
 `--allow-dirty` whenever the tree is dirty, e.g. an uncommitted version bump.
 
+After a first publish of a new scoped package, `npm view <pkg> versions` can lag several minutes behind the tarball URL; fetch the tarball to confirm, rather than re-publishing. JSR propagates faster — `curl -sfI https://jsr.io/<scope>/<pkg>/meta.json`.
+
 ## Linguist hints
 
 `.gitattributes` (`linguist-generated`, `linguist-vendored`, `linguist-documentation`) can steer GitHub's Linguist to keep the language-bar honest and collapse generated diffs. Decide separately whether language noise warrants marking generated/vendored sources.
