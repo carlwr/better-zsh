@@ -41,7 +41,7 @@
     "test:integration": "pnpm build && export BZ_SKIP_UPSTREAM=1 && pnpm run check && pnpm run test && pnpm run test:smoke"
   },
   "engines": {
-    "node": ">=22"
+    "node": ">=22.12"
   },
   "dependencies": {
     "fuzzysort": "^4.0.2",

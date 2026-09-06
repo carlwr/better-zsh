@@ -53,7 +53,7 @@
     "verifyREGISTRY": "pnpm run testREGISTRY:install && pnpm run jsrREGISTRY:check"
   },
   "engines": {
-    "node": ">=22"
+    "node": ">=22.12"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",
