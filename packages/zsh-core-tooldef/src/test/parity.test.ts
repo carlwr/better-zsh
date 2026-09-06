@@ -225,16 +225,17 @@ describe.runIf(cliFresh)("parity: TS execute() vs zshref batch", () => {
     await zsh.close()
   })
 
-  test.each(
-    PINNED_CASES.map(c => [`${c.tool}/${c.name}`, c] as const),
-  )("pinned: %s", async (_n, c) => {
-    const td = getTool(c.tool)
-    const tsOutput = td.execute(corpus, c.input)
-    const rustOutput = await zsh.call(c.tool, c.input)
-    assertOutputValid(td, tsOutput)
-    assertOutputValid(td, rustOutput)
-    compareEnvelopes(c.tool, tsOutput, rustOutput)
-  })
+  test.each(PINNED_CASES.map(c => [`${c.tool}/${c.name}`, c] as const))(
+    "pinned: %s",
+    async (_n, c) => {
+      const td = getTool(c.tool)
+      const tsOutput = td.execute(corpus, c.input)
+      const rustOutput = await zsh.call(c.tool, c.input)
+      assertOutputValid(td, tsOutput)
+      assertOutputValid(td, rustOutput)
+      compareEnvelopes(c.tool, tsOutput, rustOutput)
+    },
+  )
 
   for (const td of toolDefs) {
     test(`${td.name}: random inputs match (numRuns=${NUM_RUNS})`, async () => {

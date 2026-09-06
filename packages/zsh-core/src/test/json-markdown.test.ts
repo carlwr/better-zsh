@@ -31,34 +31,38 @@ describe.runIf(existsSync(jsonDir))(
       readonly name: string
     }
 
-    test.each(
-      jsonDataFiles,
-    )("%s records have a non-empty mdBody string", file => {
-      // Stub categories (e.g. mathfuncs.json) have zero records during
-      // development; skip the non-empty guard for them.
-      const recs = loadRecs<MdRec>(file)
-      if (recs.length === 0) return
-      for (const r of recs) {
-        expect(typeof r.mdBody).toBe("string")
-        expect(r.mdBody.length).toBeGreaterThan(0)
-        // The title now travels as its own field (split out of mdBody).
-        expect(typeof r._title).toBe("string")
-        expect(r._title.length).toBeGreaterThan(0)
-      }
-    })
+    test.each(jsonDataFiles)(
+      "%s records have a non-empty mdBody string",
+      file => {
+        // Stub categories (e.g. mathfuncs.json) have zero records during
+        // development; skip the non-empty guard for them.
+        const recs = loadRecs<MdRec>(file)
+        if (recs.length === 0) return
+        for (const r of recs) {
+          expect(typeof r.mdBody).toBe("string")
+          expect(r.mdBody.length).toBeGreaterThan(0)
+          // The title now travels as its own field (split out of mdBody).
+          expect(typeof r._title).toBe("string")
+          expect(r._title.length).toBeGreaterThan(0)
+        }
+      },
+    )
 
     test.each([
       ["options.json", "autocd", 100, ["AUTO_CD"], ["setopt"]],
       ["builtins.json", "echo", 50, ["echo"], ["echo"]],
-    ] as const)("%s:%s splits title from body", (file, name, minLen, titleParts, bodyParts) => {
-      const rec = loadRecs<NamedMdRec>(file).find(r => r.name === name)
-      expect(rec).toBeDefined()
-      const md = rec?.mdBody ?? ""
-      const title = rec?._title ?? ""
-      expect(md.length).toBeGreaterThan(minLen)
-      // Title text (e.g. the option name) now lives in `_title`, not mdBody.
-      for (const p of titleParts) expect(title).toContain(p)
-      for (const p of bodyParts) expect(md).toContain(p)
-    })
+    ] as const)(
+      "%s:%s splits title from body",
+      (file, name, minLen, titleParts, bodyParts) => {
+        const rec = loadRecs<NamedMdRec>(file).find(r => r.name === name)
+        expect(rec).toBeDefined()
+        const md = rec?.mdBody ?? ""
+        const title = rec?._title ?? ""
+        expect(md.length).toBeGreaterThan(minLen)
+        // Title text (e.g. the option name) now lives in `_title`, not mdBody.
+        for (const p of titleParts) expect(title).toContain(p)
+        for (const p of bodyParts) expect(md).toContain(p)
+      },
+    )
   },
 )

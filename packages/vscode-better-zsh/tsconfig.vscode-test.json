@@ -1,6 +1,9 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
+    // TS6 (TS5011) requires an explicit rootDir when emitting; "src" is
+    // what TS inferred before, so the emitted layout is unchanged.
+    "rootDir": "src",
     "outDir": ".vscode-test"
   },
   "include": ["src/**/*.ts"],

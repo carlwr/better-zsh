@@ -48,15 +48,14 @@ describe("resolve(corpus, 'option', raw) — option identity", () => {
 })
 
 describe("resolverFeedback(corpus, 'option', raw) — input-negated", () => {
-  test.each([
-    "NO_AUTO_CD",
-    "noautocd",
-    "NO_NOTIFY",
-  ])("%s → input-negated", raw => {
-    expect(resolverFeedback(optCorpus, "option", raw)).toEqual({
-      kind: "input-negated",
-    })
-  })
+  test.each(["NO_AUTO_CD", "noautocd", "NO_NOTIFY"])(
+    "%s → input-negated",
+    raw => {
+      expect(resolverFeedback(optCorpus, "option", raw)).toEqual({
+        kind: "input-negated",
+      })
+    },
+  )
 
   test.each([
     "AUTO_CD",

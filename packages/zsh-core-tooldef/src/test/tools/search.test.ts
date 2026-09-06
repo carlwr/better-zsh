@@ -40,14 +40,15 @@ describe("search", () => {
     expect(r.matchesTotal).toBe(0)
   })
 
-  test.each([{ query: "" }, { query: "   " }])('"$query" → empty matches[]', ({
-    query,
-  }) => {
-    const r = search(corpus, { query, limit: 7 })
-    expect(r.matches).toEqual([])
-    expect(r.matchesReturned).toBe(0)
-    expect(r.matchesTotal).toBe(0)
-  })
+  test.each([{ query: "" }, { query: "   " }])(
+    '"$query" → empty matches[]',
+    ({ query }) => {
+      const r = search(corpus, { query, limit: 7 })
+      expect(r.matches).toEqual([])
+      expect(r.matchesReturned).toBe(0)
+      expect(r.matchesTotal).toBe(0)
+    },
+  )
 
   test("limit clamped to MAX_LIMIT", () => {
     const r = search(corpus, { query: "a", limit: 999_999 })

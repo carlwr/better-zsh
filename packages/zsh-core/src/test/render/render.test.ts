@@ -519,16 +519,12 @@ describe("render markdown", () => {
   })
 
   // bare flag / key / escape
-  test.each([
-    "-a",
-    "--long",
-    "-1",
-    "nosort",
-    "%n",
-    "HOME",
-  ])("isDocoptSig rejects %j", sig => {
-    expect(isDocoptSig(sig)).toBe(false)
-  })
+  test.each(["-a", "--long", "-1", "nosort", "%n", "HOME"])(
+    "isDocoptSig rejects %j",
+    sig => {
+      expect(isDocoptSig(sig)).toBe(false)
+    },
+  )
 
   // comma-separated bare identifiers (widget synonym lists) carve out from docopt
   test.each([
@@ -696,22 +692,24 @@ describe("render dump", () => {
   })
   const noPreambleCats = docCategories.filter(k => !docCategoryPreamble[k])
 
-  test.each(
-    preambleCases,
-  )("%s dump starts with the category preamble", (k, preamble) => {
-    const body = refFiles.get(dumpFile.forCat(k)) ?? ""
-    expect(body.startsWith("<!-- preamble for category -->")).toBe(true)
-    expect(body).toContain(preamble)
-    expect(body.indexOf(preamble)).toBeLessThan(
-      body.indexOf(`## ${headingOf(k)}`),
-    )
-  })
+  test.each(preambleCases)(
+    "%s dump starts with the category preamble",
+    (k, preamble) => {
+      const body = refFiles.get(dumpFile.forCat(k)) ?? ""
+      expect(body.startsWith("<!-- preamble for category -->")).toBe(true)
+      expect(body).toContain(preamble)
+      expect(body.indexOf(preamble)).toBeLessThan(
+        body.indexOf(`## ${headingOf(k)}`),
+      )
+    },
+  )
 
-  test.each(
-    preambleCases,
-  )("all.md does NOT contain %s preamble", (_k, preamble) => {
-    expect(refFiles.get(dumpFile.all)).not.toContain(preamble)
-  })
+  test.each(preambleCases)(
+    "all.md does NOT contain %s preamble",
+    (_k, preamble) => {
+      expect(refFiles.get(dumpFile.all)).not.toContain(preamble)
+    },
+  )
 
   test.each(noPreambleCats)("%s dump has no preamble marker", k => {
     expect(refFiles.get(dumpFile.forCat(k))).not.toContain(

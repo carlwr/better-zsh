@@ -173,9 +173,12 @@ describe("toolDefs description shape", () => {
   test.each([
     ["zsh_search", searchToolDef],
     ["zsh_list", listToolDef],
-  ] as const)("%s category help does not promise one-match output", (_n, def) => {
-    expect(flagDesc(def, "category")).not.toMatch(/one match|at most/i)
-  })
+  ] as const)(
+    "%s category help does not promise one-match output",
+    (_n, def) => {
+      expect(flagDesc(def, "category")).not.toMatch(/one match|at most/i)
+    },
+  )
 
   test.each([
     ["zsh_search", searchToolDef],
@@ -203,9 +206,12 @@ describe("toolDefs description shape", () => {
     ["zsh_docs", docsToolDef, true],
     ["zsh_search", searchToolDef, true],
     ["zsh_list", listToolDef, false],
-  ] as const)("%s description names vendored zsh tag: %s", (_n, def, expected) => {
-    expect(def.description.includes(ZSH_UPSTREAM.tag)).toBe(expected)
-  })
+  ] as const)(
+    "%s description names vendored zsh tag: %s",
+    (_n, def, expected) => {
+      expect(def.description.includes(ZSH_UPSTREAM.tag)).toBe(expected)
+    },
+  )
 })
 
 // The preamble is single-sourced but rendered into two surfaces (MCP

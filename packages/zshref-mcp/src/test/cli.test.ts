@@ -31,13 +31,12 @@ describe("cli decide", () => {
     // flags win over TTY detection — consistent with stdlib cli tools
     { argv: ["--help"], isTTY: true, action: "help" },
     { argv: ["--version"], isTTY: true, action: "version" },
-  ] as const)("argv=$argv, isTTY=$isTTY → $action", ({
-    argv,
-    isTTY,
-    action,
-  }) => {
-    expect(decide({ argv, isTTY })).toBe(action)
-  })
+  ] as const)(
+    "argv=$argv, isTTY=$isTTY → $action",
+    ({ argv, isTTY, action }) => {
+      expect(decide({ argv, isTTY })).toBe(action)
+    },
+  )
 
   test("unknown flags fall through to run/tty-hint", () => {
     expect(decide({ argv: ["--what"], isTTY: false })).toBe("run")

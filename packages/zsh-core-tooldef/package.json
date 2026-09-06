@@ -44,13 +44,13 @@
     "node": ">=22"
   },
   "dependencies": {
-    "fuzzysort": "^3.1.0",
+    "fuzzysort": "^4.0.2",
     "@carlwr/typescript-extra": "0.11.0",
     "@carlwr/zsh-core": "workspace:*"
   },
   "devDependencies": {
-    "ajv": "^8.17.1",
-    "fast-check": "^4.7.0",
-    "vitest": "^4.1.4"
+    "ajv": "^8.20.0",
+    "fast-check": "^4.9.0",
+    "vitest": "^4.1.11"
   }
 }

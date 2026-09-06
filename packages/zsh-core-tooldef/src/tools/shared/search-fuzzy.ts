@@ -4,6 +4,9 @@ import type { BaseMatch } from "./entries.ts"
 
 const FUZZY_THRESHOLD = 0.3
 
+/** fuzzysort's "no cap" sentinel for `limit`. */
+const UNLIMITED = 0
+
 export function fuzzySortMatches(
   q: string,
   pool: readonly BaseMatch[],
@@ -11,6 +14,8 @@ export function fuzzySortMatches(
   return fuzzysort.go(q, [...pool], {
     keys: ["id", "display"],
     threshold: FUZZY_THRESHOLD,
+    // fuzzysort>=4 defaults to 10; callers need the untruncated tier.
+    limit: UNLIMITED,
   })
 }
 

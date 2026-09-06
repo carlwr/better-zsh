@@ -66,12 +66,15 @@ enditem()`
   test.each([
     [">&", [">& number", ">& -", ">& p", ">& word"]],
     ["<&", ["<& number", "<& -", "<& p"]],
-  ] as const)("redirection groupOp %s shared across multiple docs", (op, sigs) => {
-    const docs = parseRedirs(REDIR_YO)
-    expect(
-      docs.filter(doc => doc.groupOp === mkRedirOp(op)).map(doc => doc.sig),
-    ).toEqual(sigs)
-  })
+  ] as const)(
+    "redirection groupOp %s shared across multiple docs",
+    (op, sigs) => {
+      const docs = parseRedirs(REDIR_YO)
+      expect(
+        docs.filter(doc => doc.groupOp === mkRedirOp(op)).map(doc => doc.sig),
+      ).toEqual(sigs)
+    },
+  )
 
   describe("reserved words command-position and any-position forms", () => {
     const docs = by(parseReswords(GRAMMAR_YO), doc => doc.name)

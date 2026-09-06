@@ -63,13 +63,12 @@ describe("quotedRegionFacts", () => {
     expect(texts(lines)).toEqual(want)
   })
 
-  test.each([
-    'a=\\"',
-    'print "unterminated',
-    'print "$(echo "',
-  ])("omits unsupported or unclosed candidate: %j", line => {
-    expect(texts([line])).toEqual([])
-  })
+  test.each(['a=\\"', 'print "unterminated', 'print "$(echo "'])(
+    "omits unsupported or unclosed candidate: %j",
+    line => {
+      expect(texts([line])).toEqual([])
+    },
+  )
 
   test("recovers after unsupported but closed command substitutions", () => {
     expect(texts(['print "$(echo "inner")"', 'print "after"'])).toEqual([

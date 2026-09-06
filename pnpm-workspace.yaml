@@ -1,7 +1,8 @@
 packages:
   - packages/*
 
-onlyBuiltDependencies:
-  - "@vscode/vsce-sign"
-  - esbuild
-  - keytar
+# pnpm >=11: `allowBuilds` replaces the old `onlyBuiltDependencies` list.
+allowBuilds:
+  "@vscode/vsce-sign": true
+  esbuild: true
+  keytar: true

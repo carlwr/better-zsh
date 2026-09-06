@@ -27,14 +27,15 @@ for (const cat of docCategories) {
 }
 
 describe("docs round-trip: every literal corpus key resolves to itself", () => {
-  test.each(
-    allCases.map(c => [`${c.cat}:${c.key}`, c] as const),
-  )("%s", (_label, { cat, key }) => {
-    const r = docs(corpus, { key, category: cat })
-    expect(r.matches.length).toBe(1)
-    expect(r.matches[0]?.category).toBe(cat)
-    expect(r.matches[0]?.id).toBe(key)
-  })
+  test.each(allCases.map(c => [`${c.cat}:${c.key}`, c] as const))(
+    "%s",
+    (_label, { cat, key }) => {
+      const r = docs(corpus, { key, category: cat })
+      expect(r.matches.length).toBe(1)
+      expect(r.matches[0]?.category).toBe(cat)
+      expect(r.matches[0]?.id).toBe(key)
+    },
+  )
 })
 
 // Categories whose id is a shell-safe slug distinct from the human-readable

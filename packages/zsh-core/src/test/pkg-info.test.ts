@@ -84,11 +84,12 @@ describe("ZSH_UPSTREAM stays in sync with vendored markdown", () => {
   // SOURCE.md uses Tag/Commit/Date; THIRD_PARTY_NOTICES.md uses "Vendored <lc>".
   const sourceKey = { tag: "Tag", commit: "Commit", date: "Date" } as const
 
-  test.each(
-    Object.keys(sourceKey) as (keyof typeof sourceKey)[],
-  )("ZSH_UPSTREAM.%s matches SOURCE.md and THIRD_PARTY_NOTICES.md", field => {
-    const key = sourceKey[field]
-    expect(pick(source, key)).toBe(ZSH_UPSTREAM[field])
-    expect(pick(notices, `Vendored ${field}`)).toBe(ZSH_UPSTREAM[field])
-  })
+  test.each(Object.keys(sourceKey) as (keyof typeof sourceKey)[])(
+    "ZSH_UPSTREAM.%s matches SOURCE.md and THIRD_PARTY_NOTICES.md",
+    field => {
+      const key = sourceKey[field]
+      expect(pick(source, key)).toBe(ZSH_UPSTREAM[field])
+      expect(pick(notices, `Vendored ${field}`)).toBe(ZSH_UPSTREAM[field])
+    },
+  )
 })

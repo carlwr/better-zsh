@@ -16,7 +16,8 @@ const distDir = join(pkgDir, "dist")
     outDir: distDir,
     tsconfig: resolve(pkgDir, "tsconfig.build.json"),
     format: ["cjs", "esm"],
-    dts: true,
+    // tsup injects `baseUrl` into its dts build; TS6 rejects it (TS5101).
+    dts: { compilerOptions: { ignoreDeprecations: "6.0" } },
     clean: true,
     sourcemap: true,
     target: "es2022",

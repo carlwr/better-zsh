@@ -56,12 +56,12 @@
     "node": ">=22"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.0.0",
+    "@modelcontextprotocol/sdk": "^1.30.0",
     "@carlwr/zsh-core": "workspace:*",
     "@carlwr/zsh-core-tooldef": "workspace:*"
   },
   "devDependencies": {
-    "ajv": "^8.17.1",
-    "vitest": "^4.1.4"
+    "ajv": "^8.20.0",
+    "vitest": "^4.1.11"
   }
 }

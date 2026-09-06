@@ -66,13 +66,13 @@ describe("docs — multi-match (no `category`)", () => {
     expect(cats).toContain("option")
   })
 
-  test.each([
-    "0",
-    "a",
-  ])("bare history component `%s` is not a history match", key => {
-    const r = docs(corpus, { key })
-    expect(r.matches.map(m => m.category)).not.toContain("history_expn")
-  })
+  test.each(["0", "a"])(
+    "bare history component `%s` is not a history match",
+    key => {
+      const r = docs(corpus, { key })
+      expect(r.matches.map(m => m.category)).not.toContain("history_expn")
+    },
+  )
 })
 
 describe("docs — `category` constrains the lookup", () => {
@@ -159,16 +159,15 @@ describe("docs — subKind on category branches", () => {
     { key: "do", category: "reserved_word", subKind: "command" },
     { key: "%number", category: "job_spec", subKind: "number" },
     { key: "AUTO_CD", category: "option", subKind: undefined },
-  ] as const)("$category:$key subKind=$subKind", ({
-    key,
-    category,
-    subKind,
-  }) => {
-    const m = docs(corpus, { key, category }).matches[0]
-    expect(m).toBeDefined()
-    if (subKind !== undefined) expect(m?.subKind).toBe(subKind)
-    else expect(m).not.toHaveProperty("subKind")
-  })
+  ] as const)(
+    "$category:$key subKind=$subKind",
+    ({ key, category, subKind }) => {
+      const m = docs(corpus, { key, category }).matches[0]
+      expect(m).toBeDefined()
+      if (subKind !== undefined) expect(m?.subKind).toBe(subKind)
+      else expect(m).not.toHaveProperty("subKind")
+    },
+  )
 
   test("multi-match: reserved_word branch carries subKind, complex_command branch does not", () => {
     const r = docs(corpus, { key: "for" })
