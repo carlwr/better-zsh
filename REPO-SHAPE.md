@@ -20,6 +20,15 @@ Single source of truth for the product dependency arrow set; both timelines.
 └── zshref-web/                (TS SPA; not a pnpm member)
 ```
 
+## Repo extraction destinations
+
+Left of the arrow is today's monorepo path; right is the eventual repo name. The product is named `zshref`; `zshref-rs/` is only the current directory.
+
+- `zshref-rs/` → `zshref`
+- `zshref-web/` → `zshref-web`
+- `packages/zshref-mcp/` → `zshref-mcp` (see `packages/zshref-mcp/EXTRACTION.md`)
+- everything else stays put; this repo keeps the name `better-zsh`
+
 ## Post-extraction
 
 Producer-consumer arrows; pull-only, pinned by version:
@@ -29,13 +38,6 @@ Producer-consumer arrows; pull-only, pinned by version:
 - HuggingFace Hub → `zshref-web` at runtime (BGE-small model assets)
 
 `zshref-web` deliberately does not depend on `zsh-core`: everything the SPA renders already lives inside the index. Before introducing a `zsh-core` arrow, first try to route the data through `zshref`.
-
-## Repo extraction destinations
-
-- `zshref-rs/` → `zshref`
-- `zshref-web/` → `zshref-web`
-- `packages/zshref-mcp/` → `zshref-mcp` (see `packages/zshref-mcp/EXTRACTION.md`)
-- everything else stays in `better-zsh`
 
 ## Detail scope
 

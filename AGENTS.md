@@ -195,11 +195,10 @@ Mid-wipe, the TS LSP can emit transient TS7016 ghosts for `<pkg>/dist/*` — ign
 
 ### Post-extraction repo URLs in user-facing docs
 
-On first stable release: `zshref-rs/` -> `zshref` repo; `packages/zshref-mcp/` -> `zshref-mcp` repo. Rest stays `better-zsh`.
+Destinations and eventual repo names: `REPO-SHAPE.md`.
 
 - User-facing `.md` (`README.md`, `DEVELOPMENT.md`, `SECURITY.md`, `THIRD_PARTY_NOTICES.md`) in workspace root and each to-be-extracted dir already uses post-extraction repo URLs. Don't revert to monorepo-subpath form.
-- Project name is `zshref`; `zshref-rs` is only the current monorepo dir path.
-- Maintainer-focused docs (`AGENTS.md`, `DESIGN.md`, `*EXTRACTION.md`, handoffs) keep describing pre-release monorepo state.
+- Maintainer-focused docs (`AGENTS.md`, `DESIGN.md`, `*EXTRACTION.md`) keep describing pre-release monorepo state.
 
 ### `SECURITY.md`
 
