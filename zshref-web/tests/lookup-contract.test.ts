@@ -64,7 +64,7 @@ function gate(): string | null {
   if (process.env.BZ_REQUIRE_LOOKUP_CONTRACT === '1') {
     throw new Error(`${msg} (BZ_REQUIRE_LOOKUP_CONTRACT=1)`);
   }
-  return `skipped: ${msg}`;
+  return msg;
 }
 
 const skipReason = gate();
@@ -80,7 +80,9 @@ async function readJson(path: string): Promise<unknown> {
 }
 
 describe('lookup contract (bare layer)', () => {
-  it.skipIf(skipReason)('every bare entry resolves via the lookup map', async () => {
+  it('every bare entry resolves via the lookup map', async (ctx) => {
+    if (skipReason) ctx.skip(skipReason);
+
     const [contractRaw, mapRaw] = await Promise.all([
       readJson(PATHS.lookupContract),
       readJson(PATHS.lookupMap)

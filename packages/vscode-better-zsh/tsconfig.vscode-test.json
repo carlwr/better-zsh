@@ -1,3 +1,7 @@
+// Compiled, not just type-checked, by this package's `check` script:
+// project-config errors are only reported on emit, so a `--noEmit` pass
+// cannot see them and they would otherwise first surface in the
+// container integration tests.
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {

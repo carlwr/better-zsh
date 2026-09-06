@@ -7,7 +7,7 @@ import { artifactGate, loadIndexFromDisk } from './_helpers';
 import { renderInline, renderMarkdown } from '../src/lib/markdown';
 import type { IndexedRecord, VectorIndex } from '../src/lib/ranker/types';
 
-const skip = artifactGate('markdown rendering');
+const skipReason = artifactGate('markdown rendering');
 
 const FENCE = /^ {0,3}(`{3,}|~{3,})(.*)$/;
 // A fenced block can also open on a list-marker line, e.g. "- ```docopt"
@@ -49,15 +49,19 @@ const ref = (r: IndexedRecord) => `${r.text.category}/${r.text.id}`;
 describe('markdown', () => {
   let index: VectorIndex;
   beforeAll(async () => {
-    if (!skip) index = await loadIndexFromDisk();
+    if (!skipReason) index = await loadIndexFromDisk();
   }, 60_000);
 
-  it.skipIf(skip)('every md_body has balanced fences', () => {
+  it('every md_body has balanced fences', (ctx) => {
+    if (skipReason) ctx.skip(skipReason);
+
     const bad = index.records.filter((r) => !fences(r.text.md_body).balanced).map(ref);
     expect(bad).toEqual([]);
   });
 
-  it.skipIf(skip)('render emits one <pre> per fence, no placeholder leak', async () => {
+  it('render emits one <pre> per fence, no placeholder leak', async (ctx) => {
+    if (skipReason) ctx.skip(skipReason);
+
     const bad: string[] = [];
     for (const r of index.records) {
       const { count, balanced } = fences(r.text.md_body);

@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { artifactGate, PATHS, readData } from './_helpers';
 import { loadArtifacts } from '../src/lib/artifacts';
 
-const skip = artifactGate('artifact loader');
+const skipReason = artifactGate('artifact loader');
 
 // Rule URLs resolve to YAML sources; `readData` handles the format switch.
 const URL_TO_PATH: Record<string, string> = {
@@ -27,7 +27,9 @@ const fileFetch = (async (url: RequestInfo | URL) => {
 }) as unknown as typeof fetch;
 
 describe('artifact loader', () => {
-  it.skipIf(skip)('loads every artifact and the taxonomy covers the index', async () => {
+  it('loads every artifact and the taxonomy covers the index', async (ctx) => {
+    if (skipReason) ctx.skip(skipReason);
+
     const { index, rules, categories } = await loadArtifacts(fileFetch);
 
     expect(index.records.length).toBeGreaterThan(0);

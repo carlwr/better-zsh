@@ -33,14 +33,18 @@ export function hasArtifacts(): boolean {
   return Object.values(PATHS).every(existsSync);
 }
 
-/** Artifact-gated tests skip locally and fail when CI requires artifacts. */
+/**
+ * Reason for `ctx.skip(reason)`; null when artifacts are staged. A verbose
+ * reporter prints a ctx.skip note, whereas `it.skipIf` coerces its argument
+ * to a boolean and drops the text. Throws when CI requires artifacts.
+ */
 export function artifactGate(label: string): string | null {
   if (hasArtifacts()) return null;
   const msg = `${label}: zshref-rs artifacts not staged locally`;
   if (process.env.BZ_REQUIRE_WEB_ARTIFACTS === '1') {
     throw new Error(`${msg} (BZ_REQUIRE_WEB_ARTIFACTS=1)`);
   }
-  return `skipped: ${msg}`;
+  return msg;
 }
 
 export async function readData(path: string): Promise<unknown> {

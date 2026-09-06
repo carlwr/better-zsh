@@ -49,7 +49,7 @@ Two-tier verification with disjoint failure modes:
 
 Parity enforces byte-equality at f32 precision; `rank.ts` mirrors Rust's f32 arithmetic via `Math.fround` + `Float32Array`.
 
-Default-skip + opt-in-fail (mirrors Rust): artifact-gated tests skip with a visible reason when artifacts are missing; CI sets `BZ_REQUIRE_WEB_ARTIFACTS=1` to flip skip → fail, so a pipeline can't go green on missing artifacts.
+Default-skip + opt-in-fail (mirrors Rust): artifact-gated tests skip via `ctx.skip(reason)`; `--reporter=verbose` prints the reason. CI sets `BZ_REQUIRE_WEB_ARTIFACTS=1` to flip skip → fail, so a pipeline can't go green on missing artifacts.
 
 ## Routes
 

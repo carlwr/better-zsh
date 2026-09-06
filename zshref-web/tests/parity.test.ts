@@ -31,7 +31,9 @@ describe('ranker parity', () => {
     [index, rules] = await Promise.all([loadIndexFromDisk(), loadRulesFromDisk()]);
   }, 60_000);
 
-  it.skipIf(skipReason)('reproduces fixture scores at f32 precision', async () => {
+  it('reproduces fixture scores at f32 precision', async (ctx) => {
+    if (skipReason) ctx.skip(skipReason);
+
     const fixture = await loadParityFixture();
     for (const entry of fixture.entries) {
       const queryVec = new Float32Array(entry.queryVec);

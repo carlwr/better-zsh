@@ -47,7 +47,9 @@ describe('full-pipeline sanity', () => {
     }
   }, 180_000);
 
-  it.skipIf(skipReason)('top-1 matches curated identity', async () => {
+  it('top-1 matches curated identity', async (ctx) => {
+    if (skipReason) ctx.skip(skipReason);
+
     if (!pipe) {
       throw new Error(`pipeline load failed: ${pipeErr}`);
     }
