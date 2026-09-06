@@ -57,6 +57,10 @@ jobs:
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
+      # `test` reads dist/json/tooldef.json; unlike zshref-mcp, tooldef's
+      # `pretest` builds only upstream zsh-core, not itself. A fresh checkout
+      # has no dist/, so the build must be explicit here.
+      - run: pnpm --filter @carlwr/zsh-core-tooldef build
       - run: pnpm --filter @carlwr/zsh-core-tooldef run check
       - run: pnpm --filter @carlwr/zsh-core-tooldef run test
       - run: pnpm --filter @carlwr/zsh-core-tooldef run test:smoke
