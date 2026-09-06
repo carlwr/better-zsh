@@ -72,6 +72,15 @@ Hidden, internal-only verb — freshness/drift checks for the staging script + C
 - `tuning.yaml` holds scalar weights and thresholds only — constants, not functions.
 - If a value wants to become a function, delete it from YAML and move the logic into `rank.rs` plus the TS mirror. Don't grow `tuning.yaml` into a DSL.
 
+## MSRV
+
+Two floors, deliberately split; both declared in `Cargo.toml`:
+
+- `rust-version` — default build, i.e. what `cargo install zshref` needs.
+- `[package.metadata.msrv] all-features` — raised by `ort`/`ort-sys` under `nlp`.
+
+Collapsing to one number means the higher one, locking users out of the default binary over an optional feature they never build. Cost of splitting: the second key is ours alone, so cargo cannot reject `cargo install --features nlp` below that floor — it fails inside `ort-sys` instead. Acceptable, since `cargo install` is not the nlp delivery channel (`src/nlp/NLP.md`).
+
 ## TS↔Rust mirror discipline
 
 Two namespaces of mirror markers — kept disjoint so a search for one never picks up the other:
