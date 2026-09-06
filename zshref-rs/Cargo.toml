@@ -15,7 +15,7 @@ homepage = "https://github.com/carlwr/better-zsh"
 readme = "README.md"
 keywords = ["zsh", "shell", "cli", "reference", "documentation"]
 categories = ["command-line-utilities", "development-tools"]
-rust-version = "1.82"                   # Option::is_none_or stabilized 1.82
+rust-version = "1.85"                   # floor: clap 4.6, proptest 1.11, jsonschema 0.54
 
 # Files that land in the published `.crate` tarball. Gitignored files can
 # still be included here (cargo's packaging layer takes precedence over
@@ -23,6 +23,7 @@ rust-version = "1.82"                   # Option::is_none_or stabilized 1.82
 # though it's gitignored pre-extraction). See DATA-SYNC.md.
 include = [
     "src/**/*.rs",
+    "src/**/*.yaml",                    # include_str!-ed by src/nlp/
     "build.rs",
     "build-inputs.txt",
     "tests/**/*.rs",
@@ -55,11 +56,11 @@ indoc = "2"
 fastembed = { version = "5.13", default-features = false, features = ["ort-download-binaries-native-tls"], optional = true }
 sha2 = { version = "0.10", optional = true }
 serde_yaml_ng = { version = "0.10", optional = true }
-schemars = { version = "0.8", features = ["preserve_order"], optional = true }
+schemars = { version = "1", features = ["preserve_order"], optional = true }
 
 [dev-dependencies]
 proptest = "1"
-jsonschema = { version = "0.18", default-features = false, features = ["draft202012"] }
+jsonschema = { version = "0.54", default-features = false }
 regex = "1"
 
 [build-dependencies]

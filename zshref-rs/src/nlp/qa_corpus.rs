@@ -8,7 +8,6 @@
 
 #[cfg(test)]
 mod tests {
-    use jsonschema::{Draft, JSONSchema};
     use serde_json::Value;
     use std::path::PathBuf;
 
@@ -20,34 +19,23 @@ mod tests {
 
     #[test]
     fn nlp_corpus_matches_schema() {
-        let mut schema: Value = serde_json::from_slice(
+        let schema: Value = serde_json::from_slice(
             &std::fs::read(nlp_qa_path("schema.json")).expect("read schema.json"),
         )
         .expect("parse schema.json");
-        // The committed `$id` ("nlp-qa-corpus") is a bare relative URI, which
-        // the validator rejects as a base URL. All `$ref`s are document-local
-        // (`#/$defs/...`), so dropping `$id` does not change resolution.
-        if let Some(obj) = schema.as_object_mut() {
-            obj.remove("$id");
-        }
         let corpus: Value = serde_yaml_ng::from_str(
             &std::fs::read_to_string(nlp_qa_path("nlp-corpus.yaml")).expect("read nlp-corpus.yaml"),
         )
         .expect("parse nlp-corpus.yaml");
-        let validator = JSONSchema::options()
-            .with_draft(Draft::Draft202012)
-            .compile(&schema)
+        let validator = jsonschema::draft202012::options()
+            .build(&schema)
             .expect("compile schema.json");
-        // Collect into owned strings in one statement so the borrowing error
-        // iterator is dropped before `validator`/`corpus` go out of scope.
+        // Map to owned strings so the borrowing error iterator is dropped
+        // before `validator`/`corpus` go out of scope.
         let errors: Vec<String> = validator
-            .validate(&corpus)
-            .err()
-            .map(|errs| {
-                errs.map(|e| format!("  - {e} (path: {})", e.instance_path))
-                    .collect()
-            })
-            .unwrap_or_default();
+            .iter_errors(&corpus)
+            .map(|e| format!("  - {e} (path: {})", e.instance_path()))
+            .collect();
         assert!(
             errors.is_empty(),
             "nlp-corpus.yaml violates its declared schema.json:\n{}",

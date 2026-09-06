@@ -1,40 +1,35 @@
 {
-  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Tuning",
-  "description": "Rank-time scalar constants for the ranker (no re-embed on change). Serialized downstream for non-Rust rankers.",
+  "description": "Rank-time scalar constants for the ranker (no re-embed on change).\nSerialized downstream for non-Rust rankers.",
   "type": "object",
-  "required": [
-    "boosts",
-    "lexical",
-    "penalties",
-    "semantic_weights"
-  ],
   "properties": {
     "semantic_weights": {
-      "$ref": "#/definitions/SemanticWeights"
+      "$ref": "#/$defs/SemanticWeights"
     },
     "boosts": {
-      "$ref": "#/definitions/BoostWeights"
+      "$ref": "#/$defs/BoostWeights"
     },
     "penalties": {
-      "$ref": "#/definitions/PenaltyWeights"
+      "$ref": "#/$defs/PenaltyWeights"
     },
     "lexical": {
-      "$ref": "#/definitions/LexicalThresholds"
+      "$ref": "#/$defs/LexicalThresholds"
     }
   },
   "additionalProperties": false,
-  "definitions": {
+  "required": [
+    "semantic_weights",
+    "boosts",
+    "penalties",
+    "lexical"
+  ],
+  "$defs": {
     "SemanticWeights": {
       "type": "object",
-      "required": [
-        "body",
-        "short_body",
-        "structured"
-      ],
       "properties": {
         "body": {
-          "description": "Mix over the embedding views. Only these two are stored; `expanded` is derived as `1 − body − structured` (on the simplex by construction). See `rank::semantic_weights`.",
+          "description": "Mix over the embedding views. Only these two are stored; `expanded` is\nderived as `1 − body − structured` (on the simplex by construction).\nSee `rank::semantic_weights`.",
           "type": "number",
           "format": "float"
         },
@@ -43,18 +38,19 @@
           "format": "float"
         },
         "short_body": {
-          "$ref": "#/definitions/ShortBodyDeform"
+          "$ref": "#/$defs/ShortBodyDeform"
         }
       },
-      "additionalProperties": false
+      "additionalProperties": false,
+      "required": [
+        "body",
+        "structured",
+        "short_body"
+      ]
     },
     "ShortBodyDeform": {
-      "description": "Sparse-body deformation: shifts mass body → expanded as a body shortens, so short records lean on structured/expanded text. See `rank::semantic_weights`.",
+      "description": "Sparse-body deformation: shifts mass body → expanded as a body shortens, so\nshort records lean on structured/expanded text. See `rank::semantic_weights`.",
       "type": "object",
-      "required": [
-        "length_scale",
-        "strength"
-      ],
       "properties": {
         "strength": {
           "description": "Max shift, at body length 0.",
@@ -67,16 +63,14 @@
           "format": "float"
         }
       },
-      "additionalProperties": false
+      "additionalProperties": false,
+      "required": [
+        "strength",
+        "length_scale"
+      ]
     },
     "BoostWeights": {
       "type": "object",
-      "required": [
-        "category",
-        "exact_word_increment",
-        "resolver_increment",
-        "word_overlap"
-      ],
       "properties": {
         "category": {
           "description": "Weakest signal: query names the record's category.",
@@ -84,28 +78,30 @@
           "format": "float"
         },
         "exact_word_increment": {
-          "description": "Non-negative increment for a query word equal to id/display (`exact_word = category + this`).",
+          "description": "Non-negative increment for a query word equal to id/display\n(`exact_word = category + this`).",
           "type": "number",
           "format": "float"
         },
         "resolver_increment": {
-          "description": "Non-negative increment for a corpus-aware resolver hit (`resolver = exact_word + this`); the increments keep `category ≤ exact_word ≤ resolver` by construction.",
+          "description": "Non-negative increment for a corpus-aware resolver hit\n(`resolver = exact_word + this`); the increments keep\n`category ≤ exact_word ≤ resolver` by construction.",
           "type": "number",
           "format": "float"
         },
         "word_overlap": {
-          "$ref": "#/definitions/WordOverlap"
+          "$ref": "#/$defs/WordOverlap"
         }
       },
-      "additionalProperties": false
+      "additionalProperties": false,
+      "required": [
+        "category",
+        "exact_word_increment",
+        "resolver_increment",
+        "word_overlap"
+      ]
     },
     "WordOverlap": {
       "description": "Smooth saturating overlap boost; see `rank::overlap_boost`.",
       "type": "object",
-      "required": [
-        "half_sat",
-        "scale"
-      ],
       "properties": {
         "scale": {
           "type": "number",
@@ -116,40 +112,44 @@
           "format": "float"
         }
       },
-      "additionalProperties": false
+      "additionalProperties": false,
+      "required": [
+        "scale",
+        "half_sat"
+      ]
     },
     "PenaltyWeights": {
       "type": "object",
-      "required": [
-        "category_rarity_max"
-      ],
       "properties": {
         "category_rarity_max": {
           "type": "number",
           "format": "float"
         }
       },
-      "additionalProperties": false
+      "additionalProperties": false,
+      "required": [
+        "category_rarity_max"
+      ]
     },
     "LexicalThresholds": {
       "type": "object",
-      "required": [
-        "min_discriminating_word_len",
-        "min_significant_word_len"
-      ],
       "properties": {
         "min_discriminating_word_len": {
           "type": "integer",
           "format": "uint",
-          "minimum": 0.0
+          "minimum": 0
         },
         "min_significant_word_len": {
           "type": "integer",
           "format": "uint",
-          "minimum": 0.0
+          "minimum": 0
         }
       },
-      "additionalProperties": false
+      "additionalProperties": false,
+      "required": [
+        "min_discriminating_word_len",
+        "min_significant_word_len"
+      ]
     }
   }
 }

@@ -14,11 +14,11 @@ generate about.hbs` — or update this file by hand for now.
 - anstyle-parse 1.0.0
 - anstyle-query 1.1.5
 - anstyle-wincon 3.0.11
-- anyhow 1.0.102
+- anyhow 1.0.104
 - bitflags 2.11.1
-- clap 4.6.1
-- clap_builder 4.6.0
-- clap_complete 4.6.2
+- clap 4.6.6
+- clap_builder 4.6.6
+- clap_complete 4.6.9
 - clap_lex 1.1.0
 - colorchoice 1.0.5
 - equivalent 1.0.2
@@ -34,7 +34,7 @@ generate about.hbs` — or update this file by hand for now.
 - serde 1.0.228
 - serde_core 1.0.228
 - serde_derive 1.0.228
-- serde_json 1.0.149
+- serde_json 1.0.151
 - syn 2.0.117
 - terminal_size 0.4.4
 - utf8parse 0.2.2
@@ -44,7 +44,7 @@ generate about.hbs` — or update this file by hand for now.
 ## MIT
 
 - strsim 0.11.1
-- zmij 1.0.21
+- zmij 1.0.23
 
 ## Unlicense OR MIT
 

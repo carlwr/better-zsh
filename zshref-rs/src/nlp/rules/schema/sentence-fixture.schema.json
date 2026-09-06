@@ -1,44 +1,40 @@
 {
-  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "SentenceFixture",
   "type": "object",
-  "required": [
-    "entries",
-    "version"
-  ],
   "properties": {
     "version": {
       "type": "integer",
       "format": "uint32",
-      "minimum": 0.0
+      "minimum": 0
     },
     "default-weight": {
-      "description": "Weight applied to items that omit `w`; defaults to 1.0 when the fixture omits the field too.",
-      "default": 1.0,
+      "description": "Weight applied to items that omit `w`; defaults to 1.0 when the\nfixture omits the field too.",
       "type": "number",
-      "format": "float"
+      "format": "float",
+      "default": 1.0
     },
     "default-target-depth": {
-      "description": "Target depth applied to items that omit `d`; defaults to 3.0 when the fixture omits the field too.",
-      "default": 3.0,
+      "description": "Target depth applied to items that omit `d`; defaults to 3.0\nwhen the fixture omits the field too.",
       "type": "number",
-      "format": "float"
+      "format": "float",
+      "default": 3.0
     },
     "entries": {
       "type": "array",
       "items": {
-        "$ref": "#/definitions/SentenceEntry"
+        "$ref": "#/$defs/SentenceEntry"
       }
     }
   },
   "additionalProperties": false,
-  "definitions": {
+  "required": [
+    "version",
+    "entries"
+  ],
+  "$defs": {
     "SentenceEntry": {
       "type": "object",
-      "required": [
-        "query",
-        "want"
-      ],
       "properties": {
         "query": {
           "type": "string"
@@ -46,23 +42,23 @@
         "want": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/ExpectedItem"
+            "$ref": "#/$defs/ExpectedItem"
           }
         },
         "holdout": {
-          "description": "Held out from tuning when `true`; absent (the default) ⇒ `Train`. `false` is accepted but redundant.",
+          "description": "Held out from tuning when `true`; absent (the default) ⇒ `Train`.\n`false` is accepted but redundant.",
           "type": "boolean"
         }
       },
-      "additionalProperties": false
+      "additionalProperties": false,
+      "required": [
+        "query",
+        "want"
+      ]
     },
     "ExpectedItem": {
-      "description": "One scored item within an entry's `want` set. Each item is ranked on its OWN rank and contributes one vote; an N-item entry carries N votes. `d`/`w` override the fixture-level defaults when present; [`load`] resolves them to concrete values, so callers should read them via [`ExpectedItem::effective_depth`] / [`ExpectedItem::effective_weight`].",
+      "description": "One scored item within an entry's `want` set. Each item is ranked on\nits OWN rank and contributes one vote; an N-item entry carries N votes.\n`d`/`w` override the fixture-level defaults when present; [`load`]\nresolves them to concrete values, so callers should read them via\n[`ExpectedItem::effective_depth`] / [`ExpectedItem::effective_weight`].",
       "type": "object",
-      "required": [
-        "cat",
-        "id"
-      ],
       "properties": {
         "cat": {
           "type": "string"
@@ -85,7 +81,11 @@
           "format": "float"
         }
       },
-      "additionalProperties": false
+      "additionalProperties": false,
+      "required": [
+        "cat",
+        "id"
+      ]
     }
   }
 }

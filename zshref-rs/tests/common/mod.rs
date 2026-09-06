@@ -20,7 +20,7 @@
 
 #![allow(dead_code)]
 
-use jsonschema::{Draft, JSONSchema};
+use jsonschema::Validator;
 use serde_json::Value;
 use std::collections::HashMap;
 use std::fs;
@@ -217,8 +217,8 @@ pub fn locate_tooldef_json() -> PathBuf {
 
 /// Compile-once-per-tool validator over the bundled `outputSchema`. Draft
 /// 2020-12 to match the `$schema` declared in each per-tool schema.
-pub fn validator_for(tool: &str) -> &'static JSONSchema {
-    static VALIDATORS: OnceLock<HashMap<String, JSONSchema>> = OnceLock::new();
+pub fn validator_for(tool: &str) -> &'static Validator {
+    static VALIDATORS: OnceLock<HashMap<String, Validator>> = OnceLock::new();
     VALIDATORS
         .get_or_init(|| {
             let path = locate_tooldef_json();
@@ -239,9 +239,8 @@ pub fn validator_for(tool: &str) -> &'static JSONSchema {
                 let schema = t
                     .get("outputSchema")
                     .unwrap_or_else(|| panic!("tool {name}: missing outputSchema"));
-                let compiled = JSONSchema::options()
-                    .with_draft(Draft::Draft202012)
-                    .compile(schema)
+                let compiled = jsonschema::draft202012::options()
+                    .build(schema)
                     .unwrap_or_else(|e| panic!("compile outputSchema for {name}: {e}"));
                 out.insert(name, compiled);
             }
@@ -255,16 +254,18 @@ pub fn validator_for(tool: &str) -> &'static JSONSchema {
 /// on failure. `tool` uses the full bundled name (`zsh_docs`, …).
 pub fn validate_or_panic(tool: &str, v: &Value) {
     let validator = validator_for(tool);
-    if let Err(errors) = validator.validate(v) {
-        let detail = errors
-            .map(|e| format!("  - {e} (path: {})", e.instance_path))
-            .collect::<Vec<_>>()
-            .join("\n");
-        panic!(
-            "outputSchema validation failed for {tool}:\nactual:\n{}\nerrors:\n{detail}",
-            serde_json::to_string_pretty(v).unwrap_or_default(),
-        );
+    if validator.is_valid(v) {
+        return;
     }
+    let detail = validator
+        .iter_errors(v)
+        .map(|e| format!("  - {e} (path: {})", e.instance_path()))
+        .collect::<Vec<_>>()
+        .join("\n");
+    panic!(
+        "outputSchema validation failed for {tool}:\nactual:\n{}\nerrors:\n{detail}",
+        serde_json::to_string_pretty(v).unwrap_or_default(),
+    );
 }
 
 /// Parse the first example from an `Example:` / `Examples:` block in
