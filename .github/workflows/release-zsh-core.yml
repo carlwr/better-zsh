@@ -65,7 +65,7 @@ jobs:
 
       - run: pnpm --filter @carlwr/zsh-core run check
       - run: pnpm --filter @carlwr/zsh-core run test
-      - run: pnpm --filter @carlwr/zsh-core run test:smoke
+      - run: pnpm --filter @carlwr/zsh-core run test:pack
       - run: pnpm --filter @carlwr/zsh-core run testREGISTRY:install
       - run: pnpm --filter @carlwr/zsh-core run jsrREGISTRY:check
 

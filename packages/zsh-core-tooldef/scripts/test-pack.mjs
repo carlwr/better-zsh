@@ -4,7 +4,7 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 
 const pnpm = process.platform === "win32" ? "pnpm.cmd" : "pnpm"
-const tmp = mkdtempSync(join(tmpdir(), "better-zshref-mcp-pack-"))
+const tmp = mkdtempSync(join(tmpdir(), "zsh-core-tooldef-pack-"))
 
 try {
   const out = execFileSync(
@@ -22,7 +22,6 @@ try {
 
   const required = [
     "LICENSE",
-    "README.md",
     "THIRD_PARTY_NOTICES.md",
     "package.json",
     "deno.json",
@@ -30,11 +29,6 @@ try {
     "dist/index.js.map",
     "dist/index.mjs",
     "dist/index.mjs.map",
-    "dist/server.js",
-    "dist/server.js.map",
-    "dist/server.mjs",
-    "dist/server.mjs.map",
-    "dist/server.d.ts",
     "dist/api/index.api.json",
     "dist/types/index.d.ts",
   ]
@@ -42,11 +36,9 @@ try {
   const forbidden = [
     [/^src\//, "source file"],
     [/^scripts\//, "script file"],
-    [/^(?:index|server|build)\.ts$/, "top-level TypeScript source"],
+    [/^(?:index|build)\.ts$/, "top-level TypeScript source"],
     [/\.test\./, "test artifact"],
     [/^node_modules\//, "node_modules content"],
-    [/^DEVELOPMENT\.md$/, "contributor-only doc"],
-    [/^EXTRACTION\.md$/, "contributor-only doc"],
   ]
 
   const missing = required.filter(file => !paths.includes(file))
@@ -54,10 +46,6 @@ try {
     paths.filter(file => pat.test(file)).map(file => ({ desc, file })),
   )
 
-  // Published-shape: every path the package.json points at (main, types,
-  // bin, exports subpaths) must resolve to a file actually in the tarball.
-  // This catches the class of bug where `tsc` builds and `vitest` passes
-  // but a published consumer gets `MODULE_NOT_FOUND`.
   const pkgText = execFileSync(
     "tar",
     ["-xzOf", filename, "package/package.json"],
@@ -75,9 +63,6 @@ try {
   }
   claim("main", pkg.main)
   claim("types", pkg.types)
-  for (const [binName, binPath] of Object.entries(pkg.bin ?? {})) {
-    claim(`bin[${binName}]`, binPath)
-  }
   for (const [sub, entry] of Object.entries(pkg.exports ?? {})) {
     if (sub === "./package.json") continue
     if (typeof entry === "string") {
@@ -91,7 +76,7 @@ try {
 
   const engineIssues = []
   if (typeof pkg.engines?.node !== "string") {
-    engineIssues.push("engines.node missing (see README baseline)")
+    engineIssues.push("engines.node missing")
   }
 
   if (
@@ -120,7 +105,7 @@ try {
     throw new Error(parts.join("\n\n"))
   }
 
-  process.stdout.write("zshref-mcp smoke: OK\n")
+  process.stdout.write("zsh-core-tooldef pack: OK\n")
 } finally {
   rmSync(tmp, { recursive: true, force: true })
 }

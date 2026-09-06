@@ -19,15 +19,11 @@ export const buildTasks = {
   qa: `pnpm check && ${pkg("@carlwr/zsh-core")} run lint:slowtypes && pnpm test:unit && pnpm test:scripts && pnpm cli:qa`,
   "test:integration": verifiedRecursive("test:integration"),
   vsix: `${pkg("better-zsh")} vsix`,
-  "test:smoke": [
-    `${pkg("@carlwr/zsh-core")} test:smoke`,
-    `${pkg("@carlwr/zsh-core-tooldef")} test:smoke`,
-    `${pkg("@carlwr/zshref-mcp")} test:smoke`,
-    `${pkg("better-zsh")} test:smoke`,
-    // Docs build is local and fast; the smoke tier catches a typedoc /
-    // api-extractor break before the container run, without taxing `qa`.
-    `${pkg("@carlwr/zsh-core")} docs:build`,
-  ].join(" && "),
+  // Recursive, not a per-package chain: every member self-builds, so without
+  // the readiness helper shared upstream `dist/` is rebuilt once per member.
+  // Docs site is a published artifact too: typedoc / api-extractor breaks
+  // belong here, not in the container run.
+  "test:pack": `${verifiedRecursive("test:pack")} && pnpm docs:zsh-core`,
   cli: "make cli",
   "cli:debug": "make cli-debug",
   "cli:test": "make cli-test",

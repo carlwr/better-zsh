@@ -65,6 +65,8 @@ When a workspace has multiple aggregator scripts that re-trigger `pre*` hooks ra
 Required contracts:
 
 - downstream `pre*` hooks short-circuit on the env var
-- workspace-recursive aggregators route through the upstream-readiness script
+- an aggregator that can rebuild upstream from two or more packages routes through the upstream-readiness script — `-r` recursion, a hand-rolled `--filter` chain and an alias composed of either alike
+- build-tool targets (e.g. a Makefile) never spell an upstream build directly, at any count
+- the readiness script verifies rather than trusts the env var: an unbuilt upstream is an error, never a silent no-op
 
-New aggregators invoking upstream-rebuilding `pre*` hooks follow the pattern. Hook-less aggregators (e.g. `format`, `lint`) need not.
+Hook-less aggregators (e.g. `format`, `lint`) need not.

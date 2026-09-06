@@ -5,6 +5,13 @@ import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 
 import { buildTasks } from "./build-tasks.mjs"
+import {
+  expandRootRefs,
+  hasUpstreamBuild,
+  reEscape,
+  upstreamRebuildSources,
+  upstreamTriggering,
+} from "./upstream-graph.mjs"
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..")
 const errs = []
@@ -24,13 +31,6 @@ function fail(msg) {
   errs.push(msg)
 }
 
-function hasUpstreamBuild(cmd) {
-  return (
-    cmd.includes("pnpm --filter @carlwr/zsh-core build") ||
-    cmd.includes("pnpm --filter @carlwr/zsh-core-tooldef build")
-  )
-}
-
 const rootPkg = readJson("package.json")
 if (rootPkg.scripts["bootstrap:upstream"] !== helperBootstrap) {
   fail(
@@ -43,25 +43,16 @@ const rootCommands = {
   ...buildTasks,
 }
 
-const guardedRootRecursive = []
-for (const [name, cmd] of Object.entries(rootCommands)) {
-  if (!cmd.includes("pnpm -r")) continue
-  if (safeRawRecursive.has(name)) continue
-  guardedRootRecursive.push(name)
-  if (!cmd.includes("pnpm verify:upstream") || !cmd.includes(helperRun)) {
-    fail(
-      `package.json: recursive script "${name}" must run pnpm verify:upstream and scripts/build/upstream-ready.mjs`,
-    )
-  }
-}
-
+const triggeringByPkg = new Map()
 for (const ent of readdirSync(join(repoRoot, "packages"), {
   withFileTypes: true,
 })) {
   if (!ent.isDirectory()) continue
   const rel = join("packages", ent.name, "package.json")
   const pkg = readJson(rel)
-  for (const [name, cmd] of Object.entries(pkg.scripts ?? {})) {
+  const scripts = pkg.scripts ?? {}
+  triggeringByPkg.set(pkg.name, upstreamTriggering(scripts))
+  for (const [name, cmd] of Object.entries(scripts)) {
     if (!name.startsWith("pre") || !hasUpstreamBuild(cmd)) continue
     if (!cmd.includes("BZ_SKIP_UPSTREAM")) {
       fail(`${rel}: ${name} must guard upstream rebuilds with BZ_SKIP_UPSTREAM`)
@@ -75,13 +66,42 @@ for (const ent of readdirSync(join(repoRoot, "packages"), {
   }
 }
 
+// A hand-rolled fan-out rebuilds (or races on) shared upstream `dist/` exactly
+// like `pnpm -r` does; `pnpm -r` is only its most obvious spelling.
+const guardedRootRecursive = []
+for (const [name, cmd] of Object.entries(rootCommands)) {
+  const recursive = cmd.includes("pnpm -r")
+  const reachable = expandRootRefs(cmd, rootCommands, helperRun)
+  if (!recursive && upstreamRebuildSources(reachable, triggeringByPkg).size < 2)
+    continue
+  if (safeRawRecursive.has(name)) continue
+  guardedRootRecursive.push(name)
+  if (!cmd.includes("pnpm verify:upstream") || !cmd.includes(helperRun)) {
+    fail(
+      `package.json: fan-out script "${name}" must run pnpm verify:upstream and scripts/build/upstream-ready.mjs`,
+    )
+  }
+}
+
+if (hasUpstreamBuild(read("Makefile"))) {
+  fail("Makefile: upstream builds must route through pnpm bootstrap:upstream")
+}
+
+// An empty set would build an alternation matching every `- run: pnpm …` line.
+// It also means detection found no fan-out at all, which this repo always has:
+// the detector has stopped matching rather than the risk having gone away.
+if (!guardedRootRecursive.length)
+  fail("no fan-out root scripts detected — the detector has stopped matching")
+
 const workflowDir = join(repoRoot, ".github", "workflows")
 const riskyRootRun = new RegExp(
-  String.raw`^\s*-\s*run:\s*pnpm (${guardedRootRecursive.map(s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})\b`,
+  String.raw`^\s*-\s*run:\s*pnpm (?:run )?(${guardedRootRecursive.map(reEscape).join("|")})(?:[\s&);]|$)`,
   "m",
 )
 
-for (const ent of readdirSync(workflowDir, { withFileTypes: true })) {
+for (const ent of guardedRootRecursive.length
+  ? readdirSync(workflowDir, { withFileTypes: true })
+  : []) {
   if (!ent.isFile()) continue
   const rel = join(".github", "workflows", ent.name)
   const src = read(rel)

@@ -121,6 +121,7 @@ Pre-commit gate: `pnpm qa` runs quiet success output for:
 Related:
 
 - Full logs: `pnpm qa:verbose`.
+- Escalation order: `TESTING.md`.
 - Build-script rationale: `scripts/build/README.md`.
 - Bare `pnpm test` skips typecheck.
 
@@ -128,8 +129,8 @@ Related:
 # after any edits:
 pnpm format && pnpm qa
 
-# after code edits — fuller chain:
-pnpm format && pnpm qa && pnpm test:smoke && pnpm vsix && pnpm test:integration &>/dev/null
+# after packaging, build-script or public-API edits — the full ladder:
+pnpm format && pnpm qa && pnpm test:pack && pnpm test:integration
 ```
 
 - `pnpm format` first.
@@ -147,6 +148,7 @@ Universal pattern: `TESTING.md`. Project-specific consent-required markers:
 - `*REGISTRY*` / `verifyREGISTRY` — depends on currently-published npm/JSR state.
   - after a zsh-core public-API addition, stays red downstream until the new zsh-core publish lands
   - ordinary local tests are deliberately insulated from that
+  - in CI: own job, manual dispatch only
 
 Discover scary scripts via the markers: `jq '.scripts | keys' package.json packages/*/package.json | rg 'REGISTRY|INTERACTIVE'`.
 

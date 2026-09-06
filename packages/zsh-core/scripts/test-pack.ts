@@ -123,7 +123,7 @@ try {
     throw new Error(parts.join("\n\n"))
   }
 
-  process.stdout.write("zsh-core smoke: OK\n")
+  process.stdout.write("zsh-core pack: OK\n")
 } finally {
   rmSync(tmp, { recursive: true, force: true })
 }

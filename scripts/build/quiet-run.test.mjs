@@ -6,9 +6,15 @@ import { fileURLToPath } from "node:url"
 
 const script = resolve(dirname(fileURLToPath(import.meta.url)), "quiet-run.mjs")
 
+// These cases assert quiet-mode capture. `pnpm qa:verbose` reaches them with
+// BZ_QUIET_RUN_VERBOSE set, which would turn every capture assertion red.
+function childEnv(env = {}) {
+  return { ...process.env, ...env, BZ_QUIET_RUN_VERBOSE: undefined }
+}
+
 function run(args, env = {}) {
   return spawnSync("node", [script, ...args], {
-    env: { ...process.env, ...env },
+    env: childEnv(env),
     encoding: "utf8",
   })
 }
@@ -97,6 +103,7 @@ for (const [script, maxStdoutLines] of smokeScripts) {
   test(`smoke: pnpm --silent ${script} stays quiet`, () => {
     const r = spawnSync("pnpm", ["--silent", "run", script], {
       cwd: repoRoot,
+      env: childEnv(),
       encoding: "utf8",
     })
     assert.equal(

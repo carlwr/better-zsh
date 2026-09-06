@@ -42,7 +42,7 @@ Implementations and metadata live in `@carlwr/zsh-core-tooldef`. MCP-side follow
 - `src/test/cli.test.ts` — `--help`, `--version`, TTY-hint decision, and end-to-end bin invocation.
 - `src/test/mcp-stdio.test.ts` — real MCP round-trip through a spawned server.
 - `src/test/pkg-info.test.ts` — package identity and shared-surface drift guards.
-- `scripts/test-smoke.mjs` — tarball packaging check.
+- `scripts/test-pack.mjs` — tarball packaging check.
 - `scripts/probe-opencode` — manual agent-client probe; keep it out of package scripts and CI.
 
 Tool-level unit tests live in `@carlwr/zsh-core-tooldef`.

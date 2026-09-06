@@ -10,7 +10,7 @@ jobs:
   # standalone CI would run in the package's own repo (after extraction).
   # The monorepo-internal `integration` job re-covers unit tests via
   # `pnpm test`; the `mcp` job isolates failures of the MCP-specific
-  # packaging/install/JSR surface.
+  # packaging surface. Its published-state checks live in `registry`.
   #
   # A dedicated release workflow for @carlwr/zsh-core-tooldef is TODO;
   # today only zsh-core, the extension, and zshref-mcp have dedicated
@@ -34,14 +34,12 @@ jobs:
           deno-version: v2.x
       - run: pnpm --filter @carlwr/zshref-mcp run check
       - run: pnpm --filter @carlwr/zshref-mcp run test
-      - run: pnpm --filter @carlwr/zshref-mcp run test:smoke
-      - run: pnpm --filter @carlwr/zshref-mcp run testREGISTRY:install
-      - run: pnpm --filter @carlwr/zshref-mcp run jsrREGISTRY:check
+      - run: pnpm --filter @carlwr/zshref-mcp run test:pack
 
   # Dedicated job for @carlwr/zsh-core-tooldef — shared tool layer
   # consumed by the MCP server, the CLI, and the extension. Unlike
-  # mcp this is shared infrastructure (no standalone-extraction
-  # target today), so no `testREGISTRY:install` step: the package has no bin.
+  # mcp this is shared infrastructure, with no standalone-extraction
+  # target today.
   tooldef:
     runs-on: ubuntu-latest
     permissions:
@@ -63,8 +61,32 @@ jobs:
       - run: pnpm --filter @carlwr/zsh-core-tooldef build
       - run: pnpm --filter @carlwr/zsh-core-tooldef run check
       - run: pnpm --filter @carlwr/zsh-core-tooldef run test
-      - run: pnpm --filter @carlwr/zsh-core-tooldef run test:smoke
+      - run: pnpm --filter @carlwr/zsh-core-tooldef run test:pack
+
+  # Published-state checks: they resolve currently-published npm/JSR
+  # versions, so they fail legitimately until an upstream republish lands.
+  # Manual-only, and a job of their own — `act` targets a job, so a job is
+  # what keeps them out of everything a non-REGISTRY script can reach.
+  registry:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - run: corepack enable
+      - run: pnpm config set store-dir /tmp/pnpm-store
+      - run: pnpm install --frozen-lockfile
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - run: pnpm --filter @carlwr/zsh-core run verifyREGISTRY
+      # tooldef ships no bin, so it has no install check to pair with.
       - run: pnpm --filter @carlwr/zsh-core-tooldef run jsrREGISTRY:check
+      - run: pnpm --filter @carlwr/zshref-mcp run verifyREGISTRY
 
   integration:
     runs-on: ubuntu-latest
@@ -92,10 +114,9 @@ jobs:
       - name: Install early CI deps
         run: |
           # zsh backs repo scripts used by pnpm check
-          # ripgrep backs test:smoke
           s=; command -v sudo >/dev/null 2>&1 && s=sudo
           $s apt-get -o Acquire::Retries=3 update
-          $s apt-get -o Acquire::Retries=3 install -y --no-install-recommends ripgrep zsh
+          $s apt-get -o Acquire::Retries=3 install -y --no-install-recommends zsh
       - name: Sequential bootstrap build of upstream packages
         run: |
           pnpm --filter @carlwr/zsh-core build
@@ -120,9 +141,11 @@ jobs:
       #       exit "$code"
       #     }
       - run: pnpm test
-      - run: pnpm test:smoke
-      - run: pnpm --filter @carlwr/zsh-core testREGISTRY:install
-      - run: pnpm --filter @carlwr/zsh-core run jsrREGISTRY:check
+      # `qa` minus its Rust half (no toolchain here): the cheap host gates
+      # must not be local-only. Slow-types is registry-independent.
+      - run: pnpm test:scripts
+      - run: pnpm --filter @carlwr/zsh-core run lint:slowtypes
+      - run: pnpm test:pack
       - name: Install Linux test deps
         run: |
           s=

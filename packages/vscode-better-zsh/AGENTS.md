@@ -41,7 +41,7 @@ A stable Marketplace release needs `icon` plus gallery presentation assets in th
 
 ## Testing scope
 
-Extension tests cover VS Code wiring: position→record dispatch, command/provider registration, priority resolution. Hover/doc-record content and formatting are `@carlwr/zsh-core`'s concern — assert them in zsh-core unit tests, not here. Integration tests are expensive: anything assertable from a unit test (or any assumption an integration test relies on) belongs in a unit test.
+Extension tests cover VS Code wiring: position→record dispatch, command/provider registration, priority resolution. Hover/doc-record content and formatting are `@carlwr/zsh-core`'s concern — assert them in zsh-core unit tests, not here.
 
 ## Container-only integration tests
 

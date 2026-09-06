@@ -1,9 +1,10 @@
 # for help and use, see zshref-rs/DEVELOPMENT.md
 
+# One readiness call, not two raw builds: the downstream package's prebuild
+# hook rebuilds the upstream one, so the raw form built it twice per invocation.
 .PHONY: artifacts
 artifacts:
-	pnpm --filter @carlwr/zsh-core build
-	pnpm --filter @carlwr/zsh-core-tooldef build
+	pnpm bootstrap:upstream
 
 .PHONY: cli
 cli: artifacts

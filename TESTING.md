@@ -13,18 +13,38 @@ read-when: running or writing tests
 - "Obviously correct" helpers don't need tests.
 - External-tool-dependent integration tests must skip gracefully when the tool is absent.
 
+## Escalation order
+
+host source-only -> host artifact-producing -> container (`act`) -> remote CI
+
+- A check belongs at the first tier that can catch its failure class.
+- Enter a tier only once the earlier ones pass.
+- No check lives only inside the container tier when it can run on the host.
+- `act` and remote CI run the same workflow files — one source of truth, so a local run is a real rehearsal.
+- Every remote check `act` can run, it runs first — local iteration is far cheaper.
+- Publishing and deploying are the sanctioned remote-only steps; keep them in a workflow or job an ordinary local run does not select.
+- A check placed later than its cheapest tier states why at its definition site.
+
 ## Test-running policy
 
 Use independent name markers in script names so risk classes are visible at the script-runner output. Common patterns:
 
-- `*:integration` — long-running, noisy CI-parity checks. Safe. Run last; silence with `&>/dev/null` when not actively iterating.
+- `*:integration` — long-running, noisy CI-parity checks. Safe.
 - A dedicated marker for desktop-takeover tests (e.g. headed Electron/VS Code) — explicit consent only.
 - A dedicated marker for tests depending on currently-published registry state — they can fail legitimately before upstream republish; explicit consent.
 
 Rules:
 
 - "All tests" excludes consent-required scripts.
-- Non-scary scripts must not chain into scary ones.
+- Non-scary scripts must not chain into scary ones — including through a CI job an `act` run targets.
+
+## Build-script tests
+
+Mirroring the build graph — script names, task wiring, workflow job shapes — is what lets these tests catch drift. The coupling is deliberate.
+
+- Any change to build scripts, task wiring or intra-project build deps: read these tests and update them.
+- A stale fixture that fails is harmless.
+- A stale fixture that still passes — matching nothing, guarding nothing — is the failure to hunt for.
 
 ## Test conciseness
 

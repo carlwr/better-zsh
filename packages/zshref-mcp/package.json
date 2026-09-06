@@ -46,9 +46,9 @@
     "lint": "biome check --error-on-warnings index.ts server.ts build.ts deno.json scripts src tsconfig.build.json tsconfig.json vitest.config.ts package.json",
     "check": "pnpm typecheck && pnpm lint",
     "test": "vitest run",
-    "test:smoke": "pnpm build && node scripts/test-smoke.mjs",
+    "test:pack": "pnpm build && node scripts/test-pack.mjs",
     "testREGISTRY:install": "pnpm build && node scripts/test-install.mjs",
-    "test:integration": "pnpm build && export BZ_SKIP_UPSTREAM=1 && pnpm run check && pnpm run test && pnpm run test:smoke",
+    "test:integration": "pnpm build && export BZ_SKIP_UPSTREAM=1 && pnpm run check && pnpm run test && pnpm run test:pack",
     "test:integration:act": "ACT_JOB=mcp ../../scripts/test-integration-act",
     "verifyREGISTRY": "pnpm run testREGISTRY:install && pnpm run jsrREGISTRY:check"
   },

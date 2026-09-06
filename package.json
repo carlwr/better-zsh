@@ -34,7 +34,7 @@
     "testINTERACTIVE:electron": "pnpm --filter better-zsh testINTERACTIVE:electron",
     "testINTERACTIVE:electron-bundled": "pnpm --filter better-zsh testINTERACTIVE:electron-bundled",
     "vsix": "node scripts/build/quiet-run.mjs vsix",
-    "test:smoke": "node scripts/build/quiet-run.mjs test:smoke",
+    "test:pack": "node scripts/build/quiet-run.mjs test:pack",
     "docs:zsh-core": "pnpm --filter @carlwr/zsh-core docs:build",
     "jsrREGISTRY:zsh-core:dry": "pnpm --filter @carlwr/zsh-core jsrREGISTRY:dry",
     "jsrREGISTRY:zsh-core:check": "pnpm --filter @carlwr/zsh-core jsrREGISTRY:check",

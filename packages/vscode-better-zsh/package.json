@@ -104,7 +104,7 @@
     "testINTERACTIVE:electron": "pnpm build && tsc -p tsconfig.vscode-test.json && scripts/testINTERACTIVE-electron",
     "testINTERACTIVE:electron-bundled": "pnpm build && scripts/package-vsix ./better-zsh.vsix && tsc -p tsconfig.vscode-test.json && scripts/testINTERACTIVE-bundled",
     "vsix": "pnpm build && export BZ_SKIP_UPSTREAM=1 && pnpm check && pnpm test && scripts/package-vsix ./better-zsh.vsix",
-    "test:smoke": "pnpm build && export BZ_SKIP_UPSTREAM=1 && pnpm check && pnpm test && scripts/package-vsix /tmp/better-zsh-smoke.vsix && rm /tmp/better-zsh-smoke.vsix && echo 'smoke: OK'",
+    "test:pack": "pnpm build && scripts/package-vsix /tmp/better-zsh-pack.vsix && rm /tmp/better-zsh-pack.vsix && echo 'better-zsh pack: OK'",
     "vscode:publish:dry": "pnpm build && export BZ_SKIP_UPSTREAM=1 && pnpm check && pnpm test && node scripts/check-package.mjs && echo '---\n(DRY-RUN; ran staged vsce ls above.)'",
     "vscode:publish": "pnpm build && export BZ_SKIP_UPSTREAM=1 && pnpm check && pnpm test && scripts/package-vsix /tmp/better-zsh-publish.vsix && pnpm exec vsce publish --packagePath /tmp/better-zsh-publish.vsix --no-dependencies",
     "ovsx:publish:dry": "pnpm build && export BZ_SKIP_UPSTREAM=1 && pnpm check && pnpm test && node scripts/check-package.mjs && echo '---\n(DRY-RUN for open-vsx; ran staged vsce ls above.)'",

@@ -9,7 +9,7 @@ import { fileURLToPath } from "node:url"
  * fresh temp dir, and prove a consumer can import the root plus several
  * focused subpaths, load the corpus, resolve an option, and render markdown.
  * Catches the class of bug where `exports` declares a subpath that doesn't
- * actually resolve — which `test:smoke` only partially covers (it asserts
+ * actually resolve — which `test:pack` only partially covers (it asserts
  * files are present in the tarball, not that `node` successfully resolves
  * them).
  *

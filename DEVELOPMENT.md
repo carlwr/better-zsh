@@ -71,6 +71,7 @@ Use Docker Engine or another Docker-compatible daemon reachable via `docker`.
 
 - The first `act` run pulls runner images through Docker.
 - The wrapper pins `ubuntu-latest` to act's documented medium runner image; set `ACT_RUNNER_IMAGE` to override that.
+- `ACT_JOB` selects the workflow job; the manual-dispatch-only `registry` job also needs `ACT_EVENT=workflow_dispatch`.
 - Linux-only integration dependencies are installed inside the workflow container.
 - Local `act` runs exercise the current worktree, including uncommitted changes.
 - Direct Electron entrypoints remain available for explicit manual use.
