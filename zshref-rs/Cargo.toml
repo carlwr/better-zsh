@@ -16,6 +16,7 @@ readme = "README.md"
 keywords = ["zsh", "shell", "cli", "reference", "documentation"]
 categories = ["command-line-utilities", "development-tools"]
 rust-version = "1.85"                   # floor: clap 4.6, proptest 1.11, jsonschema 0.54
+                                        # (default build; see [package.metadata.msrv])
 
 # Files that land in the published `.crate` tarball. Gitignored files can
 # still be included here (cargo's packaging layer takes precedence over
@@ -69,3 +70,9 @@ sha2 = "0.10"
 [profile.release]
 lto = "thin"
 strip = true
+
+# `rust-version` is the default-build floor. Cargo has no per-feature MSRV, so
+# the floor with every optional feature enabled is declared here instead.
+# Both are gated against the resolved dependency graph by `tests/msrv.rs`.
+[package.metadata.msrv]
+all-features = "1.88"                   # floor: nlp -> ort / ort-sys
