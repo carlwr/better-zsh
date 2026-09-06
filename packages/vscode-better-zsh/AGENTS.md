@@ -26,6 +26,10 @@ VS Code extension package:
 
 Always use `--no-dependencies`. The extension is bundled, and `vsce`'s internal `npm list` is incompatible with pnpm's layout.
 
+### Marketplace presentation
+
+A stable Marketplace release needs `icon` plus gallery presentation assets in the staged manifest; pre-release alphas ship without them.
+
 ### Staged extension root
 
 - checked-in `package.json` is the pnpm workspace manifest

@@ -22,6 +22,36 @@ When a TS package targets both npm (compiled `dist`) and JSR (source-form):
 - Shared subpath exports must stay aligned across `package.json` and `deno.json`.
 - npm-only generated artifacts and workspace-internal entrypoints stay out of `deno.json.exports`.
 
+## Release wiring
+
+`.github/workflows/release-*.yml` headers own the per-package specifics — trigger tag pattern, dry-run default, auth posture, dist-tag and pre-release rules. Don't restate them.
+
+Invariants those headers don't carry:
+
+- Every publishable package needs its own release workflow; before tagging, walk `release-*.yml` against the publishable set and close gaps first.
+- `engines.node` and workflow `node-version` move together.
+- A version bump updates every site the workflow's tag guard checks — the guard fails the release, it does not warn.
+
+### Manual publish (fallback)
+
+Workflows are the normal path: npm provenance plus tokenless OIDC. Publish by hand only to recover a partial release, or for a package that has no workflow yet. Topological order when packages share workspace deps.
+
+npm — uses the `~/.npmrc` login (`npm whoami` to check); `--tag next` for any version containing `-`, keeping `latest` on the most recent stable:
+
+```sh
+cd packages/<pkg>
+pnpm publish --access public --tag next --no-git-checks
+```
+
+JSR — browser auth, per process, and requires a real TTY; piped or otherwise non-interactive shells fall through to `deno publish`'s "No means to authenticate" error:
+
+```sh
+cd packages/<pkg>
+pnpm dlx jsr publish --allow-dirty
+```
+
+`--allow-dirty` whenever the tree is dirty, e.g. an uncommitted version bump.
+
 ## Linguist hints
 
 `.gitattributes` (`linguist-generated`, `linguist-vendored`, `linguist-documentation`) can steer GitHub's Linguist to keep the language-bar honest and collapse generated diffs. Decide separately whether language noise warrants marking generated/vendored sources.

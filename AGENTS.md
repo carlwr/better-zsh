@@ -145,6 +145,8 @@ Universal pattern: `TESTING.md`. Project-specific consent-required markers:
 
 - `*INTERACTIVE*` — takes over the desktop (VS Code/Electron); macOS steals focus.
 - `*REGISTRY*` / `verifyREGISTRY` — depends on currently-published npm/JSR state.
+  - after a zsh-core public-API addition, stays red downstream until the new zsh-core publish lands
+  - ordinary local tests are deliberately insulated from that
 
 Discover scary scripts via the markers: `jq '.scripts | keys' package.json packages/*/package.json | rg 'REGISTRY|INTERACTIVE'`.
 

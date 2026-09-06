@@ -46,4 +46,4 @@ nlp and web specifics live under `zshref-rs/` and `zshref-web/`. Root maintainer
 - `zshref-rs/AGENTS.md` — Rust CLI; NLP Cargo feature; two-binary release
 - `zshref-rs/src/nlp/NLP.md` — NLP module measurements + packaging direction
 - `zshref-web/AGENTS.md` — SPA dependency story, parity-test posture, data staging
-- `RELEASE-HANDOFF.md`, `zshref-rs/EXTRACTION.md`, `packages/zshref-mcp/EXTRACTION.md`
+- `zshref-rs/EXTRACTION.md`, `packages/zshref-mcp/EXTRACTION.md` — extraction-day checklists
