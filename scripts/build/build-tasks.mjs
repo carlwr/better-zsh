@@ -24,6 +24,9 @@ export const buildTasks = {
     `${pkg("@carlwr/zsh-core-tooldef")} test:smoke`,
     `${pkg("@carlwr/zshref-mcp")} test:smoke`,
     `${pkg("better-zsh")} test:smoke`,
+    // Docs build is local and fast; the smoke tier catches a typedoc /
+    // api-extractor break before the container run, without taxing `qa`.
+    `${pkg("@carlwr/zsh-core")} docs:build`,
   ].join(" && "),
   cli: "make cli",
   "cli:debug": "make cli-debug",
