@@ -79,9 +79,13 @@ cli-vendored: vendor
 cli-vendored-test: vendor
 	cd zshref-rs && ZSHREF_DATA_SOURCE=vendored cargo test
 
+# `--all-features`: cargo's verify step extracts the tarball and compiles it,
+# so it is the check that the published crate is self-contained. Default
+# features alone miss embedded assets reached only under a feature gate —
+# how `src/nlp/rules/*.yaml` stayed absent from `include` undetected.
 .PHONY: cli-package
 cli-package: vendor
-	cd zshref-rs && ZSHREF_DATA_SOURCE=vendored cargo package --allow-dirty
+	cd zshref-rs && ZSHREF_DATA_SOURCE=vendored cargo package --allow-dirty --all-features
 
 # Stage zshref outputs for the SPA. Requires `cli-nlp` + populated
 # `zshref-rs/data-nlp/` (model + generated index); the script errors with

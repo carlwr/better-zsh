@@ -71,6 +71,9 @@ jobs:
       # Vendored-mode smoke: proves the published `.crate` is self-contained.
       # `cargo package` builds the tarball with the same include rules as
       # `cargo publish` and verifies it compiles standalone. See DATA-SYNC.md.
+      # `cli-package` verifies with `--all-features`, so this is also the only
+      # place the `nlp` feature is compiled in CI — it warms the cargo cache
+      # on first run after a Cargo.lock change.
       - name: Vendored-mode test + package dry-run
         run: |
           make cli-vendored-test
