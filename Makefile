@@ -54,9 +54,12 @@ cli-fmt:
 cli-fmt-check:
 	cd zshref-rs && cargo fmt --check
 
+# `--all-features`: a lint inside a `#[cfg(feature = ...)]` block is invisible
+# to a default-features run, so the `nlp` module would otherwise be ungated
+# here and in CI. Warm cost over default features is ~0.2s.
 .PHONY: cli-clippy
 cli-clippy: artifacts
-	cd zshref-rs && ZSHREF_DATA_SOURCE=monorepo cargo clippy --all-targets -- -D warnings
+	cd zshref-rs && ZSHREF_DATA_SOURCE=monorepo cargo clippy --all-targets --all-features -- -D warnings
 
 .PHONY: cli-check
 cli-check: cli-fmt-check cli-clippy

@@ -350,7 +350,7 @@ fn box_table(headers: &[&str], right: &[bool], rows: &[Vec<String>]) -> String {
         let mut s = String::new();
         s.push(l);
         for (i, &wi) in w.iter().enumerate() {
-            s.extend(std::iter::repeat('─').take(wi + 2));
+            s.extend(std::iter::repeat_n('─', wi + 2));
             s.push(if i + 1 == n { r } else { mid });
         }
         s.push('\n');

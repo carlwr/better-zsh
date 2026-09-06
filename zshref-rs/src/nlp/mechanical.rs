@@ -115,13 +115,16 @@ pub(crate) fn build(assets: &Assets) -> Vec<SentenceEntry> {
     entries
 }
 
+/// Predicate selecting one [`SLICES`] bucket from an expected record's id.
+type SlicePred = fn(&str) -> bool;
+
 /// Cross-cutting "hard slice" buckets over the expected record's id, cutting
 /// *across* categories. Short and punctuation-only ids are where embedding
 /// retrieval is weakest yet they hide inside the category means — these
 /// surface them. Diagnostic only: reported, never gated, never tuned toward.
 /// Slices overlap by design (a 1-char punctuation id lands in both `len 1`
 /// and `punctuation-only`).
-const SLICES: &[(&str, fn(&str) -> bool)] = &[
+const SLICES: &[(&str, SlicePred)] = &[
     ("id length 1", |id| id.chars().count() == 1),
     ("id length 2", |id| id.chars().count() == 2),
     ("id length 3", |id| id.chars().count() == 3),
