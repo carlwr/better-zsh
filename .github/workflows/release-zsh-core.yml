@@ -45,18 +45,15 @@ jobs:
         with:
           deno-version: v2.x
 
-      # Guard: tag → package version must match.
+      # Only against package.json: `pkg-info.test.ts` already ties
+      # deno.json and PKG_VERSION to it, and the `test` step runs it.
       - name: Verify tag matches package version
         if: startsWith(github.ref, 'refs/tags/zsh-core-v')
         run: |
           tag_version=${GITHUB_REF#refs/tags/zsh-core-v}
           pkg_version=$(node -p "require('./packages/zsh-core/package.json').version")
-          deno_version=$(node -p "require('./packages/zsh-core/deno.json').version")
-          pkginfo_version=$(grep -E 'PKG_VERSION\s*=' packages/zsh-core/src/pkg-info.ts | sed -E 's/.*"([^"]+)".*/\1/')
-          echo "tag=$tag_version pkg=$pkg_version deno=$deno_version pkg-info=$pkginfo_version"
+          echo "tag=$tag_version pkg=$pkg_version"
           [ "$tag_version" = "$pkg_version" ] || { echo "tag mismatch vs package.json"; exit 1; }
-          [ "$tag_version" = "$deno_version" ] || { echo "tag mismatch vs deno.json"; exit 1; }
-          [ "$tag_version" = "$pkginfo_version" ] || { echo "tag mismatch vs src/pkg-info.ts PKG_VERSION"; exit 1; }
 
       - run: pnpm --filter @carlwr/zsh-core run check
       - run: pnpm --filter @carlwr/zsh-core run test
