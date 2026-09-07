@@ -148,11 +148,10 @@ export async function buildApi({ entries, packageDir, packageScriptUrl }) {
         localBuild: true,
         showVerboseMessages: false,
         messageCallback(message) {
-          if (message.logLevel === "error" || message.logLevel === "warning")
-            ok = false
           if (message.logLevel !== "warning" && message.logLevel !== "error") {
             return
           }
+          ok = false
           process.stdout.write(
             `${entry}: ${message.formattedMessage ?? message.text ?? message.messageId}\n`,
           )

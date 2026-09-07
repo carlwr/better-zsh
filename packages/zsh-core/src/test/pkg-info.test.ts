@@ -22,19 +22,22 @@ const readText = (file: string) => readFileSync(join(pkgDir, file), "utf8")
 
 const pkg = readJson("package.json")
 const deno = readJson("deno.json")
+const typedoc = readJson("typedoc.json")
+const tsconfigBuild = readJson("tsconfig.build.json")
 
-// Shared-surface subpaths: must appear in both manifests.
-// `./data/*`, `./schema/*`, `./internal`, `./package.json` are npm-only.
-const SHARED_EXPORTS = [
-  ".",
-  "./analysis",
-  "./render",
-  "./assets",
-  "./meta",
-  "./resolver",
-  "./taxonomy",
-  "./types",
-] as const
+// Shared surface: every non-glob `exports` subpath. Derived from the npm
+// manifest rather than restated, so a new subpath cannot silently skip the
+// JSR manifest, the docs build, or the build tsconfig. `./data/*`,
+// `./schema/*` and `./package.json` are npm-only.
+const sharedExports: string[] = Object.keys(pkg.exports)
+  .filter(sub => !sub.includes("*") && sub !== "./package.json")
+  .sort()
+
+// Package-root facade behind each shared subpath, e.g. "./render.ts" — the
+// layout rule `scripts/build/module-layout.test.mjs` enforces repo-wide.
+const entryModules: string[] = sharedExports
+  .map(sub => (sub === "." ? "./index.ts" : `${sub}.ts`))
+  .sort()
 
 describe("pkg-info constants stay in sync with manifests", () => {
   test.each([
@@ -51,13 +54,21 @@ describe("pkg-info constants stay in sync with manifests", () => {
 })
 
 describe("shared-surface exports stay in sync", () => {
-  test("every shared subpath appears in package.json.exports", () => {
-    for (const key of SHARED_EXPORTS) {
-      expect(Object.keys(pkg.exports)).toContain(key)
-    }
-  })
   test("deno.json.exports is exactly the shared subpaths", () => {
-    expect(Object.keys(deno.exports).sort()).toEqual([...SHARED_EXPORTS].sort())
+    expect(Object.keys(deno.exports).sort()).toEqual(sharedExports)
+  })
+  test("typedoc entryPoints are exactly the shared entry modules", () => {
+    expect([...typedoc.entryPoints].sort()).toEqual(entryModules)
+  })
+  // Hand-listed sites read by a third-party tool, so nothing can derive them
+  // and a missing entry fails silently: unbuilt, or never linted/formatted.
+  test.each([
+    ["tsconfig.build.json include", tsconfigBuild.include],
+    ["package.json scripts.format", pkg.scripts.format.split(" ")],
+    ["package.json scripts.lint", pkg.scripts.lint.split(" ")],
+  ])("%s lists every shared entry module", (_label, listed) => {
+    const bare = entryModules.map(mod => mod.replace(/^\.\//, ""))
+    expect(bare.filter(mod => !listed.includes(mod))).toEqual([])
   })
 })
 

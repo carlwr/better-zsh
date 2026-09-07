@@ -76,7 +76,6 @@
     "watch": "tsx build.ts --watch",
     "dump:refs": "tsx scripts/dump-refs.ts",
     "docs:typedoc:html": "typedoc",
-    "docs:typedoc:json": "typedoc --emit none",
     "docs:api": "node scripts/build-api.mjs",
     "docs:build": "pnpm build && pnpm docs:typedoc:html && node scripts/build-docs.mjs",
     "jsrREGISTRY:dry": "pnpm dlx jsr publish --dry-run --allow-dirty",
