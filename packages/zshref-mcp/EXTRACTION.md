@@ -43,8 +43,9 @@ read-when: extraction-day checklist for @carlwr/zshref-mcp
 
 - New `.github/workflows/ci.yml` at the repo root. Template: the `mcp`
   job currently in the monorepo's `.github/workflows/ci.yml`
-  (`jobs.mcp`). That job is deliberately self-contained to minimize
-  translation work.
+  (`jobs.mcp`). Its steps are deliberately self-contained to minimize
+  translation work; the one exception is the shared `setup-node-pnpm`
+  composite action, which the new repo must carry along or inline.
 - New `scripts/test-integration-act` at the repo root. Template: the
   monorepo's script. This repo's version is much simpler — no
   Electron/xvfb/zsh/libasound2t64 step — so it's mostly delete work.

@@ -43,13 +43,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 22
-
-      - run: corepack enable
-      - run: pnpm config set store-dir /tmp/pnpm-store
-      - run: pnpm install --frozen-lockfile
+      - uses: ./.github/actions/setup-node-pnpm
 
       # Guard: tag → package version must match.
       - name: Verify tag matches package version

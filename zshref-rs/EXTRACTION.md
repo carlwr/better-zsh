@@ -49,7 +49,7 @@ directory is committed. See `DATA-SYNC.md`.
 
 - `.github/workflows/ci-rust.yml` is close-to-portable. Required changes at extraction:
   - Remove path filters referencing `packages/zsh-core/**`, `packages/zsh-core-tooldef/**`, and the root `Makefile`; narrow to `src/**`, `tests/**`, `Cargo.*`.
-  - Remove `actions/setup-node`, `corepack enable`, `pnpm install` steps — unless the extracted repo vendored-JSON sync still drives a Node checkout.
+  - Remove the `setup-node-pnpm` step — the composite action it names stays behind in the monorepo — unless the extracted repo vendored-JSON sync still drives a Node checkout.
   - Keep the `dtolnay/rust-toolchain`, cargo cache, fmt/clippy, test, and `cli-vendored-test` + `cli-package` steps unchanged.
 
 ### NLP QA harness (Node)

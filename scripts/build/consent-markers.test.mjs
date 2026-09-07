@@ -10,15 +10,19 @@
 
 import assert from "node:assert/strict"
 import { readdirSync, readFileSync } from "node:fs"
-import { join } from "node:path"
+import { dirname, join } from "node:path"
 import { test } from "node:test"
 
 import yaml from "yaml"
 
+import { actionFiles } from "./step-sites.mjs"
+
 const repoRoot = new URL("../../", import.meta.url).pathname
 const marked = /REGISTRY|INTERACTIVE/
 
-const readJson = rel => JSON.parse(readFileSync(join(repoRoot, rel), "utf8"))
+const read = rel => readFileSync(join(repoRoot, rel), "utf8")
+const readJson = rel => JSON.parse(read(rel))
+const readYaml = rel => yaml.parse(read(rel))
 
 const manifests = [
   "package.json",
@@ -40,24 +44,34 @@ test("no unmarked script reaches a consent-marked one", () => {
 // the default `push` event — so an unguarded marked step there is reachable
 // from an everyday local run. Each marker names a distinct risk, and CI may
 // carry it only where CI has actually neutralised that risk.
+//
+// A composite action is a step site too: `uses:` splices its steps into every
+// job that names it, so it inherits the reachability of the widest such job
+// while carrying no `if:` of its own to narrow the risk back down.
 const neutralises = {
   // published state: fails legitimately until an upstream republish lands, so
   // nothing an ordinary run selects may reach it
-  REGISTRY: (_step, job) => /workflow_dispatch/.test(job.if ?? ""),
+  REGISTRY: (_step, carrier) => /workflow_dispatch/.test(carrier.if ?? ""),
   // desktop takeover: a virtual display means there is no desktop to take over
   INTERACTIVE: step => /xvfb-run/.test(step.run),
 }
 
-test("consent-marked ci.yml steps run only where CI neutralises the risk", () => {
-  const ci = yaml.parse(
-    readFileSync(join(repoRoot, ".github/workflows/ci.yml"), "utf8"),
-  )
-  const exposed = Object.entries(ci.jobs).flatMap(([jobName, job]) =>
-    (job.steps ?? []).flatMap(step =>
+/** Every place a ci.yml run reaches a step, named for the failure message. */
+const stepCarriers = () => [
+  ...Object.entries(readYaml(".github/workflows/ci.yml").jobs),
+  ...actionFiles(repoRoot).map(rel => [
+    dirname(rel),
+    readYaml(rel)?.runs ?? {},
+  ]),
+]
+
+test("consent-marked steps run only where CI neutralises the risk", () => {
+  const exposed = stepCarriers().flatMap(([carrierName, carrier]) =>
+    (carrier.steps ?? []).flatMap(step =>
       Object.entries(neutralises)
         .filter(([marker]) => new RegExp(marker).test(step.run ?? ""))
-        .filter(([, isNeutralised]) => !isNeutralised(step, job))
-        .map(([marker]) => `${jobName}: ${marker} in ${step.run}`),
+        .filter(([, isNeutralised]) => !isNeutralised(step, carrier))
+        .map(([marker]) => `${carrierName}: ${marker} in ${step.run}`),
     ),
   )
   assert.deepEqual(exposed, [])

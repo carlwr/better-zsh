@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 
-import { readdirSync, readFileSync } from "node:fs"
+import { existsSync, readdirSync, readFileSync } from "node:fs"
 import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 
 import { buildTasks } from "./build-tasks.mjs"
+import { actionFiles, workflowFiles } from "./step-sites.mjs"
 import {
   expandRootRefs,
   hasUpstreamBuild,
@@ -87,25 +88,31 @@ if (hasUpstreamBuild(read("Makefile"))) {
   fail("Makefile: upstream builds must route through pnpm bootstrap:upstream")
 }
 
-// An empty set would build an alternation matching every `- run: pnpm …` line.
+// An empty set would build an alternation matching every `run: pnpm …` line.
 // It also means detection found no fan-out at all, which this repo always has:
 // the detector has stopped matching rather than the risk having gone away.
 if (!guardedRootRecursive.length)
   fail("no fan-out root scripts detected — the detector has stopped matching")
 
-const workflowDir = join(repoRoot, ".github", "workflows")
-const riskyRootRun = new RegExp(
-  String.raw`^\s*-\s*run:\s*pnpm (?:run )?(${guardedRootRecursive.map(reEscape).join("|")})(?:[\s&);]|$)`,
-  "m",
+/** A step running one of `alt`; the list dash is absent when a `name:` precedes. */
+const runsRootScript = alt =>
+  new RegExp(
+    String.raw`^\s*(?:-\s*)?run:\s*pnpm (?:run )?(?:${alt})(?:[\s&);]|$)`,
+    "m",
+  )
+
+const riskyRootRun = runsRootScript(
+  guardedRootRecursive.map(reEscape).join("|"),
 )
 
-for (const ent of guardedRootRecursive.length
-  ? readdirSync(workflowDir, { withFileTypes: true })
-  : []) {
-  if (!ent.isFile()) continue
-  const rel = join(".github", "workflows", ent.name)
-  const src = read(rel)
-  if (!riskyRootRun.test(src)) continue
+// A composite action's steps are spliced into every job that `uses:` it, so it
+// is a step site like a workflow file — and never the sanctioned one.
+const stepFiles = guardedRootRecursive.length
+  ? [...workflowFiles(repoRoot), ...actionFiles(repoRoot)]
+  : []
+
+for (const rel of stepFiles) {
+  if (!riskyRootRun.test(read(rel))) continue
   if (rel !== join(".github", "workflows", "ci.yml")) {
     fail(
       `${rel}: root recursive scripts must run only from .github/workflows/ci.yml`,
@@ -114,7 +121,7 @@ for (const ent of guardedRootRecursive.length
 }
 
 const ciRel = join(".github", "workflows", "ci.yml")
-const ci = read(ciRel)
+const ci = existsSync(join(repoRoot, ciRel)) ? read(ciRel) : ""
 const integrationIdx = ci.indexOf("\n  integration:\n")
 if (integrationIdx === -1) {
   fail(`${ciRel}: missing integration job`)
@@ -126,7 +133,7 @@ if (integrationIdx === -1) {
     "pnpm --filter @carlwr/zsh-core-tooldef build",
   )
   for (const name of guardedRootRecursive) {
-    const runIdx = integration.indexOf(`- run: pnpm ${name}`)
+    const runIdx = integration.search(runsRootScript(reEscape(name)))
     if (runIdx === -1) continue
     if (envIdx === -1) {
       fail(

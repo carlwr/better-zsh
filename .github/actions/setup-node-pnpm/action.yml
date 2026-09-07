@@ -1,0 +1,49 @@
+name: Set up Node and pnpm
+description: Node, pnpm, a lockfile-keyed store cache, and a frozen install.
+
+# A runner starts with an empty pnpm store: uncached, every job re-downloads its
+# whole dependency set. Restoring it leaves the install with only linking to do.
+#
+# One place for the install so no job drifts on the key shape, the store path,
+# the Node major or the install flags. Jobs sharing a lockfile share a key: the
+# first to finish saves, the rest log a benign "cache already exists".
+
+inputs:
+  dir:
+    description: Directory to install in; its `pnpm-lock.yaml` keys the cache.
+    default: .
+  registry-url:
+    description: Registry to write into `.npmrc` — publishing jobs need it for OIDC.
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v7
+      with:
+        node-version: 22
+        registry-url: ${{ inputs.registry-url }}
+
+    - run: corepack enable
+      shell: bash
+
+    # Fixed store path: the cache step needs a literal, and `/tmp` is writable
+    # on hosted runners and in `act` containers alike. It is also why a job may
+    # call this once only — a second `dir` would restore into the same store and
+    # save the merge back under whichever key ran first.
+    - run: pnpm config set store-dir /tmp/pnpm-store
+      shell: bash
+
+    # No `restore-keys`: an inexact hit reseeds the store from the previous
+    # lockfile and saves it again under the new key, so the entry grows with
+    # every bump and never shrinks. `pnpm store prune` empties the store
+    # outright, so it cannot trim one before the save either. The cost is a
+    # cold install on the runs that change the lockfile, and nothing else.
+    - uses: actions/cache@v6
+      with:
+        path: /tmp/pnpm-store
+        key: ${{ runner.os }}-pnpm-${{ inputs.dir }}-${{ hashFiles(format('{0}/pnpm-lock.yaml', inputs.dir)) }}
+
+    - run: pnpm install --frozen-lockfile
+      shell: bash
+      working-directory: ${{ inputs.dir }}

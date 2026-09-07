@@ -29,7 +29,7 @@ When a TS package targets both npm (compiled `dist`) and JSR (source-form):
 Invariants those headers don't carry:
 
 - Every publishable package needs its own release workflow; before tagging, walk `release-*.yml` against the publishable set and close gaps first.
-- `engines.node` and workflow `node-version` move together.
+- `engines.node` and CI's `node-version` move together.
 - A version bump updates every site the workflow's tag guard checks — the guard fails the release, it does not warn.
 
 ### Manual publish (fallback)

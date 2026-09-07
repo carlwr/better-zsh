@@ -21,6 +21,7 @@ Building and publishing the SPA **is** the point of the project; everything else
 - The deploy consumes `zshref` **release assets**, and the zshref release workflow is itself deferred to first release.
 - Pre-extraction there is nothing to consume, so a pipeline would have to fetch the model, build the nlp binary and rebuild the index purely to stage throwaway inputs — then be rewritten against real releases anyway.
 - Building it once, against the actual post-extraction repos, is both simpler and less discarded work.
+- Pages hosts one site per repo, and the zsh-core docs workflow already claims this one; a pre-extraction SPA deploy would have to share that single deployment. Extraction removes the conflict.
 
 CI is a separate question and is **not** deferred — a `web` job already runs `pnpm qa`.
 
@@ -28,6 +29,7 @@ CI is a separate question and is **not** deferred — a `web` job already runs `
 
 - `scripts/fetch-artifacts` — flips from local sibling paths to release-asset download.
 - `tests/_helpers.ts` — every test reads `../zshref-rs/` directly, never `.artifacts/`. Those paths vanish at extraction, and the two unconditional tests (parity, lookup contract) then hard-fail rather than skip.
+- The `web` CI job — its setup step names a monorepo-local composite action; the new repo carries it along or inlines it.
 - SPA base path — depends on the final repo / Pages URL; `svelte.config.js` sets no `kit.paths.base` today.
 - `pnpm-workspace.yaml` — the self-rooting marker exists only to fend off the monorepo workspace; it goes away, and with it the reason to keep workspace non-membership.
 - _unchanged:_ the BGE model is fetched from the HuggingFace CDN at runtime, so nothing model-shaped needs hosting.

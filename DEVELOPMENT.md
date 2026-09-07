@@ -70,6 +70,7 @@ Use Docker Engine or another Docker-compatible daemon reachable via `docker`.
 ### Notes
 
 - The first `act` run pulls runner images through Docker.
+- `act` runs its own cache server, so `actions/cache` steps store and restore across local runs — host-side, under `~/.cache/actcache`. Nothing expires there; `rm -rf ~/.cache/actcache` reclaims it.
 - The wrapper pins `ubuntu-latest` to act's documented medium runner image; set `ACT_RUNNER_IMAGE` to override that.
 - `ACT_JOB` selects the workflow job; the manual-dispatch-only `registry` job also needs `ACT_EVENT=workflow_dispatch`.
 - Linux-only integration dependencies are installed inside the workflow container.

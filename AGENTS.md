@@ -196,6 +196,11 @@ Mid-wipe, the TS LSP can emit transient TS7016 ghosts for `<pkg>/dist/*` — ign
 - `scripts/list-maintainer-docs` — lists every `.md` with `audience: maintainer` frontmatter; `--quiet` validates frontmatter shape.
 - Gates `pnpm qa` via `pnpm lint:md`.
 
+### CI dependency caching
+
+- `.github/actions/setup-node-pnpm` — Node, pnpm, store cache, frozen install; the repo's only `node-version` site. Every job needing Node uses it instead of open-coding those steps. One call per job.
+- Cargo side: `Swatinem/rust-cache` in the Rust workflow.
+
 ### Post-extraction repo URLs in user-facing docs
 
 Destinations and eventual repo names: `REPO-SHAPE.md`.

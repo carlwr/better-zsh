@@ -15,6 +15,7 @@ on:
       - "packages/zsh-core-tooldef/**"
       - "Makefile"
       - ".github/workflows/ci-rust.yml"
+      - ".github/actions/**"
   push:
     paths:
       - "zshref-rs/**"
@@ -22,6 +23,7 @@ on:
       - "packages/zsh-core-tooldef/**"
       - "Makefile"
       - ".github/workflows/ci-rust.yml"
+      - ".github/actions/**"
   workflow_dispatch:
 
 jobs:
@@ -34,28 +36,17 @@ jobs:
 
       # TS artifacts first: the Rust crate `include_bytes!`-embeds
       # dist/json/*.json from packages/zsh-core and zsh-core-tooldef.
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 22
-      - run: corepack enable
-      - run: pnpm config set store-dir /tmp/pnpm-store
-      - run: pnpm install --frozen-lockfile
+      - uses: ./.github/actions/setup-node-pnpm
 
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
 
-      # Cache cargo registry + target/ to keep iterations fast. Keyed
-      # on Cargo.lock so dep upgrades invalidate cleanly.
-      - uses: actions/cache@v6
+      # Keyed on the toolchain as well as Cargo.lock, and prunes stale
+      # `target/` entries — a plain path cache only ever grows.
+      - uses: Swatinem/rust-cache@v2
         with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            zshref-rs/target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('zshref-rs/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-
+          workspaces: zshref-rs
 
       - name: Hygiene (fmt + clippy)
         run: make cli-check

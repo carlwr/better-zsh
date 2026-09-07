@@ -23,12 +23,7 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 22
-      - run: corepack enable
-      - run: pnpm config set store-dir /tmp/pnpm-store
-      - run: pnpm install --frozen-lockfile
+      - uses: ./.github/actions/setup-node-pnpm
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
@@ -46,12 +41,7 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 22
-      - run: corepack enable
-      - run: pnpm config set store-dir /tmp/pnpm-store
-      - run: pnpm install --frozen-lockfile
+      - uses: ./.github/actions/setup-node-pnpm
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
@@ -74,12 +64,7 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 22
-      - run: corepack enable
-      - run: pnpm config set store-dir /tmp/pnpm-store
-      - run: pnpm install --frozen-lockfile
+      - uses: ./.github/actions/setup-node-pnpm
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
@@ -106,12 +91,9 @@ jobs:
         working-directory: zshref-web
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: ./.github/actions/setup-node-pnpm
         with:
-          node-version: 22
-      - run: corepack enable
-      - run: pnpm config set store-dir /tmp/pnpm-store
-      - run: pnpm install --frozen-lockfile
+          dir: zshref-web
       - run: pnpm qa
 
   integration:
@@ -128,12 +110,7 @@ jobs:
       BZ_SKIP_UPSTREAM: "1"
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 22
-      - run: corepack enable
-      - run: pnpm config set store-dir /tmp/pnpm-store
-      - run: pnpm install --frozen-lockfile
+      - uses: ./.github/actions/setup-node-pnpm
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
@@ -149,23 +126,6 @@ jobs:
           pnpm --filter @carlwr/zsh-core-tooldef build
           pnpm --filter @carlwr/zshref-mcp build
       - run: pnpm check
-      # - name: pnpm check
-      #   run: |
-      #     pnpm check || {
-      #       code=$?
-      #       echo "::group::pnpm check failure diagnostics"
-      #       pwd
-      #       uname -a
-      #       node --version || true
-      #       pnpm --version || true
-      #       git status --short || true
-      #       ls -l scripts/list-repo-symlinks scripts/check-claude-md-pairs || true
-      #       head -n 8 scripts/list-repo-symlinks scripts/check-claude-md-pairs || true
-      #       scripts/list-repo-symlinks --quiet || true
-      #       scripts/check-claude-md-pairs --quiet || true
-      #       echo "::endgroup::"
-      #       exit "$code"
-      #     }
       - run: pnpm test
       # `qa` minus its Rust half (no toolchain here): the cheap host gates
       # must not be local-only. Slow-types is registry-independent.
