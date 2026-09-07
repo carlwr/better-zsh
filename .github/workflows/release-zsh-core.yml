@@ -52,6 +52,9 @@ jobs:
           echo "tag=$tag_version pkg=$pkg_version"
           [ "$tag_version" = "$pkg_version" ] || { echo "tag mismatch vs package.json"; exit 1; }
 
+      # Explicit: unlike the other packages, zsh-core has no `pre*` hooks,
+      # and `test` resolves JSON subpaths that only exist under `dist/`.
+      - run: pnpm --filter @carlwr/zsh-core build
       - run: pnpm --filter @carlwr/zsh-core run check
       - run: pnpm --filter @carlwr/zsh-core run test
       - run: pnpm --filter @carlwr/zsh-core run test:pack
