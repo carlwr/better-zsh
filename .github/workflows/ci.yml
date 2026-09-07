@@ -6,6 +6,22 @@ on:
   workflow_dispatch:
 
 jobs:
+  # Covered otherwise only via `integration`, which bootstraps builds first —
+  # so a missing build here stayed invisible until release time.
+  zsh-core:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup-node-pnpm
+      # zsh-core has no `pre*` hooks, and `test` resolves JSON subpaths that
+      # exist only under `dist/`.
+      - run: pnpm --filter @carlwr/zsh-core build
+      - run: pnpm --filter @carlwr/zsh-core run check
+      - run: pnpm --filter @carlwr/zsh-core run test
+      - run: pnpm --filter @carlwr/zsh-core run test:pack
+
   # Deliberate duplication: mirrors what a standalone CI would run for this
   # package after extraction, isolating its packaging surface.
   mcp:
