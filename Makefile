@@ -18,9 +18,18 @@ cli-nlp: artifacts
 cli-debug: artifacts
 	cd zshref-rs && ZSHREF_DATA_SOURCE=monorepo cargo build
 
+# Second leg gates the NLP drift guards. `nlp` is not a default feature, so
+# the first leg never compiles the nlp module — leaving its regenerate-or-
+# assert guards (schemas, categories, lookup map/contract, parity fixture)
+# unreachable, and a corpus edit free to invalidate every committed artifact
+# unnoticed. Scoped rather than a bare `--features nlp`: that re-runs the
+# integration suites under a second feature config for no new coverage, at
+# ~6x the cost. `--bin zshref` holds the nlp unit tests; `feature_flag` the
+# nlp-side CLI surface assertions.
 .PHONY: cli-test
 cli-test: artifacts
 	cd zshref-rs && ZSHREF_DATA_SOURCE=monorepo cargo test
+	cd zshref-rs && ZSHREF_DATA_SOURCE=monorepo cargo test --features nlp --bin zshref --test feature_flag
 
 .PHONY: cli-clean
 cli-clean:
@@ -91,9 +100,22 @@ cli-vendored-test: vendor
 cli-package: vendor
 	cd zshref-rs && ZSHREF_DATA_SOURCE=vendored cargo package --allow-dirty --all-features
 
+# Download the local NLP model (~127M) into `zshref-rs/data-nlp/model/`.
+# Gitignored and not reproducible from the repo; the index and every
+# asset-gated test derive from it.
+.PHONY: nlp-model
+nlp-model:
+	zshref-rs/scripts/fetch-model
+
 # Stage zshref outputs for the SPA. Requires `cli-nlp` + populated
 # `zshref-rs/data-nlp/` (model + generated index); the script errors with
 # a hint if either is missing.
 .PHONY: artifacts-web
 artifacts-web:
 	zshref-web/scripts/fetch-artifacts
+
+# zshref-web is deliberately outside the pnpm workspace, so no root pnpm
+# script reaches it; this is the convenience entry point.
+.PHONY: web-qa
+web-qa:
+	cd zshref-web && pnpm qa
