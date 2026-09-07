@@ -4,11 +4,14 @@
 //!
 //! Two distinct fixtures:
 //!
-//! - `parity-fixture.json` — ships pre-computed `queryVec` + `resolverHit`
-//!   per query so the TS ranker runs without an embedder and produces
-//!   byte-equal scores. Pins ranker math (curated for branch coverage:
-//!   resolver hit, exact-word + category boost, short-body weighting,
-//!   lexical overlap).
+//! - `parity-fixture.json` — a closed arithmetic contract: it ships the
+//!   miniature index it was ranked against alongside the pre-computed
+//!   `queryVec` + `resolverHit` per query, so the TS ranker reproduces
+//!   byte-equal scores with neither an embedder nor the full index. Pins
+//!   ranker math (curated for branch coverage: resolver hit, exact-word +
+//!   category boost, short-body weighting, lexical overlap). Carrying its own
+//!   index is recorded as a provisional decision in the web package's
+//!   contributor doc.
 //!
 //! - `sanity-fixture.json` — hand-curated "clear winner" queries. The Rust
 //!   side enforces invariants (top score above floor; comfortable margin
@@ -16,14 +19,16 @@
 //!   embedder + ranker mirror) and asserts the top-1 identity. Pins
 //!   full-stack behaviour at a coarser resolution than parity-fixture.
 //!
-//! Skips quietly when local NLP assets are missing (`data-nlp/model/`,
-//! `data-nlp/index.json`). `BZ_REQUIRE_PARITY_FIXTURE=1` /
-//! `BZ_REQUIRE_SANITY_FIXTURE=1` flip skip → fail.
+//! Asset-dependent tests here skip quietly when the local NLP assets are
+//! missing (`data-nlp/model/`, `data-nlp/index.json`);
+//! `BZ_REQUIRE_NLP_ASSETS=1` flips skip → fail. The parity fixture is not
+//! among them — it is self-contained (see `PARITY_INDEX_RECORDS`).
 
 use crate::corpus::{load_corpus, Corpus};
-use crate::nlp::index::{self, normalize, VectorIndex};
+use crate::nlp::index::{self, normalize, IndexedRecord, VectorIndex, ViewVectors};
 use crate::nlp::model::Embedder;
 use crate::nlp::rank;
+use crate::nlp::retrieval_text::corpus_texts;
 use crate::nlp::rules::{tuning, Tuning};
 use crate::nlp::search::resolver_key;
 use crate::nlp::test_support::assert_committed_json;
@@ -49,7 +54,36 @@ const PARITY_QUERIES: &[&str] = &[
 ];
 
 const PARITY_LIMIT: usize = 5;
-const PARITY_VERSION: u32 = 2;
+const PARITY_VERSION: u32 = 3;
+
+/// Corpus records the fixture's miniature index is built from, by
+/// `(category, id)`. Real records, so resolver hits and lexical overlap stay
+/// meaningful; curated for the branches `PARITY_QUERIES` aims at. Category
+/// sizes are deliberately unequal, which pins the rarity penalty the moment
+/// its weight stops being zero. Order is load-bearing — the fixture is
+/// positional.
+const PARITY_INDEX_RECORDS: &[(&str, &str)] = &[
+    // resolver-hit target of the "AUTO_CD" query; two more keep this the
+    // largest category, i.e. the rarity baseline.
+    ("option", "autocd"),
+    ("option", "extendedglob"),
+    ("option", "globdots"),
+    // exact-word id match + category-name boost.
+    ("builtin", "setopt"),
+    ("builtin", "unsetopt"),
+    // multi-word lexical overlap, no exact id match.
+    ("redirection", ">_word"),
+    ("redirection", ">>_word"),
+    // short vs. long body inside one category — both ends of the short-body
+    // weight ramp.
+    ("glob_qualifier", "."),
+    ("glob_qualifier", "f"),
+];
+
+/// Provenance of the fixture's index, in place of a model id and a corpus
+/// hash: its vectors are generated rather than embedded, and neither field
+/// would be true.
+const PARITY_INDEX_TAG: &str = "synthetic:parity-fixture";
 
 /// Sanity-fixture curation: queries that fire exact-word + category boosts
 /// on a rare record name → predictable top-1 with comfortable margin.
@@ -92,6 +126,7 @@ struct SanityQuery {
 struct ParityFixture<'a> {
     version: u32,
     limit: usize,
+    index: VectorIndex,
     entries: Vec<ParityEntry<'a>>,
 }
 
@@ -100,7 +135,8 @@ struct ParityEntry<'a> {
     query: &'a str,
     /// f32 values serialized via JSON's f64 (lossless). TS side reads into a
     /// Float32Array (or wraps arithmetic in Math.fround) so ranker math
-    /// reproduces Rust's f32 results bit-for-bit.
+    /// reproduces Rust's f32 results bit-for-bit. Synthetic, like the index
+    /// vectors — see `synthetic_vec`.
     #[serde(rename = "queryVec")]
     query_vec: Vec<f32>,
     #[serde(rename = "resolverHit", skip_serializing_if = "Option::is_none")]
@@ -172,7 +208,12 @@ fn sanity_path() -> PathBuf {
     .collect()
 }
 
-pub(crate) fn skip_if_assets_missing(require_env: &str, label: &str) -> bool {
+/// Env var that flips every asset-gated skip into a failure. One var for
+/// all of them: they gate the identical predicate, so per-test names only
+/// made a pipeline that stages assets easy to under-arm.
+const REQUIRE_ASSETS_ENV: &str = "BZ_REQUIRE_NLP_ASSETS";
+
+pub(crate) fn skip_if_assets_missing(label: &str) -> bool {
     let assets = assets_dir();
     let model = assets.join("model");
     let index = assets.join("index.json");
@@ -184,8 +225,8 @@ pub(crate) fn skip_if_assets_missing(require_env: &str, label: &str) -> bool {
         model.display(),
         index.display()
     );
-    if std::env::var_os(require_env).is_some() {
-        panic!("{msg} ({require_env}=1)");
+    if std::env::var_os(REQUIRE_ASSETS_ENV).is_some() {
+        panic!("{msg} ({REQUIRE_ASSETS_ENV}=1)");
     }
     eprintln!("{msg}");
     true
@@ -288,23 +329,88 @@ fn embed_resolve_rank<'a>(
     (query_vec, resolver_hit, ranked)
 }
 
+/// Unconditional — no asset gate. The fixture carries its own index and every
+/// vector in it is generated, so emitting and checking it need only the
+/// corpus already embedded in this binary.
 #[test]
 fn parity_fixture_matches_committed() {
-    if skip_if_assets_missing("BZ_REQUIRE_PARITY_FIXTURE", "parity_fixture") {
-        return;
-    }
-    let assets = assets().expect("load assets");
+    let corpus = load_corpus().expect("load corpus");
+    let index = parity_index(&corpus);
     let entries: Vec<ParityEntry<'_>> = PARITY_QUERIES
         .iter()
-        .map(|q| build_parity_entry(q, assets))
+        .map(|q| build_parity_entry(q, &index, &corpus, tuning()))
         .collect();
     let fixture = ParityFixture {
         version: PARITY_VERSION,
         limit: PARITY_LIMIT,
+        index,
         entries,
     };
     let generated = serde_json::to_string_pretty(&fixture).expect("serialize") + "\n";
     assert_committed_json(&parity_path(), &generated, "UPDATE_PARITY_FIXTURE");
+}
+
+fn parity_index(corpus: &Corpus) -> VectorIndex {
+    let texts = corpus_texts(corpus);
+    let records = PARITY_INDEX_RECORDS
+        .iter()
+        .map(|(cat, id)| IndexedRecord {
+            text: texts
+                .iter()
+                .find(|t| t.category == *cat && t.id == *id)
+                .unwrap_or_else(|| panic!("parity index record {cat}/{id} is not in the corpus"))
+                .clone(),
+            vectors: ViewVectors {
+                structured: synthetic_vec(&[cat, id, "structured"]),
+                body: synthetic_vec(&[cat, id, "body"]),
+                expanded: synthetic_vec(&[cat, id, "expanded"]),
+            },
+        })
+        .collect();
+    VectorIndex {
+        version: index::INDEX_VERSION,
+        model: PARITY_INDEX_TAG.to_string(),
+        dims: index::DIMS,
+        normalized: true,
+        corpus_hash: PARITY_INDEX_TAG.to_string(),
+        records,
+    }
+}
+
+/// Stand-in for an embedding: a fixed-seed stream keyed by the vector's
+/// identity, normalized like a real one. Parity asserts that two
+/// implementations of the same arithmetic agree, never that retrieval is
+/// good — so the numbers need to be reproducible, not meaningful, and
+/// generating them is what takes the 127M model out of the contract.
+fn synthetic_vec(key: &[&str]) -> Vec<f32> {
+    let mut state = fnv1a(key) | 1;
+    let mut v = Vec::with_capacity(index::DIMS);
+    for _ in 0..index::DIMS {
+        // splitmix64
+        state = state.wrapping_add(0x9E37_79B9_7F4A_7C15);
+        let mut z = state;
+        z = (z ^ (z >> 30)).wrapping_mul(0xBF58_476D_1CE4_E5B9);
+        z = (z ^ (z >> 27)).wrapping_mul(0x94D0_49BB_1331_11EB);
+        z ^= z >> 31;
+        // Top 24 bits over 2^23: every step is exact in f32, so the spread
+        // over [-1, 1) carries no rounding bias.
+        v.push((z >> 40) as f32 / 8_388_608.0 - 1.0);
+    }
+    normalize(&mut v);
+    v
+}
+
+fn fnv1a(parts: &[&str]) -> u64 {
+    let mut h: u64 = 0xcbf2_9ce4_8422_2325;
+    for p in parts {
+        // Trailing 0xff separates the parts, so ("ab", "c") and ("a", "bc")
+        // do not collide.
+        for b in p.as_bytes().iter().chain(std::iter::once(&0xff)) {
+            h ^= u64::from(*b);
+            h = h.wrapping_mul(0x100_0000_01b3);
+        }
+    }
+    h
 }
 
 fn scored(m: &rank::RankedMatch<'_>) -> Scored {
@@ -315,8 +421,22 @@ fn scored(m: &rank::RankedMatch<'_>) -> Scored {
     }
 }
 
-fn build_parity_entry<'a>(query: &'a str, assets: &Assets) -> ParityEntry<'a> {
-    let (query_vec, resolver_hit, ranked) = embed_resolve_rank(query, assets, tuning());
+fn build_parity_entry<'a>(
+    query: &'a str,
+    index: &VectorIndex,
+    corpus: &Corpus,
+    tuning: &Tuning,
+) -> ParityEntry<'a> {
+    let query_vec = synthetic_vec(&["query", query]);
+    let resolver_hit = resolver_key(query, None, corpus);
+    let ranked = rank::rank(
+        query,
+        &query_vec,
+        resolver_hit.as_ref(),
+        None,
+        index,
+        tuning,
+    );
     let expected: Vec<Scored> = ranked.iter().take(PARITY_LIMIT).map(scored).collect();
     ParityEntry {
         query,
@@ -328,7 +448,7 @@ fn build_parity_entry<'a>(query: &'a str, assets: &Assets) -> ParityEntry<'a> {
 
 #[test]
 fn sanity_fixture_matches_committed() {
-    if skip_if_assets_missing("BZ_REQUIRE_SANITY_FIXTURE", "sanity_fixture") {
+    if skip_if_assets_missing("sanity_fixture") {
         return;
     }
     let assets = assets().expect("load assets");
@@ -463,7 +583,7 @@ pub(crate) fn eval_sanity(assets: &Assets, tuning: &Tuning) -> SanityEval {
 /// re-curate; do not relax invariants.
 #[test]
 fn sanity_invariants_hold() {
-    if skip_if_assets_missing("BZ_REQUIRE_SANITY_FIXTURE", "sanity_invariants") {
+    if skip_if_assets_missing("sanity_invariants") {
         return;
     }
     let assets = assets().expect("load assets");
@@ -481,7 +601,7 @@ fn sanity_invariants_hold() {
 /// never embeds); re-loads per case since `VectorIndex` isn't `Clone`.
 #[test]
 fn validate_rejects_tampered_index() {
-    if skip_if_assets_missing("BZ_REQUIRE_PARITY_FIXTURE", "validate_index") {
+    if skip_if_assets_missing("validate_index") {
         return;
     }
     let corpus = load_corpus().expect("load_corpus");

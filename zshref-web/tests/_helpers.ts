@@ -9,7 +9,7 @@ import { z } from 'zod';
 
 import { loadVectorIndex } from '../src/lib/ranker/index-loader';
 import { loadRules } from '../src/lib/ranker/rules';
-import type { VectorIndex } from '../src/lib/ranker/types';
+import { VectorIndexSchema, type VectorIndex } from '../src/lib/ranker/types';
 import type { Rules } from '../src/lib/ranker/rules';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -29,8 +29,13 @@ export const PATHS = {
   synonyms: resolve(zshrefRs, 'src/nlp/rules/synonyms.yaml')
 };
 
-export function hasArtifacts(): boolean {
-  return Object.values(PATHS).every(existsSync);
+// The gitignored subset of PATHS — the only members whose absence is normal.
+// Gating on all of them would turn a deleted *committed* artifact into a
+// silent skip.
+const STAGED_PATHS = [PATHS.indexJson, PATHS.modelDir];
+
+function hasArtifacts(): boolean {
+  return STAGED_PATHS.every(existsSync);
 }
 
 /**
@@ -74,8 +79,9 @@ const ParityEntrySchema = z.object({
   )
 });
 export const ParityFixtureSchema = z.object({
-  version: z.literal(2),
+  version: z.literal(3),
   limit: z.number().int(),
+  index: VectorIndexSchema,
   entries: z.array(ParityEntrySchema)
 });
 export type ParityFixture = z.infer<typeof ParityFixtureSchema>;
