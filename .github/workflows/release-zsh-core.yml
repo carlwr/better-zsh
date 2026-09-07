@@ -20,7 +20,7 @@ on:
   workflow_dispatch:
     inputs:
       dry_run:
-        description: "Dry-run (skip publish steps)"
+        description: "Dry-run (nothing is published)"
         type: boolean
         default: true
 
@@ -67,9 +67,12 @@ jobs:
           echo "tag=$tag"       >> "$GITHUB_OUTPUT"
           echo "resolved version=$version dist-tag=$tag"
 
+      # Always runs: a dry-run that skipped this step would leave packing
+      # and npm's publish preflight untested until a real tag.
       - name: npm publish (Trusted Publishing + provenance)
-        if: github.event_name == 'push' || inputs.dry_run == false
         working-directory: packages/zsh-core
+        env:
+          DRY: ${{ (github.event_name != 'push' && inputs.dry_run) && '--dry-run' || '' }}
         run: |
           pnpm build
           # Publish a `pnpm pack` tarball: only pnpm resolves `workspace:`
@@ -77,7 +80,7 @@ jobs:
           # `workspace:*` verbatim — uninstallable.
           tgz=$(pnpm pack --json --pack-destination "$RUNNER_TEMP" \
                 | node -p 'JSON.parse(require("fs").readFileSync(0,"utf8")).filename')
-          npm publish "$tgz" \
+          npm publish "$tgz" $DRY \
             --provenance \
             --access public \
             --tag "${{ steps.disttag.outputs.tag }}"
