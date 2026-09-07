@@ -52,6 +52,8 @@ Hidden, internal-only verb — freshness/drift checks for the staging script + C
   |---|---|---|
   | `src/nlp/rules/schema/*.schema.json` | `UPDATE_SCHEMAS` | `nlp::rules::tests::schemas_match_committed_files` |
   | `tests/nlp-qa/categories.json` | `UPDATE_CATEGORIES_JSON` | `nlp::retrieval_text::tests::categories_json_matches_committed_file` |
+  | `tests/nlp-qa/lookup-map.json` | `UPDATE_LOOKUP_MAP` | `nlp::lookup_map::tests::lookup_map_matches_committed` |
+  | `tests/nlp-qa/lookup-contract.json` | `UPDATE_LOOKUP_CONTRACT` | `nlp::contract::tests::lookup_contract_matches_committed` |
   | `tests/nlp-qa/parity-fixture.json` | `UPDATE_PARITY_FIXTURE` | `nlp::fixtures::parity_fixture_matches_committed` |
   | `tests/nlp-qa/sanity-fixture.json` | `UPDATE_SANITY_FIXTURE` | `nlp::fixtures::sanity_fixture_matches_committed` |
 
@@ -59,13 +61,12 @@ Hidden, internal-only verb — freshness/drift checks for the staging script + C
   <ENV>=1 cargo test --bin zshref --features nlp <FILTER>
   ```
 
-  Fixture-emission tests (`src/nlp/fixtures.rs`) call the ranker in-process to
-  capture the pre-computed `queryVec` + `resolverHit` that the TS mirror in
-  `zshref-web` consumes. The sanity
-  fixture also has an always-on invariant test (`sanity_invariants_hold`):
-  curated "clear winner" queries must satisfy `absoluteFloor` + `minMargin`
-  on the recorded top-1 vs. runner-up; failure → re-curate the query list
-  (do not relax invariants).
+  - every row but sanity runs assetless, and `make cli-test` has a second, scoped `--features nlp` leg — so a corpus edit that invalidates a committed artifact fails before commit, not silently
+  - parity fixture: self-contained; ships the miniature index it was ranked against — `src/nlp/fixtures.rs`, `zshref-web/AGENTS.md`
+  - sanity fixture: needs the real embedder, plus an always-on invariant test (`sanity_invariants_hold`) — curated "clear winner" queries must satisfy `absoluteFloor` + `minMargin` on the recorded top-1 vs. runner-up; failure → re-curate the query list, do not relax invariants
+- Local NLP assets are `data-nlp/model/` + `data-nlp/index.json`.
+  - absent → the tests needing them skip; `BZ_REQUIRE_NLP_ASSETS=1` flips skip → fail
+  - fetch the model: `scripts/fetch-model`, or `make nlp-model`
 
 ### Tuning guardrails
 

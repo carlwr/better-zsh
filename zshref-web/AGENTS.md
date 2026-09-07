@@ -21,7 +21,7 @@ Two upstreams, both pinned by version:
 - **`zshref` release assets** (post-release) or **local `../zshref-rs/` paths** (pre-release):
   - `index.json` — vector index; self-contained (carries `mdBody` per record)
   - `rules/*.json` — `tuning`, `stopwords`, `synonyms`; emitted by zshref-rs from YAML. `rules/schema/*` is not consumed here.
-  - `parity-fixture.json` — ranker-parity test input (pre-computed `queryVec` + `resolverHit` per query)
+  - `parity-fixture.json` — ranker-parity test input; self-contained (own miniature index + pre-computed `queryVec` / `resolverHit` per query)
   - `sanity-fixture.json` — full-stack sanity test input (curated "clear-winner" queries)
   - `categories.json` — category order + labels
   - `lookup-map.json` — permalink lookup data
@@ -43,13 +43,22 @@ Two-tier verification with disjoint failure modes:
 | | parity-fixture | sanity-fixture |
 |---|---|---|
 | What it isolates | Ranker math only | Full stack (embedder + ranker) |
-| TS side | `tests/parity.test.ts` — feeds pre-computed `queryVec` directly to `rank()`, no embedder | `tests/sanity.test.ts` — runs `embedder + rank()`, asserts top-1 identity |
+| TS side | `tests/parity.test.ts` — feeds the fixture's own index + `queryVec` to `rank()`, no embedder | `tests/sanity.test.ts` — runs `embedder + rank()`, asserts top-1 identity |
 | Rust SoT | `nlp::fixtures::parity_fixture_matches_committed` | `nlp::fixtures::sanity_fixture_matches_committed` + `sanity_invariants_hold` |
+| Needs staged artifacts | no | yes — skips by default |
 | Failure means | Ranker math diverged | Embedder integration broke OR ranker drift |
 
 Parity enforces byte-equality at f32 precision; `rank.ts` mirrors Rust's f32 arithmetic via `Math.fround` + `Float32Array`.
 
-Default-skip + opt-in-fail (mirrors Rust): artifact-gated tests skip via `ctx.skip(reason)`; `--reporter=verbose` prints the reason. `BZ_REQUIRE_WEB_ARTIFACTS=1` flips skip → fail — whichever pipeline stages artifacts must set it, or missing artifacts pass silently.
+Default-skip + opt-in-fail (mirrors Rust): tests needing the gitignored artifacts (`zshref-rs/data-nlp/index.json`, `zshref-rs/data-nlp/model/`) skip via `ctx.skip(reason)`; `--reporter=verbose` prints the reason. `BZ_REQUIRE_WEB_ARTIFACTS=1` flips skip → fail — whichever pipeline stages artifacts must set it, or missing artifacts pass silently. Committed artifacts get no such gate: their absence is a defect, so those tests fail outright.
+
+### Provisional: self-contained parity index
+
+- _what:_ the fixture ships its own miniature index, vectors deterministically generated
+- _buys:_ neither side needs the model or the full index to run or regenerate parity — the mirror contract stays inside ordinary CI
+- _costs:_ a self-contained arithmetic contract rather than a slice of production data
+- _status:_ **not reviewed by the maintainer in detail** — revisitable, not settled
+- _if revisiting:_ re-derive the options from the constraint (parity asserts TS ≡ Rust arithmetic at f32 precision), not from this note
 
 ## Routes
 
@@ -83,3 +92,4 @@ Binary freshness is a runtime self-check, not a `cli-nlp` make prerequisite — 
 - `zshref-rs/AGENTS.md` — Rust CLI; SoT for ranker, index builder, rules
 - `zshref-rs/src/nlp/NLP.md` — module measurements + packaging direction
 - `zshref-rs/src/nlp/fixtures.rs` — Rust-side fixture emission + sanity invariants
+- `EXTRACTION.md` — publishing intent; what extraction changes

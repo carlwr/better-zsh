@@ -49,3 +49,4 @@ nlp and web specifics live under `zshref-rs/` and `zshref-web/`. Root maintainer
 - `zshref-rs/src/nlp/NLP.md` — NLP module measurements + packaging direction
 - `zshref-web/AGENTS.md` — SPA dependency story, parity-test posture, data staging
 - `zshref-rs/EXTRACTION.md`, `packages/zshref-mcp/EXTRACTION.md` — extraction-day checklists
+- `zshref-web/EXTRACTION.md` — SPA publishing intent; what extraction changes

@@ -136,6 +136,7 @@ pnpm format && pnpm qa && pnpm test:pack && pnpm test:integration
 - `pnpm format` first.
 - Build-scripts may never be run in parallel (since: may race) — chain with `&&`.
 - `pnpm qa` failure blocks commit — fix and re-run.
+- `zshref-web` is outside the workspace — no root script reaches it: `make web-qa` locally, own `ci.yml` job in CI.
 - `INTERACTIVE`, `REGISTRY` excluded unless asked.
 - Docs-only / non-code: skip tests unless asked.
 - `.md` edits — run the pre-return audit per `STYLE-MD.md`. Required even for "small" edits.
