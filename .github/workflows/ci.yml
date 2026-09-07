@@ -11,12 +11,6 @@ jobs:
   # The monorepo-internal `integration` job re-covers unit tests via
   # `pnpm test`; the `mcp` job isolates failures of the MCP-specific
   # packaging surface. Its published-state checks live in `registry`.
-  #
-  # A dedicated release workflow for @carlwr/zsh-core-tooldef is TODO;
-  # today only zsh-core, the extension, and zshref-mcp have dedicated
-  # release pipelines under `.github/workflows/release-*.yml`. The Rust
-  # CLI (`zshref-rs/`) has its own CI at `.github/workflows/ci-rust.yml`
-  # and ships through cargo/crates.io on its own schedule.
   mcp:
     runs-on: ubuntu-latest
     permissions:

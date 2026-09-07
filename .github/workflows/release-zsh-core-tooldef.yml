@@ -1,0 +1,86 @@
+name: Release zsh-core-tooldef
+
+# Triggered by:
+#   - Tag push matching `zsh-core-tooldef-v*` → full release (npm + JSR).
+#   - workflow_dispatch → dry-run unless `dry_run` is set to false.
+#
+# Release after @carlwr/zsh-core: the packed manifest pins the exact
+# version its `workspace:*` dep resolves to, so that version must exist.
+#
+# Auth, dist-tag and pre-release rules match `release-zsh-core.yml`.
+
+on:
+  push:
+    tags:
+      - "zsh-core-tooldef-v*"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry-run (skip publish steps)"
+        type: boolean
+        default: true
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: ./.github/actions/setup-node-pnpm
+        with:
+          registry-url: https://registry.npmjs.org
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      # Only against package.json: `pkg-info.test.ts` already ties
+      # deno.json and PKG_VERSION to it, and the `test` step runs it.
+      - name: Verify tag matches package version
+        if: startsWith(github.ref, 'refs/tags/zsh-core-tooldef-v')
+        run: |
+          tag_version=${GITHUB_REF#refs/tags/zsh-core-tooldef-v}
+          pkg_version=$(node -p "require('./packages/zsh-core-tooldef/package.json').version")
+          echo "tag=$tag_version pkg=$pkg_version"
+          [ "$tag_version" = "$pkg_version" ] || { echo "tag mismatch vs package.json"; exit 1; }
+
+      # `test` reads dist/json/tooldef.json, and `pretest` builds only
+      # upstream zsh-core — a fresh checkout needs the build spelled out.
+      - run: pnpm --filter @carlwr/zsh-core-tooldef build
+      - run: pnpm --filter @carlwr/zsh-core-tooldef run check
+      - run: pnpm --filter @carlwr/zsh-core-tooldef run test
+      - run: pnpm --filter @carlwr/zsh-core-tooldef run test:pack
+      # No install smoke to pair with it: the package ships no bin.
+      - run: pnpm --filter @carlwr/zsh-core-tooldef run jsrREGISTRY:check
+
+      - name: Determine npm dist-tag
+        id: disttag
+        run: |
+          version=$(node -p "require('./packages/zsh-core-tooldef/package.json').version")
+          if [[ "$version" == *-* ]]; then tag=next; else tag=latest; fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=$tag"       >> "$GITHUB_OUTPUT"
+          echo "resolved version=$version dist-tag=$tag"
+
+      - name: npm publish (Trusted Publishing + provenance)
+        if: github.event_name == 'push' || inputs.dry_run == false
+        working-directory: packages/zsh-core-tooldef
+        run: |
+          pnpm build
+          # Publish a `pnpm pack` tarball: only pnpm resolves `workspace:`
+          # deps to real versions. Publishing the directory with npm ships
+          # `workspace:*` verbatim — uninstallable.
+          tgz=$(pnpm pack --json --pack-destination "$RUNNER_TEMP" \
+                | node -p 'JSON.parse(require("fs").readFileSync(0,"utf8")).filename')
+          npm publish "$tgz" \
+            --provenance \
+            --access public \
+            --tag "${{ steps.disttag.outputs.tag }}"
+
+      - name: JSR publish
+        if: github.event_name == 'push' || inputs.dry_run == false
+        working-directory: packages/zsh-core-tooldef
+        run: deno publish
