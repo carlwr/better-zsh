@@ -4,6 +4,7 @@
   "version": "0.1.0-alpha.2",
   "license": "MIT",
   "nodeModulesDir": "auto",
+  "minimumDependencyAge": "0",
   "exports": {
     ".": "./index.ts"
   },

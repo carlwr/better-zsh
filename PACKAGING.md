@@ -21,6 +21,7 @@ When a TS package targets both npm (compiled `dist`) and JSR (source-form):
 - Add a drift guard on package identity (`pkg-info.test.ts` style).
 - Shared subpath exports must stay aligned across `package.json` and `deno.json`.
 - npm-only generated artifacts and workspace-internal entrypoints stay out of `deno.json.exports`.
+- A package resolving siblings released in the same cycle sets `minimumDependencyAge: "0"` in `deno.json`; JSR's default 24h floor otherwise refuses a sibling published minutes earlier.
 
 ## Release wiring
 
