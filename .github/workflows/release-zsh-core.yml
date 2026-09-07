@@ -88,14 +88,17 @@ jobs:
           pnpm build
           # npm publishes this directory as-is, and only pnpm resolves
           # `workspace:` deps to real versions — so swap in the manifest pnpm
-          # resolved.
+          # resolved, then put the original back: `deno publish` refuses to
+          # run against a dirty tree.
           tgz=$(pnpm pack --json --pack-destination "$RUNNER_TEMP" \
                 | node -p 'JSON.parse(require("fs").readFileSync(0,"utf8")).filename')
+          cp package.json "$RUNNER_TEMP/manifest.orig.json"
           tar -xzOf "$tgz" package/package.json > package.json
           npm publish $DRY \
             --provenance \
             --access public \
             --tag "${{ steps.disttag.outputs.tag }}"
+          cp "$RUNNER_TEMP/manifest.orig.json" package.json
 
       - name: JSR publish
         if: github.event_name == 'push' || inputs.dry_run == false
