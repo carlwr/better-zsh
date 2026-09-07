@@ -1,0 +1,82 @@
+#! /usr/bin/env zsh
+emulate -LR zsh
+set -eu -o pipefail
+zmodload zsh/stat
+#
+# Download the local BGE-small ONNX model + tokenizer files into
+# data-nlp/model/. That directory is gitignored and is the one input not
+# reproducible from this repo; the vector index and every asset-gated test
+# derive from it.
+
+me=${0:t}
+rsDir=${0:A:h:h}
+dst=$rsDir/data-nlp/model
+
+repo=BAAI/bge-small-en-v1.5
+
+# Pinned revision: on a moving ref, new weights would silently change every
+# vector in the index and every score derived from it.
+rev=5c38ec7c405ec4b44b94cc5a9bb96e735b38267a
+
+# <path>:<bytes>. The revision pins content; the size is the integrity check.
+# `onnx/model.onnx` plus the four tokenizer files are what `src/nlp/model.rs`
+# reads, and the same layout loads under transformers.js in zshref-web.
+files=(
+  onnx/model.onnx:133093490
+  tokenizer.json:711396
+  config.json:743
+  special_tokens_map.json:125
+  tokenizer_config.json:366
+)
+
+help="
+Download the local NLP model into data-nlp/model/ (~127M).
+
+Idempotent: a file already present at the pinned size is left alone.
+
+USAGE:
+  $me [--help]
+
+THEN:
+  make cli-nlp
+  zshref-rs/target/release/zshref nlp-search --rebuild-index
+"
+
+msg() { print -u2 -- "$me: $@" }
+die() {
+  msg "ERROR: $1" ; shift
+  for hint in "$@" ; do msg "       $hint" ; done
+  exit 1
+}
+size-of() { zstat -L +size $1 2>/dev/null || print 0 }
+
+case ${1-} in
+  ("")        ;;
+  (-h|--help) print -- $help ; exit 0 ;;
+  (*)         die "unknown argument: $1" "usage: $me --help" ;;
+esac
+
+(( $+commands[curl] )) \
+  || die "curl not found" "install curl, or place $repo files under $dst by hand"
+
+for entry in $files ; do
+  path=${entry%:*}
+  want=${entry##*:}
+  out=$dst/$path
+  if [[ -f $out ]] && (( $(size-of $out) == want )) ; then
+    msg "have  $path"
+    continue
+  fi
+  mkdir -p ${out:h}
+  msg "fetch $path ($want bytes)"
+  curl -fSL --retry 3 -o $out.tmp "https://huggingface.co/$repo/resolve/$rev/$path" \
+    || { rm -f $out.tmp ; die "download failed: $path" "check network access to huggingface.co" }
+  got=$(size-of $out.tmp)
+  (( got == want )) \
+    || { rm -f $out.tmp
+         die "size mismatch for $path: got $got, want $want" \
+             "if the pinned revision moved, update rev/sizes in $me" }
+  mv $out.tmp $out
+done
+
+msg "model → $dst"

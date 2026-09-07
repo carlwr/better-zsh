@@ -35,7 +35,10 @@ stage() {
 $bin nlp-search --help >/dev/null 2>&1 \
   || die "zshref binary lacks 'nlp-search' (not built with --features nlp)" "rebuild: make cli-nlp"
 
-[[ -d $modelDir && -s $indexJson ]] || die "NLP assets missing under $zshrefRs/data-nlp/"
+[[ -d $modelDir && -s $indexJson ]] \
+  || die "NLP assets missing under $zshrefRs/data-nlp/" \
+         "model:  zshref-rs/scripts/fetch-model (or 'make nlp-model')" \
+         "index:  nlp-search --rebuild-index"
 
 # The binary is the staging oracle; verify it predates no source input.
 $bin _selfcheck --check-build-fresh >/dev/null \
