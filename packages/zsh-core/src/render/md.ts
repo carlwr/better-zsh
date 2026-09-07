@@ -286,7 +286,7 @@ const titleBuilders: {
 }
 
 /**
- * Title line for a doc record. Prefer over indexing {@link titleBuilders}
+ * Title line for a doc record. Prefer over indexing `titleBuilders`
  * directly when `cat` is a generic `K`.
  */
 export function recordTitle<K extends DocCategory>(
@@ -526,7 +526,7 @@ const headBuilders: {
 /**
  * Per-category {@link DocHead} for a doc record, or `undefined` when the
  * category emits no head (or this particular record suppresses it). Prefer
- * over indexing {@link headBuilders} directly when `cat` is a generic `K`.
+ * over indexing `headBuilders` directly when `cat` is a generic `K`.
  */
 export function headFor<K extends DocCategory>(
   cat: K,
