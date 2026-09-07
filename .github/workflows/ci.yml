@@ -88,6 +88,32 @@ jobs:
       - run: pnpm --filter @carlwr/zsh-core-tooldef run jsrREGISTRY:check
       - run: pnpm --filter @carlwr/zshref-mcp run verifyREGISTRY
 
+  # zshref-web is not a pnpm workspace member (own lockfile, own
+  # pnpm-workspace.yaml — it mirrors the post-extraction peer-repo
+  # relationship), so no root `pnpm` script reaches it. Without a job of its
+  # own the hand-maintained TS mirror of the Rust ranker has no gate at all.
+  #
+  # No BZ_REQUIRE_* here: nothing stages the gitignored NLP assets, so the
+  # artifact-gated tests (sanity, artifact loader, markdown rendering) skip by
+  # design. Everything that matters for mirror drift — ranker parity, the bare
+  # lookup contract, the marker lint — is self-contained and runs.
+  web:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: zshref-web
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - run: corepack enable
+      - run: pnpm config set store-dir /tmp/pnpm-store
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm qa
+
   integration:
     runs-on: ubuntu-latest
     permissions:
