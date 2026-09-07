@@ -482,9 +482,7 @@ mod tests {
             );
             return;
         }
-        if fixtures::skip_if_assets_missing("tune_dashboard") {
-            return;
-        }
+        fixtures::require_assets("tune_dashboard");
         // Full tier (mechanical + QA) iff release: the mechanical layer embeds
         // thousands of queries, too slow for a debug build. No separate opt-in —
         // the build profile already says whether you can afford it.

@@ -184,9 +184,7 @@ fn tune_sweep() {
         eprintln!("[skip] tune_sweep: set BZ_TUNE_SWEEP=1 (or run `make cli-tune-sweep`)");
         return;
     }
-    if fixtures::skip_if_assets_missing("tune_sweep") {
-        return;
-    }
+    fixtures::require_assets("tune_sweep");
     let bench = Bench::load();
     let base = composed_base();
     let b = bench.score(&base);
@@ -324,9 +322,7 @@ fn tune_diff() {
         eprintln!("[skip] tune_diff: set BZ_TUNE_DIFF=1 and BZ_TUNE_BASE=<candidate>");
         return;
     }
-    if fixtures::skip_if_assets_missing("tune_diff") {
-        return;
-    }
+    fixtures::require_assets("tune_diff");
     let bench = Bench::load();
     let base = tuning().clone();
     let cand = composed_base();

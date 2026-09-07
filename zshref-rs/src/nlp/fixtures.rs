@@ -51,6 +51,9 @@ const PARITY_QUERIES: &[&str] = &[
     "redirect output to a file",
     // short query — exercises short-body weighting in the top results.
     "glob qualifier flags",
+    // symbolic surface match — an operator token against a record's display
+    // head, the branch `significant_words` deliberately drops.
+    ">> file",
 ];
 
 const PARITY_LIMIT: usize = 5;
@@ -213,23 +216,37 @@ fn sanity_path() -> PathBuf {
 /// made a pipeline that stages assets easy to under-arm.
 const REQUIRE_ASSETS_ENV: &str = "BZ_REQUIRE_NLP_ASSETS";
 
-pub(crate) fn skip_if_assets_missing(label: &str) -> bool {
+fn missing_assets(label: &str) -> Option<String> {
     let assets = assets_dir();
     let model = assets.join("model");
     let index = assets.join("index.json");
-    if model.exists() && index.exists() {
+    (!(model.exists() && index.exists())).then(|| {
+        format!(
+            "{label}: missing {} or {}",
+            model.display(),
+            index.display()
+        )
+    })
+}
+
+pub(crate) fn skip_if_assets_missing(label: &str) -> bool {
+    let Some(msg) = missing_assets(label) else {
         return false;
-    }
-    let msg = format!(
-        "[skip] {label}: missing {} or {}",
-        model.display(),
-        index.display()
-    );
+    };
     if std::env::var_os(REQUIRE_ASSETS_ENV).is_some() {
         panic!("{msg} ({REQUIRE_ASSETS_ENV}=1)");
     }
-    eprintln!("{msg}");
+    eprintln!("[skip] {msg}");
     true
+}
+
+/// Hard failure, for a command the caller explicitly opted into. Skipping
+/// there means exiting green having produced nothing — worse than a panic.
+/// `REQUIRE_ASSETS_ENV` governs default-off tests and does not apply.
+pub(crate) fn require_assets(label: &str) {
+    if let Some(msg) = missing_assets(label) {
+        panic!("{msg}");
+    }
 }
 
 /// Single-shot loader cached for the test process (model + index are

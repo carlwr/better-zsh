@@ -24,12 +24,13 @@ cli-debug: artifacts
 # unreachable, and a corpus edit free to invalidate every committed artifact
 # unnoticed. Scoped rather than a bare `--features nlp`: that re-runs the
 # integration suites under a second feature config for no new coverage, at
-# ~6x the cost. `--bin zshref` holds the nlp unit tests; `feature_flag` the
-# nlp-side CLI surface assertions.
+# ~6x the cost. The three named targets are exactly the feature-gated ones —
+# nlp unit tests, the CLI surface assertions, and the nlp-search/_selfcheck
+# error paths the web staging script depends on.
 .PHONY: cli-test
 cli-test: artifacts
 	cd zshref-rs && ZSHREF_DATA_SOURCE=monorepo cargo test
-	cd zshref-rs && ZSHREF_DATA_SOURCE=monorepo cargo test --features nlp --bin zshref --test feature_flag
+	cd zshref-rs && ZSHREF_DATA_SOURCE=monorepo cargo test --features nlp --bin zshref --test feature_flag --test nlp_search
 
 .PHONY: cli-clean
 cli-clean:

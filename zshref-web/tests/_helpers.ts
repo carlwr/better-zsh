@@ -9,7 +9,7 @@ import { z } from 'zod';
 
 import { loadVectorIndex } from '../src/lib/ranker/index-loader';
 import { loadRules } from '../src/lib/ranker/rules';
-import { VectorIndexSchema, type VectorIndex } from '../src/lib/ranker/types';
+import type { VectorIndex } from '../src/lib/ranker/types';
 import type { Rules } from '../src/lib/ranker/rules';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -29,23 +29,25 @@ export const PATHS = {
   synonyms: resolve(zshrefRs, 'src/nlp/rules/synonyms.yaml')
 };
 
-// The gitignored subset of PATHS — the only members whose absence is normal.
-// Gating on all of them would turn a deleted *committed* artifact into a
-// silent skip.
-const STAGED_PATHS = [PATHS.indexJson, PATHS.modelDir];
-
-function hasArtifacts(): boolean {
-  return STAGED_PATHS.every(existsSync);
-}
+// The gitignored members of PATHS — the only ones whose absence is normal.
+// Everything else PATHS names is committed, so its absence is a defect and
+// must not resolve to a skip.
+export const STAGED = {
+  index: PATHS.indexJson,
+  model: PATHS.modelDir
+} as const;
 
 /**
- * Reason for `ctx.skip(reason)`; null when artifacts are staged. A verbose
- * reporter prints a ctx.skip note, whereas `it.skipIf` coerces its argument
- * to a boolean and drops the text. Throws when CI requires artifacts.
+ * Reason for `ctx.skip(reason)`; null when everything in `needs` is staged.
+ * A verbose reporter prints a ctx.skip note, whereas `it.skipIf` coerces its
+ * argument to a boolean and drops the text. Throws when CI requires
+ * artifacts. `needs` is per-test on purpose: gating a test on the 127M model
+ * it never loads makes deleting the model silently skip it.
  */
-export function artifactGate(label: string): string | null {
-  if (hasArtifacts()) return null;
-  const msg = `${label}: zshref-rs artifacts not staged locally`;
+export function artifactGate(label: string, needs: readonly string[]): string | null {
+  const missing = needs.filter((p) => !existsSync(p));
+  if (missing.length === 0) return null;
+  const msg = `${label}: not staged locally — ${missing.join(', ')}`;
   if (process.env.BZ_REQUIRE_WEB_ARTIFACTS === '1') {
     throw new Error(`${msg} (BZ_REQUIRE_WEB_ARTIFACTS=1)`);
   }
@@ -81,7 +83,9 @@ const ParityEntrySchema = z.object({
 export const ParityFixtureSchema = z.object({
   version: z.literal(3),
   limit: z.number().int(),
-  index: VectorIndexSchema,
+  // Through the production loader, not just its schema: whatever validation
+  // a staged index gets, the fixture's embedded one gets too.
+  index: z.unknown().transform(loadVectorIndex),
   entries: z.array(ParityEntrySchema)
 });
 export type ParityFixture = z.infer<typeof ParityFixtureSchema>;

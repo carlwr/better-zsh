@@ -17,6 +17,7 @@ import { describe, expect, it, beforeAll } from 'vitest';
 
 import {
   PATHS,
+  STAGED,
   artifactGate,
   loadIndexFromDisk,
   loadRulesFromDisk,
@@ -28,7 +29,7 @@ import { embedQuery, type FeatureExtractionPipeline } from '../src/lib/embedder'
 import type { Rules } from '../src/lib/ranker/rules';
 import type { VectorIndex } from '../src/lib/ranker/types';
 
-const skipReason = artifactGate('full-pipeline sanity');
+const skipReason = artifactGate('full-pipeline sanity', [STAGED.index, STAGED.model]);
 
 describe('full-pipeline sanity', () => {
   let index: VectorIndex;

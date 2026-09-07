@@ -23,9 +23,10 @@ describe('ranker parity', () => {
   });
 
   it('reproduces fixture scores at f32 precision', async () => {
-    // The embedded index is validated by the fixture schema, which reuses the
-    // same `VectorIndex` schema a staged index goes through.
     const fixture = await loadParityFixture();
+    // A regeneration that emitted nothing would otherwise loop zero times.
+    expect(fixture.entries.length).toBeGreaterThan(0);
+    expect(fixture.index.records.length).toBeGreaterThan(0);
     for (const entry of fixture.entries) {
       const queryVec = new Float32Array(entry.queryVec);
       const resolverHit = entry.resolverHit ?? null;

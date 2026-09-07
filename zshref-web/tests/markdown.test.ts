@@ -3,11 +3,11 @@
 
 import { beforeAll, describe, expect, it } from 'vitest';
 
-import { artifactGate, loadIndexFromDisk } from './_helpers';
+import { STAGED, artifactGate, loadIndexFromDisk } from './_helpers';
 import { renderInline, renderMarkdown } from '../src/lib/markdown';
 import type { IndexedRecord, VectorIndex } from '../src/lib/ranker/types';
 
-const skipReason = artifactGate('markdown rendering');
+const skipReason = artifactGate('markdown rendering', [STAGED.index]);
 
 const FENCE = /^ {0,3}(`{3,}|~{3,})(.*)$/;
 // A fenced block can also open on a list-marker line, e.g. "- ```docopt"

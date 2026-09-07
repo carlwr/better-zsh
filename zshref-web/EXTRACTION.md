@@ -27,6 +27,7 @@ CI is a separate question and is **not** deferred — a `web` job already runs `
 ## What changes shape at extraction
 
 - `scripts/fetch-artifacts` — flips from local sibling paths to release-asset download.
+- `tests/_helpers.ts` — every test reads `../zshref-rs/` directly, never `.artifacts/`. Those paths vanish at extraction, and the two unconditional tests (parity, lookup contract) then hard-fail rather than skip.
 - SPA base path — depends on the final repo / Pages URL; `svelte.config.js` sets no `kit.paths.base` today.
 - `pnpm-workspace.yaml` — the self-rooting marker exists only to fend off the monorepo workspace; it goes away, and with it the reason to keep workspace non-membership.
 - _unchanged:_ the BGE model is fetched from the HuggingFace CDN at runtime, so nothing model-shaped needs hosting.

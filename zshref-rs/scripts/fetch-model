@@ -12,13 +12,14 @@ me=${0:t}
 rsDir=${0:A:h:h}
 dst=$rsDir/data-nlp/model
 
-repo=BAAI/bge-small-en-v1.5
+repo=BAAI/bge-small-en-v1.5  # keep in sync with MODEL_ID in src/nlp/index.rs
 
 # Pinned revision: on a moving ref, new weights would silently change every
 # vector in the index and every score derived from it.
 rev=5c38ec7c405ec4b44b94cc5a9bb96e735b38267a
 
-# <path>:<bytes>. The revision pins content; the size is the integrity check.
+# <path>:<bytes>. The revision pins the content; the size catches a
+# truncated or interrupted download.
 # `onnx/model.onnx` plus the four tokenizer files are what `src/nlp/model.rs`
 # reads, and the same layout loads under transformers.js in zshref-web.
 files=(
@@ -50,6 +51,7 @@ die() {
 }
 size-of() { zstat -L +size $1 2>/dev/null || print 0 }
 
+(( $# <= 1 )) || die "too many arguments" "usage: $me --help"
 case ${1-} in
   ("")        ;;
   (-h|--help) print -- $help ; exit 0 ;;

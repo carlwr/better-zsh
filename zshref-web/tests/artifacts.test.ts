@@ -2,10 +2,10 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { artifactGate, PATHS, readData } from './_helpers';
+import { PATHS, STAGED, artifactGate, readData } from './_helpers';
 import { loadArtifacts } from '../src/lib/artifacts';
 
-const skipReason = artifactGate('artifact loader');
+const skipReason = artifactGate('artifact loader', [STAGED.index]);
 
 // Rule URLs resolve to YAML sources; `readData` handles the format switch.
 const URL_TO_PATH: Record<string, string> = {
