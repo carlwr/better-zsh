@@ -482,7 +482,7 @@ mod tests {
             );
             return;
         }
-        if fixtures::skip_if_assets_missing("BZ_TUNE_DASHBOARD", "tune_dashboard") {
+        if fixtures::skip_if_assets_missing("tune_dashboard") {
             return;
         }
         // Full tier (mechanical + QA) iff release: the mechanical layer embeds

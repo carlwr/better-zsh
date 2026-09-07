@@ -1,12 +1,12 @@
 // WEB-MIRROR-OF: zshref-rs/src/nlp/contract.rs
 //
 // Web mirror of the lookup-contract gate. Consumes `lookup-contract.json`
-// (entries) and `lookup-map.json` from the staged artifacts and asserts the
-// same bare-layer predicate as the Rust side.
+// (entries) and `lookup-map.json` — both committed, so this needs no staging
+// — and asserts the same bare-layer predicate as the Rust side.
 //
 // Layer split:
-// - **Bare** entries (~1700) are tested here via lookup-map only — fast,
-//   runs unconditionally when the JSONs exist.
+// - **Bare** entries (~1700) are tested here via lookup-map only — fast, and
+//   unconditional: a missing committed input is a defect, not a skip.
 // - **Decorated** entries (~4600) are not re-tested here. They need the
 //   full embed+rank pipeline; Rust-side coverage is the mechanical sentence
 //   eval (recorded, not a hard gate).
@@ -15,7 +15,6 @@
 //   exercised by `tests/sanity.test.ts` (decorated-style
 //   "kshoptionprint option" queries through the full pipeline).
 
-import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
@@ -56,19 +55,6 @@ const LookupContractSchema = z.object({
   entries: z.array(ContractEntrySchema)
 });
 
-function gate(): string | null {
-  const required = [PATHS.lookupContract, PATHS.lookupMap];
-  const missing = required.filter((p) => !existsSync(p));
-  if (missing.length === 0) return null;
-  const msg = `lookup contract: missing ${missing.join(', ')}`;
-  if (process.env.BZ_REQUIRE_LOOKUP_CONTRACT === '1') {
-    throw new Error(`${msg} (BZ_REQUIRE_LOOKUP_CONTRACT=1)`);
-  }
-  return msg;
-}
-
-const skipReason = gate();
-
 function predicateHolds(entry: ContractEntry, idx: LookupIndex): boolean {
   const hit = idx.lookup(entry.query);
   if (!hit) return false;
@@ -80,9 +66,7 @@ async function readJson(path: string): Promise<unknown> {
 }
 
 describe('lookup contract (bare layer)', () => {
-  it('every bare entry resolves via the lookup map', async (ctx) => {
-    if (skipReason) ctx.skip(skipReason);
-
+  it('every bare entry resolves via the lookup map', async () => {
     const [contractRaw, mapRaw] = await Promise.all([
       readJson(PATHS.lookupContract),
       readJson(PATHS.lookupMap)

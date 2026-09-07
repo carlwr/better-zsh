@@ -380,11 +380,11 @@ mod tests {
     }
 
     /// Eval reporter: print the per-split + per-category breakdown (no gate;
-    /// see `NLP.md`). Skip-gated on the embedder + index assets;
-    /// `BZ_REQUIRE_SENTENCE_FIXTURE=1` flips skip → fail (no CI job sets it).
+    /// see `NLP.md`). Skip-gated on the embedder + index assets, which no CI
+    /// job stages — this stays a local-only reporter.
     #[test]
     fn sentence_fixture_eval_report() {
-        if fixtures::skip_if_assets_missing("BZ_REQUIRE_SENTENCE_FIXTURE", "sentence_report") {
+        if fixtures::skip_if_assets_missing("sentence_report") {
             return;
         }
         let assets = fixtures::assets().expect("load assets");

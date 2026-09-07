@@ -337,7 +337,7 @@ mod tests {
     /// small capped subset so debug builds stay cheap. Skip-gated on assets.
     #[test]
     fn mechanical_smoke() {
-        if fixtures::skip_if_assets_missing("BZ_REQUIRE_MECHANICAL", "mechanical_smoke") {
+        if fixtures::skip_if_assets_missing("mechanical_smoke") {
             return;
         }
         let assets = fixtures::assets().expect("load assets");
@@ -362,7 +362,7 @@ mod tests {
             );
             return;
         }
-        if fixtures::skip_if_assets_missing("BZ_REQUIRE_MECHANICAL", "mechanical_report") {
+        if fixtures::skip_if_assets_missing("mechanical_report") {
             return;
         }
         let assets = fixtures::assets().expect("load assets");
