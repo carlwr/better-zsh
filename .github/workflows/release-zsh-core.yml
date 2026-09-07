@@ -78,12 +78,14 @@ jobs:
           DRY: ${{ (github.event_name != 'push' && inputs.dry_run) && '--dry-run' || '' }}
         run: |
           pnpm build
-          # Publish a `pnpm pack` tarball: only pnpm resolves `workspace:`
-          # deps to real versions. Publishing the directory with npm ships
-          # `workspace:*` verbatim — uninstallable.
+          # npm publishes this directory as-is, and only pnpm resolves
+          # `workspace:` deps to real versions — so swap in the manifest pnpm
+          # resolved. It must stay a directory publish: npm's OIDC exchange
+          # does not run for a tarball spec, and the PUT then 404s.
           tgz=$(pnpm pack --json --pack-destination "$RUNNER_TEMP" \
                 | node -p 'JSON.parse(require("fs").readFileSync(0,"utf8")).filename')
-          npm publish "$tgz" $DRY \
+          tar -xzOf "$tgz" package/package.json > package.json
+          npm publish $DRY \
             --provenance \
             --access public \
             --tag "${{ steps.disttag.outputs.tag }}"
