@@ -78,7 +78,12 @@ jobs:
         working-directory: packages/zsh-core
         run: |
           pnpm build
-          pnpm exec npm publish \
+          # Publish a `pnpm pack` tarball: only pnpm resolves `workspace:`
+          # deps to real versions. Publishing the directory with npm ships
+          # `workspace:*` verbatim — uninstallable.
+          tgz=$(pnpm pack --json --pack-destination "$RUNNER_TEMP" \
+                | node -p 'JSON.parse(require("fs").readFileSync(0,"utf8")).filename')
+          npm publish "$tgz" \
             --provenance \
             --access public \
             --tag "${{ steps.disttag.outputs.tag }}"
