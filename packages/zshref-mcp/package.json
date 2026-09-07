@@ -1,7 +1,7 @@
 {
   "name": "@carlwr/zshref-mcp",
   "description": "Structured zsh reference as MCP tools — look up, search, and enumerate shell options, builtins, parameters, operators, and more. Static data only: no execution, no environment access.",
-  "version": "0.1.0-alpha.1",
+  "version": "0.1.0-alpha.2",
   "license": "MIT",
   "repository": {
     "type": "git",

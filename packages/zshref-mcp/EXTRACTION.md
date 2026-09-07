@@ -36,7 +36,7 @@ read-when: extraction-day checklist for @carlwr/zshref-mcp
 
 ### `deno.json` edits
 
-- ~~`imports` points at `jsr:@carlwr/zsh-core@…` (done once `@carlwr/zsh-core` was published).~~ **Done** — `deno.json` already pins `jsr:@carlwr/zsh-core@^0.1.0-alpha.0`. On version bumps of the dep, update the pinned JSR specifier here in the same commit.
+- ~~`imports` points at `jsr:@carlwr/zsh-core@…` (done once `@carlwr/zsh-core` was published).~~ **Done** — `deno.json` pins the JSR specifier. Bump it in the same commit as any bump of the dep's version.
 - `imports` must also include `jsr:@carlwr/zsh-core-tooldef@...` — already present post-tooldef-extraction; same version-bump-in-same-commit discipline applies.
 
 ### CI / act
