@@ -6,11 +6,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  # Dedicated job for @carlwr/zshref-mcp — intentionally mirrors what a
-  # standalone CI would run in the package's own repo (after extraction).
-  # The monorepo-internal `integration` job re-covers unit tests via
-  # `pnpm test`; the `mcp` job isolates failures of the MCP-specific
-  # packaging surface. Its published-state checks live in `registry`.
+  # Deliberate duplication: mirrors what a standalone CI would run for this
+  # package after extraction, isolating its packaging surface.
   mcp:
     runs-on: ubuntu-latest
     permissions:
@@ -25,10 +22,7 @@ jobs:
       - run: pnpm --filter @carlwr/zshref-mcp run test
       - run: pnpm --filter @carlwr/zshref-mcp run test:pack
 
-  # Dedicated job for @carlwr/zsh-core-tooldef — shared tool layer
-  # consumed by the MCP server, the CLI, and the extension. Unlike
-  # mcp this is shared infrastructure, with no standalone-extraction
-  # target today.
+  # Shared tool layer with several consumers; no extraction target of its own.
   tooldef:
     runs-on: ubuntu-latest
     permissions:
@@ -39,18 +33,16 @@ jobs:
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
-      # `test` reads dist/json/tooldef.json; unlike zshref-mcp, tooldef's
-      # `pretest` builds only upstream zsh-core, not itself. A fresh checkout
-      # has no dist/, so the build must be explicit here.
+      # `pretest` builds only upstream, not this package — a fresh checkout has
+      # no `dist/` for `test` to read.
       - run: pnpm --filter @carlwr/zsh-core-tooldef build
       - run: pnpm --filter @carlwr/zsh-core-tooldef run check
       - run: pnpm --filter @carlwr/zsh-core-tooldef run test
       - run: pnpm --filter @carlwr/zsh-core-tooldef run test:pack
 
-  # Published-state checks: they resolve currently-published npm/JSR
-  # versions, so they fail legitimately until an upstream republish lands.
-  # Manual-only, and a job of their own — `act` targets a job, so a job is
-  # what keeps them out of everything a non-REGISTRY script can reach.
+  # Published-state checks: they resolve currently-published npm/JSR versions,
+  # so they fail legitimately until an upstream republish lands. Manual-only,
+  # and a job of their own so nothing else can reach them.
   registry:
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
@@ -63,19 +55,15 @@ jobs:
         with:
           deno-version: v2.x
       - run: pnpm --filter @carlwr/zsh-core run verifyREGISTRY
-      # tooldef ships no bin, so it has no install check to pair with.
+      # No install check to pair with: ships no bin.
       - run: pnpm --filter @carlwr/zsh-core-tooldef run jsrREGISTRY:check
       - run: pnpm --filter @carlwr/zshref-mcp run verifyREGISTRY
 
-  # zshref-web is not a pnpm workspace member (own lockfile, own
-  # pnpm-workspace.yaml — it mirrors the post-extraction peer-repo
-  # relationship), so no root `pnpm` script reaches it. Without a job of its
-  # own the hand-maintained TS mirror of the Rust ranker has no gate at all.
-  #
-  # No BZ_REQUIRE_* here: nothing stages the gitignored NLP assets, so the
-  # artifact-gated tests (sanity, artifact loader, markdown rendering) skip by
-  # design. Everything that matters for mirror drift — ranker parity, the bare
-  # lookup contract, the marker lint — is self-contained and runs.
+  # zshref-web has its own lockfile and is not a workspace member, so no root
+  # script reaches it; without this job the hand-maintained TS mirror of the
+  # Rust ranker has no gate at all. The gitignored NLP assets are absent here,
+  # so asset-gated tests skip by design; the mirror-drift gates are
+  # self-contained and run.
   web:
     runs-on: ubuntu-latest
     permissions:
@@ -94,12 +82,10 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    # Sequential bootstrap of upstream packages + BZ_SKIP_UPSTREAM=1 for
-    # aggregator steps. Without this, workspace-recursive runs race on
-    # shared `dist/` of upstream packages — each package's prebuild hook
-    # tries to `clean: true`-rebuild zsh-core / tooldef, clobbering a
-    # sibling's in-progress build and producing "no declaration file"
-    # errors mid-typecheck. See `AGENTS.md` §`BZ_SKIP_UPSTREAM`.
+    # Without this, recursive runs race on the shared `dist/` of upstream
+    # packages: every prebuild hook clean-rebuilds them, clobbering a sibling's
+    # in-progress build ("no declaration file" mid-typecheck). Hence also the
+    # bootstrap build below.
     env:
       BZ_SKIP_UPSTREAM: "1"
     steps:
@@ -121,8 +107,8 @@ jobs:
           pnpm --filter @carlwr/zshref-mcp build
       - run: pnpm check
       - run: pnpm test
-      # `qa` minus its Rust half (no toolchain here): the cheap host gates
-      # must not be local-only. Slow-types is registry-independent.
+      # The host half of `qa` (no Rust toolchain here); these gates must not be
+      # local-only.
       - run: pnpm test:scripts
       - run: pnpm --filter @carlwr/zsh-core run lint:slowtypes
       - run: pnpm test:pack
@@ -148,7 +134,7 @@ jobs:
             unzip \
             xvfb
       - run: xvfb-run -a pnpm testINTERACTIVE:electron
-      # zsh-path-matrix: container-only (VS Code's shell env resolution
-      # defeats PATH isolation on macOS). No npm script — CI-exclusive.
+      # Container-only: VS Code's shell-env resolution defeats PATH isolation
+      # on macOS.
       - run: xvfb-run -a pnpm --filter better-zsh exec -- bash -c 'pnpm build && tsc -p tsconfig.vscode-test.json && scripts/testINTERACTIVE-zsh-path-matrix'
       - run: xvfb-run -a pnpm testINTERACTIVE:electron-bundled

@@ -1,9 +1,5 @@
-# Rust CI for the `zshref-rs/` crate.
-#
-# Scope: format check, clippy, test. Artifact publishing (a binary
-# release) is out of scope here — add a separate release-zshref-rs.yml
-# when a cargo publish / GH-release cadence is decided.
-# Validated on GitHub-hosted workers (ubuntu-latest, ~1m30s typical).
+# Scope: format check, clippy, test. Binary releases are deferred until a
+# publish cadence is decided.
 
 name: CI — zshref-rs
 
@@ -34,16 +30,15 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      # TS artifacts first: the Rust crate `include_bytes!`-embeds
-      # dist/json/*.json from packages/zsh-core and zsh-core-tooldef.
+      # Node first: the crate embeds TS-generated JSON at compile time.
       - uses: ./.github/actions/setup-node-pnpm
 
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
 
-      # Keyed on the toolchain as well as Cargo.lock, and prunes stale
-      # `target/` entries — a plain path cache only ever grows.
+      # Over a plain path cache: keys on the toolchain too, and prunes stale
+      # `target/` entries.
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: zshref-rs
@@ -59,11 +54,9 @@ jobs:
           make cli
           BZ_REQUIRE_PARITY=1 pnpm --filter @carlwr/zsh-core-tooldef test parity
 
-      # Vendored-mode smoke: proves the published `.crate` is self-contained.
-      # `cargo package` builds the tarball with the same include rules as
-      # `cargo publish` and verifies it compiles standalone. See DATA-SYNC.md.
-      # `cli-package` verifies with `--all-features`: the published tarball
-      # must compile in every feature configuration, not only the default one.
+      # Proves the published `.crate` is self-contained: packaged with the same
+      # include rules as a publish, then compiled standalone with every feature
+      # enabled, not only the default configuration.
       - name: Vendored-mode test + package dry-run
         run: |
           make cli-vendored-test

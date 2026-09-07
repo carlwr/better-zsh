@@ -1,12 +1,10 @@
 name: Set up Node and pnpm
 description: Node, pnpm, a lockfile-keyed store cache, and a frozen install.
 
-# A runner starts with an empty pnpm store: uncached, every job re-downloads its
-# whole dependency set. Restoring it leaves the install with only linking to do.
-#
-# One place for the install so no job drifts on the key shape, the store path,
-# the Node major or the install flags. Jobs sharing a lockfile share a key: the
-# first to finish saves, the rest log a benign "cache already exists".
+# Uncached, every job re-downloads its whole dependency set; a restored store
+# leaves only linking. Central, so no job drifts on key shape, store path, Node
+# major or install flags. Jobs sharing a lockfile share a key — a losing save
+# logs a benign "cache already exists".
 
 inputs:
   dir:
@@ -27,18 +25,16 @@ runs:
     - run: corepack enable
       shell: bash
 
-    # Fixed store path: the cache step needs a literal, and `/tmp` is writable
-    # on hosted runners and in `act` containers alike. It is also why a job may
-    # call this once only — a second `dir` would restore into the same store and
-    # save the merge back under whichever key ran first.
+    # Fixed path: the cache step needs a literal, and `/tmp` is writable on
+    # hosted runners and in containers alike. Hence one call per job — a second
+    # `dir` would save the merged store under whichever key ran first.
     - run: pnpm config set store-dir /tmp/pnpm-store
       shell: bash
 
-    # No `restore-keys`: an inexact hit reseeds the store from the previous
-    # lockfile and saves it again under the new key, so the entry grows with
-    # every bump and never shrinks. `pnpm store prune` empties the store
-    # outright, so it cannot trim one before the save either. The cost is a
-    # cold install on the runs that change the lockfile, and nothing else.
+    # No `restore-keys`: an inexact hit reseeds from the old lockfile and saves
+    # again under the new key, so the entry only grows — and `pnpm store prune`
+    # empties the store rather than trimming it. Cost: a cold install whenever
+    # the lockfile changes.
     - uses: actions/cache@v6
       with:
         path: /tmp/pnpm-store

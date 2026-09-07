@@ -1,7 +1,7 @@
 version: 2
 updates:
   - package-ecosystem: "npm"
-    # `/` is the pnpm workspace; zshref-web sits outside it with its own lockfile.
+    # Two lockfiles: the pnpm workspace, and zshref-web outside it.
     directories:
       - "/"
       - "/zshref-web"
@@ -11,23 +11,18 @@ updates:
     groups:
       minor-and-patch:
         update-types: ["minor", "patch"]
-    # Pin @types/node to the engines.node major (currently Node 22) to
-    # avoid type definitions drifting ahead of the runtime we target.
-    # Bump the allowed major here when engines.node is raised.
+    # Keep @types/node on the `engines.node` major; raise both together.
     ignore:
       - dependency-name: "@types/node"
         update-types: ["version-update:semver-major"]
   - package-ecosystem: "github-actions"
-    # `/` is the documented spelling, and covers the workflows.
     directory: "/"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
-  # Composite actions pin their own `uses:`, and `/` above does not reach them.
-  # A separate entry rather than a second directory on that one: scanning a
-  # non-`/` directory is undocumented for this ecosystem, so if it is rejected
-  # the failure must not take workflow coverage down with it. The glob, not the
-  # one action's path, so a rename doesn't silently drop the entry.
+  # `/` covers workflows only; composite actions pin their own `uses:`. Kept
+  # separate because a non-`/` directory is undocumented here: if rejected, it
+  # must not take workflow coverage with it. Glob survives a rename.
   - package-ecosystem: "github-actions"
     directories:
       - "/.github/actions/*"

@@ -1,20 +1,17 @@
 name: Release zshref-mcp
 
-# Triggered by:
-#   - Tag push matching `zshref-mcp-v*` → full release (publish to npm + JSR).
-#   - workflow_dispatch → by default a dry-run (no publish); set the
-#     `dry_run` input to `false` to publish from an ad-hoc manual run.
+# Triggers:
+#   - tag push `zshref-mcp-v*` → publish to npm + JSR
+#   - workflow_dispatch → dry-run unless input `dry_run` is false
 #
-# Required to succeed on a real release:
-#   - npm Trusted Publisher configured for @carlwr/zshref-mcp (tokenless
-#     publish via OIDC). See npm package Settings → Publishing access.
-#   - JSR package @carlwr/zshref-mcp has the repo linked under
-#     https://jsr.io → package Settings → "GitHub actions". Enables
-#     tokenless OIDC publish.
+# Auth for a real release — tokenless, via OIDC:
+#   - npm: Trusted Publisher for @carlwr/zshref-mcp (npm package Settings →
+#     Publishing access)
+#   - JSR: repo linked for @carlwr/zshref-mcp (https://jsr.io → package
+#     Settings → "GitHub actions")
 #
-# Pre-releases: any version containing `-` (e.g. 0.1.0-alpha.0) is
-# published to npm with dist-tag `next` rather than `latest`; stable
-# releases use `latest`.
+# Pre-releases: a version containing `-` goes to npm under dist-tag `next`;
+# stable releases under `latest`.
 
 on:
   push:
@@ -44,8 +41,8 @@ jobs:
         with:
           deno-version: v2.x
 
-      # Only against package.json: `pkg-info.test.ts` already ties
-      # deno.json and PKG_VERSION to it, and the `test` step runs it.
+      # package.json only — the tests below already tie the other version
+      # sites to it.
       - name: Verify tag matches package version
         if: startsWith(github.ref, 'refs/tags/zshref-mcp-v')
         run: |

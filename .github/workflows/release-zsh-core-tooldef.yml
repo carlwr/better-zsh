@@ -1,13 +1,20 @@
 name: Release zsh-core-tooldef
 
-# Triggered by:
-#   - Tag push matching `zsh-core-tooldef-v*` → full release (npm + JSR).
-#   - workflow_dispatch → dry-run unless `dry_run` is set to false.
+# Triggers:
+#   - tag push `zsh-core-tooldef-v*` → publish to npm + JSR
+#   - workflow_dispatch → dry-run unless input `dry_run` is false
 #
-# Release after @carlwr/zsh-core: the packed manifest pins the exact
-# version its `workspace:*` dep resolves to, so that version must exist.
+# Release after @carlwr/zsh-core: the packed manifest pins the exact version
+# its `workspace:*` dep resolves to, so that version must already exist.
 #
-# Auth, dist-tag and pre-release rules match `release-zsh-core.yml`.
+# Auth for a real release — tokenless, via OIDC:
+#   - npm: Trusted Publisher for @carlwr/zsh-core-tooldef (npm package Settings
+#     → Publishing access)
+#   - JSR: repo linked for @carlwr/zsh-core-tooldef (https://jsr.io → package
+#     Settings → "GitHub actions")
+#
+# Pre-releases: a version containing `-` goes to npm under dist-tag `next`;
+# stable releases under `latest`.
 
 on:
   push:
@@ -37,8 +44,8 @@ jobs:
         with:
           deno-version: v2.x
 
-      # Only against package.json: `pkg-info.test.ts` already ties
-      # deno.json and PKG_VERSION to it, and the `test` step runs it.
+      # package.json only — the tests below already tie the other version
+      # sites to it.
       - name: Verify tag matches package version
         if: startsWith(github.ref, 'refs/tags/zsh-core-tooldef-v')
         run: |
@@ -47,13 +54,13 @@ jobs:
           echo "tag=$tag_version pkg=$pkg_version"
           [ "$tag_version" = "$pkg_version" ] || { echo "tag mismatch vs package.json"; exit 1; }
 
-      # `test` reads dist/json/tooldef.json, and `pretest` builds only
-      # upstream zsh-core — a fresh checkout needs the build spelled out.
+      # `pretest` builds only upstream, not this package — a fresh checkout has
+      # no `dist/` for `test` to read.
       - run: pnpm --filter @carlwr/zsh-core-tooldef build
       - run: pnpm --filter @carlwr/zsh-core-tooldef run check
       - run: pnpm --filter @carlwr/zsh-core-tooldef run test
       - run: pnpm --filter @carlwr/zsh-core-tooldef run test:pack
-      # No install smoke to pair with it: the package ships no bin.
+      # No install check to pair with: ships no bin.
       - run: pnpm --filter @carlwr/zsh-core-tooldef run jsrREGISTRY:check
 
       - name: Determine npm dist-tag
