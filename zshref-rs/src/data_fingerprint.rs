@@ -48,11 +48,13 @@ pub fn collect(manifest: &Path, source: &str) -> io::Result<Collected> {
                     path: manifest.join(rel),
                 });
             }
-            Some("rust-src") => {
-                let rel = parts.next().expect("rust-src input needs dir");
+            Some("src-tree") => {
+                let rel = parts.next().expect("src-tree input needs dir");
+                let exts: Vec<&str> = parts.collect();
+                assert!(!exts.is_empty(), "src-tree input needs extensions");
                 let dir = manifest.join(rel);
                 watch_dirs.push(dir.clone());
-                collect_rs(&dir, rel, &mut entries)?;
+                collect_src_tree(&dir, rel, &exts, &mut entries)?;
             }
             Some("json-data") => {
                 collect_json_data(manifest, source, &mut entries, &mut watch_dirs)?;
@@ -83,7 +85,19 @@ pub fn hash(entries: &[Entry]) -> io::Result<String> {
     Ok(format!("{:x}", h.finalize()))
 }
 
-fn collect_rs(dir: &Path, rel: &str, entries: &mut Vec<Entry>) -> io::Result<()> {
+/// Suffix-matched on the file name rather than `Path::extension`: the latter
+/// reports `None` for a file named exactly `.rs`, where the TS mirror's
+/// `endsWith` accepts it. Symlinks are followed, as `include_str!` follows them.
+fn has_ext(name: &str, exts: &[&str]) -> bool {
+    exts.iter().any(|ext| name.ends_with(&format!(".{ext}")))
+}
+
+fn collect_src_tree(
+    dir: &Path,
+    rel: &str,
+    exts: &[&str],
+    entries: &mut Vec<Entry>,
+) -> io::Result<()> {
     let mut dirs = vec![(dir.to_path_buf(), rel.to_string())];
     while let Some((d, label_dir)) = dirs.pop() {
         for ent in std::fs::read_dir(&d)? {
@@ -93,7 +107,7 @@ fn collect_rs(dir: &Path, rel: &str, entries: &mut Vec<Entry>) -> io::Result<()>
             let label = format!("{label_dir}/{name}");
             if path.is_dir() {
                 dirs.push((path, label));
-            } else if path.extension().and_then(|s| s.to_str()) == Some("rs") {
+            } else if has_ext(&name, exts) {
                 entries.push(Entry { label, path });
             }
         }
@@ -135,7 +149,7 @@ fn collect_json_dir(
         let ent = ent?;
         let path = ent.path();
         let name = ent.file_name().to_string_lossy().into_owned();
-        if path.extension().and_then(|s| s.to_str()) == Some("json") {
+        if has_ext(&name, &["json"]) {
             entries.push(Entry {
                 label: format!("json/{name}"),
                 path,

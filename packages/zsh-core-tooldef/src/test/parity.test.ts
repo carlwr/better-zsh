@@ -12,7 +12,7 @@
  *
  * Binary gate: skip the suite (with a banner) when the release binary
  * is missing or its embedded build-input hash differs from the current
- * Rust sources + TS JSON artifacts. No auto-build — the user runs
+ * Rust sources, embedded assets and TS JSON artifacts. No auto-build — the user runs
  * `make cli`. Set BZ_REQUIRE_PARITY=1 to make that gate a hard failure.
  */
 

@@ -9,7 +9,7 @@
  */
 
 import { createHash } from "node:crypto"
-import { existsSync, readdirSync, readFileSync } from "node:fs"
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs"
 import { join } from "node:path"
 import { fmtToolDefsJson } from "../../export-json.ts"
 import { TOOL_SUITE_PREAMBLE, toolDefs } from "../../tool-defs.ts"
@@ -34,13 +34,15 @@ export function currentZshrefBuildInputHash(repoRoot: string): string {
   for (const raw of readFileSync(manifest, "utf8").split(/\r?\n/)) {
     const line = raw.trim()
     if (!line || line.startsWith("#")) continue
-    const [kind, arg] = line.split(/\s+/)
+    const [kind, arg, ...exts] = line.split(/\s+/)
     if (kind === "file") {
       const rel = needArg(kind, arg)
       entries.push({ label: rel, path: join(crateRoot, rel) })
-    } else if (kind === "rust-src") {
+    } else if (kind === "src-tree") {
       const rel = needArg(kind, arg)
-      collectRustSrc(entries, join(crateRoot, rel), rel)
+      if (!exts.length)
+        throw new Error("zshref build input src-tree entry needs extensions")
+      collectSrcTree(entries, join(crateRoot, rel), rel, exts)
     } else if (kind === "json-data") {
       collectJsonDir(entries, join(repoRoot, "packages/zsh-core/dist/json"))
       entries.push({
@@ -86,22 +88,37 @@ export function compareZshrefFingerprint(
   return { ok: true, current, embedded }
 }
 
-function collectRustSrc(entries: HashEntry[], dir: string, labelDir: string) {
-  for (const ent of readdirSync(dir, { withFileTypes: true })) {
-    const path = join(dir, ent.name)
-    const label = `${labelDir}/${ent.name}`
-    if (ent.isDirectory()) {
-      collectRustSrc(entries, path, label)
-    } else if (ent.isFile() && ent.name.endsWith(".rs")) {
+function hasExt(name: string, exts: readonly string[]): boolean {
+  return exts.some(ext => name.endsWith(`.${ext}`))
+}
+
+/**
+ * `statSync`, not the `readdirSync` Dirent: Dirent kinds are lstat-flavoured
+ * and would skip symlinks, while the crate's `is_dir`/`read` follow them — as
+ * `include_str!` does. A dangling link falls through to the extension test and
+ * is reported by `hashEntries` as a missing input, matching the crate's IO error.
+ */
+function collectSrcTree(
+  entries: HashEntry[],
+  dir: string,
+  labelDir: string,
+  exts: readonly string[],
+) {
+  for (const name of readdirSync(dir)) {
+    const path = join(dir, name)
+    const label = `${labelDir}/${name}`
+    if (statSync(path, { throwIfNoEntry: false })?.isDirectory()) {
+      collectSrcTree(entries, path, label, exts)
+    } else if (hasExt(name, exts)) {
       entries.push({ label, path })
     }
   }
 }
 
 function collectJsonDir(entries: HashEntry[], dir: string) {
-  for (const ent of readdirSync(dir, { withFileTypes: true })) {
-    if (ent.isFile() && ent.name.endsWith(".json")) {
-      entries.push({ label: `json/${ent.name}`, path: join(dir, ent.name) })
+  for (const name of readdirSync(dir)) {
+    if (hasExt(name, ["json"])) {
+      entries.push({ label: `json/${name}`, path: join(dir, name) })
     }
   }
 }

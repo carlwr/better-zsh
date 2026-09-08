@@ -30,7 +30,7 @@ crates.io publishing runs from a release workflow. Binary release assets stay de
 
 Hidden, internal-only verb — freshness/drift checks for the staging script + CI. Deliberately kept out of `--help` and completions; don't expose it. See `src/nlp/selfcheck.rs`.
 
-`--check-build-fresh`'s fingerprint hashes every `src/**/*.rs` incl. `#[cfg(test)]`, so a test-only edit flags the release binary stale — deliberately conservative (over-rebuild is cheap; missing real staleness isn't).
+`--check-build-fresh`'s fingerprint hashes every source and embedded asset under `src/` (extensions listed in `build-inputs.txt`), `#[cfg(test)]` code included, so a test-only edit flags the release binary stale — deliberately conservative (over-rebuild is cheap; missing real staleness isn't).
 
 ### NLP parameter taxonomy
 
