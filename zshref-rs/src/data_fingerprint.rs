@@ -6,8 +6,8 @@
 //! - the runtime `_selfcheck --check-build-fresh` gate recomputes and compares
 //!   (semantics in `nlp::selfcheck::check_build_fresh`).
 //!
-//! Pure (no `env!`/`cfg!`/cargo directives) so `build.rs` can `#[path]`-mod it
-//! without the runtime glue.
+//! Pure at module scope (no `env!`/`cfg!`/cargo directives outside
+//! `#[cfg(test)]`) so `build.rs` can `#[path]`-mod it without the runtime glue.
 
 use sha2::{Digest, Sha256};
 use std::io;
@@ -157,4 +157,85 @@ fn collect_json_dir(
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use regex::Regex;
+    use std::collections::BTreeSet;
+
+    /// Macros standing in for a literal path. They expand to a `concat!`
+    /// reaching the JSON corpus, which the `json-data` input already covers.
+    const PATH_MACROS: [&str; 2] = ["corpus_path", "tooldef_path"];
+
+    /// Captures a literal argument, else the name of the macro supplying one.
+    /// The alternation means this pattern cannot match its own source text —
+    /// it lives inside the tree it scans. Prose mentions carry no `(`.
+    const INCLUDE_RE: &str = r#"include_(?:str|bytes)!\s*\(\s*(?:"([^"]*)"|([A-Za-z0-9_]+)!)"#;
+
+    /// Every asset compiled into the binary must also be fingerprinted, or
+    /// editing it changes the binary while its build-input hash — and so
+    /// `_selfcheck --check-build-fresh` — stays put. That is the exact gap that
+    /// left `src/nlp/rules/*.yaml` uncovered.
+    #[test]
+    fn every_embedded_asset_is_fingerprinted() {
+        let manifest = Path::new(env!("CARGO_MANIFEST_DIR"));
+        let spec = std::fs::read_to_string(manifest.join("build-inputs.txt"))
+            .expect("read build-inputs.txt");
+
+        let mut covered = BTreeSet::new();
+        let mut roots = Vec::new();
+        for raw in spec.lines() {
+            let mut parts = raw.split_whitespace();
+            if parts.next() != Some("src-tree") {
+                continue;
+            }
+            let rel = parts.next().expect("src-tree input needs dir");
+            let exts: Vec<&str> = parts.collect();
+            let dir = manifest.join(rel);
+            let mut entries = Vec::new();
+            collect_src_tree(&dir, rel, &exts, &mut entries).expect("walk src tree");
+            for e in entries {
+                covered.insert(e.path.canonicalize().expect("canonicalize input"));
+            }
+            roots.push(dir);
+        }
+        assert!(
+            !roots.is_empty(),
+            "build-inputs.txt declares no src-tree input"
+        );
+
+        let re = Regex::new(INCLUDE_RE).expect("valid include pattern");
+        let mut sources = Vec::new();
+        for dir in &roots {
+            collect_src_tree(dir, ".", &["rs"], &mut sources).expect("walk sources");
+        }
+        for src in &sources {
+            let text = std::fs::read_to_string(&src.path).expect("read source");
+            let dir = src.path.parent().expect("source has a parent");
+            for cap in re.captures_iter(&text) {
+                if let Some(lit) = cap.get(1) {
+                    let path = dir.join(lit.as_str()).canonicalize().unwrap_or_else(|e| {
+                        panic!("embedded {} in {}: {e}", lit.as_str(), src.path.display())
+                    });
+                    assert!(
+                        covered.contains(&path),
+                        "embedded asset is not a build-fingerprint input: {} (from {}) \
+                         — add its extension to build-inputs.txt",
+                        path.display(),
+                        src.path.display(),
+                    );
+                } else if let Some(mac) = cap.get(2) {
+                    assert!(
+                        PATH_MACROS.contains(&mac.as_str()),
+                        "unrecognised path macro `{}!` in {} — a non-literal include is \
+                         invisible to this guard; confirm the asset is fingerprinted",
+                        mac.as_str(),
+                        src.path.display(),
+                    );
+                }
+            }
+        }
+    }
 }
