@@ -1,3 +1,13 @@
+/**
+ * Recomputes the `zshref` binary's embedded build-input fingerprint so
+ * `parity.test.ts` can tell a stale binary from a fresh one. The hash
+ * algorithm is a hand mirror of the crate's; divergence reads as a permanent
+ * "binary stale" verdict, which `BZ_REQUIRE_PARITY=1` turns into a failure.
+ *
+ * The tooldef entry hashes source, not the built JSON artifact — an unbuilt
+ * `dist/json` must read as stale, not fresh.
+ */
+
 import { createHash } from "node:crypto"
 import { existsSync, readdirSync, readFileSync } from "node:fs"
 import { join } from "node:path"
