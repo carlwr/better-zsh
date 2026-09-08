@@ -28,7 +28,7 @@ CI is a separate question and is **not** deferred — a `web` job already runs `
 ## What changes shape at extraction
 
 - `scripts/fetch-artifacts` — flips from local sibling paths to release-asset download.
-- `tests/_helpers.ts` — every test reads `../zshref-rs/` directly, never `.artifacts/`. Those paths vanish at extraction, and the two unconditional tests (parity, lookup contract) then hard-fail rather than skip.
+- `tests/_helpers.ts` — every test reads `../zshref-rs/` directly, never `.artifacts/`. Those paths vanish at extraction, and the unconditional tests (parity, lookup contract, mirror-pairs) then hard-fail rather than skip.
 - The `web` CI job — its setup step names a monorepo-local composite action; the new repo carries it along or inlines it.
 - SPA base path — depends on the final repo / Pages URL; `svelte.config.js` sets no `kit.paths.base` today.
 - `pnpm-workspace.yaml` — the self-rooting marker exists only to fend off the monorepo workspace; it goes away, and with it the reason to keep workspace non-membership.

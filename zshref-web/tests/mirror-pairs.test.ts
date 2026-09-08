@@ -3,7 +3,8 @@
  * `WEB-MIRRORED-IN:` / `WEB-MIRROR-OF:` markers; asserts host-extension
  * match, target existence, and pair symmetry. The markers are the SoT —
  * there's no `parity-units.ts` mirror today (one ranker pair); the runtime
- * contract is `tests/parity.test.ts`. Skips when `zshref-rs/` is absent.
+ * contract is `tests/parity.test.ts`. Both scan roots are committed, so a
+ * missing one is a defect, not a skip.
  */
 
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
@@ -46,7 +47,7 @@ function scan(): readonly Marker[] {
   const out: Marker[] = [];
   for (const root of SCAN_ROOTS) {
     const abs = join(repoRoot, root);
-    if (!existsSync(abs)) continue;
+    if (!existsSync(abs)) throw new Error(`scan root missing: ${root}`);
     for (const file of walkSources(abs)) {
       const source = relative(repoRoot, file);
       for (const line of readFileSync(file, 'utf8').split(/\r?\n/)) {
@@ -62,10 +63,9 @@ function scan(): readonly Marker[] {
 const rsTsEdge = (m: Marker): string =>
   m.kind === 'WEB-MIRRORED-IN' ? `${m.source}\0${m.target}` : `${m.target}\0${m.source}`;
 
-const rsPresent = existsSync(join(repoRoot, 'zshref-rs'));
-const markers = rsPresent ? scan() : [];
+const markers = scan();
 
-describe.skipIf(!rsPresent)('web mirror-pairs', () => {
+describe('web mirror-pairs', () => {
   test('kind matches host extension', () => {
     for (const m of markers) {
       expect(extname(m.source), `${m.kind} on ${m.source}`).toBe(HOST_EXT[m.kind]);
