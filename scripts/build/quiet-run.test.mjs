@@ -95,7 +95,7 @@ test("missing label exits 2 with usage", () => {
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..")
 const smokeScripts = [
   ["verify:upstream", 0],
-  ["format:check", 1],
+  ["lint:contract", 1],
   ["lint:md", 0],
 ]
 

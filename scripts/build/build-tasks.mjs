@@ -8,11 +8,11 @@ export const buildTasks = {
   build: `${pkg("better-zsh")} build`,
   format:
     "pnpm format:root && pnpm -r --filter './packages/*' --if-present format",
-  "format:check": "pnpm lint && pnpm verify:upstream",
+  "lint:contract": "pnpm lint && pnpm verify:upstream",
   lint: "pnpm lint:root && pnpm -r --filter './packages/*' --if-present lint",
   typecheck: verifiedRecursive("typecheck"),
   check: `pnpm lint:symlinks && pnpm lint:md && pnpm lint:root && ${verifiedRecursive("check")}`,
-  test: "pnpm format:check && pnpm test:unit",
+  test: "pnpm lint:contract && pnpm test:unit",
   "test:unit": verifiedRecursive("test"),
   "test:scripts": "node --test 'scripts/build/*.test.mjs'",
   // `lint:slowtypes` runs `deno publish --dry-run --no-check` on zsh-core: registry-independent, catches JSR slow-types regressions in seconds.
