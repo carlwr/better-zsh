@@ -32,6 +32,7 @@ Invariants those headers don't carry:
 - Every publishable package needs its own release workflow; before tagging, walk `release-*.yml` against the publishable set and close gaps first.
 - `engines.node` and CI's `node-version` move together.
 - A version bump updates every site the workflow's tag guard checks — the guard fails the release, it does not warn.
+- npm pins `latest` to a package's first publish, whatever `--tag` said. While a package has no stable release, move it by hand after each prerelease — `npm dist-tag add <pkg>@<version> latest`, which needs an OTP, so no workflow can do it.
 
 ### Manual publish (fallback)
 
