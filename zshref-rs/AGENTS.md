@@ -24,7 +24,7 @@ Release artifacts of the `nlp` build feed `zshref-web` (separate repo post-extra
 
 `rules/schema/*.schema.json` are editor-only, not shipped. SoT for the ranker is `src/nlp/rank.rs`; TS mirror lives in `zshref-web/`, parity-checked against the fixture.
 
-crates.io publishing runs from a release workflow — tokenless, via Trusted Publishing. Binary release assets stay deferred; shape when built: matrix `[default, --features nlp]`, assets those binaries plus the JSON artifacts above. Pre-extraction the workflow lives in better-zsh `.github/workflows/`; post-extraction it moves to the zshref repo's.
+crates.io publishing runs from a release workflow. Binary release assets stay deferred; shape when built: matrix `[default, --features nlp]`, assets those binaries plus the JSON artifacts above.
 
 ### Internal `_selfcheck` subcommand (`nlp` build)
 

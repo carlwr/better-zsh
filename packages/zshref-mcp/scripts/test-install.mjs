@@ -9,8 +9,8 @@ import { fileURLToPath } from "node:url"
  * tarball into a fresh temp dir, and invoke the installed `zshref-mcp`
  * bin with `--version` — assert it matches the packed version.
  *
- * `@carlwr/zsh-core` is resolved from the npm registry normally (it's
- * published). Temp dirs live under `os.tmpdir()` — outside the workspace —
+ * `@carlwr/zsh-core` and `@carlwr/zsh-core-tooldef` resolve from the npm
+ * registry normally (both published). Temp dirs live under `os.tmpdir()` —
  * so npm's upward node_modules walk can't find the repo's install.
  */
 

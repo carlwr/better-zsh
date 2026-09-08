@@ -4,14 +4,8 @@ name: Release zsh-core
 #   - tag push `zsh-core-v*` → publish to npm + JSR
 #   - workflow_dispatch → dry-run unless input `dry_run` is false
 #
-# Auth for a real release — tokenless, via OIDC:
-#   - npm: Trusted Publisher for @carlwr/zsh-core (npm package Settings →
-#     Publishing access)
-#   - JSR: repo linked for @carlwr/zsh-core (https://jsr.io → package Settings
-#     → "GitHub actions")
-#
-# Pre-releases: a version containing `-` goes to npm under dist-tag `next`;
-# stable releases under `latest`.
+# A real release needs tokenless OIDC granted to this repo for
+# @carlwr/zsh-core, on npm (Trusted Publisher) and on JSR (linked repo).
 
 on:
   push:
@@ -42,9 +36,8 @@ jobs:
         with:
           deno-version: v2.x
 
-      # Tokenless publishing needs npm's OIDC exchange, added in 11.5.1; the
-      # Node 22 image ships 10.x, which silently falls back to an empty
-      # `.npmrc` token and 404s on the PUT.
+      # The npm the Node image ships predates npm's OIDC exchange; without the
+      # upgrade, publishing falls back to an empty token and 404s.
       - name: Upgrade npm for Trusted Publishing
         run: |
           npm i -g npm@latest
@@ -60,8 +53,8 @@ jobs:
           echo "tag=$tag_version pkg=$pkg_version"
           [ "$tag_version" = "$pkg_version" ] || { echo "tag mismatch vs package.json"; exit 1; }
 
-      # Explicit: unlike the other packages, zsh-core has no `pre*` hooks,
-      # and `test` resolves JSON subpaths that only exist under `dist/`.
+      # No `pre*` hooks here, and `test` resolves JSON subpaths that exist
+      # only under `dist/`.
       - run: pnpm --filter @carlwr/zsh-core build
       - run: pnpm --filter @carlwr/zsh-core run check
       - run: pnpm --filter @carlwr/zsh-core run test
@@ -74,22 +67,20 @@ jobs:
         run: |
           version=$(node -p "require('./packages/zsh-core/package.json').version")
           if [[ "$version" == *-* ]]; then tag=next; else tag=latest; fi
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-          echo "tag=$tag"       >> "$GITHUB_OUTPUT"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
           echo "resolved version=$version dist-tag=$tag"
 
-      # Always runs: a dry-run that skipped this step would leave packing
-      # and npm's publish preflight untested until a real tag.
+      # Runs on dry runs too: skipping it would leave packing and npm's
+      # publish preflight untested until a real tag.
       - name: npm publish (Trusted Publishing + provenance)
         working-directory: packages/zsh-core
         env:
           DRY: ${{ (github.event_name != 'push' && inputs.dry_run) && '--dry-run' || '' }}
         run: |
           pnpm build
-          # npm publishes this directory as-is, and only pnpm resolves
-          # `workspace:` deps to real versions — so swap in the manifest pnpm
-          # resolved, then put the original back: `deno publish` refuses to
-          # run against a dirty tree.
+          # npm publishes this directory as-is and only pnpm resolves
+          # `workspace:` deps, so publish the manifest pnpm packed — then put
+          # the original back: `deno publish` refuses a dirty tree.
           tgz=$(pnpm pack --json --pack-destination "$RUNNER_TEMP" \
                 | node -p 'JSON.parse(require("fs").readFileSync(0,"utf8")).filename')
           cp package.json "$RUNNER_TEMP/manifest.orig.json"

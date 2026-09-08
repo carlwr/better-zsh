@@ -18,7 +18,7 @@ Building and publishing the SPA **is** the point of the project; everything else
 
 ## Why publishing is deferred to post-extraction
 
-- The deploy consumes `zshref` **release assets**, and the zshref release workflow is itself deferred to first release.
+- The deploy consumes `zshref` **release assets**, which are not built yet.
 - Pre-extraction there is nothing to consume, so a pipeline would have to fetch the model, build the nlp binary and rebuild the index purely to stage throwaway inputs — then be rewritten against real releases anyway.
 - Building it once, against the actual post-extraction repos, is both simpler and less discarded work.
 - Pages hosts one site per repo, and the zsh-core docs workflow already claims this one; a pre-extraction SPA deploy would have to share that single deployment. Extraction removes the conflict.

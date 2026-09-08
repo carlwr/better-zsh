@@ -36,8 +36,7 @@ read-when: extraction-day checklist for @carlwr/zshref-mcp
 
 ### `deno.json` edits
 
-- ~~`imports` points at `jsr:@carlwr/zsh-core@…` (done once `@carlwr/zsh-core` was published).~~ **Done** — `deno.json` pins the JSR specifier. Bump it in the same commit as any bump of the dep's version.
-- `imports` must also include `jsr:@carlwr/zsh-core-tooldef@...` — already present post-tooldef-extraction; same version-bump-in-same-commit discipline applies.
+- ~~`imports` pin a `jsr:` specifier per upstream dep.~~ **Done** — bump them in the same commit as any bump of a dep's version.
 
 ### CI / act
 
@@ -51,6 +50,7 @@ read-when: extraction-day checklist for @carlwr/zshref-mcp
   Electron/xvfb/zsh/libasound2t64 step — so it's mostly delete work.
 - `scripts.test:integration` and `scripts.test:integration:act` in `package.json` — today the split exists because the monorepo also hosts the extension. Post-extraction, either collapse to a single `test:integration` or keep both if the native aggregator still pays for itself. Decide on extraction day.
 - Release workflow: tag → build → `npm publish --provenance` plus `jsr publish` (or equivalent). Port the current monorepo workflow to standalone-repo paths.
+- Re-point npm's Trusted Publisher and the JSR repo link at the new repo.
 
 ### Docs
 

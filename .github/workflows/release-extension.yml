@@ -9,9 +9,8 @@ name: Release better-zsh (VS Code extension)
 #     publisher `carlwr`
 #   - secrets.OPEN_VSX_TOKEN — Open VSX token, same namespace
 #
-# Pre-releases: a version containing `-` publishes with `--pre-release` to both
-# registries. Marketplace convention: stable on even minors, pre-release on odd
-# minors, so `0.1.x` pre-release users roll forward to stable `0.2.0` cleanly.
+# Marketplace convention: stable on even minors, pre-release on odd minors, so
+# `0.1.x` pre-release users roll forward to stable `0.2.0` cleanly.
 
 on:
   push:
@@ -58,8 +57,7 @@ jobs:
         run: |
           version=$(node -p "require('./packages/vscode-better-zsh/package.json').version")
           if [[ "$version" == *-* ]]; then flag=--pre-release; else flag=""; fi
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-          echo "flag=$flag"       >> "$GITHUB_OUTPUT"
+          echo "flag=$flag" >> "$GITHUB_OUTPUT"
           echo "resolved version=$version pre-release-flag='$flag'"
 
       - name: Publish to VS Code Marketplace (vsce)

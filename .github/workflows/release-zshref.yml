@@ -4,12 +4,8 @@ name: Release zshref (Rust CLI)
 #   - tag push `zshref-v*` → publish to crates.io
 #   - workflow_dispatch → dry-run unless input `dry_run` is false
 #
-# Auth is tokenless: crates.io Trusted Publishing exchanges the GitHub OIDC
-# token for a short-lived registry token, revoked when the job ends. Configure
-# it at crates.io → the crate → Settings → Trusted Publishing.
-#
-# Binary release assets (the `[default, --features nlp]` matrix) are not built
-# here yet; this workflow covers the crates.io half only.
+# A real release needs crates.io Trusted Publishing granted to this repo; the
+# token it issues is short-lived and revoked when the job ends.
 
 on:
   push:
@@ -42,7 +38,7 @@ jobs:
         with:
           workspaces: zshref-rs
 
-      # `tests/dump_help.rs` runs `scripts/dump-help`, a zsh script.
+      # The Rust test suite shells out to zsh.
       - name: Install zsh
         run: |
           s=; command -v sudo >/dev/null 2>&1 && s=sudo
@@ -68,9 +64,8 @@ jobs:
       - name: Vendored-mode package check
         run: make cli-package
 
-      # Skipped on a dry run: `--dry-run` uploads nothing, so it needs no
-      # token — and the whole path stays testable before the crate has
-      # Trusted Publishing configured.
+      # Skipped on a dry run: `--dry-run` uploads nothing, so the path stays
+      # testable before the crate has Trusted Publishing configured.
       - name: Authenticate with crates.io
         id: auth
         if: github.event_name == 'push' || inputs.dry_run == false

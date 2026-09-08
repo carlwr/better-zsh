@@ -2,7 +2,7 @@ name: zsh-core Docs
 
 on:
   push:
-    branches: [main, master]
+    branches: [main]
   workflow_dispatch:
 
 permissions:

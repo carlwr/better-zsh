@@ -51,6 +51,8 @@ directory is committed. See `DATA-SYNC.md`.
   - Remove path filters referencing `packages/zsh-core/**`, `packages/zsh-core-tooldef/**`, and the root `Makefile`; narrow to `src/**`, `tests/**`, `Cargo.*`.
   - Remove the `setup-node-pnpm` step — the composite action it names stays behind in the monorepo — unless the extracted repo vendored-JSON sync still drives a Node checkout.
   - Keep the `dtolnay/rust-toolchain`, cargo cache, fmt/clippy, test, and `cli-vendored-test` + `cli-package` steps unchanged.
+- `.github/workflows/release-zshref.yml` moves along, with the same `setup-node-pnpm` question.
+- Re-point crates.io Trusted Publishing at the new repo before releasing from it.
 
 ### NLP QA harness (Node)
 

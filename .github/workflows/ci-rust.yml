@@ -1,6 +1,3 @@
-# Scope: format check, clippy, test. Binary releases are deferred until a
-# publish cadence is decided.
-
 name: CI — zshref-rs
 
 on:
@@ -13,6 +10,10 @@ on:
       - ".github/workflows/ci-rust.yml"
       - ".github/actions/**"
   push:
+    # Branches only: a tag push re-runs an already-covered commit, and the
+    # release workflows gate themselves.
+    branches:
+      - "**"
     paths:
       - "zshref-rs/**"
       - "packages/zsh-core/**"
@@ -43,7 +44,7 @@ jobs:
         with:
           workspaces: zshref-rs
 
-      # `tests/dump_help.rs` runs `scripts/dump-help`, a zsh script.
+      # The Rust test suite shells out to zsh.
       - name: Install zsh
         run: |
           s=; command -v sudo >/dev/null 2>&1 && s=sudo
