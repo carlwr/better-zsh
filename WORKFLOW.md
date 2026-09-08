@@ -26,6 +26,7 @@ For lists, enumerations, or current-state claims in docs, prefer pulling from wh
 
 - Worked on from multiple agent tools — contributor docs and skills stay tool-agnostic.
 - Prefer constraints and intent over enumerating volatile specifics; prefer patterns over exact filenames when source or scripts already supply the list.
+- Stale text is a signal about the claim itself — prefer deleting or generalizing it over correcting in place.
 - Operational-notes scope stays local — package-local in package, repo-wide policy in root docs.
 - Public repo. Treat as public:
   - checked-in docs
