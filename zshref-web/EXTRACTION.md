@@ -36,4 +36,4 @@ CI is a separate question and is **not** deferred — a `web` job already runs `
 
 ## Don't forget
 
-Unlike the other to-be-extracted dirs, this one has no `README.md`, `DEVELOPMENT.md`, `LICENSE` or `THIRD_PARTY_NOTICES.md`. The SPA bundles third-party code (transformers.js, shiki, fonts), so notices are a real obligation, not a formality.
+Unlike the other to-be-extracted dirs, this one has no `README.md`, `DEVELOPMENT.md` or `THIRD_PARTY_NOTICES.md`. The SPA bundles third-party code (transformers.js, shiki, fonts), so notices are a real obligation, not a formality.

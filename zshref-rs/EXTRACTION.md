@@ -68,7 +68,8 @@ directory is committed. See `DATA-SYNC.md`.
 Companion-repo URLs and the project name are already in post-extraction form. Remaining extraction-day items:
 
 - `README.md`:
-  - `../LICENSE` / `../THIRD_PARTY_NOTICES.md` → `./LICENSE` / `./THIRD_PARTY_NOTICES.md`.
+  - ~~`../LICENSE` → `./LICENSE`.~~ **Done** — `LICENSE` added here; `README.md` links it locally.
+  - `../THIRD_PARTY_NOTICES.md` → `./THIRD_PARTY_NOTICES.md`.
   - Install: swap monorepo-checkout + `make cli` for `cargo install zshref`.
   - Remove pre-release status banner and "planned for first stable release" caveats.
 - `DEVELOPMENT.md`:
