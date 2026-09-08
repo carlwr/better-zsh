@@ -9,8 +9,8 @@
 class Zshref < Formula
   desc "Query a bundled static zsh reference from the command line"
   homepage "https://github.com/carlwr/better-zsh"
-  url "https://static.crates.io/crates/zshref/zshref-0.1.0-alpha.0.crate"
-  sha256 "96eb81d3ff430606eb5764244ad1020c6df88fad481c1619b231495d029cebd0"
+  url "https://static.crates.io/crates/zshref/zshref-0.1.0-alpha.2.crate"
+  sha256 "522419b9c0b854bef43ced596982fbc6f0bf2fb6b08a4dac213a35a8bc402137"
   license "MIT"
 
   head "https://github.com/carlwr/better-zsh.git", branch: "main"
