@@ -51,7 +51,7 @@ Per-doc-layer detail:
   - invariants
   - workarounds
   - "why not the obvious alternative"
-  - kept local: no specific other-file paths or sibling-identifier names — they rot as code moves
+  - kept local: no specific other-file paths or sibling-identifier names
 - **File-header comments** — first few lines of any source/config file. Keep locally essential. Do NOT:
   - claim global state about other files or packages
   - restate what the file already expresses:
@@ -65,13 +65,7 @@ Per-doc-layer detail:
 - **Subsystem rationale doc** — subsystem-level "why":
   - name load-bearing types and APIs
   - prefer concrete examples
-  - avoid volatile inventories:
-    - record-type names
-    - deep file paths
-    - test filenames
-    - version pins
-    - counts
-  - prefer:
+  - avoid volatile inventories; prefer:
     - directory references
     - "see API docs"
     - one representative example

@@ -1,6 +1,6 @@
 ---
 audience: maintainer
-read-when: renames, refactors, design decisions, research-agent rules, shell discipline
+read-when: renames, refactors, design decisions, research-agent rules, shell discipline, doc/comment staleness
 ---
 
 # WORKFLOW.md
@@ -18,15 +18,24 @@ read-when: renames, refactors, design decisions, research-agent rules, shell dis
 
 Pipeline exit = last stage, so `cargo test | tail` swallows a failed producer. Prefix `set -o pipefail &&` (bash/zsh) when piping anything fallible.
 
-## Pull data from elsewhere
+## Stale-proofing docs and comments
 
-For lists, enumerations, or current-state claims in docs, prefer pulling from where data lives (an `rg` query, a script call) over hand-maintaining prose. Drift becomes impossible on the data being pulled. Reach for this lever often.
+Applies to `.md`, code, config and JSDoc alike. What rots is the specific: paths, identifiers, version pins, counts, UI click-paths, and claims about another file's current state.
 
-## Keeping docs fresh
+- Prefer the least specific wording that still carries the claim — constraints and intent over enumerated specifics, patterns over exact filenames.
+- Where the data already lives, pull it (an `rg` query, a script call) instead of hand-maintaining prose; drift becomes impossible on what is pulled. Reach for this lever often.
+- Cheaply derivable detail: point at the source and state the invariant instead of copying. Sources:
+  - manifests
+  - workflows
+  - scripts
+  - tests
+
+  When a copy is unavoidable, add a drift guard. Renaming or deleting a symbol or file counts as a copy — see Renames below.
+- Stale text is a signal about the claim itself — prefer deleting or generalizing it over correcting in place.
+
+## Doc conventions
 
 - Worked on from multiple agent tools — contributor docs and skills stay tool-agnostic.
-- Prefer constraints and intent over enumerating volatile specifics; prefer patterns over exact filenames when source or scripts already supply the list.
-- Stale text is a signal about the claim itself — prefer deleting or generalizing it over correcting in place.
 - Operational-notes scope stays local — package-local in package, repo-wide policy in root docs.
 - Public repo. Treat as public:
   - checked-in docs
@@ -42,13 +51,6 @@ For lists, enumerations, or current-state claims in docs, prefer pulling from wh
 
   OK when operationally necessary: secret names, high-level auth posture.
 - Snapshot/handoff docs declare their staleness posture near the top and stay short. Orientation notes, not specs or runbooks, unless written as one.
-- If a detail is cheaply derivable, point there and summarize the invariant rather than copying. Sources:
-  - manifests
-  - workflows
-  - scripts
-  - tests
-
-  When a copy is needed, add a drift guard. Renaming or deleting a symbol or file counts as "a copy" — see Renames below.
 
 ## Research-agent proposals
 
