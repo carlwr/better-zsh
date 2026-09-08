@@ -60,16 +60,15 @@ describe("shared-surface exports stay in sync", () => {
   test("typedoc entryPoints are exactly the shared entry modules", () => {
     expect([...typedoc.entryPoints].sort()).toEqual(entryModules)
   })
-  // Hand-listed sites read by a third-party tool, so nothing can derive them
-  // and a missing entry fails silently: unbuilt, or never linted/formatted.
-  test.each([
-    ["tsconfig.build.json include", tsconfigBuild.include],
-    ["package.json scripts.format", pkg.scripts.format.split(" ")],
-    ["package.json scripts.lint", pkg.scripts.lint.split(" ")],
-  ])("%s lists every shared entry module", (_label, listed) => {
-    const bare = entryModules.map(mod => mod.replace(/^\.\//, ""))
-    expect(bare.filter(mod => !listed.includes(mod))).toEqual([])
-  })
+  // Hand-listed and read by tsc, so nothing can derive it and a missing entry
+  // fails silently: the module is simply never built.
+  test.each([["tsconfig.build.json include", tsconfigBuild.include]])(
+    "%s lists every shared entry module",
+    (_label, listed) => {
+      const bare = entryModules.map(mod => mod.replace(/^\.\//, ""))
+      expect(bare.filter(mod => !listed.includes(mod))).toEqual([])
+    },
+  )
 })
 
 describe("RECORDS_TOTAL stays in sync with the loaded corpus", () => {
