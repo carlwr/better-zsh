@@ -1,6 +1,6 @@
 [package]
 name = "zshref"
-version = "0.1.0-alpha.0"
+version = "0.1.0-alpha.2"
 edition = "2021"
 description = "Offline static zsh reference, highly structured — CLI over parsed zsh 5.9 docs, built for agent pipelines and shells"
 license = "MIT"

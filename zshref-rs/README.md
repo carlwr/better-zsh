@@ -68,7 +68,7 @@ make cli            # release binary at zshref-rs/target/release/zshref
 For alpha package testing only:
 
 ```sh
-cargo install zshref --version 0.1.0-alpha.0
+cargo install zshref --version 0.1.0-alpha.2
 ```
 
 Homebrew distribution is also planned; the formula under [`Formula/zshref.rb`](./Formula/zshref.rb) is a pre-release scaffold. Once released, install via:
