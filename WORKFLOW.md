@@ -1,6 +1,6 @@
 ---
 audience: maintainer
-read-when: renames, refactors, design decisions, research-agent rules, shell discipline, doc/comment staleness
+read-when: renames, refactors, design decisions, research-agent rules, shell discipline
 ---
 
 # WORKFLOW.md
@@ -17,21 +17,6 @@ read-when: renames, refactors, design decisions, research-agent rules, shell dis
 ## Piped commands: don't mask failures
 
 Pipeline exit = last stage, so `cargo test | tail` swallows a failed producer. Prefix `set -o pipefail &&` (bash/zsh) when piping anything fallible.
-
-## Stale-proofing docs and comments
-
-Applies to `.md`, code, config and JSDoc alike. What rots is the specific: paths, identifiers, version pins, counts, UI click-paths, and claims about another file's current state.
-
-- Prefer the least specific wording that still carries the claim — constraints and intent over enumerated specifics, patterns over exact filenames.
-- Where the data already lives, pull it (an `rg` query, a script call) instead of hand-maintaining prose; drift becomes impossible on what is pulled. Reach for this lever often.
-- Cheaply derivable detail: point at the source and state the invariant instead of copying. Sources:
-  - manifests
-  - workflows
-  - scripts
-  - tests
-
-  When a copy is unavoidable, add a drift guard. Renaming or deleting a symbol or file counts as a copy — see Renames below.
-- Stale text is a signal about the claim itself — prefer deleting or generalizing it over correcting in place.
 
 ## Doc conventions
 

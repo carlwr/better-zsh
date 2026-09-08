@@ -91,6 +91,22 @@ Per-doc-layer detail:
     - build chains
   - non-procedural facts belong in the doc owning that domain, not the skill
 
+## Stale-proofing
+
+Applies to `.md`, code, config and JSDoc alike. What rots is the specific: paths, identifiers, version pins, counts, UI click-paths, and claims about another file's current state.
+
+- Prefer the least specific wording that still carries the claim — constraints and intent over enumerated specifics, patterns over exact filenames.
+- Where the data already lives, pull it (an `rg` query, a script call) instead of hand-maintaining prose; drift becomes impossible on what is pulled. Reach for this lever often.
+- Cheaply derivable detail: point at the source and state the invariant instead of copying. Sources:
+  - manifests
+  - workflows
+  - scripts
+  - tests
+
+  When a copy is unavoidable, add a drift guard.
+- Stale text is a signal about the claim itself — prefer deleting or generalizing it over correcting in place.
+- After substantive code changes, audit relevant `.md` for stale or restructure-worthy mentions. Phrasing what code *truly is* needs implementer context — a doc-only pass cannot make these calls.
+
 ## Conciseness
 
 - Steering metric: `wc -w` (or `wc -c`); never `wc -l`. Line count is a structural shape signal (too big -> split), not a content metric.
@@ -202,7 +218,3 @@ Rules:
 
 - Don't add a callout outside the section that owns its topic.
 - When you encounter one: move the substance into the owning section; let ordering and section names carry the weight.
-
-## Code↔doc coupling
-
-After substantive code changes, audit relevant `.md` for stale or restructure-worthy mentions of the changed code. Phrasing what code *truly is* requires implementer context — a doc-only pass cannot make these calls.

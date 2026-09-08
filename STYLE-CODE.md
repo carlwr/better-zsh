@@ -31,6 +31,10 @@ second line\
 `
 ```
 
+## Comments
+
+Mandatory before editing or reviewing any comment: `STYLE-MD.md` §"Stale-proofing".
+
 ## Conciseness
 
 - Prefer short identifiers.
