@@ -68,8 +68,12 @@ jobs:
       - name: Vendored-mode package check
         run: make cli-package
 
+      # Skipped on a dry run: `--dry-run` uploads nothing, so it needs no
+      # token — and the whole path stays testable before the crate has
+      # Trusted Publishing configured.
       - name: Authenticate with crates.io
         id: auth
+        if: github.event_name == 'push' || inputs.dry_run == false
         uses: rust-lang/crates-io-auth-action@v1
 
       # Vendored: the published crate carries `data/*.json` rather than
