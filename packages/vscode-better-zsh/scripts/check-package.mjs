@@ -11,9 +11,9 @@ const {
 } = require("@carlwr/zsh-core/assets")
 const stageRoot = resolve(
   dirname(fileURLToPath(import.meta.url)),
-  "../../..",
-  ".non-vcs",
-  "vscode-better-zsh-extension",
+  "..",
+  ".tmp",
+  "staged-extension",
 )
 
 const files = execFileSync(pnpm, ["exec", "vsce", "ls", "--no-dependencies"], {

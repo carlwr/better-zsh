@@ -31,7 +31,8 @@ echo ""
 echo "=== semanticTokenScopes in extension manifest ==="
 node - <<'NODE'
 const { existsSync, readFileSync } = require("node:fs")
-const staged = ".non-vcs/vscode-better-zsh-extension/package.json"
+const staged =
+  "packages/vscode-better-zsh/.tmp/staged-extension/package.json"
 const checkedIn = "packages/vscode-better-zsh/package.json"
 const pkg = JSON.parse(
   readFileSync(existsSync(staged) ? staged : checkedIn, "utf8"),

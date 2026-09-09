@@ -33,7 +33,7 @@ A stable Marketplace release needs `icon` plus gallery presentation assets in th
 ### Staged extension root
 
 - checked-in `package.json` is the pnpm workspace manifest
-- `pnpm build` refreshes `.non-vcs/vscode-better-zsh-extension/`
+- `pnpm build` refreshes the package-local `.tmp/staged-extension/`
 - VSIX, publish, and VS Code test entrypoints use the staged root
 - generated `contributes` fields in the staged manifest:
   - `languageModelTools` from `toolDefs`

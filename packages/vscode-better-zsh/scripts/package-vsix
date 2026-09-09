@@ -10,7 +10,7 @@ set -eu
 
 pkg_dir=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 repo_root=$(CDPATH= cd -- "$pkg_dir/../.." && pwd)
-stage=$repo_root/.non-vcs/vscode-better-zsh-extension
+stage=$pkg_dir/.tmp/staged-extension
 out=${1:-better-zsh.vsix}
 
 if [ "${1:-}" = -- ]; then

@@ -8,12 +8,7 @@ const userData = process.env.BUNDLED_USER_DATA
 const testExtDir = process.env.VSCODE_TEST_EXTENSIONS_DIR
 const testUserData = process.env.VSCODE_TEST_USER_DATA
 const pkgDir = dirname(fileURLToPath(import.meta.url))
-const stagedExtRoot = resolve(
-  pkgDir,
-  "../..",
-  ".non-vcs",
-  "vscode-better-zsh-extension",
-)
+const stagedExtRoot = resolve(pkgDir, ".tmp", "staged-extension")
 
 const launchArgs = ({ extDir, userData }) => [
   "--disable-gpu",
