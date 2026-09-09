@@ -12,7 +12,9 @@ Static SPA: NLP search demo over zsh-core records. Sibling of `zshref-rs/` at re
 - Self-hosted variable fonts via `@fontsource-variable/{inter,jetbrains-mono}`
 - pnpm, non-workspace (own lockfile)
 
-Alternatives ruled out: React / Elm / PureScript front-ends; WASM port of `rank.rs`; per-record SSG (records are dynamic at runtime).
+Alternatives ruled out: React / Elm / PureScript front-ends; WASM port of the ranker; per-record SSG (records are dynamic at runtime).
+
+_Why not WASM:_ the larger version — ship the whole NLP binary as WASM — reduces to the same ruling. The embedder can't come: its Rust ONNX runtime is native-only, and porting lands back on the browser ONNX runtime already loaded here, so the embedder is *already* WASM, just not ours. Model and index are fetched either way; the CLI surface is dead weight in a browser. That leaves the ranker alone, bought at the price of a Cargo feature split to detach the embedder, a WASM toolchain, and a binary release asset — a pull-only data arrow turned build-artifact, the only binary crossing a repo boundary — plus a blob where debuggable source was. The drift it would prevent is already caught by the parity fixture, which survives extraction unchanged. Revisit post-extraction if the mirror bites; the shape then is a ranker-only target, never the binary.
 
 ## Star-pattern deps
 
