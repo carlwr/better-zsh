@@ -10,7 +10,6 @@
   },
   "scripts": {
     "build": "node scripts/build/quiet-run.mjs build",
-    "watch": "pnpm --filter better-zsh watch",
     "format": "node scripts/build/quiet-run.mjs format",
     "format:root": "biome check --error-on-warnings --write scripts package.json",
     "lint": "node scripts/build/quiet-run.mjs lint",

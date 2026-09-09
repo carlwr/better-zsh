@@ -23,7 +23,6 @@ const distDir = join(pkgDir, "dist")
     target: "es2022",
     external: ["@carlwr/zsh-core", "fuzzysort"],
     shims: true,
-    watch: process.argv.includes("--watch"),
     esbuildOptions(options) {
       options.logOverride = {
         ...(options.logOverride ?? {}),

@@ -28,7 +28,6 @@ const distDir = join(pkgDir, "dist")
       "@carlwr/zsh-core-tooldef",
     ],
     shims: true,
-    watch: process.argv.includes("--watch"),
     esbuildOptions(options) {
       options.logOverride = {
         ...(options.logOverride ?? {}),

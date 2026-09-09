@@ -89,11 +89,9 @@
   },
   "scripts": {
     "prebuild": "[ -n \"$BZ_SKIP_UPSTREAM\" ] || (pnpm --filter @carlwr/zsh-core build && BZ_SKIP_UPSTREAM=1 pnpm --filter @carlwr/zsh-core-tooldef build)",
-    "prewatch": "[ -n \"$BZ_SKIP_UPSTREAM\" ] || (pnpm --filter @carlwr/zsh-core build && BZ_SKIP_UPSTREAM=1 pnpm --filter @carlwr/zsh-core-tooldef build)",
     "pretypecheck": "[ -n \"$BZ_SKIP_UPSTREAM\" ] || (pnpm --filter @carlwr/zsh-core build && BZ_SKIP_UPSTREAM=1 pnpm --filter @carlwr/zsh-core-tooldef build)",
     "pretest": "[ -n \"$BZ_SKIP_UPSTREAM\" ] || (pnpm --filter @carlwr/zsh-core build && BZ_SKIP_UPSTREAM=1 pnpm --filter @carlwr/zsh-core-tooldef build)",
     "build": "tsx build.ts",
-    "watch": "tsx build.ts --watch",
     "format": "biome check --error-on-warnings --write .",
     "typecheck": "tsc --noEmit",
     "typecheck:vscode-test": "tsc -p tsconfig.vscode-test.json",

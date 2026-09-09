@@ -102,7 +102,6 @@ function writeJsonArtifacts() {
     clean: true,
     sourcemap: true,
     target: "es2022",
-    watch: process.argv.includes("--watch"),
     esbuildOptions(options) {
       options.logOverride = {
         ...(options.logOverride ?? {}),
