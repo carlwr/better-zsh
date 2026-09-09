@@ -88,9 +88,9 @@
     ]
   },
   "scripts": {
-    "prebuild": "[ -n \"$BZ_SKIP_UPSTREAM\" ] || (pnpm --filter @carlwr/zsh-core build && BZ_SKIP_UPSTREAM=1 pnpm --filter @carlwr/zsh-core-tooldef build)",
-    "pretypecheck": "[ -n \"$BZ_SKIP_UPSTREAM\" ] || (pnpm --filter @carlwr/zsh-core build && BZ_SKIP_UPSTREAM=1 pnpm --filter @carlwr/zsh-core-tooldef build)",
-    "pretest": "[ -n \"$BZ_SKIP_UPSTREAM\" ] || (pnpm --filter @carlwr/zsh-core build && BZ_SKIP_UPSTREAM=1 pnpm --filter @carlwr/zsh-core-tooldef build)",
+    "prebuild": "node ../../scripts/build/upstream-ready.mjs ensure",
+    "pretypecheck": "node ../../scripts/build/upstream-ready.mjs ensure",
+    "pretest": "node ../../scripts/build/upstream-ready.mjs ensure",
     "build": "tsx build.ts",
     "format": "biome check --error-on-warnings --write .",
     "typecheck": "tsc --noEmit",

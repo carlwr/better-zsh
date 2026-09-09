@@ -177,10 +177,10 @@ Universal pattern: `PACKAGING.md`. Project-specific bindings:
 
 - env var name: `BZ_SKIP_UPSTREAM`
 - upstream-readiness script: `scripts/build/upstream-ready.mjs`
-- enforcement: `scripts/build/verify-upstream-contract.mjs`
+- build stamp: `scripts/build/build-stamp.mjs`
 - rationale: `scripts/build/README.md`
 
-Mid-wipe, the TS LSP can emit transient TS7016 ghosts for `<pkg>/dist/*` — ignore.
+Mid-wipe, the TS LSP can emit transient TS7016 ghosts for `<pkg>/dist/*` — ignore. Only a stale upstream is rebuilt, so the window is narrow.
 
 ## Repo tooling
 

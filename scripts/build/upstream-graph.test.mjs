@@ -1,99 +1,61 @@
-// The fan-out guard fails silently when it stops matching: a detector that
-// matches nothing still exits 0. These fixtures pin the shapes it must catch.
+// Build order comes from the declared graph, not a hand-listed set. Asserted
+// against the real manifests, so adding a workspace dep moves the expectation
+// instead of silently diverging from it.
 
 import assert from "node:assert/strict"
 import { test } from "node:test"
 
 import {
-  hasUpstreamBuild,
-  upstreamRebuildSources,
-  upstreamTriggering,
+  allUpstream,
+  upstreamOf,
+  upstreamPkgs,
+  workspaceGraph,
 } from "./upstream-graph.mjs"
 
-// An upstream build the detector cannot see is an unguarded `pre*` hook that
-// reports clean. Every spelling `pnpm` accepts has to read as the same build.
-const spellings = [
-  ["plain", "pnpm --filter @carlwr/zsh-core build", true],
-  ["`run`", "pnpm --filter @carlwr/zsh-core run build", true],
-  ["`-F`", "pnpm -F @carlwr/zsh-core build", true],
-  ["`-F` + `run`", "pnpm -F @carlwr/zsh-core run build", true],
-  ["parenthesized", "(pnpm --filter @carlwr/zsh-core-tooldef build)", true],
-  ["longer script name", "pnpm --filter @carlwr/zsh-core build:docs", false],
-  ["downstream package", "pnpm --filter @carlwr/zshref-mcp build", false],
-]
-
-for (const [name, cmd, expected] of spellings) {
-  test(`upstream build, ${name}`, () => {
-    assert.equal(hasUpstreamBuild(cmd), expected)
-  })
-}
-
-const downstream = {
-  prebuild:
-    '[ -n "$BZ_SKIP_UPSTREAM" ] || pnpm --filter @carlwr/zsh-core build',
-  build: "tsx build.ts",
-  "test:pack": "pnpm build && node scripts/test-pack.mjs",
-  test: "vitest run",
-  lint: "biome check .",
-}
-
-test("upstream-triggering: the pre-hook's target, and what calls it", () => {
-  const triggering = upstreamTriggering(downstream)
-  assert.deepEqual([...triggering], ["build", "test:pack"])
+test("upstreamOf returns transitive deps, dependencies first", () => {
+  const graph = new Map([
+    ["app", ["lib", "mid"]],
+    ["mid", ["lib"]],
+    ["lib", []],
+  ])
+  assert.deepEqual(upstreamOf("app", graph), ["lib", "mid"])
+  assert.deepEqual(upstreamOf("mid", graph), ["lib"])
+  assert.deepEqual(upstreamOf("lib", graph), [])
 })
 
-test("upstream-triggering: a `run`-spelled pre-hook counts the same", () => {
-  const triggering = upstreamTriggering({
-    ...downstream,
-    prebuild:
-      '[ -n "$BZ_SKIP_UPSTREAM" ] || pnpm --filter @carlwr/zsh-core run build',
-  })
-  assert.deepEqual([...triggering], ["build", "test:pack"])
+test("allUpstream keeps only packages something depends on", () => {
+  const graph = new Map([
+    ["app", ["lib"]],
+    ["lonely", []],
+    ["lib", []],
+  ])
+  assert.deepEqual(allUpstream(graph), ["lib"])
 })
 
-const triggeringByPkg = new Map([
-  ["@carlwr/zsh-core", new Set()],
-  ["@carlwr/zsh-core-tooldef", upstreamTriggering(downstream)],
-  ["@carlwr/zshref-mcp", upstreamTriggering(downstream)],
-  ["better-zsh", upstreamTriggering(downstream)],
-])
+test("upstreamPkgs is exactly what some member depends on", () => {
+  const graph = workspaceGraph()
+  const depended = new Set([...graph.values()].flat())
+  assert.deepEqual(new Set(upstreamPkgs), depended)
+})
 
-const cases = [
-  ["one package", "pnpm --filter better-zsh test:pack", 1],
-  [
-    "hand-rolled fan-out",
-    "pnpm --filter @carlwr/zsh-core-tooldef test:pack && pnpm --filter @carlwr/zshref-mcp test:pack && pnpm --filter better-zsh test:pack",
-    3,
-  ],
-  [
-    "`run` spelling",
-    "pnpm --filter @carlwr/zsh-core-tooldef run test:pack && pnpm --filter better-zsh run test:pack",
-    2,
-  ],
-  [
-    "raw upstream builds",
-    "pnpm --filter @carlwr/zsh-core build && pnpm --filter @carlwr/zsh-core-tooldef build",
-    2,
-  ],
-  [
-    "raw upstream builds, `-F` and `run` spellings",
-    "pnpm -F @carlwr/zsh-core run build && pnpm --filter @carlwr/zsh-core-tooldef build",
-    2,
-  ],
-  [
-    "non-triggering scripts",
-    "pnpm --filter @carlwr/zsh-core-tooldef lint && pnpm --filter better-zsh lint",
-    0,
-  ],
-  [
-    "one package, two of its scripts",
-    "pnpm --filter better-zsh build && pnpm --filter better-zsh test:pack",
-    1,
-  ],
-]
+test("upstreamPkgs is in build order", () => {
+  const graph = workspaceGraph()
+  for (const [i, name] of upstreamPkgs.entries()) {
+    for (const dep of graph.get(name) ?? []) {
+      assert.ok(
+        upstreamPkgs.indexOf(dep) < i,
+        `${dep} must be built before ${name}`,
+      )
+    }
+  }
+})
 
-for (const [name, cmd, expected] of cases) {
-  test(`rebuild sources: ${name}`, () => {
-    assert.equal(upstreamRebuildSources(cmd, triggeringByPkg).size, expected)
-  })
-}
+test("every workspace member resolves an upstream set", () => {
+  const graph = workspaceGraph()
+  assert.ok(graph.size > 1, "workspace graph is empty — detection has broken")
+  for (const name of graph.keys()) {
+    for (const dep of upstreamOf(name, graph)) {
+      assert.ok(graph.has(dep), `${name} upstream ${dep} is not a member`)
+    }
+  }
+})

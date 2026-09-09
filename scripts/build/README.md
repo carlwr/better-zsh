@@ -9,9 +9,9 @@ Rationale only. Exact commands live in `package.json` and nearby scripts.
 - Bounded failure output.
   Keep the useful tail and name the verbose rerun.
 - One command graph.
-  Executable task data cuts `*:verbose` aliases and gives the verifier the runner graph.
+  Executable task data cuts `*:verbose` aliases and keeps the runner graph in one place.
 - Fresh upstream artifacts.
-  Recursive gates must not let package `pre*` hooks race on shared upstream `dist/`.
+  Recursive gates must not let package `pre*` hooks race on shared upstream `dist/`. A per-package content stamp decides whether a rebuild is needed at all, and makes a skip-upstream claim checkable.
 - Rust parity without stale JSON.
   CLI targets rebuild TS artifacts before cargo reads monorepo data.
 
@@ -23,6 +23,8 @@ Rationale only. Exact commands live in `package.json` and nearby scripts.
   Worked, but made the root manifest harder to scan.
 - Raw recursive pnpm for guarded tasks.
   Simpler text, unsafe with upstream rebuild hooks and tsup `clean`.
+- Static policing of script and workflow text.
+  Pattern-matched shell strings to forbid raw upstream builds; the stamp checks the same claim at the point of use, where it cannot be spelled around.
 - Rationale comments in one `.mjs` file.
   The design spans multiple scripts.
 

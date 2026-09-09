@@ -89,15 +89,11 @@ test("missing label exits 2 with usage", () => {
 })
 
 // Smoke: front-facing pnpm scripts that must stay silent on success.
-// Drift here means quiet-run wrapping has regressed, or a child script
-// (lint, verify-upstream-contract, etc.) started emitting unexpectedly.
+// Drift here means quiet-run wrapping has regressed, or a child script started
+// emitting unexpectedly.
 // When adding a new front-facing pnpm script: add [name, max-stdout-lines].
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..")
-const smokeScripts = [
-  ["verify:upstream", 0],
-  ["lint:contract", 1],
-  ["lint:md", 0],
-]
+const smokeScripts = [["lint:md", 0]]
 
 for (const [script, maxStdoutLines] of smokeScripts) {
   test(`smoke: pnpm --silent ${script} stays quiet`, () => {

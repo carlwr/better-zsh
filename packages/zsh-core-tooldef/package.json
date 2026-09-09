@@ -25,10 +25,10 @@
     "./package.json": "./package.json"
   },
   "scripts": {
-    "prebuild": "[ -n \"$BZ_SKIP_UPSTREAM\" ] || pnpm --filter @carlwr/zsh-core build",
-    "pretypecheck": "[ -n \"$BZ_SKIP_UPSTREAM\" ] || pnpm --filter @carlwr/zsh-core build",
-    "pretest": "[ -n \"$BZ_SKIP_UPSTREAM\" ] || pnpm --filter @carlwr/zsh-core build",
-    "build": "tsx build.ts && node scripts/build-api.mjs",
+    "prebuild": "node ../../scripts/build/upstream-ready.mjs ensure",
+    "pretypecheck": "node ../../scripts/build/upstream-ready.mjs ensure",
+    "pretest": "node ../../scripts/build/upstream-ready.mjs ensure",
+    "build": "node ../../scripts/build/build-stamp.mjs clear && tsx build.ts && node scripts/build-api.mjs && node ../../scripts/build/build-stamp.mjs write",
     "jsrREGISTRY:dry": "pnpm dlx jsr publish --dry-run --allow-dirty",
     "jsrREGISTRY:check": "deno publish --dry-run --allow-dirty",
     "typecheck": "tsc --noEmit",

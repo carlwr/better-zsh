@@ -102,10 +102,9 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    # Without this, recursive runs race on the shared `dist/` of upstream
-    # packages: every prebuild hook clean-rebuilds them, clobbering a sibling's
-    # in-progress build ("no declaration file" mid-typecheck). Hence also the
-    # bootstrap build below.
+    # Turns every readiness call into a verify, so no step can rebuild shared
+    # upstream `dist/` mid-run and clobber a sibling's in-progress build ("no
+    # declaration file" mid-typecheck). Hence also the priming step below.
     env:
       BZ_SKIP_UPSTREAM: "1"
     steps:
@@ -120,6 +119,10 @@ jobs:
           s=; command -v sudo >/dev/null 2>&1 && s=sudo
           $s apt-get -o Acquire::Retries=3 update
           $s apt-get -o Acquire::Retries=3 install -y --no-install-recommends zsh
+      # Not `pnpm bootstrap:upstream`: under the job env that verifies rather
+      # than builds, and a fresh checkout carries no build stamps yet. In
+      # dependency order — only the first package has no readiness hook to
+      # satisfy.
       - name: Sequential bootstrap build of upstream packages
         run: |
           pnpm --filter @carlwr/zsh-core build

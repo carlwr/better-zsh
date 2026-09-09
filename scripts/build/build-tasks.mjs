@@ -1,29 +1,26 @@
 const pkg = name => `pnpm --filter ${name}`
 const recursive = script =>
   `node scripts/build/upstream-ready.mjs run pnpm -r --filter './packages/*' --if-present ${script}`
-const verifiedRecursive = script =>
-  `pnpm verify:upstream && ${recursive(script)}`
 
 export const buildTasks = {
   build: `${pkg("better-zsh")} build`,
   format:
     "pnpm format:root && pnpm -r --filter './packages/*' --if-present format",
-  "lint:contract": "pnpm lint && pnpm verify:upstream",
   lint: "pnpm lint:root && pnpm -r --filter './packages/*' --if-present lint",
-  typecheck: verifiedRecursive("typecheck"),
-  check: `pnpm lint:symlinks && pnpm lint:md && pnpm lint:root && ${verifiedRecursive("check")}`,
-  test: "pnpm lint:contract && pnpm test:unit",
-  "test:unit": verifiedRecursive("test"),
+  typecheck: recursive("typecheck"),
+  check: `pnpm lint:symlinks && pnpm lint:md && pnpm lint:root && ${recursive("check")}`,
+  test: "pnpm lint && pnpm test:unit",
+  "test:unit": recursive("test"),
   "test:scripts": "node --test 'scripts/build/*.test.mjs'",
   // `lint:slowtypes` runs `deno publish --dry-run --no-check` on zsh-core: registry-independent, catches JSR slow-types regressions in seconds.
   qa: `pnpm check && ${pkg("@carlwr/zsh-core")} run lint:slowtypes && pnpm test:unit && pnpm test:scripts && pnpm cli:qa`,
-  "test:integration": verifiedRecursive("test:integration"),
+  "test:integration": recursive("test:integration"),
   vsix: `${pkg("better-zsh")} vsix`,
   // Recursive, not a per-package chain: every member self-builds, so without
   // the readiness helper shared upstream `dist/` is rebuilt once per member.
   // Docs site is a published artifact too: typedoc / api-extractor breaks
   // belong here, not in the container run.
-  "test:pack": `${verifiedRecursive("test:pack")} && pnpm docs:zsh-core`,
+  "test:pack": `${recursive("test:pack")} && pnpm docs:zsh-core`,
   cli: "make cli",
   "cli:debug": "make cli-debug",
   "cli:test": "make cli-test",

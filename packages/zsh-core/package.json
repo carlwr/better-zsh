@@ -72,7 +72,7 @@
     "./package.json": "./package.json"
   },
   "scripts": {
-    "build": "tsx build.ts && node scripts/build-api.mjs && tsx scripts/build-schema.ts",
+    "build": "node ../../scripts/build/build-stamp.mjs clear && tsx build.ts && node scripts/build-api.mjs && tsx scripts/build-schema.ts && node ../../scripts/build/build-stamp.mjs write",
     "dump:refs": "tsx scripts/dump-refs.ts",
     "docs:typedoc:html": "typedoc",
     "docs:api": "node scripts/build-api.mjs",

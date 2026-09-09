@@ -67,13 +67,16 @@ After a first publish of a new scoped package, `npm view <pkg> versions` can lag
 
 ## Upstream-rebuild short-circuit env var
 
-When a workspace has multiple aggregator scripts that re-trigger `pre*` hooks racing on shared upstream `dist/`, route through a single upstream-readiness script. A skip-upstream env var lets downstream `pre*` hooks short-circuit when they know upstream is already fresh.
+When a workspace has multiple aggregator scripts that re-trigger `pre*` hooks racing on shared upstream `dist/`, route through a single upstream-readiness script. A skip-upstream env var asserts that upstream is already fresh.
 
 Required contracts:
 
-- downstream `pre*` hooks short-circuit on the env var
-- an aggregator that can rebuild upstream from two or more packages routes through the upstream-readiness script — `-r` recursion, a hand-rolled `--filter` chain and an alias composed of either alike
+- downstream `pre*` hooks delegate to the readiness script rather than spelling the upstream build; the env var short-circuits inside it
+- an aggregator that can rebuild upstream from two or more packages routes through the readiness script, however the fan-out is spelled
 - build-tool targets (e.g. a Makefile) never spell an upstream build directly, at any count
-- the readiness script verifies rather than trusts the env var: an unbuilt upstream is an error, never a silent no-op
+- the readiness script verifies rather than trusts the env var: an upstream that is unbuilt or stale is an error, never a silent no-op
+- freshness is a content hash of the build inputs, never an mtime comparison
+- inputs are discovered by excluding generated trees, never by enumerating source paths: a missed exclusion costs a spurious rebuild, a missed input silently ships a stale `dist/`
+- the stamp records the files the build produced, so a deleted artifact reads as stale without any manifest listing what to expect
 
 Hook-less aggregators (e.g. `format`, `lint`) need not.
