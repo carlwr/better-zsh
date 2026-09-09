@@ -186,7 +186,7 @@ Mid-wipe, the TS LSP can emit transient TS7016 ghosts for `<pkg>/dist/*` — ign
 
 ### Repo symlinks
 
-- `scripts/list-repo-symlinks` — enumerates symlinks in HEAD; flags broken targets.
+- `scripts/list-repo-symlinks` — enumerates non-ignored symlinks; flags broken targets.
 - `scripts/check-claude-md-pairs` — every `AGENTS.md` has a sibling `CLAUDE.md`.
 - Editing a symlink writes through to its target.
 - Both gate `pnpm qa` via `pnpm lint:symlinks` (quiet mode).
