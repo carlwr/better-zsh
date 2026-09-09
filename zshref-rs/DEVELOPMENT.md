@@ -84,7 +84,9 @@ pnpm --filter @carlwr/zsh-core-tooldef test parity
 
 The suite compares the binary's embedded `buildInputHash` against current
 Rust inputs + generated JSON artifacts. Missing/stale binaries skip with a
-banner; set `BZ_REQUIRE_PARITY=1` to fail instead. No auto-build.
+banner; set `BZ_REQUIRE_PARITY=1` to fail instead. No auto-build; `pnpm qa`
+builds it before the unit-test leg, so a skip means an ad-hoc run, not a
+hole in the gate.
 
 ## Test/use zsh completions manually
 

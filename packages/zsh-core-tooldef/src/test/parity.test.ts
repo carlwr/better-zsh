@@ -17,6 +17,7 @@
  */
 
 import { spawnSync } from "node:child_process"
+import { writeSync } from "node:fs"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { loadCorpus } from "@carlwr/zsh-core"
@@ -211,8 +212,12 @@ function getTool(name: string): ToolDef {
 }
 
 if (!cliFresh) {
-  console.warn(
-    `[parity.test] ${cliBanner}; ${parityRequired ? "failing because BZ_REQUIRE_PARITY=1" : "skipping parity tests"}.`,
+  // fd 2 rather than `console`: vitest's console interception drops output from
+  // a run that reports no failures, which is exactly the run where this banner
+  // is the only sign that the comparison never happened.
+  writeSync(
+    2,
+    `[parity.test] ${cliBanner}; ${parityRequired ? "failing because BZ_REQUIRE_PARITY=1" : "skipping parity tests"}.\n`,
   )
 }
 
