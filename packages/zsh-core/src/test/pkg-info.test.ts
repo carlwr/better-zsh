@@ -62,13 +62,14 @@ describe("shared-surface exports stay in sync", () => {
   })
   // Hand-listed and read by tsc, so nothing can derive it and a missing entry
   // fails silently: the module is simply never built.
-  test.each([["tsconfig.build.json include", tsconfigBuild.include]])(
-    "%s lists every shared entry module",
-    (_label, listed) => {
-      const bare = entryModules.map(mod => mod.replace(/^\.\//, ""))
-      expect(bare.filter(mod => !listed.includes(mod))).toEqual([])
-    },
-  )
+  test.each([
+    ["tsconfig.build.json include", tsconfigBuild.include],
+    ["deno.json publish.include", deno.publish.include],
+    ["deno.json lint.include", deno.lint.include],
+  ])("%s lists every shared entry module", (_label, listed) => {
+    const bare = entryModules.map(mod => mod.replace(/^\.\//, ""))
+    expect(bare.filter(mod => !listed.includes(mod))).toEqual([])
+  })
 })
 
 describe("RECORDS_TOTAL stays in sync with the loaded corpus", () => {

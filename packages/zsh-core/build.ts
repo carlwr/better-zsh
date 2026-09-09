@@ -1,4 +1,4 @@
-import { cpSync, mkdirSync, writeFileSync } from "node:fs"
+import { cpSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 import { build } from "tsup"
@@ -22,6 +22,22 @@ const pkgDir =
     ? __dirname
     : dirname(fileURLToPath(import.meta.url))
 const distDir = join(pkgDir, "dist")
+
+/**
+ * One bundle per non-glob `exports` subpath, read from the manifest rather
+ * than restated: a subpath added without a bundle would resolve to nothing.
+ * Same derivation as `scripts/test-pack.ts`, which asserts the published shape.
+ */
+const publicEntries: string[] = Object.keys(
+  (
+    JSON.parse(readFileSync(join(pkgDir, "package.json"), "utf8")) as {
+      exports: Record<string, unknown>
+    }
+  ).exports,
+)
+  .filter(sub => !sub.includes("*") && sub !== "./package.json")
+  .map(sub => (sub === "." ? "index" : sub.slice(2)))
+  .sort()
 
 function fmtJson(data: unknown): string {
   // Keep machine artifacts deterministic and human-readable without a second
@@ -77,16 +93,7 @@ function writeJsonArtifacts() {
 
 ;(async () => {
   await build({
-    entry: [
-      resolve(pkgDir, "analysis.ts"),
-      resolve(pkgDir, "assets.ts"),
-      resolve(pkgDir, "index.ts"),
-      resolve(pkgDir, "meta.ts"),
-      resolve(pkgDir, "render.ts"),
-      resolve(pkgDir, "resolver.ts"),
-      resolve(pkgDir, "taxonomy.ts"),
-      resolve(pkgDir, "types.ts"),
-    ],
+    entry: publicEntries.map(name => resolve(pkgDir, `${name}.ts`)),
     outDir: distDir,
     tsconfig: resolve(pkgDir, "tsconfig.build.json"),
     format: ["cjs", "esm"],
