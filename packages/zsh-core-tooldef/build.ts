@@ -21,15 +21,7 @@ const distDir = join(pkgDir, "dist")
     clean: true,
     sourcemap: true,
     target: "es2022",
-    external: [
-      "@carlwr/zsh-core",
-      "@carlwr/zsh-core/meta",
-      "@carlwr/zsh-core/render",
-      "@carlwr/zsh-core/resolver",
-      "@carlwr/zsh-core/taxonomy",
-      "@carlwr/zsh-core/types",
-      "fuzzysort",
-    ],
+    external: ["@carlwr/zsh-core", "fuzzysort"],
     shims: true,
     watch: process.argv.includes("--watch"),
     esbuildOptions(options) {
