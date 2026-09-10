@@ -1,6 +1,7 @@
 .aux/
 .non-vcs/
 node_modules/
+.claude/settings.local.json
 .claude/worktrees/
 .playwright-mcp/
 .DS_Store
