@@ -67,13 +67,12 @@
       "require": "./dist/types.js",
       "default": "./dist/types.mjs"
     },
-    "./data/*.json": "./dist/json/*.json",
-    "./schema/*.json": "./dist/schema/*.json",
     "./package.json": "./package.json"
   },
   "scripts": {
     "build": "node ../../scripts/build/build-stamp.mjs clear && tsx build.ts && node scripts/build-api.mjs && tsx scripts/build-schema.ts && node ../../scripts/build/build-stamp.mjs write",
     "dump:refs": "tsx scripts/dump-refs.ts",
+    "pack:json": "tsx scripts/pack-json.ts",
     "docs:typedoc:html": "typedoc",
     "docs:api": "node scripts/build-api.mjs",
     "docs:build": "pnpm build && pnpm docs:typedoc:html && node scripts/build-docs.mjs",
@@ -85,7 +84,7 @@
     "lint": "biome check --error-on-warnings .",
     "check": "pnpm typecheck && pnpm lint",
     "test": "vitest run",
-    "test:pack": "pnpm build && tsx scripts/test-pack.ts",
+    "test:pack": "pnpm build && tsx scripts/test-pack.ts && pnpm pack:json",
     "testREGISTRY:install": "pnpm build && node scripts/test-install.mjs",
     "test:integration": "pnpm run check && pnpm run test && pnpm run test:pack",
     "verifyREGISTRY": "pnpm run testREGISTRY:install && pnpm run jsrREGISTRY:check"

@@ -204,7 +204,7 @@ pub fn locate_tooldef_json() -> PathBuf {
     if vendored.exists() {
         return vendored;
     }
-    let monorepo = manifest.join("../packages/zsh-core-tooldef/dist/json/tooldef.json");
+    let monorepo = manifest.join("../packages/zsh-core-tooldef/artifacts/json/tooldef.json");
     if monorepo.exists() {
         return monorepo;
     }

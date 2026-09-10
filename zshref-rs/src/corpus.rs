@@ -14,7 +14,7 @@ use std::sync::LazyLock;
 
 // Data-source paths are cfg-gated: `build.rs` picks `vendored` (data/*.json
 // shipped inside the crate) or `monorepo` (JSONs read from the sibling TS
-// packages' dist/). See DATA-SYNC.md.
+// packages' artifact trees). See DATA-SYNC.md.
 #[cfg(data_source = "vendored")]
 macro_rules! corpus_path {
     ($f:literal) => {
@@ -30,13 +30,13 @@ macro_rules! tooldef_path {
 #[cfg(data_source = "monorepo")]
 macro_rules! corpus_path {
     ($f:literal) => {
-        concat!("../../packages/zsh-core/dist/json/", $f)
+        concat!("../../packages/zsh-core/artifacts/json/", $f)
     };
 }
 #[cfg(data_source = "monorepo")]
 macro_rules! tooldef_path {
     ($f:literal) => {
-        concat!("../../packages/zsh-core-tooldef/dist/json/", $f)
+        concat!("../../packages/zsh-core-tooldef/artifacts/json/", $f)
     };
 }
 

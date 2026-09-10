@@ -7,7 +7,7 @@ import { TOOL_SUITE_PREAMBLE, toolDefs } from "../tool-defs.ts"
 import { ENVELOPE_REQUIRED_KEYS } from "../tools/shared/envelope.ts"
 
 const pkgDir = join(dirname(fileURLToPath(import.meta.url)), "..", "..")
-const tooldefJsonPath = join(pkgDir, "dist", "json", "tooldef.json")
+const tooldefJsonPath = join(pkgDir, "artifacts", "json", "tooldef.json")
 
 describe.runIf(existsSync(tooldefJsonPath))(
   "tooldef.json export artifact",

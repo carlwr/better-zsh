@@ -101,6 +101,8 @@ export interface JsonIndex {
     readonly commit: string
     readonly date: string
   }
+  /** SHA-256 over the emitted record files, `index.json` excluded — corpus-content identity, independent of `packageVersion`. */
+  readonly dataHash: string
   readonly files: readonly JsonDataFile[]
   readonly counts: JsonCounts
   /** Canonical list of `DocCategory` values, in primary ordering. */

@@ -44,7 +44,6 @@ Pre-1.0 everything (including public APIs) can still move freely.
 ## See also
 
 - `skills/orient/` — discovery scripts and reading paths
-- `plan-json-artifacts.md` — deferred plan for release-hosted JSON artifacts
 
 ## Architecture (summary)
 

@@ -15,7 +15,7 @@ const distDir = join(pkgDir, "dist")
 const publishDir = join(pkgDir, ".aux", "docs", "site")
 const siteDir = join(publishDir, "zsh-core")
 const apiDir = join(distDir, "api")
-const dataDir = join(distDir, "json")
+const dataDir = join(pkgDir, "artifacts", "json")
 
 const pkg = JSON.parse(readFileSync(join(pkgDir, "package.json"), "utf8"))
 const index = JSON.parse(readFileSync(join(dataDir, "index.json"), "utf8"))

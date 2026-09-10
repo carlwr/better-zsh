@@ -9,6 +9,7 @@ const pkgDir =
     ? __dirname
     : dirname(fileURLToPath(import.meta.url))
 const distDir = join(pkgDir, "dist")
+const jsonDir = join(pkgDir, "artifacts", "json")
 
 ;(async () => {
   await build({
@@ -31,5 +32,5 @@ const distDir = join(pkgDir, "dist")
     },
   })
 
-  writeToolDefsJson(toolDefs, TOOL_SUITE_PREAMBLE, join(distDir, "json"))
+  writeToolDefsJson(toolDefs, TOOL_SUITE_PREAMBLE, jsonDir)
 })()

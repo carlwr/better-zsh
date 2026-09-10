@@ -291,10 +291,10 @@ For every doc category, `docSubKind[c]` returns either `undefined` for every rec
 Vendored `.yo` is consumed three ways:
 
 - **`loadCorpus()`** — runtime parse into `DocCorpus`; cacheable.
-- **Pre-parsed JSON** (`"./data/*.json"`) — same records; markdown bodies pre-rendered at build time.
+- **Pre-parsed JSON** — same records; markdown bodies pre-rendered at build time. Distribution: `PACKAGING.md`.
 - **Raw Yodl** under `dist/data/zsh-docs/` — advanced consumers.
 
-Per-category renderers are internal; public entry is `renderDoc`. The JSON export is a sibling consumer path (e.g. Rust `include_bytes!`); it stays in zsh-core for build convenience — package split deferred.
+Per-category renderers are internal; public entry is `renderDoc`. The JSON is a sibling consumer path (e.g. Rust `include_bytes!`); it stays in zsh-core for build convenience — package split deferred.
 
 Parser and renderer are layered: the parser may capture structure the renderer chooses to flatten or compose. Rendered markdown is the byte-equal contract surface; record-shape changes (new typed fields) stay below it until they cross into the wire schema. Cross-cutting "records are self-contained" framing: PRINCIPLES.md.
 

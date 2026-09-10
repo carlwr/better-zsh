@@ -11,6 +11,7 @@ import {
   inputFiles,
   inputHash,
   isFresh,
+  outputDirs,
   readStamp,
   STAMP_REL,
 } from "./build-stamp.mjs"
@@ -66,9 +67,9 @@ test("the stamp path is spelled in exactly one tracked place", () => {
 
 test("inputs exclude generated trees", () => {
   const rels = inputFiles(dirs.get("@carlwr/zsh-core"))
-  for (const gen of ["dist/", ".aux/", "node_modules/"]) {
+  for (const gen of [...outputDirs, "node_modules", ".aux"]) {
     assert.equal(
-      rels.some(rel => rel.startsWith(`packages/zsh-core/${gen}`)),
+      rels.some(rel => rel.startsWith(`packages/zsh-core/${gen}/`)),
       false,
       gen,
     )
@@ -116,5 +117,9 @@ test("a stamp records the files the build produced", () => {
   const stamp = readStamp(dirs.get(upstreamPkgs[0]))
   if (!stamp) return // unbuilt tree; other tests cover the absent-stamp path
   assert.ok(stamp.outputs.length > 0)
-  assert.ok(stamp.outputs.every(rel => rel.startsWith("dist/")))
+  assert.ok(
+    stamp.outputs.every(rel =>
+      outputDirs.some(dir => rel.startsWith(`${dir}/`)),
+    ),
+  )
 })

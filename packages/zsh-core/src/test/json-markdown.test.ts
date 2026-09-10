@@ -15,7 +15,7 @@ import { jsonDataFiles } from "../docs/json-artifacts"
  */
 
 const pkgDir = join(dirname(fileURLToPath(import.meta.url)), "..", "..")
-const jsonDir = join(pkgDir, "dist", "json")
+const jsonDir = join(pkgDir, "artifacts", "json")
 
 const loadRecs = <T>(file: string): T[] =>
   JSON.parse(readFileSync(join(jsonDir, file), "utf8")) as T[]

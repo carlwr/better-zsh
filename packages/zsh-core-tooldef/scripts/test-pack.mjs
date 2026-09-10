@@ -35,6 +35,8 @@ try {
 
   const forbidden = [
     [/^src\//, "source file"],
+    // Generated JSON is not a registry payload.
+    [/^artifacts\//, "generated JSON artifact"],
     [/^scripts\//, "script file"],
     [/^(?:index|build)\.ts$/, "top-level TypeScript source"],
     [/\.test\./, "test artifact"],

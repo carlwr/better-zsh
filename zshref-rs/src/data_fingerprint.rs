@@ -125,13 +125,13 @@ fn collect_json_data(
         "vendored" => collect_json_dir(&manifest.join("data"), entries, watch_dirs),
         "monorepo" => {
             collect_json_dir(
-                &manifest.join("../packages/zsh-core/dist/json"),
+                &manifest.join("../packages/zsh-core/artifacts/json"),
                 entries,
                 watch_dirs,
             )?;
             entries.push(Entry {
                 label: "json/tooldef.json".to_string(),
-                path: manifest.join("../packages/zsh-core-tooldef/dist/json/tooldef.json"),
+                path: manifest.join("../packages/zsh-core-tooldef/artifacts/json/tooldef.json"),
             });
             Ok(())
         }

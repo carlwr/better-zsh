@@ -6,7 +6,7 @@
  *
  * Surfaced through the zsh-core public API so consumers (the MCP
  * server's `--version` + tool descriptions, the extension's startup
- * log, the generated `dist/json/index.json`) all name the same zsh.
+ * log, the generated `index.json`) all name the same zsh.
  */
 export const ZSH_UPSTREAM = {
   tag: "zsh-5.9",

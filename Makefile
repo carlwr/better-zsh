@@ -78,8 +78,8 @@ cli-check: cli-fmt-check cli-clippy
 .PHONY: vendor
 vendor: artifacts vendor-clean
 	@mkdir -p zshref-rs/data
-	cp packages/zsh-core/dist/json/*.json zshref-rs/data/
-	cp packages/zsh-core-tooldef/dist/json/tooldef.json zshref-rs/data/
+	cp packages/zsh-core/artifacts/json/*.json zshref-rs/data/
+	cp packages/zsh-core-tooldef/artifacts/json/tooldef.json zshref-rs/data/
 
 .PHONY: vendor-clean
 vendor-clean:

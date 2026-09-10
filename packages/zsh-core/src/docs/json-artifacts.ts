@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto"
 import { type DocCategory, docCategories } from "./taxonomy.ts"
 
 // Each category contributes a JSON data file, a camelCase count key, and a
@@ -69,4 +70,16 @@ export const jsonFiles = ["index.json", ...jsonDataFiles] as const
 
 export function schemaFile(file: string): string {
   return file.replace(/\.json$/, ".schema.json")
+}
+
+/**
+ * Lets a consumer ask "same bytes as the release I already have?" without a
+ * version line someone has to author and keep honest.
+ */
+export function hashRecordFiles(texts: ReadonlyMap<string, string>): string {
+  const h = createHash("sha256")
+  for (const file of [...texts.keys()].sort()) {
+    h.update(`${file}\0${texts.get(file)}\0`)
+  }
+  return h.digest("hex")
 }

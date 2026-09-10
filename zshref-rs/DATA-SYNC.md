@@ -78,6 +78,6 @@ Two kinds of drift to worry about:
 
 ## Source-dep vs artifact-dep, reconciled
 
-The Rust build never runs TS code. Generation happens on the producer side; the producer hands Rust a ready blob. The blob arrives as *source-of-the-Rust-crate* at pre-publish time (via the vendor target pre-extraction; whatever sync mechanism replaces it post-extraction) and rides inside the published `.crate` thereafter. End-user machines only ever see local files.
+The Rust build never runs TS code. Generation happens on the producer side; the producer hands Rust a ready blob. The blob arrives as *source-of-the-Rust-crate* at pre-publish time via the vendor target — copying from the sibling package pre-extraction, unpacking a pinned `zsh-core` release asset after — and rides inside the published `.crate` thereafter. End-user machines only ever see local files.
 
 So: source-dep from the producer's perspective, artifact-dep from the consumer's perspective, sync script straddling the boundary.

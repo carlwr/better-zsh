@@ -1,9 +1,13 @@
-import { cpSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
+import { cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 import { build } from "tsup"
 import { loadCorpus } from "./src/docs/corpus.ts"
-import { jsonArtifact, jsonDataFiles } from "./src/docs/json-artifacts.ts"
+import {
+  hashRecordFiles,
+  jsonArtifact,
+  jsonDataFiles,
+} from "./src/docs/json-artifacts.ts"
 import {
   assertAsciiIdentity,
   augmentWithMarkdown,
@@ -22,6 +26,7 @@ const pkgDir =
     ? __dirname
     : dirname(fileURLToPath(import.meta.url))
 const distDir = join(pkgDir, "dist")
+const jsonDir = join(pkgDir, "artifacts", "json")
 
 /**
  * One bundle per non-glob `exports` subpath, read from the manifest rather
@@ -50,7 +55,7 @@ function writeJson(path: string, data: unknown) {
 }
 
 function writeJsonArtifacts() {
-  const jsonDir = join(distDir, "json")
+  rmSync(jsonDir, { recursive: true, force: true })
   mkdirSync(jsonDir, { recursive: true })
 
   const corpus = loadCorpus()
@@ -65,10 +70,21 @@ function writeJsonArtifacts() {
     categoryFiles[cat] = jsonArtifact[cat].file
   }
 
+  const recordTexts = new Map<string, string>()
+  for (const cat of docCategories) {
+    const augmented = augmentWithMarkdown(corpus, cat)
+    assertAsciiIdentity(cat, augmented)
+    const { file } = jsonArtifact[cat]
+    const text = fmtJson(augmented)
+    recordTexts.set(file, text)
+    writeFileSync(join(jsonDir, file), text, "utf8")
+  }
+
   const index = {
     version: 1,
     packageVersion: PKG_VERSION,
     zshUpstream: ZSH_UPSTREAM,
+    dataHash: hashRecordFiles(recordTexts),
     files: [...jsonDataFiles],
     counts,
     // Canonical taxonomy lists, consumed by out-of-process consumers (the
@@ -83,11 +99,6 @@ function writeJsonArtifacts() {
     hookNames: [...hookNames],
   }
 
-  for (const cat of docCategories) {
-    const augmented = augmentWithMarkdown(corpus, cat)
-    assertAsciiIdentity(cat, augmented)
-    writeJson(join(jsonDir, jsonArtifact[cat].file), augmented)
-  }
   writeJson(join(jsonDir, "index.json"), index)
 }
 

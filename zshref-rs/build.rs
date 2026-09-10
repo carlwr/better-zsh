@@ -5,10 +5,10 @@
 //! path. We pick the path at compile time via `cfg(data_source = "...")`,
 //! set here based on what exists on disk:
 //!
-//!   ZSHREF_DATA_SOURCE=...          explicit override ("vendored"/"monorepo")
-//!   zshref-rs/data/                  present → cfg(data_source="vendored")
-//!   ../packages/.../dist/json/       present → cfg(data_source="monorepo")
-//!   neither                          compile error with actionable message
+//!   ZSHREF_DATA_SOURCE=...              explicit override ("vendored"/"monorepo")
+//!   zshref-rs/data/                     present → cfg(data_source="vendored")
+//!   ../packages/.../artifacts/json/     present → cfg(data_source="monorepo")
+//!   neither                             compile error with actionable message
 //!
 //! The data fingerprint (`ZSHREF_BUILD_INPUT_HASH`) comes from the shared
 //! `src/data_fingerprint.rs` (also used by the runtime freshness check).
@@ -30,8 +30,9 @@ fn main() {
         .into();
 
     let vendored = manifest.join("data").join("index.json");
-    let monorepo_core = manifest.join("../packages/zsh-core/dist/json/index.json");
-    let monorepo_tooldef = manifest.join("../packages/zsh-core-tooldef/dist/json/tooldef.json");
+    let monorepo_core = manifest.join("../packages/zsh-core/artifacts/json/index.json");
+    let monorepo_tooldef =
+        manifest.join("../packages/zsh-core-tooldef/artifacts/json/tooldef.json");
 
     // Declare the custom cfg up-front so rustc doesn't warn on older
     // editions and check-cfg-aware compilers accept the two values.
@@ -97,6 +98,8 @@ fn panic_with_help(manifest: &Path) -> ! {
          \n\
          See zshref-rs/DATA-SYNC.md for the full design.\n",
         vendored = manifest.join("data").display(),
-        monorepo = manifest.join("../packages/zsh-core/dist/json").display(),
+        monorepo = manifest
+            .join("../packages/zsh-core/artifacts/json")
+            .display(),
     );
 }

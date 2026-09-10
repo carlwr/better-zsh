@@ -4,8 +4,6 @@ import { tmpdir } from "node:os"
 import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 import { escapeRegExp } from "@carlwr/typescript-extra"
-import Ajv, { type AnySchema } from "ajv"
-import { jsonFiles, schemaFile } from "../src/docs/json-artifacts.ts"
 import { corpusYodlFiles } from "../src/docs/source-files.ts"
 
 const pkgDir = resolve(dirname(fileURLToPath(import.meta.url)), "..")
@@ -20,9 +18,7 @@ const pkgJson = JSON.parse(
  * Entry name behind every non-glob `exports` subpath, read from the manifest
  * rather than restated, so a new subpath cannot be added without the pack
  * assertions following it. `.` -> `index`, `./foo` -> `foo` is the package-root
- * facade rule `scripts/build/module-layout.test.mjs` enforces repo-wide. Glob
- * subpaths (`./data/*.json`, `./schema/*.json`) carry no entry and are covered
- * by the `jsonFiles` assertions instead.
+ * facade rule `scripts/build/module-layout.test.mjs` enforces repo-wide.
  */
 const publicEntries = Object.keys(pkgJson.exports)
   .filter(sub => !sub.includes("*") && sub !== "./package.json")
@@ -52,28 +48,7 @@ function apiTypesFile(entry: string): string {
   return `dist/types/${entry}.d.ts`
 }
 
-function readJson<T>(path: string): T {
-  return JSON.parse(readFileSync(path, "utf8")) as T
-}
-
-function validateJson() {
-  const ajv = new Ajv({ allErrors: true, strict: true })
-  for (const file of jsonFiles) {
-    const schema = readJson<AnySchema>(
-      join(pkgDir, "dist", "schema", schemaFile(file)),
-    )
-    const data = readJson<unknown>(join(pkgDir, "dist", "json", file))
-    const validate = ajv.compile(schema)
-    if (validate(data)) continue
-    throw new Error(
-      `${file} failed schema validation: ${ajv.errorsText(validate.errors, { separator: "\n" })}`,
-    )
-  }
-}
-
 try {
-  validateJson()
-
   const out = execFileSync(
     pnpm,
     ["pack", "--json", "--pack-destination", tmp],
@@ -95,8 +70,6 @@ try {
     "deno.json",
     ...publicEntries.flatMap(bundleFiles),
     ...publicEntries.map(apiFile),
-    ...jsonFiles.map(file => `dist/json/${file}`),
-    ...jsonFiles.map(file => `dist/schema/${schemaFile(file)}`),
     ...publicEntries.map(apiTypesFile),
     ...vendoredDocs.map(file => `dist/data/zsh-docs/${file}`),
   ]
@@ -112,6 +85,8 @@ try {
     ],
     [/\.test\./, "test artifact"],
     [/^dist\/docs\//, "docs-site artifact"],
+    // Generated JSON is not a registry payload.
+    [/^artifacts\//, "generated JSON artifact"],
     [/^node_modules\//, "node_modules content"],
   ] as const
 

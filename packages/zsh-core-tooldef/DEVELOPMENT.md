@@ -47,7 +47,7 @@ Any category enumeration in tool descriptions must come from zsh-core exports; d
 ## Consumers
 
 - `@carlwr/zshref-mcp` — stdio MCP server.
-- `zshref-rs/` — Rust+clap CLI; consumes the tool-def JSON artifact exported from this package, baked into the binary via `include_bytes!`.
+- `zshref-rs/` — Rust+clap CLI; consumes the tool-def JSON artifact this package generates, baked into the binary via `include_bytes!`.
 - `vscode-better-zsh` — VS Code LM tools.
 
 Thin MCP/LM sources: imports allowed by `src/test/adapter-matrix.ts`, verified by `adapter-matrix.test.ts` against sibling packages (root zsh-core + root tooldef, brace imports, MCP full tooldef symbol set vs LM `toolDefs` only).

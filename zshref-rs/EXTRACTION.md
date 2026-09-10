@@ -42,7 +42,7 @@ directory is committed. See `DATA-SYNC.md`.
 ### Makefile
 
 - The repo root `Makefile` goes away. The `artifacts` target (which drives `pnpm build` for the TS packages) moves to whatever cross-repo data-sync mechanism is chosen; the monorepo-only CI job disappears alongside it.
-- The vendor target pivots: instead of copying from a sibling package, it clones the TS repo at a pinned commit (`DATA_COMMIT` file or similar) and runs its build, then copies.
+- The vendor target pivots: instead of copying from a sibling package, it downloads and unpacks the `zsh-core` JSON release asset at a pinned tag.
 - The extracted repo will have a simpler `Makefile` (or rely on cargo-native workflows) covering only the Rust side: `cli-debug`, `cli`, `cli-test`, `cli-check`, `cli-clean`.
 
 ### CI

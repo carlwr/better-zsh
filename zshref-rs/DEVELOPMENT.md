@@ -10,8 +10,8 @@ This document describes dev workflows during the monorepo phase. Post-extraction
 
 Rust CLI that bundles two TS-generated artifacts via `include_bytes!`:
 
-- **Corpus JSONs** — `packages/zsh-core/dist/json/*.json` (built by `pnpm --filter @carlwr/zsh-core build`)
-- **Tool-def JSON** — `packages/zsh-core-tooldef/dist/json/tooldef.json` (built by `pnpm --filter @carlwr/zsh-core-tooldef build`)
+- **Corpus JSONs** — `packages/zsh-core/artifacts/json/*.json` (built by `pnpm --filter @carlwr/zsh-core build`)
+- **Tool-def JSON** — `packages/zsh-core-tooldef/artifacts/json/tooldef.json` (built by `pnpm --filter @carlwr/zsh-core-tooldef build`)
 
 Because data is embedded at compile time, rebuild after Rust or artifact changes.
 

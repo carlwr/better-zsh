@@ -5,7 +5,7 @@
  * "binary stale" verdict, which `BZ_REQUIRE_PARITY=1` turns into a failure.
  *
  * The tooldef entry hashes source, not the built JSON artifact — an unbuilt
- * `dist/json` must read as stale, not fresh.
+ * artifact tree must read as stale, not fresh.
  */
 
 import { createHash } from "node:crypto"
@@ -44,7 +44,10 @@ export function currentZshrefBuildInputHash(repoRoot: string): string {
         throw new Error("zshref build input src-tree entry needs extensions")
       collectSrcTree(entries, join(crateRoot, rel), rel, exts)
     } else if (kind === "json-data") {
-      collectJsonDir(entries, join(repoRoot, "packages/zsh-core/dist/json"))
+      collectJsonDir(
+        entries,
+        join(repoRoot, "packages/zsh-core/artifacts/json"),
+      )
       entries.push({
         label: "json/tooldef.json",
         bytes: Buffer.from(fmtToolDefsJson(toolDefs, TOOL_SUITE_PREAMBLE)),

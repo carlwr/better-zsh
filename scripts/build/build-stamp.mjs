@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
-// Lets a caller decide whether a package's `dist/` still matches its sources,
-// so a rebuild can be skipped and a "skip upstream" claim can be checked rather
-// than believed.
+// Lets a caller decide whether a package's build output still matches its
+// sources, so a rebuild can be skipped and a "skip upstream" claim can be
+// checked rather than believed.
 
 import { createHash } from "node:crypto"
 import {
@@ -22,11 +22,12 @@ import { packageDirs, repoRoot, upstreamOf } from "./upstream-graph.mjs"
 
 export const STAMP_REL = join(".aux", "build-stamp.json")
 
-const generatedDirs = new Set(["node_modules", "dist", "out"])
+export const outputDirs = ["dist", "artifacts", "out"]
+const generatedDirs = new Set(["node_modules", ...outputDirs])
 
-// Exclusion, never enumeration: an input this misses would leave `dist/` stale
-// with nothing to notice it, while a generated tree it misses costs only a
-// spurious rebuild. Dot-directories are scratch and tool state throughout.
+// Exclusion, never enumeration: an input this misses would leave the output
+// stale with nothing to notice it, while a generated tree it misses costs only
+// a spurious rebuild. Dot-directories are scratch and tool state throughout.
 //
 // Excluded by location, never by file type: prose extensions are vendored data
 // here, so carving those out would skip the rebuild on a shipped-asset edit.
@@ -66,7 +67,8 @@ export function inputFiles(pkgDir) {
 }
 
 const producedFiles = pkgDir =>
-  filesUnder(join(pkgDir, "dist"))
+  outputDirs
+    .flatMap(dir => filesUnder(join(pkgDir, dir)))
     .map(path => relative(pkgDir, path))
     .sort()
 
@@ -101,7 +103,7 @@ export function isFresh(pkgName, dirs = packageDirs()) {
   const stamp = readStamp(pkgDir)
   if (!stamp?.hash || stamp.hash !== inputHash(pkgName, dirs)) return false
   // Recorded outputs rather than manifest-declared ones: a build emits
-  // artifacts no manifest names, and a wiped `dist/` must read as stale.
+  // artifacts no manifest names, and a wiped output tree must read as stale.
   return (stamp.outputs ?? []).every(rel => existsSync(join(pkgDir, rel)))
 }
 
