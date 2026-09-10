@@ -1,52 +1,42 @@
 ---
 audience: maintainer
-read-when: moving zsh-core JSON artifacts off npm/JSR onto GitHub release assets
+read-when: making zsh-core generated JSON artifacts available as tarball GitHub release assets
 ---
 
-# Plan: pre-parsed JSON as GitHub release assets
+The intention is to, at some point in time but for the 1.0 release at latest, make the `zsh-core` generated JSON artifacts available as tarball GitHub release assets.
 
-Small standalone refactor. Independent of the tooldef/CLI work (both landed; the Rust CLI under `zshref-rs/` is the current form).
+"Generated JSON artifacts" means roughly the corpus data as JSON and its JSON-schema.
 
-## Goal
 
-Stop shipping generated JSON artifacts inside `@carlwr/zsh-core`. Publish them as tarball assets on GitHub releases instead.
+## Considerations
 
-## Rationale
+remove the generated JSON artifacts from the `@carlwr/zsh-core` package released on npm/JSR?
+* note yet decided/determined; some notes on for/against below (not exhaustive)
+* reasons to _not include_:
+  * JSON is a projection of the corpus for non-TS consumers; TS/JS consumers use the typed API
+  * reduces package weight
+* reasons to _include_:
+  * TS/JS consumers may still have reasons to want to use the JSON artifacts
+  * convenience for some to make the JSON artifacts also available in versioned form through the npm and jsr registries? (consumers needing them can have them as deps rather than vendoring them)
 
-- The JSON is a projection of the corpus for non-TS consumers; TS/JS consumers use the typed API, so the JSON mainly adds package weight.
-- Non-TS consumers fetch more naturally from a predictable release URL than from an npm subpath.
-- The generator already consumes zsh-core's runtime API; the public API does not need to change.
-- A separate npm/JSR package would add disproportionate manifest, build, test, notice, and CI overhead for what is just a directory of JSON.
+versioning
+- share the `zsh-core` version or not?
+- "corpus data version"?
+- JSON artifacts expected to change much less than the `zsh-core` public API
+- notions of "version(s)" used across the subprojects?
+- automatic CI-administret content-gated corpus versioning?
+- _derived_ or _authored_ version?
+- tag shape?
+- _conceptual_ space of distinct versions:
+  - `zsh-core` package version
+  - zsh upstream version (version of the vendored upstream Yodl files)
+  - artifacts: corpus data version (the emitted JSON bytes)
+  - artifacts: envelope version (JSON schema shape)
 
-## Non-goals
+other to-be separate-repo subprojects that use these JSON artifacts should probably (?) transition to getting them through the _Github release artifacts_ route, from when this is added.
+* since: exercises the Github artifacts mechanism; is how it would be post-extraction/post-release
 
-- No new package.
-- No checked-in JSON.
-- No change to generator logic or code location.
+choices should probably be done so it is consistent across sub-projects (i.e. for/if any other subproject have generated artifacts)
 
-## Target state
-
-- Generator code stays where it is in `packages/zsh-core/src/docs/`.
-- `./data/*` exports disappear from `packages/zsh-core/package.json` and `deno.json`.
-- `dist/json/` disappears from `package.json.files`.
-- The zsh-core release workflow generates `zsh-core-data-vX.Y.Z.tar.gz` on tag push and uploads it as a GitHub release asset.
-- `DEVELOPMENT.md` gains a short pointer that pre-parsed JSON lives on the GitHub releases page, not via npm/JSR.
-
-## Steps
-
-- Grep the workspace for `@carlwr/zsh-core/data/` and confirm no internal consumer still relies on the subpath.
-- Remove `./data/*` from `packages/zsh-core/package.json` exports and `deno.json` exports.
-- Remove `dist/json/` from `package.json.files`.
-- Update `packages/zsh-core/src/test/pkg-info.test.ts` if its shared-surface assertion still mentions `./data/*`.
-- Extend the zsh-core release workflow to tar `dist/json` and upload it as a release asset.
-- Add the short pointer to `DEVELOPMENT.md`.
-- Mention the delivery change in release notes when it lands.
-
-## Risks
-
-- External consumers may already rely on `./data/*`, though none are expected while the package is still alpha.
-- Release-asset size is expected to stay modest; worth checking during implementation, not a blocker.
-
-## Sequencing
-
-Standalone. Not urgent.
+Generated artifacts as a separate npm/JSR package?
+- probably _no_: would add manifest, build, test, notice, and CI overhead
