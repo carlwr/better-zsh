@@ -1,24 +1,20 @@
-.eslintcache
-node_modules/
-*.vsix
 out/
-.vscode-test/
-.non-vcs/
-language-configuration.json
 .aux/
+.non-vcs/
+node_modules/
+.vscode-test/
+zshref-rs/target/
+.claude/
 .claude/worktrees/
+.playwright-mcp/
 packages/**/.vscode-test/
 packages/**/dist/
 packages/**/*.vsix
 packages/**/out/
+zshref-rs/data/
+zshref-rs/data-nlp/
+language-configuration.json
+.eslintcache
+*.vsix
 example_*.zsh
 examples_*.zsh
-.claude/
-zshref-rs/target/
-# Vendored JSON snapshot; populated by `make vendor` at release-prep time.
-# Gitignored pre-extraction; committed post-extraction (see zshref-rs/DATA-SYNC.md).
-zshref-rs/data/
-# Local NLP prototype assets: model weights and generated vector indexes.
-zshref-rs/data-nlp/
-# Playwright MCP browser-inspection output (snapshots/screenshots).
-.playwright-mcp/
