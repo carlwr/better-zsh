@@ -62,21 +62,21 @@ esac
   || die "curl not found" "install curl, or place $repo files under $dst by hand"
 
 for entry in $files ; do
-  path=${entry%:*}
+  rel=${entry%:*}
   want=${entry##*:}
-  out=$dst/$path
+  out=$dst/$rel
   if [[ -f $out ]] && (( $(size-of $out) == want )) ; then
-    msg "have  $path"
+    msg "have  $rel"
     continue
   fi
   mkdir -p ${out:h}
-  msg "fetch $path ($want bytes)"
-  curl -fSL --retry 3 -o $out.tmp "https://huggingface.co/$repo/resolve/$rev/$path" \
-    || { rm -f $out.tmp ; die "download failed: $path" "check network access to huggingface.co" }
+  msg "fetch $rel ($want bytes)"
+  curl -fSL --retry 3 -o $out.tmp "https://huggingface.co/$repo/resolve/$rev/$rel" \
+    || { rm -f $out.tmp ; die "download failed: $rel" "check network access to huggingface.co" }
   got=$(size-of $out.tmp)
   (( got == want )) \
     || { rm -f $out.tmp
-         die "size mismatch for $path: got $got, want $want" \
+         die "size mismatch for $rel: got $got, want $want" \
              "if the pinned revision moved, update rev/sizes in $me" }
   mv $out.tmp $out
 done
