@@ -17,6 +17,8 @@ Steps, decisions and rationale for the 2026 reorg. Deleted once every step is do
 - names: all legacy during the work; no new names proposed here; renaming is a separate follow-up
 - reasons and rejected alternatives survive the work: they stay here, even where they describe the pre-reorg shape, until the closing step decides their home
 - state a step must leave behind (mid-step handoff, discovered issues): `state.md` in this dir; deleted when consumed
+- temporary files a step produces (captures, scratch output): `.aux/` at the repo root — gitignored; never committed
+- a step whose detail outgrows its section moves in full to a companion file in this dir; the section becomes a pointer
 - execution: roughly one session per step; the session works out its own detail — files here hold what is decided, not how to do it
 
 ## End state
