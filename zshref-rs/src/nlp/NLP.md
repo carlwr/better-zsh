@@ -99,7 +99,6 @@ Compression checks:
 ## Open
 
 - Retrieval-quality eval on quantized BGE-small (gates mobile-friendly browser-side embedding for `zshref-web`).
-- Investigate the ~2 pp QA-harness regression after the zsh-option md format change from `SOME_OPT` to **`SOME_OPT`** (baseline 2026-05-22: ~93 % pass, 5 warnings, 75 hard-check failures).
 
 ## Upstream API references
 
