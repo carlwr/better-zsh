@@ -11,7 +11,7 @@ Experimental local semantic retrieval for zsh-core records. Embeds queries with 
 
 Held-out eval sets: `tests/nlp-qa/nlp-corpus.yaml` and the `holdout`-split entries of `src/nlp/rules/sentence-fixture.yaml`. Steering anything toward them is leakage — hardcoded boosts/hints that memorized these queries were removed; do not reintroduce the pattern.
 
-- **No editing NLP code or data with a holdout set in context.** "NLP" = anything under `src/nlp/` (incl. `rules/*.yaml`) and the `zshref-web/` ranker mirror. If you have read either eval set this session, delegate the edit to a fresh subagent that has not.
+- **No editing NLP code or data with a holdout set in context.** "NLP" = anything under `src/nlp/` (incl. `rules/*.yaml`) and the `packages/zshref-web/` ranker mirror. If you have read either eval set this session, delegate the edit to a fresh subagent that has not.
 - **Touch a holdout set only via a subagent** that edits no NLP logic and whose reply leaks nothing about it — no queries, expected records, scores, counts, or paraphrases. The parent verifies this before proceeding.
 - **New domain data** (synonyms, vocab) is authored blind — by a subagent that has not read the eval sets.
 - The `train` split is not holdout; tuning against it is fine. Parity/sanity fixture inputs are not holdout either, but must not themselves be drawn from the eval sets (neither query nor target record).

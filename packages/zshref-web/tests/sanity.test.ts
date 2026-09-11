@@ -13,21 +13,20 @@
 
 import { dirname } from 'node:path';
 import { isNonEmpty } from '@carlwr/typescript-extra';
-import { describe, expect, it, beforeAll } from 'vitest';
-
+import { beforeAll, describe, expect, it } from 'vitest';
+import { embedQuery, type FeatureExtractionPipeline } from '../src/lib/embedder';
+import { errMsg } from '../src/lib/errors';
+import { rank } from '../src/lib/ranker/rank';
+import type { Rules } from '../src/lib/ranker/rules';
+import type { VectorIndex } from '../src/lib/ranker/types';
 import {
-  PATHS,
-  STAGED,
   artifactGate,
   loadIndexFromDisk,
   loadRulesFromDisk,
-  loadSanityFixture
+  loadSanityFixture,
+  PATHS,
+  STAGED
 } from './_helpers';
-import { rank } from '../src/lib/ranker/rank';
-import { errMsg } from '../src/lib/errors';
-import { embedQuery, type FeatureExtractionPipeline } from '../src/lib/embedder';
-import type { Rules } from '../src/lib/ranker/rules';
-import type { VectorIndex } from '../src/lib/ranker/types';
 
 const skipReason = artifactGate('full-pipeline sanity', [STAGED.index, STAGED.model]);
 

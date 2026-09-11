@@ -81,8 +81,4 @@ nlp-model:
 
 .PHONY: artifacts-web
 artifacts-web:
-	zshref-web/scripts/fetch-artifacts
-
-.PHONY: web-qa
-web-qa:
-	cd zshref-web && pnpm qa
+	packages/zshref-web/scripts/fetch-artifacts

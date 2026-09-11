@@ -1,4 +1,4 @@
-// WEB-MIRRORED-IN: zshref-web/tests/lookup-contract.test.ts
+// WEB-MIRRORED-IN: packages/zshref-web/tests/lookup-contract.test.ts
 //
 // Auto-generated contract corpus for the canonical-identifier lookup path.
 //

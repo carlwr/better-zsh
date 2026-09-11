@@ -20,11 +20,8 @@
       // since a bare name anchors to this dir, where neither exists.
       "!**/syntaxes",
       "!**/test-fixtures",
-      // Sibling projects, not workspace members — each owns its tooling
-      // (zshref-web: own Biome root; zshref-rs: Rust + drift-checked JSON).
-      // Excluded so a bare root run / LSP won't hit the nested root or
-      // reformat that JSON.
-      "!zshref-web",
+      // Rust crate: drift-checked JSON under it must not be reformatted by a
+      // bare root run / the LSP.
       "!zshref-rs"
     ]
   },

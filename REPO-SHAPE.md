@@ -15,9 +15,9 @@ Single source of truth for the product dependency arrow set; both timelines.
 │   ├── zsh-core               (TS lib; corpus + types)
 │   ├── zsh-core-tooldef       (TS lib; shared tool defs)
 │   ├── zshref-mcp             (MCP server)
-│   └── vscode-better-zsh      (VS Code extension)
-├── zshref-rs/                 (Rust CLI; not a pnpm member)
-└── zshref-web/                (TS SPA; not a pnpm member)
+│   ├── vscode-better-zsh      (VS Code extension)
+│   └── zshref-web             (TS SPA)
+└── zshref-rs/                 (Rust CLI; not a pnpm member)
 ```
 
 ## Repo extraction destinations
@@ -25,7 +25,6 @@ Single source of truth for the product dependency arrow set; both timelines.
 Left of the arrow is today's monorepo path; right is the eventual repo name. The product is named `zshref`; `zshref-rs/` is only the current directory.
 
 - `zshref-rs/` → `zshref`
-- `zshref-web/` → `zshref-web`
 - `packages/zshref-mcp/` → `zshref-mcp` (see `packages/zshref-mcp/EXTRACTION.md`)
 - everything else stays put; this repo keeps the name `better-zsh`
 
@@ -41,12 +40,11 @@ Producer-consumer arrows; pull-only, pinned by version:
 
 ## Detail scope
 
-nlp and web specifics live under `zshref-rs/` and `zshref-web/`. Root maintainer docs point at them; they don't restate the detail. Anti-pattern: a root-level `EXTRACTION.md` accumulating nlp/web items that belong in the to-be-extracted dir's own checklist.
+nlp and web specifics live under `zshref-rs/` and `packages/zshref-web/`. Root maintainer docs point at them; they don't restate the detail. Anti-pattern: a root-level `EXTRACTION.md` accumulating nlp/web items that belong in the to-be-extracted dir's own checklist.
 
 ## Pointers
 
 - `zshref-rs/AGENTS.md` — Rust CLI; NLP Cargo feature; two-binary release
 - `zshref-rs/src/nlp/NLP.md` — NLP module measurements + packaging direction
-- `zshref-web/AGENTS.md` — SPA dependency story, parity-test posture, data staging
+- `packages/zshref-web/AGENTS.md` — SPA dependency story, hosting intent, parity-test posture, data staging
 - `zshref-rs/EXTRACTION.md`, `packages/zshref-mcp/EXTRACTION.md` — extraction-day checklists
-- `zshref-web/EXTRACTION.md` — SPA publishing intent; what extraction changes

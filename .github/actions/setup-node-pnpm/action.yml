@@ -3,13 +3,10 @@ description: Node, pnpm, a lockfile-keyed store cache, and a frozen install.
 
 # Uncached, every job re-downloads its whole dependency set; a restored store
 # leaves only linking. Central, so no job drifts on key shape, store path, Node
-# major or install flags. Jobs sharing a lockfile share a key — a losing save
-# logs a benign "cache already exists".
+# major or install flags. Every job shares the key — a losing save logs a
+# benign "cache already exists".
 
 inputs:
-  dir:
-    description: Directory to install in; its `pnpm-lock.yaml` keys the cache.
-    default: .
   registry-url:
     description: Registry to write into `.npmrc` — publishing jobs need it for OIDC.
     default: ""
@@ -26,8 +23,7 @@ runs:
       shell: bash
 
     # Fixed path: the cache step needs a literal, and `/tmp` is writable on
-    # hosted runners and in containers alike. Hence one call per job — a second
-    # `dir` would save the merged store under whichever key ran first.
+    # hosted runners and in containers alike.
     - run: pnpm config set store-dir /tmp/pnpm-store
       shell: bash
 
@@ -38,8 +34,7 @@ runs:
     - uses: actions/cache@v6
       with:
         path: /tmp/pnpm-store
-        key: ${{ runner.os }}-pnpm-${{ inputs.dir }}-${{ hashFiles(format('{0}/pnpm-lock.yaml', inputs.dir)) }}
+        key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
 
     - run: pnpm install --frozen-lockfile
       shell: bash
-      working-directory: ${{ inputs.dir }}

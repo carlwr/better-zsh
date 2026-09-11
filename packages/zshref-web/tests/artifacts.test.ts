@@ -1,9 +1,8 @@
 // Exercises `loadArtifacts()` through a file-backed fetch.
 
 import { describe, expect, it } from 'vitest';
-
-import { PATHS, STAGED, artifactGate, readData } from './_helpers';
 import { loadArtifacts } from '../src/lib/artifacts';
+import { artifactGate, PATHS, readData, STAGED } from './_helpers';
 
 const skipReason = artifactGate('artifact loader', [STAGED.index]);
 

@@ -18,9 +18,8 @@
 import { readFile } from 'node:fs/promises';
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
-
-import { PATHS } from './_helpers';
 import { LookupIndex, LookupMapSchema } from '../src/lib/ranker/lookup-map';
+import { PATHS } from './_helpers';
 
 const IdentitySchema = z.object({ category: z.string(), id: z.string() });
 

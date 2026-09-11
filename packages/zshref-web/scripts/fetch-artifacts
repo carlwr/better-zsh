@@ -7,7 +7,7 @@ set -eu -o pipefail
 
 me=${0:t}
 webDir=${0:A:h:h}
-zshrefRs=$webDir:h/zshref-rs
+zshrefRs=$webDir:h:h/zshref-rs
 dst=$webDir/.artifacts
 bin=${ZSHREF_BIN-$zshrefRs/target/release/zshref}
 

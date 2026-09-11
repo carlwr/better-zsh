@@ -79,25 +79,6 @@ jobs:
       - run: pnpm --filter @carlwr/zsh-core-tooldef run jsrREGISTRY:check
       - run: pnpm --filter @carlwr/zshref-mcp run verifyREGISTRY
 
-  # zshref-web has its own lockfile and is not a workspace member, so no root
-  # script reaches it; without this job the hand-maintained TS mirror of the
-  # Rust ranker has no gate at all. The gitignored NLP assets are absent here,
-  # so asset-gated tests skip by design; the mirror-drift gates are
-  # self-contained and run.
-  web:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    defaults:
-      run:
-        working-directory: zshref-web
-    steps:
-      - uses: actions/checkout@v7
-      - uses: ./.github/actions/setup-node-pnpm
-        with:
-          dir: zshref-web
-      - run: pnpm qa
-
   integration:
     runs-on: ubuntu-latest
     permissions:

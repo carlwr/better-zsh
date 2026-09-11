@@ -1,8 +1,8 @@
 // Light/dark theme toggle. Pre-paint application happens in app.html so the
 // page never renders the wrong theme; this module only handles user toggles.
 
-import { browser } from '$app/environment';
 import { writable } from 'svelte/store';
+import { browser } from '$app/environment';
 
 export type Theme = 'light' | 'dark';
 

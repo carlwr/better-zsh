@@ -2,12 +2,12 @@
 // Pass through `loadRules` once at startup; the ranker reads it as `Rules`.
 
 import {
-  StopwordsSchema,
-  SynonymsSchema,
-  TuningSchema,
   type Stopwords,
+  StopwordsSchema,
   type Synonyms,
-  type Tuning
+  SynonymsSchema,
+  type Tuning,
+  TuningSchema
 } from './types';
 
 export interface Rules {

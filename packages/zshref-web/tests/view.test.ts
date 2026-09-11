@@ -2,15 +2,15 @@ import { describe, expect, it } from 'vitest';
 
 import {
   findRecord,
+  type RecordView,
+  type RecordViewInputs,
   recordHref,
   recordKey,
   recordView,
   summaryLine,
-  viewState,
-  type RecordView,
-  type RecordViewInputs,
   type ViewInputs,
-  type ViewState
+  type ViewState,
+  viewState
 } from '../src/lib/view';
 import { makeRecordText } from './_fixtures';
 

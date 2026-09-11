@@ -1,19 +1,19 @@
 // Pre-extraction artifact paths.
 
-import { readFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parse as parseYaml } from 'yaml';
 import { z } from 'zod';
 
 import { loadVectorIndex } from '../src/lib/ranker/index-loader';
+import type { Rules } from '../src/lib/ranker/rules';
 import { loadRules } from '../src/lib/ranker/rules';
 import type { VectorIndex } from '../src/lib/ranker/types';
-import type { Rules } from '../src/lib/ranker/rules';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const repoRoot = resolve(__dirname, '..', '..');
+const repoRoot = resolve(__dirname, '..', '..', '..');
 const zshrefRs = resolve(repoRoot, 'zshref-rs');
 
 export const PATHS = {

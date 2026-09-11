@@ -1,7 +1,7 @@
 // Pure page-presentation logic: testable without a DOM, templates are thin
 // switches over it. Same posture as markdown.ts.
 
-import { categoryLabel, type Category } from './artifacts';
+import { type Category, categoryLabel } from './artifacts';
 import type { RecordText } from './ranker/types';
 
 // Check order is the contract: earlier wins, so an error or cold embedder is

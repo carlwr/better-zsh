@@ -12,7 +12,7 @@ import { dirname, extname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, test } from 'vitest';
 
-const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
+const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 
 /** Host-extension SoT: drives marker kind, host-check, and edge canonicalisation. */
 const HOST_EXT = {
@@ -21,7 +21,7 @@ const HOST_EXT = {
 } as const;
 type MarkerKind = keyof typeof HOST_EXT;
 
-const SCAN_ROOTS = ['zshref-rs', 'zshref-web'] as const;
+const SCAN_ROOTS = ['zshref-rs', 'packages/zshref-web'] as const;
 const SKIP_DIRS: ReadonlySet<string> = new Set([
   '.git', '.svelte-kit', 'build', 'dist', 'node_modules', 'target'
 ]);

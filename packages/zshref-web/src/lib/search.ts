@@ -9,9 +9,9 @@
 // lookup-map subsumes canonical-form resolution.
 
 import { embedQuery } from './embedder';
+import type { LookupIndex } from './ranker/lookup-map';
 import { expandQueryForEmbedding } from './ranker/query-expand';
 import { rank } from './ranker/rank';
-import type { LookupIndex } from './ranker/lookup-map';
 import type { Rules } from './ranker/rules';
 import type { RankedMatch, VectorIndex } from './ranker/types';
 

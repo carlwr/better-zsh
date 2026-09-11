@@ -2,10 +2,9 @@
 // to the data; a red output test localises it to the renderer.
 
 import { beforeAll, describe, expect, it } from 'vitest';
-
-import { STAGED, artifactGate, loadIndexFromDisk } from './_helpers';
 import { renderInline, renderMarkdown } from '../src/lib/markdown';
 import type { IndexedRecord, VectorIndex } from '../src/lib/ranker/types';
+import { artifactGate, loadIndexFromDisk, STAGED } from './_helpers';
 
 const skipReason = artifactGate('markdown rendering', [STAGED.index]);
 

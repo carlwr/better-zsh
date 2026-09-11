@@ -1,4 +1,4 @@
-// WEB-MIRRORED-IN: zshref-web/src/lib/ranker/query-expand.ts
+// WEB-MIRRORED-IN: packages/zshref-web/src/lib/ranker/query-expand.ts
 //
 // Query-time, embedding-only synonym expansion. Maps colloquial query
 // vocabulary onto the corpus's canonical term by appending the canonical word

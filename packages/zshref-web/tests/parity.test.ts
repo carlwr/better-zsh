@@ -9,11 +9,10 @@
 // (Rust natively, TS via Math.fround), so the values must match the f32
 // closest to whatever the chain yields.
 
-import { describe, expect, it, beforeAll } from 'vitest';
-
-import { loadParityFixture, loadRulesFromDisk } from './_helpers';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { rank } from '../src/lib/ranker/rank';
 import type { Rules } from '../src/lib/ranker/rules';
+import { loadParityFixture, loadRulesFromDisk } from './_helpers';
 
 describe('ranker parity', () => {
   let rules: Rules;

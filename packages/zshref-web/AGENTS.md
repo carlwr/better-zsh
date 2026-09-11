@@ -1,16 +1,15 @@
 # AGENTS.md — `zshref-web`
 
-Static SPA: NLP search demo over zsh-core records. Sibling of `zshref-rs/` at repo root; not a pnpm workspace member; extracts to its own repo on release. Non-membership mirrors the post-release peer-repo relationship and blocks accidental cross-package imports.
+Static SPA: NLP search demo over zsh-core records. Workspace member; its pre-release data path reads `zshref-rs/` at the repo root directly (below).
 
 ## Stack
 
-- SvelteKit 2 + Svelte 5 (`adapter-static`) — single-page app prerendered as static HTML+JS+CSS; hosting intent: `EXTRACTION.md`
+- SvelteKit 2 + Svelte 5 (`adapter-static`) — single-page app prerendered as static HTML+JS+CSS
 - TypeScript (strict + `noUncheckedIndexedAccess`, matching the workspace), Vitest; lint via Biome (`.ts`) + svelte-check (`.svelte`)
 - `@huggingface/transformers` (ONNX Runtime Web) for browser-side BGE-small query embeddings
 - `markdown-it` + `shiki` (dual light/dark theme via CSS variables) for record markdown
 - `zod` for artifact schema validation at load time
 - Self-hosted variable fonts via `@fontsource-variable/{inter,jetbrains-mono}`
-- pnpm, non-workspace (own lockfile)
 
 Alternatives ruled out: React / Elm / PureScript front-ends; WASM port of the ranker; per-record SSG (records are dynamic at runtime).
 
@@ -20,7 +19,7 @@ _Why not WASM:_ the larger version — ship the whole NLP binary as WASM — red
 
 Two upstreams, both pinned by version:
 
-- **`zshref` release assets** (post-release) or **local `../zshref-rs/` paths** (pre-release):
+- **`zshref` release assets** (post-release) or **local `zshref-rs/` paths** (pre-release):
   - `index.json` — vector index; self-contained (carries `mdBody` per record)
   - `rules/*.json` — `tuning`, `stopwords`, `synonyms`; emitted by zshref-rs from YAML. `rules/schema/*` is not consumed here.
   - `parity-fixture.json` — ranker-parity test input; self-contained (own miniature index + pre-computed `queryVec` / `resolverHit` per query)
@@ -30,6 +29,15 @@ Two upstreams, both pinned by version:
 - **HuggingFace Hub** — `BAAI/bge-small-en-v1.5` ONNX + tokenizer files at runtime (production); tests use the local `zshref-rs/data-nlp/model/` directory to stay network-free
 
 No runtime dep on `@carlwr/zsh-core`: everything the UI renders lives inside `index.json`.
+
+## Hosting intent
+
+- GitHub Pages first; Cloudflare Pages the alternative
+- Pages hosts one site per repo, and the zsh-core docs workflow already claims this one: the SPA takes the site root, the zsh-core docs move under `/zsh-core-docs/`, one deployment carries both
+- deferred: the deploy consumes `zshref` release assets, which are not built yet
+- before publishing:
+  - `svelte.config.js` sets no `kit.paths.base`; the final URL decides
+  - `THIRD_PARTY_NOTICES.md` — the bundle ships transformers.js, shiki and fonts; a real obligation, and this package has none of the user-facing docs its siblings carry
 
 ## TS↔Rust mirror discipline (web namespace)
 
@@ -94,4 +102,3 @@ Binary freshness is a runtime self-check, not a `cli-nlp` make prerequisite — 
 - `zshref-rs/AGENTS.md` — Rust CLI; SoT for ranker, index builder, rules
 - `zshref-rs/src/nlp/NLP.md` — module measurements + packaging direction
 - `zshref-rs/src/nlp/fixtures.rs` — Rust-side fixture emission + sanity invariants
-- `EXTRACTION.md` — publishing intent; what extraction changes

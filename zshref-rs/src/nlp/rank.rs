@@ -1,4 +1,4 @@
-// WEB-MIRRORED-IN: zshref-web/src/lib/ranker/rank.ts
+// WEB-MIRRORED-IN: packages/zshref-web/src/lib/ranker/rank.ts
 //
 // Pure ranker math — all rank-time (no embedder / corpus dependency).
 // Inputs are pre-computed (query string, query vector, optional resolver

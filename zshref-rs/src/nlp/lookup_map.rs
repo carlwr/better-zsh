@@ -1,4 +1,4 @@
-// WEB-MIRRORED-IN: zshref-web/src/lib/ranker/lookup-map.ts
+// WEB-MIRRORED-IN: packages/zshref-web/src/lib/ranker/lookup-map.ts
 //
 // Static lookup map from canonical surface forms to (category, id). Built
 // once from corpus + resolver, shipped as JSON alongside index.json. Consumed

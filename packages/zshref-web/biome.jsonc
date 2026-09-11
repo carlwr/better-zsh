@@ -1,0 +1,15 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.5.12/schema.json",
+  "root": false,
+  "extends": "//",
+  // Lints the .ts logic only. .svelte components are checked by svelte-check
+  // (template-aware); Biome parses <script> in isolation and would
+  // false-flag template-referenced symbols as unused. Formatter is off —
+  // this package keeps its semicolon style.
+  "files": {
+    "includes": ["**", "!**/*.svelte", "!**/*.d.ts", "!**/*.css", "!**/*.html", "!svelte.config.js"]
+  },
+  "formatter": {
+    "enabled": false
+  }
+}

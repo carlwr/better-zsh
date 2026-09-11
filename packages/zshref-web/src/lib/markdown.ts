@@ -2,12 +2,12 @@
 // block to Shiki. Dual light/dark via Shiki's CSS-variable mode
 // (`defaultColor: false`) so one HTML reacts to the `data-theme` attribute.
 
+import docoptGrammar from '@carlwr/docopt-tmlanguage/grammar.json';
 import { memoized } from '@carlwr/typescript-extra';
 // markdown-it v15 bundles its own types: the default export is a callable
 // back-compat wrapper (a value), so the class type is the named export.
 import MarkdownIt, { type MarkdownIt as Md } from 'markdown-it';
 import { createHighlighter, type LanguageRegistration } from 'shiki';
-import docoptGrammar from '@carlwr/docopt-tmlanguage/grammar.json';
 
 const THEMES = { light: 'github-light', dark: 'github-dark' } as const;
 

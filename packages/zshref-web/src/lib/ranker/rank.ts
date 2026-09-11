@@ -8,6 +8,7 @@
 // flows through Float32Array so values read back as the exact f32 values
 // Rust emitted. The parity-fixture test asserts byte-equality.
 
+import type { Rules } from './rules';
 import type {
   Boosts,
   IndexedRecord,
@@ -18,7 +19,6 @@ import type {
   Tuning,
   VectorIndex
 } from './types';
-import type { Rules } from './rules';
 
 const f = Math.fround;
 

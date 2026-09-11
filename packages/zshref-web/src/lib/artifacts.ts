@@ -7,9 +7,9 @@ import { z } from 'zod';
 import { memoizedRetry } from './memoizedRetry';
 import { loadVectorIndex } from './ranker/index-loader';
 import { LookupIndex, LookupMapSchema } from './ranker/lookup-map';
+import type { Rules } from './ranker/rules';
 import { loadRules } from './ranker/rules';
 import type { VectorIndex } from './ranker/types';
-import type { Rules } from './ranker/rules';
 
 const BASE = '/artifacts';
 

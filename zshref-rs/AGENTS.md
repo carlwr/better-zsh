@@ -2,7 +2,7 @@
 
 Rust CLI; tool-surface mirror of the TS adapters. NLP subsystem at `src/nlp/`, opt-in via the `nlp` Cargo feature.
 
-**Editing any part of the NLP subsystem (`src/nlp/**`, incl. `rules/*.yaml`, and the `zshref-web/` ranker mirror) requires reading `src/nlp/NLP.md` first — its holdout-isolation rules are binding.**
+**Editing any part of the NLP subsystem (`src/nlp/**`, incl. `rules/*.yaml`, and the `packages/zshref-web/` ranker mirror) requires reading `src/nlp/NLP.md` first — its holdout-isolation rules are binding.**
 
 ## NLP feature + two-binary release
 
@@ -13,7 +13,7 @@ Default build excludes `nlp` plus its optional deps; `Cargo.toml` owns the exact
 
 Both Cargo configurations are exercised by `tests/feature_flag.rs` (subcommand presence + `batch` error envelope).
 
-Release artifacts of the `nlp` build feed `zshref-web` (separate repo post-extraction):
+Release artifacts of the `nlp` build feed `zshref-web`:
 
 - `index.json`
 - `rules/*.json` (emitted from embedded YAML at staging time; not committed)
@@ -22,7 +22,7 @@ Release artifacts of the `nlp` build feed `zshref-web` (separate repo post-extra
 - `categories.json`
 - `lookup-map.json`
 
-`rules/schema/*.schema.json` are editor-only, not shipped. SoT for the ranker is `src/nlp/rank.rs`; TS mirror lives in `zshref-web/`, parity-checked against the fixture.
+`rules/schema/*.schema.json` are editor-only, not shipped. SoT for the ranker is `src/nlp/rank.rs`; TS mirror lives in `packages/zshref-web/`, parity-checked against the fixture.
 
 crates.io publishing runs from a release workflow. Binary release assets stay deferred; shape when built: matrix `[default, --features nlp]`, assets those binaries plus the JSON artifacts above.
 
@@ -62,7 +62,7 @@ Hidden, internal-only verb — freshness/drift checks for the staging script + C
   ```
 
   - every row but sanity runs assetless, and `make cli-test` has a second, scoped `--features nlp` leg — so a corpus edit that invalidates a committed artifact fails before commit, not silently
-  - parity fixture: self-contained; ships the miniature index it was ranked against — `src/nlp/fixtures.rs`, `zshref-web/AGENTS.md`
+  - parity fixture: self-contained; ships the miniature index it was ranked against — `src/nlp/fixtures.rs`, `packages/zshref-web/AGENTS.md`
   - sanity fixture: needs the real embedder, plus an always-on invariant test (`sanity_invariants_hold`) — curated "clear winner" queries must satisfy `absoluteFloor` + `minMargin` on the recorded top-1 vs. runner-up; failure → re-curate the query list, do not relax invariants
 - Local NLP assets are `data-nlp/model/` + `data-nlp/index.json`.
   - absent → the tests needing them skip; `BZ_REQUIRE_NLP_ASSETS=1` flips skip → fail
@@ -87,7 +87,7 @@ Collapsing to one number means the higher one, locking users out of the default 
 Two namespaces of mirror markers — kept disjoint so a search for one never picks up the other:
 
 - `// MIRRORED-IN:` (TS) ↔ `// MIRROR-OF:` (Rust) — zshref-rs ↔ pnpm-workspace TS code (`packages/zsh-core{,-tooldef}/`). Structural parity is enforced by `parity-units.ts` (rationale: `DESIGN.md`).
-- `// WEB-MIRRORED-IN:` (Rust) ↔ `// WEB-MIRROR-OF:` (TS) — zshref-rs ↔ zshref-web (out-of-workspace, post-extraction peer repo). Not driven by `parity-units.ts`; the parity-fixture test in `zshref-web/` is the runtime contract.
+- `// WEB-MIRRORED-IN:` (Rust) ↔ `// WEB-MIRROR-OF:` (TS) — zshref-rs ↔ zshref-web. Not driven by `parity-units.ts`; the parity-fixture test in `packages/zshref-web/` is the runtime contract.
 
 When renaming a mirrored symbol on either side: update both markers (plus `parity-units.ts` for the first namespace).
 
