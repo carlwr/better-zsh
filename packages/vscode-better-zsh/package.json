@@ -109,8 +109,7 @@
     "ovsx:publish": "pnpm build && export BZ_SKIP_UPSTREAM=1 && pnpm check && pnpm test && scripts/package-vsix /tmp/better-zsh-publish.vsix && npx -y ovsx publish /tmp/better-zsh-publish.vsix -p $OPEN_VSX_TOKEN"
   },
   "dependencies": {
-    "@carlwr/zsh-core": "workspace:*",
-    "@carlwr/zsh-core-tooldef": "workspace:*"
+    "@carlwr/zsh-core": "workspace:*"
   },
   "devDependencies": {
     "vitest": "^4.1.11"

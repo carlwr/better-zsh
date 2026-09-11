@@ -1,6 +1,6 @@
 # AGENTS.md — `@carlwr/zsh-core-tooldef`
 
-Tool definitions over zsh-core; consumed by adapters (CLI, MCP, VS Code LM).
+Tool definitions over zsh-core; consumed by adapters (CLI, MCP).
 
 ## Tooldef + adapters
 

@@ -178,9 +178,6 @@ importers:
       '@carlwr/zsh-core':
         specifier: workspace:*
         version: link:../zsh-core
-      '@carlwr/zsh-core-tooldef':
-        specifier: workspace:*
-        version: link:../zsh-core-tooldef
     devDependencies:
       vitest:
         specifier: ^4.1.11

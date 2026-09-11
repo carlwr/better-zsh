@@ -21,7 +21,6 @@ import {
   BETTER_ZSH_TEST_GET_SEMANTIC_TOKENS,
   ZSH_LANG_ID,
 } from "./ids"
-import { registerZshRefTools } from "./lm-adapter/zsh-ref-tools"
 import { initLog, log, recentLogs } from "./log"
 import { readZshPathConfig, ZSH_PATH_KEY } from "./settings"
 import { configureZsh } from "./zsh"
@@ -54,7 +53,6 @@ export async function activate(ctx: vscode.ExtensionContext) {
   )
 
   setupDiagnostics(ctx)
-  registerZshRefTools(ctx, corpus)
 
   ctx.subscriptions.push(
     vscode.languages.registerDocumentHighlightProvider(

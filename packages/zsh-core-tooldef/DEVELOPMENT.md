@@ -8,7 +8,7 @@ This package owns the pure tool implementations plus `ToolDef` metadata; every c
 - Files under `src/tools/` and `src/tools/shared/` are pure `(DocCorpus, input) → output`.
 - No `child_process`, networking, `node:fs`, `process.env`, or `vscode` in the tool layer.
 - `src/tool-defs.ts` is the single source of tool name, description, input + output JSON Schemas, and execute wrapper.
-- The package knows about zsh-core only, not MCP, CLI framework, or VS Code.
+- The package knows about zsh-core only.
 
 ## Tool naming
 
@@ -20,11 +20,11 @@ For the rationale, see `packages/zshref-mcp/DEVELOPMENT.md`.
 
 Each `ToolDef` carries three docstring-like fields. The asymmetry is load-bearing:
 
-- `description` — long-form prose shown in LLM tool selection and full CLI help blocks. MCP and VS Code LM consume this directly; it is the source of truth for LLM-facing docs.
+- `description` — long-form prose shown in LLM tool selection and full CLI help blocks. MCP consumes this directly; it is the source of truth for LLM-facing docs.
 - `brief` — ≤50-char phrase for narrow rendering contexts: the CLI help's commands column, UI list rows, any surface with a column budget.
 - `flagBriefs[key]` — ≤60-char per-flag phrase keyed by schema property; CLI help's flag column.
 
-MCP and VS Code LM ignore `brief` and `flagBriefs` — LM-facing surfaces have no column budget. The CLI consumes all three: clap's commands column, `long_about`, and per-flag `help` would wrap badly on the default ~80-col terminal if fed the long-form `description` strings. `buildToolDef` enforces at compile time that the per-flag prose keys are exactly the schema's property keys, and that `required` lists only reference actual properties — so adding a flag without a brief, or referencing a non-existent flag in `required`, is a type error rather than a rendering bug.
+MCP ignores `brief` and `flagBriefs` — LLM-facing surfaces have no column budget. The CLI consumes all three: clap's commands column, `long_about`, and per-flag `help` would wrap badly on the default ~80-col terminal if fed the long-form `description` strings. `buildToolDef` enforces at compile time that the per-flag prose keys are exactly the schema's property keys, and that `required` lists only reference actual properties — so adding a flag without a brief, or referencing a non-existent flag in `required`, is a type error rather than a rendering bug.
 
 A consumer that needs neither short form reads only `description`; a consumer that needs narrow rendering reads the briefs too. The one tooldef record serves both.
 
@@ -48,8 +48,5 @@ Any category enumeration in tool descriptions must come from zsh-core exports; d
 
 - `@carlwr/zshref-mcp` — stdio MCP server.
 - `zshref-rs/` — Rust+clap CLI; consumes the tool-def JSON artifact this package generates, baked into the binary via `include_bytes!`.
-- `vscode-better-zsh` — VS Code LM tools.
 
-Thin MCP/LM sources: imports allowed by `src/test/adapter-matrix.ts`, verified by `adapter-matrix.test.ts` against sibling packages (root zsh-core + root tooldef, brace imports, MCP full tooldef symbol set vs LM `toolDefs` only).
-
-Cross-package note: the VS Code extension manifest mirrors each `ToolDef`'s name, description, and `inputSchema`; an extension test asserts the equality.
+Thin MCP source: imports restricted to the root `@carlwr/zsh-core*` packages and an allow-list of named symbols — `src/test/adapter-matrix.ts`, enforced by `adapter-matrix.test.ts`.

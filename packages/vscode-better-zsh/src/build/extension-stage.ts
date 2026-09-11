@@ -1,8 +1,6 @@
 import { cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
-import { toolDefs } from "@carlwr/zsh-core-tooldef"
 import { buildSettingsConfiguration } from "../settings-metadata"
-import { buildLmTools } from "./lm-tools-manifest"
 import { pkgDir, stagedExtensionDir } from "./paths"
 
 const copiedEntries = [
@@ -33,7 +31,6 @@ export function stageExtension(): void {
     contributes: {
       ...(workspacePkg.contributes ?? {}),
       configuration: buildSettingsConfiguration(),
-      languageModelTools: buildLmTools(toolDefs),
     },
   }
   writeFileSync(

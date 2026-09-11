@@ -13,17 +13,16 @@ The tool layer: pure `(DocCorpus, input) → output` implementations plus shared
 - **`buildToolDef`** — type-safe builder composing prose and schema shape; compile-time-checks per-flag prose keys, schema properties, and `required` against one shared key union.
 - **Pure tool implementations** — `docs`, `search`, `list`. No IO, no subprocess, no network, no filesystem, no `process.env`, no `vscode`. Structurally enforced by `src/test/scope.test.ts`.
 
-The package knows about `zsh-core` only. It has no knowledge of MCP, clap, or VS Code.
+The package knows about `zsh-core` only.
 
 ## Who consumes this
 
-Three adapters today:
+Two adapters today:
 
 - [`@carlwr/zshref-mcp`](https://github.com/carlwr/zshref-mcp) — stdio MCP server.
 - [`zshref`](https://github.com/carlwr/zshref) — Rust+clap CLI. Consumes the JSON-exported `tooldef.json` artifact baked into the binary at build time.
-- [`better-zsh`](https://github.com/carlwr/better-zsh/tree/main/packages/vscode-better-zsh) — VS Code extension; registers the same tools as Language Model tools via `vscode.lm.registerTool`. A drift test asserts the extension manifest and `toolDefs` stay in one-to-one correspondence.
 
-Three consumers is what justifies the extraction: at two, the shared layer is overhead; at three, collapsing per-adapter glue into a walk over `toolDefs` pays in both code and drift prevention (tool name, description, input schema, and output schema live in exactly one place and every adapter picks them up automatically).
+Per-adapter glue collapses into a walk over `toolDefs`: tool name, description, input schema, and output schema live in exactly one place and every adapter picks them up automatically.
 
 ## Install
 
@@ -49,7 +48,7 @@ for (const td of toolDefs) {
 }
 ```
 
-Adapters plug `execute` into their transport of choice. The MCP server registers `name` + `inputSchema` + `outputSchema` + `execute` with `@modelcontextprotocol/sdk` (and emits `structuredContent` alongside text on success); the Rust CLI materialises subcommands from the JSON-serialised `toolDefs` at build time and exposes `outputSchema` via `zshref schema`; the VS Code adapter wires each one into `vscode.lm.registerTool`.
+Adapters plug `execute` into their transport of choice. The MCP server registers `name` + `inputSchema` + `outputSchema` + `execute` with `@modelcontextprotocol/sdk` (and emits `structuredContent` alongside text on success); the Rust CLI materialises subcommands from the JSON-serialised `toolDefs` at build time and exposes `outputSchema` via `zshref schema`.
 
 ## Scope fence (product feature)
 

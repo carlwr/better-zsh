@@ -316,11 +316,7 @@ Per MCP spec, tools register `outputSchema`; responses include `structuredConten
 
 ## Adapters of the shared tool surface
 
-Three adapters over the same `toolDefs`:
-
-- MCP
-- VS Code LM
-- Rust CLI
+Two adapters over the same `toolDefs`: MCP and the Rust CLI.
 
 Adapters walk `toolDefs` and call `def.execute(corpus, input)`; nothing else.
 
@@ -330,7 +326,6 @@ Structural locks (each is the spec for its own claim):
   - `resolve`
   - `renderDoc`
   - analysis
-- **VS Code LM manifest ↔ `toolDefs`** — `packages/vscode-better-zsh/src/test/zsh-ref-tools.test.ts`.
 - **Tool-impl scope fence** — `packages/zsh-core-tooldef/src/test/scope.test.ts`.
 
 Three tools, intent-split:

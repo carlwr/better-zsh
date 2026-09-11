@@ -10,7 +10,7 @@ import { outDir } from "./src/build/paths"
     sourcemap: true,
     clean: true,
     external: ["vscode"],
-    noExternal: ["@carlwr/zsh-core", "@carlwr/zsh-core-tooldef"],
+    noExternal: ["@carlwr/zsh-core"],
     esbuildOptions(options) {
       options.conditions = ["require", "node"]
       options.mainFields = ["main"]

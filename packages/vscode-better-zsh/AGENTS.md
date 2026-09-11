@@ -1,10 +1,6 @@
 # AGENTS.md — `better-zsh` (VS Code extension)
 
-VS Code extension package:
-
-- editor providers
-- LM-tool adapter
-- host-zsh execution
+VS Code extension package: editor providers and host-zsh execution.
 
 ## Layout
 
@@ -13,8 +9,6 @@ VS Code extension package:
 - `editor/` — language-feature providers:
   - wires zsh-core analysis + doc records to VS Code APIs
   - reusable parsing/rendering belongs in pure helpers; provider-local dispatch may stay here
-- `lm-adapter/` — VS Code LM tool registration:
-  - sibling of the MCP server; consumes only the shared tool surface
 - extension-root modules:
   - activation
   - infrastructure
@@ -35,9 +29,11 @@ A stable Marketplace release needs `icon` plus gallery presentation assets in th
 - checked-in `package.json` is the pnpm workspace manifest
 - `pnpm build` refreshes the package-local `.tmp/staged-extension/`
 - VSIX, publish, and VS Code test entrypoints use the staged root
-- generated `contributes` fields in the staged manifest:
-  - `languageModelTools` from `toolDefs`
-  - `configuration` from `settings-metadata`
+- generated `contributes` field in the staged manifest: `configuration` from `settings-metadata`
+
+## Agent access
+
+No Language Model tools; the MCP server is the agent-facing surface over the same reference. Registering it from the extension (VS Code's MCP server definition provider API) may be considered later.
 
 ## Testing scope
 

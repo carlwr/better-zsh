@@ -67,7 +67,6 @@ read-when: extraction-day checklist for @carlwr/zshref-mcp
 
 ### Cross-repo drift guards
 
-- `packages/vscode-better-zsh/src/test/zsh-ref-tools.test.ts` imports `toolDefs` from `@carlwr/zsh-core-tooldef`, not from the MCP package. That guard should survive extraction unchanged as long as tooldef stays published and the extension pins a compatible version.
 - `packages/zsh-core-tooldef/src/test/adapter-matrix.ts` reads this package's `build-server.ts` by repo-relative path. That path vanishes at extraction — drop the `mcp-build-server` row, or re-home the check here against the published tooldef.
 
 ### Scope fence

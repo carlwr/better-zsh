@@ -147,7 +147,7 @@ describe("toolDefs description shape", () => {
     expect(d).toContain("`category`")
   })
 
-  // Tooldef prose reaches MCP/LM verbatim; CLI shows real flags.
+  // Prose is adapter-neutral; only the CLI has flags.
   eachTool("%s prose has no `--option` references", (_n, td) => {
     const FLAG_RE = /--\w/
     expect(td.description).not.toMatch(FLAG_RE)

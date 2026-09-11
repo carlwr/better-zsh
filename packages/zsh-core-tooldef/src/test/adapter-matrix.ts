@@ -1,10 +1,10 @@
 /**
- * Declared import surface for thin TS adapters — MCP `buildServer`, VS Code
- * `registerZshRefTools`. Enforced by `adapter-matrix.test.ts` only.
+ * Declared import surface for thin TS adapters — today MCP `buildServer`.
+ * Enforced by `adapter-matrix.test.ts` only.
  *
  * Each adapter has its own per-row tooldef symbol allow-list, so widening
- * either side requires updating the matrix — that is the intended forcing
- * function on changes to the "thin adapter" surface.
+ * it requires updating the matrix — that is the intended forcing function
+ * on changes to the "thin adapter" surface.
  */
 
 export interface ThinAdapter {
@@ -29,20 +29,12 @@ const MCP_TOOLDEF: ReadonlySet<string> = new Set([
   "toolDefs",
 ])
 
-const LM_TOOLDEF: ReadonlySet<string> = new Set(["toolDefs"])
-
 export const thinAdapters = [
   {
     id: "mcp-build-server",
     file: "packages/zshref-mcp/src/server/build-server.ts",
     zshCoreSymbols: DOC_CORPUS_ONLY,
     tooldefSymbols: MCP_TOOLDEF,
-  },
-  {
-    id: "vscode-lm-adapter",
-    file: "packages/vscode-better-zsh/src/lm-adapter/zsh-ref-tools.ts",
-    zshCoreSymbols: DOC_CORPUS_ONLY,
-    tooldefSymbols: LM_TOOLDEF,
   },
 ] as const satisfies readonly ThinAdapter[]
 

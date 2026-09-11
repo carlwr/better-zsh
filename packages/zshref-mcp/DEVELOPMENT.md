@@ -32,7 +32,6 @@ Keep the prefix on every new tool. Use `snake_case`. Never move `zsh` into the m
 Implementations and metadata live in `@carlwr/zsh-core-tooldef`. MCP-side follow-up is limited to:
 
 - extend `src/test/mcp-stdio.test.ts` if the tool deserves an end-to-end stdio check;
-- update the extension manifest if the tool surface changed there too;
 - run `pnpm run check && pnpm run test`.
 
 `toolDefs` is the registry. There is no codegen layer.

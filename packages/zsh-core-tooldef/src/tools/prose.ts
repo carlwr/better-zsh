@@ -1,6 +1,6 @@
 // Section order: cross-tool comparison over within-tool adjacency.
 // Top-level `<tool>_<part>` constants keep multiline literals at col 1.
-// No `--option`: leaks to MCP/LM verbatim. Drift guard in tool-defs.test.ts.
+// No `--option`: prose is adapter-neutral. Drift guard in tool-defs.test.ts.
 
 import { ZSH_UPSTREAM } from "@carlwr/zsh-core/meta"
 import {

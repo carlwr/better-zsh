@@ -104,13 +104,13 @@ Out of scope:
 
 In order. A step ends with the repo's validation gates green where touched and the docs it invalidates updated.
 
-### Tag
+### DONE: Tag
 
 - annotated tag `pre-reorg` on the commit that adds this dir in its initial form: the tagged tree holds the old shape and the reasoning
 - pushed; may live indefinitely
 - `rationale.md` names the tag — rename in both places if the name changes
 
-### Extension drops LM tools
+### DONE: Extension drops LM tools
 
 - remove the LM adapter, the generated `languageModelTools` manifest and their test
 - drop the tooldef dependency

@@ -55,7 +55,7 @@ if (pid) {
 
 ## See also
 
-- [`@carlwr/zsh-core-tooldef`](https://github.com/carlwr/better-zsh/tree/main/packages/zsh-core-tooldef) — declarative tool definitions over this library, consumed by the MCP, CLI, and VS Code adapters.
+- [`@carlwr/zsh-core-tooldef`](https://github.com/carlwr/better-zsh/tree/main/packages/zsh-core-tooldef) — declarative tool definitions over this library, consumed by the MCP and CLI adapters.
 - [`@carlwr/zshref-mcp`](https://github.com/carlwr/zshref-mcp) — Model Context Protocol server.
 - [`zshref`](https://github.com/carlwr/zshref) — single-file executable Rust CLI.
 - [`better-zsh`](https://github.com/carlwr/better-zsh/tree/main/packages/vscode-better-zsh) — VS Code extension.

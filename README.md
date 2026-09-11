@@ -9,16 +9,16 @@ Improved zsh tooling, packaged as a set of focused libraries and adapters over a
 | Package | Purpose | Lives in | Distribution |
 |---|---|---|---|
 | `@carlwr/zsh-core` | Structured zsh reference: typed `DocCorpus`, closed `DocCategory` taxonomy, `resolve`/`renderDoc`, small analysis layer. Parsed from upstream zsh-5.9 Yodl source. | `packages/zsh-core/` | npm, JSR |
-| `@carlwr/zsh-core-tooldef` | Framework-neutral tool definitions over `zsh-core`: pure `(DocCorpus, input) → output` impls + shared `ToolDef` metadata. Consumed by every adapter. | `packages/zsh-core-tooldef/` | npm, JSR |
+| `@carlwr/zsh-core-tooldef` | Framework-neutral tool definitions over `zsh-core`: pure `(DocCorpus, input) → output` impls + shared `ToolDef` metadata. Consumed by the MCP server and the CLI. | `packages/zsh-core-tooldef/` | npm, JSR |
 | `@carlwr/zshref-mcp` | Model Context Protocol server over stdio. Registers the shared tool surface for MCP-aware clients (Claude Desktop, Cursor, VS Code MCP, Zed, …). | `packages/zshref-mcp/` | npm, JSR |
 | `zshref` | Single-file executable Rust CLI over the same tool surface. Pipes JSON on stdout. Offline; no Node, Python, or zsh runtime dependency. | `zshref-rs/` | crates.io, Homebrew (planned) |
-| `better-zsh` | VS Code extension: hovers, completions, semantic tokens, diagnostics, Language Model tools. | `packages/vscode-better-zsh/` | VS Code Marketplace, Open VSX |
+| `better-zsh` | VS Code extension: hovers, completions, semantic tokens, diagnostics. | `packages/vscode-better-zsh/` | VS Code Marketplace, Open VSX |
 
-Pick the adapter that matches your runtime; they all wrap the same static corpus and the same pure tool implementations.
+Pick the adapter that matches your runtime; all wrap the same static corpus.
 
 ## Architecture in one paragraph
 
-Two layers, three adapters. `zsh-core` (the knowledge layer) feeds `zsh-core-tooldef` (the single `ToolDef` surface: name, JSON-Schema input, brief + long description, pure `(corpus, input) → output` `execute`). Each adapter — MCP, CLI, VS Code — is thin transport glue that walks `toolDefs` uniformly. Drift guards at every joint: the staged VS Code LM manifest must match `toolDefs` by a unit-test invariant, and the Rust CLI parses the exported tool-def JSON at build time and bakes it into the binary.
+Two layers, two adapters. `zsh-core` (the knowledge layer) feeds `zsh-core-tooldef` (the single `ToolDef` surface: name, JSON-Schema input, brief + long description, pure `(corpus, input) → output` `execute`). Each adapter — MCP, CLI — is thin transport glue that walks `toolDefs` uniformly. Drift guard at the joint: the Rust CLI parses the exported tool-def JSON at build time and bakes it into the binary. The VS Code extension consumes `zsh-core` directly for its editor features.
 
 No shell execution, no subprocess, no network, no filesystem, no `process.env` reads in the tool layer — structurally enforced by a scope-fence test. This is a product feature, not just policy.
 

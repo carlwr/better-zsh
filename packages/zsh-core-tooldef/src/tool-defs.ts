@@ -1,11 +1,11 @@
 import type { DocCorpus } from "@carlwr/zsh-core"
 import { docsToolDef, listToolDef, searchToolDef } from "./tools.ts"
 
-/** JSON Schema object as shipped to MCP/LM clients; opaque to this package. */
+/** JSON Schema object; opaque to this package. */
 export type ToolInputSchema = Readonly<Record<string, unknown>>
 
 /**
- * Metadata + runtime for one MCP/LM tool. `execute` receives JSON input
+ * Metadata + runtime for one tool. `execute` receives JSON input
  * already validated against `inputSchema` by the adapter.
  *
  * `brief` is a ≤50-char line for narrow UIs (CLI commands column, list rows);
@@ -149,9 +149,6 @@ export const toolDefs: readonly ToolDef[] = [
  *   - Rust `zshref` CLI — concatenated after `prose::rewrite_refs(preamble)`
  *     with `prose::ROOT_AFTER_HELP_TAIL` into the root `--help` tail (tool
  *     names rewritten to subcommands first).
- *
- * The VS Code LM adapter has no server-level slot; per-tool descriptions
- * suffice there.
  *
  * WARNING — DRIFT-PRONE: this string is rendered VERBATIM (modulo the
  * tool-name rewrite) into BOTH an LLM prompt and a terminal user's
