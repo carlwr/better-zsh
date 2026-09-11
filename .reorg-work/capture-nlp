@@ -1,0 +1,263 @@
+#! /usr/bin/env zsh
+emulate -LR zsh
+set -eu -o pipefail
+#
+# Records the Rust NLP oracle for the "NLP moves to zshref-web" step
+# (nlp-move.md). Everything lands under the gitignored .aux/nlp-move/.
+#
+# Holdout hygiene (zshref-rs/src/nlp/NLP.md): no eval-set content reaches the
+# terminal or any capture file — the sentence fixture is read only through the
+# blind `yq` filter and only its train-split query strings are kept; run-qa
+# output is reduced to the hard-check section and the summary lines.
+
+me=${0:t}
+root=${0:A:h:h}
+aux=$root/.aux/nlp-move
+rs=$root/zshref-rs
+qa=$rs/tests/nlp-qa
+# Both staged under the binary's real name: clap prints argv[0] in every
+# subcommand's `Usage:` line, so a renamed copy would pollute the dump-help
+# oracle.
+bin=$aux/bin/nlp/zshref
+binDefault=$aux/bin/default/zshref
+
+help="
+Capture the Rust NLP oracle into .aux/nlp-move/ (layout: .reorg-work/nlp-move.md).
+
+USAGE:
+  $me stage      fetch the model, build both binaries, rebuild the index
+  $me capture    record every capture (needs a prior stage)
+  $me all        stage, then capture
+  $me --help
+
+Run from anywhere; re-runnable. stage builds the release binary twice (default,
+then nlp), so zshref-rs/target/release/zshref is the nlp one afterwards — what
+fetch-artifacts and run-qa.mjs expect by default. The index is rebuilt only when
+it fails validation against the corpus.
+"
+
+msg() { print -u2 -- "$me: $@" }
+die() {
+  msg "ERROR: $1" ; shift
+  for hint in "$@" ; do msg "       $hint" ; done
+  exit 1
+}
+
+cargoTest=(cargo test --release --features nlp --bin zshref)
+
+
+# --- stage ---
+
+stage() {
+  $rs/scripts/fetch-model
+  mkdir -p $aux/bin/nlp $aux/bin/default
+  msg "build: default binary"
+  ( cd $root && make cli >/dev/null )
+  cp $rs/target/release/zshref $binDefault
+  msg "build: nlp binary"
+  ( cd $root && make cli-nlp >/dev/null )
+  cp $rs/target/release/zshref $bin
+  if $bin _selfcheck --validate-index --index $rs/data-nlp/index.json >/dev/null 2>&1 ; then
+    msg "index: valid for this corpus; kept"
+  else
+    msg "rebuild index (minutes)"
+    $bin nlp-search --rebuild-index 'stage' >/dev/null
+    $bin _selfcheck --validate-index --index $rs/data-nlp/index.json >/dev/null
+  fi
+  msg "staged: $bin"
+}
+
+
+# --- capture ---
+
+provenance() {
+  local rev=$(sed -n 's/^rev=//p' $rs/scripts/fetch-model)
+  {
+    print -- "date:            $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+    print -- "git:             $(git -C $root rev-parse HEAD)"
+    print -- "git dirty paths: $(git -C $root status --porcelain | wc -l | tr -d ' ')"
+    print -- "bin/nlp:         $(shasum -a 256 $bin | cut -d' ' -f1)"
+    print -- "bin/default:     $(shasum -a 256 $binDefault | cut -d' ' -f1)"
+    print -- "model rev:       $rev"
+    print -- "model.onnx:      $(shasum -a 256 $rs/data-nlp/model/onnx/model.onnx | cut -d' ' -f1)"
+    print -- "index corpus:    $(jq -r .corpus_hash $rs/data-nlp/index.json)"
+    print -- "rustc:           $(rustc --version)"
+    print -- "node:            $(node --version)"
+    print -- "yq:              $(yq --version)"
+  } > $aux/provenance.txt
+}
+
+# One JSONL request per query. `src` tags the source; `batch` ignores it.
+req() {  # <src> ; stdin: one JSON string per line
+  jq -c --arg src $1 '{src:$src, tool:"nlp_search", input:{query:., limit:10, debug:true}}'
+}
+
+# The same queries as `zsh_docs` requests: the Rust resolver's per-category
+# verdicts, so a boost mismatch can be blamed on the port or on the resolver
+# mirror. `resolver_key` = the first match (plus history_expn entries `docs`
+# filters out — see tools/docs.rs).
+docs-requests() {
+  jq -c '{src, tool:"zsh_docs", input:({key:.input.query} + (.input | if .category then {category} else {} end))}'
+}
+
+nl-question() {  # <category> <display> ; mirrors the templates in mechanical.rs
+  local cat=$1 d=$2
+  case $cat in
+    (builtin)       print -- "what does the $d builtin do" ;;
+    (special_param) print -- "what is the $d parameter"
+                    print -- "what is the \$$d parameter" ;;
+    (option)        print -- "what does the $d option do" ;;
+    (reserved_word) print -- "what does the $d reserved word do" ;;
+    (mathfunc)      print -- "what does the $d math function do" ;;
+    (comp_utility)  print -- "what does the $d completion function do" ;;
+    (zle_widget)    print -- "what does the $d widget do" ;;
+  esac
+}
+
+build-queries() {
+  local set=$aux/queries/set.jsonl
+  : > $set
+
+  # sentence fixture, train split only — blind read; nothing else leaves the file
+  yq -o=json '.entries |= map(select(.holdout != true)) | [.entries[].query]' \
+      $rs/src/nlp/rules/sentence-fixture.yaml \
+    | jq -c '.[]' | req sentence-train >> $set
+
+  jq -c '.entries[].query' $qa/sanity-fixture.json | req sanity >> $set
+  jq -c '.entries[].query' $qa/parity-fixture.json | req parity >> $set
+
+  # lookup contract: deterministic thinning (index modulo), bare + decorated
+  jq -c '[.entries[] | select(.phrasingKind == "bare")]
+         | to_entries[] | select(.key % 8 == 0) | .value.query' \
+      $qa/lookup-contract.json | req contract-bare >> $set
+  jq -c '[.entries[] | select(.phrasingKind != "bare")]
+         | to_entries[] | select(.key % 40 == 0) | .value.query' \
+      $qa/lookup-contract.json | req contract-decorated >> $set
+
+  # NL questions over the corpus, ~24 records per templated category
+  local cat n step
+  for cat in builtin special_param option reserved_word mathfunc comp_utility zle_widget ; do
+    n=$( $binDefault list --category=$cat --limit=100000 | jq '.matchesTotal' )
+    step=$(( (n + 23) / 24 ))
+    $binDefault list --category=$cat --limit=100000 \
+      | jq -r --argjson step $step '.matches | to_entries[] | select(.key % $step == 0) | .value.display // .value.id' \
+      | while IFS= read -r d ; do nl-question $cat $d ; done \
+      | jq -Rc . | req nl-question >> $set
+  done
+
+  # hand-written edge cases (authored blind); category-filtered ones last
+  local edge=(
+    'AUTO_CD'
+    'auto_cd'
+    '$#'
+    '?'
+    '!!'
+    ':'
+    'setopt'
+    'how do I make cd happen automatically when typing a directory name'
+    'array slicing with negative indices and the KSH_ARRAYS option'
+    'glob qualifier for files modified in the last hour'
+    'The Quick Brown Fox Jumps Over The Lazy Dog'
+    'zsh'
+    '   spaces   around   '
+  )
+  print -l -- $edge | jq -Rc . | req edge >> $set
+  { repeat 100 print -n -- "what does this do " ; print } | jq -Rc . | req edge-long >> $set
+  local filtered=(
+    'option:change directory automatically'
+    'builtin:print a formatted string'
+    'special_param:exit status of the last command'
+    'zle_widget:move to the beginning of the line'
+    'glob_qualifier:only regular files'
+  )
+  print -l -- $filtered \
+    | jq -Rc 'split(":") | {cat: .[0], q: (.[1:] | join(":"))}
+              | {src:"edge-category", tool:"nlp_search",
+                 input:{query:.q, category:.cat, limit:10, debug:true}}' >> $set
+
+  cat > $aux/queries/README.txt <<EOF
+set.jsonl — one JSONL request per line for \`zshref batch\` (the default
+model/index paths are baked into the binary; cwd does not matter). \`src\` tags
+the source:
+
+  sentence-train      sentence-fixture.yaml, train split (blind yq filter)
+  sanity, parity      the committed fixtures' queries
+  contract-bare       lookup-contract.json, bare phrasings, every 8th
+  contract-decorated  lookup-contract.json, decorated phrasings, every 40th
+  nl-question         mechanical.rs question templates over \`zshref list\`, thinned
+  edge, edge-long     hand-written, authored blind
+  edge-category       hand-written, with a category filter
+
+No holdout query is in this set: nlp-corpus.yaml is not a source and the
+sentence fixture contributes its train split only.
+EOF
+  msg "queries: $(wc -l < $set | tr -d ' ') requests"
+}
+
+evals() {
+  local e=$aux/rust/eval
+  (
+    cd $rs
+    export ZSHREF_DATA_SOURCE=monorepo BZ_REQUIRE_NLP_ASSETS=1
+    msg "cargo test: release, nlp, assets required"
+    $cargoTest > $aux/rust/cargo-test-nlp.txt 2>&1
+    msg "eval: sentence"
+    $cargoTest sentence_fixture_eval_report -- --nocapture > $e/sentence.txt 2>&1
+    msg "eval: mechanical"
+    $cargoTest mechanical_sentences_report -- --nocapture > $e/mechanical.txt 2>&1
+    msg "eval: dashboard"
+    BZ_TUNE_DASHBOARD=1 ZSHREF_NLP_BIN=$bin \
+      $cargoTest tune_dashboard -- --nocapture > $e/dashboard.txt 2>&1
+    msg "eval: sweep (minutes)"
+    BZ_TUNE_SWEEP=1 $cargoTest tune_sweep -- --nocapture > $e/sweep.txt 2>&1
+    msg "eval: diff"
+    BZ_TUNE_DIFF=1 BZ_TUNE_BASE=cat=0.02 \
+      $cargoTest tune_diff -- --nocapture > $e/diff.txt 2>&1
+  )
+}
+
+# The per-query section names every held-out query; keep the hard-check
+# section (corpus-derived) and the trailing summary lines only.
+run-qa() {
+  msg "eval: run-qa (filtered)"
+  QUIET_WARN=1 node $qa/run-qa.mjs --zshref $bin 2>/dev/null \
+    | awk '/^=== Scored queries ===/ { skip = 1 } /^Average score:/ { skip = 0 } !skip' \
+    > $aux/rust/eval/run-qa-summary.txt
+}
+
+capture() {
+  [[ -x $bin && -x $binDefault ]] || die "missing binaries under $aux/bin" "run: $me stage"
+  [[ -f $rs/data-nlp/index.json ]] || die "missing zshref-rs/data-nlp/index.json" "run: $me stage"
+  mkdir -p $aux/rust/rules $aux/rust/eval $aux/queries
+
+  provenance
+  cp $rs/data-nlp/index.json $aux/rust/index.json
+  $bin _selfcheck --emit-rules --out $aux/rust/rules >/dev/null
+  ZSHREF=$bin        $rs/scripts/dump-help $aux/rust/dump-help.nlp.txt
+  ZSHREF=$binDefault $rs/scripts/dump-help $aux/rust/dump-help.default.txt
+  build-queries
+  msg "batch: ranking every query with --debug"
+  $bin batch < $aux/queries/set.jsonl > $aux/rust/batch-debug.jsonl
+  msg "batch: resolver verdict per query (zsh_docs)"
+  docs-requests < $aux/queries/set.jsonl | $binDefault batch > $aux/rust/docs.jsonl
+  local f n
+  for f in batch-debug docs ; do
+    n=$(jq -c 'select(.ok != true)' $aux/rust/$f.jsonl | wc -l | tr -d ' ')
+    (( n == 0 )) || die "$n responses are not ok:true — see $aux/rust/$f.jsonl"
+  done
+  evals
+  run-qa
+  msg "captured: $aux"
+}
+
+
+# --- main ---
+
+(( $# == 1 )) || { print -- $help ; exit 1 }
+case $1 in
+  (-h|--help) print -- $help ;;
+  (stage)     stage ;;
+  (capture)   capture ;;
+  (all)       stage ; capture ;;
+  (*)         die "unknown argument: $1" "usage: $me --help" ;;
+esac

@@ -51,7 +51,7 @@ Dependencies — an arrow reads "consumes, pinned by version"; its label is the 
 - workspace link: pnpm `workspace:*` onto the upstream's built `dist/`; the TS stamp keeps it fresh
 - release assets: tarballs on zsh-core's release tag, vendored by `make vendor` — in-monorepo from the sibling's `artifacts/`, post-split by download
 - zsh-core is the only producer; the three consumers are leaves with no consumer of their own
-- _undecided:_ the NLP (ranker, index build, eval tooling) inside `zshref-web` as drawn, or in a workspace lib package the SPA consumes by workspace link — the NLP step's call
+- _decided (`nlp-move.md`):_ the NLP (ranker, index build, eval tooling) inside `zshref-web` as drawn; the alternative was a workspace lib package the SPA consumes by workspace link
   - the lib would be a second TS producer over the same mechanism; it makes the browser/Node seam structural instead of by convention
   - the invariants below concern language crossings and bespoke mechanisms; a TS→TS workspace edge adds neither
 - hosting: GitHub Pages, one site — the SPA at the root, the zsh-core docs under `/zsh-core-docs/`; Cloudflare Pages the alternative
@@ -123,51 +123,9 @@ In order. A step ends with the repo's validation gates green where touched and t
 
 ### NLP moves to zshref-web; zshref-web joins the workspace
 
-- `zshref-web` becomes a workspace package under `packages/`; name unchanged; depends on `@carlwr/zsh-core` via `workspace:*`
-  - goes:
-    - own lockfile
-    - own CI job
-    - `make web-qa`
-    - its `EXTRACTION.md`
-    - every `../zshref-rs` path
-  - the TS API is the interface (typed, resolvers available), not the JSON assets
-- package shape — undecided, this step's call: all NLP inside the SPA package, or a workspace lib package (unnamed here) the SPA consumes; see End state
-- consumer posture: build-time only
-  - a Node build step derives index, lookup-map, categories and rules JSON from the corpus
-  - the browser bundle stays zsh-core-free; the index stays self-contained (`mdBody` baked in)
-- embedder: transformers.js for both the index build (Node) and queries (browser) — one embedder, one model
-- the model: fetched once into a gitignored dir at a pinned revision (today: `zshref-rs/scripts/fetch-model`); index build, tests and evals read it from there
-  - root commands may require it; a present model is never re-downloaded
-  - CI starts from a fresh environment: some cache of the model is required there; mechanism decided when the step is executed
-- hosting as in End state; `docs-zsh-core.yml` becomes, or folds into, the one deployment; whether the SPA deploy lands in this step or a follow-up: the step's call
-  - the hosting intent's home once `EXTRACTION.md` goes: `zshref-web/AGENTS.md`
-- port scope: everything under `src/nlp/` the SPA or its quality work needs
-  - product path:
-    - retrieval-text construction
-    - index build
-    - lookup-map build
-    - contract
-    - rules (YAML stays the editable form)
-  - the eval tooling too (curated sentence eval, mechanical sentences, tune sweep) — built for a reason; keep
-  - `NLP.md` moves with it; holdout rules unchanged, now single-language
-- port method: Rust is the oracle while porting
-- Rust nlp is deleted when the TS side matches
-- Rust side after:
-  - no `nlp` feature
-  - no `_selfcheck`
-  - no fastembed/ort; one MSRV
-  - one binary
-  - no `WEB-MIRROR` markers
-  - the build-input hash stays until the parity gate goes (tooldef step)
-- `REPO-SHAPE.md`: the `zshref → zshref-web` arrow becomes `zsh-core → zshref-web`
-- stamp machinery: zsh-core gains a second downstream; nothing to change (derived from manifests)
-- _decided:_ no extraction preparation for `zshref-web`
-- _before/after:_
-  - retrieval text per record: Rust dump = TS build
-  - `lookup-map.json`, `categories.json`, rules JSON: Rust-emitted = TS-built
-  - ranker: the existing parity fixture, unchanged
-  - `index.json`: same record set; vectors differ (embedder change) — the expected diff
-  - `dump-help`: only the `nlp-search` subcommand gone
+- `nlp-move.md` — scope, decisions, oracle captures, before/after gates, sub-stages, inventory, port notes
+- `capture-nlp` — stages the Rust oracle and records it into `.aux/nlp-move/`
+- `probe-embedder.mts` — TS embedder against the captured vectors
 
 ### Resolver conformance fixture
 
