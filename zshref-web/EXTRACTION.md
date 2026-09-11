@@ -13,15 +13,14 @@ Building and publishing the SPA **is** the point of the project; everything else
 
 ## Publishing intent
 
-- Host wherever is simplest. Current leaning: GitHub Pages.
-- `zshref-web/AGENTS.md` still names Cloudflare Pages. Reconcile the two when the decision is actually made, not before.
+- GitHub Pages first; Cloudflare Pages the alternative.
+- Pages hosts one site per repo, and the zsh-core docs workflow already claims this one. While the two share a repo: the SPA takes the site root, the zsh-core docs move under `/zsh-core-docs/`, one deployment carries both.
 
 ## Why publishing is deferred to post-extraction
 
 - The deploy consumes `zshref` **release assets**, which are not built yet.
 - Pre-extraction there is nothing to consume, so a pipeline would have to fetch the model, build the nlp binary and rebuild the index purely to stage throwaway inputs — then be rewritten against real releases anyway.
 - Building it once, against the actual post-extraction repos, is both simpler and less discarded work.
-- Pages hosts one site per repo, and the zsh-core docs workflow already claims this one; a pre-extraction SPA deploy would have to share that single deployment. Extraction removes the conflict.
 
 CI is a separate question and is **not** deferred — a `web` job already runs `pnpm qa`.
 

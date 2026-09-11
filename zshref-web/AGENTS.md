@@ -4,7 +4,7 @@ Static SPA: NLP search demo over zsh-core records. Sibling of `zshref-rs/` at re
 
 ## Stack
 
-- SvelteKit 2 + Svelte 5 (`adapter-static`) — single-page app prerendered as static HTML+JS+CSS for Cloudflare Pages
+- SvelteKit 2 + Svelte 5 (`adapter-static`) — single-page app prerendered as static HTML+JS+CSS; hosting intent: `EXTRACTION.md`
 - TypeScript (strict + `noUncheckedIndexedAccess`, matching the workspace), Vitest; lint via Biome (`.ts`) + svelte-check (`.svelte`)
 - `@huggingface/transformers` (ONNX Runtime Web) for browser-side BGE-small query embeddings
 - `markdown-it` + `shiki` (dual light/dark theme via CSS variables) for record markdown
