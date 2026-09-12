@@ -4,11 +4,6 @@
 // zsh-core's corpus and the rules YAML; only the index needs the model
 // (scripts/fetch-model) and minutes of CPU, so an index that still validates
 // against the corpus is kept.
-//
-//   pnpm --filter zshref-web build:index [--force] [--validate]
-//
-//   --force     rebuild the index even when the existing one validates
-//   --validate  only validate the existing index; exit 1 when it does not
 
 import { existsSync } from 'node:fs';
 import { writeFile } from 'node:fs/promises';
@@ -21,13 +16,15 @@ import { buildIndex, type IndexValidation, readIndex, validateIndex, writeIndex 
 import { buildLookupMap } from '../nlp/lookup-map-build';
 import { PATHS } from '../nlp/paths';
 import { emitRulesJson, loadRulesYaml, prettyJson } from '../nlp/rules-load';
+import { scriptFlags } from './_args';
 
-const args = new Set(process.argv.slice(2));
-const unknown = [...args].filter((a) => a !== '--force' && a !== '--validate');
-if (unknown.length > 0) {
-  console.error(`build-index: unknown argument(s): ${unknown.join(' ')}`);
-  process.exit(2);
-}
+const usage = `\
+pnpm --filter zshref-web build:index [--force] [--validate]
+
+  --force     rebuild the index even when the existing one validates
+  --validate  only validate the existing index; exit 1 when it does not\
+`;
+const args = scriptFlags('build-index', usage, ['--force', '--validate']);
 
 const say = (msg: string) => console.log(`build-index: ${msg}`);
 const seconds = (since: number) => `${((Date.now() - since) / 1000).toFixed(0)}s`;

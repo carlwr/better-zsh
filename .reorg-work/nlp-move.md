@@ -86,6 +86,12 @@ Appended as found; each item is a deviation from, or a refinement of, the list a
 - _oracle on an unknown category:_ the TS oracle throws (Rust returned zero matches). No capture exercises it.
 - _Rust model dir after S3:_ `zshref-rs/data-nlp/model` keeps serving the oracle binary until deletion but has no fetch script any more (copy from `packages/zshref-web/.aux/model` if wiped).
 - _embedder batching:_ padded batches of 32 are ~4× slower than 32 single calls on CPU (padding to the longest row); kept for now since it mirrors the capture. Follow-up: drop batching once the Rust captures stop mattering.
+- _reporter modes:_ every eval reporter (`nlp:eval-sentence`, `nlp:eval-mechanical`, `nlp:qa-score`, the tuning trio) runs in oracle mode by default while the captures are the reference, with `--product` for the SPA's no-resolver mode. Flipping the default to product mode (one identifier per script and per report test) is part of the post-gate follow-up that drops the resolver boost.
+- _resolver gap in the evals:_ the two train-split queries hitting the `resolveRedir` mirror gap move one `redirection` row of the sentence eval; the eval gates substitute Rust's captured `zsh_docs` verdicts for those queries (listed, not counted), as the batch gate does.
+- _QA corpus shape:_ `schema.json` had no `additionalProperties: false`; the zod shape is strict on entry/expected items and loose at the root (the YAML carries an editor `$schema` key). The regenerated schema thus tightens once. `warnings` counts what `run-qa.mjs` counted (negative present, positive absent); the per-query section is gone for good (holdout).
+- _`scripts/**` typechecked:_ the package's svelte-check include now reaches `nlp/**` and `scripts/**`.
+- _Rust number formatting:_ Rust `{:.N}` rounds exact binary ties half-to-even where JS `toFixed` rounds half-up (two dashboard cells hit it); every report formatter goes through `nlp/eval/format.ts` (`rustFixed`, `signed`, `rustDebugString`). The tune sweep in TS takes ~70 min against Rust's ~27 (one mechanical ranking pass ≈ 1 min: `rank.ts` rebuilds and lowercases each record's overlap haystack per query). Follow-up: memoize the per-record haystack (behaviour-preserving; touches the browser ranker, so after the gates).
+- _dashboard `[qa]` row_ is computed over the dashboard's own (candidate) tuning, not the committed one as the binary-driven harness did — identical without `BZ_TUNE_BASE`, honest with one.
 
 ## Oracle and captures
 

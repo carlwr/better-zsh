@@ -15,7 +15,7 @@ const config = {
       // The generated tsconfig reaches src/ and tests/ only; the Node-side
       // NLP code sits beside them. Paths are relative to .svelte-kit/.
       config: (tsconfig) => {
-        tsconfig.include.push('../nlp/**/*.ts');
+        tsconfig.include.push('../nlp/**/*.ts', '../scripts/**/*.ts');
       }
     }
   }

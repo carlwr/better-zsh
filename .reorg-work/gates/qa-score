@@ -1,0 +1,32 @@
+#!/usr/bin/env zsh
+# S4d gate (nlp-move.md §"Before/after gates", row "eval numbers", QA
+# summary): the in-process QA scoring (packages/zshref-web/scripts/qa-score.ts,
+# oracle mode) against .aux/nlp-move/rust/eval/run-qa-summary.txt — the
+# harness's stdout minus its per-query section, i.e. exactly the lines the TS
+# reporter prints, in order. Byte-equal at the printed precision.
+#
+#   .reorg-work/gates/qa-score
+#
+# Prints `qa-score gate: PASS` or the diff (`<` TS, `>` capture) and
+# `qa-score gate: FAIL: N lines differ`; exit 1 on FAIL. Holdout hygiene: the
+# QA corpus is held out; both sides hold hard-check lines (corpus-derived)
+# and aggregates only.
+emulate -LR zsh
+set -eu -o pipefail
+
+root=${0:A:h:h:h}
+expected=$root/.aux/nlp-move/rust/eval/run-qa-summary.txt
+actual=$(mktemp "${TMPDIR:-/tmp}/qa-score.XXXXXX")
+trap 'rm -f "$actual"' EXIT
+
+# `sed`: pnpm's `> pkg@version script` header lines, should a run-script wrap this.
+pnpm -C "$root" --filter zshref-web exec tsx scripts/qa-score.ts | sed '/^> /d' > "$actual"
+
+if diff "$actual" "$expected" > /dev/null; then
+  print 'qa-score gate: PASS'
+else
+  diff "$actual" "$expected" || true
+  n=$(diff "$actual" "$expected" | sed -n '/^[<>]/p' | wc -l | tr -d ' ')
+  print "qa-score gate: FAIL: $n lines differ"
+  exit 1
+fi

@@ -60,6 +60,54 @@ jobs:
       - run: pnpm --filter @carlwr/zsh-core-tooldef run test
       - run: pnpm --filter @carlwr/zsh-core-tooldef run test:pack
 
+  # The NLP evals need the model (~127M, gitignored) and a built index
+  # (minutes of CPU). Their tests skip without the assets everywhere else and
+  # must fail here, so a missing asset cannot pass silently. Not part of
+  # `integration`: the index build alone would dominate that job. Rehearse
+  # with `ACT_JOB=nlp scripts/test-integration-act` — the index build peaks
+  # above 2 GB, so the docker VM needs sizing (DEVELOPMENT.md).
+  nlp:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      BZ_REQUIRE_WEB_ARTIFACTS: "1"
+      # Every readiness hook verifies: zsh-core is built once, below, and no
+      # later step can rebuild it mid-run.
+      BZ_SKIP_UPSTREAM: "1"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup-node-pnpm
+      - name: Install zsh
+        run: |
+          # scripts/fetch-model is a zsh script
+          s=; command -v sudo >/dev/null 2>&1 && s=sudo
+          $s apt-get -o Acquire::Retries=3 update
+          $s apt-get -o Acquire::Retries=3 install -y --no-install-recommends zsh
+      # The fetch script pins the model revision, so its hash is the key: a
+      # bumped revision misses, an unchanged one restores and the fetch is a
+      # size check.
+      - uses: actions/cache@v6
+        with:
+          path: packages/zshref-web/.aux/model
+          key: nlp-model-${{ hashFiles('packages/zshref-web/scripts/fetch-model') }}
+      - run: packages/zshref-web/scripts/fetch-model
+      - run: pnpm --filter @carlwr/zsh-core build
+      # The index derives from the corpus and its projection, the rules, the
+      # Node-side NLP code and the ranker's schemas, the model and the
+      # embedder's package — all in the key, so a hit is an index of these
+      # exact inputs. No `restore-keys`: `build:index` keeps an index that
+      # validates against the corpus, and validation cannot see a changed
+      # embedder. Per OS: the vectors are what the runner's ONNX build computes.
+      - uses: actions/cache@v6
+        with:
+          path: packages/zshref-web/static/artifacts
+          key: ${{ runner.os }}-nlp-index-${{ hashFiles('packages/zsh-core/src/**', 'packages/zsh-core/package.json', 'packages/zshref-web/nlp/**', 'packages/zshref-web/src/lib/ranker/**', 'packages/zshref-web/scripts/build-index.ts', 'packages/zshref-web/scripts/fetch-model', 'zshref-rs/src/nlp/rules/*.yaml', 'pnpm-lock.yaml') }}
+      - run: pnpm --filter zshref-web build:index
+      - run: pnpm --filter zshref-web run check
+      - run: pnpm --filter zshref-web run test
+      - run: pnpm --filter zshref-web build
+
   # Published-state checks: they resolve currently-published npm/JSR versions,
   # so they fail legitimately until an upstream republish lands. Manual-only,
   # and a job of their own so nothing else can reach them.

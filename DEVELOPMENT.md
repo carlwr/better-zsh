@@ -44,16 +44,16 @@ The repo does not provide the container runtime.
 
 ### macOS
 
-If a CLI-first setup is preferred, `colima` works:
+If a CLI-first setup is preferred, `colima` works. Its default VM (2 CPUs, 2 GiB) is too small for the `nlp` job — the index build peaks above 2 GB and is OOM-killed (exit 137) — so size it at creation; the flags stick to the instance, and `colima stop` + `colima start` with new values resizes an existing one.
 
 ```sh
 brew install colima
-colima start --disk 20
+colima start --disk 20 --memory 6 --cpu 4
 
 # restart / reset
 colima stop
 colima delete
-colima start --disk 20
+colima start --disk 20 --memory 6 --cpu 4
 
 # reclaim VM-backed disk space
 docker system prune -af --volumes

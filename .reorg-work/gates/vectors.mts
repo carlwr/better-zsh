@@ -40,7 +40,9 @@ function cosine(a: Float32Array, b: number[]): number {
 }
 
 type Row = { rec: string; view: View; chars: number; cos: number }
-const texts = records.flatMap(r => VIEWS.map(view => `passage: ${r.text[view]}`))
+const texts = records.flatMap(r =>
+  VIEWS.map(view => `passage: ${r.text[view]}`),
+)
 const e = await createNodeEmbedder()
 const t0 = Date.now()
 const vectors = await e.embed(texts)
@@ -51,11 +53,16 @@ const rows: Row[] = records.flatMap((r, ri) =>
     rec: `${r.text.category}/${r.text.id}`,
     view,
     chars: r.text[view].length,
-    cos: cosine(vectors[ri * VIEWS.length + vi] ?? new Float32Array(), r.vectors[view]),
+    cos: cosine(
+      vectors[ri * VIEWS.length + vi] ?? new Float32Array(),
+      r.vectors[view],
+    ),
   })),
 )
 rows.sort((a, b) => a.cos - b.cos)
-const q = (p: number) => rows[Math.min(rows.length - 1, Math.floor(p * rows.length))]?.cos ?? Number.NaN
+const q = (p: number) =>
+  rows[Math.min(rows.length - 1, Math.floor(p * rows.length))]?.cos ??
+  Number.NaN
 const below = rows.filter(r => r.cos < MIN_COSINE).length
 
 console.log(
@@ -64,6 +71,12 @@ console.log(
 )
 console.log(`below ${MIN_COSINE}: ${below}`)
 for (const r of rows.slice(0, 3))
-  console.log(`  worst: ${r.cos.toFixed(8)}  ${r.rec}  ${r.view}  ${r.chars} chars`)
-console.log(below === 0 ? "vectors gate: PASS" : `vectors gate: FAIL (${below} below ${MIN_COSINE})`)
+  console.log(
+    `  worst: ${r.cos.toFixed(8)}  ${r.rec}  ${r.view}  ${r.chars} chars`,
+  )
+console.log(
+  below === 0
+    ? "vectors gate: PASS"
+    : `vectors gate: FAIL (${below} below ${MIN_COSINE})`,
+)
 process.exit(below === 0 ? 0 : 1)
