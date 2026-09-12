@@ -5,8 +5,8 @@
 import type { ProgressInfo } from '@huggingface/transformers';
 import { memoizedRetry } from './memoizedRetry';
 
-const MODEL_ID = 'BAAI/bge-small-en-v1.5';
-const DIMS = 384;
+export const MODEL_ID = 'BAAI/bge-small-en-v1.5';
+export const DIMS = 384;
 
 export type FeatureExtractionPipeline = (
   inputs: string | string[],

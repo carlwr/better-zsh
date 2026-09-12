@@ -4,12 +4,12 @@
 // not probabilistic, so it bypasses ranker math for the top slot. Slots
 // 2..N still come from the ranker.
 //
-// No TS-side resolver (zshref-web doesn't depend on @carlwr/zsh-core) — the
-// resolver-hit boost path is therefore always null here. The pre-computed
+// The browser bundle carries no resolver (it is zsh-core-free), so the
+// resolver-hit input to `rank` is always null here; the pre-computed
 // lookup-map subsumes canonical-form resolution.
 
 import { embedQuery } from './embedder';
-import type { LookupIndex } from './ranker/lookup-map';
+import { type LookupIndex, promoteToTop } from './ranker/lookup-map';
 import { expandQueryForEmbedding } from './ranker/query-expand';
 import { rank } from './ranker/rank';
 import type { Rules } from './ranker/rules';
@@ -42,15 +42,7 @@ export async function search(args: {
   const ranked0 = rank(q, queryVec, null, null, args.index, args.rules);
   const ranked = cats ? ranked0.filter((m) => cats.has(m.rec.category)) : ranked0;
   const mapHit = args.lookup.lookup(q);
-  if (mapHit && (cats === null || cats.has(mapHit.category))) {
-    const pos = ranked.findIndex(
-      (m) => m.rec.category === mapHit.category && m.rec.id === mapHit.id
-    );
-    if (pos > 0) {
-      const [hit] = ranked.splice(pos, 1);
-      if (hit) ranked.unshift(hit);
-    }
-  }
+  promoteToTop(ranked, mapHit && (cats === null || cats.has(mapHit.category)) ? mapHit : null);
   const total = ranked.length;
   const matches = ranked.slice(0, args.limit ?? 20);
   return { matches, total };

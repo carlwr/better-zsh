@@ -7,8 +7,9 @@
 //
 //   pnpm exec tsx .reorg-work/probe-embedder.mts [sample-size]
 //
-// Needs: a capture under .aux/nlp-move/, the model under zshref-rs/data-nlp/,
-// and the workspace installed (resolves transformers.js via zshref-web).
+// Needs: a capture under .aux/nlp-move/, the model under
+// packages/zshref-web/.aux/model/ (scripts/fetch-model there), and the
+// workspace installed (resolves transformers.js via zshref-web).
 
 import { readFileSync } from "node:fs"
 import { createRequire } from "node:module"
@@ -16,7 +17,7 @@ import { dirname, join, resolve } from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..")
-const modelDir = join(root, "zshref-rs", "data-nlp", "model")
+const modelDir = join(root, "packages", "zshref-web", ".aux", "model")
 const sampleSize = Number(process.argv[2] ?? 80)
 const CONTENT_MAX = 510 // 512 minus [CLS] and [SEP], as HF tokenizers count it
 

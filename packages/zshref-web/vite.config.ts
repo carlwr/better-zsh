@@ -9,6 +9,7 @@ export default defineConfig({
   ssr: { noExternal: ['shiki'] },
   test: {
     include: ['tests/**/*.test.ts'],
+    setupFiles: ['tests/_setup-fast-check.ts'],
     environment: 'node'
   }
 });

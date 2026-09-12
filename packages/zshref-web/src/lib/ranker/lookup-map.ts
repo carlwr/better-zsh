@@ -7,6 +7,8 @@
 
 import { z } from 'zod';
 
+import type { RankedMatch, ResolverHit } from './types';
+
 export const LookupEntrySchema = z.object({
   raw: z.string(),
   category: z.string(),
@@ -44,5 +46,20 @@ export class LookupIndex {
       return this.byRaw.get(lower) ?? null;
     }
     return null;
+  }
+}
+
+/**
+ * Hard-promote `hit` (the lookup map's claim for the query) to slot 0 of
+ * `ranked`, if present; slots 1..N keep ranker order. In place. The one
+ * promote, shared by product search and the Node-side evals (the parity and
+ * sanity fixtures rank without it).
+ */
+export function promoteToTop(ranked: RankedMatch[], hit: ResolverHit | null): void {
+  if (hit === null) return;
+  const pos = ranked.findIndex((m) => m.rec.category === hit.category && m.rec.id === hit.id);
+  if (pos > 0) {
+    const [found] = ranked.splice(pos, 1);
+    if (found) ranked.unshift(found);
   }
 }

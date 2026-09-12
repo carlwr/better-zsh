@@ -4,15 +4,15 @@ set -eu -o pipefail
 zmodload zsh/stat
 #
 # Download the local BGE-small ONNX model + tokenizer files into
-# data-nlp/model/. That directory is gitignored and is the one input not
-# reproducible from this repo; the vector index and every asset-gated test
-# derive from it.
+# .aux/model/ (this package). That directory is gitignored and is the one
+# input not reproducible from this repo; the Node embedder reads it for the
+# index build and for every model-gated test.
 
 me=${0:t}
-rsDir=${0:A:h:h}
-dst=$rsDir/data-nlp/model
+webDir=${0:A:h:h}
+dst=$webDir/.aux/model
 
-repo=BAAI/bge-small-en-v1.5  # keep in sync with MODEL_ID in src/nlp/index.rs
+repo=BAAI/bge-small-en-v1.5  # = the embedder's MODEL_ID; a test checks the pin
 
 # Pinned revision: on a moving ref, new weights would silently change every
 # vector in the index and every score derived from it.
@@ -20,8 +20,8 @@ rev=5c38ec7c405ec4b44b94cc5a9bb96e735b38267a
 
 # <path>:<bytes>. The revision pins the content; the size catches a
 # truncated or interrupted download.
-# `onnx/model.onnx` plus the four tokenizer files are what `src/nlp/model.rs`
-# reads, and the same layout loads under transformers.js in zshref-web.
+# `onnx/model.onnx` plus the four tokenizer files are what transformers.js
+# loads in local-models mode (nlp/embedder-node.ts).
 files=(
   onnx/model.onnx:133093490
   tokenizer.json:711396
@@ -31,7 +31,7 @@ files=(
 )
 
 help="
-Download the local NLP model into data-nlp/model/ (~127M).
+Download the local NLP model into packages/zshref-web/.aux/model/ (~127M).
 
 Idempotent: a file already present at the pinned size is left alone.
 
@@ -39,8 +39,8 @@ USAGE:
   $me [--help]
 
 THEN:
-  make cli-nlp
-  zshref-rs/target/release/zshref nlp-search --rebuild-index
+  pnpm --filter zshref-web build:index   # the index (minutes on CPU); reporters build it in memory without
+  pnpm --filter zshref-web test          # the model- and index-gated tests now run instead of skipping
 "
 
 msg() { print -u2 -- "$me: $@" }

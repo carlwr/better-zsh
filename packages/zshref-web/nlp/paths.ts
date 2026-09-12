@@ -10,12 +10,12 @@ const repoRoot = resolve(pkgDir, '..', '..');
 // Transitional: rules, fixtures and the QA corpus still live in the Rust
 // tree, which `include_str!`s the YAML and is the oracle while the TS port
 // lands; they move into this package when the Rust nlp module is deleted.
-// The model and the staged index take the same route, the model first (with
-// the Node embedder).
 const zshrefRs = resolve(repoRoot, 'zshref-rs');
 const rulesDir = resolve(zshrefRs, 'src/nlp/rules');
 const qaDir = resolve(zshrefRs, 'tests/nlp-qa');
-const dataNlp = resolve(zshrefRs, 'data-nlp');
+// Build output (gitignored): what the SPA fetches under `/artifacts`;
+// `scripts/build-index.ts` writes it. The model: `scripts/fetch-model`.
+const artifactsDir = resolve(pkgDir, 'static/artifacts');
 
 export const PATHS = {
   tuning: resolve(rulesDir, 'tuning.yaml'),
@@ -30,10 +30,9 @@ export const PATHS = {
   sanityFixture: resolve(qaDir, 'sanity-fixture.json'),
   qaCorpus: resolve(qaDir, 'nlp-corpus.yaml'),
   qaSchema: resolve(qaDir, 'schema.json'),
-  modelDir: resolve(dataNlp, 'model'),
-  indexJson: resolve(dataNlp, 'index.json'),
-  // Build output (gitignored): what the SPA fetches under `/artifacts`.
-  artifactsDir: resolve(pkgDir, 'static/artifacts')
+  modelDir: resolve(pkgDir, '.aux/model'),
+  artifactsDir,
+  indexJson: resolve(artifactsDir, 'index.json')
 } as const;
 
 // The gitignored inputs — the only PATHS members whose absence is normal, so

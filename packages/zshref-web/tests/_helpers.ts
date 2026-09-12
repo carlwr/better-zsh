@@ -1,17 +1,18 @@
-// Artifact gating, on-disk loaders and fixture schemas shared by the tests.
+// Artifact gating, on-disk loaders and the compare-or-rewrite helper shared
+// by the tests. The fixture shapes live with their generators in
+// nlp/fixtures.ts; the loaders are re-exported here.
 
 import { existsSync } from 'node:fs';
 import { readFile, writeFile } from 'node:fs/promises';
 import { expect } from 'vitest';
 import { parse as parseYaml } from 'yaml';
-import { z } from 'zod';
 
+import { readIndex } from '../nlp/index-build';
 import { PATHS } from '../nlp/paths';
-import { loadVectorIndex } from '../src/lib/ranker/index-loader';
-import type { Rules } from '../src/lib/ranker/rules';
-import { loadRules } from '../src/lib/ranker/rules';
+import { prettyJson } from '../nlp/rules-load';
 import type { VectorIndex } from '../src/lib/ranker/types';
 
+export { loadParityFixture, loadSanityFixture } from '../nlp/fixtures';
 export { PATHS, STAGED } from '../nlp/paths';
 
 /**
@@ -30,8 +31,6 @@ export function artifactGate(label: string, needs: readonly string[]): string | 
   }
   return msg;
 }
-
-export const prettyJson = (value: unknown): string => `${JSON.stringify(value, null, 2)}\n`;
 
 /**
  * Compare-or-rewrite for a committed, generated JSON file: with `envVar` set
@@ -62,55 +61,5 @@ export async function readData(path: string): Promise<unknown> {
   return path.endsWith('.yaml') ? parseYaml(text) : JSON.parse(text);
 }
 
-export async function loadIndexFromDisk(): Promise<VectorIndex> {
-  return loadVectorIndex(await readData(PATHS.indexJson));
-}
-
-export async function loadRulesFromDisk(): Promise<Rules> {
-  const [tuning, stopwords, synonyms] = await Promise.all([
-    readData(PATHS.tuning),
-    readData(PATHS.stopwords),
-    readData(PATHS.synonyms)
-  ]);
-  return loadRules({ tuning, stopwords, synonyms });
-}
-
-const ParityEntrySchema = z.object({
-  query: z.string(),
-  queryVec: z.array(z.number()),
-  resolverHit: z.object({ category: z.string(), id: z.string() }).optional(),
-  expected: z.array(
-    z.object({ category: z.string(), id: z.string(), score: z.number() })
-  )
-});
-export const ParityFixtureSchema = z.object({
-  version: z.literal(3),
-  limit: z.number().int(),
-  // Through the production loader, not just its schema: whatever validation
-  // a staged index gets, the fixture's embedded one gets too.
-  index: z.unknown().transform(loadVectorIndex),
-  entries: z.array(ParityEntrySchema)
-});
-export type ParityFixture = z.infer<typeof ParityFixtureSchema>;
-
-const SanityEntrySchema = z.object({
-  query: z.string(),
-  topMatch: z.object({ category: z.string(), id: z.string(), score: z.number() }),
-  runnerUp: z
-    .object({ category: z.string(), id: z.string(), score: z.number() })
-    .optional()
-});
-export const SanityFixtureSchema = z.object({
-  version: z.literal(1),
-  invariants: z.object({ absoluteFloor: z.number(), minMargin: z.number() }),
-  entries: z.array(SanityEntrySchema)
-});
-export type SanityFixture = z.infer<typeof SanityFixtureSchema>;
-
-export async function loadParityFixture(): Promise<ParityFixture> {
-  return ParityFixtureSchema.parse(await readData(PATHS.parityFixture));
-}
-
-export async function loadSanityFixture(): Promise<SanityFixture> {
-  return SanityFixtureSchema.parse(await readData(PATHS.sanityFixture));
-}
+/** The staged index, schema-validated (not corpus-validated: that is `validateIndex`'s test). */
+export const loadIndexFromDisk = (): Promise<VectorIndex> => readIndex(PATHS.indexJson);

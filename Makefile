@@ -77,7 +77,7 @@ cli-package: vendor
 
 .PHONY: nlp-model
 nlp-model:
-	zshref-rs/scripts/fetch-model
+	packages/zshref-web/scripts/fetch-model
 
 .PHONY: artifacts-web
 artifacts-web:

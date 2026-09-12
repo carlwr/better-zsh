@@ -64,6 +64,29 @@ Made in preparation; the step follows them unless it finds a reason not to, and 
 - _package-local test notes:_ the package's `AGENTS.md` (repo-root `TESTING.md` stays generic).
 - _`corpus_hash`:_ reimplemented over the TS projection (same inputs: package version, upstream tag, per-record JSON), not byte-matched to Rust's — its only job is "index built from this corpus?"
 
+### Decided during execution
+
+Appended as found; each item is a deviation from, or a refinement of, the list above.
+
+- _data files stay put until deletion:_ rules YAML, schemas, fixtures, `NLP.md` keep their Rust paths through S2–S4 (Rust `include_str!`s the YAML; `ci-rust.yml` runs the `--features nlp` leg). TS reads them through `packages/zshref-web/nlp/paths.ts`; the `git mv` is S5's first move.
+- _schemas:_ zod is the source of truth; `rules/schema/*.schema.json` and the QA `schema.json` are regenerated from it (`UPDATE_SCHEMAS=1`) at S5, in the same commit as the move — the committed form changes once (inlined defs, no `format: float`). The rule zod shapes live in `src/lib/ranker/types.ts` (browser-safe, the one definition); `nlp/rules-schema.ts` is the Node-side facade + schema generator.
+- _model dir:_ `packages/zshref-web/.aux/model/` (root `.gitignore` covers `.aux/` at any depth); `fetch-model` moves with the Node embedder at S3; `build:index` writes into `static/artifacts/` directly (already gitignored; no `.artifacts` + symlink). CI caches the model keyed on the fetch script's hash.
+- _contract in S2:_ the contract generator ports with the lookup map (S2), `corpus_hash` as a function in S2; both are inputs of later gates.
+- _gate scripts:_ under `.reorg-work/gates/`, not in the package; deleted with the dir at the closing step.
+- _category tables:_ the lookup map's surface-form table is a complete mapped type over `DocCategory` (a category not naming its forms fails to compile); the partial-table allowance above stays for the NL-question templates.
+- _resolver-key mirror gap (pre-existing, recorded, not fixed here):_ zsh-core `resolveRedir` and Rust `resolve_redir` disagree on a bare two-character redirection group operator with no tail (TS returns the `word`-tailed record of the shorter one-char operator; Rust returns nothing — zsh lexes the longest operator, so Rust looks right). Two train-split queries hit it; the batch gate treats them as a documented modulo. Follow-up: fix in zsh-core (+ its Rust mirror, tooldef parity case).
+- _`resolve_in` = `lookupRaw`:_ zsh-core's `lookupRaw` already does the trimmed direct-`_id` check before `resolve`; the TS oracle uses it as is.
+- _`corpusTexts(corpus, indexGroups)`:_ the synonyms' `index_groups` is a required parameter, so a forgotten argument cannot make build and validate silently agree.
+- _sweep capture:_ the first capture's sweep was truncated; the oracle was recaptured whole (same binaries, same index) before S2.
+- _SPA deploy:_ deferred to a follow-up step (maintainer decision); hosting intent goes into the package `AGENTS.md`.
+- _`corpus_hash` byte-matches Rust after all:_ `JSON.stringify` of the projected record equals serde's compact form, so the TS hash reproduces Rust's — the gate row "differs" became an informational line. The decision above ("not byte-matched") stands as a non-requirement, not as a fact.
+- _vectors are f32-identical:_ transformers.js on onnxruntime-node reproduces fastembed's vectors bit for bit (index: 3936/3936 f32-identical; batch gate: max |Δscore| = 0 over 743 requests). The cosine/ε tolerances in the gate table were never needed; kept as the gate's contract anyway.
+- _fixtures regenerated without a changed byte:_ `UPDATE_PARITY_FIXTURE=1` / `UPDATE_SANITY_FIXTURE=1` from the TS side reproduce the committed files byte for byte (f32-shortest printing matches ryu on every number present). They are TS goldens from here on. One cosmetic difference is known: `f32Shortest` breaks an exact decimal tie half-up where ryu goes half-even (one byte in the built `index.json`; same f32).
+- _sanity test split:_ `tests/sanity.test.ts` stays the product-mode smoke (browser embedder path, no resolver hit) with a tolerance derived from the effective resolver boost instead of the old `−0.05`; the exact oracle-mode checks (`sanity_fixture_matches_committed`, `sanity_fixture_reproduces_rust_within_eps`, `sanity_invariants_hold`) live in `tests/nlp/fixtures.test.ts`. Fixture zod shapes moved from `tests/_helpers.ts` to `nlp/fixtures.ts` (one shape for generator and loader).
+- _oracle on an unknown category:_ the TS oracle throws (Rust returned zero matches). No capture exercises it.
+- _Rust model dir after S3:_ `zshref-rs/data-nlp/model` keeps serving the oracle binary until deletion but has no fetch script any more (copy from `packages/zshref-web/.aux/model` if wiped).
+- _embedder batching:_ padded batches of 32 are ~4× slower than 32 single calls on CPU (padding to the longest row); kept for now since it mirrors the capture. Follow-up: drop batching once the Rust captures stop mattering.
+
 ## Oracle and captures
 
 Staged and recorded by `capture-nlp` in this dir; everything under `.aux/nlp-move/`. `probe-embedder.mts` (same dir) checks the TS embedder against the captured vectors.

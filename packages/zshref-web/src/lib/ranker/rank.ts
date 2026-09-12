@@ -123,8 +123,13 @@ function countWords(s: string): number {
   return s.split(/\s+/).filter((w) => w.length > 0).length;
 }
 
-// Mirror of rank.rs `semantic_weights`.
-function semanticWeights(
+/**
+ * Mirror of rank.rs `semantic_weights`: the effective (body, structured,
+ * expanded) weights. `expanded` is derived as 1 − body − structured (on the
+ * simplex by construction), then mass is shifted body → expanded the shorter
+ * the body. Continuous — no threshold cliff.
+ */
+export function semanticWeights(
   bodyWords: number,
   sw: Tuning['semantic_weights']
 ): [number, number, number] {
@@ -156,7 +161,8 @@ function categoryPenalties(index: VectorIndex, rules: Rules): Map<string, number
   return out;
 }
 
-function computeBoosts(
+/** Mirror of rank.rs `boosts`. `q` is the lowercased query, as `rank` passes it. */
+export function computeBoosts(
   rec: RecordText,
   q: string,
   resolverHit: ResolverHit | null,
@@ -185,16 +191,23 @@ function computeBoosts(
   // the symbolic head of its display — the punctuation analogue of wordExact.
   const symbolExact = symbolTokens(q).some((t) => t === id || symbolHead(display) === t);
   const exactWord = wordExact || symbolExact ? eff.exactWord : 0;
-  const overlap = f(wordOverlap(rec, q, rules));
-  const wo = b.word_overlap;
-  // Mirror of rank.rs `overlap_boost`.
-  const overlapBoost = fDiv(fMul(f(wo.scale), overlap), fAdd(overlap, f(wo.half_sat)));
-  const lexical = f(exactWord + overlapBoost);
+  const lexical = f(exactWord + overlapBoost(wordOverlap(rec, q, rules), b));
   return {
     category,
     resolver,
     lexical
   };
+}
+
+/**
+ * Mirror of rank.rs `overlap_boost`: smooth saturating lexical-overlap boost
+ * over the overlap count `n`: `scale · n / (n + half_sat)` — monotone,
+ * asymptote `scale`, half at `half_sat`.
+ */
+export function overlapBoost(n: number, b: Tuning['boosts']): number {
+  const nf = f(n);
+  const wo = b.word_overlap;
+  return fDiv(fMul(f(wo.scale), nf), fAdd(nf, f(wo.half_sat)));
 }
 
 function isDiscriminating(word: string, rules: Rules): boolean {
@@ -215,12 +228,14 @@ function wordOverlap(rec: RecordText, q: string, rules: Rules): number {
   return count;
 }
 
-// Mirror of rank.rs `symbol_tokens`.
-// Literal symbol tokens in `q`: whitespace tokens that bear punctuation or are
-// `$`-sigiled parameter refs, lowercased, with surrounding quotes and one
-// leading `$` stripped ("$?" -> "?"). Exactly what significantWords discards,
-// yet how zsh names its operators and special parameters.
-function symbolTokens(q: string): string[] {
+/**
+ * Mirror of rank.rs `symbol_tokens`.
+ * Literal symbol tokens in `q`: whitespace tokens that bear punctuation or are
+ * `$`-sigiled parameter refs, lowercased, with surrounding quotes and one
+ * leading `$` stripped ("$?" -> "?"). Exactly what significantWords discards,
+ * yet how zsh names its operators and special parameters.
+ */
+export function symbolTokens(q: string): string[] {
   const out: string[] = [];
   for (const t of q.split(/\s+/)) {
     if (t.length === 0) continue;
@@ -232,11 +247,13 @@ function symbolTokens(q: string): string[] {
   return out;
 }
 
-// Mirror of rank.rs `symbol_head`.
-// Leading run of operator characters in a display form — the symbol before any
-// alphanumeric operand placeholder: ">> word" -> ">>", "?" -> "?",
-// "auto_cd" -> null. Lets a bare-operator query match a sig-shaped record.
-function symbolHead(display: string): string | null {
+/**
+ * Mirror of rank.rs `symbol_head`.
+ * Leading run of operator characters in a display form — the symbol before any
+ * alphanumeric operand placeholder: ">> word" -> ">>", "?" -> "?",
+ * "auto_cd" -> null. Lets a bare-operator query match a sig-shaped record.
+ */
+export function symbolHead(display: string): string | null {
   const m = display.search(/[A-Za-z0-9 ]/);
   const end = m === -1 ? display.length : m;
   return end > 0 ? display.slice(0, end) : null;
