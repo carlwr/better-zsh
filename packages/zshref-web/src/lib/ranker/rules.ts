@@ -1,26 +1,25 @@
-// Bundle of static rule data read from zshref release artifacts.
-// Pass through `loadRules` once at startup; the ranker reads it as `Rules`.
+// The three rule files as one bundle: their shapes by name, and the loader.
+// The browser passes the fetched `rules/*.json` through `loadRules` once at
+// startup; the Node side feeds it the YAML (nlp/rules-load.ts). The ranker
+// reads the result as `Rules`.
 
-import {
-  type Stopwords,
-  StopwordsSchema,
-  type Synonyms,
-  SynonymsSchema,
-  type Tuning,
-  TuningSchema
-} from './types';
+import type { z } from 'zod';
 
-export interface Rules {
-  tuning: Tuning;
-  stopwords: Stopwords;
-  synonyms: Synonyms;
-}
+import { StopwordsSchema, SynonymsSchema, TuningSchema } from './types';
 
-export function loadRules(input: {
-  tuning: unknown;
-  stopwords: unknown;
-  synonyms: unknown;
-}): Rules {
+// Canonical key source: file base names (`<name>.yaml`, `<name>.json`,
+// `<name>.schema.json`) in emission order.
+export const RULE_SCHEMAS = {
+  tuning: TuningSchema,
+  stopwords: StopwordsSchema,
+  synonyms: SynonymsSchema
+} as const;
+export type RuleFile = keyof typeof RULE_SCHEMAS;
+export const RULE_FILES = Object.keys(RULE_SCHEMAS) as RuleFile[];
+
+export type Rules = { [K in RuleFile]: z.output<(typeof RULE_SCHEMAS)[K]> };
+
+export function loadRules(input: Record<RuleFile, unknown>): Rules {
   return {
     tuning: TuningSchema.parse(input.tuning),
     stopwords: StopwordsSchema.parse(input.stopwords),

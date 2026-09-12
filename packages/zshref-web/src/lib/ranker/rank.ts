@@ -9,15 +9,16 @@
 // Rust emitted. The parity-fixture test asserts byte-equality.
 
 import type { Rules } from './rules';
-import type {
-  Boosts,
-  IndexedRecord,
-  RankedMatch,
-  RecordText,
-  ResolverHit,
-  SemanticScores,
-  Tuning,
-  VectorIndex
+import {
+  type Boosts,
+  derivedBoosts,
+  type IndexedRecord,
+  type RankedMatch,
+  type RecordText,
+  type ResolverHit,
+  type SemanticScores,
+  type Tuning,
+  type VectorIndex
 } from './types';
 
 const f = Math.fround;
@@ -155,15 +156,6 @@ function categoryPenalties(index: VectorIndex, rules: Rules): Map<string, number
   return out;
 }
 
-// Mirror of rank.rs `BoostWeights::{exact_word, resolver}`.
-function exactWordBoost(b: Tuning['boosts']): number {
-  return f(f(b.category) + f(b.exact_word_increment));
-}
-
-function resolverBoost(b: Tuning['boosts']): number {
-  return f(exactWordBoost(b) + f(b.resolver_increment));
-}
-
 function computeBoosts(
   rec: RecordText,
   q: string,
@@ -171,12 +163,13 @@ function computeBoosts(
   rules: Rules
 ): Boosts {
   const b = rules.tuning.boosts;
+  const eff = derivedBoosts(b);
   const categoryWord = rec.category.toLowerCase();
   const labelWord = rec.category_label.toLowerCase();
   const category = q.includes(categoryWord) || q.includes(labelWord) ? f(b.category) : 0;
   const resolver =
     resolverHit && resolverHit.category === rec.category && resolverHit.id === rec.id
-      ? resolverBoost(b)
+      ? eff.resolver
       : 0;
   const id = rec.id.toLowerCase();
   const display = rec.display.toLowerCase();
@@ -191,7 +184,7 @@ function computeBoosts(
   // significantWords drops it. Match those tokens against the record's id and
   // the symbolic head of its display — the punctuation analogue of wordExact.
   const symbolExact = symbolTokens(q).some((t) => t === id || symbolHead(display) === t);
-  const exactWord = wordExact || symbolExact ? exactWordBoost(b) : 0;
+  const exactWord = wordExact || symbolExact ? eff.exactWord : 0;
   const overlap = f(wordOverlap(rec, q, rules));
   const wo = b.word_overlap;
   // Mirror of rank.rs `overlap_boost`.

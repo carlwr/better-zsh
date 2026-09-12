@@ -1,7 +1,8 @@
 // Artifact gating, on-disk loaders and fixture schemas shared by the tests.
 
 import { existsSync } from 'node:fs';
-import { readFile } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
+import { expect } from 'vitest';
 import { parse as parseYaml } from 'yaml';
 import { z } from 'zod';
 
@@ -28,6 +29,32 @@ export function artifactGate(label: string, needs: readonly string[]): string | 
     throw new Error(`${msg} (BZ_REQUIRE_WEB_ARTIFACTS=1)`);
   }
   return msg;
+}
+
+export const prettyJson = (value: unknown): string => `${JSON.stringify(value, null, 2)}\n`;
+
+/**
+ * Compare-or-rewrite for a committed, generated JSON file: with `envVar` set
+ * the file is (re)written from `generated`; otherwise it must exist and equal
+ * `generated` as parsed JSON (formatting is free to differ). `render` is the
+ * writer, so a fixture with its own number printing round-trips through it
+ * before the comparison.
+ */
+export async function assertCommittedJson(
+  path: string,
+  generated: unknown,
+  envVar: string,
+  render: (value: unknown) => string = prettyJson
+): Promise<void> {
+  const text = render(generated);
+  if (process.env[envVar] === '1') {
+    await writeFile(path, text);
+    return;
+  }
+  if (!existsSync(path)) {
+    throw new Error(`${path} is missing — generate it with ${envVar}=1`);
+  }
+  expect(JSON.parse(await readFile(path, 'utf8'))).toEqual(JSON.parse(text));
 }
 
 export async function readData(path: string): Promise<unknown> {

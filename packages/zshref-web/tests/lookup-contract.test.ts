@@ -18,47 +18,26 @@
 import { readFile } from 'node:fs/promises';
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
+import { evalBare, LOOKUP_CONTRACT_VERSION, phrasingKinds, predicates } from '../nlp/contract';
+import { surfaceFormKinds } from '../nlp/lookup-map-build';
 import { LookupIndex, LookupMapSchema } from '../src/lib/ranker/lookup-map';
 import { PATHS } from './_helpers';
 
 const IdentitySchema = z.object({ category: z.string(), id: z.string() });
 
-const SurfaceFormKindSchema = z.enum([
-  'id',
-  'display',
-  'lower-display',
-  'no-prefix-display',
-  'no-prefix-id'
-]);
-const PhrasingKindSchema = z.enum([
-  'bare',
-  'label-prefix',
-  'label-suffix',
-  'id-prefix',
-  'id-suffix'
-]);
-const PredicateSchema = z.enum(['top1-in-set']);
-
-const ContractEntrySchema = z.object({
-  query: z.string(),
-  record: IdentitySchema,
-  surfaceFormKind: SurfaceFormKindSchema,
-  phrasingKind: PhrasingKindSchema,
-  predicate: PredicateSchema,
-  expectedSet: z.array(IdentitySchema)
-});
-type ContractEntry = z.infer<typeof ContractEntrySchema>;
-
 const LookupContractSchema = z.object({
-  version: z.literal(1),
-  entries: z.array(ContractEntrySchema)
+  version: z.literal(LOOKUP_CONTRACT_VERSION),
+  entries: z.array(
+    z.object({
+      query: z.string(),
+      record: IdentitySchema,
+      surfaceFormKind: z.enum(surfaceFormKinds),
+      phrasingKind: z.enum(phrasingKinds),
+      predicate: z.enum(predicates),
+      expectedSet: z.array(IdentitySchema)
+    })
+  )
 });
-
-function predicateHolds(entry: ContractEntry, idx: LookupIndex): boolean {
-  const hit = idx.lookup(entry.query);
-  if (!hit) return false;
-  return entry.expectedSet.some((e) => e.category === hit.category && e.id === hit.id);
-}
 
 async function readJson(path: string): Promise<unknown> {
   return JSON.parse(await readFile(path, 'utf8'));
@@ -72,25 +51,11 @@ describe('lookup contract (bare layer)', () => {
     ]);
     const contract = LookupContractSchema.parse(contractRaw);
     const idx = new LookupIndex(LookupMapSchema.parse(mapRaw));
-    const failures: string[] = [];
-    let bareTotal = 0;
-    let decoratedSkipped = 0;
-    for (const entry of contract.entries) {
-      if (entry.phrasingKind !== 'bare') {
-        decoratedSkipped++;
-        continue;
-      }
-      bareTotal++;
-      if (!predicateHolds(entry, idx)) {
-        failures.push(
-          `query=${JSON.stringify(entry.query)} record=${entry.record.category}/${entry.record.id} kind=${entry.surfaceFormKind}`
-        );
-      }
-    }
+    const e = evalBare(contract, idx);
     console.log(
-      `[contract bare] ${bareTotal} entries, ${failures.length} failures ` +
-        `(skipped ${decoratedSkipped} decorated — covered Rust-side by the mechanical sentence eval)`
+      `[contract bare] ${e.bareTotal} entries, ${e.failures.length} failures ` +
+        `(skipped ${e.skippedDecorated} decorated — covered Rust-side by the mechanical sentence eval)`
     );
-    expect(failures, failures.join('\n')).toEqual([]);
+    expect(e.failures, e.failures.join('\n')).toEqual([]);
   });
 });
