@@ -14,8 +14,8 @@ import {
 } from "./taxonomy.ts"
 
 /**
- * Augment each record with `mdBody` plus projected identity fields for
- * out-of-process consumers (the Rust CLI). Underscore-prefixed
+ * Augment each record with `mdBody` plus projected identity fields — the
+ * record as JSON consumers see it. Underscore-prefixed
  * `_id`/`_display`/`_title`/`_subKind` avoid collisions with existing record
  * fields (`display` on ZshOption, `subKind` on ParamExpnDoc). `_title` (the
  * rendered record title) is split out of `mdBody` so each consumer decides

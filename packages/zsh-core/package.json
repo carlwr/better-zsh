@@ -37,6 +37,12 @@
       "require": "./dist/assets.js",
       "default": "./dist/assets.mjs"
     },
+    "./json": {
+      "types": "./dist/types/json.d.ts",
+      "import": "./dist/json.mjs",
+      "require": "./dist/json.js",
+      "default": "./dist/json.mjs"
+    },
     "./meta": {
       "types": "./dist/types/meta.d.ts",
       "import": "./dist/meta.mjs",

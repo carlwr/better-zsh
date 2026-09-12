@@ -4,6 +4,7 @@
     "./analysis.ts",
     "./assets.ts",
     "./index.ts",
+    "./json.ts",
     "./meta.ts",
     "./render.ts",
     "./resolver.ts",
@@ -31,6 +32,7 @@
     "src/analysis/fact-types.ts:FactGuard",
     "src/docs/corpus.ts:DocMap",
     "src/docs/corpus.ts:SubKindEnums",
+    "src/docs/json-types.ts:JsonDoc",
     "src/docs/resolver.ts:ResolverFeedbackKindSchemas",
     "src/docs/taxonomy.ts:SubKindFnMap",
     "src/render/refs.ts:RefDocK"

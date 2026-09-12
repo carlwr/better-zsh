@@ -26,9 +26,8 @@ type Unbrand<T> = T extends string & BrandTag
 type JsonDoc<K extends DocCategory> = Unbrand<DocRecordMap[K]>
 
 /**
- * Generated fields attached to every JSON record at build time. The
- * in-memory corpus omits these — they are projected during JSON emission
- * for out-of-process consumers.
+ * Generated fields attached to every JSON record; the in-memory corpus omits
+ * them.
  *
  * `_id` / `_display` patterns mirror the corpus-ASCII test's
  * `ID_RE` / `SURFACE_RE` — keep aligned.
