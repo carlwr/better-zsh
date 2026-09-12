@@ -1,9 +1,8 @@
 // JSON number printing for f32 data (index vectors, fixture scores): the
-// shortest decimal that reads back to the same f32 — what serde_json (ryu)
-// printed for Rust's `f32`, so a TS-written file stays as small as the Rust
-// one was. `JSON.stringify` prints a number as a double: an f32 read back
-// from JSON is exact in f64, so it would print its full expansion
-// (`0.10000000149011612` for `0.1f32`), several times the bytes.
+// shortest decimal that reads back to the same f32. `JSON.stringify` prints
+// a number as a double: an f32 read back from JSON is exact in f64, so it
+// would print its full expansion (`0.10000000149011612` for the f32 nearest
+// 0.1), several times the bytes.
 
 /**
  * Shortest decimal `s` with `Math.fround(Number(s)) === v`, as `toPrecision`

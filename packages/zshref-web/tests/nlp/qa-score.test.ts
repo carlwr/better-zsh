@@ -32,7 +32,7 @@ import {
 } from '../../nlp/eval/qa-score';
 import { corpusResolverHit } from '../../nlp/oracle';
 import type { JsonSchema } from '../../nlp/rules-schema';
-import { artifactGate, STAGED } from '../_helpers';
+import { artifactGate, assertCommittedJson, PATHS, STAGED } from '../_helpers';
 
 const entry = (e: z.input<typeof QaEntrySchema>) => QaEntrySchema.parse(e);
 const hit = (category: string, id: string) => ({ category, id });
@@ -220,6 +220,11 @@ describe('qa corpus', () => {
     expect(Object.keys(entryProps)).toEqual(['query', 'category', 'limit', 'topN', 'weight', 'expected']);
     expect(isSchema(entryProps.limit) && entryProps.limit.default).toBe(20);
     expect(isSchema(entryProps.weight) && entryProps.weight.default).toBe(1);
+  });
+
+  // The same variable rewrites the rules schemas (tests/nlp/rules.test.ts).
+  it('qa_schema_matches_committed_file', async () => {
+    await assertCommittedJson(PATHS.qaSchema, qaCorpusJsonSchema(), 'UPDATE_SCHEMAS');
   });
 });
 

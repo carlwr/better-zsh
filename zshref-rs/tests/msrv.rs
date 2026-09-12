@@ -1,16 +1,13 @@
 //! MSRV drift guard: no resolved dependency may require a newer Rust than the
-//! floor declared for the build configuration that pulls it in.
+//! declared `rust-version`.
 //!
 //! CI builds on `dtolnay/rust-toolchain@stable` with no MSRV job, so an
 //! understated floor is invisible there — it surfaces only when a user on the
-//! declared version tries to build. Two floors, because cargo has no
-//! per-feature MSRV: `rust-version` covers the default build,
-//! `[package.metadata.msrv] all-features` the every-feature build (`nlp`
-//! pulls `ort`, which floors higher).
+//! declared version tries to build.
 //!
-//! Both read `cargo metadata`, which needs no network while `Cargo.lock` is
-//! current, and compare numerically (`1.9` outranks `1.85` lexically, but not
-//! as a version). Default-features tests, so `make cli-test` gates them.
+//! Reads `cargo metadata`, which needs no network while `Cargo.lock` is
+//! current, and compares numerically (`1.9` outranks `1.85` lexically, but not
+//! as a version). `make cli-test` gates it.
 //! Resolution is filtered per release-relevant triple: unfiltered metadata
 //! drags in wasm/wasi-only packages nothing here ever compiles, while a
 //! host-only filter would make the verdict differ per machine.
@@ -33,7 +30,7 @@ fn ver(s: &str) -> (u32, u32, u32) {
     (next(), next(), next())
 }
 
-fn metadata(triple: &str, features: &[&str]) -> serde_json::Value {
+fn metadata(triple: &str) -> serde_json::Value {
     let out = Command::new(env!("CARGO"))
         .args([
             "metadata",
@@ -44,7 +41,6 @@ fn metadata(triple: &str, features: &[&str]) -> serde_json::Value {
             "--filter-platform",
             triple,
         ])
-        .args(features)
         .output()
         .expect("spawn cargo metadata");
     assert!(
@@ -55,14 +51,14 @@ fn metadata(triple: &str, features: &[&str]) -> serde_json::Value {
     serde_json::from_slice(&out.stdout).expect("cargo metadata json")
 }
 
-/// Every package resolved under `features`, across [`TRIPLES`], whose
-/// `rust_version` exceeds `floor` — one line each, ready for a failure list.
+/// Every package resolved across [`TRIPLES`] whose `rust_version` exceeds
+/// `floor` — one line each, ready for a failure list.
 /// A package that offends on only some triples is tagged with them; one that
 /// offends everywhere is not, since the tag would carry no information.
-fn over_floor(features: &[&str], floor: &str) -> Vec<String> {
+fn over_floor(floor: &str) -> Vec<String> {
     let mut by_pkg: BTreeMap<String, Vec<&str>> = BTreeMap::new();
     for triple in TRIPLES {
-        let meta = metadata(triple, features);
+        let meta = metadata(triple);
         for p in meta["packages"].as_array().expect("metadata.packages") {
             let Some(req) = p["rust_version"].as_str() else {
                 continue;
@@ -84,41 +80,15 @@ fn over_floor(features: &[&str], floor: &str) -> Vec<String> {
         .collect()
 }
 
-/// `decl` names the Cargo.toml key holding `floor`, so a failure points at the
-/// knob to turn.
-fn assert_fits(decl: &str, features: &[&str], floor: &str) {
-    let over = over_floor(features, floor);
-    assert!(
-        over.is_empty(),
-        "`{decl}` declares Rust {floor}, but resolved packages need newer:\n  {}\n\
-         Fix: raise `{decl}` in zshref-rs/Cargo.toml (keep its floor comment in \
-         sync), or pin the dependency back.",
-        over.join("\n  ")
-    );
-}
-
 #[test]
 fn default_build_fits_declared_rust_version() {
-    assert_fits("rust-version", &[], env!("CARGO_PKG_RUST_VERSION"));
-}
-
-#[test]
-fn all_features_build_fits_declared_floor() {
-    let meta = metadata(TRIPLES[0], &["--all-features"]);
-    let root = meta["packages"]
-        .as_array()
-        .expect("metadata.packages")
-        .iter()
-        .find(|p| p["name"] == env!("CARGO_PKG_NAME"))
-        .expect("root package in metadata");
-    let floor = root["metadata"]["msrv"]["all-features"]
-        .as_str()
-        .expect("[package.metadata.msrv] all-features missing from Cargo.toml")
-        .to_string();
-
-    assert_fits(
-        "package.metadata.msrv.all-features",
-        &["--all-features"],
-        &floor,
+    let floor = env!("CARGO_PKG_RUST_VERSION");
+    let over = over_floor(floor);
+    assert!(
+        over.is_empty(),
+        "`rust-version` declares Rust {floor}, but resolved packages need newer:\n  {}\n\
+         Fix: raise `rust-version` in zshref-rs/Cargo.toml (keep its floor comment in \
+         sync), or pin the dependency back.",
+        over.join("\n  ")
     );
 }

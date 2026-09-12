@@ -43,8 +43,8 @@ const idOnly: SurfaceFormsFn = (id) => [{ form: id, kind: 'id' }];
 // token has several resolvable destinations, which is the ranker's job.
 //
 // The option resolver strips `_` and case and handles `NO_`/`no_` negation,
-// so each option form canonicalizes to the same id. `toLowerCase()` stands
-// in for Rust's ASCII lowercasing: `_display` is printable ASCII.
+// so each option form canonicalizes to the same id. `toLowerCase()` is
+// ASCII lowercasing here: `_display` is printable ASCII.
 const surfaceForms: { readonly [K in DocCategory]: SurfaceFormsFn } = {
   option: (id, display) => [
     { form: id, kind: 'id' },
@@ -94,8 +94,8 @@ const compareEntries = (a: LookupEntry, b: LookupEntry): number =>
 /**
  * Every enumerated surface form the resolver canonicalizes, sorted by (raw,
  * category, id). `resolverKey` is a function of the form alone, so a form
- * reached from several records lands on one destination — the Rust side's
- * collision branch was dead by construction, and a plain map suffices.
+ * reached from several records lands on one destination — no collision
+ * handling is needed, and a plain map suffices.
  */
 export function buildLookupMap(corpus: DocCorpus): LookupMap {
   const byRaw = new Map<string, ResolverHit>();

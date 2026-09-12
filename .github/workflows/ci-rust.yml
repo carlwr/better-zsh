@@ -63,8 +63,7 @@ jobs:
           BZ_REQUIRE_PARITY=1 pnpm --filter @carlwr/zsh-core-tooldef test parity
 
       # Proves the published `.crate` is self-contained: packaged with the same
-      # include rules as a publish, then compiled standalone with every feature
-      # enabled, not only the default configuration.
+      # include rules as a publish, then compiled standalone.
       - name: Vendored-mode test + package dry-run
         run: |
           make cli-vendored-test

@@ -1,8 +1,5 @@
-// The curated sentence eval as a report (NLP.md §"Eval architecture", layer
-// B): aggregates only — the total, the two splits (holdout as an
-// overfit-watch, never a tuning target) and the per-category breakdown.
-// Asset-gated like the Rust reporter: the model must be fetched
-// (scripts/fetch-model); a missing index is built in memory.
+// The curated sentence eval as a report: aggregates only — the total, the
+// two splits (holdout as the overfit watch) and the per-category breakdown.
 
 import { evalSentence, renderSentence } from '../nlp/eval/sentence';
 import { loadSentenceFixture } from '../nlp/eval/sentence-fixture';

@@ -1,7 +1,6 @@
 // The two committed NLP fixtures: their shapes, generators, and the checks
 // over them. `tests/nlp/fixtures.test.ts` drift-checks and (under
-// `UPDATE_*_FIXTURE=1`) rewrites the files; ported from
-// zshref-rs/src/nlp/fixtures.rs.
+// `UPDATE_*_FIXTURE=1`) rewrites the files.
 //
 // - parity-fixture.json — a closed arithmetic contract: it ships the
 //   miniature index it was ranked against alongside the pre-computed
@@ -273,7 +272,7 @@ export async function buildSanityFixture({ corpus, index, rules, embedder }: San
   };
 }
 
-/** f32, as the Rust invariant compared it. */
+/** f32, as the fixture stores scores. */
 const margin = (top: Scored, runner: Scored): number => Math.fround(top.score - runner.score);
 
 /** One message per violated invariant (identity drift / floor / margin). */

@@ -1,24 +1,27 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Stopwords",
   "type": "object",
   "properties": {
     "generic": {
       "type": "array",
       "items": {
         "type": "string"
-      }
+      },
+      "description": "Filtered from any tokenization of the query."
     },
     "discriminating_extra": {
       "type": "array",
       "items": {
         "type": "string"
-      }
+      },
+      "description": "Filtered additionally when deciding whether a query word is distinctive enough to qualify a record for the exact-word boost."
     }
   },
-  "additionalProperties": false,
   "required": [
     "generic",
     "discriminating_extra"
-  ]
+  ],
+  "additionalProperties": false,
+  "title": "Stopwords",
+  "description": "Query stopwords; rank-time."
 }

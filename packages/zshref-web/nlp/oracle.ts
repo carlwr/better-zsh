@@ -1,10 +1,10 @@
-// The Rust `search::run` (zshref-rs/src/nlp/search.rs) reproduced in TS, for
-// the captures under .aux/nlp-move and the evals: embed → resolver hit →
-// rank → lookup-map promote, emitted in the `batch --debug` response shape
-// with the capture's 6-decimal rounding. The resolver hit is a parameter —
-// oracle mode computes it as Rust did (`corpusResolverHit`), product mode
-// passes none (`noResolverHit`, what the SPA does). The product path itself
-// is src/lib/search.ts, untouched.
+// The Node-side search runner the evals share: embed → resolver hit → rank
+// → lookup-map promote. It keeps the `batch --debug` response shape of the
+// retired Rust CLI, 6-decimal rounding included, so the recorded oracle
+// captures stay comparable. The resolver hit is a parameter — oracle mode
+// computes it from the corpus (`corpusResolverHit`, as the captures had
+// it), product mode passes none (`noResolverHit`, what the SPA does). The
+// product path itself is src/lib/search.ts, untouched.
 
 import type { DocCorpus } from '@carlwr/zsh-core';
 import { type DocCategory, docCategories } from '@carlwr/zsh-core/taxonomy';
@@ -22,7 +22,7 @@ export type ResolverHitSource = (query: string, category?: DocCategory) => Resol
 /** Product mode: no resolver. */
 export const noResolverHit: ResolverHitSource = () => null;
 
-/** Oracle mode: the hit as Rust `resolver_key` computed it. */
+/** Oracle mode: the corpus resolver's verdict on the query. */
 export const corpusResolverHit =
   (corpus: DocCorpus): ResolverHitSource =>
   (query, category) =>
@@ -30,7 +30,7 @@ export const corpusResolverHit =
 
 export interface OracleInput {
   query: string;
-  /** Rust `input_from_json` default. */
+  /** Default `DEFAULT_LIMIT`. */
   limit?: number;
   category?: string;
   debug?: boolean;
@@ -44,7 +44,7 @@ export interface OracleDeps {
   resolverHit: ResolverHitSource;
 }
 
-// Field order = Rust `match_json` insertion order = the capture's key order.
+// Field order = the emitted key order (what the captures were compared on).
 export interface OracleMatch {
   title: string;
   category: { id: string; label: string };
@@ -81,8 +81,8 @@ export function docCategory(s: string): DocCategory {
 }
 
 /**
- * Rust `rounded`: 6 decimals of the f64 widening, half away from zero.
- * `Math.round` alone rounds a negative half toward +∞.
+ * 6 decimals of the f64 widening, half away from zero (the captures'
+ * rounding). `Math.round` alone rounds a negative half toward +∞.
  */
 export function rounded(v: number): number {
   const x = v * 1e6;

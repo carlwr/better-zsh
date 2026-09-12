@@ -1,12 +1,7 @@
-// The rule shapes for the Node side, and the JSON Schema (draft 2020-12)
-// generated from them for the YAML editor. The shapes live in the browser
-// bundle (src/lib/ranker/types.ts), zod-only, so one definition validates the
-// YAML here and the emitted JSON there; this module re-exports them and adds
-// the schema emission — for the sentence fixture too, which shares the
-// rules/ dir and its schema/ (shape: nlp/eval/sentence-fixture.ts). The
-// committed rules/schema/*.schema.json are regenerated from
-// `rulesJsonSchemas()` once the Rust nlp module goes (until then they are
-// schemars output, asserted by the Rust test suite).
+// The editor JSON Schemas (draft 2020-12) for everything under rules/: the
+// three rule files and the sentence fixture, generated from their zod shapes
+// so one definition validates the YAML, the emitted JSON and the editor. The
+// committed rules/schema/*.schema.json are `rulesJsonSchemas()` output.
 
 import { z } from 'zod';
 

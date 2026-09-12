@@ -1,10 +1,7 @@
 version: 2
 updates:
   - package-ecosystem: "npm"
-    # Two lockfiles: the pnpm workspace, and zshref-web outside it.
-    directories:
-      - "/"
-      - "/zshref-web"
+    directory: "/"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5

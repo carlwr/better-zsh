@@ -1,5 +1,3 @@
-// WEB-MIRROR-OF: zshref-rs/src/nlp/lookup_map.rs
-//
 // Static lookup map: canonical surface form → (category, id). Shipped as
 // JSON alongside index.json; consumed before the ranker as a hard-promote
 // bypass for canonical-identifier queries (e.g. `AUTO_CD`, `_arguments`,

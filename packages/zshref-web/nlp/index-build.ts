@@ -1,7 +1,7 @@
 // The vector index: build from the corpus (embed the three retrieval-text
 // views per record), validate against the corpus it claims to be built from,
-// read and write `index.json`. Ported from zshref-rs/src/nlp/index.rs; the
-// browser reads the file through `src/lib/ranker/index-loader.ts`.
+// read and write `index.json`. The browser reads the file through
+// `src/lib/ranker/index-loader.ts`.
 
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
@@ -80,10 +80,10 @@ export async function buildIndex({ corpus, rules, embedder, onProgress }: BuildI
 }
 
 /**
- * Is `index` an index of this corpus under these rules? Checks in the Rust
- * order: version, model, dims, corpus hash, the normalized flag, record count,
- * then per record the full retrieval text and every view's length. No
- * unit-length check — the flag is trusted.
+ * Is `index` an index of this corpus under these rules? Checks header
+ * before records: version, model, dims, corpus hash, the normalized flag,
+ * record count, then per record the full retrieval text and every view's
+ * length. No unit-length check — the flag is trusted.
  */
 export function validateIndex(index: VectorIndex, corpus: DocCorpus, rules: Rules): IndexValidation {
   const fail = (reason: string): IndexValidation => ({ ok: false, reason });
@@ -113,8 +113,8 @@ export function validateIndex(index: VectorIndex, corpus: DocCorpus, rules: Rule
   return { ok: true };
 }
 
-/** `index.json` as serde wrote it: compact, key order as the Rust structs,
- * each vector component the shortest decimal for its f32. */
+/** `index.json`: compact, fixed key order, each vector component the
+ * shortest decimal for its f32 (`f32VecJson`). */
 export function indexJson(index: VectorIndex): string {
   const { version, model, dims, normalized, corpus_hash } = index;
   const head = JSON.stringify({ version, model, dims, normalized, corpus_hash });
@@ -128,7 +128,7 @@ export async function writeIndex(path: string, index: VectorIndex): Promise<void
   await writeFile(path, indexJson(index));
 }
 
-/** Parse + schema-validate; `validateIndex` is the caller's, as in Rust `load`. */
+/** Parse + schema-validate; `validateIndex` is the caller's. */
 export async function readIndex(path: string): Promise<VectorIndex> {
   return loadVectorIndex(JSON.parse(await readFile(path, 'utf8')));
 }

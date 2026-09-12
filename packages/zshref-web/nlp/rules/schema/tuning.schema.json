@@ -1,0 +1,125 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "semantic_weights": {
+      "type": "object",
+      "properties": {
+        "body": {
+          "type": "number",
+          "description": "Mix over the embedding views. Only body and structured are stored; expanded is derived as 1 − body − structured (on the simplex by construction)."
+        },
+        "structured": {
+          "type": "number"
+        },
+        "short_body": {
+          "type": "object",
+          "properties": {
+            "strength": {
+              "type": "number",
+              "description": "Max shift, at body length 0."
+            },
+            "length_scale": {
+              "type": "number",
+              "description": "Body length at/above which the shift is zero."
+            }
+          },
+          "required": [
+            "strength",
+            "length_scale"
+          ],
+          "additionalProperties": false,
+          "description": "Sparse-body deformation: shifts mass body → expanded as a body shortens, so short records lean on structured/expanded text."
+        }
+      },
+      "required": [
+        "body",
+        "structured",
+        "short_body"
+      ],
+      "additionalProperties": false
+    },
+    "boosts": {
+      "type": "object",
+      "properties": {
+        "category": {
+          "type": "number",
+          "description": "Weakest signal: the query names the record's category."
+        },
+        "exact_word_increment": {
+          "type": "number",
+          "description": "Non-negative increment for a query word equal to id/display (exact_word = category + this)."
+        },
+        "resolver_increment": {
+          "type": "number",
+          "description": "Non-negative increment for a corpus-aware resolver hit (resolver = exact_word + this); the increments keep category ≤ exact_word ≤ resolver by construction."
+        },
+        "word_overlap": {
+          "type": "object",
+          "properties": {
+            "scale": {
+              "type": "number"
+            },
+            "half_sat": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "scale",
+            "half_sat"
+          ],
+          "additionalProperties": false,
+          "description": "Smooth saturating overlap boost: asymptote `scale`, half of it at `half_sat`."
+        }
+      },
+      "required": [
+        "category",
+        "exact_word_increment",
+        "resolver_increment",
+        "word_overlap"
+      ],
+      "additionalProperties": false
+    },
+    "penalties": {
+      "type": "object",
+      "properties": {
+        "category_rarity_max": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "category_rarity_max"
+      ],
+      "additionalProperties": false
+    },
+    "lexical": {
+      "type": "object",
+      "properties": {
+        "min_discriminating_word_len": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "min_significant_word_len": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "min_discriminating_word_len",
+        "min_significant_word_len"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "semantic_weights",
+    "boosts",
+    "penalties",
+    "lexical"
+  ],
+  "additionalProperties": false,
+  "title": "Tuning",
+  "description": "Rank-time scalar constants for the ranker (no re-embed on change)."
+}

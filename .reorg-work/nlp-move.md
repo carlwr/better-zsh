@@ -92,6 +92,8 @@ Appended as found; each item is a deviation from, or a refinement of, the list a
 - _`scripts/**` typechecked:_ the package's svelte-check include now reaches `nlp/**` and `scripts/**`.
 - _Rust number formatting:_ Rust `{:.N}` rounds exact binary ties half-to-even where JS `toFixed` rounds half-up (two dashboard cells hit it); every report formatter goes through `nlp/eval/format.ts` (`rustFixed`, `signed`, `rustDebugString`). The tune sweep in TS takes ~70 min against Rust's ~27 (one mechanical ranking pass ≈ 1 min: `rank.ts` rebuilds and lowercases each record's overlap haystack per query). Follow-up: memoize the per-record haystack (behaviour-preserving; touches the browser ranker, so after the gates).
 - _dashboard `[qa]` row_ is computed over the dashboard's own (candidate) tuning, not the committed one as the binary-driven harness did — identical without `BZ_TUNE_BASE`, honest with one.
+- _`UPDATE_*` regeneration_ is one mechanism (`assertCommittedJson` in the tests: compare, or rewrite under the env): `UPDATE_CATEGORIES_JSON`, `UPDATE_LOOKUP_MAP`, `UPDATE_LOOKUP_CONTRACT`, `UPDATE_PARITY_FIXTURE`, `UPDATE_SANITY_FIXTURE`, `UPDATE_SCHEMAS` (the four rule schemas and the QA `schema.json`). No separate emit path for schemas.
+- _biome and the data dirs:_ the package's `biome.jsonc` excludes `nlp/data` and `nlp/rules/schema` (the 2 MiB contract JSON exceeds biome's size cap, as it did under `zshref-rs/`).
 
 ## Oracle and captures
 

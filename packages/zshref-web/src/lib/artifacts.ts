@@ -1,6 +1,5 @@
 // Centralised loader for the static JSON artifacts under `/artifacts/`
-// (SvelteKit static folder), staged by `scripts/fetch-artifacts`
-// pre-extraction or fetched from a zshref release after. Loads are
+// (SvelteKit static folder), written by `pnpm build:index`. Loads are
 // zod-validated.
 
 import { z } from 'zod';

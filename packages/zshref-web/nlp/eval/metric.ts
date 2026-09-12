@@ -1,9 +1,9 @@
 // The eval metric (NLP.md §"Eval architecture"): each expected item is one
 // vote, graded on its own rank by `gain`; a category scores the weighted
 // mean of its votes, the total the unweighted mean over categories — so a
-// category with 100 votes counts as much as one with 5. f32 throughout, as
-// zshref-rs/src/nlp/sentence_fixture.rs computes it. β and the target
-// depths are fixed human-judgment values, never tuning knobs.
+// category with 100 votes counts as much as one with 5. f32 throughout, so
+// a printed score is reproducible to the digit. β and the target depths
+// are fixed human-judgment values, never tuning knobs.
 
 import { byteOrder } from '../byte-order';
 
@@ -51,7 +51,7 @@ export function score(votes: readonly Vote[]): Score {
     s.weights = f(s.weights + v.weight);
     sums.set(v.category, s);
   }
-  // Sorted before summing: the f32 sum depends on the order (Rust folds a BTreeMap).
+  // Sorted before summing: the f32 sum depends on the order.
   const perCategory = new Map(
     [...sums]
       .sort(([a], [b]) => byteOrder(a, b))

@@ -10,9 +10,6 @@
 //!   ../packages/.../artifacts/json/     present → cfg(data_source="monorepo")
 //!   neither                             compile error with actionable message
 //!
-//! The data fingerprint (`ZSHREF_BUILD_INPUT_HASH`) comes from the shared
-//! `src/data_fingerprint.rs` (also used by the runtime freshness check).
-//!
 //! Post-extraction the monorepo branch is dead; drop it and everything
 //! collapses to the vendored mode.
 

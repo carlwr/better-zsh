@@ -1,6 +1,6 @@
-// The resolver's verdict on a query, as the Rust `search.rs` computed it:
-// the ranker's resolver-hit input in oracle mode, and the canonicalizer
-// behind the lookup map and the lookup contract.
+// The resolver's verdict on a query: the ranker's resolver-hit input in
+// oracle mode, and the canonicalizer behind the lookup map and the lookup
+// contract.
 
 import type { DocCorpus } from '@carlwr/zsh-core';
 import { lookupRaw } from '@carlwr/zsh-core/resolver';
@@ -12,7 +12,7 @@ import type { ResolverHit } from '../src/lib/ranker/types';
  * first, then the per-category resolver. zsh-core's `lookupRaw` is exactly
  * that dispatch (the corpus maps are keyed by `idOf`, i.e. `_id`); `resolve`
  * alone is not — it never checks the literal key in template-keyed
- * categories (`!n` resolves to `!str`). Named as the Rust side names it.
+ * categories (`!n` resolves to `!str`).
  */
 export const resolveIn = lookupRaw;
 

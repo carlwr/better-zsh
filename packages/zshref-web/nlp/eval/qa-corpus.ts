@@ -1,8 +1,9 @@
 // The QA corpus (`nlp-corpus.yaml`): its shape, the loader, and the JSON
 // Schema generated from the shape for the YAML editor (the conventions of
-// nlp/rules-schema.ts; the committed schema.json is regenerated from
-// `qaCorpusJsonSchema()` once the Rust nlp module goes). The corpus is a
-// held-out set (NLP.md): code loads it, nothing prints an entry.
+// nlp/rules-schema.ts; the committed schema.json is `qaCorpusJsonSchema()`
+// output, regenerated under `UPDATE_SCHEMAS=1` beside the rules schemas).
+// The corpus is a held-out set (NLP.md): code loads it, nothing prints an
+// entry.
 
 import { readFile } from 'node:fs/promises';
 import { parse as parseYaml } from 'yaml';

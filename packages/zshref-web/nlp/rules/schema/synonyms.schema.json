@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "index_groups": {
+      "default": [],
+      "description": "Symmetric, index-time. If any member matches a record (whole word / phrase), the others are appended to its expanded view before embedding. May be empty.",
+      "type": "array",
+      "items": {
+        "minItems": 2,
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      }
+    },
+    "query_expansions": {
+      "default": [],
+      "description": "Directional, query-time, embedding-only. Maps colloquial query vocabulary onto the corpus's canonical term.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "when": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Colloquial trigger words / phrases (matched whole word / phrase). Any casing; normalized to lowercase at load."
+          },
+          "add": {
+            "type": "string",
+            "description": "Canonical term appended for embedding. One term by design; any casing, normalized to lowercase at load."
+          }
+        },
+        "required": [
+          "when",
+          "add"
+        ],
+        "additionalProperties": false,
+        "description": "One directional query rule: when any `when` trigger matches the query, the single canonical `add` term is appended to the embedded query string only (never the lexical-overlap bag — keeps short queries from being swamped)."
+      }
+    }
+  },
+  "additionalProperties": false,
+  "title": "Synonyms",
+  "description": "Generic zsh/English synonym data. Two disjoint mechanisms — see synonyms.yaml for the contract."
+}

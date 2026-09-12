@@ -1,10 +1,9 @@
-// Mirrors the unit tests of zshref-rs/src/nlp/sentence_fixture.rs: the
-// metric on synthetic votes, the fixture shape on inline YAML, the committed
-// fixture loaded blind (counts and record existence only — nothing of an
-// entry is printed), and — with the staged index and model — the eval report,
-// aggregates only. The eval chain itself (rank → promote → own-rank vote,
-// missing item past the end) runs over the parity fixture's miniature index,
-// so it needs no model.
+// The curated sentence eval: the metric on synthetic votes, the fixture
+// shape on inline YAML, the committed fixture loaded blind (counts and
+// record existence only — nothing of an entry is printed), and — with the
+// staged index and model — the eval report, aggregates only. The eval chain
+// itself (rank → promote → own-rank vote, missing item past the end) runs
+// over the parity fixture's miniature index, so it needs no model.
 
 import { loadCorpus } from '@carlwr/zsh-core';
 import { docCategories } from '@carlwr/zsh-core/taxonomy';
@@ -78,8 +77,8 @@ describe('committed sentence fixture', () => {
 describe('sentence eval report', () => {
   const skipReason = artifactGate('sentence eval report', [STAGED.index, STAGED.model]);
 
-  // The Rust reporter ran with the resolver hit; product mode (no hit) is
-  // the default once the port's gates are passed (nlp-move.md §Decisions).
+  // Oracle mode (resolver hit), as the recorded captures ran; flipping the
+  // default to product mode (no hit) is a recorded follow-up.
   it('sentence_fixture_eval_report', async (ctx) => {
     if (skipReason) ctx.skip(skipReason);
     const assets = await loadEvalAssets();

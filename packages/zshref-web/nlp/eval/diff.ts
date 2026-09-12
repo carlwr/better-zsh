@@ -4,8 +4,6 @@
 // hundred items can move the headline by under 0.01, and that move is a
 // net. This recovers the discrete signal — each item's rank under a
 // tuning, and how many items crossed the pass bar each way (never a net).
-// Ported from zshref-rs/src/nlp/eval_diff.rs and the `report` of
-// tune_sweep.rs.
 //
 // Holdout hygiene (NLP.md): the mover lines print query strings, so the
 // curated report is restricted to the train split (`trainOnly`); the

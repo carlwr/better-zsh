@@ -31,8 +31,8 @@ export async function search(args: {
   );
   // Multi-category filter is applied here, post-rank, not pushed into `rank`:
   // category penalties derive from full-corpus counts, so filtering the ranked
-  // output is score-identical to filtering inside `rank`, and keeps the
-  // rank.rs-mirrored `rank()` on its single-category Rust signature.
+  // output is score-identical to filtering inside `rank`, and keeps
+  // `rank()` on its single-category signature.
   //
   // `categories` semantics: null = no filter (all); a list = keep exactly those
   // (so [] keeps nothing). The caller passes null when every category is ticked,

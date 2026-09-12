@@ -3,13 +3,9 @@
 mod prose;
 
 use crate::corpus::{Corpus, ToolDef, ToolDefs, DOC_CATEGORIES};
-#[cfg(feature = "nlp")]
-use crate::nlp;
 use crate::output;
 use crate::tools;
 use anyhow::Result;
-#[cfg(feature = "nlp")]
-use clap::ArgGroup;
 use clap::{Arg, ArgAction, ArgMatches, Command, ValueHint};
 use serde_json::{json, Map, Value};
 
@@ -105,88 +101,6 @@ pub fn build_cli(tool_defs: &ToolDefs, corpus: &Corpus, mode: BuildMode) -> Comm
         mode,
     ));
 
-    #[cfg(feature = "nlp")]
-    {
-        root = root.subcommand(
-            Command::new("nlp-search")
-                .about("experimental local semantic search over zsh records")
-                .after_long_help(
-                    "Embeds the query with a local model and ranks bundled zsh-core records.\n\n\
-                     Required local model files under --model-dir:\n\
-                       model.onnx or onnx/model.onnx\n\
-                       tokenizer.json\n\
-                       config.json\n\
-                       special_tokens_map.json\n\
-                       tokenizer_config.json\n\n\
-                     Pass --rebuild-index to (re)generate the local index (the only mode that writes to disk); a missing index otherwise errors.",
-                )
-                .disable_help_flag(true)
-                .arg(
-                    Arg::new("query")
-                        .value_name("QUERY")
-                        .required(true)
-                        .help("natural-language query")
-                        .value_hint(ValueHint::Other),
-                )
-                .arg(
-                    Arg::new("limit")
-                        .long("limit")
-                        .value_name("LIMIT")
-                        .default_value("10")
-                        .hide_default_value(true)
-                        .value_parser(clap::value_parser!(u32).range(0..))
-                        .help("maximum matches to return (default: 10)"),
-                )
-                .arg(
-                    Arg::new("category")
-                        .long("category")
-                        .value_name("CATEGORY")
-                        .value_parser(clap::builder::PossibleValuesParser::new(
-                            DOC_CATEGORIES.as_slice(),
-                        ))
-                        .hide_possible_values(true)
-                        .help("restrict matches to one category"),
-                )
-                .arg(
-                    Arg::new("debug")
-                        .long("debug")
-                        .action(ArgAction::SetTrue)
-                        .help("include score components and retrieval text"),
-                )
-                .arg(
-                    Arg::new("model-dir")
-                        .long("model-dir")
-                        .value_name("DIR")
-                        .default_value(nlp::search::DEFAULT_MODEL_DIR)
-                        .hide_default_value(true)
-                        .value_hint(ValueHint::DirPath)
-                        .help("local fastembed model directory"),
-                )
-                .arg(
-                    Arg::new("index")
-                        .long("index")
-                        .value_name("FILE")
-                        .default_value(nlp::search::DEFAULT_INDEX_PATH)
-                        .hide_default_value(true)
-                        .value_hint(ValueHint::FilePath)
-                        .help("local JSON vector index path"),
-                )
-                .arg(
-                    Arg::new("rebuild-index")
-                        .long("rebuild-index")
-                        .action(ArgAction::SetTrue)
-                        .help("regenerate the local vector index before searching"),
-                )
-                .arg(pretty_arg())
-                .arg(help_arg()),
-        );
-
-        // Parser-only: completions and help must not expose internal checks.
-        if matches!(mode, BuildMode::Parsing) {
-            root = root.subcommand(build_selfcheck());
-        }
-    }
-
     let (words, leaves) = tools::schema::size_hint(tool_defs);
     root = root.subcommand(
         Command::new("schema")
@@ -236,55 +150,6 @@ pub fn build_cli(tool_defs: &ToolDefs, corpus: &Corpus, mode: BuildMode) -> Comm
     ));
 
     root
-}
-
-#[cfg(feature = "nlp")]
-fn build_selfcheck() -> Command {
-    Command::new("_selfcheck")
-        .hide(true)
-        .about("internal freshness/drift self-checks (not user-facing)")
-        .disable_help_flag(true)
-        .arg(
-            Arg::new("check-build-fresh")
-                .long("check-build-fresh")
-                .action(ArgAction::SetTrue)
-                .help("verify this binary's embedded data matches the current source tree"),
-        )
-        .arg(
-            Arg::new("validate-index")
-                .long("validate-index")
-                .action(ArgAction::SetTrue)
-                .help("validate the on-disk index against this binary (no model load)"),
-        )
-        .arg(
-            Arg::new("emit-rules")
-                .long("emit-rules")
-                .action(ArgAction::SetTrue)
-                .help("emit downstream rule-data JSON to --out"),
-        )
-        .group(
-            ArgGroup::new("check")
-                .args(["check-build-fresh", "validate-index", "emit-rules"])
-                .required(true),
-        )
-        .arg(
-            Arg::new("index")
-                .long("index")
-                .value_name("FILE")
-                .default_value(nlp::search::DEFAULT_INDEX_PATH)
-                .hide_default_value(true)
-                .value_hint(ValueHint::FilePath)
-                .help("on-disk index path checked by --validate-index"),
-        )
-        .arg(
-            Arg::new("out")
-                .long("out")
-                .value_name("DIR")
-                .required_if_eq("emit-rules", "true")
-                .value_hint(ValueHint::DirPath)
-                .help("output directory for --emit-rules"),
-        )
-        .arg(help_arg())
 }
 
 /// Multi-line `--version` string: pkg version, zsh upstream, corpus totals.
@@ -598,18 +463,6 @@ pub fn dispatch(cmd: Command, tool_defs: &ToolDefs, corpus: &Corpus) -> Result<i
             output::emit(&tools::schema::run(ctx.tool_defs)?, ctx.pretty);
             Ok(0)
         }
-        #[cfg(feature = "nlp")]
-        "nlp-search" => {
-            let input = nlp_search_input(sub_matches);
-            output::emit(&nlp::search::run(input, ctx.corpus)?, ctx.pretty);
-            Ok(0)
-        }
-        #[cfg(feature = "nlp")]
-        "_selfcheck" => {
-            let check = selfcheck_check(sub_matches);
-            output::emit(&nlp::selfcheck::run(check, ctx.corpus)?, ctx.pretty);
-            Ok(0)
-        }
         "batch" => crate::batch::run(ctx.tool_defs, ctx.corpus),
         "help" => {
             let command = sub_matches.get_one::<String>("command").map(String::as_str);
@@ -629,49 +482,6 @@ pub fn dispatch(cmd: Command, tool_defs: &ToolDefs, corpus: &Corpus) -> Result<i
             Ok(0)
         }
     }
-}
-
-#[cfg(feature = "nlp")]
-fn nlp_search_input(matches: &ArgMatches) -> nlp::search::Input {
-    nlp::search::Input {
-        query: matches
-            .get_one::<String>("query")
-            .cloned()
-            .unwrap_or_default(),
-        limit: *matches
-            .get_one::<u32>("limit")
-            .expect("clap applies default") as usize,
-        category: matches.get_one::<String>("category").cloned(),
-        debug: matches.get_flag("debug"),
-        model_dir: nlp_path(matches, "model-dir", nlp::search::DEFAULT_MODEL_DIR),
-        index_path: nlp_path(matches, "index", nlp::search::DEFAULT_INDEX_PATH),
-        rebuild_index: matches.get_flag("rebuild-index"),
-    }
-}
-
-#[cfg(feature = "nlp")]
-fn selfcheck_check(matches: &ArgMatches) -> nlp::selfcheck::Check {
-    use nlp::selfcheck::Check;
-    if matches.get_flag("validate-index") {
-        Check::Index {
-            index_path: nlp_path(matches, "index", nlp::search::DEFAULT_INDEX_PATH),
-        }
-    } else if matches.get_flag("emit-rules") {
-        Check::EmitRules {
-            out_dir: nlp_path(matches, "out", "."),
-        }
-    } else {
-        // `check` is a required group, so build-fresh is the remaining arm.
-        Check::BuildFresh
-    }
-}
-
-#[cfg(feature = "nlp")]
-fn nlp_path(matches: &ArgMatches, key: &str, default: &str) -> std::path::PathBuf {
-    let raw = matches
-        .get_one::<String>(key)
-        .expect("clap applies default");
-    nlp::search::resolve_path(raw, default)
 }
 
 fn render_help(mut cmd: Command, subcommand: Option<&str>) -> i32 {

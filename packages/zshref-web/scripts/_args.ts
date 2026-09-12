@@ -9,8 +9,8 @@ import { corpusResolverHit, noResolverHit, type ResolverHitSource } from '../nlp
 /** The mode flag every reporter takes, and its usage paragraph: one wording. */
 export const PRODUCT_FLAG = '--product';
 export const PRODUCT_USAGE = `\
-  ${PRODUCT_FLAG}  no resolver hit, as the SPA ranks. Default: the hit as the
-             Rust captures had it (nlp-move.md §Decisions "resolver hit").\
+  ${PRODUCT_FLAG}  no resolver hit, as the SPA ranks. Default: the corpus
+             resolver's hit, as the recorded oracle captures had it.\
 `;
 
 /**

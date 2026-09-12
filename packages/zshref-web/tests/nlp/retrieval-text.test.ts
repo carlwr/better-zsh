@@ -1,6 +1,6 @@
-// Mirrors the Rust unit tests in zshref-rs/src/nlp/retrieval_text.rs, plus
-// the helpers' edges (whole-word matching, value compaction, hint groups).
-// Pure — no corpus, no staged assets.
+// Retrieval text: the three views on synthetic records, plus the helpers'
+// edges (whole-word matching, value compaction, hint groups). Pure — no
+// corpus, no staged assets.
 
 import { describe, expect, it } from 'vitest';
 

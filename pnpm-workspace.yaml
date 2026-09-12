@@ -3,8 +3,9 @@ packages:
 
 # pnpm >=11: `allowBuilds` replaces the old `onlyBuiltDependencies` list; an
 # unlisted build script is a hard install error, so every one is decided here.
-# `onnxruntime-node` (native ORT for zshref-web's local-model tests) and its
-# transitive `protobufjs`/`sharp` come in via @huggingface/transformers.
+# `onnxruntime-node` (native ORT for zshref-web's Node embedder: index build,
+# evals, model-gated tests) and its transitive `protobufjs`/`sharp` come in
+# via @huggingface/transformers.
 allowBuilds:
   "@vscode/vsce-sign": true
   esbuild: true

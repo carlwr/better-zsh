@@ -5,9 +5,7 @@ dist
 .vite
 .env*
 !.env.example
-.artifacts
-# created by scripts/fetch-artifacts (committing it would dangle pre-stage and
-# break SvelteKit's static walk)
+# `pnpm build:index` output (what the SPA fetches under /artifacts)
 static/artifacts
 .DS_Store
 *.log

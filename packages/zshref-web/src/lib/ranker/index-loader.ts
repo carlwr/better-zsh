@@ -1,6 +1,6 @@
 // Parse + validate a `VectorIndex` JSON blob. Vector arrays are converted
 // to `Float32Array` by the zod schema (`F32Vec` transform) so reads round-
-// trip to the same f32 values Rust emitted.
+// trip to the f32 values the index build embedded.
 
 import { type VectorIndex, VectorIndexSchema } from './types';
 

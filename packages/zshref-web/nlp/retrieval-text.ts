@@ -2,11 +2,11 @@
 // expanded) that get embedded. Changes here invalidate the corpus vectors;
 // re-embed required.
 //
-// Ported from zshref-rs/src/nlp/retrieval_text.rs. The record walked here is
-// the JSON projection as Rust read it (`projection.ts`) after a
-// `JSON.stringify` round trip (undefined-valued keys gone, key order kept).
-// String handling mirrors Rust's ASCII semantics (`to_ascii_lowercase`,
-// `is_ascii_alphanumeric`) and Unicode `char::is_whitespace`.
+// The record walked here is the JSON projection (`projection.ts`) after a
+// `JSON.stringify` round trip (undefined-valued keys gone, key order kept) —
+// the same text a JSON consumer of the corpus sees.
+// Lowercasing and alphanumeric tests are ASCII-only; whitespace is Unicode
+// White_Space.
 
 import type { DocCorpus } from '@carlwr/zsh-core';
 
@@ -16,7 +16,7 @@ import { projectCorpus } from './projection';
 export type { RecordText } from '../src/lib/ranker/types';
 
 export type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
-/** A projected record as JSON: Rust's `Rec` (`serde_json::Map`, insertion-ordered). */
+/** A projected record as JSON (insertion-ordered keys). */
 export type JsonRecord = { readonly [key: string]: JsonValue };
 
 /** `synonyms.json` `index_groups`, normalized (trimmed, lowercased) at rules load. */
@@ -174,8 +174,7 @@ export const normalizeWs = (s: string): string => words(s).join(' ');
 
 export const stripMarkdown = (s: string): string => s.replace(/[`*_]/g, '');
 
-// Rust `char::is_whitespace` (Unicode White_Space), behind `split_whitespace`
-// and `trim`; JS `\s` differs at U+0085 and U+FEFF.
+// Unicode White_Space; JS `\s` differs at U+0085 and U+FEFF.
 const wsRun = /[\t\n\v\f\r \u0085\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]+/;
 
 const words = (s: string): string[] => s.split(wsRun).filter((w) => w !== '');
@@ -192,5 +191,5 @@ const strField = (rec: JsonRecord, key: string): string => {
   return typeof v === 'string' ? v : '';
 };
 
-/** The projected record as its JSON text reads back: what Rust parsed. */
+/** The projected record as its JSON text reads back. */
 const asJson = (rec: object): JsonRecord => JSON.parse(JSON.stringify(rec)) as JsonRecord;

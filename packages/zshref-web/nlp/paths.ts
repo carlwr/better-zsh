@@ -5,14 +5,14 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const pkgDir = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const repoRoot = resolve(pkgDir, '..', '..');
+const nlpDir = resolve(pkgDir, 'nlp');
 
-// Transitional: rules, fixtures and the QA corpus still live in the Rust
-// tree, which `include_str!`s the YAML and is the oracle while the TS port
-// lands; they move into this package when the Rust nlp module is deleted.
-const zshrefRs = resolve(repoRoot, 'zshref-rs');
-const rulesDir = resolve(zshrefRs, 'src/nlp/rules');
-const qaDir = resolve(zshrefRs, 'tests/nlp-qa');
+// The editable rules (YAML) with their editor schemas, and the held-out
+// sentence fixture (NLP.md).
+const rulesDir = resolve(nlpDir, 'rules');
+// Committed, generated data (the `UPDATE_*` tests regenerate it) and the
+// held-out QA corpus with its editor schema.
+const dataDir = resolve(nlpDir, 'data');
 // Build output (gitignored): what the SPA fetches under `/artifacts`;
 // `scripts/build-index.ts` writes it. The model: `scripts/fetch-model`.
 const artifactsDir = resolve(pkgDir, 'static/artifacts');
@@ -23,13 +23,13 @@ export const PATHS = {
   synonyms: resolve(rulesDir, 'synonyms.yaml'),
   sentenceFixture: resolve(rulesDir, 'sentence-fixture.yaml'),
   rulesSchemaDir: resolve(rulesDir, 'schema'),
-  categoriesJson: resolve(qaDir, 'categories.json'),
-  lookupMap: resolve(qaDir, 'lookup-map.json'),
-  lookupContract: resolve(qaDir, 'lookup-contract.json'),
-  parityFixture: resolve(qaDir, 'parity-fixture.json'),
-  sanityFixture: resolve(qaDir, 'sanity-fixture.json'),
-  qaCorpus: resolve(qaDir, 'nlp-corpus.yaml'),
-  qaSchema: resolve(qaDir, 'schema.json'),
+  categoriesJson: resolve(dataDir, 'categories.json'),
+  lookupMap: resolve(dataDir, 'lookup-map.json'),
+  lookupContract: resolve(dataDir, 'lookup-contract.json'),
+  parityFixture: resolve(dataDir, 'parity-fixture.json'),
+  sanityFixture: resolve(dataDir, 'sanity-fixture.json'),
+  qaCorpus: resolve(dataDir, 'nlp-corpus.yaml'),
+  qaSchema: resolve(dataDir, 'schema.json'),
   modelDir: resolve(pkgDir, '.aux/model'),
   artifactsDir,
   indexJson: resolve(artifactsDir, 'index.json')

@@ -1,8 +1,7 @@
 // The oracle runner: `rounded` pure, the empty-query shape without touching
 // any dependency, and — with the staged index and model — the `batch
 // --debug` response shape and key order on two non-holdout queries. The
-// numbers themselves are the batch gate's business
-// (.reorg-work/gates/batch.mts), not a test's.
+// numbers themselves are pinned by the parity and sanity fixtures, not here.
 
 import { loadCorpus } from '@carlwr/zsh-core';
 import { beforeAll, describe, expect, it } from 'vitest';
@@ -74,7 +73,7 @@ describe('oracleSearch over the staged index', () => {
   const MATCH_KEYS = ['title', 'category', 'id', 'display', 'score', 'mdBody'];
   const DEBUG_KEYS = ['semantic', 'boosts', 'retrievalText'];
 
-  it('emits the batch response shape in Rust key order', async (ctx) => {
+  it('emits the batch response shape in its fixed key order', async (ctx) => {
     if (skipReason) ctx.skip(skipReason);
     const out = await oracleSearch({ query: ' AUTO_CD ', limit: 10, debug: true }, deps);
     expect(out.query).toBe(' AUTO_CD ');

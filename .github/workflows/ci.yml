@@ -102,7 +102,7 @@ jobs:
       - uses: actions/cache@v6
         with:
           path: packages/zshref-web/static/artifacts
-          key: ${{ runner.os }}-nlp-index-${{ hashFiles('packages/zsh-core/src/**', 'packages/zsh-core/package.json', 'packages/zshref-web/nlp/**', 'packages/zshref-web/src/lib/ranker/**', 'packages/zshref-web/scripts/build-index.ts', 'packages/zshref-web/scripts/fetch-model', 'zshref-rs/src/nlp/rules/*.yaml', 'pnpm-lock.yaml') }}
+          key: ${{ runner.os }}-nlp-index-${{ hashFiles('packages/zsh-core/src/**', 'packages/zsh-core/package.json', 'packages/zshref-web/nlp/**', 'packages/zshref-web/src/lib/ranker/**', 'packages/zshref-web/scripts/build-index.ts', 'packages/zshref-web/scripts/fetch-model', 'pnpm-lock.yaml') }}
       - run: pnpm --filter zshref-web build:index
       - run: pnpm --filter zshref-web run check
       - run: pnpm --filter zshref-web run test

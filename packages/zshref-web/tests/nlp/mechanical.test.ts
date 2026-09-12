@@ -1,14 +1,13 @@
-// Mirrors the unit tests of zshref-rs/src/nlp/mechanical.rs: the question
-// templates, the built set's shape (pure on the corpus), the blend and the
-// slices on synthetic input, the eval chain over the parity fixture's
-// miniature index (no model), and — with the staged index and model — a
-// capped smoke plus the full report.
+// The mechanical eval: the question templates, the built set's shape (pure
+// on the corpus), the blend and the slices on synthetic input, the eval
+// chain over the parity fixture's miniature index (no model), and — with
+// the staged index and model — a capped smoke plus the full report.
 //
-// The full report embeds thousands of queries (minutes): Rust ran it under
-// `--release` only. Here it is opt-in via `BZ_NLP_SLOW=1`, on top of the
-// artifact gate — `BZ_REQUIRE_WEB_ARTIFACTS=1` alone does not run it, so
-// the CI `nlp` job stays at the capped smoke; `pnpm nlp:eval-mechanical` is
-// the report's day-to-day form.
+// The full report embeds thousands of queries (minutes), so it is opt-in
+// via `BZ_NLP_SLOW=1`, on top of the artifact gate —
+// `BZ_REQUIRE_WEB_ARTIFACTS=1` alone does not run it, so the CI `nlp` job
+// stays at the capped smoke; `pnpm nlp:eval-mechanical` is the report's
+// day-to-day form.
 
 import { loadCorpus } from '@carlwr/zsh-core';
 import { docCategories, docDisplay } from '@carlwr/zsh-core/taxonomy';
@@ -66,7 +65,7 @@ describe('nl questions', () => {
 
 // Pure on the corpus, but two contract builds each: seconds on a loaded CI worker.
 describe('build', () => {
-  /** Non-trivial, every entry well-formed, in the Rust order: the contract's decorated phrasings, then the questions. */
+  /** Non-trivial, every entry well-formed, in build order: the contract's decorated phrasings, then the questions. */
   it('mechanical_build_is_well_formed', () => {
     const entries = buildMechanical(corpus);
     const decorated = buildLookupContract(corpus).entries.filter((e) => e.phrasingKind !== 'bare');

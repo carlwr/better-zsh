@@ -3,12 +3,9 @@
 mod batch;
 mod cli;
 mod corpus;
-// NLP-only: fingerprinting pulls in `sha2` and is only used by internal checks.
-#[cfg(feature = "nlp")]
+#[cfg(test)]
 mod data_fingerprint;
 mod fuzzy;
-#[cfg(feature = "nlp")]
-mod nlp;
 mod output;
 mod resolver;
 mod tools;

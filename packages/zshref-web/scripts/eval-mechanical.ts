@@ -1,10 +1,7 @@
-// The mechanical sentence eval as a report (NLP.md §"Eval architecture",
-// layer B): the component total with the per-category breakdown and
-// #1-violation counts, then the `[combined]` blend with the curated
-// fixture's train split — the two evals the dashboard tunes on. Slow: it
-// embeds every mechanical query (thousands). Asset-gated like the Rust
-// reporter: the model must be fetched (scripts/fetch-model); a missing index
-// is built in memory.
+// The mechanical sentence eval as a report: the component total with the
+// per-category breakdown and #1-violation counts, then the `[combined]`
+// blend with the curated fixture's train split. Slow: it embeds every
+// mechanical query (thousands).
 
 import { buildMechanical, evalMechanical, renderCombined, renderMechanical } from '../nlp/eval/mechanical';
 import { evalSentence } from '../nlp/eval/sentence';

@@ -2,9 +2,9 @@
 // natural-language queries, each naming the records it should surface, with
 // a per-item target depth and weight. The zod shape is also the editor
 // schema (nlp/rules-schema.ts emits it); loading validates and resolves each
-// item's `d`/`w` against the fixture defaults, as zshref-rs/src/nlp/
-// sentence_fixture.rs does. Holdout hygiene (NLP.md): nothing prints an
-// entry of the holdout split; `trainOnly` is the view for anything that does.
+// item's `d`/`w` against the fixture defaults. Holdout hygiene (NLP.md):
+// nothing prints an entry of the holdout split; `trainOnly` is the view for
+// anything that does.
 
 import { readFile } from 'node:fs/promises';
 import { parse as parseYaml } from 'yaml';
@@ -89,11 +89,11 @@ export interface SentenceFixture {
 }
 
 const f = Math.fround;
-/** Of the f32 value, as Rust checks it. */
+/** Of the f32 value (the precision the metric computes in). */
 const positive = (x: number): boolean => f(x) > 0 && Number.isFinite(f(x));
 
-/** The shape, then the load-time invariants (in the Rust order) and the
- * resolution. Messages name entries by index only — never by query. */
+/** The shape, then the load-time invariants (first violation reported) and
+ * the resolution. Messages name entries by index only — never by query. */
 export const SentenceFixtureSchema = SentenceFixtureShape.transform((raw, ctx): SentenceFixture => {
   const issue = (path: (string | number)[], message: string): void => {
     ctx.issues.push({ code: 'custom', input: raw, path, message });

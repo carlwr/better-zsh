@@ -1,11 +1,10 @@
-// The QA harness's scoring (zshref-rs/tests/nlp-qa/run-qa.mjs), in-process
-// over the oracle runner instead of the binary: the hard checks (templated
+// QA scoring over the oracle runner: the hard checks (templated
 // self-retrieval per record of a few categories, limit 1, category-weighted
 // pass rate) and the scored entries of the held-out corpus (weighted
-// expected sets, negatives as penalties). The report is the harness's
-// hard-check section and summary lines; the per-entry section is gone for
-// good — the corpus is a held-out set (NLP.md), and the harness's WARN lines
-// (query strings) are counted, never printed.
+// expected sets, negatives as penalties). The report is the hard-check
+// section and the summary lines; there is no per-entry section — the corpus
+// is a held-out set (NLP.md) — and a warning (an expected item's absence or
+// a negative's presence) is counted, never printed with its query.
 
 import type { DocCorpus } from '@carlwr/zsh-core';
 import { type DocCategory, docDisplay, idOf } from '@carlwr/zsh-core/taxonomy';
@@ -127,7 +126,7 @@ export interface EntryScore {
   entryExpectedWeight: number;
   /** Distinct positive expected items found. */
   numMatched: number;
-  /** A negative item present, or a positive one absent (the harness's counted WARNs). */
+  /** A negative item present, or a positive one absent. */
   warnings: number;
 }
 

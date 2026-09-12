@@ -211,8 +211,9 @@ describe('churn', () => {
   });
 });
 
-describe('rust formatting', () => {
-  // The expectations are rustc's own output for the same values.
+describe('report formatting', () => {
+  // The expectations are Rust's `{:.N}` / `{:?}` output for the same values
+  // (the rule the reports keep; nlp/eval/format.ts).
   it('rustFixed rounds exact ties to even, as {:.N} does', () => {
     const f = Math.fround;
     expect(rustFixed(f(0.5625), 3)).toBe('0.562');

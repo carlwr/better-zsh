@@ -1,8 +1,7 @@
-// JSON shapes the browser loads. The index shapes are emitted by zshref-rs
-// (consumed read-only here; the Rust SoT is `RecordText`, `IndexedRecord`,
-// `VectorIndex` in `zshref-rs/src/nlp/{retrieval_text,index}.rs`); the rule
-// shapes below are this package's own. zod schemas validate at load time;
-// types derive from them so drift = type error.
+// JSON shapes the browser loads: the index (`index.json`, written by
+// nlp/index-build.ts) and the rules (`rules/*.json`, emitted by
+// nlp/rules-load.ts from the YAML). zod schemas validate at load time; types
+// derive from them so drift = type error.
 
 import { z } from 'zod';
 
@@ -20,10 +19,10 @@ export const RecordTextSchema = z.object({
 });
 export type RecordText = z.infer<typeof RecordTextSchema>;
 
-// Float32Array transform: vectors round-trip through f32 precision (the
-// source values were f32 in Rust). Ranker math reads them as ArrayLike,
-// so Float32Array indexing returns the same JS-number representation as
-// the original f32.
+// Float32Array transform: vectors are f32 data (the embedder's output,
+// printed as the shortest decimal per component). Ranker math reads them
+// as ArrayLike, so Float32Array indexing returns the same JS-number
+// representation as the original f32.
 const F32Vec = z.array(z.number()).transform((arr) => new Float32Array(arr));
 
 export const ViewVectorsSchema = z.object({
@@ -54,8 +53,7 @@ export type VectorIndex = z.infer<typeof VectorIndexSchema>;
 // with them, normalizes, and emits the JSON the browser loads through the
 // same shapes; the editor schemas under rules/schema/ are generated from them
 // (nlp/rules-schema.ts). Strict: an unknown key is an error. Field order =
-// emitted key order. Mirrors zshref-rs/src/nlp/rules.rs until the Rust nlp
-// module goes.
+// emitted key order.
 
 const f = Math.fround;
 const f32 = z.number();
@@ -112,8 +110,8 @@ interface Violation {
   message: string;
 }
 
-// Range checks in the Rust order; the first violation is the error, as
-// `parse_tuning` reports it. Values compare as f32, as they are stored there.
+// Range checks in a fixed order; the first violation is the error. Values
+// compare as f32, as the ranker reads them.
 function tuningViolation(t: Tuning): Violation | null {
   const sw = t.semantic_weights;
   const b = t.boosts;
@@ -193,7 +191,8 @@ export type Stopwords = z.infer<typeof StopwordsSchema>;
 // Authors write triggers and canonical terms in natural casing (`PID`,
 // `process ID`) or as phrases; the matchers compare against a lowercased
 // haystack, so each term is trimmed and lowercased once at load rather than
-// constraining the author. ASCII lowercasing, as the Rust side does.
+// constraining the author. ASCII lowercasing, the same as the retrieval
+// text's (nlp/retrieval-text.ts).
 const asciiLower = (s: string): string => s.replace(/[A-Z]+/g, (m) => m.toLowerCase());
 const term = z
   .string()

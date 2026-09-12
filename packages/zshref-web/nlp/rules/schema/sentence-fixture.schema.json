@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "version": {
+      "type": "number",
+      "const": 4
+    },
+    "default-weight": {
+      "default": 1,
+      "description": "Weight applied to items that omit `w`; 1 when the fixture omits the field too.",
+      "type": "number"
+    },
+    "default-target-depth": {
+      "default": 3,
+      "description": "Target depth applied to items that omit `d`; 3 when the fixture omits the field too.",
+      "type": "number"
+    },
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string"
+          },
+          "want": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "cat": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "d": {
+                  "description": "Target depth; overrides `default-target-depth`.",
+                  "type": "number"
+                },
+                "w": {
+                  "description": "Weight; overrides `default-weight`.",
+                  "type": "number"
+                }
+              },
+              "required": [
+                "cat",
+                "id"
+              ],
+              "additionalProperties": false,
+              "title": "ExpectedItem",
+              "description": "One scored item within an entry's `want` set. Each item is graded on its OWN rank and contributes one vote; an N-item entry carries N votes."
+            }
+          },
+          "holdout": {
+            "default": false,
+            "description": "Held out from tuning when `true`; absent (the default) ⇒ train. `false` is accepted but redundant.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "query",
+          "want"
+        ],
+        "additionalProperties": false,
+        "title": "SentenceEntry"
+      }
+    }
+  },
+  "required": [
+    "version",
+    "entries"
+  ],
+  "additionalProperties": false,
+  "title": "SentenceFixture",
+  "description": "Sentence-style queries for the natural-language search eval: hand-curated paraphrased questions, each targeting specific canonical records. Test-only."
+}

@@ -1,12 +1,10 @@
-// WEB-MIRROR-OF: zshref-rs/src/nlp/rank.rs
-//
 // Pure ranker math. Inputs are pre-computed (query string, query vector,
 // optional resolver hit) so this module has no embedder / corpus dependency.
 //
-// f32 math: every floating-point op funnels through Math.fround so the
-// score sequence matches Rust's f32 evaluation bit-for-bit. Vector data
-// flows through Float32Array so values read back as the exact f32 values
-// Rust emitted. The parity-fixture test asserts byte-equality.
+// f32 math: every floating-point op funnels through Math.fround, and vector
+// data flows through Float32Array, so a score is a function of the f32
+// values the index carries and the parity fixture (a golden of this
+// ranker's own past output) pins the arithmetic byte for byte.
 
 import type { Rules } from './rules';
 import {
@@ -24,7 +22,8 @@ import {
 const f = Math.fround;
 
 function fAdd(...xs: number[]): number {
-  // Left-fold matches Rust's `iter().sum::<f32>()` (fold from 0 with `+`).
+  // Left fold from 0: the f32 sum depends on the order, and the parity
+  // fixture pins this one.
   let s = 0;
   for (const x of xs) s = f(s + x);
   return s;
@@ -53,8 +52,8 @@ function clamp01(x: number): number {
 }
 
 function dot(a: ArrayLike<number>, b: ArrayLike<number>): number {
-  // Mirrors Rust's `iter().zip()` (stops at the shorter); in practice both are
-  // DIMS-length, so the `?? 0` fallbacks never trigger (i stays in range).
+  // Stops at the shorter; in practice both are DIMS-length, so the `?? 0`
+  // fallbacks never trigger (i stays in range).
   let s = 0;
   const n = Math.min(a.length, b.length);
   for (let i = 0; i < n; i++) {
@@ -119,7 +118,7 @@ function scoreRecord(
 }
 
 function countWords(s: string): number {
-  // Mirrors Rust's `str::split_whitespace().count()`.
+  // Whitespace-separated runs; leading/trailing whitespace counts nothing.
   return s.split(/\s+/).filter((w) => w.length > 0).length;
 }
 

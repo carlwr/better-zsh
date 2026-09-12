@@ -1,13 +1,14 @@
 //! Content fingerprint of the binary's embedded data inputs.
 //!
-//! One implementation, two callers that must hash identically:
-//! - `build.rs` bakes it into `ZSHREF_BUILD_INPUT_HASH` (also driving cargo's
-//!   `rerun-if-changed`).
-//! - the runtime `_selfcheck --check-build-fresh` gate recomputes and compares
-//!   (semantics in `nlp::selfcheck::check_build_fresh`).
+//! `build.rs` bakes it into `ZSHREF_BUILD_INPUT_HASH` (also driving cargo's
+//! `rerun-if-changed`); the TS mirror in the tooldef parity suite recomputes
+//! it over the same inputs to detect a stale binary.
 //!
 //! Pure at module scope (no `env!`/`cfg!`/cargo directives outside
-//! `#[cfg(test)]`) so `build.rs` can `#[path]`-mod it without the runtime glue.
+//! `#[cfg(test)]`) so `build.rs` can `#[path]`-mod it. The crate compiles it
+//! under `cfg(test)` only, for the guard below — hence the crate-side
+//! `dead_code` allowance on what only `build.rs` calls.
+#![allow(dead_code)]
 
 use sha2::{Digest, Sha256};
 use std::io;
@@ -22,8 +23,7 @@ pub struct Entry {
 pub struct Collected {
     pub entries: Vec<Entry>,
     /// `build.rs` watches these for `rerun-if-changed` (catch added/removed
-    /// files); the runtime check only hashes `entries`.
-    #[allow(dead_code)]
+    /// files); only `entries` are hashed.
     pub watch_dirs: Vec<PathBuf>,
 }
 
@@ -175,9 +175,8 @@ mod tests {
     const INCLUDE_RE: &str = r#"include_(?:str|bytes)!\s*\(\s*(?:"([^"]*)"|([A-Za-z0-9_]+)!)"#;
 
     /// Every asset compiled into the binary must also be fingerprinted, or
-    /// editing it changes the binary while its build-input hash — and so
-    /// `_selfcheck --check-build-fresh` — stays put. That is the exact gap that
-    /// left `src/nlp/rules/*.yaml` uncovered.
+    /// editing it changes the binary while its build-input hash — and so the
+    /// staleness verdict of the parity suite — stays put.
     #[test]
     fn every_embedded_asset_is_fingerprinted() {
         let manifest = Path::new(env!("CARGO_MANIFEST_DIR"));

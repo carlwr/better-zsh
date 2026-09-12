@@ -1,5 +1,3 @@
-// WEB-MIRROR-OF: zshref-rs/src/nlp/query_expand.rs
-//
 // Query-time, embedding-only synonym expansion. Maps colloquial query
 // vocabulary onto the corpus's canonical term by appending the canonical word
 // to the string that gets EMBEDDED — the caller keeps passing the raw query to
@@ -33,8 +31,8 @@ export function expandQueryForEmbedding(query: string, rules: QueryExpansion[]):
 }
 
 /**
- * Whole-word match; multi-word needles match as a substring phrase. Mirrors
- * Rust `word_in`: triggers and canonical terms are alphanumeric words.
+ * Whole-word match; multi-word needles match as a substring phrase. Words
+ * are alphanumeric runs: triggers and canonical terms are written that way.
  */
 function wordIn(hay: string, needle: string): boolean {
   if (needle.includes(' ')) return hay.includes(needle);

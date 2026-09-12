@@ -220,7 +220,7 @@
 
   {#if view.kind === 'artifacts-error'}
     <p class="err">artifacts failed to load: <code>{view.message}</code></p>
-    <p>run <code>./scripts/fetch-artifacts</code> to stage them.</p>
+    <p>run <code>pnpm build:index</code> to build them.</p>
   {:else if view.kind === 'loading-artifacts'}
     <p class="muted">loading artifacts…</p>
   {:else if view.kind === 'searching-cold'}

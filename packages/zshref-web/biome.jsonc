@@ -7,7 +7,18 @@
   // false-flag template-referenced symbols as unused. Formatter is off —
   // this package keeps its semicolon style.
   "files": {
-    "includes": ["**", "!**/*.svelte", "!**/*.d.ts", "!**/*.css", "!**/*.html", "!svelte.config.js"]
+    "includes": [
+      "**",
+      "!**/*.svelte",
+      "!**/*.d.ts",
+      "!**/*.css",
+      "!**/*.html",
+      "!svelte.config.js",
+      // Committed generated JSON (the `UPDATE_*` tests regenerate it):
+      // drift-checked, not linted; one file exceeds Biome's size cap.
+      "!nlp/data",
+      "!nlp/rules/schema"
+    ]
   },
   "formatter": {
     "enabled": false

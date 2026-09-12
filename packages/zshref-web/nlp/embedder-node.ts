@@ -1,22 +1,21 @@
 // Node-side BGE-small embedder: @huggingface/transformers on onnxruntime-node
 // over the pinned local model (`scripts/fetch-model` → `.aux/model/`), for
 // the index build, the evals and the model-gated tests. The browser keeps its
-// own pipeline (src/lib/embedder.ts); this one reproduces what the index was
-// built with:
+// own pipeline (src/lib/embedder.ts); this one defines the index's numerics:
 //
 // - HF-tokenizers truncation: content cut to 510 tokens, then `[CLS] … [SEP]`.
 //   The pipeline's own truncation cuts after adding the specials, which drops
 //   `[SEP]` from a long body and moves its vector by ~1e-2 in cosine.
 // - CLS pooling (first token of `last_hidden_state`), fp32.
-// - L2 normalization in f32, sequential, as `normalize` in zshref-rs
-//   nlp/index.rs does it. Callers re-normalize where the Rust call sites do
-//   (index build, query embedding); f32 makes both idempotent up to an ulp.
+// - L2 normalization in f32, sequential (`normalizeF32`). Callers
+//   re-normalize (index build, query embedding); f32 makes both idempotent
+//   up to an ulp.
 // - Padded batches with an attention mask, `INDEX_EMBED_CHUNK` texts each —
 //   the batch shape is part of the vectors' numerics (~1e-7 against single
-//   texts), so the index build embeds in the same chunks the Rust build did.
-//   Padding to the longest row makes a batch slower than its texts one by one
-//   on CPU (~4× measured); kept for the numerics, revisit once the Rust
-//   captures no longer matter.
+//   texts), so a rebuilt index reproduces the committed sanity fixture and
+//   the recorded oracle captures only in these chunks. Padding to the
+//   longest row makes a batch slower than its texts one by one on CPU (~4×
+//   measured); dropping batching is a recorded follow-up (re-embeds).
 
 import { basename, dirname } from 'node:path';
 import {
@@ -49,8 +48,8 @@ export type Embedder = {
 };
 
 /**
- * Unit-normalize `v` in place the way zshref-rs `normalize` does: f32
- * sequential `sqrt(Σx²)`, divide only if the norm is positive. Returns `v`.
+ * Unit-normalize `v` in place: f32 sequential `sqrt(Σx²)`, divide only if
+ * the norm is positive. Returns `v`.
  */
 export function normalizeF32<B extends ArrayBufferLike>(v: Float32Array<B>): Float32Array<B> {
   let sum = 0;

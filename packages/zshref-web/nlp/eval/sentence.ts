@@ -3,8 +3,6 @@
 // lookup-map promote — and each expected item graded on its own rank.
 // Embedding is tuning-independent, so `evalSentenceCached` takes the query
 // vectors as a cache: a tuning sweep embeds once and re-ranks per variant.
-// Ported from `eval`/`eval_cached`/`render` in zshref-rs/src/nlp/
-// sentence_fixture.rs.
 
 import { promoteToTop } from '../../src/lib/ranker/lookup-map';
 import { rank } from '../../src/lib/ranker/rank';

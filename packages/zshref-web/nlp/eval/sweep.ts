@@ -4,8 +4,7 @@
 // once (`loadBench`) and re-ranked per variant. The objective is the
 // dashboard's combined blend; `holdout` is printed as the overfit watch,
 // never optimized. The greedy loop: sweep, fold the best row into
-// `BZ_TUNE_BASE`, repeat (one knob at a time misses interactions). Ported
-// from zshref-rs/src/nlp/tune_sweep.rs.
+// `BZ_TUNE_BASE`, repeat (one knob at a time misses interactions).
 
 import type { Tuning } from '../../src/lib/ranker/types';
 import { embedUnique } from '../embedder-node';
@@ -197,7 +196,7 @@ export const runSweep = (bench: Bench, base: Tuning): Sweep => ({
   knobs: KNOB_KEYS.map((key) => sweepKnob(bench, base, key))
 });
 
-/** A row whose combined is within this of the base's is the base row (Rust: `|Δ| < 1e-6`, f32). */
+/** A row whose combined is within this of the base's is the base row (`|Δ| < 1e-6`, f32). */
 const BASE_EPS = f(1e-6);
 
 /**

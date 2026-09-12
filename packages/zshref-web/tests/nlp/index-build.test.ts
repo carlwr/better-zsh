@@ -1,7 +1,7 @@
 // Index build: f32 number printing, `writeIndex` → `readIndex` round trip,
 // and validation — its check order on a synthetic index (pure, always runs),
-// and `validate_rejects_tampered_index` as the Rust suite had it, on the
-// built index (skipped until `build:index` has run).
+// and `validate_rejects_tampered_index` on the built index (skipped until
+// `build:index` has run).
 
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -126,7 +126,7 @@ describe('indexJson / writeIndex / readIndex', () => {
   });
   afterAll(() => rm(dir, { recursive: true, force: true }));
 
-  it('is compact, in the Rust key order, with shortest-f32 components', () => {
+  it('is compact, header keys first, with shortest-f32 components', () => {
     const json = indexJson(tinyIndex());
     expect(json).not.toContain('\n');
     expect(json.startsWith(`{"version":${INDEX_VERSION},"model":"${MODEL_ID}","dims":3,"normalized":true,"corpus_hash":"`)).toBe(true);
@@ -161,7 +161,7 @@ describe('validateIndex', () => {
     expect(validateIndex(zeroIndex(), corpus, rules)).toEqual({ ok: true });
   });
 
-  it('checks in the Rust order, header before records', () => {
+  it('checks header before records', () => {
     const base = zeroIndex();
     const first = base.records[0];
     if (!first) throw new Error('empty corpus');

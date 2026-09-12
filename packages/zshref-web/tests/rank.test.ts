@@ -40,7 +40,7 @@ type BoostWeights = Tuning['boosts'];
 
 const withTuning = (r: Rules, patch: (t: Tuning) => Tuning): Rules => ({ ...r, tuning: patch(r.tuning) });
 
-// The Rust tests' `sw(body, structured, strength)`: length_scale 10.
+// Semantic weights with a fixed length_scale of 10.
 const sw = (body: number, structured: number, strength: number): SemanticWeights => ({
   body,
   structured,

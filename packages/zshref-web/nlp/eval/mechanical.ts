@@ -12,8 +12,7 @@
 // `score`, `BETA`); the combined total blends curated `train` and
 // mechanical via `LAMBDA`. Two diagnostics ride along — reported, never
 // gated, never tuned toward: the per-category count of entries whose record
-// did not rank #1, and the id-shape slices. Ported from zshref-rs/src/nlp/
-// mechanical.rs.
+// did not rank #1, and the id-shape slices.
 
 import type { DocCorpus } from '@carlwr/zsh-core';
 import { type DocCategory, docCategories, docDisplay, idOf } from '@carlwr/zsh-core/taxonomy';
@@ -93,7 +92,7 @@ export interface Slice {
   pred: (id: string) => boolean;
 }
 
-/** Rust `char::is_alphanumeric`: the Unicode `Alphabetic` property or a number category. */
+/** Unicode alphanumeric: the `Alphabetic` property or a number category. */
 const isAlphanumeric = (c: string): boolean => /[\p{Alphabetic}\p{N}]/u.test(c);
 const idLength = (n: number): Slice => ({ label: `id length ${n}`, pred: (id) => [...id].length === n });
 

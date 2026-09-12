@@ -1,0 +1,36 @@
+#!/usr/bin/env zsh
+# S5b gate (nlp-move.md §"Before/after gates", row "dump-help"): the
+# post-deletion release binary's `dump-help` against
+# .aux/nlp-move/rust/dump-help.default.txt — exact modulo the `## bin:` header
+# line (the capture ran a staged copy of the binary; the path is the only
+# thing that legitimately differs).
+#
+#   .reorg-work/gates/dump-help
+#
+# Prints `dump-help gate: PASS` or the diff (`<` current, `>` capture) and
+# `dump-help gate: FAIL: N lines differ`; exit 1 on FAIL. Wants
+# zshref-rs/target/release/zshref (`make cli`).
+emulate -LR zsh
+set -eu -o pipefail
+
+root=${0:A:h:h:h}
+bin=$root/zshref-rs/target/release/zshref
+expected=$root/.aux/nlp-move/rust/dump-help.default.txt
+tmp=$(mktemp -d "${TMPDIR:-/tmp}/dump-help.XXXXXX")
+trap 'rm -rf "$tmp"' EXIT
+
+[[ -x $bin ]] || { print -u2 "dump-help gate: missing $bin — run \`make cli\`"; exit 2 }
+
+ZSHREF=$bin $root/zshref-rs/scripts/dump-help $tmp/dump-help.txt 2> /dev/null
+# `## bin:` is the one line allowed to differ.
+sed '/^## bin: /d' $tmp/dump-help.txt > $tmp/actual
+sed '/^## bin: /d' $expected > $tmp/expected
+
+if diff $tmp/actual $tmp/expected > /dev/null; then
+  print 'dump-help gate: PASS'
+else
+  diff $tmp/actual $tmp/expected || true
+  n=$(diff $tmp/actual $tmp/expected | sed -n '/^[<>]/p' | wc -l | tr -d ' ')
+  print "dump-help gate: FAIL: $n lines differ"
+  exit 1
+fi

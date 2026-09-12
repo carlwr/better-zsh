@@ -49,9 +49,9 @@ const defaultPipeline = memoizedRetry(async (): Promise<FeatureExtractionPipelin
 });
 
 /**
- * Embed a query the way `zshref-rs` does: `query: ` prefix (the index builder
- * embeds documents with `passage: `), CLS pooling, unit-normalized. Returns a
- * 384-dim Float32Array.
+ * Embed a query the way the index build embeds a record (nlp/embedder-node.ts)
+ * apart from the prefix: `query: ` here, `passage: ` there; CLS pooling,
+ * unit-normalized. Returns a 384-dim Float32Array.
  *
  * `pipe` is for tests using a local on-disk model; production omits it.
  */

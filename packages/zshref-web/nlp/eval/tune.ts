@@ -5,14 +5,13 @@
 // embedder-vs-boosts ablation, the per-category and hard-slice tables, and
 // the held-out QA score as an overfit watch. Every number comes from the
 // same eval functions the tests use, so the dashboard cannot drift from
-// them. Ported from zshref-rs/src/nlp/tune.rs; the QA row is computed
-// in-process (nlp/eval/qa-score.ts) over the dashboard's tuning rather than
-// read from the harness driving the committed binary.
+// them; the QA row too is computed in-process (nlp/eval/qa-score.ts), over
+// the dashboard's own tuning.
 //
 // Tiers: `fast` skips the mechanical layer and the QA (both embed thousands
-// of queries) — the Rust debug-build tier — and renders their rows as
-// skipped; `cap` keeps every layer but cuts each input to its first entries,
-// so the reporter smoke runs the whole path in seconds.
+// of queries) and renders their rows as skipped; `cap` keeps every layer but
+// cuts each input to its first entries, so the reporter smoke runs the whole
+// path in seconds.
 
 import type { Tuning } from '../../src/lib/ranker/types';
 import { byteOrder } from '../byte-order';

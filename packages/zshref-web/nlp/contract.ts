@@ -62,8 +62,8 @@ export type LookupContract = {
 /**
  * Build the contract: per record and surface form, the expected set is
  * derived from the bare form (decorated phrasings inherit it) and paired
- * with the `top1-in-set` predicate. Entries sort in field order — the Rust
- * derived `Ord`; duplicate queries across records are kept.
+ * with the `top1-in-set` predicate. Entries sort in field order (the
+ * committed file's order); duplicate queries across records are kept.
  */
 export function buildLookupContract(corpus: DocCorpus): LookupContract {
   const entries: ContractEntry[] = [];
@@ -183,19 +183,10 @@ function barePredicateHolds(entry: ContractEntry, idx: LookupIndex): boolean {
   return top !== null && predicateHolds[entry.predicate](entry, top);
 }
 
-// The Rust failure line: `{:?}` renders strings quoted, enum variants in
-// PascalCase and the expected set as `[Identity { category: "…", id: "…" }]`.
-const variantName = (kebab: string): string =>
-  kebab
-    .split('-')
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join('');
-const identityDebug = (i: Identity): string =>
-  `Identity { category: ${JSON.stringify(i.category)}, id: ${JSON.stringify(i.id)} }`;
+const identityText = (i: Identity): string => `${i.category}/${i.id}`;
 const formatFailure = (e: ContractEntry): string =>
-  `  query=${JSON.stringify(e.query)} record=${e.record.category}/${e.record.id}` +
-  ` surface=${variantName(e.surfaceFormKind)} phrasing=${variantName(e.phrasingKind)}` +
-  ` expected=[${e.expectedSet.map(identityDebug).join(', ')}]`;
+  `  query=${JSON.stringify(e.query)} record=${identityText(e.record)} surface=${e.surfaceFormKind}` +
+  ` phrasing=${e.phrasingKind} expected=[${e.expectedSet.map(identityText).join(', ')}]`;
 
 export type BareEval = {
   bareTotal: number;

@@ -1,7 +1,9 @@
-// Rust's formatting of the values the reports print, so a TS report equals
-// its zshref-rs counterpart at the printed precision: `{:.N}` rounds the
-// exact binary value with ties to even where `toFixed` rounds a tie up
-// (an f32 score can sit exactly on one — an odd multiple of 1/16 at three
+// The number and string formatting every report prints through — one
+// rule set, so two reports of the same value never differ. The rules are
+// Rust's `{:.N}`, `{:+.N}` and `{:?}` (hence the names), kept so a report
+// still compares against the recorded ones: `{:.N}` rounds the exact
+// binary value with ties to even where `toFixed` rounds a tie up (an f32
+// score can sit exactly on one — an odd multiple of 1/16 at three
 // decimals), and a negative zero or a negative below the precision keeps
 // its sign; `{:+.N}` prints the sign always; `{:?}` of a string escapes.
 

@@ -1,7 +1,8 @@
-// Mirrors the unit tests of zshref-rs/src/nlp/rules.rs: the committed YAML
-// is the positive control, every negative case asserts the reason it fails.
-// `schemas_match_committed_files` lands at S5 of the nlp move, when the
-// committed rules/schema/*.json switch from schemars to `rulesJsonSchemas()`.
+// Rules loading: the committed YAML is the positive control, every negative
+// case asserts the reason it fails.
+// The committed editor schemas are `rulesJsonSchemas()` output; the drift
+// test rewrites them under UPDATE_SCHEMAS=1 (the QA corpus schema regenerates
+// under the same variable: tests/nlp/qa-score.test.ts).
 
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -10,7 +11,7 @@ import { describe, expect, it } from 'vitest';
 import { parse as parseYaml } from 'yaml';
 import type { z } from 'zod';
 
-import { emitRulesJson, emitRulesJsonSchemas, loadRulesYaml } from '../../nlp/rules-load';
+import { emitRulesJson, loadRulesYaml } from '../../nlp/rules-load';
 import {
   MAX_SCORE_TERM,
   RULE_FILES,
@@ -21,10 +22,10 @@ import {
   TuningSchema
 } from '../../nlp/rules-schema';
 import { derivedBoosts } from '../../src/lib/ranker/types';
-import { PATHS } from '../_helpers';
+import { assertCommittedJson, PATHS } from '../_helpers';
 
-/** The single issue of a rejected parse — the reason, as Rust reports the
- * first violation only. */
+/** The single issue of a rejected parse — the loader reports the first
+ * violation only. */
 function rejection(schema: z.ZodType, yaml: string): z.core.$ZodIssue {
   const r = schema.safeParse(parseYaml(yaml));
   if (r.success) throw new Error(`expected a rejection, got ${JSON.stringify(r.data)}`);
@@ -69,7 +70,7 @@ describe('committed rules', () => {
     });
   });
 
-  it('emits draft 2020-12 strict schemas, one per rule file', async () => {
+  it('emits draft 2020-12 strict schemas, one per rule file', () => {
     const schemas = rulesJsonSchemas();
     for (const f of RULE_FILES) {
       const s = schemas[ruleSchemaFile(f)];
@@ -77,13 +78,12 @@ describe('committed rules', () => {
       expect(s.additionalProperties).toBe(false);
       expect(s.title).toBeTypeOf('string');
     }
-    await withTempDir(async (dir) => {
-      await emitRulesJsonSchemas(dir);
-      for (const f of RULE_FILES) {
-        const text = await readFile(join(dir, ruleSchemaFile(f)), 'utf8');
-        expect(JSON.parse(text)).toEqual(schemas[ruleSchemaFile(f)]);
-      }
-    });
+  });
+
+  it('schemas_match_committed_files', async () => {
+    for (const [file, schema] of Object.entries(rulesJsonSchemas())) {
+      await assertCommittedJson(join(PATHS.rulesSchemaDir, file), schema, 'UPDATE_SCHEMAS');
+    }
   });
 });
 
