@@ -73,7 +73,9 @@ test("every package with upstream routes its pre* hooks through ensure", () => {
       readFileSync(join(dir, "package.json"), "utf8"),
     ).scripts
     for (const [hook, cmd] of Object.entries(scripts ?? {})) {
-      if (!hook.startsWith("pre")) continue
+      // pnpm's rule: `pre<x>` is a hook only when a script `x` exists
+      // (`preview` is a script, not a hook of `view`).
+      if (!hook.startsWith("pre") || !(hook.slice(3) in scripts)) continue
       assert.match(cmd, /upstream-ready\.mjs ensure/, `${name}:${hook}`)
     }
   }

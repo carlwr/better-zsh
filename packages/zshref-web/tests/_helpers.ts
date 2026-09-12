@@ -1,41 +1,17 @@
-// Pre-extraction artifact paths.
+// Artifact gating, on-disk loaders and fixture schemas shared by the tests.
 
 import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { parse as parseYaml } from 'yaml';
 import { z } from 'zod';
 
+import { PATHS } from '../nlp/paths';
 import { loadVectorIndex } from '../src/lib/ranker/index-loader';
 import type { Rules } from '../src/lib/ranker/rules';
 import { loadRules } from '../src/lib/ranker/rules';
 import type { VectorIndex } from '../src/lib/ranker/types';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const repoRoot = resolve(__dirname, '..', '..', '..');
-const zshrefRs = resolve(repoRoot, 'zshref-rs');
-
-export const PATHS = {
-  parityFixture: resolve(zshrefRs, 'tests/nlp-qa/parity-fixture.json'),
-  sanityFixture: resolve(zshrefRs, 'tests/nlp-qa/sanity-fixture.json'),
-  categoriesJson: resolve(zshrefRs, 'tests/nlp-qa/categories.json'),
-  lookupMap: resolve(zshrefRs, 'tests/nlp-qa/lookup-map.json'),
-  lookupContract: resolve(zshrefRs, 'tests/nlp-qa/lookup-contract.json'),
-  indexJson: resolve(zshrefRs, 'data-nlp/index.json'),
-  modelDir: resolve(zshrefRs, 'data-nlp/model'),
-  tuning: resolve(zshrefRs, 'src/nlp/rules/tuning.yaml'),
-  stopwords: resolve(zshrefRs, 'src/nlp/rules/stopwords.yaml'),
-  synonyms: resolve(zshrefRs, 'src/nlp/rules/synonyms.yaml')
-};
-
-// The gitignored members of PATHS — the only ones whose absence is normal.
-// Everything else PATHS names is committed, so its absence is a defect and
-// must not resolve to a skip.
-export const STAGED = {
-  index: PATHS.indexJson,
-  model: PATHS.modelDir
-} as const;
+export { PATHS, STAGED } from '../nlp/paths';
 
 /**
  * Reason for `ctx.skip(reason)`; null when everything in `needs` is staged.

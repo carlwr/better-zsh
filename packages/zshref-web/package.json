@@ -6,6 +6,9 @@
   "description": "Static SPA: NLP search demo over zsh-core records.",
   "license": "MIT",
   "scripts": {
+    "prebuild": "node ../../scripts/build/upstream-ready.mjs ensure",
+    "pretypecheck": "node ../../scripts/build/upstream-ready.mjs ensure",
+    "pretest": "node ../../scripts/build/upstream-ready.mjs ensure",
     "dev": "vite dev",
     "build": "vite build",
     "preview": "vite preview",
@@ -19,14 +22,18 @@
     "test:pack": "pnpm build"
   },
   "devDependencies": {
+    "@carlwr/zsh-core": "workspace:*",
     "@sveltejs/adapter-static": "^3.0.10",
     "@sveltejs/kit": "^2.70.3",
     "@sveltejs/vite-plugin-svelte": "^6.2.4",
+    "@types/node": "^22.20.1",
     "svelte": "^5.57.0",
     "svelte-check": "^4.7.6",
     "tslib": "^2.8.1",
+    "tsx": "^4.23.13",
     "vite": "^7.3.6",
-    "vitest": "^4.1.11"
+    "vitest": "^4.1.11",
+    "yaml": "^2.9.0"
   },
   "dependencies": {
     "@carlwr/docopt-tmlanguage": "^0.1.2",

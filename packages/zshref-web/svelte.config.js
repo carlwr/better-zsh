@@ -10,7 +10,14 @@ const config = {
       precompress: false,
       strict: true
     }),
-    prerender: { entries: ['*'] }
+    prerender: { entries: ['*'] },
+    typescript: {
+      // The generated tsconfig reaches src/ and tests/ only; the Node-side
+      // NLP code sits beside them. Paths are relative to .svelte-kit/.
+      config: (tsconfig) => {
+        tsconfig.include.push('../nlp/**/*.ts');
+      }
+    }
   }
 };
 
