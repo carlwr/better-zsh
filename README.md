@@ -13,12 +13,13 @@ Improved zsh tooling, packaged as a set of focused libraries and adapters over a
 | `@carlwr/zshref-mcp` | Model Context Protocol server over stdio. Registers the shared tool surface for MCP-aware clients (Claude Desktop, Cursor, VS Code MCP, Zed, …). | `packages/zshref-mcp/` | npm, JSR |
 | `zshref` | Single-file executable Rust CLI over the same tool surface. Pipes JSON on stdout. Offline; no Node, Python, or zsh runtime dependency. | `zshref-rs/` | crates.io, Homebrew (planned) |
 | `better-zsh` | VS Code extension: hovers, completions, semantic tokens, diagnostics. | `packages/vscode-better-zsh/` | VS Code Marketplace, Open VSX |
+| `zshref-web` | Browser SPA: local semantic search over the same reference — embeddings computed in the browser; index built from `zsh-core` at build time. | `packages/zshref-web/` | static site (deploy planned) |
 
 Pick the adapter that matches your runtime; all wrap the same static corpus.
 
 ## Architecture in one paragraph
 
-Two layers, two adapters. `zsh-core` (the knowledge layer) feeds `zsh-core-tooldef` (the single `ToolDef` surface: name, JSON-Schema input, brief + long description, pure `(corpus, input) → output` `execute`). Each adapter — MCP, CLI — is thin transport glue that walks `toolDefs` uniformly. Drift guard at the joint: the Rust CLI parses the exported tool-def JSON at build time and bakes it into the binary. The VS Code extension consumes `zsh-core` directly for its editor features.
+Two layers, two adapters. `zsh-core` (the knowledge layer) feeds `zsh-core-tooldef` (the single `ToolDef` surface: name, JSON-Schema input, brief + long description, pure `(corpus, input) → output` `execute`). Each adapter — MCP, CLI — is thin transport glue that walks `toolDefs` uniformly. Drift guard at the joint: the Rust CLI parses the exported tool-def JSON at build time and bakes it into the binary. The VS Code extension and the web SPA consume `zsh-core` directly — the extension for its editor features, the SPA at build time for its search index.
 
 No shell execution, no subprocess, no network, no filesystem, no `process.env` reads in the tool layer — structurally enforced by a scope-fence test. This is a product feature, not just policy.
 

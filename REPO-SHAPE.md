@@ -32,19 +32,18 @@ Left of the arrow is today's monorepo path; right is the eventual repo name. The
 
 Producer-consumer arrows; pull-only, pinned by version:
 
-- `zsh-core` → `zshref`, `zshref-mcp`, `vscode-better-zsh` (corpus + types)
-- `zshref` → `zshref-web` (release JSON artifacts)
-- HuggingFace Hub → `zshref-web` at runtime (BGE-small model assets)
+- `zsh-core` → `zshref`, `zshref-mcp`, `vscode-better-zsh`, `zshref-web` (corpus + types)
+- HuggingFace Hub → `zshref-web` (the embedding model: fetched at runtime by the browser, pre-fetched for the Node side)
 
-`zshref-web` deliberately does not depend on `zsh-core`: everything the SPA renders already lives inside the index. Before introducing a `zsh-core` arrow, first try to route the data through `zshref`.
+`zshref-web` consumes `zsh-core` at build time only — the index build; the browser bundle is `zsh-core`-free (`packages/zshref-web/AGENTS.md`). `zshref` produces nothing for `zshref-web`.
 
 ## Detail scope
 
-nlp and web specifics live under `zshref-rs/` and `packages/zshref-web/`. Root maintainer docs point at them; they don't restate the detail. Anti-pattern: a root-level `EXTRACTION.md` accumulating nlp/web items that belong in the to-be-extracted dir's own checklist.
+Web and NLP specifics live under `packages/zshref-web/`; Rust CLI specifics under `zshref-rs/`. Root maintainer docs point at them; they don't restate the detail. Anti-pattern: a root-level `EXTRACTION.md` accumulating items that belong in the to-be-extracted dir's own checklist.
 
 ## Pointers
 
-- `zshref-rs/AGENTS.md` — Rust CLI; NLP Cargo feature; two-binary release
-- `zshref-rs/src/nlp/NLP.md` — NLP module measurements + packaging direction
-- `packages/zshref-web/AGENTS.md` — SPA dependency story, hosting intent, parity-test posture, data staging
+- `zshref-rs/AGENTS.md` — Rust CLI
+- `packages/zshref-web/AGENTS.md` — SPA: stack, upstreams, build, tests, hosting intent
+- `packages/zshref-web/nlp/NLP.md` — the NLP module; holdout rules
 - `zshref-rs/EXTRACTION.md`, `packages/zshref-mcp/EXTRACTION.md` — extraction-day checklists

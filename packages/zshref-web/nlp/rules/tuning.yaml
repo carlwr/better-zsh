@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=./schema/tuning.schema.json
 #
 # Rank-time constants (no re-embed on change). The math + prior-encoding live
-# in rank.rs; the structure encodes the priors: the third semantic weight is
+# in src/lib/ranker/rank.ts; the structure encodes the priors: the third semantic weight is
 # derived (sum 1 by construction), boosts are an ordered base+increments chain,
 # overlap saturates smoothly.
 

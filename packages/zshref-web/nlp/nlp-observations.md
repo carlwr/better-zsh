@@ -8,7 +8,7 @@ Method: BGE-small, ON/OFF re-embed A/B (synonyms baked vs empty) + manual query 
 
 - BGE already bridges generic English synonymy (folder≈directory, remove≈delete) — synonym lists are mostly redundant.
 - Query-side expansion of short queries can swamp: scores compress, literal-name records get promoted — the main regression risk.
-- Swamping rides the lexical channel → query expansion must be embedding-only (kept out of `word_overlap`).
+- Swamping rides the lexical channel → query expansion must be embedding-only (kept out of `rank.ts` `wordOverlap`).
 - Minimal RHS (one canonical term) + a small append cap keep embedding drift bounded.
 - Plurals carry only a faint, noisy signal; conflating singular/plural costs ~nothing.
 - The `element` vs `elements` → different-subscript-flag nuance is not model-capturable anyway.

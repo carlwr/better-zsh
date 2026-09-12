@@ -43,20 +43,16 @@ directory is committed. See `DATA-SYNC.md`.
 
 - The repo root `Makefile` goes away. The `artifacts` target (which drives `pnpm build` for the TS packages) moves to whatever cross-repo data-sync mechanism is chosen; the monorepo-only CI job disappears alongside it.
 - The vendor target pivots: instead of copying from a sibling package, it downloads and unpacks the `zsh-core` JSON release asset at a pinned tag.
-- The extracted repo will have a simpler `Makefile` (or rely on cargo-native workflows) covering only the Rust side: `cli-debug`, `cli`, `cli-test`, `cli-check`, `cli-clean`.
+- The extracted repo will have a simpler `Makefile` (or rely on cargo-native workflows) covering only the Rust-side targets.
 
 ### CI
 
 - `.github/workflows/ci-rust.yml` is close-to-portable. Required changes at extraction:
   - Remove path filters referencing `packages/zsh-core/**`, `packages/zsh-core-tooldef/**`, and the root `Makefile`; narrow to `src/**`, `tests/**`, `Cargo.*`.
   - Remove the `setup-node-pnpm` step — the composite action it names stays behind in the monorepo — unless the extracted repo vendored-JSON sync still drives a Node checkout.
-  - Keep the `dtolnay/rust-toolchain`, cargo cache, fmt/clippy, test, and `cli-vendored-test` + `cli-package` steps unchanged.
+  - Every other step stays.
 - `.github/workflows/release-zshref.yml` moves along, with the same `setup-node-pnpm` question.
 - Re-point crates.io Trusted Publishing at the new repo before releasing from it.
-
-### NLP QA harness (Node)
-
-`tests/nlp-qa/run-qa.mjs` imports `yaml`, resolved today from the monorepo-root `node_modules`; the standalone crate ships no `package.json` providing it. Either add a dev-only `package.json` (`yaml` dep) to the extracted repo, or author the QA corpus as JSON to drop the dep.
 
 ### Homebrew
 

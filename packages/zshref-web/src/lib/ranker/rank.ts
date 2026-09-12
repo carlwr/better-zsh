@@ -123,10 +123,10 @@ function countWords(s: string): number {
 }
 
 /**
- * Mirror of rank.rs `semantic_weights`: the effective (body, structured,
- * expanded) weights. `expanded` is derived as 1 − body − structured (on the
- * simplex by construction), then mass is shifted body → expanded the shorter
- * the body. Continuous — no threshold cliff.
+ * The effective (body, structured, expanded) weights. `expanded` is derived
+ * as 1 − body − structured (on the simplex by construction), then mass is
+ * shifted body → expanded the shorter the body. Continuous — no threshold
+ * cliff.
  */
 export function semanticWeights(
   bodyWords: number,
@@ -160,7 +160,7 @@ function categoryPenalties(index: VectorIndex, rules: Rules): Map<string, number
   return out;
 }
 
-/** Mirror of rank.rs `boosts`. `q` is the lowercased query, as `rank` passes it. */
+/** The boost terms. `q` is the lowercased query, as `rank` passes it. */
 export function computeBoosts(
   rec: RecordText,
   q: string,
@@ -199,9 +199,9 @@ export function computeBoosts(
 }
 
 /**
- * Mirror of rank.rs `overlap_boost`: smooth saturating lexical-overlap boost
- * over the overlap count `n`: `scale · n / (n + half_sat)` — monotone,
- * asymptote `scale`, half at `half_sat`.
+ * Smooth saturating lexical-overlap boost over the overlap count `n`:
+ * `scale · n / (n + half_sat)` — monotone, asymptote `scale`, half at
+ * `half_sat`.
  */
 export function overlapBoost(n: number, b: Tuning['boosts']): number {
   const nf = f(n);
@@ -228,7 +228,6 @@ function wordOverlap(rec: RecordText, q: string, rules: Rules): number {
 }
 
 /**
- * Mirror of rank.rs `symbol_tokens`.
  * Literal symbol tokens in `q`: whitespace tokens that bear punctuation or are
  * `$`-sigiled parameter refs, lowercased, with surrounding quotes and one
  * leading `$` stripped ("$?" -> "?"). Exactly what significantWords discards,
@@ -247,7 +246,6 @@ export function symbolTokens(q: string): string[] {
 }
 
 /**
- * Mirror of rank.rs `symbol_head`.
  * Leading run of operator characters in a display form — the symbol before any
  * alphanumeric operand placeholder: ">> word" -> ">>", "?" -> "?",
  * "auto_cd" -> null. Lets a bare-operator query match a sig-shaped record.

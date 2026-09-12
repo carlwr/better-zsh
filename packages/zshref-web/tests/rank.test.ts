@@ -1,4 +1,4 @@
-// The ranker on its own merits: the rank.rs unit tests by name, then
+// The ranker on its own merits: the unit tests inherited from the port, then
 // properties over small synthetic indexes (records with hand-made text and
 // `syntheticVec` vectors, the committed rules and mutated copies). The
 // parity fixture pins the arithmetic against its past; these pin what the
@@ -54,7 +54,7 @@ const near = (got: number, want: number): void => {
 const rec = (over: Partial<RecordText>): RecordText =>
   makeRecordText({ category: 'option', category_label: 'option', title: '', md_body: '', ...over });
 
-describe('rank.rs unit tests', () => {
+describe('ranker unit tests', () => {
   it('exact_id_match_gives_lexical_boost', () => {
     const r = rec({ id: 'autocd', display: 'AUTO_CD' });
     const exact = computeBoosts(r, 'autocd', null, rules);

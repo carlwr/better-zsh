@@ -34,7 +34,7 @@ type Index = {
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..")
 const captureDir = join(root, ".aux", "nlp-move", "rust")
 const artifacts = join(root, "packages", "zshref-web", "static", "artifacts")
-const qaDir = join(root, "zshref-rs", "tests", "nlp-qa")
+const qaDir = join(root, "packages", "zshref-web", "nlp", "data")
 const readJson = (p: string) => JSON.parse(readFileSync(p, "utf8"))
 
 const rust: Index = readJson(join(captureDir, "index.json"))

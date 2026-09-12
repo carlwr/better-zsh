@@ -59,8 +59,3 @@ cli-vendored-test: vendor
 .PHONY: cli-package
 cli-package: vendor
 	$(vendored) cargo package --allow-dirty
-
-# Root convenience for the web package: the model its index build and evals read.
-.PHONY: nlp-model
-nlp-model:
-	packages/zshref-web/scripts/fetch-model

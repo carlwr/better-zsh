@@ -121,11 +121,20 @@ In order. A step ends with the repo's validation gates green where touched and t
 - _decided:_ functionality loss accepted — the MCP fills the role; the extension's part in the reorg ends here
 - _before/after:_ the staged manifest differs only by the removed `languageModelTools` section
 
-### NLP moves to zshref-web; zshref-web joins the workspace
+### DONE: NLP moves to zshref-web; zshref-web joins the workspace
 
-- `nlp-move.md` — scope, decisions, oracle captures, before/after gates, sub-stages, inventory, port notes
+- `nlp-move.md` — scope, decisions (incl. those made during execution), oracle captures, before/after gates, sub-stages, inventory, port notes
 - `capture-nlp` — stages the Rust oracle and records it into `.aux/nlp-move/`
 - `probe-embedder.mts` — TS embedder against the captured vectors
+- `gates/` — the before/after gate scripts, run against `.aux/nlp-move/`; every row green in oracle mode before each sub-stage's commit
+- _before/after:_ equal to the Rust captures, bit-equal where the gate table only asked for a tolerance:
+  - retrieval texts
+  - index vectors
+  - boosts and scores
+  - fixtures
+  - every eval report
+  - default `zshref` help, modulo the `## bin:` line
+- follow-ups recorded in `packages/zshref-web/nlp/NLP.md` §Follow-ups (they outlive this dir)
 
 ### Resolver conformance fixture
 
@@ -134,6 +143,7 @@ In order. A step ends with the repo's validation gates green where touched and t
 - covers the zsh-core-only mirror unit `resolver`; `record-fields` is a data contract already exercised by loading the corpus — no fixture
 - lands while tooldef's `parity.test.ts` still runs: both green before the old harness goes
 - `MIRROR-OF` markers stay on the Rust side; `mirror-pairs.test.ts` goes with tooldef — a one-sided successor is the step's call
+- a known TS/Rust disagreement the fixture will expose — `resolveRedir` on a bare two-character operator; the record and its web-eval consequence: `packages/zshref-web/nlp/NLP.md` §Follow-ups
 - _before/after:_ the fixture's pinned inputs seeded from `parity.test.ts`'s cases, so old harness and new test agree on the same cases first
 
 ### MCP in Rust
@@ -199,7 +209,7 @@ In order. A step ends with the repo's validation gates green where touched and t
 - after every other code step; before the closing sweep, so the docs describe the outcome
 - question: with zsh-core the only TS upstream and a star-shaped workspace graph, does the stamp/`upstream-ready` machinery (`BZ_SKIP_UPSTREAM`, content stamps, `scripts/build/upstream-ready.mjs`) still earn its keep, or does pnpm's own topological ordering cover it?
 - weigh against what the reorg actually left in place, not this file's expectations
-  - the SPA's index build is the costliest build step; a skip-when-fresh gate may still be wanted for it alone
+  - the SPA's index build is the costliest build step; `build:index` already skips itself when the on-disk index validates against the corpus
 - an evaluation, not a foregone removal; the decision and its reason land in `scripts/build/README.md` either way
 
 ### Docs consolidation and closing
@@ -209,7 +219,7 @@ In order. A step ends with the repo's validation gates green where touched and t
 - root `AGENTS.md`: architecture summary, dual-publish list, test markers; orient skill scripts
 - leftovers sweep — `rg` for:
   - tooldef
-  - nlp
+  - nlp, outside `packages/zshref-web/`
   - `WEB-MIRROR`
   - `BZ_REQUIRE_PARITY`
   - `_selfcheck`
@@ -228,3 +238,4 @@ Decided not to decide now:
 - a `zshref-web` split into its own repo — no technical driver; its payoff if done: the SPA's toolchain and dependency churn (SvelteKit, Vite, transformers.js) leave the workspace lockfile and root `qa`
 - an MCP discoverability shim in the extension
 - deprecating the published alphas of `@carlwr/zsh-core-tooldef` and `@carlwr/zshref-mcp` on npm and JSR
+- the NLP follow-ups recorded by the move: `packages/zshref-web/nlp/NLP.md` §Follow-ups

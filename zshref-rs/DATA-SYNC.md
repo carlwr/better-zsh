@@ -50,7 +50,10 @@ A feature flag (`--features vendored`) would need `default-features = ["vendored
 
 ### Mechanics — see code
 
-- `build.rs` top doc-comment summarises the data-source selection rules; the implementation enforces them. It also emits a semantic input hash (`ZSHREF_BUILD_INPUT_HASH`): cache busting, plus the `_selfcheck --check-build-fresh` staleness gate (shared `data_fingerprint`).
+- `build.rs` top doc-comment summarises the data-source selection rules; the implementation enforces them.
+- `build.rs` also emits a semantic input hash (`ZSHREF_BUILD_INPUT_HASH`, from the shared `data_fingerprint`): cargo cache busting, and `zshref info` reports it as `buildInputHash` so tooldef's parity suite can tell a stale binary from a fresh one.
+  - inputs per `build-inputs.txt`; the `src/` tree is hashed whole, `#[cfg(test)]` code included, so a test-only edit reads as stale — deliberately conservative (an extra rebuild is cheap, missed staleness isn't)
+  - `every_embedded_asset_is_fingerprinted` (`cargo test`) keeps every `include_*!` asset among the hashed inputs
 - `src/corpus.rs` uses `cfg`-gated path macros so the final binary contains bytes from exactly one source.
 - The vendor target refreshes the local `data/` from TS output and forces vendored mode for downstream checks.
 - The package target runs `cargo package --allow-dirty` to prove the publishable tarball builds standalone with no monorepo visible.

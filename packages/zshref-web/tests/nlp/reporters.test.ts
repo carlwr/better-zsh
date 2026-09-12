@@ -87,7 +87,9 @@ describe('script entry points', () => {
   // One script at a time: a burst of spawns starves the sibling workers.
   it.each(points)('%s: --help prints its usage; an unknown argument exits 2', async (name, file) => {
     const [help, unknown] = await Promise.all([runScript(file, ['--help']), runScript(file, ['--no-such-flag'])]);
-    expect(help).toMatchObject({ status: 0, stderr: '' });
+    // stderr is not asserted empty: onnxruntime greets some hosts (an emulated
+    // CI container, say) with a cpuid warning on load.
+    expect(help.status).toBe(0);
     expect(help.stdout).toContain(`pnpm --filter zshref-web ${name}`);
     expect(unknown).toMatchObject({ status: 2, stdout: '' });
     expect(unknown.stderr).toContain('unknown argument(s): --no-such-flag');
