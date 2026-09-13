@@ -27,7 +27,7 @@ pub fn normalize_option(raw: &str) -> String {
 }
 
 /// Lossy-resolution feedback from a per-category resolver. Mirrors the TS
-/// `ResolverFeedback` union in `resolvers.ts`.
+/// `ResolverFeedback` union in `resolver.ts`.
 ///
 /// - `InputNegated`: option name reached via `NO_`-stripping.
 /// - `Subscripted(inner)`: special-parameter name reached by stripping a
@@ -426,5 +426,84 @@ fn tail_kind_of(tail: &str) -> &str {
         "-" | "p" => tail,
         t if t.chars().all(|c| c.is_ascii_digit()) => "number",
         _ => "word",
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    //! Behavioural conformance to zsh-core's resolver fixture: the answers the
+    //! TS resolvers give for pinned and generated inputs, released with the
+    //! corpus. Structural mirroring is tooldef's `parity-units.ts` concern.
+    use super::*;
+    use crate::corpus::{load_corpus, resolver_fixture_path, DOC_CATEGORIES};
+    use serde::Deserialize;
+    use serde_json::Value;
+
+    #[derive(Deserialize)]
+    struct Fixture {
+        version: u32,
+        #[serde(rename = "packageVersion")]
+        package_version: String,
+        #[serde(rename = "dataHash")]
+        data_hash: String,
+        cases: serde_json::Map<String, Value>,
+    }
+
+    #[derive(Deserialize)]
+    struct Case {
+        input: String,
+        id: Option<String>,
+        feedback: Option<Value>,
+    }
+
+    #[test]
+    fn resolver_conforms_to_fixture() {
+        let corpus = load_corpus().expect("load_corpus");
+        let path = resolver_fixture_path();
+        let text = std::fs::read_to_string(&path).unwrap_or_else(|e| {
+            panic!(
+                "{}: {e}\nthe fixture is refreshed together with the corpus: \
+                 `make cli-test` (monorepo) or `make cli-vendored-test` (vendored)",
+                path.display()
+            )
+        });
+        let fixture: Fixture = serde_json::from_str(&text).expect("fixture parses");
+
+        assert_eq!(fixture.version, 1);
+        let same_build = "fixture and embedded index.json come from different zsh-core builds \
+                          — rebuild through the make target, not plain `cargo test`";
+        assert_eq!(
+            fixture.package_version, corpus.index.package_version,
+            "{same_build}"
+        );
+        assert_eq!(fixture.data_hash, corpus.index.data_hash, "{same_build}");
+        let fixture_cats: Vec<&str> = fixture.cases.keys().map(String::as_str).collect();
+        assert_eq!(fixture_cats, *DOC_CATEGORIES);
+
+        let mut mismatches: Vec<String> = Vec::new();
+        for (cat, cases) in &fixture.cases {
+            let cases: Vec<Case> = serde_json::from_value(cases.clone()).expect("cases parse");
+            assert!(!cases.is_empty(), "{cat}: no cases");
+            for case in cases {
+                let hit = resolve_in(&corpus, cat, &case.input);
+                let got = (
+                    hit.as_ref().map(|h| h.id.clone()),
+                    hit.as_ref()
+                        .and_then(|h| h.feedback.as_ref().map(ResolverFeedback::to_json)),
+                );
+                let want = (case.id, case.feedback);
+                if got != want {
+                    mismatches.push(format!(
+                        "{cat} / {:?}: expected {want:?}, got {got:?}",
+                        case.input
+                    ));
+                }
+            }
+        }
+        assert!(
+            mismatches.is_empty(),
+            "resolver.rs disagrees with the fixture:\n  {}",
+            mismatches.join("\n  ")
+        );
     }
 }

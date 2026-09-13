@@ -13,6 +13,8 @@ Rust CLI that bundles two TS-generated artifacts via `include_bytes!`:
 - **Corpus JSONs** — `packages/zsh-core/artifacts/json/*.json` (built by `pnpm --filter @carlwr/zsh-core build`)
 - **Tool-def JSON** — `packages/zsh-core-tooldef/artifacts/json/tooldef.json` (built by `pnpm --filter @carlwr/zsh-core-tooldef build`)
 
+A third artifact, the resolver conformance fixture (`packages/zsh-core/artifacts/resolver-fixture/`), is read by `cargo test` rather than embedded; it is vendored next to the corpus and ships in the `.crate` so the tests run from a downloaded crate.
+
 Because data is embedded at compile time, rebuild after Rust or artifact changes.
 
 The `build.rs` auto-detects two data sources (monorepo paths vs. vendored `data/`) — see `DATA-SYNC.md` for the design. Pre-extraction the monorepo path is what you'll hit during normal dev; vendored mode exists for `cargo publish` validation.
@@ -54,7 +56,7 @@ From repo root: `./zshref-rs/target/debug/zshref <args>`.
 ## Testing
 
 ```sh
-cargo test          # Rust-only proptests + schema/help smoke
+cargo test          # proptests, schema/help smoke, resolver-fixture conformance
 ```
 
 Cross-language parity (TS `tool.execute()` vs the Rust binary) lives in

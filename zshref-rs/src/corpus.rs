@@ -40,6 +40,17 @@ macro_rules! tooldef_path {
     };
 }
 
+/// The resolver conformance fixture released with the corpus. Test input, not
+/// embedded: read from the same source the corpus JSONs come from.
+#[cfg(test)]
+pub fn resolver_fixture_path() -> std::path::PathBuf {
+    #[cfg(data_source = "vendored")]
+    const REL: &str = "data/resolver-fixture.json";
+    #[cfg(data_source = "monorepo")]
+    const REL: &str = "../packages/zsh-core/artifacts/resolver-fixture/resolver-fixture.json";
+    std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join(REL)
+}
+
 const TOOLDEF_JSON: &[u8] = include_bytes!(tooldef_path!("tooldef.json"));
 
 const INDEX_JSON: &[u8] = include_bytes!(corpus_path!("index.json"));
@@ -221,14 +232,18 @@ pub struct Index {
     pub classify_order: Vec<String>,
     #[serde(rename = "categoryFiles")]
     pub category_files: BTreeMap<String, String>,
+    /// Corpus-content identity, independent of `package_version`. Consumed
+    /// only by the resolver fixture test today.
+    #[allow(dead_code)]
+    #[serde(rename = "dataHash")]
+    pub data_hash: String,
     /// Human-readable per-category labels. SoT: `docCategoryLabels` in
-    /// `packages/zsh-core/src/docs/taxonomy.ts`. Consumed only by the
-    /// cfg(test) `categories.json` emitter today.
+    /// `packages/zsh-core/src/docs/taxonomy.ts`. Unread by the CLI today.
     #[allow(dead_code)]
     #[serde(rename = "docCategoryLabels")]
     pub doc_category_labels: BTreeMap<String, String>,
     /// Hook base names for the special_function resolver (`*_functions` suffix
-    /// pattern). Sourced from `packages/zsh-core/src/docs/resolvers.ts`.
+    /// pattern). Sourced from `packages/zsh-core/src/docs/resolver.ts`.
     #[serde(rename = "hookNames")]
     pub hook_names: Vec<String>,
 }
