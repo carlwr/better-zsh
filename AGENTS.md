@@ -55,11 +55,12 @@ Pre-1.0 everything (including public APIs) can still move freely.
 
 Sanctioned brand crossing inside `zsh-core`: `resolve(corpus, cat, raw)`.
 
-Repo layering:
+Repo layering (layout, arrows and their invariants: `REPO-SHAPE.md`):
 
-- `zsh-core` owns corpus, analysis, rendering, and resolver primitives.
+- `zsh-core` owns corpus, analysis, rendering, and resolver primitives; it is the only producer.
 - `zshref-rs` consumes zsh-core's release assets (corpus JSON, resolver fixture) and owns the tool set; its adapters consume that.
 - Editor features compose `zsh-core` primitives directly.
+- `zshref-web` consumes `zsh-core` at build time only — its search index; the browser bundle is zsh-core-free.
 - No "candidate in, markdown out" shortcut in `zsh-core`; consumers compose `resolve()` + `renderDoc()`.
 
 ### zsh-core package imports
@@ -192,12 +193,12 @@ Mid-wipe, the TS LSP can emit transient TS7016 ghosts for `<pkg>/dist/*` — ign
 - Cargo side: `Swatinem/rust-cache` in the Rust workflow.
 - VS Code downloads: deliberately uncached — a cache lets the test harness silently fall back to an already-downloaded version when the update service is unreachable; uncached, that fails hard.
 
-### Post-extraction repo URLs in user-facing docs
+### One organization at a time
 
-Destinations and eventual repo names: `REPO-SHAPE.md`.
+Docs describe the current shape. The one planned change — extracting `zshref-rs/` into its own repo — is described in one place, `zshref-rs/EXTRACTION.md` (`REPO-SHAPE.md` points there); nothing else keeps a second timeline.
 
-- User-facing `.md` (`README.md`, `DEVELOPMENT.md`, `SECURITY.md`, `THIRD_PARTY_NOTICES.md`) in workspace root and each to-be-extracted dir already uses post-extraction repo URLs. Don't revert to monorepo-subpath form.
-- Maintainer-focused docs (`AGENTS.md`, `DESIGN.md`, `*EXTRACTION.md`) keep describing pre-release monorepo state.
+- Exception: user-facing `.md` (`README.md`, `DEVELOPMENT.md`, `SECURITY.md`, `THIRD_PARTY_NOTICES.md`, wherever they sit) already links the crate at its post-extraction repo URL. Don't revert to monorepo-subpath form.
+- Maintainer-focused docs keep describing the monorepo state.
 
 ### `SECURITY.md`
 

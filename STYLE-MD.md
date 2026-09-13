@@ -5,7 +5,7 @@ read-when: editing markdown in maintainer-audience docs
 
 # STYLE-MD.md
 
-Rules for editing maintainer-audience `.md` files — all repo `.md` except user-facing docs (`README.md`, `DEVELOPMENT.md`, `SECURITY.md`, `THIRD_PARTY_NOTICES.md` at workspace root and at to-be-extracted package roots).
+Rules for editing maintainer-audience `.md` files — all repo `.md` except user-facing docs (`README.md`, `DEVELOPMENT.md`, `SECURITY.md`, `THIRD_PARTY_NOTICES.md` at the workspace root and at package roots).
 
 ## Frontmatter
 

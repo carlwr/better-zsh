@@ -14,13 +14,10 @@ resolvers against the conformance fixture `zsh-core` emits beside them.
 Anything that alters those artifacts — taxonomy changes, new record
 fields, resolver behaviour — is a cross-language change.
 
-Pre-extraction, `make cli` / `make cli-test` rebuild TS artifacts before
-Rust runs; a resolver change that the Rust mirror does not follow fails
-`make cli-test`.
-
-Post-extraction, propagation is explicit and manual: see
-`zshref-rs/DATA-SYNC.md` for how the vendored data snapshot is updated.
-The exact sync trigger is an extraction-day decision.
+`make cli` / `make cli-test` rebuild the TS artifacts before Rust runs; a
+resolver change that the Rust mirror does not follow fails `make cli-test`.
+How the artifacts reach the crate — here, and once it lives in its own repo:
+`zshref-rs/DATA-SYNC.md`.
 
 ## zsh-core API docs
 

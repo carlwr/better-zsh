@@ -11,7 +11,7 @@ Static SPA: NLP search over zsh-core records — plus the Node-side NLP toolchai
 - `zod` — artifact schemas at load time; also the source of truth for the editor schemas of the rules YAML, the sentence fixture and the QA corpus
 - self-hosted variable fonts via `@fontsource-variable/*`
 
-Alternatives ruled out: React / Elm / PureScript front-ends; per-record SSG (records are dynamic at runtime).
+Alternatives ruled out: React / Elm / PureScript front-ends; per-record SSG (records are dynamic at runtime); a Rust ranker compiled to WASM (the NLP is TS end-to-end: one language, one embedder); in-browser index building (too slow for first load).
 
 ## Layout: the browser/Node seam
 
@@ -122,7 +122,7 @@ The sanity fixture's two tests:
 
 ## Hosting intent
 
-- static SPA, no server; deploy deferred to a follow-up reorg step — artifacts build locally and in the CI `nlp` job, nothing publishes them
+- static SPA, no server; deploying is a follow-up — artifacts build locally and in the CI `nlp` job, nothing publishes them
 - GitHub Pages first, Cloudflare Pages the alternative
 - Pages hosts one site per repo, and `docs-zsh-core.yml` already claims it: the SPA takes the site root, the zsh-core docs move under `/zsh-core-docs/`, one deployment carries both
 - before publishing:

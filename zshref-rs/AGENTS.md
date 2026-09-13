@@ -10,6 +10,8 @@ One floor: `rust-version` in `Cargo.toml` — what `cargo install zshref` needs,
 
 `// MIRRORED-IN:` (TS) ↔ `// MIRROR-OF:` (Rust) mark what this crate re-implements from `packages/zsh-core/` (resolvers, record-field projection): orientation only, no checker; the rename rule is root `AGENTS.md`'s. Resolver behaviour is pinned by zsh-core's conformance fixture (`DATA-SYNC.md`): a resolver change lands TS-side first, the fixture test then names every input the Rust side must follow.
 
+Known divergence the fixture does not yet pin: `history_expn` caret shorthand with text after the final `^` (`^a^b^:G`, `^a^^`) — `history_key` answers `!!`, the TS regex nothing. `man zshexpn` sides with Rust (`^foo^bar^` is `!!:s^foo^bar^`; modifiers may follow): pin it, align TS.
+
 ## Iteration
 
 - Rust-only edits: `cargo build --all-features` + `cargo test --all-features` (skip `pnpm qa`); without `--all-features` the MCP binary and its test are skipped.
@@ -31,7 +33,7 @@ For plain integration tests (exit status, stdout shape) that don't need `outputS
 
 ## Entry points
 
-`cli.rs` reaches `tools::dispatch` directly; `batch.rs` and the MCP server go through `tools::call`. Both paths inject `inputSchema.default` for omitted flags — CLI via `clap::Arg::default_value`, `call` via `tools::input`. Edit one, mirror the other. Parity is pinned by `omit_equals_schema_default` + `cli_equals_batch` in `tests/cli_invariants.rs` and `omitted_limit_takes_the_schema_default` in `tests/mcp.rs`.
+`cli.rs` reaches `tools::dispatch` directly; `batch.rs` and the MCP server go through `tools::call`. Both paths inject `inputSchema.default` for omitted flags — CLI via `clap::Arg::default_value`, `call` via `tools::input`. Edit one, mirror the other. Parity is pinned by `omit_equals_schema_default` + `cli_equals_batch` in `tests/cli_invariants.rs` and `omitted_limit_takes_the_schema_default` in `tests/mcp.rs`. Candidate simplification: route the CLI through `tools::call` too and drop clap's `default_value` injection — one default-filling path instead of the pinned pair.
 
 ## Make targets
 

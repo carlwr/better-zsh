@@ -152,15 +152,19 @@ In order. A step ends with the repo's validation gates green where touched and t
 - `tooldef-delete.md` — scope, decisions (incl. those made during execution), captures, gates, follow-ups
 - _before/after:_ `dump-help`, `zshref schema`, `zshref batch` over the pinned cases, MCP `initialize` / `tools/list` / `tools/call` equal throughout; `zshref info` differs by the decided field swap (`buildInputHash` → `dataHash`)
 
-### Stamp machinery: evaluate
+### DONE: Stamp machinery: evaluate
 
 - after every other code step; before the closing sweep, so the docs describe the outcome
 - question: with zsh-core the only TS upstream and a star-shaped workspace graph, does the stamp/`upstream-ready` machinery (`BZ_SKIP_UPSTREAM`, content stamps, `scripts/build/upstream-ready.mjs`) still earn its keep, or does pnpm's own topological ordering cover it?
 - weigh against what the reorg actually left in place, not this file's expectations
   - the SPA's index build is the costliest build step; `build:index` already skips itself when the on-disk index validates against the corpus
 - an evaluation, not a foregone removal; the decision and its reason land in `scripts/build/README.md` either way
+- _decided:_ kept, unchanged — `scripts/build/README.md` §Rejected, "pnpm's topological order alone"
+  - pnpm orders one script across members; nothing of its own builds the upstream before a leaf's typecheck or test, `make` reaches the upstream outside pnpm, and two leaves still fan out concurrently
+  - measured: a readiness call ~0.35 s, an unconditional zsh-core build ~7 s; `qa` reaches the call repeatedly (two `run` wrappers, the leaves' `pre*` hooks, `make artifacts`)
+  - one-upstream simplifications (the named `bootstrap` form, the chain branch of `buildUpstream`) left in place: generic, graph-read, tested; removing them would be LOC-only
 
-### Docs consolidation and closing
+### DONE: Docs consolidation and closing
 
 - `REPO-SHAPE.md`: current shape only; one arrow set; a pointer to `zshref-rs/EXTRACTION.md` for the one remaining extraction
 - `zshref-rs/EXTRACTION.md` shrinks; `DATA-SYNC.md`: vendoring = corpus tarball + fixture tarball
@@ -175,6 +179,12 @@ In order. A step ends with the repo's validation gates green where touched and t
   - `zshref-rs` paths outside `zshref-rs/`
   - extraction, post-extraction, to-be-extracted, pre-release — each hit re-judged, not deleted wholesale
 - decide the home of `rationale.md` content (candidates: `DESIGN.md`, `PRINCIPLES.md`, `REPO-SHAPE.md`, source comments); then delete this dir
+- _sweep outcome:_ no hits for tooldef, `WEB-MIRROR`, `BZ_REQUIRE_PARITY`, `_selfcheck`, `fetch-artifacts`; nlp outside the SPA is the CI job and pointers; `zshref-rs` outside its dir is directory references; the extraction/pre-release hits reduced to the narrowed root `AGENTS.md` rule (§"One organization at a time"), `STYLE-MD.md`'s scope line and root `DEVELOPMENT.md` — the crate's user-facing docs keep their banners (extraction-day items)
+- _decided, `rationale.md`'s home:_ the arrow invariants → `REPO-SHAPE.md`; the structural principles and the maintenance posture → `PRINCIPLES.md`; the rejected shapes → the `DESIGN.md` sections they concern (adapters, mirrors, CLI) and `packages/zshref-web/AGENTS.md`; the shape before, its diagnosis and the per-step records stay history — the tag `pre-reorg` and this dir's last commit
+- _decided, the tooldef follow-up on consumer-less zsh-core exports:_ `RECORDS_TOTAL` dropped with its drift test (hand-maintained, no consumer); `subKindEnums`, `resolverFeedbackKindSchemas`, `resolverFeedbackKinds` kept as the canonical derived sources — `subKindEnums` made lazy, its eager form parsed the corpus on import of the index entry
+- follow-ups re-homed: the crate-side ones → `zshref-rs/AGENTS.md`; the NLP ones already in `NLP.md`
+- orient skill: `overview` and `exports` learn `zshref-web`
+- this dir: deleted by the maintainer once the closing commit is reviewed; the Deferred list below needs a home first
 
 ## Deferred
 
@@ -185,6 +195,6 @@ Decided not to decide now:
 - performing the `zshref-rs` split; whether a thin `zshref-mcp` repo is wanted
 - a `zshref-web` split into its own repo — no technical driver; its payoff if done: the SPA's toolchain and dependency churn (SvelteKit, Vite, transformers.js) leave the workspace lockfile and root `qa`
 - an MCP discoverability shim in the extension
-- deprecating the published alphas of `@carlwr/zsh-core-tooldef` and `@carlwr/zshref-mcp` on npm and JSR
+- deprecating the published alphas of `@carlwr/zsh-core-tooldef` and `@carlwr/zshref-mcp` on npm and JSR; with it, revoking the trusted-publisher grants that still name their deleted release workflows
 - the `zsh_docs` description (`docs_long` in `zshref-rs/src/tools/prose.rs`): its `matches[]` property list omits `title` and files the optional `subKind` / `feedback` under "mandatory" — ported verbatim; product text (`--help`, MCP descriptions), so a prose fix of its own, not a reorg change
 - the NLP follow-ups recorded by the move: `packages/zshref-web/nlp/NLP.md` §Follow-ups

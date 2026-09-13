@@ -333,12 +333,23 @@ Rejected alternatives:
 - mega-tool with a `kind` enum
 - one tool per category
 
+One crate with a lib target and two bins; rejected shapes:
+
+- the MCP as its own crate or repo over a `zshref` lib: a public lib API to semver for one consumer; three version bumps per change
+- a TS MCP fed by a Rust-emitted metadata artifact: two behaviour implementations, so an oracle is still needed
+- prose and limits as committed YAML + JSON Schema: one consumer once the MCP is Rust; constants and strings in Rust are the source
+
 ## TS ↔ Rust mirrors
 
 The Rust crate re-implements one behaviour — the resolvers; the rest it consumes as baked JSON.
 
 - Markers (`// MIRRORED-IN:` / `// MIRROR-OF:`) on the mirrored pairs (resolvers, record-field projection): orientation, no mechanical check.
 - Resolver conformance: the fixture zsh-core releases beside the corpus JSON (`packages/zsh-core/scripts/resolver-fixture.ts`), replayed in-crate by `zshref-rs/src/resolver.rs`.
+
+The mirror is accepted because it is bounded — it changes only with categories or normalization rules, and drifts visibly against the fixture (principle: `PRINCIPLES.md` §"Cross-project structure"). Rejected ways to remove it:
+
+- resolvers as data: a table or pattern format expressive enough for the template categories is a custom DSL, and specifying, testing and tooling one costs more than a bounded dual implementation
+- zsh-core in Rust: Yodl parsing and the data model are substantial, the extension needs TS, the package's audience (IDE- and agent-adjacent tooling) is TS-centric, and the deliverable to Rust is already data
 
 ## `lookupRaw`: direct ∥ resolver, direct preferred
 
@@ -399,6 +410,8 @@ External coverage:
 - `zshref-rs/README.md` — user-facing surface and conventions
 - `zshref-rs/DATA-SYNC.md` — dual-mode build, bundled corpus
 - `CLI-POLICY.md` — stream / color discipline
+
+Rust, not a TS CLI: several TS CLI frameworks were tried and each fought `--help` quality (`PRINCIPLES.md`); clap did not. A small, fast, self-contained binary is the product for a tool agents invoke hundreds of times per session; single-binary TS routes give large binaries and slow startup.
 
 The tool definitions keep the marginal cost of "another adapter" low — dynamic `clap::Command` assembly walks them:
 

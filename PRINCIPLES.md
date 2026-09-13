@@ -210,6 +210,25 @@ Pragmatism carve-out: when shape inference *radically* simplifies code or remove
 
 ---
 
+## Cross-project structure
+
+The arrows and their invariants: `REPO-SHAPE.md`. The principles behind them:
+
+- **Dependencies over peers.** Two peers held equal by a parity test have no owner of the invariant — the test is a parent asserting they agree. Make one the depender: it claims parity and owns the test.
+- **One root of truth, no diamonds.** A consumer of two producers that must agree — one derived from the other — verifies their consistency on every update. Cure: a single upstream; the derived producer merges into the root or into the consumer.
+- **Language crossings carry data.** A TS→Rust edge carrying data costs a schema and a version pin; carrying behaviour it costs a mirror, a parity mechanism and typically a binary as the other side's oracle. Keep behaviour crossings to what cannot be data.
+- **A mirror is owned by its dependent**, tested against a fixture the source ships (the resolvers: `DESIGN.md` §"TS ↔ Rust mirrors"). A binary spawned as an oracle is the shape to avoid.
+- **Leaves have no consumers.** A package nothing depends on needs no freshness oracle and no fingerprint.
+
+## Maintenance posture
+
+- Built for stability over time: implementation effort once, then version bumps for years; uptake expected limited but not zero.
+- Post-release maintenance must be cheap. The expensive thing is re-understanding a non-natural organization; an easy-to-understand overall structure outranks preserving effort already spent.
+- `zsh-core` is the future-proof part; `zshref` is the main surface; the SPA is an NLP retrieval showcase — NLP inside the CLI is not wanted.
+- Build outputs are never committed; the tree is committable in any build state.
+
+---
+
 ## Tool layer + adapters
 
 ### Judge changes by extrapolation to unknown consumers
