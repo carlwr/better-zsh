@@ -76,7 +76,7 @@ pub fn build_cli(tool_defs: &ToolDefs, corpus: &Corpus, mode: BuildMode) -> Comm
         // in `Options:` (the override `Usage:` block shows `[--category=C]`
         // per subcommand, conveying where it applies); `dispatch` forwards a
         // root-position value to the tool subcommand.
-        .arg(root_category_arg(&tool_defs.tools))
+        .arg(root_category_arg(tool_defs))
         .arg(help_arg())
         .arg(version_arg());
 
@@ -367,26 +367,23 @@ fn pretty_arg() -> Arg {
 /// adds a one-match-per-category note only in its own subcommand help,
 /// which would read as inaccurate at the root where `search`/`list` also
 /// take `--category`.
-fn root_category_arg(tools: &[ToolDef]) -> Arg {
-    let cat = |name: &str| {
-        tools.iter().find(|t| t.name == name).and_then(|t| {
-            t.input_schema
-                .get("properties")
-                .and_then(|p| p.get("category"))
-        })
-    };
+fn root_category_arg(tool_defs: &ToolDefs) -> Arg {
     // `zsh_list` carries the generic category description; `zsh_docs` would
     // carry the docs-specific (one-match) variant.
-    let spec = cat("zsh_list").expect("zsh_list tooldef must expose a `category` property");
-    let long_help = spec
+    let list = tool_defs.get("zsh_list").expect("zsh_list tooldef");
+    let long_help = list
+        .input_schema
+        .get("properties")
+        .and_then(|p| p.get("category"))
+        .expect("zsh_list tooldef must expose a `category` property")
         .get("description")
         .and_then(Value::as_str)
         .unwrap_or_default()
         .to_string();
-    let brief = tools
-        .iter()
-        .find(|t| t.name == "zsh_list")
-        .and_then(|t| t.flag_briefs.get("category").cloned())
+    let brief = list
+        .flag_briefs
+        .get("category")
+        .cloned()
         .unwrap_or_default();
     Arg::new("category")
         .long("category")
@@ -469,12 +466,9 @@ pub fn dispatch(cmd: Command, tool_defs: &ToolDefs, corpus: &Corpus) -> Result<i
             Ok(render_help(cmd_for_err, command))
         }
         sub => {
-            let tool_name = format!("zsh_{sub}");
             let td = ctx
                 .tool_defs
-                .tools
-                .iter()
-                .find(|t| t.name == tool_name)
+                .get(&format!("zsh_{sub}"))
                 .expect("subcommand registered from tool_defs");
             let mut input = matches_to_input_value(td, sub_matches);
             forward_root_category(&mut input, td, &matches);

@@ -1,7 +1,7 @@
 //! Corpus + tool-def JSON decoding.
 //!
 //! Record shapes are loose (`serde_json::Value`) — forward-compatible with
-//! schema additions; the CLI only reads a handful of well-known fields.
+//! schema additions; the tools only read a handful of well-known fields.
 //! Taxonomy lists come from the embedded `index.json` (TS source of truth).
 //! The only Rust-side filename inventory is the `include_bytes!` table below;
 //! `load_corpus` asserts every indexed file has embedded bytes.
@@ -198,6 +198,12 @@ pub struct ToolDefs {
     pub preamble: String,
 }
 
+impl ToolDefs {
+    pub fn get(&self, name: &str) -> Option<&ToolDef> {
+        self.tools.iter().find(|t| t.name == name)
+    }
+}
+
 #[derive(Debug, Deserialize)]
 pub struct ToolDef {
     pub name: String,
@@ -207,7 +213,7 @@ pub struct ToolDef {
     pub flag_briefs: BTreeMap<String, String>,
     #[serde(rename = "inputSchema")]
     pub input_schema: Value,
-    // Bundled into `zshref schema` and used by schema-validation tests.
+    // `zshref schema`, `tools/list`, and the schema-validation tests.
     #[serde(rename = "outputSchema")]
     pub output_schema: Value,
 }
@@ -220,7 +226,6 @@ pub fn load_tool_defs() -> Result<ToolDefs> {
 /// `category_files`) come directly from the TS source of truth — no Rust-side mirror.
 #[derive(Debug, Deserialize)]
 pub struct Index {
-    #[allow(dead_code)]
     pub version: u32,
     #[serde(rename = "packageVersion")]
     pub package_version: String,
@@ -232,14 +237,11 @@ pub struct Index {
     pub classify_order: Vec<String>,
     #[serde(rename = "categoryFiles")]
     pub category_files: BTreeMap<String, String>,
-    /// Corpus-content identity, independent of `package_version`. Consumed
-    /// only by the resolver fixture test today.
-    #[allow(dead_code)]
+    /// Corpus-content identity, independent of `package_version`.
     #[serde(rename = "dataHash")]
     pub data_hash: String,
     /// Human-readable per-category labels. SoT: `docCategoryLabels` in
-    /// `packages/zsh-core/src/docs/taxonomy.ts`. Unread by the CLI today.
-    #[allow(dead_code)]
+    /// `packages/zsh-core/src/docs/taxonomy.ts`.
     #[serde(rename = "docCategoryLabels")]
     pub doc_category_labels: BTreeMap<String, String>,
     /// Hook base names for the special_function resolver (`*_functions` suffix

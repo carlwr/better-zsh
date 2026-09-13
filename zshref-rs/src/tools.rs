@@ -3,6 +3,7 @@
 pub mod docs;
 pub mod envelope;
 pub mod info;
+mod input;
 pub mod list;
 pub mod record_fields;
 pub mod schema;
@@ -12,7 +13,15 @@ use crate::corpus::{Corpus, ToolDef};
 use anyhow::{anyhow, Result};
 use serde_json::Value;
 
-/// Dispatch over a JSON `input` object. Both CLI and batch adapters funnel here.
+/// The request path for adapters that hand over raw JSON input (batch, MCP):
+/// validate against `inputSchema`, fill its defaults, dispatch. The CLI
+/// arrives at `dispatch` directly — clap has already done both.
+pub fn call(td: &ToolDef, raw_input: &Value, corpus: &Corpus) -> Result<Value> {
+    input::validate(td, raw_input).map_err(anyhow::Error::msg)?;
+    dispatch(td, &input::fill_defaults(td, raw_input), corpus)
+}
+
+/// Dispatch over a JSON `input` object that already satisfies `inputSchema`.
 pub fn dispatch(td: &ToolDef, input: &Value, corpus: &Corpus) -> Result<Value> {
     match td.name.as_str() {
         "zsh_docs" => docs::run(input, corpus),

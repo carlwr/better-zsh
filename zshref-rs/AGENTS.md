@@ -29,7 +29,7 @@ For plain integration tests (exit status, stdout shape) that don't need `outputS
 
 ## CLI / batch parity
 
-`cli.rs` and `batch.rs` are independent entry points into `tools::dispatch`. Both inject `inputSchema.default` for omitted flags — CLI via `clap::Arg::default_value`, batch via `fill_defaults_from_schema`. Edit one, mirror the other. Parity is pinned by `omit_equals_schema_default` + `cli_equals_batch` in `tests/cli_invariants.rs`.
+`cli.rs` reaches `tools::dispatch` directly; `batch.rs` goes through `tools::call`. Both inject `inputSchema.default` for omitted flags — CLI via `clap::Arg::default_value`, `call` via `tools::input`. Edit one, mirror the other. Parity is pinned by `omit_equals_schema_default` + `cli_equals_batch` in `tests/cli_invariants.rs`.
 
 ## Make targets
 

@@ -92,25 +92,18 @@ pub fn root_after_help_tail(tool_defs: &ToolDefs, corpus: &Corpus) -> String {
 fn workflow_example(tool_defs: &ToolDefs, corpus: &Corpus) -> String {
     let find = |name: &str| {
         tool_defs
-            .tools
-            .iter()
-            .find(|t| t.name == name)
+            .get(name)
             .unwrap_or_else(|| panic!("workflow example needs {name} tooldef"))
     };
     let search_td = find("zsh_search");
     let docs_td = find("zsh_docs");
 
-    // Match `--limit` default-filling that the CLI gets from clap and the
-    // batch protocol gets from `fill_defaults_from_schema`. Without this,
-    // `dispatch` would see no `limit` and return zero matches.
-    let search_in = crate::batch::fill_defaults_from_schema(
-        search_td,
-        &json!({ "query": "!", "category": "conditional_op" }),
-    );
+    // `tools::call` fills the `limit` default the shell command gets from
+    // clap; without it `dispatch` would see no `limit` and return nothing.
+    let search_in = json!({ "query": "!", "category": "conditional_op" });
     let docs_in = json!({ "key": "!", "category": "conditional_op" });
 
-    let search_out =
-        tools::dispatch(search_td, &search_in, corpus).expect("workflow search must run");
+    let search_out = tools::call(search_td, &search_in, corpus).expect("workflow search must run");
     let mut docs_out = tools::dispatch(docs_td, &docs_in, corpus).expect("workflow docs must run");
     // Defensive: the chosen record's `mdBody` is under threshold so no
     // elision should fire, but a future corpus change could push it over.
@@ -192,9 +185,7 @@ pub fn batch_long(tool_defs: &ToolDefs, corpus: &Corpus) -> String {
 
 fn batch_example(tool_defs: &ToolDefs, corpus: &Corpus) -> String {
     let td = tool_defs
-        .tools
-        .iter()
-        .find(|t| t.name == "zsh_search")
+        .get("zsh_search")
         .expect("batch help example needs zsh_search tooldef");
     let input = json!({ "query": "autolo", "limit": 1 });
     let output = tools::dispatch(td, &input, corpus).expect("batch help example must run");

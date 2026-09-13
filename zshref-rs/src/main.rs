@@ -1,16 +1,7 @@
-//! Rust CLI entry point for the bundled zsh reference.
-
-mod batch;
-mod cli;
-mod corpus;
-#[cfg(test)]
-mod data_fingerprint;
-mod fuzzy;
-mod output;
-mod resolver;
-mod tools;
+//! `zshref` — the CLI binary.
 
 use anyhow::Result;
+use zshref::{cli, corpus};
 
 fn main() {
     let code = match run() {
