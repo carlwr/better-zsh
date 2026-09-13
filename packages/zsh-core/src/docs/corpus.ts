@@ -205,13 +205,14 @@ export const loadCorpus: () => DocCorpus = cached(() => {
  * `undefined` when `docSubKind[c]` is `undefined` for every record.
  *
  * The source for JSON Schema `enum` keywords and the like (AGENTS.md §"Never
- * enumerate or count `DocCategory`"). Eager, cached, total over `DocCategory`.
+ * enumerate or count `DocCategory`"). Lazy — importing must not parse the
+ * corpus — cached, total over `DocCategory`.
  */
 type SubKindEnums = Readonly<{
   [K in DocCategory]: readonly string[] | undefined
 }>
 
-export const subKindEnums: SubKindEnums = (() => {
+export const subKindEnums: () => SubKindEnums = cached(() => {
   const corpus = loadCorpus()
   const entries = docCategories.map(cat => {
     const seen = new Set<string>()
@@ -222,4 +223,4 @@ export const subKindEnums: SubKindEnums = (() => {
     return [cat, seen.size === 0 ? undefined : [...seen].sort()] as const
   })
   return Object.freeze(Object.fromEntries(entries)) as SubKindEnums
-})()
+})
