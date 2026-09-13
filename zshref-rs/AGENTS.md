@@ -8,7 +8,7 @@ One floor: `rust-version` in `Cargo.toml` — what `cargo install zshref` needs;
 
 ## TS↔Rust mirror discipline
 
-`// MIRRORED-IN:` (TS) ↔ `// MIRROR-OF:` (Rust) — zshref-rs ↔ pnpm-workspace TS code (`packages/zsh-core{,-tooldef}/`). Structural parity is enforced by `parity-units.ts` (rationale: `DESIGN.md`); the rename rule is root `AGENTS.md`'s.
+`// MIRRORED-IN:` (TS) ↔ `// MIRROR-OF:` (Rust) — zshref-rs ↔ pnpm-workspace TS code (`packages/zsh-core{,-tooldef}/`). Structural parity is enforced by `parity-units.ts` (rationale: `DESIGN.md`); the rename rule is root `AGENTS.md`'s. Resolver behaviour is pinned by zsh-core's conformance fixture (`DATA-SYNC.md`): a resolver change lands TS-side first, the fixture test then names every input the Rust side must follow.
 
 ## Iteration
 
@@ -21,6 +21,7 @@ One floor: `rust-version` in `Cargo.toml` — what `cargo install zshref` needs;
 - `tests/properties.rs` — property-based (proptest)
 - `tests/cli_invariants.rs` — deterministic invariant checks: CLI ↔ batch parity, every-category sweeps, full-corpus round-trip
 - `tests/common/mod.rs` — shared helpers: spawn-and-parse vocabulary, tooldef path resolution, `outputSchema` validators, subcommand→tool-name map
+- `src/resolver.rs` `#[cfg(test)]` — conformance to zsh-core's resolver fixture; `make cli-test` / `make cli-vendored-test` refresh fixture and corpus together, plain `cargo test` reads what is on disk
 
 `run_json` auto-validates every tool subcommand response against its bundled `outputSchema` — new tests get conformance checks for free.
 

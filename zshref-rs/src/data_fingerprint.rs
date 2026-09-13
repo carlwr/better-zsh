@@ -1,4 +1,4 @@
-//! Content fingerprint of the binary's embedded data inputs.
+//! Content fingerprint of the binary's data inputs.
 //!
 //! `build.rs` bakes it into `ZSHREF_BUILD_INPUT_HASH` (also driving cargo's
 //! `rerun-if-changed`); the TS mirror in the tooldef parity suite recomputes

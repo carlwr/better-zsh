@@ -26,9 +26,9 @@ read-when: extraction-day checklist for zshref (Rust CLI)
 
 ### Embedded JSON paths
 
-Already routed through cfg-gated macros (`corpus_path!`, `tooldef_path!` in `src/corpus.rs`) by the option-6 dual-mode build. At extraction:
+Already routed through cfg-gated macros (`corpus_path!`, `tooldef_path!` in `src/corpus.rs`) by the option-6 dual-mode build; the resolver fixture's `resolver_fixture_path()` beside them is gated the same way. At extraction:
 
-- Drop the `monorepo` arm from the macros in `src/corpus.rs` and the corresponding branch in `build.rs`.
+- Drop the `monorepo` arm from the macros and the path fn in `src/corpus.rs` and the corresponding branch in `build.rs`.
 - Remove `/data/` from `.gitignore` and commit the vendored JSONs.
 
 See `DATA-SYNC.md` for the landed design.
@@ -42,7 +42,7 @@ directory is committed. See `DATA-SYNC.md`.
 ### Makefile
 
 - The repo root `Makefile` goes away. The `artifacts` target (which drives `pnpm build` for the TS packages) moves to whatever cross-repo data-sync mechanism is chosen; the monorepo-only CI job disappears alongside it.
-- The vendor target pivots: instead of copying from a sibling package, it downloads and unpacks the `zsh-core` JSON release asset at a pinned tag.
+- The vendor target pivots: instead of copying from a sibling package, it downloads and unpacks the `zsh-core` release assets (corpus JSON, resolver fixture) at a pinned tag.
 - The extracted repo will have a simpler `Makefile` (or rely on cargo-native workflows) covering only the Rust-side targets.
 
 ### CI
@@ -77,7 +77,7 @@ Companion-repo URLs and the project name are already in post-extraction form. Re
 
 ### Cross-repo drift guards
 
-- No extraction-day action. The TS↔Rust drift guards described in `DATA-SYNC.md` survive unchanged as long as the vendored `index.json` ships with the crate.
+- No extraction-day action. The TS↔Rust drift guards described in `DATA-SYNC.md` survive unchanged as long as the vendored `index.json` and resolver fixture ship with the crate.
 
 ### Scope fence
 

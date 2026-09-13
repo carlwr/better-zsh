@@ -26,6 +26,7 @@ The `build.rs` auto-detects two data sources (monorepo paths vs. vendored `data/
 | Pure Rust only | `cargo build` |
 | Tool-def (flag name, description, input/output schema) | `make cli-debug` (runs TS build first) |
 | Corpus (zsh-core docs/types) | `make cli-debug` (runs TS build first) |
+| Resolver behaviour (zsh-core `resolver.ts`) | `make cli-test` (refreshes the conformance fixture, then runs `cargo test`) |
 
 `make cli-debug` depends on `make artifacts`, which runs the `pnpm --filter` steps for both TS packages. For vendored-mode dev (e.g. verifying what `cargo publish` will see), use `make cli-vendored` / `make cli-vendored-test` instead.
 

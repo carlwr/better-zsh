@@ -352,6 +352,7 @@ The Rust CLI re-implements a small surface; the rest is consumed via baked JSON.
 - Source of truth: `packages/zsh-core-tooldef/src/test/parity-units.ts` (file header is the spec).
 - Marker alignment (`// MIRRORED-IN:` / `// MIRROR-OF:`): `mirror-pairs.test.ts`.
 - Behavioral parity (modulo the carved-out fuzzy tier): `parity.test.ts`.
+- Resolver conformance: the fixture zsh-core releases beside the corpus JSON (`packages/zsh-core/scripts/resolver-fixture.ts`), replayed in-crate by `zshref-rs/src/resolver.rs`.
 
 ## `lookupRaw`: direct ∥ resolver, direct preferred
 

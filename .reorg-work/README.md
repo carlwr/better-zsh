@@ -136,15 +136,10 @@ In order. A step ends with the repo's validation gates green where touched and t
   - default `zshref` help, modulo the `## bin:` line
 - follow-ups recorded in `packages/zshref-web/nlp/NLP.md` §Follow-ups (they outlive this dir)
 
-### Resolver conformance fixture
+### DONE: Resolver conformance fixture
 
-- zsh-core emits a fixture — per category, resolver inputs (pinned + generated) with the expected id and feedback — as a second release asset next to the JSON tarball, same tag
-- `zshref-rs` vendors it alongside the corpus (in-monorepo: from the sibling's `artifacts/`) and tests `resolver.rs` against it
-- covers the zsh-core-only mirror unit `resolver`; `record-fields` is a data contract already exercised by loading the corpus — no fixture
-- lands while tooldef's `parity.test.ts` still runs: both green before the old harness goes
-- `MIRROR-OF` markers stay on the Rust side; `mirror-pairs.test.ts` goes with tooldef — a one-sided successor is the step's call
-- a known TS/Rust disagreement the fixture will expose — `resolveRedir` on a bare two-character operator; the record and its web-eval consequence: `packages/zshref-web/nlp/NLP.md` §Follow-ups
-- _before/after:_ the fixture's pinned inputs seeded from `parity.test.ts`'s cases, so old harness and new test agree on the same cases first
+- `resolver-fixture.md` — scope, decisions (incl. those made during execution), captures, gates, follow-ups
+- _before/after:_ `zshref batch` over the parity pinned cases and `dump-help` equal throughout; the fixture's only movement across the `resolveRedir` fix is the bare `>&` / `<&` pair it was known to expose
 
 ### MCP in Rust
 
