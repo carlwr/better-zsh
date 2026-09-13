@@ -2,9 +2,9 @@
 
 // Prose strings in this file are hand-written by a human. Agents making changes to this file must approach with great care.
 
-use crate::corpus::{Corpus, ToolDef, ToolDefs};
+use crate::corpus::Corpus;
 use crate::output;
-use crate::tools;
+use crate::tools::{self, ToolDef, ToolDefs};
 use indoc::{formatdoc, indoc};
 use serde_json::{json, Value};
 
@@ -93,7 +93,7 @@ fn workflow_example(tool_defs: &ToolDefs, corpus: &Corpus) -> String {
     let find = |name: &str| {
         tool_defs
             .get(name)
-            .unwrap_or_else(|| panic!("workflow example needs {name} tooldef"))
+            .unwrap_or_else(|| panic!("workflow example needs the {name} tool"))
     };
     let search_td = find("zsh_search");
     let docs_td = find("zsh_docs");
@@ -186,7 +186,7 @@ pub fn batch_long(tool_defs: &ToolDefs, corpus: &Corpus) -> String {
 fn batch_example(tool_defs: &ToolDefs, corpus: &Corpus) -> String {
     let td = tool_defs
         .get("zsh_search")
-        .expect("batch help example needs zsh_search tooldef");
+        .expect("batch help example needs the zsh_search tool");
     let input = json!({ "query": "autolo", "limit": 1 });
     let output = tools::dispatch(td, &input, corpus).expect("batch help example must run");
     let envelope = json!({ "ok": true, "output": output });
@@ -337,15 +337,15 @@ pub const COMPL_SHELL_HELP: &str = indoc! {"
       powershell
     "};
 
-const CLI_OMIT_TOOLDEF_LINES: &[&str] = &["No shell execution, no environment access."];
+const CLI_OMIT_LINES: &[&str] = &[tools::prose::SAFETY];
 
-/// Tooldef descriptions are MCP-primary. Remove lines that are useful for
+/// Tool descriptions are MCP-primary. Remove lines that are useful for
 /// agents but too README-like for terminal help.
 pub fn cli_tool_description(s: &str) -> String {
     s.lines()
         .filter(|line| {
             let trimmed = line.trim();
-            !CLI_OMIT_TOOLDEF_LINES.contains(&trimmed)
+            !CLI_OMIT_LINES.contains(&trimmed)
         })
         .collect::<Vec<_>>()
         .join("\n")
@@ -359,8 +359,8 @@ pub fn rewrite_refs(s: &str, tools: &[ToolDef]) -> String {
     let mut out = s.to_string();
     for td in tools {
         out = out.replace(
-            &td.name,
-            &format!("zshref {}", super::subcommand_name(&td.name)),
+            td.name,
+            &format!("zshref {}", super::subcommand_name(td.name)),
         );
     }
     out

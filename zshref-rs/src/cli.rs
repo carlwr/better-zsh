@@ -2,9 +2,9 @@
 
 mod prose;
 
-use crate::corpus::{Corpus, ToolDef, ToolDefs, DOC_CATEGORIES};
+use crate::corpus::{Corpus, DOC_CATEGORIES};
 use crate::output;
-use crate::tools;
+use crate::tools::{self, ToolDef, ToolDefs};
 use anyhow::Result;
 use clap::{Arg, ArgAction, ArgMatches, Command, ValueHint};
 use serde_json::{json, Map, Value};
@@ -51,7 +51,7 @@ pub fn build_cli(tool_defs: &ToolDefs, corpus: &Corpus, mode: BuildMode) -> Comm
     // The shared preamble is rendered in terminal help, so width matters here.
     let root_after_help = format!(
         "\n{}\n{}",
-        prose::rewrite_refs(&tool_defs.preamble, &tool_defs.tools),
+        prose::rewrite_refs(tools::prose::PREAMBLE, &tool_defs.tools),
         prose::root_after_help_tail(tool_defs, corpus),
     );
 
@@ -168,10 +168,10 @@ pub fn version_string(corpus: &Corpus) -> String {
 }
 
 fn build_subcommand(td: &ToolDef, tools: &[ToolDef], corpus: &Corpus) -> Command {
-    let name = subcommand_name(&td.name).to_string();
+    let name = subcommand_name(td.name).to_string();
     let after_help = tool_after_help(td, tools, corpus);
     let mut cmd = Command::new(name)
-        .about(prose::rewrite_refs(&td.brief, tools))
+        .about(prose::rewrite_refs(td.brief, tools))
         .after_long_help(after_help)
         .disable_help_flag(true)
         // Subcommand arg: `zshref docs … --pretty`.
@@ -228,7 +228,7 @@ fn tool_after_help(td: &ToolDef, tools: &[ToolDef], corpus: &Corpus) -> String {
 fn tool_cli_example(td: &ToolDef, corpus: &Corpus) -> Option<String> {
     // Keep examples compact while exercising resolver normalization,
     // resolver feedback, and help-output elision.
-    let pairs: Vec<(&str, Value)> = match td.name.as_str() {
+    let pairs: Vec<(&str, Value)> = match td.name {
         "zsh_docs" => vec![
             ("zshref docs --key='(.)' --pretty", json!({ "key": "(.)" })),
             (
@@ -326,9 +326,9 @@ fn build_arg(
                 .unwrap_or(i64::from(u32::MAX));
             // clap range is i64; u32 parser narrows on parse.
             arg = arg.value_parser(clap::value_parser!(u32).range(min..=max));
-            // Schema `default` → clap default; avoids Rust-side mirror constants.
-            // The schema `description` already states the default, so suppress
-            // clap's auto-appended "[default: …]" to avoid duplication.
+            // Schema `default` → clap default: the one source, as for
+            // `tools::input`. The schema `description` already states it, so
+            // suppress clap's auto-appended "[default: …]".
             if let Some(d) = spec.get("default").and_then(Value::as_u64) {
                 arg = arg.default_value(d.to_string()).hide_default_value(true);
             }
@@ -336,8 +336,8 @@ fn build_arg(
         "string"
             // The `category` flag has a closed enum — expose as PossibleValues
             // so clap generates a clean error + completion for bad inputs.
-            // We detect this by name rather than from the schema (the schema
-            // stays generic; the category list is owned by zsh-core).
+            // Detected by name rather than from the schema `enum`: the list
+            // is the corpus' either way.
             if key == "category" =>
         {
             arg = arg
@@ -362,21 +362,18 @@ fn pretty_arg() -> Arg {
 }
 
 /// Root-level `--category`. The brief and the (valid-values-listing) long
-/// help are single-sourced from the embedded tooldef so the category list
-/// can't drift from the subcommands. The generic (search/list) wording is
-/// used deliberately: it is the common denominator across tools — `docs`
-/// adds a one-match-per-category note only in its own subcommand help,
-/// which would read as inaccurate at the root where `search`/`list` also
-/// take `--category`.
+/// help are `zsh_list`'s, so the category list can't drift from the
+/// subcommands. The generic (search/list) wording is the common
+/// denominator across tools — `docs` adds a one-match-per-category note
+/// only in its own subcommand help, which would read as inaccurate at the
+/// root where `search`/`list` also take `--category`.
 fn root_category_arg(tool_defs: &ToolDefs) -> Arg {
-    // `zsh_list` carries the generic category description; `zsh_docs` would
-    // carry the docs-specific (one-match) variant.
-    let list = tool_defs.get("zsh_list").expect("zsh_list tooldef");
+    let list = tool_defs.get("zsh_list").expect("zsh_list is a tool");
     let long_help = list
         .input_schema
         .get("properties")
         .and_then(|p| p.get("category"))
-        .expect("zsh_list tooldef must expose a `category` property")
+        .expect("zsh_list exposes a `category` property")
         .get("description")
         .and_then(Value::as_str)
         .unwrap_or_default()

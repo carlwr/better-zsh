@@ -6,9 +6,7 @@
 
 mod common;
 
-use common::{
-    assert_envelope, doc_categories, locate_tooldef_json, run_json, validate_or_panic, BIN,
-};
+use common::{assert_envelope, doc_categories, run_json, tool_defs, validate_or_panic, BIN};
 use serde_json::{json, Value};
 use std::process::Command;
 use std::sync::OnceLock;
@@ -20,8 +18,8 @@ use std::sync::OnceLock;
 /// records that all carry `category == C`, and the category must contain
 /// at least one record (no empty taxonomy entries).
 ///
-/// Adding a new category to zsh-core → tooldef → the baked corpus
-/// automatically extends this sweep; no test code change is needed. If a
+/// Adding a new category to zsh-core → the baked corpus automatically
+/// extends this sweep; no test code change is needed. If a
 /// new category ships without records (or leaks records from another
 /// category), this test fails. Stub categories with no extractor yet are
 /// skipped.
@@ -69,12 +67,12 @@ fn every_category_list_is_pure_and_nonempty() {
 #[test]
 fn omit_equals_schema_default() {
     let mut checked = 0;
-    for tool in tooldef_tools() {
-        let name = tool.get("name").and_then(Value::as_str).expect("tool.name");
+    for tool in &tool_defs().tools {
+        let name = tool.name;
         let sub = name.strip_prefix("zsh_").unwrap_or(name);
         let Some(props) = tool
-            .get("inputSchema")
-            .and_then(|s| s.get("properties"))
+            .input_schema
+            .get("properties")
             .and_then(Value::as_object)
         else {
             continue;
@@ -195,9 +193,9 @@ fn cli_equals_batch() {
 }
 
 /// `--limit` above corpus size must clamp silently: exit 0, full result
-/// set returned. Pins the schema's "no upper bound" contract — see
-/// `packages/zsh-core-tooldef/src/tools/shared/limits.ts` (no `maximum`).
-/// Mirrored in batch input to pin CLI ↔ batch parity under clamping.
+/// set returned. Pins the schema's "no upper bound" contract (`limit` has
+/// no `maximum`). Mirrored in batch input to pin CLI ↔ batch parity under
+/// clamping.
 #[test]
 fn limit_above_corpus_clamps_silently() {
     let cases: &[(&str, &[&str], Value)] = &[
@@ -274,21 +272,6 @@ fn docs_roundtrip_over_corpus() {
             "round-trip id mismatch for ({cat}, {id})"
         );
     }
-}
-
-/// `tools` array from the bundled tooldef.json. Cached.
-fn tooldef_tools() -> &'static [Value] {
-    static TOOLS: OnceLock<Vec<Value>> = OnceLock::new();
-    TOOLS.get_or_init(|| {
-        let path = locate_tooldef_json();
-        let bytes = std::fs::read(&path).unwrap_or_else(|e| panic!("read {}: {e}", path.display()));
-        let defs: Value = serde_json::from_slice(&bytes)
-            .unwrap_or_else(|e| panic!("parse {}: {e}", path.display()));
-        defs.get("tools")
-            .and_then(Value::as_array)
-            .expect("tools array")
-            .clone()
-    })
 }
 
 /// Every `(category, id)` in the corpus, fetched once via a single

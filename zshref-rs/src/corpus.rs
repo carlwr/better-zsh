@@ -1,4 +1,4 @@
-//! Corpus + tool-def JSON decoding.
+//! Corpus JSON decoding.
 //!
 //! Record shapes are loose (`serde_json::Value`) — forward-compatible with
 //! schema additions; the tools only read a handful of well-known fields.
@@ -14,15 +14,9 @@ use std::sync::LazyLock;
 
 // Data-source paths are cfg-gated: `build.rs` picks `vendored` (data/*.json
 // shipped inside the crate) or `monorepo` (JSONs read from the sibling TS
-// packages' artifact trees). See DATA-SYNC.md.
+// package's artifact tree). See DATA-SYNC.md.
 #[cfg(data_source = "vendored")]
 macro_rules! corpus_path {
-    ($f:literal) => {
-        concat!("../data/", $f)
-    };
-}
-#[cfg(data_source = "vendored")]
-macro_rules! tooldef_path {
     ($f:literal) => {
         concat!("../data/", $f)
     };
@@ -31,12 +25,6 @@ macro_rules! tooldef_path {
 macro_rules! corpus_path {
     ($f:literal) => {
         concat!("../../packages/zsh-core/artifacts/json/", $f)
-    };
-}
-#[cfg(data_source = "monorepo")]
-macro_rules! tooldef_path {
-    ($f:literal) => {
-        concat!("../../packages/zsh-core-tooldef/artifacts/json/", $f)
     };
 }
 
@@ -50,8 +38,6 @@ pub fn resolver_fixture_path() -> std::path::PathBuf {
     const REL: &str = "../packages/zsh-core/artifacts/resolver-fixture/resolver-fixture.json";
     std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join(REL)
 }
-
-const TOOLDEF_JSON: &[u8] = include_bytes!(tooldef_path!("tooldef.json"));
 
 const INDEX_JSON: &[u8] = include_bytes!(corpus_path!("index.json"));
 
@@ -188,40 +174,6 @@ pub static HOOK_NAMES: LazyLock<Vec<&'static str>> = LazyLock::new(|| {
         .map(|s| Box::leak(s.clone().into_boxed_str()) as &'static str)
         .collect()
 });
-
-#[derive(Debug, Deserialize)]
-pub struct ToolDefs {
-    pub version: u32,
-    pub tools: Vec<ToolDef>,
-    /// Suite-level intent→tool cheat-sheet: `zshref --help` and the MCP
-    /// server's `instructions`.
-    /// Source: `TOOL_SUITE_PREAMBLE` in `packages/zsh-core-tooldef/src/tool-defs.ts`.
-    pub preamble: String,
-}
-
-impl ToolDefs {
-    pub fn get(&self, name: &str) -> Option<&ToolDef> {
-        self.tools.iter().find(|t| t.name == name)
-    }
-}
-
-#[derive(Debug, Deserialize)]
-pub struct ToolDef {
-    pub name: String,
-    pub brief: String,
-    pub description: String,
-    #[serde(rename = "flagBriefs")]
-    pub flag_briefs: BTreeMap<String, String>,
-    #[serde(rename = "inputSchema")]
-    pub input_schema: Value,
-    // `zshref schema`, `tools/list`, and the schema-validation tests.
-    #[serde(rename = "outputSchema")]
-    pub output_schema: Value,
-}
-
-pub fn load_tool_defs() -> Result<ToolDefs> {
-    serde_json::from_slice(TOOLDEF_JSON).context("parsing embedded tooldef.json")
-}
 
 /// Decoded `index.json`. Taxonomy lists (`doc_categories`, `classify_order`,
 /// `category_files`) come directly from the TS source of truth — no Rust-side mirror.

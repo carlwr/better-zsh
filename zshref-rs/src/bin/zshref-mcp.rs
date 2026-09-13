@@ -10,7 +10,8 @@ use rmcp::{ErrorData, RoleServer, ServerHandler, ServiceExt};
 use serde_json::Value;
 use std::io::IsTerminal;
 use std::sync::Arc;
-use zshref::corpus::{Corpus, ToolDefs};
+use zshref::corpus::Corpus;
+use zshref::tools::ToolDefs;
 use zshref::{cli, corpus, tools};
 
 const BIN: &str = "zshref-mcp";
@@ -92,7 +93,8 @@ fn decide(args: &[String], stdin_is_terminal: bool) -> Action {
 
 #[tokio::main(flavor = "current_thread")]
 async fn serve() -> Result<()> {
-    let server = Server::new(corpus::load_tool_defs()?, corpus::load_corpus()?);
+    let corpus = corpus::load_corpus()?;
+    let server = Server::new(ToolDefs::build(&corpus), corpus);
     let running = match server.serve(rmcp::transport::stdio()).await {
         Ok(running) => running,
         // The client went away before the handshake completed: nothing to do.
@@ -117,7 +119,7 @@ impl Server {
             .iter()
             .map(|td| {
                 Tool::new(
-                    td.name.clone(),
+                    td.name,
                     td.description.clone(),
                     schema_object(&td.input_schema),
                 )
@@ -137,7 +139,7 @@ fn schema_object(schema: &Value) -> Arc<JsonObject> {
         schema
             .as_object()
             .cloned()
-            .expect("tooldef schemas are JSON objects"),
+            .expect("tool schemas are JSON objects"),
     )
 }
 
@@ -149,7 +151,7 @@ impl ServerHandler for Server {
     fn get_info(&self) -> ServerInfo {
         ServerInfo::new(ServerCapabilities::builder().enable_tools().build())
             .with_server_info(Implementation::new(BIN, env!("CARGO_PKG_VERSION")))
-            .with_instructions(self.tool_defs.preamble.clone())
+            .with_instructions(tools::prose::PREAMBLE)
     }
 
     async fn list_tools(

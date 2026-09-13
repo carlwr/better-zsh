@@ -3,15 +3,40 @@
 //! Exact/resolver/prefix → `score: 1.0`. Fuzzy tier uses `crate::fuzzy::score`
 //! (in-tree ASCII matcher) mapped into `(0, 1)` — strictly below 1.0 so the
 //! tier is recoverable from the score. `matchesTotal` is pre-truncation.
-//
-// MIRROR-OF: packages/zsh-core-tooldef/src/tools/search.ts
 
 use crate::corpus::Corpus;
 use crate::resolver::resolve_in;
 use crate::tools::envelope::{mk_entry, mk_envelope};
 use crate::tools::record_fields::{record_display, record_id, record_sub_kind};
+use crate::tools::schema::{category_shape, limit_shape, output_schema, string_shape, MatchShape};
+use crate::tools::{prose, Field, ToolDef};
 use anyhow::Result;
 use serde_json::Value;
+
+pub fn def(corpus: &Corpus) -> ToolDef {
+    ToolDef::new(
+        "zsh_search",
+        prose::SEARCH_BRIEF,
+        prose::search_long(corpus.index),
+        &[
+            Field::required("query", prose::flag_query(), string_shape()),
+            Field::optional(
+                "category",
+                prose::flag_filter_category(corpus.index),
+                category_shape(),
+            ),
+            Field::optional("limit", prose::flag_limit(), limit_shape()),
+        ],
+        output_schema(
+            &MatchShape {
+                score: true,
+                ..MatchShape::default()
+            },
+            corpus,
+        ),
+        run,
+    )
+}
 
 struct Entry<'c> {
     category: &'c str,
@@ -21,14 +46,14 @@ struct Entry<'c> {
 }
 
 pub fn run(input: &Value, corpus: &Corpus) -> Result<Value> {
-    // `query` is required upstream; empty/whitespace → empty matches (matches TS).
+    // `query` is required by the schema; empty/whitespace → empty matches.
     let query = input
         .get("query")
         .and_then(Value::as_str)
         .unwrap_or("")
         .trim();
     let category = input.get("category").and_then(Value::as_str);
-    // Default is baked into the clap arg from inputSchema.properties.limit.default.
+    // Callers fill the schema default (clap / `tools::input`).
     let limit = input.get("limit").and_then(Value::as_u64).unwrap_or(0) as usize;
 
     if query.is_empty() {
@@ -38,7 +63,7 @@ pub fn run(input: &Value, corpus: &Corpus) -> Result<Value> {
     let pool = entries(corpus, category);
     let q_low = query.to_ascii_lowercase();
 
-    // Dedup: seen-set across all four tiers; mirrors the TS tooldef.
+    // Dedup: one seen-set across all four tiers.
     let mut seen: std::collections::HashSet<(String, String)> = std::collections::HashSet::new();
     let key = |e: &Entry| -> (String, String) { (e.category.to_string(), e.id.clone()) };
 
@@ -83,8 +108,8 @@ pub fn run(input: &Value, corpus: &Corpus) -> Result<Value> {
         }
     }
 
-    // Fuzzy tier: max(score(id), score(display)), mirrors fuzzysort `keys`.
-    // Non-ASCII queries score None; pool is ASCII-only per drift guard.
+    // Fuzzy tier: max(score(id), score(display)). Non-ASCII queries score
+    // None; the pool is ASCII-only per the corpus drift guard.
     let mut fuzzy: Vec<(&Entry, u32)> = rest
         .iter()
         .filter(|e| !seen.contains(&key(e)))

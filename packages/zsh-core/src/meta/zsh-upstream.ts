@@ -4,9 +4,9 @@
  * of truth; the sibling `SOURCE.md` and `THIRD_PARTY_NOTICES.md` in
  * that dir stay human-readable, kept in sync by `pkg-info.test.ts`.
  *
- * Surfaced through the zsh-core public API so every consumer (tool
- * descriptions, the extension's startup log, the generated `index.json`
- * and through it the Rust binaries) names the same zsh.
+ * Surfaced through the zsh-core public API so every consumer (the
+ * extension's startup log, the generated `index.json` and through it the
+ * Rust binaries) names the same zsh.
  */
 export const ZSH_UPSTREAM = {
   tag: "zsh-5.9",

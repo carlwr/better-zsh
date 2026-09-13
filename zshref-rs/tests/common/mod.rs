@@ -5,12 +5,12 @@
 //! 1. **Spawn-and-parse vocabulary.** `BIN`, `run_raw`, `run_json`,
 //!    `assert_envelope`, `doc_categories` — the minimum surface for
 //!    invoking the built binary and shaping its JSON responses.
-//! 2. **`outputSchema` validation.** `locate_tooldef_json`,
-//!    `validator_for`, `validate_or_panic`, `tool_for_subcommand` —
-//!    `run_json` auto-validates every tool-subcommand response against
-//!    its bundled schema, so new tests get conformance checks for free.
+//! 2. **`outputSchema` validation.** `tool_defs`, `validator_for`,
+//!    `validate_or_panic`, `tool_for_subcommand` — `run_json`
+//!    auto-validates every tool-subcommand response against the crate's
+//!    own schema, so new tests get conformance checks for free.
 //! 3. **`Example:` block parsing.** `extract_example` — pairs with
-//!    `cli/prose.rs::shell_example`.
+//!    `cli/prose.rs::shell_examples`.
 //!
 //! `#[allow(dead_code)]` because Rust compiles each `tests/*.rs` as a
 //! separate crate with its own copy of this module — items unused by
@@ -21,10 +21,9 @@
 use jsonschema::Validator;
 use serde_json::Value;
 use std::collections::HashMap;
-use std::fs;
-use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::OnceLock;
+use zshref::tools::ToolDefs;
 
 /// Path to the test crate's binary under test, baked in by Cargo.
 pub const BIN: &str = env!("CARGO_BIN_EXE_zshref");
@@ -37,23 +36,23 @@ pub fn run_raw(args: &[&str]) -> std::process::Output {
 
 const NON_TOOL_SUBCOMMANDS: &[&str] = &["batch", "info", "schema", "completions", "help"];
 
+/// The tool definitions the binary under test was built from: same crate,
+/// same data source.
+pub fn tool_defs() -> &'static ToolDefs {
+    static DEFS: OnceLock<ToolDefs> = OnceLock::new();
+    DEFS.get_or_init(|| {
+        let corpus = zshref::corpus::load_corpus().expect("load_corpus");
+        ToolDefs::build(&corpus)
+    })
+}
+
 pub fn tool_full_names() -> &'static [String] {
     static NAMES: OnceLock<Vec<String>> = OnceLock::new();
     NAMES.get_or_init(|| {
-        let path = locate_tooldef_json();
-        let bytes = fs::read(&path).unwrap_or_else(|e| panic!("read {}: {e}", path.display()));
-        let defs: Value = serde_json::from_slice(&bytes)
-            .unwrap_or_else(|e| panic!("parse {}: {e}", path.display()));
-        defs.get("tools")
-            .and_then(Value::as_array)
-            .expect("tools array")
+        tool_defs()
+            .tools
             .iter()
-            .map(|t| {
-                t.get("name")
-                    .and_then(Value::as_str)
-                    .expect("tool.name")
-                    .to_string()
-            })
+            .map(|t| t.name.to_string())
             .collect()
     })
 }
@@ -114,7 +113,7 @@ pub fn help_target_args() -> Vec<Vec<&'static str>> {
 }
 
 /// Spawn `zshref` with `args`, assert success, parse stdout as JSON,
-/// and auto-validate against the tool's bundled `outputSchema` when
+/// and auto-validate against the tool's `outputSchema` when
 /// one exists. Subcommands without a schema (`info`, `schema`,
 /// `completions`) are passed through unchecked.
 pub fn run_json(args: &[&str]) -> Value {
@@ -185,63 +184,29 @@ pub fn doc_categories() -> &'static [String] {
     })
 }
 
-/// Find `tooldef.json` next to the binary's baked corpus; vendored copy
-/// wins over monorepo sibling so a packaged crate validates against the
-/// data it shipped with.
-pub fn locate_tooldef_json() -> PathBuf {
-    let manifest = Path::new(env!("CARGO_MANIFEST_DIR"));
-    let vendored = manifest.join("data/tooldef.json");
-    if vendored.exists() {
-        return vendored;
-    }
-    let monorepo = manifest.join("../packages/zsh-core-tooldef/artifacts/json/tooldef.json");
-    if monorepo.exists() {
-        return monorepo;
-    }
-    panic!(
-        "no tooldef.json found at {} or {}",
-        vendored.display(),
-        monorepo.display()
-    );
-}
-
-/// Compile-once-per-tool validator over the bundled `outputSchema`. Draft
+/// Compile-once-per-tool validator over the tool's `outputSchema`. Draft
 /// 2020-12 to match the `$schema` declared in each per-tool schema.
 pub fn validator_for(tool: &str) -> &'static Validator {
     static VALIDATORS: OnceLock<HashMap<String, Validator>> = OnceLock::new();
     VALIDATORS
         .get_or_init(|| {
-            let path = locate_tooldef_json();
-            let bytes = fs::read(&path).unwrap_or_else(|e| panic!("read {}: {e}", path.display()));
-            let defs: Value = serde_json::from_slice(&bytes)
-                .unwrap_or_else(|e| panic!("parse {}: {e}", path.display()));
-            let tools = defs
-                .get("tools")
-                .and_then(Value::as_array)
-                .expect("tooldef.json: tools array");
-            let mut out = HashMap::new();
-            for t in tools {
-                let name = t
-                    .get("name")
-                    .and_then(Value::as_str)
-                    .expect("tool: name")
-                    .to_string();
-                let schema = t
-                    .get("outputSchema")
-                    .unwrap_or_else(|| panic!("tool {name}: missing outputSchema"));
-                let compiled = jsonschema::draft202012::options()
-                    .build(schema)
-                    .unwrap_or_else(|e| panic!("compile outputSchema for {name}: {e}"));
-                out.insert(name, compiled);
-            }
-            out
+            tool_defs()
+                .tools
+                .iter()
+                .map(|td| {
+                    let compiled = jsonschema::draft202012::options()
+                        .build(&td.output_schema)
+                        .unwrap_or_else(|e| panic!("compile outputSchema for {}: {e}", td.name));
+                    (td.name.to_string(), compiled)
+                })
+                .collect()
         })
         .get(tool)
         .unwrap_or_else(|| panic!("no validator for tool {tool:?}"))
 }
 
 /// Validate `v` against the named tool's `outputSchema`; panic with detail
-/// on failure. `tool` uses the full bundled name (`zsh_docs`, …).
+/// on failure. `tool` is the full tool name (`zsh_docs`, …).
 pub fn validate_or_panic(tool: &str, v: &Value) {
     let validator = validator_for(tool);
     if validator.is_valid(v) {
@@ -353,7 +318,7 @@ pub fn extract_examples_under(help: &str, headings: &[&str]) -> Vec<(String, Str
     out
 }
 
-/// Map a CLI subcommand to the tooldef name (`docs` → `zsh_docs`). `None`
+/// Map a CLI subcommand to the tool name (`docs` → `zsh_docs`). `None`
 /// for subcommands that don't have a tool schema (`info`, `schema`, …).
 pub fn tool_for_subcommand(sub: &str) -> Option<&'static str> {
     let target = format!("zsh_{sub}");

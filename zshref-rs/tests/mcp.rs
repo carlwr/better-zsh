@@ -1,7 +1,7 @@
 //! Black-box client over the `zshref-mcp` binary: one stdio session per test,
 //! JSON-RPC frames written by hand and responses matched by id. Every
 //! successful `tools/call` is checked for `structuredContent` == the parsed
-//! text block and validated against the tool's bundled `outputSchema`.
+//! text block and validated against the tool's `outputSchema`.
 
 mod common;
 
@@ -144,12 +144,6 @@ fn error_text(result: &Value) -> &str {
     result["content"][0]["text"].as_str().expect("text block")
 }
 
-fn tooldef_json() -> Value {
-    let path = common::locate_tooldef_json();
-    let bytes = std::fs::read(&path).unwrap_or_else(|e| panic!("read {}: {e}", path.display()));
-    serde_json::from_slice(&bytes).expect("tooldef.json parses")
-}
-
 #[test]
 fn initialize_advertises_tools_and_the_suite_preamble() {
     let session = Session::start();
@@ -158,22 +152,22 @@ fn initialize_advertises_tools_and_the_suite_preamble() {
     assert_eq!(init["capabilities"]["tools"], json!({}));
     assert_eq!(init["serverInfo"]["name"], "zshref-mcp");
     assert_eq!(init["serverInfo"]["version"], env!("CARGO_PKG_VERSION"));
-    assert_eq!(init["instructions"], tooldef_json()["preamble"]);
+    assert_eq!(init["instructions"], zshref::tools::prose::PREAMBLE);
     session.finish();
 }
 
 #[test]
-fn tools_list_equals_the_tooldef_in_order() {
+fn tools_list_equals_the_tool_defs_in_order() {
     let mut session = Session::start();
     let listed = session.request("tools/list", json!({}));
     let listed = listed["tools"].as_array().expect("tools array");
-    let defs = tooldef_json();
-    let defs = defs["tools"].as_array().expect("tooldef tools");
+    let defs = &common::tool_defs().tools;
     assert_eq!(listed.len(), defs.len());
     for (tool, def) in listed.iter().zip(defs) {
-        for field in ["name", "description", "inputSchema", "outputSchema"] {
-            assert_eq!(tool[field], def[field], "{}: {field}", def["name"]);
-        }
+        assert_eq!(tool["name"], def.name);
+        assert_eq!(tool["description"], def.description, "{}", def.name);
+        assert_eq!(tool["inputSchema"], def.input_schema, "{}", def.name);
+        assert_eq!(tool["outputSchema"], def.output_schema, "{}", def.name);
     }
     session.finish();
 }
@@ -249,12 +243,10 @@ fn search_and_list_return_identity_only_rows() {
 #[test]
 fn omitted_limit_takes_the_schema_default() {
     let mut session = Session::start();
-    let default = tooldef_json()["tools"]
-        .as_array()
-        .expect("tools")
-        .iter()
-        .find(|t| t["name"] == "zsh_search")
-        .expect("zsh_search")["inputSchema"]["properties"]["limit"]["default"]
+    let default = common::tool_defs()
+        .get("zsh_search")
+        .expect("zsh_search")
+        .input_schema["properties"]["limit"]["default"]
         .clone();
     let out = parsed(&session.call("zsh_search", json!({ "query": "e" })));
     assert!(

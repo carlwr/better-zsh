@@ -1,23 +1,24 @@
 //! Result envelope + entry shape.
-//
-// MIRROR-OF: packages/zsh-core-tooldef/src/tools/shared/envelope.ts
-// MIRROR-OF: packages/zsh-core-tooldef/src/tools/shared/entries.ts
 
 use serde_json::{json, Map, Value};
+
+/// The envelope's keys; the output schemas require exactly these.
+pub const ENVELOPE_KEYS: [&str; 3] = ["matches", "matchesReturned", "matchesTotal"];
 
 /// Standard `{ matches, matchesReturned, matchesTotal }` envelope.
 /// `total` is pre-truncation; for non-truncating tools (`docs`) pass `matches.len()`.
 pub fn mk_envelope(matches: Vec<Value>, total: usize) -> Value {
+    let [k_matches, k_returned, k_total] = ENVELOPE_KEYS;
     let returned = matches.len();
     json!({
-        "matches": matches,
-        "matchesReturned": returned,
-        "matchesTotal": total,
+        k_matches: matches,
+        k_returned: returned,
+        k_total: total,
     })
 }
 
 /// `{category, id, display, subKind?, score?}` entry for `list`/`search`.
-/// Field insertion order matches the TS tooldef (→ byte-equal JSON).
+/// Insertion order is the output's key order.
 pub fn mk_entry(
     category: &str,
     id: String,

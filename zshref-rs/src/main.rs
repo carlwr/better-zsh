@@ -1,6 +1,7 @@
 //! `zshref` — the CLI binary.
 
 use anyhow::Result;
+use zshref::tools::ToolDefs;
 use zshref::{cli, corpus};
 
 fn main() {
@@ -15,8 +16,8 @@ fn main() {
 }
 
 fn run() -> Result<i32> {
-    let tool_defs = corpus::load_tool_defs()?;
     let corpus = corpus::load_corpus()?;
+    let tool_defs = ToolDefs::build(&corpus);
     let cmd = cli::build_cli(&tool_defs, &corpus, cli::BuildMode::Parsing);
     cli::dispatch(cmd, &tool_defs, &corpus)
 }

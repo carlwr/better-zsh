@@ -1,17 +1,43 @@
 //! `zsh_docs` — zsh key → per-category resolved matches.
 //!
-//! Without `--category`, walks `CLASSIFY_ORDER` and returns one match per
+//! Without `category`, walks `CLASSIFY_ORDER` and returns one match per
 //! resolving category. Feedback (e.g. `NO_`-stripping → `input-negated`)
 //! is forwarded from the per-category resolver.
-//
-// MIRROR-OF: packages/zsh-core-tooldef/src/tools/docs.ts
 
 use crate::corpus::{Corpus, CLASSIFY_ORDER};
 use crate::resolver::{resolve_in, ResolvedHit};
 use crate::tools::envelope::mk_envelope;
 use crate::tools::record_fields::{record_sub_kind, record_title, str_field, str_input};
+use crate::tools::schema::{category_shape, output_schema, string_shape, MatchShape};
+use crate::tools::{prose, Field, ToolDef};
 use anyhow::Result;
 use serde_json::{Map, Value};
+
+pub fn def(corpus: &Corpus) -> ToolDef {
+    ToolDef::new(
+        "zsh_docs",
+        prose::DOCS_BRIEF,
+        prose::docs_long(corpus.index),
+        &[
+            Field::required("key", prose::flag_key(), string_shape()),
+            Field::optional(
+                "category",
+                prose::flag_docs_category(corpus.index),
+                category_shape(),
+            ),
+        ],
+        output_schema(
+            &MatchShape {
+                title: true,
+                md_body: true,
+                feedback: true,
+                ..MatchShape::default()
+            },
+            corpus,
+        ),
+        run,
+    )
+}
 
 pub fn run(input: &Value, corpus: &Corpus) -> Result<Value> {
     let key = str_input(input, "key");

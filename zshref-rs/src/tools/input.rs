@@ -1,6 +1,6 @@
 //! Request input against a tool's `inputSchema`: validation and defaults.
 
-use crate::corpus::ToolDef;
+use crate::tools::ToolDef;
 use serde_json::Value;
 
 /// Lightweight check: missing required, unknown fields, type mismatch,

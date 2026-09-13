@@ -75,7 +75,7 @@ proptest! {
     /// DESIGN.md §"docs: direct ∥ resolver"). The strategy covers
     /// reserved words (`while`), complex commands (`[[`), redir sigils
     /// (`<<<`), builtins (`echo`), and options. Property-level companion
-    /// to the exhaustive `round-trip.test.ts` in tooldef.
+    /// to the exhaustive `docs_roundtrip_over_corpus` in `cli_invariants.rs`.
     #[test]
     fn docs_self_roundtrip(key in known_raw()) {
         let v = run_json(&["docs", "--key", key]);
@@ -193,13 +193,11 @@ proptest! {
 proptest! {
     #![proptest_config(ProptestConfig::with_cases(32))]
 
-    /// search dedup invariant: no two matches share `(category, id)`.
-    /// Companion to the focused TS regression test in
-    /// `packages/zsh-core-tooldef/src/test/tools/search.test.ts`,
-    /// exercised across many random queries here. The seen-set is the
-    /// load-bearing structure that makes the four-tier walk
-    /// (exact / resolver / prefix / fuzzy) safe; this catches walk-order
-    /// regressions wherever they manifest.
+    /// search dedup invariant: no two matches share `(category, id)`,
+    /// across many random queries. The seen-set is the load-bearing
+    /// structure that makes the four-tier walk (exact / resolver / prefix /
+    /// fuzzy) safe; this catches walk-order regressions wherever they
+    /// manifest.
     #[test]
     fn search_dedup_invariant(q in r"\PC{1,20}", n in 1u32..=200_000) {
         let n_s = n.to_string();

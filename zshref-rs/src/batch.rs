@@ -7,8 +7,8 @@
 //! OS pipe buffer; otherwise the child blocks on stdout, stops reading
 //! stdin, and a parent that completes stdin before reading stdout deadlocks.
 
-use crate::corpus::{Corpus, ToolDefs};
-use crate::tools;
+use crate::corpus::Corpus;
+use crate::tools::{self, ToolDefs};
 use anyhow::Result;
 use serde_json::{json, Value};
 use std::io::{BufRead, Write};

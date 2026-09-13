@@ -6,6 +6,7 @@
 
 use crate::corpus::Corpus;
 use crate::tools::record_fields::{record_display, record_id, str_field, Rec};
+use serde_json::{json, Map, Value};
 
 /// Return the non-empty remainder after stripping a case-insensitive `no_`
 /// or `no` prefix from `raw`. `None` if `raw` doesn't begin with either.
@@ -26,8 +27,7 @@ pub fn normalize_option(raw: &str) -> String {
         .collect()
 }
 
-/// Lossy-resolution feedback from a per-category resolver. Mirrors the TS
-/// `ResolverFeedback` union in `resolver.ts`.
+/// Lossy-resolution feedback from a per-category resolver.
 ///
 /// - `InputNegated`: option name reached via `NO_`-stripping.
 /// - `Subscripted(inner)`: special-parameter name reached by stripping a
@@ -39,17 +39,45 @@ pub enum ResolverFeedback {
 }
 
 impl ResolverFeedback {
-    /// Serialize to the JSON object shape required by the bundled
-    /// `outputSchema`'s `$defs.Feedback`. Mirrors `resolverFeedbackKindSchemas`
-    /// in TS — kind values must match `ResolverFeedback["kind"]` literals.
-    pub fn to_json(&self) -> serde_json::Value {
+    /// The kind-tagged object the tools emit; `kind` values are the TS
+    /// union's literals, pinned by the fixture.
+    pub fn to_json(&self) -> Value {
         match self {
-            ResolverFeedback::InputNegated => serde_json::json!({ "kind": "input-negated" }),
-            ResolverFeedback::Subscripted(s) => serde_json::json!({
+            ResolverFeedback::InputNegated => json!({ "kind": "input-negated" }),
+            ResolverFeedback::Subscripted(s) => json!({
                 "kind": "subscripted",
                 "subscript": s,
             }),
         }
+    }
+
+    /// One closed JSON Schema per kind, variant order — the `oneOf` behind
+    /// the tool output schemas' `Feedback`. Adding a kind: a variant, an arm
+    /// in `to_json`, a row here.
+    pub fn kind_schemas() -> Vec<Value> {
+        let kind_schema = |kind: &str, extra: &[(&str, Value)]| {
+            let required: Vec<&str> = std::iter::once("kind")
+                .chain(extra.iter().map(|(k, _)| *k))
+                .collect();
+            let mut properties = Map::new();
+            properties.insert("kind".into(), json!({ "const": kind }));
+            for (k, v) in extra {
+                properties.insert((*k).into(), v.clone());
+            }
+            json!({
+                "type": "object",
+                "additionalProperties": false,
+                "required": required,
+                "properties": properties,
+            })
+        };
+        vec![
+            kind_schema("input-negated", &[]),
+            kind_schema(
+                "subscripted",
+                &[("subscript", json!({ "type": "string", "minLength": 1 }))],
+            ),
+        ]
     }
 }
 
@@ -433,11 +461,10 @@ fn tail_kind_of(tail: &str) -> &str {
 mod tests {
     //! Behavioural conformance to zsh-core's resolver fixture: the answers the
     //! TS resolvers give for pinned and generated inputs, released with the
-    //! corpus. Structural mirroring is tooldef's `parity-units.ts` concern.
+    //! corpus.
     use super::*;
     use crate::corpus::{load_corpus, resolver_fixture_path, DOC_CATEGORIES};
     use serde::Deserialize;
-    use serde_json::Value;
 
     #[derive(Deserialize)]
     struct Fixture {
@@ -505,5 +532,22 @@ mod tests {
             "resolver.rs disagrees with the fixture:\n  {}",
             mismatches.join("\n  ")
         );
+    }
+
+    #[test]
+    fn every_feedback_kind_validates_against_its_schema() {
+        let samples = [
+            ResolverFeedback::InputNegated,
+            ResolverFeedback::Subscripted("context".into()),
+        ];
+        let schemas = ResolverFeedback::kind_schemas();
+        assert_eq!(samples.len(), schemas.len());
+        for (fb, schema) in samples.iter().zip(&schemas) {
+            let validator = jsonschema::draft202012::options()
+                .build(schema)
+                .expect("kind schema compiles");
+            let v = fb.to_json();
+            assert!(validator.is_valid(&v), "{v} fails {schema}");
+        }
     }
 }

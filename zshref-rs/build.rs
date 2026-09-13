@@ -27,16 +27,14 @@ fn main() {
         .into();
 
     let vendored = manifest.join("data").join("index.json");
-    let monorepo_core = manifest.join("../packages/zsh-core/artifacts/json/index.json");
-    let monorepo_tooldef =
-        manifest.join("../packages/zsh-core-tooldef/artifacts/json/tooldef.json");
+    let monorepo = manifest.join("../packages/zsh-core/artifacts/json/index.json");
 
     // Declare the custom cfg up-front so rustc doesn't warn on older
     // editions and check-cfg-aware compilers accept the two values.
     println!("cargo:rustc-check-cfg=cfg(data_source, values(\"vendored\", \"monorepo\"))");
 
     println!("cargo:rerun-if-env-changed=ZSHREF_DATA_SOURCE");
-    let source = data_source(&manifest, &vendored, &monorepo_core, &monorepo_tooldef);
+    let source = data_source(&manifest, &vendored, &monorepo);
 
     println!("cargo:rustc-cfg=data_source=\"{source}\"");
 
@@ -59,12 +57,7 @@ fn main() {
     println!("cargo:rustc-env=ZSHREF_BUILD_INPUT_HASH={hash}");
 }
 
-fn data_source(
-    manifest: &Path,
-    vendored: &Path,
-    monorepo_core: &Path,
-    monorepo_tooldef: &Path,
-) -> &'static str {
+fn data_source(manifest: &Path, vendored: &Path, monorepo: &Path) -> &'static str {
     match env::var("ZSHREF_DATA_SOURCE") {
         Ok(s) if s == "vendored" => {
             if vendored.exists() {
@@ -74,7 +67,7 @@ fn data_source(
             }
         }
         Ok(s) if s == "monorepo" => {
-            if monorepo_core.exists() && monorepo_tooldef.exists() {
+            if monorepo.exists() {
                 "monorepo"
             } else {
                 panic_with_help(manifest)
@@ -82,7 +75,7 @@ fn data_source(
         }
         Ok(s) => panic!("ZSHREF_DATA_SOURCE must be vendored or monorepo, got {s:?}"),
         Err(_) if vendored.exists() => "vendored",
-        Err(_) if monorepo_core.exists() && monorepo_tooldef.exists() => "monorepo",
+        Err(_) if monorepo.exists() => "monorepo",
         Err(_) => panic_with_help(manifest),
     }
 }
