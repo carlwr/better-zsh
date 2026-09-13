@@ -7,6 +7,7 @@ import type {
 import { lookupRaw, resolverFeedback } from "../src/docs/resolver.ts"
 import {
   type DocCategory,
+  type DocRecordMap,
   docCategories,
   docDisplay,
   idOf,
@@ -63,6 +64,9 @@ const pinnedInputs: { readonly [K in DocCategory]?: Inputs } = {
     ">& number",
     "<<[-] word",
     "<<-",
+    "2>&",
+    "<&file",
+    "<& file",
   ],
   subscript_flag: [
     "w",
@@ -182,6 +186,8 @@ const crossCategoryInputs: Inputs = [
   "()",
   "(#i)",
   ">",
+  ">&",
+  "<&",
   "2>&1",
   "<<",
   "<<EOF",
@@ -191,12 +197,55 @@ const crossCategoryInputs: Inputs = [
   "precmd_functions",
 ]
 
-/** Every record's id and, where it differs, its display form. */
-function recordInputs(corpus: DocCorpus, cat: DocCategory): Inputs {
+type ExtraInputs<K extends DocCategory> = (doc: DocRecordMap[K]) => Inputs
+
+// Operand example per documented tail word; a sig with a tail not listed here
+// fails the build rather than going untested.
+const redirTailExamples: Readonly<Record<string, string>> = {
+  number: "1",
+  word: "file",
+  "-": "-",
+  p: "p",
+}
+
+const redirInputs: ExtraInputs<"redirection"> = ({ sig, groupOp }) => {
+  const tail = sig.slice(groupOp.length).trim()
+  const ex = redirTailExamples[tail]
+  if (ex === undefined) throw new Error(`no operand example for tail ${tail}`)
+  const ops = groupOp === "<<[-]" ? ["<<", "<<-"] : [groupOp]
+  return ops.flatMap(op => [op, `${op}${ex}`, `${op} ${ex}`, `2${op}${ex}`])
+}
+
+/**
+ * Per-record surface forms beyond id and display: the shapes a category's
+ * resolver accepts (sigils, wrapping parens, negation, operands).
+ */
+const extraInputs: { readonly [K in DocCategory]?: ExtraInputs<K> } = {
+  option: d => [`NO_${d.display}`, `no${d.name}`, d.name.toUpperCase()],
+  special_param: d => [
+    `$${d.name}`,
+    `\${${d.name}}`,
+    `${d.name}[1]`,
+    `$${d.name}[1]`,
+  ],
+  redirection: redirInputs,
+  subscript_flag: d => [`(${d.flag})`, `(${d.sig})`],
+  param_expn_flag: d => [`(${d.flag})`, `(${d.sig})`],
+  glob_flag: d => [`(#${d.flag})`, `(${d.flag})`],
+  glob_qualifier: d => [`(#q${d.flag})`, `(${d.flag})`],
+  special_function: d => [`${d.name}_functions`],
+}
+
+/** Every record's id, its display form where it differs, and `extraInputs`. */
+function recordInputs<K extends DocCategory>(
+  corpus: DocCorpus,
+  cat: K,
+): Inputs {
+  const extra = extraInputs[cat] ?? (() => [])
   return [...corpus[cat].values()].flatMap(doc => {
     const id: string = idOf(cat, doc)
     const display = docDisplay(cat, doc)
-    return display === id ? [id] : [id, display]
+    return [id, ...(display === id ? [] : [display]), ...extra(doc)]
   })
 }
 
