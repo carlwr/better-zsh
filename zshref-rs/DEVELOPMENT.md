@@ -8,12 +8,9 @@ This document describes dev workflows during the monorepo phase. Post-extraction
 
 ---
 
-Rust crate — the `zshref` CLI and, behind the `mcp` feature, the `zshref-mcp` MCP server — bundling two TS-generated artifacts via `include_bytes!`:
+Rust crate — the `zshref` CLI and, behind the `mcp` feature, the `zshref-mcp` MCP server — bundling the TS-generated corpus JSONs (`packages/zsh-core/artifacts/json/*.json`, built by `pnpm --filter @carlwr/zsh-core build`) via `include_bytes!`.
 
-- **Corpus JSONs** — `packages/zsh-core/artifacts/json/*.json` (built by `pnpm --filter @carlwr/zsh-core build`)
-- **Tool-def JSON** — `packages/zsh-core-tooldef/artifacts/json/tooldef.json` (built by `pnpm --filter @carlwr/zsh-core-tooldef build`)
-
-A third artifact, the resolver conformance fixture (`packages/zsh-core/artifacts/resolver-fixture/`), is read by `cargo test` rather than embedded; it is vendored next to the corpus and ships in the `.crate` so the tests run from a downloaded crate.
+A second artifact, the resolver conformance fixture (`packages/zsh-core/artifacts/resolver-fixture/`), is read by `cargo test` rather than embedded; it is vendored next to the corpus and ships in the `.crate` so the tests run from a downloaded crate.
 
 Because data is embedded at compile time, rebuild after Rust or artifact changes.
 
@@ -23,12 +20,11 @@ The `build.rs` auto-detects two data sources (monorepo paths vs. vendored `data/
 
 | What changed | What to run |
 |---|---|
-| Pure Rust only | `cargo build` |
-| Tool-def (flag name, description, input/output schema) | `make cli-debug` (runs TS build first) |
+| Pure Rust only (tool prose and schemas included) | `cargo build` |
 | Corpus (zsh-core docs/types) | `make cli-debug` (runs TS build first) |
 | Resolver behaviour (zsh-core `resolver.ts`) | `make cli-test` (refreshes the conformance fixture, then runs `cargo test`) |
 
-`make cli-debug` depends on `make artifacts`, which runs the `pnpm --filter` steps for both TS packages. For vendored-mode dev (e.g. verifying what `cargo publish` will see), use `make cli-vendored` / `make cli-vendored-test` instead.
+`make cli-debug` depends on `make artifacts`, which builds zsh-core. For vendored-mode dev (e.g. verifying what `cargo publish` will see), use `make cli-vendored` / `make cli-vendored-test` instead.
 
 ## Make targets (from repo root)
 
@@ -62,21 +58,6 @@ cargo test --all-features   # proptests, schema/help smoke, resolver-fixture con
 ```
 
 `scripts/probe-opencode` drives the built `zshref-mcp` through a real agent client (opencode); manual, not in CI.
-
-Cross-language parity (TS `tool.execute()` vs the Rust binary) lives in
-`packages/zsh-core-tooldef/src/test/parity.test.ts`. Build the release binary first, then run vitest:
-
-```sh
-make cli
-pnpm --filter @carlwr/zsh-core-tooldef test parity
-# tune fast-check budget: BZ_PARITY_RUNS=2000 pnpm ... test parity
-```
-
-The suite compares the binary's embedded `buildInputHash` against current
-Rust inputs + generated JSON artifacts. Missing/stale binaries skip with a
-banner; set `BZ_REQUIRE_PARITY=1` to fail instead. No auto-build; `pnpm qa`
-builds it before the unit-test leg, so a skip means an ad-hoc run, not a
-hole in the gate.
 
 ## Test/use zsh completions manually
 

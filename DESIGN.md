@@ -279,7 +279,7 @@ Wiring:
 For every doc category, `docSubKind[c]` returns either `undefined` for every record or a non-empty string for every record — never mixed.
 
 - Enforced corpus-wide: `packages/zsh-core/src/test/doc-sub-kind.test.ts`.
-- Tool-layer schema consumption (per-category `oneOf` branching, no schema-level optionality): file-header JSDoc on `packages/zsh-core-tooldef/src/tools/shared/output-schema.ts`.
+- Tool-layer schema consumption (per-category `oneOf` branching, no schema-level optionality): `zshref-rs/src/tools/schema.rs`.
 
 **Future work:** generalize to "per-category structural fields are always-or-never" so schemas encode presence structurally, not as blanket optionals. Fold tests and this section into one named invariant when a second concrete instance appears.
 
@@ -299,27 +299,22 @@ Parser and renderer are layered: the parser may capture structure the renderer c
 
 ---
 
-## Output schemas (tooldef-owned)
+## Output schemas (crate-owned)
 
-- Each `ToolDef` has `outputSchema` (JSON Schema 2020-12) next to its result type.
-- Mechanical constraints — file-header JSDoc on `packages/zsh-core-tooldef/src/tools/shared/output-schema.ts`:
-  - `$defs` shape
-  - `subKind` always-or-never
-  - feedback enum interpolation
+- Each tool's `outputSchema` (JSON Schema 2020-12) is generated beside its implementation in the `zshref` crate (`src/tools/schema.rs`): envelope, per-category `oneOf` branches, shared `$defs`.
+- `subKind` enums and the record total come from the loaded corpus; feedback kinds from the resolver.
 - Cross-cutting "co-released schema precision" rationale: PRINCIPLES.md.
-- Drift enforced by `output-schema-prop.test.ts` (fast-check + Ajv) and `parity.test.ts` (cross-language).
-
-Hand-authored today; migrating to zod-derived schemas is a documented escape hatch if burden grows.
+- Drift enforced at test time: every tool response the crate's test suite sees is validated against its schema (`zshref-rs/tests/common/`).
 
 Per MCP spec, tools register `outputSchema`; responses include `structuredContent` for schema-aware clients while legacy clients still get JSON in `content[0].text`.
 
 ## Adapters of the shared tool surface
 
-Two adapters over the same `toolDefs`, both in the `zshref` crate: the CLI and the MCP server.
+Two adapters over the same `ToolDefs`, both in the `zshref` crate: the CLI and the MCP server.
 
-Adapters walk the exported tool-def JSON and dispatch on tool name; nothing else. The request path is shared — validate, fill schema defaults, dispatch (`tools::call`).
+Adapters walk the tool definitions (`src/tools.rs`) and dispatch through them; nothing else. The request path is shared — validate, fill schema defaults, dispatch (`tools::call`).
 
-Structural lock on the tool layer (the spec for its own claim): **scope fence** — `packages/zsh-core-tooldef/src/test/scope.test.ts`.
+Structural lock on the tool layer (the spec for its own claim): **scope fence** — `zshref-rs/tests/scope_fence.rs`.
 
 Three tools, intent-split:
 
@@ -338,13 +333,11 @@ Rejected alternatives:
 - mega-tool with a `kind` enum
 - one tool per category
 
-## Parity surface units (TS ↔ Rust mirrors)
+## TS ↔ Rust mirrors
 
-The Rust crate re-implements a small surface; the rest is consumed via baked JSON.
+The Rust crate re-implements one behaviour — the resolvers; the rest it consumes as baked JSON.
 
-- Source of truth: `packages/zsh-core-tooldef/src/test/parity-units.ts` (file header is the spec).
-- Marker alignment (`// MIRRORED-IN:` / `// MIRROR-OF:`): `mirror-pairs.test.ts`.
-- Behavioral parity (modulo the carved-out fuzzy tier): `parity.test.ts`.
+- Markers (`// MIRRORED-IN:` / `// MIRROR-OF:`) on the mirrored pairs (resolvers, record-field projection): orientation, no mechanical check.
 - Resolver conformance: the fixture zsh-core releases beside the corpus JSON (`packages/zsh-core/scripts/resolver-fixture.ts`), replayed in-crate by `zshref-rs/src/resolver.rs`.
 
 ## `lookupRaw`: direct ∥ resolver, direct preferred
@@ -379,8 +372,7 @@ The contract on the canonical-id subset is tight:
 Enforcement:
 
 - charset — `packages/zsh-core/src/test/corpus-ascii.test.ts`
-- round-trip — `packages/zsh-core-tooldef/src/test/round-trip.test.ts`
-- Rust mirror — `parity-units.ts` (see above)
+- round-trip — `packages/zsh-core/src/test/resolver.test.ts` (TS), `zshref-rs/tests/cli_invariants.rs` (Rust)
 
 ## Tie-break in docs
 
@@ -408,15 +400,14 @@ External coverage:
 - `zshref-rs/DATA-SYNC.md` — dual-mode build, bundled corpus
 - `CLI-POLICY.md` — stream / color discipline
 
-Tooldef keeps the marginal cost of "another adapter" low — dynamic `clap::Command` assembly walks the bundled tool-def JSON:
+The tool definitions keep the marginal cost of "another adapter" low — dynamic `clap::Command` assembly walks them:
 
 - subcommands = tool names minus `zsh_`
 - flags from schema fragments
-- `brief` / `description` / `flagBriefs` → clap help slots (three-field split: `packages/zsh-core-tooldef/DEVELOPMENT.md`)
+- `brief` / `description` / `flag_briefs` → clap help slots (three-field split: `ToolDef` in `zshref-rs/src/tools.rs`)
 
 Cross-adapter notes:
 
-- **Fuzzy scores** — the Rust binaries use an in-tree ASCII scorer; TS tooldef uses `fuzzysort`. Not comparable cross-language; the parity suite compares rank and identity only.
 - **Corpus metadata** — `zshref info`; MCP `initialize` carries only the suite preamble (`instructions`) and the crate version.
 - **`zshref schema`**:
   - emits `inputSchema` + `outputSchema` per tool as one JSON bundle for codegen/validation

@@ -9,16 +9,14 @@ This is visual QA for zsh-core's rendered reference corpus, including the subset
 
 ## Changes that feed the Rust crate
 
-`zshref-rs/` embeds JSON artifacts produced by `zsh-core` and
-`zsh-core-tooldef`, and tests its resolvers against the conformance
-fixture `zsh-core` emits beside them. Anything that alters those
-artifacts — taxonomy changes, new record fields, resolver behaviour,
-schema edits — is a cross-language change.
+`zshref-rs/` embeds the JSON artifacts `zsh-core` produces and tests its
+resolvers against the conformance fixture `zsh-core` emits beside them.
+Anything that alters those artifacts — taxonomy changes, new record
+fields, resolver behaviour — is a cross-language change.
 
 Pre-extraction, `make cli` / `make cli-test` rebuild TS artifacts before
 Rust runs; a resolver change that the Rust mirror does not follow fails
-`make cli-test`. CI also runs TS/Rust parity with `BZ_REQUIRE_PARITY=1`,
-so stale or divergent artifacts fail there.
+`make cli-test`.
 
 Post-extraction, propagation is explicit and manual: see
 `zshref-rs/DATA-SYNC.md` for how the vendored data snapshot is updated.

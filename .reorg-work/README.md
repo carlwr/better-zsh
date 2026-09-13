@@ -99,7 +99,7 @@ Out of scope:
   - the validation gates before returning
 - deliberate repetition (home: `STYLE-CODE.md`, `STYLE-MD.md`): DRY; naming and structure over comments — a comment that a rename or refactor makes obsolete is a refactor not done; concise prose and code. Agent output drifts the other way constantly.
 - before/after capture: where a step re-implements or relocates behaviour, record its observable output before, re-record after, verify equality — or that the diff is exactly the expected one. Cheap insurance for the value already in the existing implementation (bugs found, edge cases handled).
-  - general instruments: `zshref-rs/scripts/dump-help` (complete `--help`), `zshref schema`, `zshref info`, `zshref batch` over the pinned cases in tooldef's `parity.test.ts`
+  - general instruments: `zshref-rs/scripts/dump-help` (complete `--help`), `zshref schema`, `zshref info`, `zshref batch` over the pinned cases (`.aux/resolver-fixture/pinned.jsonl`)
   - step-specific captures are listed under each step
 
 ## Steps
@@ -147,39 +147,10 @@ In order. A step ends with the repo's validation gates green where touched and t
 - `capture-mcp` — one MCP stdio session against a server command, recorded into `.aux/mcp-rust/`
 - _before/after:_ `initialize` and `tools/list` TS server = Rust server; `tools/call` over the pinned parity cases equal modulo `isError: false` on success; `zshref batch` over the pinned cases and `dump-help` equal throughout
 
-### Delete tooldef
+### DONE: Delete tooldef
 
-- tool metadata becomes Rust-owned; `zshref schema` and `tools/list` read the same code
-  - names
-  - prose: brief, description, flag briefs, preamble
-  - limits
-  - input schemas
-  - output schemas, generated: envelope via schemars; per-category `oneOf` from a small generator over `index.json`'s categories
-    - `subKind` enums: derived from the corpus records (always-or-never per category); not in `index.json` today
-    - feedback kinds and shapes: Rust-owned — the resolver mirror emits them, the fixture pins them
-- CLI/MCP-specific prose transforms (`rewrite_refs`, the CLI line filter) stay as adapter-side transforms of single-owner strings
-- _decided:_ tool semantics Rust-only; zsh-core's TS API keeps primitives — deliberate (`rationale.md`)
-- then delete:
-  - the package
-  - every `tooldef.json` embed/vendor/hash line
-  - its workflow and CI job
-  - root registry scripts
-- tests re-homed rather than dropped
-  - `round-trip.test.ts` → a zsh-core `lookupRaw` test (the invariant is zsh-core's)
-  - `scope.test.ts` posture → a Rust test that `src/tools` has no process/network/env access; the user-facing "no execution" promise moves to the `zshref-rs` README
-  - `output-schema-prop.test.ts` → covered by Rust's schema validation of every tool response; extend with generated inputs if the step finds a gap
-  - prose/metadata assertions (`tool-defs.test.ts`) → Rust unit tests
-  - `parity.test.ts`, `zshref-batch.ts`, `zshref-fingerprint.ts`, `export-json` → gone with their subject
-- fingerprint machinery (`data_fingerprint.rs`, `build-inputs.txt`, `buildInputHash`) goes: its last consumer was the parity gate
-  - `zshref info` reports the zsh-core version and `dataHash` instead
-- `tooldef.schema.json`: no successor
-- `make artifacts` drops its explicit tooldef target; plain `pnpm bootstrap:upstream` covers zsh-core
-- docs: the TS tool implementation leaves the narrative (root `README.md`, `DESIGN.md`, `PRINCIPLES.md`, `zshref-rs` docs): one implementation, two adapters in one crate; rationale worth keeping moves to `zshref-rs` docs
-- _before/after:_ equal before and after the metadata moves to Rust:
-  - `dump-help`
-  - `zshref schema`
-  - `zshref batch` over the pinned cases
-  - MCP `tools/list`
+- `tooldef-delete.md` — scope, decisions (incl. those made during execution), captures, gates, follow-ups
+- _before/after:_ `dump-help`, `zshref schema`, `zshref batch` over the pinned cases, MCP `initialize` / `tools/list` / `tools/call` equal throughout; `zshref info` differs by the decided field swap (`buildInputHash` → `dataHash`)
 
 ### Stamp machinery: evaluate
 
@@ -192,7 +163,7 @@ In order. A step ends with the repo's validation gates green where touched and t
 ### Docs consolidation and closing
 
 - `REPO-SHAPE.md`: current shape only; one arrow set; a pointer to `zshref-rs/EXTRACTION.md` for the one remaining extraction
-- `zshref-rs/EXTRACTION.md` shrinks: tooldef items go; the parity item becomes the fixture test; `DATA-SYNC.md`: vendoring = corpus tarball + fixture tarball
+- `zshref-rs/EXTRACTION.md` shrinks; `DATA-SYNC.md`: vendoring = corpus tarball + fixture tarball
 - root `AGENTS.md`: architecture summary, dual-publish list, test markers; orient skill scripts
 - leftovers sweep — `rg` for:
   - tooldef
@@ -215,4 +186,5 @@ Decided not to decide now:
 - a `zshref-web` split into its own repo — no technical driver; its payoff if done: the SPA's toolchain and dependency churn (SvelteKit, Vite, transformers.js) leave the workspace lockfile and root `qa`
 - an MCP discoverability shim in the extension
 - deprecating the published alphas of `@carlwr/zsh-core-tooldef` and `@carlwr/zshref-mcp` on npm and JSR
+- the `zsh_docs` description (`docs_long` in `zshref-rs/src/tools/prose.rs`): its `matches[]` property list omits `title` and files the optional `subKind` / `feedback` under "mandatory" — ported verbatim; product text (`--help`, MCP descriptions), so a prose fix of its own, not a reorg change
 - the NLP follow-ups recorded by the move: `packages/zshref-web/nlp/NLP.md` §Follow-ups

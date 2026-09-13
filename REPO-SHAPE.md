@@ -13,7 +13,6 @@ Single source of truth for the product dependency arrow set; both timelines.
 .
 ├── packages/
 │   ├── zsh-core               (TS lib; corpus + types)
-│   ├── zsh-core-tooldef       (TS lib; shared tool defs)
 │   ├── vscode-better-zsh      (VS Code extension)
 │   └── zshref-web             (TS SPA)
 └── zshref-rs/                 (Rust crate: `zshref` CLI + `zshref-mcp` MCP server; not a pnpm member)
@@ -30,7 +29,7 @@ Left of the arrow is today's monorepo path; right is the eventual repo name. The
 
 Producer-consumer arrows; pull-only, pinned by version:
 
-- `zsh-core` → `zshref`, `vscode-better-zsh`, `zshref-web` (corpus + types)
+- `zsh-core` → `zshref` (corpus JSON + resolver fixture), `vscode-better-zsh`, `zshref-web` (corpus + types)
 - HuggingFace Hub → `zshref-web` (the embedding model: fetched at runtime by the browser, pre-fetched for the Node side)
 
 `zshref-web` consumes `zsh-core` at build time only — the index build; the browser bundle is `zsh-core`-free (`packages/zshref-web/AGENTS.md`). `zshref` produces nothing for `zshref-web`.

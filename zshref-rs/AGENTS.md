@@ -1,6 +1,6 @@
 # AGENTS.md — `zshref` (Rust crate)
 
-The `zshref` CLI and, behind the `mcp` feature, the `zshref-mcp` MCP server: one tool set, mirroring the TS tooldef. Semantic search is `zshref-web`'s (`packages/zshref-web/`); this crate has none.
+The `zshref` CLI and, behind the `mcp` feature, the `zshref-mcp` MCP server: one tool set, owned here (`src/tools.rs`). Semantic search is `zshref-web`'s (`packages/zshref-web/`); this crate has none.
 
 ## MSRV
 
@@ -8,23 +8,24 @@ One floor: `rust-version` in `Cargo.toml` — what `cargo install zshref` needs,
 
 ## TS↔Rust mirror discipline
 
-`// MIRRORED-IN:` (TS) ↔ `// MIRROR-OF:` (Rust) — zshref-rs ↔ pnpm-workspace TS code (`packages/zsh-core{,-tooldef}/`). Structural parity is enforced by `parity-units.ts` (rationale: `DESIGN.md`); the rename rule is root `AGENTS.md`'s. Resolver behaviour is pinned by zsh-core's conformance fixture (`DATA-SYNC.md`): a resolver change lands TS-side first, the fixture test then names every input the Rust side must follow.
+`// MIRRORED-IN:` (TS) ↔ `// MIRROR-OF:` (Rust) mark what this crate re-implements from `packages/zsh-core/` (resolvers, record-field projection): orientation only, no checker; the rename rule is root `AGENTS.md`'s. Resolver behaviour is pinned by zsh-core's conformance fixture (`DATA-SYNC.md`): a resolver change lands TS-side first, the fixture test then names every input the Rust side must follow.
 
 ## Iteration
 
 - Rust-only edits: `cargo build --all-features` + `cargo test --all-features` (skip `pnpm qa`); without `--all-features` the MCP binary and its test are skipped.
 - From outside `zshref-rs/`: pass `--manifest-path zshref-rs/Cargo.toml`.
-- Edits touching `packages/zsh-core-tooldef/` prose: rebuild tooldef first (`pnpm --filter @carlwr/zsh-core-tooldef build`), then `cargo build`.
+- Edits touching `packages/zsh-core/`: the make targets (`DEVELOPMENT.md` §Rebuild rules) rebuild the artifacts first.
 
 ## Tests
 
 - `tests/properties.rs` — property-based (proptest)
 - `tests/cli_invariants.rs` — deterministic invariant checks: CLI ↔ batch parity, every-category sweeps, full-corpus round-trip
 - `tests/mcp.rs` — black-box MCP client over the `zshref-mcp` binary: one stdio session per test; every successful `tools/call` validated against its `outputSchema`
-- `tests/common/mod.rs` — shared helpers: spawn-and-parse vocabulary, tooldef path resolution, `outputSchema` validators, subcommand→tool-name map
+- `tests/scope_fence.rs` — the tool layer names no process, network, environment or file-system facility
+- `tests/common/mod.rs` — shared helpers: spawn-and-parse vocabulary, the crate's tool definitions, `outputSchema` validators, subcommand→tool-name map
 - `src/resolver.rs` `#[cfg(test)]` — conformance to zsh-core's resolver fixture; `make cli-test` / `make cli-vendored-test` refresh fixture and corpus together, plain `cargo test` reads what is on disk
 
-`run_json` auto-validates every tool subcommand response against its bundled `outputSchema` — new tests get conformance checks for free.
+`run_json` auto-validates every tool subcommand response against its `outputSchema` — new tests get conformance checks for free.
 
 For plain integration tests (exit status, stdout shape) that don't need `outputSchema` validation, spawn the binary directly via `Command::new(env!("CARGO_BIN_EXE_zshref"))`.
 

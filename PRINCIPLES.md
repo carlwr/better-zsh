@@ -53,7 +53,7 @@ Resolution can be lossy (`setopt NO_AUTO_CD` resolves to `autocd`). The brand ma
 Cross-cutting principles:
 
 - **`resolve` and `Documented<K>` carry only identity.** No optional side-channels, no hidden state.
-- **Per-category dispatch lives in zsh-core**, not in consumers. Tooldef stays parametric over `DocCategory` — no `if (cat === "option")` branches.
+- **Per-category dispatch lives in zsh-core**, not in consumers. Consumers stay parametric over `DocCategory` — no `if (cat === "option")` branches.
 - **Structured, not prose.** Closed `kind`-tagged union so consumers route programmatically.
 
 See DESIGN.md.
@@ -120,7 +120,7 @@ zsh-core exposes every category uniformly. Examples of overlap:
 
 Consumer-layer ordering resolves these:
 
-- `classifyOrder` in zsh-core (consumed by tooldef)
+- `classifyOrder` in zsh-core (consumed by the `zshref` tools)
 - fallback chains in extension hover
 
 Resist restructuring the taxonomy to eliminate overlap; the resolver walk is where overlap cost belongs.
@@ -210,16 +210,16 @@ Pragmatism carve-out: when shape inference *radically* simplifies code or remove
 
 ---
 
-## Tooldef + adapters
+## Tool layer + adapters
 
 ### Judge changes by extrapolation to unknown consumers
 
-Tooldef is a library. Evaluate changes across host adapters and unknown third-party consumers. Adapter surface budgets differ — hence the asymmetric field budget:
+Two adapters today; evaluate changes as for unknown ones. Adapter surface budgets differ — hence the asymmetric field budget:
 
 - `brief`
 - `description`
-- `flagBriefs`
-- `inputSchema.properties[*].description`
+- `flag_briefs`
+- `input_schema.properties[*].description`
 
 ### Push decisions downstream
 
@@ -229,9 +229,9 @@ Decisions belong close to the consumer:
 - filtering
 - formatting
 
-Adapter narrows tooldef, tooldef narrows zsh-core. Counterforce: over-parameterization bloats the per-call input surface. Balance consciously; default is "push downstream."
+The adapter narrows the tool layer; the tool layer narrows zsh-core. Counterforce: over-parameterization bloats the per-call input surface. Balance consciously; default is "push downstream."
 
-Counter-example: corpus-aware identity primitives (e.g. `lookupRaw`'s direct-or-resolver rule) live in zsh-core even though tooldef is the only current consumer. They are properties of *the corpus*, not the tool surface — leaking them into tooldef would force every other consumer (including the Rust mirror) to re-implement the rule, multiplying mirror surface for no gain.
+Counter-example: corpus-aware identity primitives (e.g. `lookupRaw`'s direct-or-resolver rule) live in zsh-core even where a tool is the only consumer. They are properties of *the corpus*, not the tool surface; the Rust mirror follows them under the fixture instead of re-deriving them per tool.
 
 ### Schema precision when schemas are co-released
 

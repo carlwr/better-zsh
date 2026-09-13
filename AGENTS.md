@@ -58,19 +58,19 @@ Sanctioned brand crossing inside `zsh-core`: `resolve(corpus, cat, raw)`.
 Repo layering:
 
 - `zsh-core` owns corpus, analysis, rendering, and resolver primitives.
-- `zsh-core-tooldef` consumes `zsh-core` to define shared tools.
-- Adapters consume tooldef; editor features compose `zsh-core` primitives directly.
+- `zshref-rs` consumes zsh-core's release assets (corpus JSON, resolver fixture) and owns the tool set; its adapters consume that.
+- Editor features compose `zsh-core` primitives directly.
 - No "candidate in, markdown out" shortcut in `zsh-core`; consumers compose `resolve()` + `renderDoc()`.
 
 ### zsh-core package imports
 
 Prefer explicit subpaths from `@carlwr/zsh-core` so dependency arrows stay visible and rollups stay legible. Subpath inventory: `packages/zsh-core/AGENTS.md`.
 
-### Tooldef + adapters
+### Tool layer + adapters
 
-Principle: tooldef consumes zsh-core; adapters consume tooldef. Do not add zsh-core query APIs just to support an adapter.
+Principle: the tool layer consumes zsh-core; adapters consume the tool layer. Do not add zsh-core query APIs just to support an adapter.
 
-Static, read-only, no-execution posture is a product feature. Mechanics + scope-fence enforcement: `packages/zsh-core-tooldef/AGENTS.md`.
+Static, read-only, no-execution posture is a product feature. Enforcement: `zshref-rs/tests/scope_fence.rs`.
 
 ## Project-specific code rules
 
@@ -80,7 +80,7 @@ Hand-written category lists drift. Same posture for other closed zsh-core unions
 
 - In JSDoc, comments, docs: give examples, not exhaustive lists.
 - No hard-coded category counts in prose.
-- Runtime strings and JSON Schema `enum` values interpolate from canonical zsh-core exports — never hand-typed.
+- Runtime strings and JSON Schema `enum` values interpolate from canonical zsh-core exports — in the Rust crate, from the embedded `index.json` and corpus — never hand-typed.
 - Category-indexed tables belong in zsh-core, structurally complete; consumers import them. Prefer mapped types so structure enforces completeness by construction. A compile-time guard is the fallback for tables that can't be derived (e.g. runtime order tuples).
 
 Rationale: `DESIGN.md`, `PRINCIPLES.md`.
@@ -107,7 +107,7 @@ Follow when they model the domain — see `PRINCIPLES.md`.
 
 ### TS↔Rust mirror discipline
 
-For TS↔Rust mirrors (`// MIRRORED-IN:` / `// MIRROR-OF:`), a rename touches both sides plus `parity-units.ts` (see `DESIGN.md`).
+For TS↔Rust mirrors (`// MIRRORED-IN:` / `// MIRROR-OF:`), a rename touches both sides; behaviour is pinned by the resolver fixture (see `DESIGN.md`).
 
 ## Validation before returning
 
@@ -144,10 +144,7 @@ pnpm format && pnpm qa && pnpm test:pack && pnpm test:integration
 Universal pattern: `TESTING.md`. Project-specific consent-required markers:
 
 - `*INTERACTIVE*` — takes over the desktop (VS Code/Electron); macOS steals focus.
-- `*REGISTRY*` / `verifyREGISTRY` — depends on currently-published npm/JSR state.
-  - after a zsh-core public-API addition, stays red downstream until the new zsh-core publish lands
-  - ordinary local tests are deliberately insulated from that
-  - in CI: own job, manual dispatch only
+- `*REGISTRY*` / `verifyREGISTRY` — depends on currently-published npm/JSR state; in CI: own job, manual dispatch only.
 
 Discover scary scripts via the markers: `jq '.scripts | keys' package.json packages/*/package.json | rg 'REGISTRY|INTERACTIVE'`.
 
@@ -160,10 +157,7 @@ Per-package `test:integration` is intentionally not one mechanism:
 
 ### npm + JSR dual publish
 
-Universal pattern: `PACKAGING.md`. Project-specific packages targeting both registries:
-
-- `@carlwr/zsh-core`
-- `@carlwr/zsh-core-tooldef`
+Universal pattern: `PACKAGING.md`. Project-specific package targeting both registries: `@carlwr/zsh-core`.
 
 The Rust crate in `zshref-rs/` publishes via cargo/crates.io — see `zshref-rs/` for release conventions.
 

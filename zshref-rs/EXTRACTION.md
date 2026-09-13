@@ -26,9 +26,9 @@ read-when: extraction-day checklist for zshref (Rust crate)
 
 ### Embedded JSON paths
 
-Already routed through cfg-gated macros (`corpus_path!`, `tooldef_path!` in `src/corpus.rs`) by the option-6 dual-mode build; the resolver fixture's `resolver_fixture_path()` beside them is gated the same way. At extraction:
+Already routed through a cfg-gated macro (`corpus_path!` in `src/corpus.rs`) by the option-6 dual-mode build; the resolver fixture's `resolver_fixture_path()` beside it is gated the same way. At extraction:
 
-- Drop the `monorepo` arm from the macros and the path fn in `src/corpus.rs` and the corresponding branch in `build.rs`.
+- Drop the `monorepo` arm from the macro and the path fn in `src/corpus.rs` and the corresponding branch in `build.rs`.
 - Remove `/data/` from `.gitignore` and commit the vendored JSONs.
 
 See `DATA-SYNC.md` for the landed design.
@@ -41,14 +41,14 @@ directory is committed. See `DATA-SYNC.md`.
 
 ### Makefile
 
-- The repo root `Makefile` goes away. The `artifacts` target (which drives `pnpm build` for the TS packages) moves to whatever cross-repo data-sync mechanism is chosen; the monorepo-only CI job disappears alongside it.
+- The repo root `Makefile` goes away. The `artifacts` target (which drives zsh-core's `pnpm build`) moves to whatever cross-repo data-sync mechanism is chosen; the monorepo-only CI job disappears alongside it.
 - The vendor target pivots: instead of copying from a sibling package, it downloads and unpacks the `zsh-core` release assets (corpus JSON, resolver fixture) at a pinned tag.
 - The extracted repo will have a simpler `Makefile` (or rely on cargo-native workflows) covering only the Rust-side targets.
 
 ### CI
 
 - `.github/workflows/ci-rust.yml` is close-to-portable. Required changes at extraction:
-  - Remove path filters referencing `packages/zsh-core/**`, `packages/zsh-core-tooldef/**`, and the root `Makefile`; narrow to `src/**`, `tests/**`, `Cargo.*`.
+  - Remove path filters referencing `packages/zsh-core/**` and the root `Makefile`; narrow to `src/**`, `tests/**`, `Cargo.*`.
   - Remove the `setup-node-pnpm` step — the composite action it names stays behind in the monorepo — unless the extracted repo vendored-JSON sync still drives a Node checkout.
   - Every other step stays.
 - `.github/workflows/release-zshref.yml` moves along, with the same `setup-node-pnpm` question.
@@ -79,10 +79,6 @@ Companion-repo URLs and the project name are already in post-extraction form. Re
 ### Cross-repo drift guards
 
 - No extraction-day action. The TS↔Rust drift guards described in `DATA-SYNC.md` survive unchanged as long as the vendored `index.json` and resolver fixture ship with the crate.
-
-### Scope fence
-
-- N/A for Rust.
 
 ---
 
