@@ -38,8 +38,7 @@ Pre-release alphas are not yet listed on either registry.
 ## See also
 
 - [`@carlwr/zsh-core`](https://github.com/carlwr/better-zsh/tree/main/packages/zsh-core) — the structured-reference library the extension consumes.
-- [`@carlwr/zshref-mcp`](https://github.com/carlwr/zshref-mcp) — the same reference as a Model Context Protocol server, for agents.
-- [`zshref`](https://github.com/carlwr/zshref) — single-file executable Rust CLI over the same reference.
+- [`zshref`](https://github.com/carlwr/zshref) — single-file executable Rust CLI over the same reference, and a Model Context Protocol server for agents.
 - [Better Zsh on GitHub](https://github.com/carlwr/better-zsh) — source, issues, companion packages.
 
 ## License

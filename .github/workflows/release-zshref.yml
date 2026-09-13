@@ -1,4 +1,4 @@
-name: Release zshref (Rust CLI)
+name: Release zshref (Rust crate)
 
 # Triggers:
 #   - tag push `zshref-v*` → publish to crates.io
@@ -60,7 +60,7 @@ jobs:
         run: make cli-test
 
       # Vendors the JSON, then proves the packaged tarball compiles standalone
-      # under every feature configuration.
+      # with every feature on.
       - name: Vendored-mode package check
         run: make cli-package
 

@@ -4,7 +4,7 @@
 
 Structured zsh reference knowledge as a typed TypeScript library. Parses vendored Yodl (`.yo`) source from upstream zsh-5.9 into typed records, exposes a closed taxonomy of doc categories, and ships markdown rendering plus a small analysis layer for zsh source code.
 
-Library-first: the VS Code extension, MCP server, and Rust CLI in the same monorepo are each separate consumers of this package, not internal users of it. Further consumers are expected.
+Library-first: the VS Code extension, the web SPA, and the Rust crate (CLI + MCP server) in the same monorepo are each separate consumers of this package, not internal users of it. Further consumers are expected.
 
 ## What you get
 
@@ -55,9 +55,8 @@ if (pid) {
 
 ## See also
 
-- [`@carlwr/zsh-core-tooldef`](https://github.com/carlwr/better-zsh/tree/main/packages/zsh-core-tooldef) — declarative tool definitions over this library, consumed by the MCP and CLI adapters.
-- [`@carlwr/zshref-mcp`](https://github.com/carlwr/zshref-mcp) — Model Context Protocol server.
-- [`zshref`](https://github.com/carlwr/zshref) — single-file executable Rust CLI.
+- [`@carlwr/zsh-core-tooldef`](https://github.com/carlwr/better-zsh/tree/main/packages/zsh-core-tooldef) — declarative tool definitions over this library, consumed by the CLI and MCP adapters.
+- [`zshref`](https://github.com/carlwr/zshref) — single-file executable Rust CLI, and the same reference as a Model Context Protocol server.
 - [`better-zsh`](https://github.com/carlwr/better-zsh/tree/main/packages/vscode-better-zsh) — VS Code extension.
 - [`DESIGN.md`](https://github.com/carlwr/better-zsh/blob/main/DESIGN.md) — architectural rationale.
 

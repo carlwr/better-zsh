@@ -20,7 +20,7 @@ export const ENVELOPE_REQUIRED_KEYS = [
   "matchesTotal",
 ] as const
 
-/** Result envelope: match list + returned/total counts. Rust CLI emits the same shape. */
+/** Result envelope: match list + returned/total counts. The Rust crate emits the same shape. */
 export interface Envelope<M> {
   readonly matches: readonly M[]
   readonly matchesReturned: number

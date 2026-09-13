@@ -49,7 +49,7 @@ Adapters plug `execute` into their transport of choice. The Rust binaries embed 
 
 ## Scope fence (product feature)
 
-The "no execution, no environment access" posture advertised by the MCP and CLI is structurally enforced here: `src/test/scope.test.ts` walks `src/tools/` and rejects any import of `child_process`, network APIs, `node:fs`, `vscode`, or reads of `process.env`. Loosening the fence is a deliberate product decision, not a casual implementation change.
+The "no execution, no environment access" posture the binaries advertise is enforced structurally on the tool layer: `src/test/scope.test.ts` walks `src/tools/` and rejects any import of `child_process`, network APIs, `node:fs`, `vscode`, or reads of `process.env`. Loosening the fence is a deliberate product decision, not a casual implementation change.
 
 ## See also
 

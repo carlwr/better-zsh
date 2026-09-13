@@ -154,7 +154,6 @@ Discover scary scripts via the markers: `jq '.scripts | keys' package.json packa
 Per-package `test:integration` is intentionally not one mechanism:
 
 - extension: `act`
-- MCP: native-host CI-parity aggregator
 - workspace: delegates via `pnpm -r --if-present`
 
 ## Packaging
@@ -165,9 +164,8 @@ Universal pattern: `PACKAGING.md`. Project-specific packages targeting both regi
 
 - `@carlwr/zsh-core`
 - `@carlwr/zsh-core-tooldef`
-- `@carlwr/zshref-mcp`
 
-The Rust CLI in `zshref-rs/` publishes via cargo/crates.io — see `zshref-rs/` for release conventions.
+The Rust crate in `zshref-rs/` publishes via cargo/crates.io — see `zshref-rs/` for release conventions.
 
 ### `BZ_SKIP_UPSTREAM`
 

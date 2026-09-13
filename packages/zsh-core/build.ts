@@ -94,7 +94,7 @@ function writeJsonArtifacts() {
     files: [...jsonDataFiles],
     counts,
     // Canonical taxonomy lists, consumed by out-of-process consumers (the
-    // Rust CLI) as the source of truth — no Rust-side mirror.
+    // Rust crate) as the source of truth — no Rust-side mirror.
     docCategories: [...docCategories],
     classifyOrder: [...classifyOrder],
     /** Per-category JSON filename — pairs `docCategories[i]` with the file holding its records. */

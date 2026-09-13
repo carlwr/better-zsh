@@ -39,7 +39,7 @@ export function augmentWithMarkdown<K extends DocCategory>(
 }
 
 /**
- * `_id`/`_display` must be ASCII — the Rust CLI's fuzzy scorer is
+ * `_id`/`_display` must be ASCII — the Rust crate's fuzzy scorer is
  * ASCII-only, and non-ASCII silently degrades search for those records.
  * Mirrors the corpus-load test on the Rust side.
  */

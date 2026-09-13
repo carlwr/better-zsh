@@ -70,8 +70,7 @@ Doc records → human-readable markdown. Depends on A; orthogonal to B.
 Consumers plumb A+B→C:
 
 - extension
-- MCP server
-- `zshref` CLI
+- `zshref` CLI and `zshref-mcp` (the Rust crate)
 - future wrappers
 
 Composition:
@@ -316,17 +315,11 @@ Per MCP spec, tools register `outputSchema`; responses include `structuredConten
 
 ## Adapters of the shared tool surface
 
-Two adapters over the same `toolDefs`: MCP and the Rust CLI.
+Two adapters over the same `toolDefs`, both in the `zshref` crate: the CLI and the MCP server.
 
-Adapters walk `toolDefs` and call `def.execute(corpus, input)`; nothing else.
+Adapters walk the exported tool-def JSON and dispatch on tool name; nothing else. The request path is shared — validate, fill schema defaults, dispatch (`tools::call`).
 
-Structural locks (each is the spec for its own claim):
-
-- **Thin-adapter import allow-list** — `packages/zsh-core-tooldef/src/test/adapter-matrix.ts` (+ `.test.ts`). Forbidden in thin adapters:
-  - `resolve`
-  - `renderDoc`
-  - analysis
-- **Tool-impl scope fence** — `packages/zsh-core-tooldef/src/test/scope.test.ts`.
+Structural lock on the tool layer (the spec for its own claim): **scope fence** — `packages/zsh-core-tooldef/src/test/scope.test.ts`.
 
 Three tools, intent-split:
 
@@ -336,7 +329,7 @@ Three tools, intent-split:
 
 Notes:
 
-- per-tool surface: `packages/zshref-mcp/README.md` Tools section
+- per-tool surface: `zshref-rs/README.md` §Tools
 - `zsh_search` and `zsh_list` stay separate — "search with no query" would be a silent footgun
 - uniform output envelope keeps adapters simple
 
@@ -347,7 +340,7 @@ Rejected alternatives:
 
 ## Parity surface units (TS ↔ Rust mirrors)
 
-The Rust CLI re-implements a small surface; the rest is consumed via baked JSON.
+The Rust crate re-implements a small surface; the rest is consumed via baked JSON.
 
 - Source of truth: `packages/zsh-core-tooldef/src/test/parity-units.ts` (file header is the spec).
 - Marker alignment (`// MIRRORED-IN:` / `// MIRROR-OF:`): `mirror-pairs.test.ts`.
@@ -423,8 +416,8 @@ Tooldef keeps the marginal cost of "another adapter" low — dynamic `clap::Comm
 
 Cross-adapter notes:
 
-- **Fuzzy scores** — CLI uses an in-tree ASCII scorer; MCP uses `fuzzysort`. Not comparable cross-adapter; shared tests compare rank and identity only.
-- **Corpus metadata** — `zshref info` and MCP `initialize` carry overlapping data.
+- **Fuzzy scores** — the Rust binaries use an in-tree ASCII scorer; TS tooldef uses `fuzzysort`. Not comparable cross-language; the parity suite compares rank and identity only.
+- **Corpus metadata** — `zshref info`; MCP `initialize` carries only the suite preamble (`instructions`) and the crate version.
 - **`zshref schema`**:
   - emits `inputSchema` + `outputSchema` per tool as one JSON bundle for codegen/validation
   - no per-tool subcommand (would fight clap conventions); cherry-pick with `jq`

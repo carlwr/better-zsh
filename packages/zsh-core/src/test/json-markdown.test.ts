@@ -7,7 +7,7 @@ import { jsonDataFiles } from "../docs/json-artifacts"
 /**
  * Smoke test: every emitted corpus JSON record carries an `mdBody` string.
  * Rendered-markdown embedding is the seam between TS (renderer) and the
- * out-of-process Rust CLI; this test guards against accidental drift in the
+ * out-of-process Rust crate; this test guards against accidental drift in the
  * JSON-emit path.
  *
  * Every category has a renderer; this checks the generated JSON files using

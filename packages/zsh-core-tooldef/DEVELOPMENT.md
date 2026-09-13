@@ -43,7 +43,7 @@ Any category enumeration in tool descriptions must come from zsh-core exports; d
 
 ## Scope fence
 
-`src/test/scope.test.ts` walks `src/tools/` and rejects forbidden imports plus `process.env` reads. This is the structural backing for the "no execution, no environment access" promise advertised by the MCP and CLI. Loosening it is a deliberate product decision, not a casual implementation change.
+`src/test/scope.test.ts` walks `src/tools/` and rejects forbidden imports plus `process.env` reads: the structural backing for the tool layer's "no execution, no environment access" promise. Loosening it is a deliberate product decision, not a casual implementation change.
 
 ## Consumers
 

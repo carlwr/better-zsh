@@ -4,22 +4,24 @@
 
 > **Status: pre-release (alpha).** This crate is developed inside the [`better-zsh`](https://github.com/carlwr/better-zsh) monorepo and will be extracted to its own repository on first stable release. Stable install docs are not live yet; alpha crates.io packages exist for packaging validation.
 
-A command-line reference for zsh syntax. Ask what a token is, search the manual, or print the docs for a known element — from a terminal, a script, or an agent pipeline. Tool subcommands emit one compact JSON line on stdout per invocation (pass `--pretty` for indented multi-line) — pipe into `jq` for projection. `zshref info` does likewise; `zshref completions` emits its shell script on stdout instead.
+A reference for zsh syntax, as a command-line tool and as a [Model Context Protocol](https://modelcontextprotocol.io) server. Ask what a token is, search the manual, or print the docs for a known element — from a terminal, a script, an agent pipeline, or an MCP-aware client. CLI tool subcommands emit one compact JSON line on stdout per invocation (pass `--pretty` for indented multi-line) — pipe into `jq` for projection. `zshref info` does likewise; `zshref completions` emits its shell script on stdout instead.
 
 ## Why zshref?
 
-Built for agents, acceptable for humans. One of two adapters over the same parsed zsh reference (alongside the [MCP server](https://github.com/carlwr/zshref-mcp)). What the CLI adds on top of the shared corpus:
+Built for agents, acceptable for humans. One crate, two faces over the same parsed zsh reference: the `zshref` CLI and the `zshref-mcp` MCP server. What the CLI adds on top of the shared corpus:
 
 - **Single-file executable** — no Node, Python, or zsh at runtime; drops into containers, air-gapped CI, and minimal base images.
 - **Pipes and scripts.** Parseable output stays on stdout; errors and warnings stay on stderr. Explicit help/version also uses stdout. Exit codes are stable. `zshref docs --key AUTO_CD | jq ...` is the intended shape, including for LLM agents composing through `sh`.
 - **Protocol-independent.** MCP is young; POSIX CLIs have fifty years of backward-compat. Insurance against whichever agent protocol comes next.
 
-What it shares with the other adapters — and, for most users, the reason to pick any of them over `man zshall | grep`:
+What the MCP server adds: one line in a client config (Claude Code, Claude Desktop, Cursor, VS Code's built-in MCP, Zed, opencode, any generic MCP host) and the same tools appear alongside the client's other MCP servers, selectable by the agent like any built-in — and, unlike most shell-flavored MCP servers, this one never executes shell or touches the host environment.
+
+What both share — and, for most users, the reason to pick either over `man zshall | grep`:
 
 - **Structured, not textual.** Parsed from upstream Yodl source into typed per-category records, not regex-scraped from `man`. Every record carries its own shape; every category carries its own resolver.
 - **Non-trivial resolvers.** Corpus-aware `NO_*` negation (including the `NOTIFY` / `NO_NOTIFY` edge case), redirection decomposition into `groupOp` + tail, parameter-expansion sig matching. The real value-add.
 - **Token-efficient.** `search` and `list` return identity-only rows (no `mdBody`); only `docs` returns the rendered markdown body. The closed category enum surfaces as shell-completion values and clap `PossibleValues`, not prose — callers don't burn tokens recalling category names.
-- **No trust surface.** No shell execution, no subprocess, no network, no filesystem writes, no logs, no caches, no config files, no telemetry, no environment-variable reads beyond the `NO_COLOR` / `CLICOLOR_FORCE` color gates. Structurally enforced by a scope-fence test, not policy.
+- **No trust surface.** No shell execution, no subprocess, no network, no filesystem writes, no logs, no caches, no config files, no telemetry, no environment-variable reads beyond the CLI's `NO_COLOR` / `CLICOLOR_FORCE` color gates. The MCP server's only side effect is writing JSON-RPC frames to stdout (fatal errors to stderr). Structurally enforced by a scope-fence test, not policy.
 
 Primary audience: agent pipelines (Claude Code, Codex CLI, Cursor, shell-wrapped LLM flows). Humans aren't locked out, but every design trade-off picks the agent-first answer.
 
@@ -63,12 +65,14 @@ cd better-zsh
 corepack enable
 pnpm install --frozen-lockfile
 make cli            # release binary at zshref-rs/target/release/zshref
+(cd zshref-rs && cargo build --release --features mcp)   # adds target/release/zshref-mcp
 ```
 
 For alpha package testing only:
 
 ```sh
-cargo install zshref --version 0.1.0-alpha.2
+cargo install zshref --version 0.1.0-alpha.2                  # the CLI
+cargo install zshref --version 0.1.0-alpha.2 --features mcp   # CLI + MCP server
 ```
 
 Homebrew distribution is also planned; the formula under [`Formula/zshref.rb`](./Formula/zshref.rb) is a pre-release scaffold. Once released, install via:
@@ -146,9 +150,129 @@ For cached completions (slightly faster startup), write the zsh script to a dire
 
 See `zshref completions --help` for other supported shells.
 
+## MCP server
+
+`zshref-mcp` speaks MCP JSON-RPC over stdio; an MCP client launches it — no flags, no environment variables. For introspection, `--help` / `-h` and `--version` / `-V` are available; run in a terminal without flags it prints a hint and exits.
+
+Any MCP-aware client that can spawn a subprocess over stdio can use it:
+
+```
+command: zshref-mcp
+args:    none
+```
+
+Per client:
+
+```sh
+# Claude Code
+claude mcp add zshref -- zshref-mcp
+```
+
+```json
+// Claude Desktop: claude_desktop_config.json (macOS: ~/Library/Application Support/Claude/;
+// Windows: %APPDATA%\Claude\), under "mcpServers"; restart Claude Desktop afterwards.
+// Cursor: ~/.cursor/mcp.json (global) or .cursor/mcp.json (per project), same shape.
+{
+  "mcpServers": {
+    "zshref": { "command": "zshref-mcp" }
+  }
+}
+```
+
+```json
+// VS Code (built-in MCP client): .vscode/mcp.json in the workspace, or the
+// `mcp.servers` block in user/workspace settings.
+{
+  "servers": {
+    "zshref": { "command": "zshref-mcp" }
+  }
+}
+```
+
+```json
+// Zed: settings.json
+{
+  "context_servers": {
+    "zshref": { "command": { "path": "zshref-mcp" } }
+  }
+}
+```
+
+```json
+// opencode: opencode.json (per project) or ~/.config/opencode/opencode.json
+{
+  "mcp": {
+    "zshref": { "type": "local", "command": ["zshref-mcp"], "enabled": true }
+  }
+}
+```
+
+### Tools
+
+Three tools, one intent axis each; the same three the CLI exposes as subcommands. All return the envelope `{ matches, matchesReturned, matchesTotal }`; `matchesReturned < matchesTotal` means `limit` truncated the result. Only `zsh_docs` carries the rendered markdown body — pair `zsh_search` / `zsh_list` results with `zsh_docs` for the full doc. Every tool advertises an `outputSchema`; responses carry `structuredContent` alongside the JSON text block.
+
+- **`zsh_docs`** — look up the docs for a zsh key (`key`, optional `category`). Resolution is corpus-aware: case-insensitive option matching, underscore stripping, `NO_*` negation, redirection decomposition, history event designators. With `category` omitted, every category is tried; a few tokens (`for`, `[[`, `function`, `nocorrect`) match in more than one. Matches reached through a lossy normalization carry `feedback`.
+
+  ```json
+  { "key": "NO_AUTO_CD" }
+  ```
+
+  ```json
+  {
+    "matches": [
+      {
+        "category": "option",
+        "id": "autocd",
+        "display": "AUTO_CD",
+        "mdBody": "### AUTO_CD ...",
+        "feedback": { "kind": "input-negated" }
+      }
+    ],
+    "matchesReturned": 1,
+    "matchesTotal": 1
+  }
+  ```
+
+- **`zsh_search`** — fuzzy discovery by name (`query`, optional `category`, `limit`). Ranking: exact id/display > resolver match > prefix > fuzzy score; rows carry `{ category, id, display, subKind?, score }`, no body.
+
+  ```json
+  { "query": "echo", "category": "builtin", "limit": 5 }
+  ```
+
+  ```json
+  {
+    "matches": [
+      { "category": "builtin", "id": "echo", "display": "echo", "score": 1.0 },
+      { "category": "builtin", "id": "echotc", "display": "echotc", "score": 1.0 },
+      { "category": "builtin", "id": "echoti", "display": "echoti", "score": 1.0 }
+    ],
+    "matchesReturned": 3,
+    "matchesTotal": 3
+  }
+  ```
+
+- **`zsh_list`** — enumerate records (optional `category`, `limit`); identity-only rows like `zsh_search`. `{}` lists the first records of every category with `matchesTotal` = the whole corpus; `limit: 0` returns counts only.
+
+  ```json
+  { "category": "precmd_modifier", "limit": 100 }
+  ```
+
+  ```json
+  {
+    "matches": [
+      { "category": "precmd_modifier", "id": "noglob", "display": "noglob" },
+      { "category": "precmd_modifier", "id": "nocorrect", "display": "nocorrect" }
+    ],
+    "matchesReturned": 2,
+    "matchesTotal": 2
+  }
+  ```
+
+For options, `id` is the normalized lookup key (lowercase, underscores stripped) and `display` the human-friendly form; categories with literal identities (builtins, reserved words, …) have `id == display`. The full descriptions and schemas are what `tools/list` — and `zshref schema` — return.
+
 ## More
 
-Companion projects sharing the same underlying reference: the [`@carlwr/zshref-mcp`](https://github.com/carlwr/zshref-mcp) MCP server and the [`better-zsh`](https://github.com/carlwr/better-zsh) VS Code extension.
+Companion project sharing the same underlying reference: the [`better-zsh`](https://github.com/carlwr/better-zsh) VS Code extension.
 
 ## License
 

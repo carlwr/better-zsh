@@ -1,6 +1,6 @@
 ---
 audience: maintainer
-read-when: extraction-day checklist for zshref (Rust CLI)
+read-when: extraction-day checklist for zshref (Rust crate)
 ---
 
 # Extraction checklist
@@ -57,6 +57,7 @@ directory is committed. See `DATA-SYNC.md`.
 ### Homebrew
 
 - `Formula/zshref.rb` is already positioned for the default Homebrew tap scan (repo-root `Formula/`) and already pulls from the crates.io-published `.crate`. On each new release, bump `url` + `sha256` to the new version's tarball. No structural changes needed at extraction.
+- Decide whether the formula builds with `--features mcp` (ships `zshref-mcp` alongside the CLI) — today it builds the CLI alone.
 - Consider `brew audit --strict --online` as a CI gate at that point (macOS runner).
 
 ### Docs
@@ -66,7 +67,7 @@ Companion-repo URLs and the project name are already in post-extraction form. Re
 - `README.md`:
   - ~~`../LICENSE` → `./LICENSE`.~~ **Done** — `LICENSE` added here; `README.md` links it locally.
   - `../THIRD_PARTY_NOTICES.md` → `./THIRD_PARTY_NOTICES.md`.
-  - Install: swap monorepo-checkout + `make cli` for `cargo install zshref`.
+  - Install: swap monorepo-checkout + `make cli` for `cargo install zshref` (`--features mcp` for both binaries).
   - Remove pre-release status banner and "planned for first stable release" caveats.
 - `DEVELOPMENT.md`:
   - Remove the "Note: pre-release, monorepo" section.

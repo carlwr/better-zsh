@@ -7,7 +7,7 @@ Repo-level notes that do not fit better in a package-local `DEVELOPMENT.md`.
 Use `pnpm dump:refs` to write the current static reference markdown under `.aux/refs/`.
 This is visual QA for zsh-core's rendered reference corpus, including the subset consumed by VS Code hovers.
 
-## Changes that feed the Rust CLI
+## Changes that feed the Rust crate
 
 `zshref-rs/` embeds JSON artifacts produced by `zsh-core` and
 `zsh-core-tooldef`, and tests its resolvers against the conformance
@@ -18,7 +18,7 @@ schema edits — is a cross-language change.
 Pre-extraction, `make cli` / `make cli-test` rebuild TS artifacts before
 Rust runs; a resolver change that the Rust mirror does not follow fails
 `make cli-test`. CI also runs TS/Rust parity with `BZ_REQUIRE_PARITY=1`,
-so stale or divergent CLI artifacts fail there.
+so stale or divergent artifacts fail there.
 
 Post-extraction, propagation is explicit and manual: see
 `zshref-rs/DATA-SYNC.md` for how the vendored data snapshot is updated.

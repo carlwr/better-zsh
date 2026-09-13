@@ -37,13 +37,8 @@ For plain integration tests (exit status, stdout shape) that don't need `outputS
 - Agents: use `pnpm cli`, `pnpm cli:test`, etc — wrapped via `quiet-run.mjs`, silent on success.
 - Direct `make cli`: stays verbose; silencing would duplicate `quiet-run.mjs` buffering for no agent-path benefit.
 
-## `dump-help` script
+## Scripts
 
-Useful for:
-- inspecting the `--help` output for top-level + all subcommands with a single command
-- diffing complete `--help` output across changes
-
-More info:
-```sh
-./zshref-rs/scripts/dump-help --help
-```
+- `scripts/dump-help` — `--help` output for top-level + all subcommands in one file; for diffing across changes
+- `scripts/third-party-notices` — regenerates `THIRD_PARTY_NOTICES.md` from `cargo tree`; run when `Cargo.lock` moves
+- `scripts/probe-opencode` — manual agent-client probe of the built `zshref-mcp`

@@ -8,7 +8,7 @@ This document describes dev workflows during the monorepo phase. Post-extraction
 
 ---
 
-Rust CLI that bundles two TS-generated artifacts via `include_bytes!`:
+Rust crate — the `zshref` CLI and, behind the `mcp` feature, the `zshref-mcp` MCP server — bundling two TS-generated artifacts via `include_bytes!`:
 
 - **Corpus JSONs** — `packages/zsh-core/artifacts/json/*.json` (built by `pnpm --filter @carlwr/zsh-core build`)
 - **Tool-def JSON** — `packages/zsh-core-tooldef/artifacts/json/tooldef.json` (built by `pnpm --filter @carlwr/zsh-core-tooldef build`)
@@ -35,7 +35,7 @@ The `build.rs` auto-detects two data sources (monorepo paths vs. vendored `data/
 - `make artifacts` — rebuild TS JSON only
 - `make cli-debug` — TS artifacts + `cargo build`
 - `make cli` — TS artifacts + `cargo build --release`
-- `make cli-test` — TS artifacts + `cargo test`
+- `make cli-test` — TS artifacts + `cargo test --all-features`
 - `make cli-clean` — `cargo clean`
 - `make cli-fmt` / `cli-fmt-check` / `cli-clippy` / `cli-check` — formatting + lint
 - `make vendor` / `vendor-clean` — populate / remove `zshref-rs/data/` from TS output (see `DATA-SYNC.md`)
@@ -50,6 +50,7 @@ From inside `zshref-rs/`:
 
 ```sh
 cargo build && ./target/debug/zshref <args>
+cargo build --features mcp && ./target/debug/zshref-mcp --help
 ```
 
 From repo root: `./zshref-rs/target/debug/zshref <args>`.
@@ -57,8 +58,10 @@ From repo root: `./zshref-rs/target/debug/zshref <args>`.
 ## Testing
 
 ```sh
-cargo test          # proptests, schema/help smoke, resolver-fixture conformance
+cargo test --all-features   # proptests, schema/help smoke, resolver-fixture conformance, MCP stdio session
 ```
+
+`scripts/probe-opencode` drives the built `zshref-mcp` through a real agent client (opencode); manual, not in CI.
 
 Cross-language parity (TS `tool.execute()` vs the Rust binary) lives in
 `packages/zsh-core-tooldef/src/test/parity.test.ts`. Build the release binary first, then run vitest:

@@ -141,29 +141,11 @@ In order. A step ends with the repo's validation gates green where touched and t
 - `resolver-fixture.md` — scope, decisions (incl. those made during execution), captures, gates, follow-ups
 - _before/after:_ `zshref batch` over the parity pinned cases and `dump-help` equal throughout; the fixture's only movement across the `resolveRedir` fix is the bare `>&` / `<&` pair it was known to expose
 
-### MCP in Rust
+### DONE: MCP in Rust
 
-- one package
-  - `src/lib.rs`: corpus, resolvers, tools, prose
-  - `src/main.rs` → `zshref`
-  - `src/bin/zshref-mcp.rs` → `zshref-mcp`, `required-features = ["mcp"]` (rmcp, tokio)
-  - the default binary's dependency set is unchanged
-- protocol surface — nothing beyond:
-  - initialize with `instructions` and `capabilities.tools`
-  - `tools/list` with input and output schemas
-  - `tools/call`: text plus `structuredContent`; errors as `isError` without it
-  - stdio transport
-- glue = the `batch` request handler's shape over `tools::dispatch`: validate input -> fill schema defaults -> dispatch -> envelope
-- no `nlp_search` tool
-- keeps the embedded tooldef metadata as-is (protocol-only change); ownership moves in the next step
-- tests: the TS MCP's black-box stdio assertions ported to a Rust integration test spawning the binary; output validated against the advertised schema as `tests/common` already does
-- the TS `zshref-mcp` package, its workflow, CI jobs and `EXTRACTION.md` go at this step
-- user-facing READMEs linking to `carlwr/zshref-mcp` (`zshref-rs`, `zsh-core`, the extension) re-point to the `zshref` repo
-- its README's tool documentation moves to the `zshref-rs` README
-- _decided:_ `cargo install zshref --features mcp` is the distribution for now; the Rust SDK covers `outputSchema`/`structuredContent`
-- _before/after:_
-  - `initialize` and `tools/list` results: TS server = Rust server
-  - `tools/call` over the pinned parity cases: equal modulo scores, as `parity.test.ts` compares
+- `mcp-rust.md` — scope, decisions (incl. those made during execution), captures, gates, follow-ups
+- `capture-mcp` — one MCP stdio session against a server command, recorded into `.aux/mcp-rust/`
+- _before/after:_ `initialize` and `tools/list` TS server = Rust server; `tools/call` over the pinned parity cases equal modulo `isError: false` on success; `zshref batch` over the pinned cases and `dump-help` equal throughout
 
 ### Delete tooldef
 
@@ -187,12 +169,12 @@ In order. A step ends with the repo's validation gates green where touched and t
   - `scope.test.ts` posture → a Rust test that `src/tools` has no process/network/env access; the user-facing "no execution" promise moves to the `zshref-rs` README
   - `output-schema-prop.test.ts` → covered by Rust's schema validation of every tool response; extend with generated inputs if the step finds a gap
   - prose/metadata assertions (`tool-defs.test.ts`) → Rust unit tests
-  - `parity.test.ts`, `zshref-batch.ts`, `zshref-fingerprint.ts`, `adapter-matrix`, `export-json` → gone with their subject
+  - `parity.test.ts`, `zshref-batch.ts`, `zshref-fingerprint.ts`, `export-json` → gone with their subject
 - fingerprint machinery (`data_fingerprint.rs`, `build-inputs.txt`, `buildInputHash`) goes: its last consumer was the parity gate
   - `zshref info` reports the zsh-core version and `dataHash` instead
 - `tooldef.schema.json`: no successor
-- stamp machinery loses a level (`upstreamPkgs` = zsh-core only); no code change
-- docs: the "three adapters" narrative (root `README.md`, `DESIGN.md`, `PRINCIPLES.md`, `zshref-rs` docs) → one implementation, two adapters in one crate; rationale worth keeping moves to `zshref-rs` docs
+- `make artifacts` drops its explicit tooldef target; plain `pnpm bootstrap:upstream` covers zsh-core
+- docs: the TS tool implementation leaves the narrative (root `README.md`, `DESIGN.md`, `PRINCIPLES.md`, `zshref-rs` docs): one implementation, two adapters in one crate; rationale worth keeping moves to `zshref-rs` docs
 - _before/after:_ equal before and after the metadata moves to Rust:
   - `dump-help`
   - `zshref schema`
