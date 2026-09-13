@@ -1,9 +1,8 @@
-//! Data-source auto-detect + semantic build fingerprint for embedded data.
+//! Data-source auto-detect for the embedded corpus.
 //!
-//! See DATA-SYNC.md for the full design rationale. Short version:
 //! `src/corpus.rs` embeds JSONs via `include_bytes!`, which takes a literal
-//! path. We pick the path at compile time via `cfg(data_source = "...")`,
-//! set here based on what exists on disk:
+//! path. The path is picked at compile time via `cfg(data_source = "...")`,
+//! set here from what exists on disk:
 //!
 //!   ZSHREF_DATA_SOURCE=...              explicit override ("vendored"/"monorepo")
 //!   zshref-rs/data/                     present → cfg(data_source="vendored")
@@ -11,10 +10,7 @@
 //!   neither                             compile error with actionable message
 //!
 //! Post-extraction the monorepo branch is dead; drop it and everything
-//! collapses to the vendored mode.
-
-#[path = "src/data_fingerprint.rs"]
-mod data_fingerprint;
+//! collapses to the vendored mode. Design: DATA-SYNC.md.
 
 use std::{
     env,
@@ -33,28 +29,17 @@ fn main() {
     // editions and check-cfg-aware compilers accept the two values.
     println!("cargo:rustc-check-cfg=cfg(data_source, values(\"vendored\", \"monorepo\"))");
 
+    // Re-detect on the override changing (every make target sets it) or a
+    // present candidate vanishing (`make vendor-clean`). A missing path
+    // would re-run this script — and rebuild the crate — on every build, so
+    // an appearing candidate is only seen through the override. The
+    // embedded files themselves are tracked by rustc's dep-info.
     println!("cargo:rerun-if-env-changed=ZSHREF_DATA_SOURCE");
+    for path in [&vendored, &monorepo].into_iter().filter(|p| p.exists()) {
+        println!("cargo:rerun-if-changed={}", path.display());
+    }
     let source = data_source(&manifest, &vendored, &monorepo);
-
     println!("cargo:rustc-cfg=data_source=\"{source}\"");
-
-    // Fingerprint the data inputs; watch each file + its defining dirs so
-    // added/removed files re-trigger the build.
-    println!(
-        "cargo:rerun-if-changed={}",
-        manifest.join("build-inputs.txt").display()
-    );
-    let collected = data_fingerprint::collect(&manifest, source)
-        .unwrap_or_else(|e| panic!("collect build inputs: {e}"));
-    for dir in &collected.watch_dirs {
-        println!("cargo:rerun-if-changed={}", dir.display());
-    }
-    for entry in &collected.entries {
-        println!("cargo:rerun-if-changed={}", entry.path.display());
-    }
-    let hash = data_fingerprint::hash(&collected.entries)
-        .unwrap_or_else(|e| panic!("hash build inputs: {e}"));
-    println!("cargo:rustc-env=ZSHREF_BUILD_INPUT_HASH={hash}");
 }
 
 fn data_source(manifest: &Path, vendored: &Path, monorepo: &Path) -> &'static str {

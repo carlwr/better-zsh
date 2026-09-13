@@ -1,8 +1,0 @@
-# Build fingerprint inputs. Paths are relative to zshref-rs.
-file build-inputs.txt
-file build.rs
-file Cargo.toml
-file Cargo.lock
-# Extensions are data both implementations read, not a list duplicated in each.
-src-tree src rs
-json-data

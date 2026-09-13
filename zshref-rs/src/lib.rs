@@ -6,8 +6,6 @@ pub mod corpus;
 pub mod tools;
 
 mod batch;
-#[cfg(test)]
-mod data_fingerprint;
 mod fuzzy;
 mod output;
 mod resolver;

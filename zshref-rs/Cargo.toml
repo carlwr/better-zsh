@@ -24,7 +24,6 @@ rust-version = "1.88"                   # floor: rmcp 3.3
 include = [
     "src/**/*.rs",
     "build.rs",
-    "build-inputs.txt",
     "tests/**/*.rs",
     "Cargo.toml",
     "Cargo.lock",
@@ -66,10 +65,6 @@ tokio = { version = "1", features = ["rt", "macros"], optional = true }
 proptest = "1"
 jsonschema = { version = "0.54", default-features = false }
 regex = "1"
-sha2 = "0.10"                           # src/data_fingerprint.rs, compiled under cfg(test)
-
-[build-dependencies]
-sha2 = "0.10"
 
 [profile.release]
 lto = "thin"

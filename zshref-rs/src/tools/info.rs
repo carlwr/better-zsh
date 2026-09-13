@@ -1,4 +1,4 @@
-//! `zshref info` — emit build-/corpus-level introspection as JSON.
+//! `zshref info` — emit corpus-level introspection as JSON.
 //!
 //! Unlike the other tools, `info` has no `ToolDef` (it's a CLI-only feature,
 //! not surfaced through the MCP seam) and takes no input flags. The shape is
@@ -30,7 +30,7 @@ pub fn run(corpus: &Corpus) -> Result<Value> {
 
     Ok(json!({
         "packageVersion": corpus.index.package_version,
-        "buildInputHash": env!("ZSHREF_BUILD_INPUT_HASH"),
+        "dataHash": corpus.index.data_hash,
         "zshUpstream": {
             "tag": corpus.index.zsh_upstream.tag,
             "commit": corpus.index.zsh_upstream.commit,
@@ -53,7 +53,7 @@ mod tests {
         let obj = v.as_object().expect("top-level object");
         for key in [
             "packageVersion",
-            "buildInputHash",
+            "dataHash",
             "zshUpstream",
             "counts",
             "categories",

@@ -107,7 +107,7 @@ zshref search --query echo --category builtin --limit 5
 # Enumerate records in a category — id-only, no `mdBody`.
 zshref list --category option --limit 200
 
-# Emit corpus + upstream/build metadata.
+# Emit corpus + upstream metadata.
 zshref info
 
 # Emit JSON Schema for tool inputs + outputs (codegen / programmatic
