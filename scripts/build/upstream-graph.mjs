@@ -56,6 +56,10 @@ function depsFirst(graph, roots, keep) {
 export const upstreamOf = (pkgName, graph = workspaceGraph()) =>
   depsFirst(graph, [pkgName], name => name !== pkgName)
 
+/** `names` and their transitive dependencies, dependencies-first. */
+export const withUpstream = (names, graph = workspaceGraph()) =>
+  depsFirst(graph, names, () => true)
+
 /** Packages some other member depends on, in build order. */
 export function allUpstream(graph = workspaceGraph()) {
   const isUpstream = new Set([...graph.values()].flat())

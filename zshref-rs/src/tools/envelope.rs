@@ -17,7 +17,7 @@ pub fn mk_envelope(matches: Vec<Value>, total: usize) -> Value {
 }
 
 /// `{category, id, display, subKind?, score?}` entry for `list`/`search`.
-/// Field insertion order matches the TS adapter (→ byte-equal JSON).
+/// Field insertion order matches the TS tooldef (→ byte-equal JSON).
 pub fn mk_entry(
     category: &str,
     id: String,

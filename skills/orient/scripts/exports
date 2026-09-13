@@ -7,7 +7,7 @@ me_dir=${0:A:h}
 
 help="
 Usage:
-  $me <zsh-core|zsh-core-tooldef|zshref-mcp|vscode-better-zsh>...
+  $me <zsh-core|zsh-core-tooldef|vscode-better-zsh>...
 
 Examples:
   $me zsh-core
@@ -32,7 +32,6 @@ foreach arg ( $@ ) {
   case $arg in
        (zsh-core         ) dirs+=( packages/zsh-core/src          )
     ;; (zsh-core-tooldef ) dirs+=( packages/zsh-core-tooldef      )
-    ;; (zshref-mcp       ) dirs+=( packages/zshref-mcp            )
     ;; (vscode-better-zsh) dirs+=( packages/vscode-better-zsh/src )
     ;; (-h|--help        ) print -r -- $help && exit 0
     ;; (*                ) die "illegal arg: $arg"

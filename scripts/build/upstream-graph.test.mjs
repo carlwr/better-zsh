@@ -9,6 +9,7 @@ import {
   allUpstream,
   upstreamOf,
   upstreamPkgs,
+  withUpstream,
   workspaceGraph,
 } from "./upstream-graph.mjs"
 
@@ -21,6 +22,22 @@ test("upstreamOf returns transitive deps, dependencies first", () => {
   assert.deepEqual(upstreamOf("app", graph), ["lib", "mid"])
   assert.deepEqual(upstreamOf("mid", graph), ["lib"])
   assert.deepEqual(upstreamOf("lib", graph), [])
+})
+
+test("withUpstream lists the named packages after their deps", () => {
+  const graph = new Map([
+    ["app", ["mid"]],
+    ["mid", ["lib"]],
+    ["leaf", ["lib"]],
+    ["lib", []],
+  ])
+  assert.deepEqual(withUpstream(["leaf"], graph), ["lib", "leaf"])
+  assert.deepEqual(withUpstream(["app", "leaf"], graph), [
+    "lib",
+    "mid",
+    "app",
+    "leaf",
+  ])
 })
 
 test("allUpstream keeps only packages something depends on", () => {

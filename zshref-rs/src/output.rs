@@ -1,7 +1,6 @@
 //! Output routing: JSON/help/version → stdout, errors → stderr.
 //!
-//! Exit-code contract mirrors the CLI policy document and the existing TS
-//! adapters.
+//! Exit-code contract mirrors `CLI-POLICY.md`.
 
 use clap::error::ErrorKind;
 use clap::Command;

@@ -7,7 +7,7 @@ me=${0:A}
 model_default='openai/gpt-5.4-mini'
 
 help="
-One-shot opencode MCP probe against the local built server.
+One-shot opencode MCP probe against the locally built zshref-mcp.
 
 usage:
   ${me:t} [--mcp|--no-mcp] [--custom PROMPT]
@@ -25,6 +25,9 @@ environment:
   PROBE_MODEL
     the model opencode should use
     default: \"$model_default\"
+  ZSHREF_MCP
+    server binary to probe
+    default: target/release/zshref-mcp, else target/debug/zshref-mcp
 
 requirements:
   opencode
@@ -49,9 +52,10 @@ done
 
 model=${PROBE_MODEL:-${model_default}}
 
-pkg_root=${me:h}/../
-server_=${pkg_root}/dist/server.mjs
-server=${server_:P}
+crate=${me:h:h}
+server=${ZSHREF_MCP:-${crate}/target/release/zshref-mcp}
+[[ -x $server ]] || server=${crate}/target/debug/zshref-mcp
+server=${server:P}
 
 
 
@@ -73,7 +77,7 @@ json_mcp='
   "mcp": {
     "zshref": {
       "type"   : "local",
-      "command": ["node","'$server'"],
+      "command": ["'$server'"],
       "enabled": true
     }
   }'
@@ -90,7 +94,6 @@ json_tools='
 
 
 print-json() {
-  # local s='' && ((with_mcp)) && s=$mcpChunk
   if ((mcp))
   then print -rl -- "{" $json_schema, $json_mcp, $json_tools "}"
   else print -rl -- "{" $json_schema,            $json_tools "}"
@@ -108,7 +111,7 @@ args=(
   --pure
   --format json
   --model  $model
-  --dir    $pkg_root
+  --dir    $crate
   )
 
 
@@ -116,7 +119,7 @@ if [[ -z $custom ]]
 then
   # run-test
   agentPrompt=(
-    'Use the zshref MCP tool zsh_docs with raw=NO_NOTIFY and category=option.'
+    'Use the zshref MCP tool zsh_docs with key=NO_NOTIFY and category=option.'
     ''
     'Output exactly: id=notify feedback=input-negated. If unavailable, output TOOL_UNAVAILABLE.'
     )
@@ -128,7 +131,6 @@ then
   print "\n${me:t}: PASSED."
 else
   # run-custom
-  # opencode_ $custom
   XDG_CONFIG_HOME=$tmp \
     opencode run $args $prompt_rules$'\n\n'$custom
 fi

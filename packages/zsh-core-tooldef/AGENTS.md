@@ -1,10 +1,10 @@
 # AGENTS.md — `@carlwr/zsh-core-tooldef`
 
-Tool definitions over zsh-core; consumed by adapters (CLI, MCP).
+Tool definitions over zsh-core; consumed by the Rust adapters (CLI, MCP) through the exported JSON.
 
 ## Tooldef + adapters
 
-Tool layer is shared; adapters stay thin. Mechanics in sibling `DEVELOPMENT.md`. Thin-adapter import allow-list as code: `src/test/adapter-matrix.ts` (+ sibling `.test.ts`).
+Tool layer is shared; adapters stay thin. Mechanics in sibling `DEVELOPMENT.md`.
 
 Principle (root `AGENTS.md`, restated for proximity): tooldef consumes zsh-core; adapters consume tooldef. Do not add zsh-core query APIs just to support an adapter.
 

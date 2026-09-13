@@ -3,9 +3,11 @@
 mono     = cd zshref-rs && ZSHREF_DATA_SOURCE=monorepo
 vendored = cd zshref-rs && ZSHREF_DATA_SOURCE=vendored
 
+# The crate embeds zsh-core's and tooldef's artifacts; no workspace member
+# depends on tooldef, so the plain bootstrap would stop at zsh-core.
 .PHONY: artifacts
 artifacts:
-	pnpm bootstrap:upstream
+	pnpm bootstrap:upstream @carlwr/zsh-core-tooldef
 
 .PHONY: cli
 cli: artifacts

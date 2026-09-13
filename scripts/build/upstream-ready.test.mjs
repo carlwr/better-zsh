@@ -54,6 +54,12 @@ for (const [label, name] of [
   })
 }
 
+test("bootstrap refuses a package outside the workspace", () => {
+  const { status, stderr } = call(["bootstrap", "nope"])
+  assert.equal(status, 1)
+  assert.match(stderr, /not a workspace member: nope/)
+})
+
 test("ensure demands nothing of a package with no upstream", () => {
   // The dependency-free upstream package. A fallback to the whole workspace
   // would demand freshness of siblings it does not compile against.

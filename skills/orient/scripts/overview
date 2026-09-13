@@ -10,7 +10,7 @@ me_dir=${0:A:h}
 
 help="
 Usage:
-  $me [zsh-core|zsh-core-tooldef|zshref-mcp|vscode-better-zsh|zshref-rs]...
+  $me [zsh-core|zsh-core-tooldef|vscode-better-zsh|zshref-rs]...
 
 Print the repo overview. With subpackage args, also print file trees for those
 packages.
@@ -37,7 +37,6 @@ foreach arg ( $@ ) {
     ;;
        (zsh-core         ) dirs_ts+=( packages/zsh-core          )
     ;; (zsh-core-tooldef ) dirs_ts+=( packages/zsh-core-tooldef  )
-    ;; (zshref-mcp       ) dirs_ts+=( packages/zshref-mcp        )
     ;; (vscode-better-zsh) dirs_ts+=( packages/vscode-better-zsh )
     ;; (zshref-rs        ) dirs_rs+=( zshref-rs                  )
     ;; (*                ) die "illegal arg: $arg"
@@ -102,7 +101,6 @@ print
       'examples:' \
       "  $me zsh-core" \
       "  $me zsh-core-tooldef" \
-      "  $me zshref-mcp" \
       "  $me vscode-better-zsh" \
       "  $me zshref-rs" \
       "  $me zsh-core zsh-core-tooldef"

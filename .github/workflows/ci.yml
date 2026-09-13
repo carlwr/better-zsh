@@ -26,23 +26,7 @@ jobs:
       - run: pnpm --filter @carlwr/zsh-core run test
       - run: pnpm --filter @carlwr/zsh-core run test:pack
 
-  # Deliberate duplication: mirrors what a standalone CI would run for this
-  # package after extraction, isolating its packaging surface.
-  mcp:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@v7
-      - uses: ./.github/actions/setup-node-pnpm
-      - uses: denoland/setup-deno@v2
-        with:
-          deno-version: v2.x
-      - run: pnpm --filter @carlwr/zshref-mcp run check
-      - run: pnpm --filter @carlwr/zshref-mcp run test
-      - run: pnpm --filter @carlwr/zshref-mcp run test:pack
-
-  # Shared tool layer with several consumers; no extraction target of its own.
+  # Shared tool layer; no extraction target of its own.
   tooldef:
     runs-on: ubuntu-latest
     permissions:
@@ -125,7 +109,6 @@ jobs:
       - run: pnpm --filter @carlwr/zsh-core run verifyREGISTRY
       # No install check to pair with: ships no bin.
       - run: pnpm --filter @carlwr/zsh-core-tooldef run jsrREGISTRY:check
-      - run: pnpm --filter @carlwr/zshref-mcp run verifyREGISTRY
 
   integration:
     runs-on: ubuntu-latest
@@ -156,7 +139,6 @@ jobs:
         run: |
           pnpm --filter @carlwr/zsh-core build
           pnpm --filter @carlwr/zsh-core-tooldef build
-          pnpm --filter @carlwr/zshref-mcp build
       - run: pnpm check
       - run: pnpm test
       # The host half of `qa` (no Rust toolchain here); these gates must not be

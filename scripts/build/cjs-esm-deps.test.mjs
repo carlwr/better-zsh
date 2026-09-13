@@ -66,7 +66,7 @@ const esmOnlyRequires = (dir, cjsEntry) => {
 }
 
 const offenders = []
-for (const name of ["zsh-core", "zsh-core-tooldef", "zshref-mcp"]) {
+for (const name of ["zsh-core", "zsh-core-tooldef"]) {
   const dir = join(pkgsDir, name)
   const pkg = readJson(join(dir, "package.json"))
   const cjs = pkg.exports?.["."]?.require

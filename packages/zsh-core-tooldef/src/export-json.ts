@@ -64,8 +64,7 @@ export function fmtToolDefsJson(
  * Write `tooldef.json` + `tooldef.schema.json` under `outDir`. Invoked from
  * `build.ts` after `tsup` emits the bundle.
  *
- * The Rust CLI embeds `tooldef.json`; TypeScript adapters use in-memory
- * `toolDefs` and normally skip this artifact.
+ * The Rust crate embeds `tooldef.json`.
  */
 export function writeToolDefsJson(
   toolDefs: readonly ToolDef[],

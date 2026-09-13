@@ -109,8 +109,8 @@ test("the hash is stable across calls", () => {
 test("a package that never stamps is never fresh", () => {
   // Downstream packages carry no stamp: an absent stamp must read as stale,
   // which is also the interrupted-build case (`clear` ran, `write` did not).
-  assert.equal(readStamp(dirs.get("@carlwr/zshref-mcp")), undefined)
-  assert.equal(isFresh("@carlwr/zshref-mcp"), false)
+  assert.equal(readStamp(dirs.get("zshref-web")), undefined)
+  assert.equal(isFresh("zshref-web"), false)
 })
 
 test("a stamp records the files the build produced", () => {

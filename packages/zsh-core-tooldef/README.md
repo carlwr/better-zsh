@@ -17,10 +17,7 @@ The package knows about `zsh-core` only.
 
 ## Who consumes this
 
-Two adapters today:
-
-- [`@carlwr/zshref-mcp`](https://github.com/carlwr/zshref-mcp) — stdio MCP server.
-- [`zshref`](https://github.com/carlwr/zshref) — Rust+clap CLI. Consumes the JSON-exported `tooldef.json` artifact baked into the binary at build time.
+- [`zshref`](https://github.com/carlwr/zshref) — the `zshref` CLI and the `zshref-mcp` MCP server, in Rust. Both consume the JSON-exported `tooldef.json` artifact baked into the binaries at build time.
 
 Per-adapter glue collapses into a walk over `toolDefs`: tool name, description, input schema, and output schema live in exactly one place and every adapter picks them up automatically.
 
@@ -48,7 +45,7 @@ for (const td of toolDefs) {
 }
 ```
 
-Adapters plug `execute` into their transport of choice. The MCP server registers `name` + `inputSchema` + `outputSchema` + `execute` with `@modelcontextprotocol/sdk` (and emits `structuredContent` alongside text on success); the Rust CLI materialises subcommands from the JSON-serialised `toolDefs` at build time and exposes `outputSchema` via `zshref schema`.
+Adapters plug `execute` into their transport of choice. The Rust binaries embed the JSON-serialised `toolDefs` at build time; the CLI materialises its subcommands from it and the MCP server its `tools/list`, each exposing `outputSchema` (`zshref schema`, `tools/list`).
 
 ## Scope fence (product feature)
 

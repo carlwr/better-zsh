@@ -12,9 +12,10 @@ This package owns the pure tool implementations plus `ToolDef` metadata; every c
 
 ## Tool naming
 
-Tools are named `zsh_<verb>[_<object>]`.
-Keep the `zsh_` prefix and use `snake_case`.
-For the rationale, see `packages/zshref-mcp/DEVELOPMENT.md`.
+Tools are named `zsh_<verb>[_<object>]`; keep the `zsh_` prefix, use `snake_case`, never move `zsh` into the middle or tail. Why:
+
+- MCP clients present tools from multiple servers in one flat namespace; the prefix avoids collisions with generic tool names
+- the prefix primes domain reasoning and makes logs self-describing
 
 ## `brief` vs `flagBriefs` vs `description`
 
@@ -46,7 +47,4 @@ Any category enumeration in tool descriptions must come from zsh-core exports; d
 
 ## Consumers
 
-- `@carlwr/zshref-mcp` — stdio MCP server.
-- `zshref-rs/` — Rust+clap CLI; consumes the tool-def JSON artifact this package generates, baked into the binary via `include_bytes!`.
-
-Thin MCP source: imports restricted to the root `@carlwr/zsh-core*` packages and an allow-list of named symbols — `src/test/adapter-matrix.ts`, enforced by `adapter-matrix.test.ts`.
+- `zshref-rs/` — the `zshref` CLI and the `zshref-mcp` MCP server; consume the tool-def JSON artifact this package generates, baked into the binaries via `include_bytes!`.

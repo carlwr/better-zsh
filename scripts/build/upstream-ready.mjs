@@ -8,6 +8,7 @@ import {
   repoRoot,
   upstreamOf,
   upstreamPkgs,
+  withUpstream,
 } from "./upstream-graph.mjs"
 
 const args = process.argv.slice(2)
@@ -68,8 +69,17 @@ function callerPkg() {
   )
 }
 
+// `bootstrap [pkg...]`: the workspace's upstream packages, or the named
+// packages with their upstream — for a consumer outside the workspace graph
+// (the Rust crate embeds artifacts of a package no member depends on).
+function bootstrapTargets(names) {
+  for (const name of names)
+    if (!dirOf.has(name)) die(`bootstrap: not a workspace member: ${name}`)
+  return names.length ? withUpstream(names) : upstreamPkgs
+}
+
 const commands = new Map([
-  ["bootstrap", () => buildUpstream(upstreamPkgs)],
+  ["bootstrap", () => buildUpstream(bootstrapTargets(args.slice(1)))],
   ["ensure", () => buildUpstream(upstreamOf(callerPkg()))],
   [
     "run",
