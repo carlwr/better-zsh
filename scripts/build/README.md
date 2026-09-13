@@ -27,6 +27,8 @@ Rationale only. Exact commands live in `package.json` and nearby scripts.
   Pattern-matched shell strings to forbid raw upstream builds; the stamp checks the same claim at the point of use, where it cannot be spelled around.
 - Rationale comments in one `.mjs` file.
   The design spans multiple scripts.
+- pnpm's topological order alone.
+  Re-weighed after the 2026 reorg left one upstream and a star graph: `pnpm -r` orders one script across members, never a build before a member's own typecheck or test; the crate reaches the upstream through `make`, outside pnpm; two leaves still fan out concurrently. The stamp keeps a readiness call at a fraction of a second against seconds for the build it skips, and `qa` asks repeatedly.
 
 ## Enforcement
 
