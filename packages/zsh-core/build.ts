@@ -2,11 +2,13 @@ import { cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 import { build } from "tsup"
+import { buildResolverFixture } from "./scripts/resolver-fixture.ts"
 import { loadCorpus } from "./src/docs/corpus.ts"
 import {
   hashRecordFiles,
   jsonArtifact,
   jsonDataFiles,
+  resolverFixture,
 } from "./src/docs/json-artifacts.ts"
 import {
   assertAsciiIdentity,
@@ -27,6 +29,7 @@ const pkgDir =
     : dirname(fileURLToPath(import.meta.url))
 const distDir = join(pkgDir, "dist")
 const jsonDir = join(pkgDir, "artifacts", "json")
+const fixtureDir = join(pkgDir, "artifacts", resolverFixture.dir)
 
 /**
  * One bundle per non-glob `exports` subpath, read from the manifest rather
@@ -55,8 +58,10 @@ function writeJson(path: string, data: unknown) {
 }
 
 function writeJsonArtifacts() {
-  rmSync(jsonDir, { recursive: true, force: true })
-  mkdirSync(jsonDir, { recursive: true })
+  for (const dir of [jsonDir, fixtureDir]) {
+    rmSync(dir, { recursive: true, force: true })
+    mkdirSync(dir, { recursive: true })
+  }
 
   const corpus = loadCorpus()
 
@@ -80,11 +85,12 @@ function writeJsonArtifacts() {
     writeFileSync(join(jsonDir, file), text, "utf8")
   }
 
+  const dataHash = hashRecordFiles(recordTexts)
   const index = {
     version: 1,
     packageVersion: PKG_VERSION,
     zshUpstream: ZSH_UPSTREAM,
-    dataHash: hashRecordFiles(recordTexts),
+    dataHash,
     files: [...jsonDataFiles],
     counts,
     // Canonical taxonomy lists, consumed by out-of-process consumers (the
@@ -100,6 +106,10 @@ function writeJsonArtifacts() {
   }
 
   writeJson(join(jsonDir, "index.json"), index)
+  writeJson(
+    join(fixtureDir, resolverFixture.file),
+    buildResolverFixture(corpus, { packageVersion: PKG_VERSION, dataHash }),
+  )
 }
 
 ;(async () => {

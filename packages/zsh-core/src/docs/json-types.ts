@@ -1,4 +1,5 @@
 import type { JsonCountKey, JsonDataFile } from "./json-artifacts.ts"
+import type { ResolverFeedback } from "./resolver.ts"
 import type { DocCategory, DocRecordMap } from "./taxonomy.ts"
 
 type BrandTag =
@@ -114,4 +115,28 @@ export interface JsonIndex {
   readonly docCategoryLabels: { readonly [K in DocCategory]: string }
   /** Hook base names used by the special-function resolver. */
   readonly hookNames: readonly string[]
+}
+
+/** What the resolvers answer for one raw input; `null` where they answer nothing. */
+export interface ResolverFixtureCase {
+  readonly input: string
+  /** `lookupRaw` result — direct corpus-key lookup, then the category's resolver. */
+  readonly id: string | null
+  readonly feedback: ResolverFeedback | null
+}
+
+/** @minItems 1 */
+export type ResolverFixtureCases = readonly ResolverFixtureCase[]
+
+/**
+ * Resolver conformance fixture: per category, pinned and generated inputs with
+ * the answers computed over the corpus identified by `dataHash`. A mirror
+ * resolver is conformant when it gives the same answers.
+ */
+export interface ResolverFixtureJson {
+  readonly version: 1
+  readonly packageVersion: string
+  /** `JsonIndex.dataHash` of the corpus the answers were computed over. */
+  readonly dataHash: string
+  readonly cases: { readonly [K in DocCategory]: ResolverFixtureCases }
 }

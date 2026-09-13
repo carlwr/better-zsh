@@ -1,7 +1,7 @@
 name: Release zsh-core
 
 # Triggers:
-#   - tag push `zsh-core-v*` → publish to npm + JSR, attach JSON release assets
+#   - tag push `zsh-core-v*` → publish to npm + JSR, attach the release assets
 #   - workflow_dispatch → dry-run unless input `dry_run` is false
 #
 # A real release needs tokenless OIDC granted to this repo for
@@ -99,18 +99,18 @@ jobs:
 
       # Repacked rather than reused: keeps the uploaded bytes tied to the
       # build this job last ran.
-      - name: Pack JSON release assets
-        run: pnpm --filter @carlwr/zsh-core run pack:json
+      - name: Pack release assets
+        run: pnpm --filter @carlwr/zsh-core run pack:release
 
-      - name: Attest JSON release assets
+      - name: Attest release assets
         if: startsWith(github.ref, 'refs/tags/zsh-core-v')
         uses: actions/attest-build-provenance@v4
         with:
-          subject-path: packages/zsh-core/.aux/release/zsh-core-json.tar.gz
+          subject-path: packages/zsh-core/.aux/release/*.tar.gz
 
       # Create-then-upload rather than `create` with the assets inline: a
       # re-run after a partial failure finds the release already there.
-      - name: Attach JSON release assets
+      - name: Attach release assets
         if: startsWith(github.ref, 'refs/tags/zsh-core-v')
         working-directory: packages/zsh-core/.aux/release
         env:
@@ -120,7 +120,5 @@ jobs:
           version=${TAG#zsh-core-v}
           gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" \
             --title "zsh-core $version" \
-            --notes "Generated zsh corpus JSON and JSON Schema for @carlwr/zsh-core $version."
-          gh release upload "$TAG" --clobber \
-            zsh-core-json.tar.gz \
-            zsh-core-json.tar.gz.sha256
+            --notes "Generated zsh corpus JSON, JSON Schema and resolver conformance fixture for @carlwr/zsh-core $version."
+          gh release upload "$TAG" --clobber *.tar.gz *.tar.gz.sha256

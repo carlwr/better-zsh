@@ -6,6 +6,7 @@ import {
   hashRecordFiles,
   jsonDataFiles,
   jsonFiles,
+  resolverFixture,
   schemaFile,
 } from "../docs/json-artifacts"
 
@@ -35,6 +36,20 @@ describe("generated JSON is a release asset, not a registry payload", () => {
         existsSync(join(pkgDir, "artifacts", "schema", schemaFile(file))),
       ).toBe(true)
     }
+  })
+
+  test("the resolver fixture is emitted with its schema", () => {
+    const dir = join(pkgDir, "artifacts", resolverFixture.dir)
+    for (const file of [
+      resolverFixture.file,
+      schemaFile(resolverFixture.file),
+    ]) {
+      expect(existsSync(join(dir, file))).toBe(true)
+    }
+    expect(
+      readJson(join("artifacts", resolverFixture.dir, resolverFixture.file))
+        .dataHash,
+    ).toBe(readJson("artifacts/json/index.json").dataHash)
   })
 
   test("index.dataHash matches the emitted record bytes", () => {

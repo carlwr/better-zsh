@@ -11,7 +11,7 @@ Library-first: the VS Code extension, MCP server, and Rust CLI in the same monor
 - **Tiny root** — `loadCorpus`, `DocCorpus`, aggregate corpus metadata.
 - **Focused subpaths** — `./types`, `./analysis`, `./resolver`, `./taxonomy`, `./render`, `./assets`, `./meta`, `./json`.
 - **Orthogonal primitives** — brands/types, raw-to-doc resolution, markdown rendering, and static analysis stay separate.
-- **Pre-parsed JSON artifacts** — the same records plus JSON Schema, published as a GitHub release asset, for consumers that want the corpus without importing the runtime.
+- **Release assets** — the records as JSON plus JSON Schema, and a resolver conformance fixture for resolver mirrors; attached to the GitHub release tag for consumers that want the corpus without the runtime.
 
 Public reading surface: `dist/types/*.d.ts` after `pnpm build`.
 

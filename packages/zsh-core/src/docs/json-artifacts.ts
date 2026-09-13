@@ -72,6 +72,15 @@ export function schemaFile(file: string): string {
   return file.replace(/\.json$/, ".schema.json")
 }
 
+// The resolver conformance fixture is a release asset of its own; its
+// `artifacts/` subdir, file and schema root derive from one base.
+const fixtureBase = "resolver-fixture"
+export const resolverFixture = {
+  dir: fixtureBase,
+  file: `${fixtureBase}.json`,
+  schema: "ResolverFixtureJson",
+} as const
+
 /**
  * Lets a consumer ask "same bytes as the release I already have?" without a
  * version line someone has to author and keep honest.
