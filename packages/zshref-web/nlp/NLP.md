@@ -114,5 +114,4 @@ Recorded during the move from the Rust CLI, deferred past its parity gates.
 - retrieval-text category label → zsh-core's `docCategoryLabels` (`nlp/retrieval-text.ts` derives it mechanically today); re-embeds
 - embed without padded batching (`nlp/embedder-node.ts`: padding to the longest row costs ~4× against single calls on CPU; kept for the captures' numerics); re-embeds
 - memoize the per-record overlap haystack in `rank.ts` `wordOverlap` — rebuilt and lowercased per query, so a mechanical ranking pass takes a minute and the sweep over an hour; behaviour-preserving, touches the browser ranker
-- zsh-core `resolveRedir` mirror gap: a bare two-character redirection operator with no tail resolves to the shorter one-character operator's `word`-tailed record; the Rust mirror returns nothing, and zsh lexes the longest operator, so Rust looks right. Fix in zsh-core, its Rust mirror and the tooldef parity case; two train-split queries move one `redirection` row of the sentence eval
 - SPA deploy — hosting intent in `../AGENTS.md`

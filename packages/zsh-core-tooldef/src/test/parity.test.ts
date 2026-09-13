@@ -123,6 +123,12 @@ const PINNED_CASES: readonly Case[] = [
     name: "glob_qualifier_extended",
     input: { key: "(#q@)", category: "glob_qualifier" },
   },
+  // the longest redirection operator wins: none of these names a record
+  ...[">&", "<&", "<&file"].map(key => ({
+    tool: "zsh_docs",
+    name: `redir_no_fallback_${key}`,
+    input: { key, category: "redirection" },
+  })),
 
   // search
   { tool: "zsh_search", name: "query_printf", input: { query: "printf" } },

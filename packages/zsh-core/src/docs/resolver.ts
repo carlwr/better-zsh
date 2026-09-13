@@ -32,7 +32,7 @@
  * (lossy normalization)".
  */
 
-import { escapeRegExp, isDefined, isSingle } from "@carlwr/typescript-extra"
+import { escapeRegExp, isSingle } from "@carlwr/typescript-extra"
 import { mkDocumented } from "./brands.ts"
 import type { DocCorpus } from "./corpus.ts"
 import {
@@ -91,8 +91,10 @@ function resolveByKey<K extends DocCategory>(
 
 /**
  * Redirection resolver. Decomposes a raw token (`"1>&2"`) into group-op +
- * tail; disambiguates shared group-ops by matching the user-input tail shape
- * against the doc's literal tail word ("number", "word", `-`, `p`, ...).
+ * tail. Candidates are the records whose group-op is the longest prefix of
+ * the token — zsh lexes the longest operator, so `>&` never falls back to
+ * `>` — and the user-input tail shape against each doc's literal tail word
+ * ("number", "word", `-`, `p`, ...) picks one of them.
  */
 function resolveRedir(
   c: DocCorpus,
@@ -113,30 +115,32 @@ function docTail(sig: string, groupOpLen: number): string {
 
 function matchRedirKey(c: DocCorpus, t: string): string | undefined {
   const text = t.replace(/^[0-9]+/, "")
-  if (!text || /^<<-?$/.test(text)) return undefined
-
-  const matches = [...c.redirection.values()]
-    .map(doc => redirMatch(doc, text))
-    .filter(isDefined)
-
-  const longest = Math.max(...matches.map(m => m.groupLen), -1)
-  const hit = matches.filter(m => m.groupLen === longest)
+  const docs = [...c.redirection.values()]
+  const longest = Math.max(
+    0,
+    ...docs.map(doc => groupOpPrefixLen(doc.groupOp, text)),
+  )
+  if (longest === 0) return undefined
+  const hit = docs.filter(
+    doc =>
+      groupOpPrefixLen(doc.groupOp, text) === longest &&
+      redirTailMatches(doc, text.slice(longest)),
+  )
   return isSingle(hit) ? hit[0].slug : undefined
 }
 
-interface RedirMatch {
-  readonly slug: string
-  readonly groupLen: number
+/** Length of `groupOp` as a prefix of `text`, 0 when it is none; `<<[-]` stands for `<<-` or `<<`. */
+function groupOpPrefixLen(groupOp: string, text: string): number {
+  const ops = groupOp === "<<[-]" ? ["<<-", "<<"] : [groupOp]
+  return ops.find(op => text.startsWith(op))?.length ?? 0
 }
 
-function redirMatch(doc: RedirDoc, text: string): RedirMatch | undefined {
-  const { sig, slug, groupOp } = doc
-  const group = groupOp === "<<[-]" ? "<<-?" : escapeRegExp(groupOp)
-  const tail = docTail(sig, groupOp.length)
-  const tailPat =
-    groupOp === "<<[-]" ? String.raw`\s*\S.*` : redirTailPattern(groupOp, tail)
-  const m = text.match(new RegExp(`^(${group})${tailPat}$`))
-  return m ? { slug, groupLen: m[1]?.length ?? 0 } : undefined
+function redirTailMatches({ sig, groupOp }: RedirDoc, tail: string): boolean {
+  const pat =
+    groupOp === "<<[-]"
+      ? String.raw`\s*\S.*`
+      : redirTailPattern(groupOp, docTail(sig, groupOp.length))
+  return new RegExp(`^${pat}$`).test(tail)
 }
 
 function redirTailPattern(groupOp: string, tail: string): string {

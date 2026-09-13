@@ -202,7 +202,7 @@ Ids are **shell-safe slugs** — printable ASCII, no whitespace, non-empty. The 
 ### Redirection: shell-safe slug identity, sig surface
 
 - Identity is `slug`, derived from `sig` by replacing whitespace with `_` (`>_word`, `<<[-]_word`). `sig` keeps the upstream form (`> word`).
-- `groupOp` is the shared lookup bucket; the resolver disambiguates by tail — corpus-aware, not plain map lookup.
+- `groupOp` is the shared lookup bucket: the longest `groupOp` prefixing the token wins (zsh lexes the longest operator — `>&` never falls back to `>`), then the resolver disambiguates by tail — corpus-aware, not plain map lookup.
 - Both forms round-trip through `docs`: direct on `slug`, close-variant resolver on `sig`.
 - `OptFlag` and `RedirOp` are secondary-index brands outside the `Observed`/`Documented` split.
 

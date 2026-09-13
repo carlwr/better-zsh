@@ -75,12 +75,26 @@ describe("resolveRedir", () => {
     ["> word", ">_word"],
     [">& number", ">&_number"],
     ["<<[-] word", "<<[-]_word"],
+    // the longest operator wins; `>` / `<` never claim a longer operator's token
+    [">>", ">>_word"],
+    ["<>", "<>_word"],
+    [">|", ">|_word"],
+    ["&>", "&>_word"],
+    [">&file", ">&_word"],
+    [">&-", ">&_-"],
   ])("%s -> %s", redir.hit)
 
-  test.each(["<<", "<<-"])(
-    "incomplete here-doc %s does not resolve",
-    redir.miss,
-  )
+  test.each([
+    // incomplete here-doc
+    "<<",
+    "<<-",
+    // `>&` / `<&` without an operand, or `<&` with one no record documents
+    ">&",
+    "<&",
+    "2>&",
+    "<&file",
+    "<& file",
+  ])("%s does not resolve", redir.miss)
 })
 
 describe("parens-agnostic flag resolvers", () => {
