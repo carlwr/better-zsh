@@ -37,8 +37,6 @@ describe("docSubKind", () => {
 
   test("every category resolves without throwing on a sample record", () => {
     for (const cat of docCategories) {
-      // Skip stub categories with no records yet (e.g. mathfunc pending extractor).
-      if (corpus[cat].size === 0) continue
       expect(() => subKindOf(cat, firstRec(cat))).not.toThrow()
     }
   })

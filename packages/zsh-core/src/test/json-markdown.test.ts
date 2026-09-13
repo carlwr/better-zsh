@@ -34,14 +34,12 @@ describe.runIf(existsSync(jsonDir))(
     test.each(jsonDataFiles)(
       "%s records have a non-empty mdBody string",
       file => {
-        // Stub categories (e.g. mathfuncs.json) have zero records during
-        // development; skip the non-empty guard for them.
         const recs = loadRecs<MdRec>(file)
-        if (recs.length === 0) return
+        expect(recs.length).toBeGreaterThan(0)
         for (const r of recs) {
           expect(typeof r.mdBody).toBe("string")
           expect(r.mdBody.length).toBeGreaterThan(0)
-          // The title now travels as its own field (split out of mdBody).
+          // The title travels as its own field, split out of `mdBody`.
           expect(typeof r._title).toBe("string")
           expect(r._title.length).toBeGreaterThan(0)
         }

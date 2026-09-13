@@ -61,7 +61,7 @@ cargo test --all-features   # proptests, schema/help smoke, resolver-fixture con
 
 ## Test/use zsh completions manually
 
-Configure completions for the curren zsh interactive session:
+Configure completions for the current zsh interactive session:
 ```sh
 source =(cd zshref-rs && cargo run --quiet -- completions zsh)
 ```

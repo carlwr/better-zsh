@@ -72,7 +72,7 @@ proptest! {
     /// docs round-trip: when `docs --key=KEY` resolves, the first hit's
     /// canonical `(category, id)` re-queries to the same id under
     /// `docs --category=C --key=ID` — pins direct-hit precedence (see
-    /// DESIGN.md §"docs: direct ∥ resolver"). The strategy covers
+    /// DESIGN.md §"`lookupRaw`: direct ∥ resolver"). The strategy covers
     /// reserved words (`while`), complex commands (`[[`), redir sigils
     /// (`<<<`), builtins (`echo`), and options. Property-level companion
     /// to the exhaustive `docs_roundtrip_over_corpus` in `cli_invariants.rs`.

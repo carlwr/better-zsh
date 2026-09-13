@@ -41,9 +41,8 @@ pub fn resolver_fixture_path() -> std::path::PathBuf {
 
 const INDEX_JSON: &[u8] = include_bytes!(corpus_path!("index.json"));
 
-// `include_bytes!` requires literal compile-time paths → hand-maintained in
-// alphabetical order matching `index.json.files`. Category→file→bytes mapping
-// is driven at runtime by `index.json.categoryFiles`.
+// `include_bytes!` requires literal compile-time paths → hand-maintained;
+// `load_corpus` asserts every file `index.json.categoryFiles` names is here.
 const FILE_BYTES: &[(&str, &[u8])] = &[
     (
         "arith-ops.json",
@@ -288,18 +287,18 @@ mod tests {
 
     #[test]
     fn record_id_key_populated_for_every_category() {
-        // If TS stopped emitting `_id`, Rust would silently read "" everywhere.
-        // Skip stub categories with zero records (extractor lands in a later task).
+        // If zsh-core stopped emitting `_id`, Rust would silently read ""
+        // everywhere.
         let corpus = load_corpus().expect("load_corpus");
         for cat in &corpus.categories {
-            let Some(first) = cat.records.first() else {
-                continue; // stub category with no records yet — skip
-            };
+            let first = cat
+                .records
+                .first()
+                .unwrap_or_else(|| panic!("category {} has no records", cat.name));
             let id = crate::tools::record_fields::record_id(cat.name, first);
             assert!(
                 !id.is_empty(),
-                "baked `_id` field is absent or empty for category {} — \
-                 packages/zsh-core/build.ts must emit `_id` on every record",
+                "baked `_id` field is absent or empty for category {}",
                 cat.name
             );
         }
