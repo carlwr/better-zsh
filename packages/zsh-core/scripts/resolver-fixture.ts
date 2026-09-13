@@ -216,6 +216,14 @@ const redirInputs: ExtraInputs<"redirection"> = ({ sig, groupOp }) => {
   return ops.flatMap(op => [op, `${op}${ex}`, `${op} ${ex}`, `2${op}${ex}`])
 }
 
+const colonFlagInputs: ExtraInputs<
+  "subscript_flag" | "param_expn_flag"
+> = d => [`(${d.flag})`, `(${d.sig})`]
+
+const globInputs =
+  (marker: string): ExtraInputs<"glob_flag" | "glob_qualifier"> =>
+  d => [`(${marker}${d.flag})`, `(${d.flag})`]
+
 /**
  * Per-record surface forms beyond id and display: the shapes a category's
  * resolver accepts (sigils, wrapping parens, negation, operands).
@@ -229,10 +237,10 @@ const extraInputs: { readonly [K in DocCategory]?: ExtraInputs<K> } = {
     `$${d.name}[1]`,
   ],
   redirection: redirInputs,
-  subscript_flag: d => [`(${d.flag})`, `(${d.sig})`],
-  param_expn_flag: d => [`(${d.flag})`, `(${d.sig})`],
-  glob_flag: d => [`(#${d.flag})`, `(${d.flag})`],
-  glob_qualifier: d => [`(#q${d.flag})`, `(${d.flag})`],
+  subscript_flag: colonFlagInputs,
+  param_expn_flag: colonFlagInputs,
+  glob_flag: globInputs("#"),
+  glob_qualifier: globInputs("#q"),
   special_function: d => [`${d.name}_functions`],
 }
 
