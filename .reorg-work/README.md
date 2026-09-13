@@ -5,7 +5,7 @@ read-when: doing or reviewing the reorg work, or reading why the repo shape chan
 
 # Reorg work
 
-Steps, decisions and rationale for the 2026 reorg. Deleted once every step is done and verified.
+Steps, decisions and rationale for the 2026 reorg. Deleted once every step is done and verified and the Deferred list is empty.
 
 ## About this directory
 
@@ -184,17 +184,21 @@ In order. A step ends with the repo's validation gates green where touched and t
 - _decided, the tooldef follow-up on consumer-less zsh-core exports:_ `RECORDS_TOTAL` dropped with its drift test (hand-maintained, no consumer); `subKindEnums`, `resolverFeedbackKindSchemas`, `resolverFeedbackKinds` kept as the canonical derived sources — `subKindEnums` made lazy, its eager form parsed the corpus on import of the index entry
 - follow-ups re-homed: the crate-side ones → `zshref-rs/AGENTS.md`; the NLP ones already in `NLP.md`
 - orient skill: `overview` and `exports` learn `zshref-web`
-- this dir: deleted by the maintainer once the closing commit is reviewed; the Deferred list below needs a home first
+- this dir: outlives the steps until the Deferred list below is empty
 
 ## Deferred
 
-Decided not to decide now:
+Decided not to decide during the reorg. An item leaves this list once it is decided and executed, or moved to another home; this dir is deleted when the list is empty. Roughly chronological:
 
-- npm/npx distribution of the Rust binaries — if ever: inside the `zshref-rs` repo, same release workflow (cargo-dist is a candidate)
-- renaming: top repo, workspace packages, Rust crate and binary
-- performing the `zshref-rs` split; whether a thin `zshref-mcp` repo is wanted
-- a `zshref-web` split into its own repo — no technical driver; its payoff if done: the SPA's toolchain and dependency churn (SvelteKit, Vite, transformers.js) leave the workspace lockfile and root `qa`
-- an MCP discoverability shim in the extension
-- deprecating the published alphas of `@carlwr/zsh-core-tooldef` and `@carlwr/zshref-mcp` on npm and JSR; with it, revoking the trusted-publisher grants that still name their deleted release workflows
-- the `zsh_docs` description (`docs_long` in `zshref-rs/src/tools/prose.rs`): its `matches[]` property list omits `title` and files the optional `subKind` / `feedback` under "mandatory" — ported verbatim; product text (`--help`, MCP descriptions), so a prose fix of its own, not a reorg change
+- the `zsh_docs` description text (`docs_long` in `zshref-rs/src/tools/prose.rs`), ported verbatim from tooldef: its `matches[]` property list omits `title` and files the optional `subKind` / `feedback` under "mandatory" — product text (`--help`, MCP), so a prose fix of its own
 - the NLP follow-ups recorded by the move: `packages/zshref-web/nlp/NLP.md` §Follow-ups
+- deploy the SPA: the hosting intent under End state (`packages/zshref-web/AGENTS.md` §Hosting intent for the prerequisites)
+- deprecate the published alpha of `@carlwr/zsh-core-tooldef` on npm and JSR + revoke the trusted-publisher grants
+- an MCP discoverability shim in the extension: register `zshref-mcp` through VS Code's MCP server definition provider API
+- npm/npx distribution of the Rust binaries: decide if + possibly arrange (if yes: probably inside the `zshref` repo, same release workflow; cargo-dist a candidate)
+  - when done:
+    - deprecate the published alpha of `@carlwr/zshref-mcp` on npm and JSR; with them, revoke the trusted-publisher grants
+- renaming: the top repo, the workspace packages, the Rust crate and its binaries
+- the `zshref-rs` split into its own repo (`zshref-rs/EXTRACTION.md`); with it, whether a thin `zshref-mcp` repo is wanted
+- a `zshref-web` split into its own repo — no technical driver; the payoff: the SPA's toolchain and dependency churn (SvelteKit, Vite, transformers.js) leave the workspace lockfile and root `qa`
+  
