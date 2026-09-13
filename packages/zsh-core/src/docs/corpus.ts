@@ -204,9 +204,8 @@ export const loadCorpus: () => DocCorpus = cached(() => {
  * Per-category sorted, de-duplicated `subKind` values in the corpus;
  * `undefined` when `docSubKind[c]` is `undefined` for every record.
  *
- * Tooldef output schemas interpolate these into JSON Schema `enum` keywords
- * (AGENTS.md §"Never enumerate or count `DocCategory`"). Eager, cached, total
- * over `DocCategory`.
+ * The source for JSON Schema `enum` keywords and the like (AGENTS.md §"Never
+ * enumerate or count `DocCategory`"). Eager, cached, total over `DocCategory`.
  */
 type SubKindEnums = Readonly<{
   [K in DocCategory]: readonly string[] | undefined

@@ -514,8 +514,8 @@ const feedbackOverrides: { readonly [K in DocCategory]?: FeedbackResolver } = {
 }
 
 /**
- * JSON Schema fragment per `ResolverFeedback` kind. Source of truth for
- * tooldef's `Feedback` `$def`; per-kind extra fields (`subscript`) live here.
+ * JSON Schema fragment per `ResolverFeedback` kind; per-kind extra fields
+ * (`subscript`) live here.
  */
 const kindSchema = (
   kind: ResolverFeedback["kind"],
@@ -549,8 +549,8 @@ export const resolverFeedbackKinds: readonly ResolverFeedback["kind"][] =
  * Lossy-normalization feedback for a raw user-code token. `undefined` when
  * the input did not resolve or resolution was loss-free (canonical form).
  *
- * Parametric over `DocCategory`: tooldef and schema layers stay free of
- * per-category branches.
+ * Parametric over `DocCategory`: consumers stay free of per-category
+ * branches.
  */
 export function resolverFeedback<K extends DocCategory>(
   corpus: DocCorpus,

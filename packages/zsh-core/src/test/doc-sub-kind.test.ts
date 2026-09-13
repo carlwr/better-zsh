@@ -44,8 +44,8 @@ describe("docSubKind", () => {
   })
 
   // Specific instance of a broader future invariant: per-category structural
-  // fields should follow always-or-never on the corpus, so the tool-layer
-  // output schema can encode presence structurally (required-when-non-undefined,
+  // fields should follow always-or-never on the corpus, so a tool output
+  // schema can encode presence structurally (required-when-non-undefined,
   // forbidden-when-undefined) rather than as optional. See DESIGN.md
   // §"`subKind` is always-or-never per category". When a second instance of
   // this pattern arises, generalize this test rather than adding a parallel

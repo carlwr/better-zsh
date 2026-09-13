@@ -1,5 +1,5 @@
-// Pinned fast-check seed, the same as the zsh-core and tooldef test setups
-// (TESTING.md: a fixed checked-in seed), so property tests replay identically
+// Pinned fast-check seed, the same as zsh-core's test setup (TESTING.md: a
+// fixed checked-in seed), so property tests replay identically
 // run to run. Not a test file: `_`-prefixed and outside the test glob.
 
 import fc from 'fast-check';

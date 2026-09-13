@@ -35,7 +35,6 @@ Run selectively (TS packages only):
 ```sh
 # print exports (grep-friendly; out lines are "<filename> <identifier>"):
 ./skills/orient/scripts/exports zsh-core
-./skills/orient/scripts/exports zsh-core-tooldef
 ./skills/orient/scripts/exports vscode-better-zsh
 
 # print extension provider metadata:

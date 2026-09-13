@@ -70,8 +70,7 @@ function callerPkg() {
 }
 
 // `bootstrap [pkg...]`: the workspace's upstream packages, or the named
-// packages with their upstream — for a consumer outside the workspace graph
-// (the Rust crate embeds artifacts of a package no member depends on).
+// packages with their upstream.
 function bootstrapTargets(names) {
   for (const name of names)
     if (!dirOf.has(name)) die(`bootstrap: not a workspace member: ${name}`)

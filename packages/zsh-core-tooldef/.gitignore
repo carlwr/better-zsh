@@ -1,6 +1,0 @@
-dist
-artifacts
-node_modules
-.turbo
-*.tsbuildinfo
-deno.lock

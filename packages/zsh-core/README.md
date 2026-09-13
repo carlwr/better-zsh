@@ -55,7 +55,6 @@ if (pid) {
 
 ## See also
 
-- [`@carlwr/zsh-core-tooldef`](https://github.com/carlwr/better-zsh/tree/main/packages/zsh-core-tooldef) — declarative tool definitions over this library, consumed by the CLI and MCP adapters.
 - [`zshref`](https://github.com/carlwr/zshref) — single-file executable Rust CLI, and the same reference as a Model Context Protocol server.
 - [`better-zsh`](https://github.com/carlwr/better-zsh/tree/main/packages/vscode-better-zsh) — VS Code extension.
 - [`DESIGN.md`](https://github.com/carlwr/better-zsh/blob/main/DESIGN.md) — architectural rationale.

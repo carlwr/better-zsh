@@ -5,7 +5,6 @@ on:
     paths:
       - "zshref-rs/**"
       - "packages/zsh-core/**"
-      - "packages/zsh-core-tooldef/**"
       - "Makefile"
       - ".github/workflows/ci-rust.yml"
       - ".github/actions/**"
@@ -17,7 +16,6 @@ on:
     paths:
       - "zshref-rs/**"
       - "packages/zsh-core/**"
-      - "packages/zsh-core-tooldef/**"
       - "Makefile"
       - ".github/workflows/ci-rust.yml"
       - ".github/actions/**"
@@ -56,11 +54,6 @@ jobs:
 
       - name: Tests (fixture parity + drift-guards + fuzz)
         run: make cli-test
-
-      - name: TS/Rust tool parity
-        run: |
-          make cli
-          BZ_REQUIRE_PARITY=1 pnpm --filter @carlwr/zsh-core-tooldef test parity
 
       # Proves the published `.crate` is self-contained: packaged with the same
       # include rules as a publish, then compiled standalone.

@@ -17,7 +17,7 @@ type Inputs = readonly string[]
 
 /**
  * Inputs a resolver is known to have an opinion on: the resolver tests'
- * hit/miss tables, tooldef's pinned parity cases, JSDoc examples.
+ * hit/miss tables, adapter test cases, JSDoc examples.
  */
 const pinnedInputs: { readonly [K in DocCategory]?: Inputs } = {
   option: [

@@ -12,7 +12,7 @@ Rationale only. Exact commands live in `package.json` and nearby scripts.
   Executable task data cuts `*:verbose` aliases and keeps the runner graph in one place.
 - Fresh upstream artifacts.
   Recursive gates must not let package `pre*` hooks race on shared upstream `dist/`. A per-package content stamp decides whether a rebuild is needed at all, and makes a skip-upstream claim checkable.
-- Rust parity without stale JSON.
+- No stale embedded JSON.
   CLI targets rebuild TS artifacts before cargo reads monorepo data.
 
 ## Rejected

@@ -7,11 +7,11 @@ me_dir=${0:A:h}
 
 help="
 Usage:
-  $me <zsh-core|zsh-core-tooldef|vscode-better-zsh>...
+  $me <zsh-core|vscode-better-zsh>...
 
 Examples:
   $me zsh-core
-  $me zsh-core zsh-core-tooldef
+  $me zsh-core vscode-better-zsh
 
 Lists all 'export' lines from source (excluding tests). Each output line is filename + first line of the export expression.
 
@@ -31,7 +31,6 @@ dirs=()
 foreach arg ( $@ ) {
   case $arg in
        (zsh-core         ) dirs+=( packages/zsh-core/src          )
-    ;; (zsh-core-tooldef ) dirs+=( packages/zsh-core-tooldef      )
     ;; (vscode-better-zsh) dirs+=( packages/vscode-better-zsh/src )
     ;; (-h|--help        ) print -r -- $help && exit 0
     ;; (*                ) die "illegal arg: $arg"

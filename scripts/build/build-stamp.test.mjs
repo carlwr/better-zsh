@@ -77,20 +77,18 @@ test("inputs exclude generated trees", () => {
 })
 
 test("inputs cover the whole package tree, plus the shared repo files", () => {
-  const rels = inputFiles(dirs.get("@carlwr/zsh-core-tooldef"))
+  const rels = inputFiles(dirs.get("@carlwr/zsh-core"))
   // Build config that no entry point imports: reachable only because discovery
   // takes everything the exclusion rule leaves.
-  assert.ok(
-    rels.includes("packages/zsh-core-tooldef/api-extractor.runtime.json"),
-  )
-  assert.ok(rels.includes("packages/zsh-core-tooldef/scripts/build-api.mjs"))
+  assert.ok(rels.includes("packages/zsh-core/typedoc.json"))
+  assert.ok(rels.includes("packages/zsh-core/scripts/build-api.mjs"))
   assert.ok(rels.includes("scripts/api-extractor.mjs"))
   assert.ok(rels.includes("pnpm-lock.yaml"))
   assert.ok(rels.includes("package.json"))
 })
 
 test("a file appearing anywhere in the package tree moves the hash", () => {
-  const name = "@carlwr/zsh-core-tooldef"
+  const name = "@carlwr/zsh-core"
   const probe = join(dirs.get(name), "src", "build-stamp-probe.tmp")
   const before = inputHash(name)
   writeFileSync(probe, "probe")

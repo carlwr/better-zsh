@@ -199,28 +199,6 @@ importers:
         specifier: ^4.1.11
         version: 4.1.11(@types/node@22.20.1)(vite@7.3.6(@types/node@22.20.1)(lightningcss@1.32.0)(tsx@4.23.13)(yaml@2.9.0))
 
-  packages/zsh-core-tooldef:
-    dependencies:
-      '@carlwr/typescript-extra':
-        specifier: 0.11.0
-        version: 0.11.0
-      '@carlwr/zsh-core':
-        specifier: workspace:*
-        version: link:../zsh-core
-      fuzzysort:
-        specifier: ^4.0.2
-        version: 4.0.2
-    devDependencies:
-      ajv:
-        specifier: ^8.20.0
-        version: 8.20.0
-      fast-check:
-        specifier: ^4.9.0
-        version: 4.9.0
-      vitest:
-        specifier: ^4.1.11
-        version: 4.1.11(@types/node@22.20.1)(vite@7.3.6(@types/node@22.20.1)(lightningcss@1.32.0)(tsx@4.23.13)(yaml@2.9.0))
-
   packages/zshref-web:
     dependencies:
       '@carlwr/docopt-tmlanguage':
@@ -2000,9 +1978,6 @@ packages:
 
   function-bind@1.1.2:
     resolution: {integrity: sha512-7XHNxH7qX9xG5mIwxkhumTox/MIRNcOgDrxWsMt2pAr23WHp6MrRlN7FBSFpCpr+oVO0F744iUgR82nJMfG2SA==}
-
-  fuzzysort@4.0.2:
-    resolution: {integrity: sha512-3c7yD6rK1EXIsqpcu1ZVzXJugODWNMzvUij6yTiziaAHrpNS8kzFOI9mJLE8pmG4K9JOaVgzQRgklfOEk8f4Tg==}
 
   get-caller-file@2.0.5:
     resolution: {integrity: sha512-DyFP3BM/3YHTQOCUL/w0OZHR0lpKeGrxotcHWcqNEdnltqFwXVfhEBQ94eIo34AfQpo0rGki4cyIiftY06h2Fg==}
@@ -5101,8 +5076,6 @@ snapshots:
     optional: true
 
   function-bind@1.1.2: {}
-
-  fuzzysort@4.0.2: {}
 
   get-caller-file@2.0.5: {}
 

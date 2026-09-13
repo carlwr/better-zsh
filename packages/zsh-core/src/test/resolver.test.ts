@@ -250,4 +250,30 @@ describe("lookupRaw round-trip (corpus-wide)", () => {
     }
     expect(mismatched).toEqual([])
   })
+
+  // Categories whose id is a shell-safe slug distinct from the human-readable
+  // `sig` (whitespace, argument placeholders): the close-variant resolver
+  // must take the full-sig form to the slug id.
+  test.each(["redirection", "param_expn_flag", "subscript_flag"] as const)(
+    "%s sigs resolve to their slug id",
+    cat => {
+      const map = corpus[cat] as ReadonlyMap<string, { readonly sig: string }>
+      const mismatched: { sig: string; id: string; got: string | undefined }[] =
+        []
+      let n = 0
+      for (const [id, rec] of map) {
+        if (!rec.sig || rec.sig === id) continue
+        n++
+        const pid = lookupRaw(corpus, cat, rec.sig)
+        if (pid?.id !== id)
+          mismatched.push({
+            sig: rec.sig,
+            id,
+            got: pid?.id as string | undefined,
+          })
+      }
+      expect(n).toBeGreaterThan(0)
+      expect(mismatched).toEqual([])
+    },
+  )
 })

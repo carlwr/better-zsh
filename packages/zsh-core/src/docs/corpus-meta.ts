@@ -1,8 +1,8 @@
 /**
  * Hand-coded (not derived from `loadCorpus()`) so importing stays
  * side-effect-free — consumers must not be forced to eager-load the corpus.
- * Extension startup is the prime constraint; also keeps the value available
- * to non-TS consumers (the Rust crate). Drift is caught by a build-time test.
+ * Extension startup is the prime constraint. Drift is caught by a build-time
+ * test.
  */
 
 /** Total records across every `DocCategory` in the bundled corpus. */
