@@ -1,10 +1,10 @@
-# AGENTS.md — `zshref` (Rust CLI)
+# AGENTS.md — `zshref` (Rust crate)
 
-Rust CLI; tool-surface mirror of the TS adapters. Semantic search is `zshref-web`'s (`packages/zshref-web/`); this crate has none.
+The `zshref` CLI and, behind the `mcp` feature, the `zshref-mcp` MCP server: one tool set, mirroring the TS tooldef. Semantic search is `zshref-web`'s (`packages/zshref-web/`); this crate has none.
 
 ## MSRV
 
-One floor: `rust-version` in `Cargo.toml` — what `cargo install zshref` needs; the comment beside it names the dependencies that set it. `tests/msrv.rs` guards it against the resolved dependency graph; CI has no MSRV job.
+One floor: `rust-version` in `Cargo.toml` — what `cargo install zshref` needs, features included; the comment beside it names the dependency that sets it. `tests/msrv.rs` guards it against the dependency graph resolved with every feature on; CI has no MSRV job.
 
 ## TS↔Rust mirror discipline
 
@@ -12,7 +12,7 @@ One floor: `rust-version` in `Cargo.toml` — what `cargo install zshref` needs;
 
 ## Iteration
 
-- Rust-only edits: `cargo build` + `cargo test` (skip `pnpm qa`).
+- Rust-only edits: `cargo build --all-features` + `cargo test --all-features` (skip `pnpm qa`); without `--all-features` the MCP binary and its test are skipped.
 - From outside `zshref-rs/`: pass `--manifest-path zshref-rs/Cargo.toml`.
 - Edits touching `packages/zsh-core-tooldef/` prose: rebuild tooldef first (`pnpm --filter @carlwr/zsh-core-tooldef build`), then `cargo build`.
 
@@ -20,6 +20,7 @@ One floor: `rust-version` in `Cargo.toml` — what `cargo install zshref` needs;
 
 - `tests/properties.rs` — property-based (proptest)
 - `tests/cli_invariants.rs` — deterministic invariant checks: CLI ↔ batch parity, every-category sweeps, full-corpus round-trip
+- `tests/mcp.rs` — black-box MCP client over the `zshref-mcp` binary: one stdio session per test; every successful `tools/call` validated against its `outputSchema`
 - `tests/common/mod.rs` — shared helpers: spawn-and-parse vocabulary, tooldef path resolution, `outputSchema` validators, subcommand→tool-name map
 - `src/resolver.rs` `#[cfg(test)]` — conformance to zsh-core's resolver fixture; `make cli-test` / `make cli-vendored-test` refresh fixture and corpus together, plain `cargo test` reads what is on disk
 
@@ -27,9 +28,9 @@ One floor: `rust-version` in `Cargo.toml` — what `cargo install zshref` needs;
 
 For plain integration tests (exit status, stdout shape) that don't need `outputSchema` validation, spawn the binary directly via `Command::new(env!("CARGO_BIN_EXE_zshref"))`.
 
-## CLI / batch parity
+## Entry points
 
-`cli.rs` reaches `tools::dispatch` directly; `batch.rs` goes through `tools::call`. Both inject `inputSchema.default` for omitted flags — CLI via `clap::Arg::default_value`, `call` via `tools::input`. Edit one, mirror the other. Parity is pinned by `omit_equals_schema_default` + `cli_equals_batch` in `tests/cli_invariants.rs`.
+`cli.rs` reaches `tools::dispatch` directly; `batch.rs` and the MCP server go through `tools::call`. Both paths inject `inputSchema.default` for omitted flags — CLI via `clap::Arg::default_value`, `call` via `tools::input`. Edit one, mirror the other. Parity is pinned by `omit_equals_schema_default` + `cli_equals_batch` in `tests/cli_invariants.rs` and `omitted_limit_takes_the_schema_default` in `tests/mcp.rs`.
 
 ## Make targets
 

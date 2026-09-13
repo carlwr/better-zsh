@@ -153,7 +153,8 @@ pub fn build_cli(tool_defs: &ToolDefs, corpus: &Corpus, mode: BuildMode) -> Comm
 }
 
 /// Multi-line `--version` string: pkg version, zsh upstream, corpus totals.
-fn version_string(corpus: &Corpus) -> String {
+/// Shared by both binaries; each prefixes its own name.
+pub fn version_string(corpus: &Corpus) -> String {
     let pkg_version = env!("CARGO_PKG_VERSION");
     let up = &corpus.index.zsh_upstream;
     let total: usize = corpus.categories.iter().map(|c| c.records.len()).sum();

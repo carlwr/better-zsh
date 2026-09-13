@@ -17,7 +17,7 @@ cli-debug: artifacts
 
 .PHONY: cli-test
 cli-test: artifacts
-	$(mono) cargo test
+	$(mono) cargo test --all-features
 
 .PHONY: cli-clean
 cli-clean:
@@ -33,7 +33,7 @@ cli-fmt-check:
 
 .PHONY: cli-clippy
 cli-clippy: artifacts
-	$(mono) cargo clippy --all-targets -- -D warnings
+	$(mono) cargo clippy --all-targets --all-features -- -D warnings
 
 .PHONY: cli-check
 cli-check: cli-fmt-check cli-clippy
@@ -55,8 +55,8 @@ cli-vendored: vendor
 
 .PHONY: cli-vendored-test
 cli-vendored-test: vendor
-	$(vendored) cargo test
+	$(vendored) cargo test --all-features
 
 .PHONY: cli-package
 cli-package: vendor
-	$(vendored) cargo package --allow-dirty
+	$(vendored) cargo package --allow-dirty --all-features

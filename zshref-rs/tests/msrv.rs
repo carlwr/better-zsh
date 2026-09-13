@@ -5,7 +5,8 @@
 //! understated floor is invisible there — it surfaces only when a user on the
 //! declared version tries to build.
 //!
-//! Reads `cargo metadata`, which needs no network while `Cargo.lock` is
+//! Reads `cargo metadata` with every feature on — one floor covers every
+//! `cargo install` form — which needs no network while `Cargo.lock` is
 //! current, and compares numerically (`1.9` outranks `1.85` lexically, but not
 //! as a version). `make cli-test` gates it.
 //! Resolution is filtered per release-relevant triple: unfiltered metadata
@@ -38,6 +39,7 @@ fn metadata(triple: &str) -> serde_json::Value {
             "1",
             "--manifest-path",
             concat!(env!("CARGO_MANIFEST_DIR"), "/Cargo.toml"),
+            "--all-features",
             "--filter-platform",
             triple,
         ])
@@ -81,7 +83,7 @@ fn over_floor(floor: &str) -> Vec<String> {
 }
 
 #[test]
-fn default_build_fits_declared_rust_version() {
+fn every_feature_build_fits_declared_rust_version() {
     let floor = env!("CARGO_PKG_RUST_VERSION");
     let over = over_floor(floor);
     assert!(

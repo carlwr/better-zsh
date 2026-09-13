@@ -2,7 +2,7 @@
 name = "zshref"
 version = "0.1.0-alpha.2"
 edition = "2021"
-description = "Offline static zsh reference, highly structured — CLI over parsed zsh 5.9 docs, built for agent pipelines and shells"
+description = "Offline static zsh reference, highly structured — CLI and MCP server over parsed zsh 5.9 docs, built for agent pipelines and shells"
 license = "MIT"
 # crates.io enabled pre-extraction — first alpha cut from the monorepo.
 publish = true
@@ -13,9 +13,9 @@ authors = ["Carl (carlwr)"]
 repository = "https://github.com/carlwr/better-zsh"
 homepage = "https://github.com/carlwr/better-zsh"
 readme = "README.md"
-keywords = ["zsh", "shell", "cli", "reference", "documentation"]
+keywords = ["zsh", "shell", "cli", "reference", "mcp"]
 categories = ["command-line-utilities", "development-tools"]
-rust-version = "1.85"                   # floor: clap 4.6, proptest 1.11, jsonschema 0.54
+rust-version = "1.88"                   # floor: rmcp 3.3
 
 # Files that land in the published `.crate` tarball. Gitignored files can
 # still be included here (cargo's packaging layer takes precedence over
@@ -34,9 +34,23 @@ include = [
     "data/*.json",
 ]
 
+# `mcp` adds the `zshref-mcp` binary; without it the dependency set is the
+# CLI's alone.
+[features]
+mcp = ["dep:rmcp", "dep:tokio"]
+
 [[bin]]
 name = "zshref"
 path = "src/main.rs"
+
+[[bin]]
+name = "zshref-mcp"
+path = "src/bin/zshref-mcp.rs"
+required-features = ["mcp"]
+
+[[test]]
+name = "mcp"
+required-features = ["mcp"]
 
 [dependencies]
 clap = { version = "4.5", features = ["string", "wrap_help", "color", "suggestions"] }
@@ -45,6 +59,8 @@ serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["preserve_order"] }
 anyhow = "1"
 indoc = "2"
+rmcp = { version = "3.3", default-features = false, features = ["server", "transport-io"], optional = true }
+tokio = { version = "1", features = ["rt", "macros"], optional = true }
 
 [dev-dependencies]
 proptest = "1"

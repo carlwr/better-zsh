@@ -193,7 +193,8 @@ pub static HOOK_NAMES: LazyLock<Vec<&'static str>> = LazyLock::new(|| {
 pub struct ToolDefs {
     pub version: u32,
     pub tools: Vec<ToolDef>,
-    /// Suite-level intent→tool cheat-sheet, rendered into `zshref --help`.
+    /// Suite-level intent→tool cheat-sheet: `zshref --help` and the MCP
+    /// server's `instructions`.
     /// Source: `TOOL_SUITE_PREAMBLE` in `packages/zsh-core-tooldef/src/tool-defs.ts`.
     pub preamble: String,
 }

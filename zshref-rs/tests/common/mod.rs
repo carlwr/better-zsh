@@ -5,14 +5,12 @@
 //! 1. **Spawn-and-parse vocabulary.** `BIN`, `run_raw`, `run_json`,
 //!    `assert_envelope`, `doc_categories` — the minimum surface for
 //!    invoking the built binary and shaping its JSON responses.
-//!    (Used by `properties.rs`, `cli_invariants.rs`.)
 //! 2. **`outputSchema` validation.** `locate_tooldef_json`,
 //!    `validator_for`, `validate_or_panic`, `tool_for_subcommand` —
 //!    `run_json` auto-validates every tool-subcommand response against
 //!    its bundled schema, so new tests get conformance checks for free.
 //! 3. **`Example:` block parsing.** `extract_example` — pairs with
-//!    `cli/prose.rs::shell_example`; used by `help_examples.rs` and
-//!    `help_layout.rs`.
+//!    `cli/prose.rs::shell_example`.
 //!
 //! `#[allow(dead_code)]` because Rust compiles each `tests/*.rs` as a
 //! separate crate with its own copy of this module — items unused by
