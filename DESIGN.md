@@ -312,7 +312,7 @@ Per MCP spec, tools register `outputSchema`; responses include `structuredConten
 
 Two adapters over the same `ToolSet`, both in the `zshref` crate: the CLI and the MCP server.
 
-Adapters walk the tool set (`src/tools.rs`) and dispatch through it; nothing else. The request path is shared — validate, fill schema defaults, dispatch (`tools::call`).
+Adapters walk the tool set (`src/tools.rs`) and dispatch through it; nothing else. The request path is shared — `Tool::call`: one typed decode, run, encode; `Input` defaults are mirrored in `inputSchema.default`.
 
 Structural lock on the tool layer (the spec for its own claim): **scope fence** — `zshref-rs/tests/scope_fence.rs`.
 

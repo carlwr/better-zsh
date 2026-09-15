@@ -160,7 +160,7 @@ impl DocCategory {
 
 /// `DocCategory::from_str` rejection: the name is not in `index.json`.
 #[derive(Clone, PartialEq, Eq, Debug)]
-pub struct UnknownCategory(pub String);
+pub struct UnknownCategory(String);
 
 impl fmt::Display for UnknownCategory {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -285,13 +285,9 @@ pub struct Record(Map<String, Value>);
 // MIRROR-OF: packages/zsh-core/src/docs/json-projection.ts
 // (`_id` / `_display` / `_subKind` / `_title` are the projection's field names)
 impl Record {
-    pub fn get(&self, key: &str) -> Option<&Value> {
-        self.0.get(key)
-    }
-
     /// `""` when absent or not a string.
     pub fn str(&self, key: &str) -> &str {
-        self.get(key).and_then(Value::as_str).unwrap_or("")
+        self.0.get(key).and_then(Value::as_str).unwrap_or("")
     }
 
     pub fn id(&self) -> &str {

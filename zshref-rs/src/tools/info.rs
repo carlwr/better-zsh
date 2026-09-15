@@ -2,25 +2,18 @@
 //! tool set. Counts are recomputed from the loaded corpus rather than copied
 //! from `index.counts` (a second drift surface, with camelCase keys).
 
-use crate::corpus::Corpus;
-use anyhow::Result;
+use crate::corpus::{Corpus, DocCategory};
 use serde_json::{json, Map, Value};
 
-pub fn run(corpus: &Corpus) -> Result<Value> {
-    let mut counts = Map::new();
-    for cat in &corpus.categories {
-        counts.insert(
-            cat.name.to_string(),
-            Value::from(u64::try_from(cat.records.len()).unwrap_or(u64::MAX)),
-        );
-    }
-    let categories: Vec<Value> = corpus
+pub fn run(corpus: &Corpus) -> Value {
+    let counts: Map<String, Value> = corpus
         .categories
         .iter()
-        .map(|c| Value::String(c.name.to_string()))
+        .map(|c| (c.name.to_string(), Value::from(c.records.len())))
         .collect();
+    let categories: Vec<DocCategory> = corpus.categories.iter().map(|c| c.name).collect();
 
-    Ok(json!({
+    json!({
         "packageVersion": corpus.index.package_version,
         "dataHash": corpus.index.data_hash,
         "zshUpstream": {
@@ -28,9 +21,9 @@ pub fn run(corpus: &Corpus) -> Result<Value> {
             "commit": corpus.index.zsh_upstream.commit,
             "date": corpus.index.zsh_upstream.date,
         },
-        "counts": Value::Object(counts),
+        "counts": counts,
         "categories": categories,
-    }))
+    })
 }
 
 #[cfg(test)]
@@ -41,7 +34,7 @@ mod tests {
     #[test]
     fn info_json_has_expected_top_level_keys() {
         let corpus = load_corpus().expect("load_corpus");
-        let v = run(&corpus).expect("info::run");
+        let v = run(&corpus);
         let obj = v.as_object().expect("top-level object");
         for key in [
             "packageVersion",
@@ -67,7 +60,7 @@ mod tests {
     #[test]
     fn info_categories_match_corpus_order() {
         let corpus = load_corpus().expect("load_corpus");
-        let v = run(&corpus).expect("info::run");
+        let v = run(&corpus);
         let listed: Vec<&str> = v["categories"]
             .as_array()
             .expect("categories array")
@@ -82,7 +75,7 @@ mod tests {
     fn info_counts_nonzero_per_category() {
         // An empty category usually means the JSON artifact failed to regenerate.
         let corpus = load_corpus().expect("load_corpus");
-        let v = run(&corpus).expect("info::run");
+        let v = run(&corpus);
         let counts = v["counts"].as_object().expect("counts object");
         for cat in &corpus.categories {
             let n = counts

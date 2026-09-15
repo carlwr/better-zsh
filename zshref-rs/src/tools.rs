@@ -13,16 +13,16 @@
 pub mod docs;
 pub mod envelope;
 pub mod info;
-mod input;
 pub mod list;
 pub mod prose;
 pub mod schema;
 pub mod search;
 pub mod text;
 
-use crate::corpus::{Corpus, DocCategory};
-use anyhow::Result;
+use crate::corpus::Corpus;
+use anyhow::{anyhow, Result};
 use schema::Shape;
+use serde::de::DeserializeOwned;
 use serde_json::Value;
 use std::fmt;
 use text::Prose;
@@ -65,10 +65,12 @@ pub struct Tool {
     pub fields: Vec<Field>,
     pub input_schema: Value,
     pub output_schema: Value,
-    /// The implementation, over an input that satisfies `input_schema`
-    /// with defaults filled.
-    pub run: fn(&Value, &Corpus) -> Result<Value>,
+    run: Erased,
 }
+
+/// The implementation behind `Value` in and out; `Send + Sync` because the
+/// MCP server holds the `ToolSet` inside its handler.
+type Erased = Box<dyn Fn(&Value, &Corpus) -> Result<Value> + Send + Sync>;
 
 /// One `input_schema` property. Key, prose and shape are declared together
 /// so a field cannot lack its brief or its schema entry.
@@ -100,13 +102,18 @@ impl Field {
 }
 
 impl Tool {
-    pub fn new(
+    /// `I` decodes exactly what `input_schema` (built from `fields`) admits.
+    pub fn new<I: DeserializeOwned + 'static>(
         name: ToolName,
         prose: Prose,
         fields: Vec<Field>,
         output_schema: Value,
-        run: fn(&Value, &Corpus) -> Result<Value>,
+        run: fn(I, &Corpus) -> Result<Value>,
     ) -> Self {
+        let run = Box::new(move |input: &Value, corpus: &Corpus| {
+            let input = I::deserialize(input).map_err(|e| anyhow!("invalid input: {e}"))?;
+            run(input, corpus)
+        });
         Self {
             input_schema: schema::input_schema(&fields),
             name,
@@ -117,19 +124,11 @@ impl Tool {
         }
     }
 
-    /// The request path of every adapter: validate against `input_schema`,
-    /// fill its defaults, run. Idempotent on filled input, so the CLI's
-    /// clap-validated input takes the same path.
-    pub fn call(&self, raw_input: &Value, corpus: &Corpus) -> Result<Value> {
-        input::validate(self, raw_input).map_err(anyhow::Error::msg)?;
-        (self.run)(&input::fill_defaults(self, raw_input), corpus)
+    /// The request path of every adapter: decode the typed input, then run.
+    /// Decode failures read `invalid input: <serde message>`.
+    pub fn call(&self, input: &Value, corpus: &Corpus) -> Result<Value> {
+        (self.run)(input, corpus)
     }
-}
-
-/// The `category` input as a filter; `null` counts as absent.
-pub(crate) fn category_input(input: &Value) -> Result<Option<DocCategory>> {
-    let cat = input.get("category").and_then(Value::as_str);
-    Ok(cat.map(str::parse::<DocCategory>).transpose()?)
 }
 
 /// Every tool, in registration order (`tools/list`, the CLI's `Commands:`).
@@ -171,7 +170,8 @@ mod tests {
     use super::*;
     use crate::corpus::{load_corpus, DOC_CATEGORIES};
     use regex::Regex;
-    use serde_json::json;
+    use serde_json::{json, Map};
+    use std::collections::BTreeSet;
     use std::sync::LazyLock;
     use text::Target;
 
@@ -389,6 +389,64 @@ mod tests {
                 TOOLS.by_json(name).is_some(),
                 "preamble names {name}, not a tool"
             );
+        }
+    }
+
+    fn backticked(s: &str) -> BTreeSet<String> {
+        Regex::new(r"`([^`]+)`")
+            .unwrap()
+            .captures_iter(s)
+            .map(|c| c[1].to_string())
+            .collect()
+    }
+
+    /// The typed `Input` behind each tool decodes exactly what its
+    /// `input_schema` admits: every property, only those, and the same
+    /// required set.
+    #[test]
+    fn input_structs_mirror_the_input_schemas() {
+        let sample = |shape: Shape| match shape {
+            Shape::Text => json!("echo"),
+            Shape::Category => json!(DOC_CATEGORIES[0]),
+            Shape::Limit => json!(1),
+        };
+        for tool in &TOOLS.tools {
+            let name = tool.name;
+            let keys: BTreeSet<String> = tool.fields.iter().map(|f| f.key.to_string()).collect();
+            let full: Map<String, Value> = tool
+                .fields
+                .iter()
+                .map(|f| (f.key.to_string(), sample(f.shape)))
+                .collect();
+            tool.call(&Value::Object(full.clone()), &CORPUS)
+                .unwrap_or_else(|e| panic!("{name}: {e}"));
+
+            let required: BTreeSet<String> = tool.input_schema["required"]
+                .as_array()
+                .into_iter()
+                .flatten()
+                .filter_map(Value::as_str)
+                .map(str::to_string)
+                .collect();
+            match tool.call(&json!({}), &CORPUS) {
+                Ok(_) => assert!(required.is_empty(), "{name}: `{{}}` decoded"),
+                Err(e) => {
+                    let e = e.to_string();
+                    assert!(e.contains("missing field"), "{name}: {e}");
+                    assert!(backticked(&e).is_subset(&required), "{name}: {e}");
+                }
+            }
+
+            let mut extra = full;
+            extra.insert("bogus".into(), json!(1));
+            let e = tool
+                .call(&Value::Object(extra), &CORPUS)
+                .unwrap_err()
+                .to_string();
+            assert!(e.contains("unknown field `bogus`"), "{name}: {e}");
+            let mut expected = backticked(&e);
+            expected.remove("bogus");
+            assert_eq!(expected, keys, "{name}: {e}");
         }
     }
 

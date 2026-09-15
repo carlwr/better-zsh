@@ -35,7 +35,7 @@ For plain integration tests (exit status, stdout shape) that don't need `outputS
 
 - `src/tools/prose.rs` — tool prose, authored once and rendered into both targets (terminal `--help`, JSON tool surface); neither target is primary — see its module doc
 - `src/cli/help.rs` — prose with no JSON counterpart (root help, non-tool subcommands) and the help-example renderer; hand-written prose, edit with care
-- `tools::call` — the request path of every adapter (`cli.rs`, `batch.rs`, the MCP server); the one place `inputSchema.default` is filled for omitted flags. Pinned by `omit_equals_schema_default` + `cli_equals_batch` in `tests/cli_invariants.rs` and `omitted_limit_takes_the_schema_default` in `tests/mcp.rs`
+- `Tool::call` — the request path of every adapter (`cli.rs`, `batch.rs`, the MCP server): one typed decode; omitted `limit` takes the `Input` default, mirrored in `inputSchema.default`. Pinned by `omit_equals_schema_default` + `cli_equals_batch` in `tests/cli_invariants.rs` and `omitted_limit_takes_the_schema_default` in `tests/mcp.rs`
 
 ## Make targets
 

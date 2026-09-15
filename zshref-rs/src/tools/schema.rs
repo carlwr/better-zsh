@@ -12,16 +12,19 @@ use crate::corpus::{Corpus, DocCategory, DOC_CATEGORIES};
 use crate::resolver::ResolverFeedback;
 use crate::tools::envelope::ENVELOPE_KEYS;
 use crate::tools::{Field, ToolSet};
-use anyhow::Result;
 use serde_json::{json, Map, Value};
 use std::collections::BTreeSet;
 
 /// Format version of the `zshref schema` bundle.
 pub const SCHEMA_VERSION: u32 = 1;
 
-/// `limit` when a `search` / `list` caller omits it; `Tool::call` fills
-/// it from the schema.
-pub const DEFAULT_LIMIT: u64 = 20;
+/// `limit` when a `search` / `list` caller omits it: the schema's `default`
+/// and the `Input` structs' serde default, from one constant.
+pub const DEFAULT_LIMIT: u32 = 20;
+
+pub fn default_limit() -> u32 {
+    DEFAULT_LIMIT
+}
 
 /// An input field's value shape: its JSON Schema, and what the CLI flag
 /// parses.
@@ -49,17 +52,9 @@ pub fn input_schema(fields: &[Field]) -> Value {
     let properties: Map<String, Value> = fields
         .iter()
         .map(|f| {
-            let mut spec = f
-                .shape
-                .schema()
-                .as_object()
-                .cloned()
-                .expect("field shape is an object");
-            spec.insert(
-                "description".into(),
-                Value::String(f.prose.long.json.to_string()),
-            );
-            (f.key.to_string(), Value::Object(spec))
+            let mut spec = f.shape.schema();
+            spec["description"] = Value::String(f.prose.long.json.to_string());
+            (f.key.to_string(), spec)
         })
         .collect();
     let required: Vec<&str> = fields
@@ -203,11 +198,7 @@ fn sub_kind_enums(corpus: &Corpus) -> Vec<(DocCategory, Vec<String>)> {
         .collect()
 }
 
-pub fn run(tool_set: &ToolSet) -> Result<Value> {
-    Ok(build_bundle(tool_set))
-}
-
-fn build_bundle(tool_set: &ToolSet) -> Value {
+pub fn run(tool_set: &ToolSet) -> Value {
     let tools: Vec<Value> = tool_set
         .tools
         .iter()
@@ -228,8 +219,7 @@ fn build_bundle(tool_set: &ToolSet) -> Value {
 /// Word count of the pretty-printed bundle — exact for `--pretty`, a slight
 /// over-estimate for the compact default.
 pub fn bundle_words(tool_set: &ToolSet) -> usize {
-    serde_json::to_string_pretty(&build_bundle(tool_set))
-        .map_or(0, |s| s.split_whitespace().count())
+    serde_json::to_string_pretty(&run(tool_set)).map_or(0, |s| s.split_whitespace().count())
 }
 
 #[cfg(test)]
@@ -240,7 +230,7 @@ mod tests {
     #[test]
     fn bundle_has_expected_top_level_keys() {
         let corpus = load_corpus().expect("load_corpus");
-        let v = run(&ToolSet::build(&corpus)).expect("schema::run");
+        let v = run(&ToolSet::build(&corpus));
         let obj = v.as_object().expect("top-level object");
         assert_eq!(obj.get("version").and_then(Value::as_u64), Some(1));
         assert!(obj.contains_key("tools"));
@@ -250,7 +240,7 @@ mod tests {
     fn bundle_lists_every_tool_with_input_and_output_schema() {
         let corpus = load_corpus().expect("load_corpus");
         let tool_set = ToolSet::build(&corpus);
-        let v = run(&tool_set).expect("schema::run");
+        let v = run(&tool_set);
         let tools = v["tools"].as_array().expect("tools array");
         assert_eq!(tools.len(), tool_set.tools.len());
         for entry in tools {

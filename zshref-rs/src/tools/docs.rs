@@ -4,13 +4,14 @@
 //! resolving category. Feedback (e.g. `NO_`-stripping → `input-negated`)
 //! is forwarded from the per-category resolver.
 
-use crate::corpus::{Corpus, CLASSIFY_ORDER};
-use crate::resolver::{resolve_in, ResolvedHit};
-use crate::tools::envelope::mk_envelope;
+use crate::corpus::{Corpus, DocCategory, CLASSIFY_ORDER};
+use crate::resolver::{resolve_in, ResolvedHit, ResolverFeedback};
+use crate::tools::envelope::Envelope;
 use crate::tools::schema::{output_schema, MatchShape, Shape};
-use crate::tools::{category_input, prose, Field, Tool, ToolName};
+use crate::tools::{prose, Field, Tool, ToolName};
 use anyhow::Result;
-use serde_json::{json, Map, Value};
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 pub fn tool(corpus: &Corpus) -> Tool {
     Tool::new(
@@ -37,49 +38,90 @@ pub fn tool(corpus: &Corpus) -> Tool {
     )
 }
 
-pub fn run(input: &Value, corpus: &Corpus) -> Result<Value> {
-    let key = input.get("key").and_then(Value::as_str).unwrap_or("");
-    let category = category_input(input)?;
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Input {
+    key: String,
+    category: Option<DocCategory>,
+}
 
-    let matches_vec: Vec<Value> = if key.trim().is_empty() {
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct Match<'c> {
+    category: DocCategory,
+    id: &'c str,
+    display: &'c str,
+    title: &'c str,
+    md_body: &'c str,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    sub_kind: Option<&'c str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    feedback: Option<ResolverFeedback>,
+}
+
+impl<'c> From<ResolvedHit<'c>> for Match<'c> {
+    fn from(h: ResolvedHit<'c>) -> Self {
+        Self {
+            category: h.category,
+            id: h.id,
+            display: h.display,
+            title: h.rec.title(),
+            md_body: h.rec.md_body(),
+            sub_kind: h.rec.sub_kind(),
+            feedback: h.feedback,
+        }
+    }
+}
+
+/// In the category walk, `history_expn` counts only for event designators:
+/// a bare word designator or modifier (`0`, `h`) is not a history token.
+fn walk_admits(h: &ResolvedHit) -> bool {
+    h.category.as_str() != "history_expn" || h.rec.sub_kind() == Some("event-designator")
+}
+
+fn run(input: Input, corpus: &Corpus) -> Result<Value> {
+    let key = input.key.as_str();
+    let matches: Vec<Match> = if key.trim().is_empty() {
         Vec::new()
     } else {
-        match category {
+        match input.category {
             Some(cat) => resolve_in(corpus, cat, key)
-                .map(|h| hit_to_match(&h))
+                .map(Match::from)
                 .into_iter()
                 .collect(),
             None => CLASSIFY_ORDER
                 .iter()
                 .filter_map(|&cat| {
-                    let h = resolve_in(corpus, cat, key)?;
-                    if h.category.as_str() == "history_expn"
-                        && h.rec.sub_kind() != Some("event-designator")
-                    {
-                        return None;
-                    }
-                    Some(hit_to_match(&h))
+                    resolve_in(corpus, cat, key)
+                        .filter(walk_admits)
+                        .map(Match::from)
                 })
                 .collect(),
         }
     };
-
-    let n = matches_vec.len();
-    Ok(mk_envelope(matches_vec, n))
+    let n = matches.len();
+    Envelope::new(matches, n).to_value()
 }
 
-fn hit_to_match(h: &ResolvedHit<'_>) -> Value {
-    let mut m = Map::new();
-    m.insert("category".into(), h.category.as_str().into());
-    m.insert("id".into(), h.id.into());
-    m.insert("display".into(), h.display.into());
-    m.insert("title".into(), h.rec.title().into());
-    m.insert("mdBody".into(), h.rec.md_body().into());
-    if let Some(sk) = h.rec.sub_kind() {
-        m.insert("subKind".into(), sk.into());
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::corpus::load_corpus;
+    use serde_json::json;
+
+    #[test]
+    fn walk_skips_history_modifiers_but_scoping_finds_them() {
+        let corpus = load_corpus().expect("load_corpus");
+        let docs = tool(&corpus);
+        let categories = |input: Value| -> Vec<Value> {
+            let out = docs.call(&input, &corpus).expect("docs");
+            let matches = out["matches"].as_array().expect("matches");
+            matches.iter().map(|m| m["category"].clone()).collect()
+        };
+        assert!(!categories(json!({"key": "h"})).contains(&json!("history_expn")));
+        assert_eq!(
+            categories(json!({"key": "h", "category": "history_expn"})),
+            [json!("history_expn")]
+        );
     }
-    if let Some(fb) = &h.feedback {
-        m.insert("feedback".into(), json!(fb));
-    }
-    Value::Object(m)
 }

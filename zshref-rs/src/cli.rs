@@ -327,11 +327,11 @@ pub fn dispatch(mut cmd: Command, tool_set: &ToolSet, corpus: &Corpus) -> Result
             Ok(0)
         }
         "info" => {
-            output::emit_pretty(&tools::info::run(corpus)?);
+            output::emit_pretty(&tools::info::run(corpus));
             Ok(0)
         }
         "schema" => {
-            output::emit(&tools::schema::run(tool_set)?, pretty);
+            output::emit(&tools::schema::run(tool_set), pretty);
             Ok(0)
         }
         "batch" => crate::batch::run(tool_set, corpus),

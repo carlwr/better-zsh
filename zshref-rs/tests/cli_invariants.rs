@@ -49,7 +49,8 @@ fn every_category_list_is_pure_and_nonempty() {
 
 /// For every (tool, flag-with-default) pair: omitting the flag must
 /// produce the same CLI output as passing the flag set to the schema
-/// default. Pins default filling on the CLI path (`Tool::call`). New
+/// default. Pins that the CLI path reaches the typed `Input`'s default
+/// through `Tool::call`, and that it is the schema's number. New
 /// flags-with-defaults are covered automatically; extend `viable_args`
 /// only if a new tool gains its first such flag.
 #[test]
@@ -150,9 +151,9 @@ fn list_per_category_totals_sum_to_total() {
 }
 
 /// CLI and `batch` entry points must produce identical output for the
-/// same logical input. Pins parity of default-injection, input parsing,
-/// and dispatch wiring between `src/cli.rs` and `src/batch.rs` — both
-/// inject `inputSchema.default` for omitted flags, by different means.
+/// same logical input. Pins parity of input parsing and dispatch wiring
+/// between `src/cli.rs` and `src/batch.rs`: both build the JSON input
+/// `Tool::call` decodes, so an omitted `limit` defaults the same way.
 #[test]
 fn cli_equals_batch() {
     let cases: &[(&str, &[&str], Value)] = &[

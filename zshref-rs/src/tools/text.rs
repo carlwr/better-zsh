@@ -117,12 +117,6 @@ impl IntoParagraph for String {
     }
 }
 
-impl IntoParagraph for Paragraph {
-    fn into_paragraph(self) -> Option<Paragraph> {
-        Some(self)
-    }
-}
-
 impl IntoParagraph for Option<Paragraph> {
     fn into_paragraph(self) -> Option<Paragraph> {
         self

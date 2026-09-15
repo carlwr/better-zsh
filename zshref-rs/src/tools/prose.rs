@@ -69,7 +69,9 @@ pub fn docs(index: &Index) -> Prose {
     let tag = &index.zsh_upstream.tag;
     Prose::new("look up bundled zsh reference docs", |t| {
         body![
-            format!("Render markdown for a zsh token or canonical id from the bundled static {tag} reference."),
+            format!(
+                "Render markdown for a zsh token or canonical id from the bundled static {tag} reference."
+            ),
             "Omitting `category` can return multiple matches for overlapping syntax.",
             RESOLUTION,
             "Input `key` and the returned `id` may therefore differ; the returned `id` is always a valid `key` for follow-up lookups and is shell-safe (printable ASCII, no whitespace).",

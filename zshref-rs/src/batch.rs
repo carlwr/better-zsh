@@ -38,11 +38,14 @@ fn handle_request(line: &str, tool_set: &ToolSet, corpus: &Corpus) -> Value {
         None => return err("missing `tool` field"),
     };
     let empty = Value::Object(Default::default());
-    let raw_input = req.get("input").unwrap_or(&empty);
+    let input = req.get("input").unwrap_or(&empty);
+    if !input.is_object() {
+        return err("`input` must be a JSON object");
+    }
     let Some(tool) = tool_set.by_json(name) else {
         return err(format!("unknown tool: {name}"));
     };
-    match tool.call(raw_input, corpus) {
+    match tool.call(input, corpus) {
         Ok(output) => json!({ "ok": true, "output": output }),
         Err(e) => err(format!("{e:#}")),
     }

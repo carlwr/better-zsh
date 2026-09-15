@@ -1,44 +1,73 @@
-//! Result envelope + entry shape.
+//! Result envelope + entry shape. Struct field order is wire key order.
 
-use crate::corpus::DocCategory;
-use serde_json::{json, Map, Value};
+use crate::corpus::{Corpus, DocCategory};
+use anyhow::Result;
+use serde::Serialize;
+use serde_json::Value;
 
 /// The envelope's keys; the output schemas require exactly these.
 pub const ENVELOPE_KEYS: [&str; 3] = ["matches", "matchesReturned", "matchesTotal"];
 
 /// Standard `{ matches, matchesReturned, matchesTotal }` envelope.
-/// `total` is pre-truncation; for non-truncating tools (`docs`) pass `matches.len()`.
-pub fn mk_envelope(matches: Vec<Value>, total: usize) -> Value {
-    let [k_matches, k_returned, k_total] = ENVELOPE_KEYS;
-    let returned = matches.len();
-    json!({
-        k_matches: matches,
-        k_returned: returned,
-        k_total: total,
-    })
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Envelope<M> {
+    matches: Vec<M>,
+    matches_returned: usize,
+    matches_total: usize,
+}
+
+impl<M: Serialize> Envelope<M> {
+    /// `total` is pre-truncation; for non-truncating tools (`docs`) pass `matches.len()`.
+    pub fn new(matches: Vec<M>, total: usize) -> Self {
+        Self {
+            matches_returned: matches.len(),
+            matches,
+            matches_total: total,
+        }
+    }
+
+    /// The wire form every tool returns.
+    pub fn to_value(&self) -> Result<Value> {
+        Ok(serde_json::to_value(self)?)
+    }
 }
 
 /// `{category, id, display, subKind?, score?}` entry for `list`/`search`.
-/// Insertion order is the output's key order.
-pub fn mk_entry(
-    category: DocCategory,
-    id: &str,
-    display: &str,
-    sub_kind: Option<&str>,
-    score: Option<f64>,
-) -> Value {
-    let mut obj = Map::new();
-    obj.insert("category".into(), category.as_str().into());
-    obj.insert("id".into(), id.into());
-    obj.insert("display".into(), display.into());
-    if let Some(sk) = sub_kind {
-        obj.insert("subKind".into(), sk.into());
+#[derive(Clone, Copy, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Entry<'c> {
+    pub category: DocCategory,
+    pub id: &'c str,
+    pub display: &'c str,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub sub_kind: Option<&'c str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub score: Option<f64>,
+}
+
+impl<'c> Entry<'c> {
+    /// Corpus-wide identity.
+    pub fn key(&self) -> (DocCategory, &'c str) {
+        (self.category, self.id)
     }
-    if let Some(s) = score {
-        obj.insert(
-            "score".into(),
-            Value::Number(serde_json::Number::from_f64(s).expect("score finite")),
-        );
-    }
-    Value::Object(obj)
+}
+
+/// Every record as a score-less `Entry`, in corpus order, optionally one
+/// category only.
+pub fn entries(corpus: &Corpus, category: Option<DocCategory>) -> Vec<Entry<'_>> {
+    corpus
+        .categories
+        .iter()
+        .filter(|cat| category.is_none_or(|f| cat.name == f))
+        .flat_map(|cat| {
+            cat.records.iter().map(move |rec| Entry {
+                category: cat.name,
+                id: rec.id(),
+                display: rec.display(),
+                sub_kind: rec.sub_kind(),
+                score: None,
+            })
+        })
+        .collect()
 }

@@ -272,15 +272,17 @@ fn invalid_input_is_a_tool_error() {
         (
             "zsh_search",
             json!({ "query": "echo", "limit": null }),
-            "`limit` must be an integer",
+            "invalid type: null",
         ),
-        ("zsh_docs", json!({}), "missing required field: `key`"),
-        ("zsh_list", json!({ "bogus": 1 }), "unknown field: `bogus`"),
+        ("zsh_docs", json!({}), "missing field `key`"),
+        ("zsh_list", json!({ "bogus": 1 }), "unknown field `bogus`"),
     ];
-    for (tool, args, message) in cases {
+    for (tool, args, fragment) in cases {
         let result = session.call(tool, args);
         assert!(is_error(&result), "{tool}: {result}");
-        assert_eq!(error_text(&result), message);
+        let text = error_text(&result);
+        assert!(text.starts_with("invalid input: "), "{tool}: {text}");
+        assert!(text.contains(fragment), "{tool}: {text}");
     }
     session.finish();
 }

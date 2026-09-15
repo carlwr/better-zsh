@@ -6,10 +6,11 @@
 
 use crate::corpus::{Corpus, DocCategory, CLASSIFY_ORDER};
 use crate::resolver::resolve_in;
-use crate::tools::envelope::{mk_entry, mk_envelope};
-use crate::tools::schema::{output_schema, MatchShape, Shape};
-use crate::tools::{category_input, prose, Field, Tool, ToolName};
+use crate::tools::envelope::{entries, Entry, Envelope};
+use crate::tools::schema::{default_limit, output_schema, MatchShape, Shape};
+use crate::tools::{prose, Field, Tool, ToolName};
 use anyhow::Result;
+use serde::Deserialize;
 use serde_json::Value;
 use std::collections::{HashMap, HashSet};
 
@@ -37,34 +38,22 @@ pub fn tool(corpus: &Corpus) -> Tool {
     )
 }
 
-#[derive(Debug)]
-struct Entry<'c> {
-    category: DocCategory,
-    id: &'c str,
-    display: &'c str,
-    sub_kind: Option<&'c str>,
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Input {
+    query: String,
+    category: Option<DocCategory>,
+    #[serde(default = "default_limit")]
+    limit: u32,
 }
 
-impl<'c> Entry<'c> {
-    fn key(&self) -> (DocCategory, &'c str) {
-        (self.category, self.id)
-    }
-}
-
-pub fn run(input: &Value, corpus: &Corpus) -> Result<Value> {
-    let query = input
-        .get("query")
-        .and_then(Value::as_str)
-        .unwrap_or("")
-        .trim();
-    let category = category_input(input)?;
-    let limit = input.get("limit").and_then(Value::as_u64).unwrap_or(0) as usize;
-
+fn run(input: Input, corpus: &Corpus) -> Result<Value> {
+    let query = input.query.trim();
     if query.is_empty() {
-        return Ok(mk_envelope(Vec::new(), 0));
+        return Envelope::new(Vec::<Entry>::new(), 0).to_value();
     }
 
-    let pool = entries(corpus, category);
+    let pool = entries(corpus, input.category);
     let q_low = query.to_ascii_lowercase();
 
     let mut seen: HashSet<(DocCategory, &str)> = HashSet::new();
@@ -85,13 +74,13 @@ pub fn run(input: &Value, corpus: &Corpus) -> Result<Value> {
         }
     }
 
-    let resolver_cats: Vec<DocCategory> = match category {
-        Some(c) => vec![c],
-        None => CLASSIFY_ORDER.to_vec(),
+    let resolver_cats: &[DocCategory] = match &input.category {
+        Some(c) => std::slice::from_ref(c),
+        None => &CLASSIFY_ORDER,
     };
     let by_key: HashMap<(DocCategory, &str), &Entry> = pool.iter().map(|e| (e.key(), e)).collect();
     let mut resolver_hits: Vec<&Entry> = Vec::new();
-    for &cat in &resolver_cats {
+    for &cat in resolver_cats {
         if let Some(h) = resolve_in(corpus, cat, query) {
             let k = (h.category, h.id);
             if seen.contains(&k) {
@@ -104,15 +93,13 @@ pub fn run(input: &Value, corpus: &Corpus) -> Result<Value> {
         }
     }
 
-    // A non-ASCII query scores `None`; the pool is ASCII-only (corpus drift guard).
     let mut fuzzy: Vec<(&Entry, u32)> = rest
         .iter()
         .filter(|e| !seen.contains(&e.key()))
         .filter_map(|e| {
-            let s_id = crate::fuzzy::score(query, e.id).unwrap_or(0);
-            let s_disp = crate::fuzzy::score(query, e.display).unwrap_or(0);
-            let s = s_id.max(s_disp);
-            (s > 0).then_some((*e, s))
+            crate::fuzzy::score(query, e.id)
+                .max(crate::fuzzy::score(query, e.display))
+                .map(|s| (*e, s))
         })
         .collect();
     fuzzy.sort_by_key(|b| std::cmp::Reverse(b.1));
@@ -122,31 +109,18 @@ pub fn run(input: &Value, corpus: &Corpus) -> Result<Value> {
         .iter()
         .chain(resolver_hits.iter())
         .chain(prefix.iter())
-        .map(|e| entry_json(e, 1.0))
+        .map(|e| scored(e, 1.0))
         .chain(fuzzy.iter().map(|(e, s)| {
             let mapped = (*s as f64 / 1000.0).min(0.999_999);
-            entry_json(e, mapped)
+            scored(e, mapped)
         }));
-    let returned: Vec<Value> = ranked.take(limit).collect();
-    Ok(mk_envelope(returned, total))
+    let returned: Vec<Entry> = ranked.take(input.limit as usize).collect();
+    Envelope::new(returned, total).to_value()
 }
 
-fn entry_json(e: &Entry, score: f64) -> Value {
-    mk_entry(e.category, e.id, e.display, e.sub_kind, Some(score))
-}
-
-fn entries(corpus: &Corpus, cat_filter: Option<DocCategory>) -> Vec<Entry<'_>> {
-    corpus
-        .categories
-        .iter()
-        .filter(|cat| cat_filter.is_none_or(|f| cat.name == f))
-        .flat_map(|cat| {
-            cat.records.iter().map(move |rec| Entry {
-                category: cat.name,
-                id: rec.id(),
-                display: rec.display(),
-                sub_kind: rec.sub_kind(),
-            })
-        })
-        .collect()
+fn scored<'c>(e: &Entry<'c>, score: f64) -> Entry<'c> {
+    Entry {
+        score: Some(score),
+        ..*e
+    }
 }
