@@ -1,11 +1,19 @@
 name: Release zshref (Rust crate)
 
 # Triggers:
-#   - tag push `zshref-v*` → publish to crates.io
+#   - tag push `zshref-v*` → GitHub Release archives, npm, crates.io
 #   - workflow_dispatch → dry-run unless input `dry_run` is false
 #
-# A real release needs crates.io Trusted Publishing granted to this repo; the
-# token it issues is short-lived and revoked when the job ends.
+# A real release needs, granted to this repo and this workflow file:
+#   - crates.io Trusted Publishing for `zshref`
+#   - npm Trusted Publishing for `@carlwr/zshref` and `@carlwr/zshref-mcp`
+# Every token is short-lived and revoked when its job ends.
+#
+# Job order is reversibility, descending — a GitHub Release can be deleted,
+# an npm version unpublished for 72 h, a crates.io version never — so a re-run
+# after a failed npm publish never re-attempts `cargo publish`.
+#
+# Local rehearsal, act: `make cli-release-act` (zshref-rs/DISTRIBUTION.md).
 
 on:
   push:
@@ -19,11 +27,13 @@ on:
         default: true
 
 jobs:
-  release:
+  check:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      id-token: write
+    outputs:
+      publish: ${{ steps.mode.outputs.publish }}
+      version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@v7
 
@@ -45,13 +55,24 @@ jobs:
           $s apt-get -o Acquire::Retries=3 update
           $s apt-get -o Acquire::Retries=3 install -y --no-install-recommends zsh
 
+      - name: Crate version
+        id: version
+        run: |
+          version=$(cargo metadata --no-deps --format-version 1 --manifest-path zshref-rs/Cargo.toml \
+                    | jq -r '.packages[0].version')
+          echo "version=$version" | tee -a "$GITHUB_OUTPUT"
+
       - name: Verify tag matches crate version
         if: startsWith(github.ref, 'refs/tags/zshref-v')
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
           tag_version=${GITHUB_REF#refs/tags/zshref-v}
-          pkg_version=$(sed -n 's/^version = "\(.*\)"$/\1/p' zshref-rs/Cargo.toml | head -1)
-          echo "tag=$tag_version crate=$pkg_version"
-          [ "$tag_version" = "$pkg_version" ] || { echo "tag mismatch vs Cargo.toml"; exit 1; }
+          [ "$tag_version" = "$VERSION" ] || { echo "tag $tag_version vs crate $VERSION"; exit 1; }
+
+      - name: Publish or dry-run
+        id: mode
+        run: echo "publish=${{ github.event_name == 'push' || inputs.dry_run == false }}" | tee -a "$GITHUB_OUTPUT"
 
       - name: Hygiene (fmt + clippy)
         run: make cli-check
@@ -64,11 +85,198 @@ jobs:
       - name: Vendored-mode package check
         run: make cli-package
 
+      # The build matrix has no Node: the vendored data travels as an artifact.
+      # upload-artifact v5: the newest whose upload protocol act's artifact
+      # server accepts (`make cli-release-act`); downloads are unaffected.
+      - uses: actions/upload-artifact@v5
+        with:
+          name: vendored-data
+          path: zshref-rs/data
+          retention-days: 1
+          if-no-files-found: error
+
+  build:
+    needs: check
+    strategy:
+      # Every platform's verdict at once; flip once the matrix has proven itself.
+      fail-fast: false
+      matrix:
+        include:
+          - { target: aarch64-apple-darwin, os: macos-latest }
+          - { target: x86_64-apple-darwin, os: macos-latest }
+          - { target: x86_64-unknown-linux-gnu, os: ubuntu-latest }
+          - { target: aarch64-unknown-linux-gnu, os: ubuntu-24.04-arm }
+          - { target: x86_64-pc-windows-msvc, os: windows-latest }
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: zshref-rs
+          key: ${{ matrix.target }}
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: vendored-data
+          path: zshref-rs/data
+
+      # The x64 binaries are smoke-run on the arm64 runner; a no-op where
+      # Rosetta is already installed.
+      - if: matrix.target == 'x86_64-apple-darwin'
+        run: sudo softwareupdate --install-rosetta --agree-to-license
+
+      - name: Build
+        working-directory: zshref-rs
+        env:
+          ZSHREF_DATA_SOURCE: vendored
+        run: cargo build --release --locked --features mcp --target ${{ matrix.target }}
+
+      # Runs every binary (`--version`), then packs the archive.
+      - name: Archive
+        shell: bash
+        run: zshref-rs/scripts/archive-bins ${{ matrix.target }} zshref-rs/.aux/dist
+
+      - uses: actions/upload-artifact@v5
+        with:
+          name: zshref-${{ matrix.target }}
+          path: zshref-rs/.aux/dist/*
+          if-no-files-found: error
+
+  release-assets:
+    needs: [check, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: zshref-*
+          merge-multiple: true
+          path: dist
+
+      # Listed on dry runs too: the rehearsal's view of what would ship.
+      - name: Checksums
+        working-directory: dist
+        run: |
+          sha256sum zshref-* > SHA256SUMS
+          ls -l
+
+      - name: Attest release assets
+        if: needs.check.outputs.publish == 'true' && startsWith(github.ref, 'refs/tags/zshref-v')
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-path: dist/zshref-*
+
+      # Create-then-upload: a re-run after a partial failure finds the release
+      # already there. Tag runs only — `gh release create` on a branch would
+      # mint a tag.
+      - name: Attach release assets
+        if: needs.check.outputs.publish == 'true' && startsWith(github.ref, 'refs/tags/zshref-v')
+        working-directory: dist
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+          VERSION: ${{ needs.check.outputs.version }}
+        run: |
+          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" \
+            --title "zshref $VERSION" \
+            --notes "Prebuilt \`zshref\` and \`zshref-mcp\` binaries for zshref $VERSION. Also on crates.io (\`cargo install zshref --features mcp\`, \`cargo binstall zshref\`) and npm (\`@carlwr/zshref\`, \`@carlwr/zshref-mcp\`)."
+          gh release upload "$TAG" --clobber zshref-* SHA256SUMS
+
+  publish-npm:
+    needs: [check, release-assets]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # OIDC: npm Trusted Publishing + provenance.
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: ./.github/actions/setup-node-pnpm
+        with:
+          registry-url: https://registry.npmjs.org
+
+      # For `cargo metadata` only: the packages take name, version and
+      # description from the crate manifest.
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: zshref-*
+          merge-multiple: true
+          path: zshref-rs/.aux/dist
+
+      - name: Stage packages
+        run: node zshref-rs/npm/assemble.mjs
+
+      - name: Determine npm dist-tag
+        id: disttag
+        env:
+          VERSION: ${{ needs.check.outputs.version }}
+        run: |
+          if [[ "$VERSION" == *-* ]]; then tag=next; else tag=latest; fi
+          echo "tag=$tag" | tee -a "$GITHUB_OUTPUT"
+
+      # The npm the Node image ships predates npm's OIDC exchange, so the
+      # latest runs through npx — a global self-upgrade breaks under act.
+      # Fat package first: the thin one depends on it at this exact version.
+      # A version already on the registry is skipped, so a re-run after a
+      # partial failure — or after a manual first publish — completes the pair.
+      # Runs on dry runs too — `--dry-run` packs and previews, never publishes.
+      - name: npm publish (Trusted Publishing + provenance)
+        env:
+          DRY: ${{ needs.check.outputs.publish != 'true' && '--dry-run' || '' }}
+          TAG: ${{ steps.disttag.outputs.tag }}
+          VERSION: ${{ needs.check.outputs.version }}
+        run: |
+          npx -y npm@latest --version
+          for pkg in zshref zshref-mcp; do
+            dir=zshref-rs/.aux/npm/$pkg
+            name=$(node -p "require('./$dir/package.json').name")
+            if [ -z "$DRY" ] && npm view "$name@$VERSION" version >/dev/null 2>&1; then
+              echo "$name@$VERSION is already published — skipping"
+              continue
+            fi
+            npx -y npm@latest publish $DRY --provenance --access public --tag "$TAG" "$dir"
+          done
+
+  publish-crate:
+    needs: [check, publish-npm]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # OIDC: crates.io Trusted Publishing.
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: zshref-rs
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: vendored-data
+          path: zshref-rs/data
+
       # Skipped on a dry run: `--dry-run` uploads nothing, so the path stays
       # testable before the crate has Trusted Publishing configured.
       - name: Authenticate with crates.io
         id: auth
-        if: github.event_name == 'push' || inputs.dry_run == false
+        if: needs.check.outputs.publish == 'true'
         uses: rust-lang/crates-io-auth-action@v1
 
       # Vendored: the published crate carries `data/*.json` rather than
@@ -78,5 +286,5 @@ jobs:
         env:
           CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
           ZSHREF_DATA_SOURCE: vendored
-          DRY: ${{ (github.event_name != 'push' && inputs.dry_run) && '--dry-run' || '' }}
-        run: cargo publish --allow-dirty $DRY
+          DRY: ${{ needs.check.outputs.publish != 'true' && '--dry-run' || '' }}
+        run: cargo publish --allow-dirty --locked $DRY
