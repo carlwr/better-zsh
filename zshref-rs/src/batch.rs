@@ -39,7 +39,7 @@ fn handle_request(line: &str, tool_set: &ToolSet, corpus: &Corpus) -> Value {
     };
     let empty = Value::Object(Default::default());
     let raw_input = req.get("input").unwrap_or(&empty);
-    let Some(tool) = tool_set.get(name) else {
+    let Some(tool) = tool_set.by_json(name) else {
         return err(format!("unknown tool: {name}"));
     };
     match tools::call(tool, raw_input, corpus) {

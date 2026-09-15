@@ -4,19 +4,17 @@
 
 use crate::corpus::Corpus;
 use crate::output;
-use crate::tools::{self, Tool, ToolSet};
+use crate::tools::{self, ToolName, ToolSet};
 use indoc::{formatdoc, indoc};
 use serde_json::{json, Value};
 
 pub const BIN: &str = "zshref";
 
-pub const ROOT_BRIEF: &str = indoc! {"
+pub const ROOT_ABOUT: &str = indoc! {"
     Query a bundled static zsh reference.
 
     github.com/carlwr/zshref
     "};
-
-pub const ROOT_LONG: &str = ROOT_BRIEF;
 
 // Hand-aligned so tool subcommands line up across columns.
 //
@@ -90,13 +88,8 @@ pub fn root_after_help_tail(tool_set: &ToolSet, corpus: &Corpus) -> String {
 /// `mdBody` ("true if exp is false."). This makes the example demonstrate
 /// (a) the search → docs sequence and (b) why `--category` matters.
 fn workflow_example(tool_set: &ToolSet, corpus: &Corpus) -> String {
-    let find = |name: &str| {
-        tool_set
-            .get(name)
-            .unwrap_or_else(|| panic!("workflow example needs the {name} tool"))
-    };
-    let search_tool = find("zsh_search");
-    let docs_tool = find("zsh_docs");
+    let search_tool = tool_set.get(ToolName::Search);
+    let docs_tool = tool_set.get(ToolName::Docs);
 
     // `tools::call` fills the `limit` default the shell command gets from
     // clap; without it `dispatch` would see no `limit` and return nothing.
@@ -156,7 +149,7 @@ pub const HELP_FLAG_HELP: &str = "print help";
 
 pub const VERSION_FLAG_HELP: &str = "print version";
 
-pub const ROOT_PRETTY_HELP: &str = indoc! {"
+pub const PRETTY_HELP: &str = indoc! {"
     emit indented multi-line JSON
 
     Not recommended for agents. Pretty-printing inflates output size by roughly 30-40% in tokens without adding information.
@@ -186,9 +179,7 @@ pub fn batch_long(tool_set: &ToolSet, corpus: &Corpus) -> String {
 }
 
 fn batch_example(tool_set: &ToolSet, corpus: &Corpus) -> String {
-    let tool = tool_set
-        .get("zsh_search")
-        .expect("batch help example needs the zsh_search tool");
+    let tool = tool_set.get(ToolName::Search);
     let input = json!({ "query": "autolo", "limit": 1 });
     let output = tools::dispatch(tool, &input, corpus).expect("batch help example must run");
     let envelope = json!({ "ok": true, "output": output });
@@ -338,32 +329,3 @@ pub const COMPL_SHELL_HELP: &str = indoc! {"
       elvish
       powershell
     "};
-
-const CLI_OMIT_LINES: &[&str] = &[tools::prose::SAFETY];
-
-/// Tool descriptions are MCP-primary. Remove lines that are useful for
-/// agents but too README-like for terminal help.
-pub fn cli_tool_description(s: &str) -> String {
-    s.lines()
-        .filter(|line| {
-            let trimmed = line.trim();
-            !CLI_OMIT_LINES.contains(&trimmed)
-        })
-        .collect::<Vec<_>>()
-        .join("\n")
-        .trim_end()
-        .to_string()
-}
-
-/// Rewrite MCP-primary `zsh_*` names to `zshref *` — avoids duplicating
-/// descriptions across the CLI and MCP seam.
-pub fn rewrite_refs(s: &str, tools: &[Tool]) -> String {
-    let mut out = s.to_string();
-    for tool in tools {
-        out = out.replace(
-            tool.name,
-            &format!("zshref {}", super::subcommand_name(tool.name)),
-        );
-    }
-    out
-}

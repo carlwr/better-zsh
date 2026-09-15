@@ -9,6 +9,8 @@ use serde_json::{json, Value};
 use std::collections::BTreeMap;
 use std::io::{BufRead, BufReader, Read, Write};
 use std::process::{Child, ChildStdin, ChildStdout, Command, Stdio};
+use zshref::tools::text::Target;
+use zshref::tools::ToolName;
 
 const BIN: &str = env!("CARGO_BIN_EXE_zshref-mcp");
 
@@ -152,7 +154,10 @@ fn initialize_advertises_tools_and_the_suite_preamble() {
     assert_eq!(init["capabilities"]["tools"], json!({}));
     assert_eq!(init["serverInfo"]["name"], "zshref-mcp");
     assert_eq!(init["serverInfo"]["version"], env!("CARGO_PKG_VERSION"));
-    assert_eq!(init["instructions"], zshref::tools::prose::PREAMBLE);
+    assert_eq!(
+        init["instructions"],
+        zshref::tools::prose::preamble(Target::Json).as_str()
+    );
     session.finish();
 }
 
@@ -164,10 +169,15 @@ fn tools_list_equals_the_tool_set_in_order() {
     let tools = &common::tool_set().tools;
     assert_eq!(listed.len(), tools.len());
     for (listed, tool) in listed.iter().zip(tools) {
-        assert_eq!(listed["name"], tool.name);
-        assert_eq!(listed["description"], tool.description, "{}", tool.name);
-        assert_eq!(listed["inputSchema"], tool.input_schema, "{}", tool.name);
-        assert_eq!(listed["outputSchema"], tool.output_schema, "{}", tool.name);
+        let name = tool.name.json();
+        assert_eq!(listed["name"], name);
+        assert_eq!(
+            listed["description"],
+            tool.prose.long.json.as_str(),
+            "{name}"
+        );
+        assert_eq!(listed["inputSchema"], tool.input_schema, "{name}");
+        assert_eq!(listed["outputSchema"], tool.output_schema, "{name}");
     }
     session.finish();
 }
@@ -243,10 +253,8 @@ fn search_and_list_return_identity_only_rows() {
 #[test]
 fn omitted_limit_takes_the_schema_default() {
     let mut session = Session::start();
-    let default = common::tool_set()
-        .get("zsh_search")
-        .expect("zsh_search")
-        .input_schema["properties"]["limit"]["default"]
+    let default = common::tool_set().get(ToolName::Search).input_schema["properties"]["limit"]
+        ["default"]
         .clone();
     let out = parsed(&session.call("zsh_search", json!({ "query": "e" })));
     assert!(

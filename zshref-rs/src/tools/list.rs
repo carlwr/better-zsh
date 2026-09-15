@@ -5,22 +5,21 @@ use crate::corpus::Corpus;
 use crate::tools::envelope::{mk_entry, mk_envelope};
 use crate::tools::record_fields::{record_display, record_id, record_sub_kind};
 use crate::tools::schema::{category_shape, limit_shape, output_schema, MatchShape};
-use crate::tools::{prose, Field, Tool};
+use crate::tools::{prose, Field, Tool, ToolName};
 use anyhow::Result;
 use serde_json::Value;
 
 pub fn tool(corpus: &Corpus) -> Tool {
     Tool::new(
-        "zsh_list",
-        prose::LIST_BRIEF,
-        prose::list_long(),
-        &[
+        ToolName::List,
+        prose::list(),
+        vec![
             Field::optional(
                 "category",
-                prose::flag_filter_category(corpus.index),
+                prose::filter_category(corpus.index),
                 category_shape(),
             ),
-            Field::optional("limit", prose::flag_limit(), limit_shape()),
+            Field::optional("limit", prose::limit(), limit_shape()),
         ],
         output_schema(&MatchShape::default(), corpus),
         run,

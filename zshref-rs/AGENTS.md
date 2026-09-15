@@ -33,6 +33,8 @@ For plain integration tests (exit status, stdout shape) that don't need `outputS
 
 ## Entry points
 
+`src/tools/prose.rs` — tool prose, authored once and rendered into both targets (terminal `--help`, JSON tool surface); neither target is primary — see its module doc.
+
 `cli.rs` reaches `tools::dispatch` directly; `batch.rs` and the MCP server go through `tools::call`. Both paths inject `inputSchema.default` for omitted flags — CLI via `clap::Arg::default_value`, `call` via `tools::input`. Edit one, mirror the other. Parity is pinned by `omit_equals_schema_default` + `cli_equals_batch` in `tests/cli_invariants.rs` and `omitted_limit_takes_the_schema_default` in `tests/mcp.rs`. Candidate simplification: route the CLI through `tools::call` too and drop clap's `default_value` injection — one default-filling path instead of the pinned pair.
 
 ## Make targets

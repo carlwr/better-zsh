@@ -159,7 +159,7 @@ fn run_batch_request(request: &str) -> String {
     );
     let raw = String::from_utf8(out.stdout).expect("batch stdout is utf-8");
     // Re-pretty-print each batch line with the same `to_string_pretty`
-    // formatter used in `cli/prose.rs::batch_example`. We're not mimicking
+    // formatter used in `cli/help.rs::batch_example`. We're not mimicking
     // `jq` byte-for-byte (jq's spacing differs in places); we're checking
     // that the prose-side rendering matches a round-trip through batch.
     // Avoids a hard dependency on a `jq` binary in CI.

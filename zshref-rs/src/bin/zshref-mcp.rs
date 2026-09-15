@@ -12,6 +12,7 @@ use serde_json::Value;
 use std::io::IsTerminal;
 use std::sync::Arc;
 use zshref::corpus::Corpus;
+use zshref::tools::text::Target;
 use zshref::tools::ToolSet;
 use zshref::{cli, corpus, tools};
 
@@ -74,9 +75,8 @@ enum Action {
 /// An MCP client launches the bin with no flags and a piped stdin; a human
 /// typing its name in a terminal gets a hint instead of a silent process
 /// that looks hung. Flags win over the terminal check.
-// Considered clap; picked hand-rolled matching because the surface is two
-// flags with no option-arguments, and a clap `Command` would bring its own
-// help layout to a bin whose help is a short note.
+// Considered clap; two flags with no option-arguments don't justify its help
+// layout on a bin whose help is a short note.
 fn decide(args: &[String], stdin_is_terminal: bool) -> Action {
     for arg in args {
         match arg.as_str() {
@@ -120,8 +120,8 @@ impl Server {
             .iter()
             .map(|tool| {
                 McpTool::new(
-                    tool.name,
-                    tool.description.clone(),
+                    tool.name.json(),
+                    tool.prose.long.json.to_string(),
                     schema_object(&tool.input_schema),
                 )
                 .with_raw_output_schema(schema_object(&tool.output_schema))
@@ -152,7 +152,7 @@ impl ServerHandler for Server {
     fn get_info(&self) -> ServerInfo {
         ServerInfo::new(ServerCapabilities::builder().enable_tools().build())
             .with_server_info(Implementation::new(BIN, env!("CARGO_PKG_VERSION")))
-            .with_instructions(tools::prose::PREAMBLE)
+            .with_instructions(tools::prose::preamble(Target::Json).to_string())
     }
 
     async fn list_tools(
@@ -170,7 +170,7 @@ impl ServerHandler for Server {
         request: CallToolRequestParams,
         _context: RequestContext<RoleServer>,
     ) -> Result<CallToolResponse, ErrorData> {
-        let result = match self.tool_set.get(&request.name) {
+        let result = match self.tool_set.by_json(&request.name) {
             None => error(format!("unknown tool: {}", request.name)),
             Some(tool) => {
                 let input = Value::Object(request.arguments.unwrap_or_default());
@@ -201,13 +201,10 @@ mod tests {
             (&["-V"], false, Action::Version),
             (&[], true, Action::TtyHint),
             (&[], false, Action::Run),
-            // flags win over the terminal check
             (&["--help"], true, Action::Help),
             (&["--version"], true, Action::Version),
-            // unknown flags fall through
             (&["--what"], false, Action::Run),
             (&["--what"], true, Action::TtyHint),
-            // first flag wins
             (&["--version", "--help"], false, Action::Version),
         ];
         for (list, tty, expected) in cases {

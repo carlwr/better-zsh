@@ -57,8 +57,8 @@ fn every_category_list_is_pure_and_nonempty() {
 fn omit_equals_schema_default() {
     let mut checked = 0;
     for tool in &tool_set().tools {
-        let name = tool.name;
-        let sub = name.strip_prefix("zsh_").unwrap_or(name);
+        let name = tool.name.json();
+        let sub = tool.name.stem();
         let Some(props) = tool
             .input_schema
             .get("properties")

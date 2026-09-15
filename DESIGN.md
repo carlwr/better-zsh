@@ -415,9 +415,9 @@ Rust, not a TS CLI: several TS CLI frameworks were tried and each fought `--help
 
 The tool set keeps the marginal cost of "another adapter" low — dynamic `clap::Command` assembly walks it:
 
-- subcommands = tool names minus `zsh_`
-- flags from schema fragments
-- `brief` / `description` / `flag_briefs` → clap help slots (three-field split: `Tool` in `zshref-rs/src/tools.rs`)
+- subcommands = each tool's `ToolName` stem (`docs`; `zsh_docs` on the JSON surface)
+- flags from each tool's fields
+- one `Prose` (`brief`, `long` per target) per tool and per field → clap help slots (`zshref-rs/src/tools/text.rs`)
 
 Cross-adapter notes:
 

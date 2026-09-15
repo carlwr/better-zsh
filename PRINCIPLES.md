@@ -233,12 +233,7 @@ The arrows and their invariants: `REPO-SHAPE.md`. The principles behind them:
 
 ### Judge changes by extrapolation to unknown consumers
 
-Two adapters today; evaluate changes as for unknown ones. Adapter surface budgets differ — hence the asymmetric field budget:
-
-- `brief`
-- `description`
-- `flag_briefs`
-- `input_schema.properties[*].description`
+Two adapters today; evaluate changes as for unknown ones. Adapter surface budgets differ — hence, per tool and per field, a one-line `brief` plus a `long` form authored per render target (terminal help, JSON surface).
 
 ### Push decisions downstream
 

@@ -1,12 +1,14 @@
 //! The tool set: per tool, a `Tool` — metadata for every adapter and the
 //! implementation behind it — plus the shared request path.
 //!
-//! Names are `zsh_<verb>[_<object>]`: MCP clients show tools from many
-//! servers in one flat namespace, so the prefix avoids collisions and
-//! makes logs self-describing. Adding a tool: a module with `run` and
-//! `tool`, a line in `ToolSet::build`, a row in `prose::PREAMBLE`.
-//! Category names, subKind values and record counts reach the metadata
-//! from the loaded corpus — never as hand-typed lists.
+//! A `ToolName` has two forms: the stem, which is the CLI subcommand
+//! (`docs`), and the JSON-surface name (`zsh_docs`) — MCP clients show
+//! tools from many servers in one flat namespace, so the prefix avoids
+//! collisions and makes logs self-describing. Adding a tool: a `ToolName`
+//! variant, a module with `run` and `tool`, a line in `ToolSet::build`, a
+//! row in `prose::preamble`. Category names, subKind values and record
+//! counts reach the metadata from the loaded corpus — never as hand-typed
+//! lists.
 
 pub mod docs;
 pub mod envelope;
@@ -17,29 +19,50 @@ pub mod prose;
 pub mod record_fields;
 pub mod schema;
 pub mod search;
+pub mod text;
 
 use crate::corpus::Corpus;
 use anyhow::Result;
-use prose::FlagProse;
 use serde_json::Value;
-use std::collections::BTreeMap;
+use std::fmt;
+use text::Prose;
 
-/// Widest `brief` the CLI's commands column renders on one line.
-pub const BRIEF_MAX_LEN: usize = 50;
+/// A tool's name; `Display` is the stem.
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
+pub enum ToolName {
+    Docs,
+    Search,
+    List,
+}
 
-/// Widest `flag_briefs` entry the CLI's flags column renders on one line.
-pub const FLAG_BRIEF_MAX_LEN: usize = 60;
+impl ToolName {
+    const JSON_PREFIX: &str = "zsh_";
 
-/// One tool. Three prose fields for two audiences: `description` is the
-/// long form for LLM tool selection and full help; `brief` and
-/// `flag_briefs` are the column-width forms the CLI's commands and flags
-/// columns need (MCP ignores them). The long form per flag is
-/// `input_schema.properties[key].description`.
+    /// The CLI subcommand (`docs`).
+    pub fn stem(self) -> &'static str {
+        match self {
+            Self::Docs => "docs",
+            Self::Search => "search",
+            Self::List => "list",
+        }
+    }
+
+    /// The name on the JSON surface (`zsh_docs`).
+    pub fn json(self) -> String {
+        format!("{}{}", Self::JSON_PREFIX, self.stem())
+    }
+}
+
+impl fmt::Display for ToolName {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(self.stem())
+    }
+}
+
 pub struct Tool {
-    pub name: &'static str,
-    pub brief: &'static str,
-    pub description: String,
-    pub flag_briefs: BTreeMap<String, String>,
+    pub name: ToolName,
+    pub prose: Prose,
+    pub fields: Vec<Field>,
     pub input_schema: Value,
     pub output_schema: Value,
     /// The implementation, over an input that satisfies `input_schema`
@@ -48,17 +71,17 @@ pub struct Tool {
 }
 
 /// One `input_schema` property. Key, prose and shape are declared together
-/// so a flag cannot lack its brief or its schema entry.
+/// so a field cannot lack its brief or its schema entry.
 pub struct Field {
     pub key: &'static str,
-    pub prose: FlagProse,
+    pub prose: Prose,
     /// JSON Schema fragment; `description` is merged in from `prose`.
     pub shape: Value,
     pub required: bool,
 }
 
 impl Field {
-    pub fn required(key: &'static str, prose: FlagProse, shape: Value) -> Self {
+    pub fn required(key: &'static str, prose: Prose, shape: Value) -> Self {
         Self {
             key,
             prose,
@@ -67,7 +90,7 @@ impl Field {
         }
     }
 
-    pub fn optional(key: &'static str, prose: FlagProse, shape: Value) -> Self {
+    pub fn optional(key: &'static str, prose: Prose, shape: Value) -> Self {
         Self {
             key,
             prose,
@@ -79,22 +102,17 @@ impl Field {
 
 impl Tool {
     pub fn new(
-        name: &'static str,
-        brief: &'static str,
-        description: String,
-        fields: &[Field],
+        name: ToolName,
+        prose: Prose,
+        fields: Vec<Field>,
         output_schema: Value,
         run: fn(&Value, &Corpus) -> Result<Value>,
     ) -> Self {
         Self {
+            input_schema: schema::input_schema(&fields),
             name,
-            brief,
-            description,
-            flag_briefs: fields
-                .iter()
-                .map(|f| (f.key.to_string(), f.prose.brief.clone()))
-                .collect(),
-            input_schema: schema::input_schema(fields),
+            prose,
+            fields,
             output_schema,
             run,
         }
@@ -115,8 +133,21 @@ impl ToolSet {
         }
     }
 
-    pub fn get(&self, name: &str) -> Option<&Tool> {
-        self.tools.iter().find(|t| t.name == name)
+    /// The tool behind a `ToolName`; every variant is registered.
+    pub fn get(&self, name: ToolName) -> &Tool {
+        self.tools
+            .iter()
+            .find(|t| t.name == name)
+            .unwrap_or_else(|| panic!("{name} is not a registered tool"))
+    }
+
+    pub fn by_stem(&self, stem: &str) -> Option<&Tool> {
+        self.tools.iter().find(|t| t.name.stem() == stem)
+    }
+
+    pub fn by_json(&self, name: &str) -> Option<&Tool> {
+        name.strip_prefix(ToolName::JSON_PREFIX)
+            .and_then(|stem| self.by_stem(stem))
     }
 }
 
@@ -142,18 +173,29 @@ mod tests {
     use regex::Regex;
     use serde_json::json;
     use std::sync::LazyLock;
+    use text::Target;
 
     static CORPUS: LazyLock<Corpus> = LazyLock::new(|| load_corpus().expect("load_corpus"));
     static TOOLS: LazyLock<ToolSet> = LazyLock::new(|| ToolSet::build(&CORPUS));
 
-    fn by_name(name: &str) -> &'static Tool {
-        TOOLS.get(name).unwrap_or_else(|| panic!("no tool {name}"))
+    /// Widest tool `brief` the CLI's commands column renders on one line.
+    const BRIEF_MAX_LEN: usize = 50;
+
+    /// Widest field `brief` the CLI's options column renders on one line.
+    const FIELD_BRIEF_MAX_LEN: usize = 60;
+
+    fn long(tool: &Tool, t: Target) -> &str {
+        tool.prose.long[t].as_str()
     }
 
-    fn flag_desc<'a>(tool: &'a Tool, key: &str) -> &'a str {
-        tool.input_schema["properties"][key]["description"]
+    fn field_long<'a>(tool: &'a Tool, key: &str, t: Target) -> &'a str {
+        tool.fields
+            .iter()
+            .find(|f| f.key == key)
+            .unwrap_or_else(|| panic!("{}: no field {key}", tool.name))
+            .prose
+            .long[t]
             .as_str()
-            .unwrap_or_else(|| panic!("{}: flag {key} has no description", tool.name))
     }
 
     fn has_flag_syntax(s: &str) -> bool {
@@ -161,78 +203,100 @@ mod tests {
     }
 
     #[test]
-    fn names_are_stable_snake_case_zsh_prefixed() {
-        let names: Vec<&str> = TOOLS.tools.iter().map(|t| t.name).collect();
-        assert_eq!(names, ["zsh_docs", "zsh_search", "zsh_list"]);
+    fn names_are_stable() {
+        let names: Vec<ToolName> = TOOLS.tools.iter().map(|t| t.name).collect();
+        assert_eq!(names, [ToolName::Docs, ToolName::Search, ToolName::List]);
         let shape = Regex::new(r"^zsh_[a-z][a-z0-9_]*$").unwrap();
         for name in names {
-            assert!(shape.is_match(name), "{name}");
+            let json = name.json();
+            assert!(shape.is_match(&json), "{json}");
+            assert_eq!(TOOLS.by_json(&json).map(|t| t.name), Some(name));
         }
     }
 
     #[test]
-    fn briefs_are_one_line_phrases_within_the_column_caps() {
+    fn briefs_fit_the_columns() {
         for tool in &TOOLS.tools {
-            let b = tool.brief;
-            assert!(
-                !b.is_empty() && b.len() <= BRIEF_MAX_LEN,
-                "{}: {b:?}",
-                tool.name
-            );
-            assert!(!b.contains('\n'), "{}: {b:?}", tool.name);
-            assert!(
-                !b.starts_with(|c: char| c.is_ascii_uppercase()),
-                "{}: {b:?}",
-                tool.name
-            );
-            assert!(!b.ends_with('.'), "{}: {b:?}", tool.name);
-            for (key, fb) in &tool.flag_briefs {
+            let b = tool.prose.brief.as_str();
+            assert!(b.len() <= BRIEF_MAX_LEN, "{}: {b:?}", tool.name);
+            for f in &tool.fields {
+                let fb = f.prose.brief.as_str();
                 assert!(
-                    !fb.is_empty() && fb.len() <= FLAG_BRIEF_MAX_LEN && !fb.contains('\n'),
-                    "{}.{key}: {fb:?}",
-                    tool.name
+                    fb.len() <= FIELD_BRIEF_MAX_LEN,
+                    "{}.{}: {fb:?}",
+                    tool.name,
+                    f.key
                 );
             }
         }
     }
 
     #[test]
-    fn descriptions_state_the_trust_model() {
+    fn json_descriptions_state_the_trust_model_and_terminal_help_does_not() {
         for tool in &TOOLS.tools {
-            let d = tool.description.to_lowercase();
-            assert!(d.len() >= 80, "{}", tool.name);
-            assert!(d.contains("shell execution"), "{}", tool.name);
-            assert!(d.contains("environment access"), "{}", tool.name);
+            let json = long(tool, Target::Json).to_lowercase();
+            assert!(json.len() >= 80, "{}", tool.name);
+            assert!(json.contains("shell execution"), "{}", tool.name);
+            assert!(json.contains("environment access"), "{}", tool.name);
+            let terminal = long(tool, Target::Terminal).to_lowercase();
+            assert!(!terminal.contains("shell execution"), "{}", tool.name);
         }
     }
 
     #[test]
     fn prose_names_parameters_never_cli_flags() {
-        assert!(!has_flag_syntax(prose::PREAMBLE));
-        for tool in &TOOLS.tools {
-            assert!(!has_flag_syntax(&tool.description), "{}", tool.name);
-            assert!(!has_flag_syntax(tool.brief), "{}", tool.name);
-            for (key, fb) in &tool.flag_briefs {
-                assert!(!has_flag_syntax(fb), "{}.{key}", tool.name);
-                assert!(
-                    !has_flag_syntax(flag_desc(tool, key)),
-                    "{}.{key}",
-                    tool.name
-                );
+        for t in [Target::Terminal, Target::Json] {
+            assert!(!has_flag_syntax(prose::preamble(t).as_str()), "{t:?}");
+            for tool in &TOOLS.tools {
+                assert!(!has_flag_syntax(long(tool, t)), "{}", tool.name);
+                assert!(!has_flag_syntax(tool.prose.brief.as_str()), "{}", tool.name);
+                for f in &tool.fields {
+                    assert!(
+                        !has_flag_syntax(f.prose.brief.as_str()),
+                        "{}.{}",
+                        tool.name,
+                        f.key
+                    );
+                    assert!(
+                        !has_flag_syntax(field_long(tool, f.key, t)),
+                        "{}.{}",
+                        tool.name,
+                        f.key
+                    );
+                }
             }
         }
     }
 
     #[test]
+    fn each_target_names_tools_its_own_way() {
+        let search = TOOLS.get(ToolName::Search);
+        assert!(long(search, Target::Json).contains("`zsh_docs`"));
+        assert!(long(search, Target::Terminal).contains("`zshref docs`"));
+        for tool in &TOOLS.tools {
+            assert!(
+                !long(tool, Target::Terminal).contains("zsh_"),
+                "{}",
+                tool.name
+            );
+        }
+        assert!(!prose::preamble(Target::Terminal).as_str().contains("zsh_"));
+    }
+
+    #[test]
     fn input_schemas_declare_required_keys_and_the_category_enum() {
         let required = [
-            ("zsh_docs", json!(["key"])),
-            ("zsh_search", json!(["query"])),
+            (ToolName::Docs, json!(["key"])),
+            (ToolName::Search, json!(["query"])),
         ];
-        for (name, keys) in required {
-            assert_eq!(by_name(name).input_schema["required"], keys, "{name}");
+        for (sub, keys) in required {
+            assert_eq!(TOOLS.get(sub).input_schema["required"], keys, "{sub}");
         }
-        assert!(by_name("zsh_list").input_schema.get("required").is_none());
+        assert!(TOOLS
+            .get(ToolName::List)
+            .input_schema
+            .get("required")
+            .is_none());
         for tool in &TOOLS.tools {
             assert_eq!(tool.input_schema["type"], "object", "{}", tool.name);
             assert_eq!(tool.output_schema["type"], "object", "{}", tool.name);
@@ -242,12 +306,21 @@ mod tests {
                 "{}",
                 tool.name
             );
+            for f in &tool.fields {
+                assert_eq!(
+                    tool.input_schema["properties"][f.key]["description"],
+                    field_long(tool, f.key, Target::Json),
+                    "{}.{}",
+                    tool.name,
+                    f.key
+                );
+            }
         }
     }
 
     #[test]
     fn docs_prose_states_negation_and_multi_match() {
-        let d = &by_name("zsh_docs").description;
+        let d = long(TOOLS.get(ToolName::Docs), Target::Json);
         assert!(d.to_lowercase().contains("negat"));
         assert!(d.contains("NO_"));
         assert!(d.to_lowercase().contains("multiple matches"));
@@ -256,21 +329,21 @@ mod tests {
 
     #[test]
     fn category_help_claims_cardinality_only_for_docs() {
-        let docs = flag_desc(by_name("zsh_docs"), "category").to_lowercase();
+        let docs = field_long(TOOLS.get(ToolName::Docs), "category", Target::Json).to_lowercase();
         assert!(docs.contains("at most one match"));
         assert!(docs.contains("one match per category"));
-        for name in ["zsh_search", "zsh_list"] {
-            let help = flag_desc(by_name(name), "category").to_lowercase();
+        for sub in [ToolName::Search, ToolName::List] {
+            let help = field_long(TOOLS.get(sub), "category", Target::Json).to_lowercase();
             assert!(
                 !help.contains("one match") && !help.contains("at most"),
-                "{name}"
+                "{sub}"
             );
         }
     }
 
     #[test]
     fn docs_category_help_lists_every_category_label() {
-        let help = flag_desc(by_name("zsh_docs"), "category");
+        let help = field_long(TOOLS.get(ToolName::Docs), "category", Target::Json);
         for (cat, label) in &CORPUS.index.doc_category_labels {
             assert!(help.contains(label.as_str()), "{cat}: {label:?}");
         }
@@ -278,41 +351,42 @@ mod tests {
 
     #[test]
     fn follow_up_tools_are_named() {
-        let search = by_name("zsh_search");
-        assert!(search.description.to_lowercase().contains("fuzzy"));
-        assert!(search.description.contains("zsh_docs"));
-        let limit = flag_desc(search, "limit").to_lowercase();
+        let search = TOOLS.get(ToolName::Search);
+        assert!(long(search, Target::Json).to_lowercase().contains("fuzzy"));
+        assert!(long(search, Target::Json).contains("zsh_docs"));
+        let limit = field_long(search, "limit", Target::Json).to_lowercase();
         assert!(limit.contains("limit") || limit.contains("maximum"));
-        assert!(by_name("zsh_list").description.contains("zsh_docs"));
+        assert!(long(TOOLS.get(ToolName::List), Target::Json).contains("zsh_docs"));
     }
 
     #[test]
     fn entry_tools_name_the_zsh_tag() {
         let tag = &CORPUS.index.zsh_upstream.tag;
-        for (name, expected) in [
-            ("zsh_docs", true),
-            ("zsh_search", true),
-            ("zsh_list", false),
+        for (sub, expected) in [
+            (ToolName::Docs, true),
+            (ToolName::Search, true),
+            (ToolName::List, false),
         ] {
             assert_eq!(
-                by_name(name).description.contains(tag.as_str()),
+                long(TOOLS.get(sub), Target::Json).contains(tag.as_str()),
                 expected,
-                "{name}"
+                "{sub}"
             );
         }
     }
 
     #[test]
     fn preamble_mentions_only_real_tools() {
+        let preamble = prose::preamble(Target::Json);
         let mentioned: Vec<&str> = Regex::new(r"\bzsh_[a-z][a-z0-9_]*\b")
             .unwrap()
-            .find_iter(prose::PREAMBLE)
+            .find_iter(preamble.as_str())
             .map(|m| m.as_str())
             .collect();
         assert!(!mentioned.is_empty());
         for name in mentioned {
             assert!(
-                TOOLS.get(name).is_some(),
+                TOOLS.by_json(name).is_some(),
                 "preamble names {name}, not a tool"
             );
         }
@@ -320,12 +394,17 @@ mod tests {
 
     #[test]
     fn run_wires_the_corpus_through() {
-        let docs = dispatch(by_name("zsh_docs"), &json!({ "key": "echo" }), &CORPUS).unwrap();
+        let docs = dispatch(
+            TOOLS.get(ToolName::Docs),
+            &json!({ "key": "echo" }),
+            &CORPUS,
+        )
+        .unwrap();
         assert_eq!(docs["matches"][0]["category"], "builtin");
         assert!(!docs["matches"][0]["mdBody"].as_str().unwrap().is_empty());
 
         let search = call(
-            by_name("zsh_search"),
+            TOOLS.get(ToolName::Search),
             &json!({ "query": "echo", "category": "builtin", "limit": 3 }),
             &CORPUS,
         )
@@ -333,7 +412,7 @@ mod tests {
         assert_eq!(search["matches"][0]["id"], "echo");
 
         let list = call(
-            by_name("zsh_list"),
+            TOOLS.get(ToolName::List),
             &json!({ "category": "precmd_modifier", "limit": 100 }),
             &CORPUS,
         )

@@ -10,7 +10,7 @@
 //!    auto-validates every tool-subcommand response against the crate's
 //!    own schema, so new tests get conformance checks for free.
 //! 3. **`Example:` block parsing.** `extract_example` — pairs with
-//!    `cli/prose.rs::shell_examples`.
+//!    `cli/help.rs::shell_examples`.
 //!
 //! `#[allow(dead_code)]` because Rust compiles each `tests/*.rs` as a
 //! separate crate with its own copy of this module — items unused by
@@ -46,24 +46,20 @@ pub fn tool_set() -> &'static ToolSet {
     })
 }
 
+/// Tool names (`zsh_docs`, …).
 pub fn tool_full_names() -> &'static [String] {
     static NAMES: OnceLock<Vec<String>> = OnceLock::new();
-    NAMES.get_or_init(|| {
+    NAMES.get_or_init(|| tool_set().tools.iter().map(|t| t.name.json()).collect())
+}
+
+/// CLI subcommands of the tools (`docs`, …).
+pub fn tool_subcommands() -> &'static [String] {
+    static SUBS: OnceLock<Vec<String>> = OnceLock::new();
+    SUBS.get_or_init(|| {
         tool_set()
             .tools
             .iter()
             .map(|t| t.name.to_string())
-            .collect()
-    })
-}
-
-/// `tool_full_names` with `zsh_` stripped.
-pub fn tool_subcommands() -> &'static [String] {
-    static SUBS: OnceLock<Vec<String>> = OnceLock::new();
-    SUBS.get_or_init(|| {
-        tool_full_names()
-            .iter()
-            .map(|n| n.strip_prefix("zsh_").unwrap_or(n).to_string())
             .collect()
     })
 }
@@ -194,10 +190,11 @@ pub fn validator_for(tool: &str) -> &'static Validator {
                 .tools
                 .iter()
                 .map(|t| {
+                    let name = t.name.json();
                     let compiled = jsonschema::draft202012::options()
                         .build(&t.output_schema)
-                        .unwrap_or_else(|e| panic!("compile outputSchema for {}: {e}", t.name));
-                    (t.name.to_string(), compiled)
+                        .unwrap_or_else(|e| panic!("compile outputSchema for {name}: {e}"));
+                    (name, compiled)
                 })
                 .collect()
         })
@@ -248,7 +245,7 @@ pub fn extract_examples(help: &str) -> Vec<(String, String)> {
 /// `    $ # ...` shell-comment prompts (no-ops, but useful for narrating
 /// a workflow) are skipped — they aren't commands to re-run.
 ///
-/// Pairs with `cli/prose.rs::shell_examples`: prompt at 4-space indent,
+/// Pairs with `cli/help.rs::shell_examples`: prompt at 4-space indent,
 /// continuations at 8-space indent, output at 4-space indent. Returns
 /// an empty Vec if the help text has no matching heading or the layout
 /// doesn't match (e.g. dangling `\` continuation, missing prompt).
@@ -321,9 +318,8 @@ pub fn extract_examples_under(help: &str, headings: &[&str]) -> Vec<(String, Str
 /// Map a CLI subcommand to the tool name (`docs` → `zsh_docs`). `None`
 /// for subcommands that don't have a tool schema (`info`, `schema`, …).
 pub fn tool_for_subcommand(sub: &str) -> Option<&'static str> {
-    let target = format!("zsh_{sub}");
-    tool_full_names()
+    tool_subcommands()
         .iter()
-        .find(|name| **name == target)
-        .map(String::as_str)
+        .position(|s| s == sub)
+        .map(|i| tool_full_names()[i].as_str())
 }

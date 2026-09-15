@@ -11,7 +11,6 @@
 use crate::corpus::{Corpus, DOC_CATEGORIES};
 use crate::resolver::ResolverFeedback;
 use crate::tools::envelope::ENVELOPE_KEYS;
-use crate::tools::prose::DEFAULT_LIMIT;
 use crate::tools::record_fields::record_sub_kind;
 use crate::tools::{Field, ToolSet};
 use anyhow::Result;
@@ -21,6 +20,10 @@ use std::sync::OnceLock;
 
 /// Format version of the `zshref schema` bundle.
 pub const SCHEMA_VERSION: u32 = 1;
+
+/// `limit` when a `search` / `list` caller omits it; `tools::call` fills
+/// it from the schema.
+pub const DEFAULT_LIMIT: u64 = 20;
 
 // --- input -------------------------------------------------------------------
 
@@ -46,7 +49,10 @@ pub fn input_schema(fields: &[Field]) -> Value {
                 .as_object()
                 .cloned()
                 .expect("field shape is an object");
-            spec.insert("description".into(), Value::String(f.prose.long.clone()));
+            spec.insert(
+                "description".into(),
+                Value::String(f.prose.long.json.to_string()),
+            );
             (f.key.to_string(), Value::Object(spec))
         })
         .collect();
@@ -205,7 +211,7 @@ fn build_bundle(tool_set: &ToolSet) -> Value {
         .iter()
         .map(|tool| {
             json!({
-                "name": tool.name,
+                "name": tool.name.json(),
                 "inputSchema": tool.input_schema,
                 "outputSchema": tool.output_schema,
             })

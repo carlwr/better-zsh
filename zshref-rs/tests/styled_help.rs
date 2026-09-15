@@ -192,11 +192,11 @@ fn bad_input_color_policy_matches_stderr() {
 }
 
 #[test]
-fn help_renders_suite_preamble_with_rewritten_tool_names() {
-    // The shared tool-suite preamble is MCP-tone prose (references `zsh_*`
-    // tool names); `prose::rewrite_refs()` rewrites those to `zshref *` at render.
-    // Asserts both: (a) the preamble reached the CLI help output,
-    // (b) the rewrite actually ran (no stray `zsh_search` etc. in help).
+fn help_renders_suite_preamble_with_terminal_tool_names() {
+    // The shared tool-suite preamble names tools per target: `zshref *` in
+    // the terminal, `zsh_*` on the JSON surface. Asserts both: (a) the
+    // preamble reached the CLI help output, (b) it is the terminal
+    // rendering (no stray `zsh_search` etc. in help).
     let help = String::from_utf8(explicit_stdout(&["--help"], &[])).expect("help is utf-8");
     assert!(
         help.contains("Tool \u{2192} intent:"),
@@ -204,12 +204,12 @@ fn help_renders_suite_preamble_with_rewritten_tool_names() {
     );
     assert!(
         help.contains("zshref search"),
-        "prose::rewrite_refs() did not produce `zshref search` in --help:\n{help}"
+        "terminal preamble did not produce `zshref search` in --help:\n{help}"
     );
     for raw in ["zsh_docs", "zsh_search", "zsh_list"] {
         assert!(
             !help.contains(raw),
-            "raw MCP tool name `{raw}` leaked through into --help:\n{help}"
+            "JSON-surface tool name `{raw}` leaked through into --help:\n{help}"
         );
     }
 }

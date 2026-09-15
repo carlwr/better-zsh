@@ -9,20 +9,19 @@ use crate::resolver::{resolve_in, ResolvedHit};
 use crate::tools::envelope::mk_envelope;
 use crate::tools::record_fields::{record_sub_kind, record_title, str_field, str_input};
 use crate::tools::schema::{category_shape, output_schema, string_shape, MatchShape};
-use crate::tools::{prose, Field, Tool};
+use crate::tools::{prose, Field, Tool, ToolName};
 use anyhow::Result;
 use serde_json::{Map, Value};
 
 pub fn tool(corpus: &Corpus) -> Tool {
     Tool::new(
-        "zsh_docs",
-        prose::DOCS_BRIEF,
-        prose::docs_long(corpus.index),
-        &[
-            Field::required("key", prose::flag_key(), string_shape()),
+        ToolName::Docs,
+        prose::docs(corpus.index),
+        vec![
+            Field::required("key", prose::key(), string_shape()),
             Field::optional(
                 "category",
-                prose::flag_docs_category(corpus.index),
+                prose::docs_category(corpus.index),
                 category_shape(),
             ),
         ],

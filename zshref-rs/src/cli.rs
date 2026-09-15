@@ -1,10 +1,11 @@
 //! Dynamic `clap::Command` assembly for the CLI surface.
 
-mod prose;
+mod help;
 
 use crate::corpus::{Corpus, DOC_CATEGORIES};
 use crate::output;
-use crate::tools::{self, Tool, ToolSet};
+use crate::tools::text::Target;
+use crate::tools::{self, Field, Tool, ToolName, ToolSet};
 use anyhow::Result;
 use clap::{Arg, ArgAction, ArgMatches, Command, ValueHint};
 use serde_json::{json, Map, Value};
@@ -34,10 +35,6 @@ pub enum BuildMode {
     Completions,
 }
 
-pub fn subcommand_name(tool_name: &str) -> &str {
-    tool_name.strip_prefix("zsh_").unwrap_or(tool_name)
-}
-
 /// Wrap a subcommand that doesn't natively use `--pretty` so that, in
 /// `Parsing` mode, it still accepts the flag as a hidden no-op.
 fn with_noop_pretty(cmd: Command, mode: BuildMode) -> Command {
@@ -48,18 +45,16 @@ fn with_noop_pretty(cmd: Command, mode: BuildMode) -> Command {
 }
 
 pub fn build_cli(tool_set: &ToolSet, corpus: &Corpus, mode: BuildMode) -> Command {
-    // The shared preamble is rendered in terminal help, so width matters here.
     let root_after_help = format!(
-        "\n{}\n{}",
-        prose::rewrite_refs(tools::prose::PREAMBLE, &tool_set.tools),
-        prose::root_after_help_tail(tool_set, corpus),
+        "\n{}\n\n{}",
+        tools::prose::preamble(Target::Terminal),
+        help::root_after_help_tail(tool_set, corpus),
     );
 
-    let mut root = Command::new(prose::BIN)
+    let mut root = Command::new(help::BIN)
         .version(version_string(corpus))
-        .about(prose::ROOT_BRIEF)
-        .long_about(prose::ROOT_LONG)
-        .override_usage(prose::ROOT_USAGE)
+        .about(help::ROOT_ABOUT)
+        .override_usage(help::ROOT_USAGE)
         .after_long_help(root_after_help)
         // Bare `zshref` should match the explicit help path byte-for-byte.
         .disable_help_subcommand(true)
@@ -81,13 +76,13 @@ pub fn build_cli(tool_set: &ToolSet, corpus: &Corpus, mode: BuildMode) -> Comman
         .arg(version_arg());
 
     for tool in &tool_set.tools {
-        root = root.subcommand(build_subcommand(tool, &tool_set.tools, corpus));
+        root = root.subcommand(build_subcommand(tool, corpus));
     }
 
     root = root.subcommand(with_noop_pretty(
         Command::new("batch")
-            .about(prose::BATCH_ABOUT)
-            .after_long_help(prose::batch_long(tool_set, corpus))
+            .about(help::BATCH_ABOUT)
+            .after_long_help(help::batch_long(tool_set, corpus))
             .disable_help_flag(true)
             .arg(help_arg()),
         mode,
@@ -95,7 +90,7 @@ pub fn build_cli(tool_set: &ToolSet, corpus: &Corpus, mode: BuildMode) -> Comman
 
     root = root.subcommand(with_noop_pretty(
         Command::new("info")
-            .about(prose::INFO_ABOUT)
+            .about(help::INFO_ABOUT)
             .disable_help_flag(true)
             .arg(help_arg()),
         mode,
@@ -104,8 +99,8 @@ pub fn build_cli(tool_set: &ToolSet, corpus: &Corpus, mode: BuildMode) -> Comman
     let (words, leaves) = tools::schema::size_hint(tool_set);
     root = root.subcommand(
         Command::new("schema")
-            .about(prose::schema_about(words))
-            .after_long_help(prose::schema_long(words, leaves))
+            .about(help::schema_about(words))
+            .after_long_help(help::schema_long(words, leaves))
             .disable_help_flag(true)
             .arg(pretty_arg())
             .arg(help_arg()),
@@ -113,7 +108,7 @@ pub fn build_cli(tool_set: &ToolSet, corpus: &Corpus, mode: BuildMode) -> Comman
 
     root = root.subcommand(with_noop_pretty(
         Command::new("completions")
-            .about(prose::COMPL_ABOUT)
+            .about(help::COMPL_ABOUT)
             .disable_help_flag(true)
             .arg(
                 Arg::new("shell")
@@ -121,7 +116,7 @@ pub fn build_cli(tool_set: &ToolSet, corpus: &Corpus, mode: BuildMode) -> Comman
                     .required(true)
                     .value_parser(clap::value_parser!(clap_complete::Shell))
                     .hide_possible_values(true)
-                    .help(prose::COMPL_SHELL_HELP),
+                    .help(help::COMPL_SHELL_HELP),
             )
             .arg(help_arg()),
         mode,
@@ -135,7 +130,7 @@ pub fn build_cli(tool_set: &ToolSet, corpus: &Corpus, mode: BuildMode) -> Comman
 
     root = root.subcommand(with_noop_pretty(
         Command::new("help")
-            .about(prose::HELP_ABOUT)
+            .about(help::HELP_ABOUT)
             .disable_help_flag(true)
             .arg(
                 Arg::new("command")
@@ -143,7 +138,7 @@ pub fn build_cli(tool_set: &ToolSet, corpus: &Corpus, mode: BuildMode) -> Comman
                     .num_args(0..=1)
                     .value_parser(clap::builder::PossibleValuesParser::new(help_commands))
                     .hide_possible_values(true)
-                    .help(prose::HELP_COMMAND_HELP),
+                    .help(help::HELP_COMMAND_HELP),
             )
             .arg(help_arg()),
         mode,
@@ -162,75 +157,38 @@ pub fn version_string(corpus: &Corpus) -> String {
 
     let commit_short: Option<String> =
         (!up.commit.is_empty()).then(|| up.commit.chars().take(8).collect());
-    let upstream = prose::version_upstream_line(&up.tag, &up.date, commit_short.as_deref());
-    let summary = prose::version_corpus_summary(total, cats);
+    let upstream = help::version_upstream_line(&up.tag, &up.date, commit_short.as_deref());
+    let summary = help::version_corpus_summary(total, cats);
     format!("{pkg_version}\n{upstream}\n{summary}")
 }
 
-fn build_subcommand(tool: &Tool, tools: &[Tool], corpus: &Corpus) -> Command {
-    let name = subcommand_name(tool.name).to_string();
-    let after_help = tool_after_help(tool, tools, corpus);
-    let mut cmd = Command::new(name)
-        .about(prose::rewrite_refs(tool.brief, tools))
-        .after_long_help(after_help)
+fn build_subcommand(tool: &Tool, corpus: &Corpus) -> Command {
+    let mut cmd = Command::new(tool.name.to_string())
+        .about(tool.prose.brief.to_string())
+        .after_long_help(tool_after_help(tool, corpus))
         .disable_help_flag(true)
         // Subcommand arg: `zshref docs … --pretty`.
         .arg(pretty_arg())
         .arg(help_arg());
-
-    let props = tool
-        .input_schema
-        .get("properties")
-        .and_then(Value::as_object)
-        .cloned()
-        .unwrap_or_default();
-    let required: Vec<String> = tool
-        .input_schema
-        .get("required")
-        .and_then(Value::as_array)
-        .map(|arr| {
-            arr.iter()
-                .filter_map(|v| v.as_str().map(str::to_owned))
-                .collect()
-        })
-        .unwrap_or_default();
-
-    for (key, spec) in &props {
-        let flag_brief = tool.flag_briefs.get(key).cloned().unwrap_or_default();
-        // MCP and `--help` share `inputSchema.properties[key].description`;
-        // `prose::rewrite_refs` rewrites `zsh_*` refs before render.
-        let long_help = spec
-            .get("description")
-            .and_then(Value::as_str)
-            .unwrap_or("")
-            .to_string();
-        let arg = build_arg(
-            key,
-            spec,
-            required.contains(key),
-            &flag_brief,
-            &long_help,
-            tools,
-        );
-        cmd = cmd.arg(arg);
+    for field in &tool.fields {
+        cmd = cmd.arg(build_arg(field));
     }
     cmd
 }
 
-fn tool_after_help(tool: &Tool, tools: &[Tool], corpus: &Corpus) -> String {
-    let cli_description =
-        prose::rewrite_refs(&prose::cli_tool_description(&tool.description), tools);
-    match tool_cli_example(tool, corpus) {
-        Some(example) => format!("{cli_description}\n\n{example}"),
-        None => cli_description,
-    }
+fn tool_after_help(tool: &Tool, corpus: &Corpus) -> String {
+    format!(
+        "{}\n\n{}",
+        tool.prose.long.terminal,
+        tool_cli_example(tool, corpus)
+    )
 }
 
-fn tool_cli_example(tool: &Tool, corpus: &Corpus) -> Option<String> {
-    // Keep examples compact while exercising resolver normalization,
-    // resolver feedback, and help-output elision.
+/// Compact examples that still exercise resolver normalization, resolver
+/// feedback and help-output elision.
+fn tool_cli_example(tool: &Tool, corpus: &Corpus) -> String {
     let pairs: Vec<(&str, Value)> = match tool.name {
-        "zsh_docs" => vec![
+        ToolName::Docs => vec![
             ("zshref docs --key='(.)' --pretty", json!({ "key": "(.)" })),
             (
                 "zshref docs --key=ALIASES --pretty",
@@ -241,55 +199,53 @@ fn tool_cli_example(tool: &Tool, corpus: &Corpus) -> Option<String> {
                 json!({ "key": "NO_ALIASES" }),
             ),
         ],
-        "zsh_search" => vec![(
+        ToolName::Search => vec![(
             "zshref search --query=autolo --limit=1 --pretty",
             json!({ "query": "autolo", "limit": 1 }),
         )],
-        "zsh_list" => vec![(
+        ToolName::List => vec![(
             "zshref list --category=option --limit=1 --pretty",
             json!({ "category": "option", "limit": 1 }),
         )],
-        _ => return None,
     };
     let outputs: Vec<String> = pairs
         .iter()
         .map(|(_, input)| {
             let mut value =
                 tools::dispatch(tool, input, corpus).expect("CLI help example must run");
-            prose::elide_for_help_example(&mut value);
+            help::elide_for_help_example(&mut value);
             output::render(&value, true)
         })
         .collect();
-    let items: Vec<prose::ShellExample<'_>> = pairs
+    let items: Vec<help::ShellExample<'_>> = pairs
         .iter()
         .zip(outputs.iter())
-        .map(|((command, _), output)| prose::ShellExample {
+        .map(|((command, _), output)| help::ShellExample {
             prompt: command,
             continuations: &[],
             output: output.as_str(),
         })
         .collect();
-    let block = prose::shell_examples(&items);
-    // A shell recipe belongs here because raw JSON strings are easy to
-    // mis-handle at the terminal.
-    if tool.name == "zsh_docs" {
-        Some(format!("{block}\n\n{}", docs_md_recipe(tool, corpus)))
+    let block = help::shell_examples(&items);
+    if tool.name == ToolName::Docs {
+        format!("{block}\n\n{}", docs_md_recipe(tool, corpus))
     } else {
-        Some(block)
+        block
     }
 }
 
-/// Uses a compact record that needs category narrowing, so the recipe shows
-/// the intended filter without bloating help output.
+/// Only `docs` gets a recipe: raw JSON strings are easy to mis-handle at
+/// the terminal. Uses a compact record that needs category narrowing, so
+/// the recipe shows the intended filter without bloating help output.
 fn docs_md_recipe(tool: &Tool, corpus: &Corpus) -> String {
     let input = json!({ "key": "!", "category": "conditional_op" });
     let out = tools::dispatch(tool, &input, corpus).expect("docs md recipe must run");
     let md_body = out["matches"][0]["mdBody"]
         .as_str()
         .expect("docs md recipe expects matches[0].mdBody to be a string");
-    prose::labelled_example(
+    help::labelled_example(
         "Recipe — extract just the markdown body:",
-        prose::ShellExample {
+        help::ShellExample {
             prompt: "zshref docs --key='!' --category=conditional_op",
             continuations: &["| jq -r '.matches[].mdBody'"],
             output: md_body,
@@ -297,21 +253,15 @@ fn docs_md_recipe(tool: &Tool, corpus: &Corpus) -> String {
     )
 }
 
-fn build_arg(
-    key: &str,
-    spec: &Value,
-    required: bool,
-    help: &str,
-    long_help: &str,
-    tools: &[Tool],
-) -> Arg {
-    let value_name = key.to_uppercase();
-    let mut arg = Arg::new(key.to_string())
-        .long(key.to_string())
-        .value_name(value_name)
-        .help(help.to_string())
-        .long_help(prose::rewrite_refs(long_help, tools))
-        .required(required)
+fn build_arg(field: &Field) -> Arg {
+    let key = field.key;
+    let spec = &field.shape;
+    let mut arg = Arg::new(key)
+        .long(key)
+        .value_name(key.to_uppercase())
+        .help(field.prose.brief.to_string())
+        .long_help(field.prose.long.terminal.to_string())
+        .required(field.required)
         .action(ArgAction::Set)
         .value_hint(ValueHint::Other)
         // zsh tokens include `-`, `-p`, fd prefixes (`2>`), etc.
@@ -360,36 +310,27 @@ fn pretty_arg() -> Arg {
         .long("pretty")
         .display_order(90)
         .action(ArgAction::SetTrue)
-        .long_help(prose::ROOT_PRETTY_HELP)
+        .long_help(help::PRETTY_HELP)
 }
 
 /// Root-level `--category`. The brief and the (valid-values-listing) long
-/// help are `zsh_list`'s, so the category list can't drift from the
+/// help are `list`'s, so the category list can't drift from the
 /// subcommands. The generic (search/list) wording is the common
 /// denominator across tools — `docs` adds a one-match-per-category note
 /// only in its own subcommand help, which would read as inaccurate at the
 /// root where `search`/`list` also take `--category`.
 fn root_category_arg(tool_set: &ToolSet) -> Arg {
-    let list = tool_set.get("zsh_list").expect("zsh_list is a tool");
-    let long_help = list
-        .input_schema
-        .get("properties")
-        .and_then(|p| p.get("category"))
-        .expect("zsh_list exposes a `category` property")
-        .get("description")
-        .and_then(Value::as_str)
-        .unwrap_or_default()
-        .to_string();
-    let brief = list
-        .flag_briefs
-        .get("category")
-        .cloned()
-        .unwrap_or_default();
+    let category = tool_set
+        .get(ToolName::List)
+        .fields
+        .iter()
+        .find(|f| f.key == "category")
+        .expect("list takes a `category`");
     Arg::new("category")
         .long("category")
         .value_name("CATEGORY")
-        .help(brief)
-        .long_help(long_help)
+        .help(category.prose.brief.to_string())
+        .long_help(category.prose.long.terminal.to_string())
         .action(ArgAction::Set)
         .value_parser(clap::builder::PossibleValuesParser::new(
             DOC_CATEGORIES.as_slice(),
@@ -406,7 +347,7 @@ fn help_arg() -> Arg {
         .short('h')
         .long("help")
         .action(ArgAction::HelpLong)
-        .help(prose::HELP_FLAG_HELP)
+        .help(help::HELP_FLAG_HELP)
 }
 
 fn version_arg() -> Arg {
@@ -415,7 +356,7 @@ fn version_arg() -> Arg {
         .short('V')
         .long("version")
         .action(ArgAction::Version)
-        .help(prose::VERSION_FLAG_HELP)
+        .help(help::VERSION_FLAG_HELP)
 }
 
 pub fn dispatch(cmd: Command, tool_set: &ToolSet, corpus: &Corpus) -> Result<i32> {
@@ -447,7 +388,7 @@ pub fn dispatch(cmd: Command, tool_set: &ToolSet, corpus: &Corpus) -> Result<i32
             clap_complete::generate(
                 shell,
                 &mut cmd_for_completions,
-                prose::BIN,
+                help::BIN,
                 &mut std::io::stdout(),
             );
             Ok(0)
@@ -468,7 +409,7 @@ pub fn dispatch(cmd: Command, tool_set: &ToolSet, corpus: &Corpus) -> Result<i32
         sub => {
             let tool = ctx
                 .tool_set
-                .get(&format!("zsh_{sub}"))
+                .by_stem(sub)
                 .expect("subcommand registered from the tool set");
             let mut input = matches_to_input_value(tool, sub_matches);
             forward_root_category(&mut input, tool, &matches);
@@ -480,8 +421,8 @@ pub fn dispatch(cmd: Command, tool_set: &ToolSet, corpus: &Corpus) -> Result<i32
 
 fn render_help(mut cmd: Command, subcommand: Option<&str>) -> i32 {
     let args = match subcommand {
-        Some(sub) => vec![prose::BIN, sub, "--help"],
-        None => vec![prose::BIN, "--help"],
+        Some(sub) => vec![help::BIN, sub, "--help"],
+        None => vec![help::BIN, "--help"],
     };
     match cmd.try_get_matches_from_mut(args) {
         Ok(_) => 0,
@@ -499,12 +440,7 @@ fn forward_root_category(input: &mut Value, tool: &Tool, root: &ArgMatches) {
     let Ok(Some(category)) = root.try_get_one::<String>("category") else {
         return;
     };
-    let accepts_category = tool
-        .input_schema
-        .get("properties")
-        .and_then(Value::as_object)
-        .is_some_and(|props| props.contains_key("category"));
-    if !accepts_category {
+    if !tool.fields.iter().any(|f| f.key == "category") {
         return;
     }
     if let Value::Object(map) = input {
@@ -522,24 +458,22 @@ fn optional_flag(matches: &ArgMatches, key: &str) -> bool {
 /// `batch::run` builds the same shape from JSONL.
 fn matches_to_input_value(tool: &Tool, matches: &ArgMatches) -> Value {
     let mut obj = Map::new();
-    let Some(props) = tool
-        .input_schema
-        .get("properties")
-        .and_then(Value::as_object)
-    else {
-        return Value::Object(obj);
-    };
-    for (key, spec) in props {
-        let ty = spec.get("type").and_then(Value::as_str).unwrap_or("string");
+    for field in &tool.fields {
+        let key = field.key;
+        let ty = field
+            .shape
+            .get("type")
+            .and_then(Value::as_str)
+            .unwrap_or("string");
         match ty {
             "integer" => {
                 if let Some(v) = matches.get_one::<u32>(key) {
-                    obj.insert(key.clone(), Value::Number((*v).into()));
+                    obj.insert(key.to_string(), Value::Number((*v).into()));
                 }
             }
             _ => {
                 if let Some(v) = matches.get_one::<String>(key) {
-                    obj.insert(key.clone(), Value::String(v.clone()));
+                    obj.insert(key.to_string(), Value::String(v.clone()));
                 }
             }
         }
