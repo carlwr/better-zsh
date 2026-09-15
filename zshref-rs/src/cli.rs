@@ -246,7 +246,7 @@ fn build_arg(field: &Field) -> Arg {
         Shape::Text => arg,
         Shape::Category => arg
             .value_parser(clap::builder::PossibleValuesParser::new(
-                DOC_CATEGORIES.as_slice(),
+                DOC_CATEGORIES.iter().map(|c| c.as_str()),
             ))
             // The long help lists the values; clap's inline block wraps badly.
             .hide_possible_values(true),
@@ -279,7 +279,7 @@ fn root_category_arg(tool_set: &ToolSet) -> Arg {
         .long_help(category.prose.long.terminal.to_string())
         .action(ArgAction::Set)
         .value_parser(clap::builder::PossibleValuesParser::new(
-            DOC_CATEGORIES.as_slice(),
+            DOC_CATEGORIES.iter().map(|c| c.as_str()),
         ))
         .hide_possible_values(true)
 }
@@ -305,7 +305,7 @@ fn version_arg() -> Arg {
 pub fn dispatch(mut cmd: Command, tool_set: &ToolSet, corpus: &Corpus) -> Result<i32> {
     let matches = match cmd.try_get_matches_from_mut(std::env::args_os()) {
         Ok(m) => m,
-        Err(err) => return Ok(output::handle_clap_error(err, &mut cmd)),
+        Err(err) => return Ok(output::handle_clap_error(err)),
     };
     let Some((sub_name, sub_matches)) = matches.subcommand() else {
         return Ok(render_help(cmd, None));
@@ -358,7 +358,7 @@ fn render_help(mut cmd: Command, subcommand: Option<&str>) -> i32 {
     };
     match cmd.try_get_matches_from_mut(args) {
         Ok(_) => 0,
-        Err(err) => output::handle_clap_error(err, &mut cmd),
+        Err(err) => output::handle_clap_error(err),
     }
 }
 

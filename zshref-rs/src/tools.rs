@@ -16,12 +16,11 @@ pub mod info;
 mod input;
 pub mod list;
 pub mod prose;
-pub mod record_fields;
 pub mod schema;
 pub mod search;
 pub mod text;
 
-use crate::corpus::Corpus;
+use crate::corpus::{Corpus, DocCategory};
 use anyhow::Result;
 use schema::Shape;
 use serde_json::Value;
@@ -125,6 +124,12 @@ impl Tool {
         input::validate(self, raw_input).map_err(anyhow::Error::msg)?;
         (self.run)(&input::fill_defaults(self, raw_input), corpus)
     }
+}
+
+/// The `category` input as a filter; `null` counts as absent.
+pub(crate) fn category_input(input: &Value) -> Result<Option<DocCategory>> {
+    let cat = input.get("category").and_then(Value::as_str);
+    Ok(cat.map(str::parse::<DocCategory>).transpose()?)
 }
 
 /// Every tool, in registration order (`tools/list`, the CLI's `Commands:`).

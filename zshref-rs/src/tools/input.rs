@@ -11,11 +11,17 @@ pub fn validate(tool: &Tool, input: &Value) -> Result<(), String> {
         .as_object()
         .ok_or_else(|| "`input` must be a JSON object".to_string())?;
 
-    if let Some(required) = tool.input_schema.get("required").and_then(Value::as_array) {
-        for r in required.iter().filter_map(Value::as_str) {
-            if !obj.contains_key(r) {
-                return Err(format!("missing required field: `{r}`"));
-            }
+    let required: Vec<&str> = tool
+        .input_schema
+        .get("required")
+        .and_then(Value::as_array)
+        .into_iter()
+        .flatten()
+        .filter_map(Value::as_str)
+        .collect();
+    for r in &required {
+        if !obj.contains_key(*r) {
+            return Err(format!("missing required field: `{r}`"));
         }
     }
 
@@ -42,6 +48,11 @@ pub fn validate(tool: &Tool, input: &Value) -> Result<(), String> {
 
     for (key, spec) in props {
         let Some(value) = obj.get(key) else { continue };
+        // `null` is "no value" where nothing would fill one in.
+        let nullable = !required.contains(&key.as_str()) && spec.get("default").is_none();
+        if nullable && value.is_null() {
+            continue;
+        }
         let ty = spec.get("type").and_then(Value::as_str).unwrap_or("string");
         match ty {
             "integer" => {

@@ -3,7 +3,6 @@
 //! Exit-code contract mirrors `CLI-POLICY.md`.
 
 use clap::error::ErrorKind;
-use clap::Command;
 use serde_json::Value;
 use std::io::{IsTerminal, Write};
 
@@ -34,7 +33,7 @@ pub fn render(value: &Value, pretty: bool) -> String {
 /// implicit bad-input help stays on stderr. Display output uses
 /// `StyledStr::ansi()` when color is enabled so styling isn't lost
 /// (clap's `Display` strips ANSI). User errors → 2; internal errors → 1.
-pub fn handle_clap_error(err: clap::Error, _cmd: &mut Command) -> i32 {
+pub fn handle_clap_error(err: clap::Error) -> i32 {
     match err.kind() {
         ErrorKind::DisplayHelp | ErrorKind::DisplayVersion => {
             write_to_stdout(&err);
@@ -55,8 +54,7 @@ pub fn handle_clap_error(err: clap::Error, _cmd: &mut Command) -> i32 {
         | ErrorKind::ArgumentConflict
         | ErrorKind::MissingRequiredArgument
         | ErrorKind::MissingSubcommand => {
-            // `err.print()` routes through `anstream::AutoStream` — color
-            // gating on NO_COLOR / CLICOLOR_FORCE / TTY is already correct.
+            // `err.print()` goes through `anstream`, whose color gating is already right.
             let _ = err.print();
             if matches!(err.kind(), ErrorKind::InvalidSubcommand) {
                 let mut stderr = std::io::stderr().lock();

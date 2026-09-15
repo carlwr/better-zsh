@@ -1,11 +1,10 @@
 //! `zsh_list` — enumerate corpus records (no `mdBody`), optional category filter.
 //! `limit=0` → metadata only (`matchesTotal` nonzero, `matches` empty).
 
-use crate::corpus::Corpus;
+use crate::corpus::{Corpus, DocCategory};
 use crate::tools::envelope::{mk_entry, mk_envelope};
-use crate::tools::record_fields::{record_display, record_id, record_sub_kind};
 use crate::tools::schema::{output_schema, MatchShape, Shape};
-use crate::tools::{prose, Field, Tool, ToolName};
+use crate::tools::{category_input, prose, Field, Tool, ToolName};
 use anyhow::Result;
 use serde_json::Value;
 
@@ -27,7 +26,7 @@ pub fn tool(corpus: &Corpus) -> Tool {
 }
 
 pub fn run(input: &Value, corpus: &Corpus) -> Result<Value> {
-    let category = input.get("category").and_then(Value::as_str);
+    let category = category_input(input)?;
     let limit = input.get("limit").and_then(Value::as_u64).unwrap_or(0) as usize;
 
     let pool = entries(corpus, category);
@@ -36,21 +35,15 @@ pub fn run(input: &Value, corpus: &Corpus) -> Result<Value> {
     Ok(mk_envelope(matches, total))
 }
 
-fn entries(corpus: &Corpus, cat_filter: Option<&str>) -> Vec<Value> {
+fn entries(corpus: &Corpus, cat_filter: Option<DocCategory>) -> Vec<Value> {
     corpus
         .categories
         .iter()
         .filter(|cat| cat_filter.is_none_or(|f| cat.name == f))
         .flat_map(|cat| {
-            cat.records.iter().map(move |rec| {
-                mk_entry(
-                    cat.name,
-                    record_id(cat.name, rec),
-                    record_display(cat.name, rec),
-                    record_sub_kind(cat.name, rec),
-                    None,
-                )
-            })
+            cat.records
+                .iter()
+                .map(move |rec| mk_entry(cat.name, rec.id(), rec.display(), rec.sub_kind(), None))
         })
         .collect()
 }

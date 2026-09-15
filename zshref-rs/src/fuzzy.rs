@@ -1,27 +1,11 @@
-//! ASCII-only case-insensitive subsequence matcher.
-//!
-//! In-tree replacement for an external fuzzy-match dependency. General
-//! utility — tool-agnostic signature — composed by `tools/search.rs`
-//! for the `search` subcommand's bottom-tier scoring. Callers are
-//! responsible for the exact/prefix tiers; this one just handles the
-//! "is P a subsequence of H, and if so how clean a match" question.
-//!
-//! Non-ASCII input (pattern or haystack) returns `None` rather than
-//! panicking — a guard-rail so bad or drifted input doesn't take the
-//! binary down. The corpus is asserted ASCII-only in a drift test
-//! under `corpus::tests`.
-//!
-//! Scoring is a unitless positive scalar: higher is better. The exact
-//! number has no meaning beyond ranking; callers typically map it into
-//! an informational `[0, 1]` band before emitting to JSON consumers.
+//! ASCII-only case-insensitive subsequence matcher: "is P a subsequence of
+//! H, and how clean a match" — the exact/prefix tiers are the caller's.
+//! Scores are unitless and only meaningful for ranking.
 
-/// Score `pattern` against `haystack`. Returns `None` when either is
-/// non-ASCII, when `pattern` is empty, or when `pattern` is not a
-/// subsequence of `haystack` (case-insensitively). Otherwise returns
-/// a positive score; higher = better match.
-///
-/// A case-insensitive exact match is returned as `u32::MAX`, so callers
-/// can collapse "literally the same string" to a dominating rank.
+/// `None` when either side is non-ASCII (never a panic on drifted input),
+/// `pattern` is empty, or `pattern` is not a case-insensitive subsequence
+/// of `haystack`; otherwise a positive score, higher = better, with a
+/// case-insensitive exact match at `u32::MAX`.
 pub fn score(pattern: &str, haystack: &str) -> Option<u32> {
     if !pattern.is_ascii() || !haystack.is_ascii() {
         return None;
@@ -35,10 +19,8 @@ pub fn score(pattern: &str, haystack: &str) -> Option<u32> {
         return Some(u32::MAX);
     }
 
-    // Greedy left-to-right subsequence walk. Sufficient for short,
-    // structured ids like `AUTO_PUSHD_MINUS` — the corpus is ~1k rows
-    // and realistic queries are ≤ 20 chars, so backtracking to find
-    // the "best" subsequence isn't worth the complexity vs. nucleo.
+    // Greedy left-to-right walk: ids are short and structured (`AUTO_PUSHD_MINUS`),
+    // so backtracking for the best subsequence is not worth its complexity.
     let mut positions: Vec<usize> = Vec::with_capacity(pat.len());
     let mut i = 0usize;
     for (j, &h) in hay.iter().enumerate() {
@@ -54,18 +36,10 @@ pub fn score(pattern: &str, haystack: &str) -> Option<u32> {
         return None;
     }
 
-    // Ranking components (all unitless):
-    //   +200   : match starts at position 0 ("prefix-like" fuzzy)
-    //   +15    : per pair of adjacent matched positions (runs of
-    //            consecutive chars beat scattered subsequences)
-    //   +10    : per matched position whose preceding byte is a word
-    //            boundary (`_`, `-`, `.`, `/`, space) or start-of-string
-    //   −1     : per position offset of the first match (prefer earlier)
-    //   −len/8 : haystack-length penalty (break ties toward denser hits)
-    //   base   : 100
-    //
-    // Integers are i64 during calculation so underflow is impossible;
-    // clamped to ≥ 1 on return.
+    // Base 100; +200 for a match at position 0; +15 per adjacent matched
+    // pair; +10 per match on a word boundary (`_ - . /`, space, start);
+    // −1 per offset of the first match; −len/8 to favour denser hits.
+    // Computed in i64, clamped to ≥ 1.
     let mut s: i64 = 100;
     if positions[0] == 0 {
         s += 200;
@@ -144,9 +118,7 @@ mod tests {
 
     #[test]
     fn word_boundary_outranks_inside_word() {
-        // Every matched char follows `_` (word boundary).
         let boundary = score("abc", "x_a_b_c").unwrap();
-        // Every matched char is inside a word.
         let inside = score("abc", "xaxbxcx").unwrap();
         assert!(
             boundary > inside,
@@ -156,14 +128,12 @@ mod tests {
 
     #[test]
     fn case_insensitive_symmetry() {
-        // Same letters, different case → same score.
         assert_eq!(score("ac", "abc"), score("Ac", "ABC"));
         assert_eq!(score("AUTO", "auto_cd"), score("auto", "AUTO_CD"));
     }
 
     #[test]
     fn shorter_haystack_wins_on_ties() {
-        // Both match at position 0, same structure.
         let short = score("abc", "abc_xx").unwrap();
         let long = score("abc", "abc_xxxxxxxxxxxxx").unwrap();
         assert!(
@@ -180,7 +150,6 @@ mod tests {
 
     #[test]
     fn score_is_positive_for_any_match() {
-        // Smoke: no legitimate subsequence match should clamp to zero.
         for (p, h) in [
             ("a", "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzza"),
             ("abc", "xxxxxxxxxxaxxxxbxxxxc"),

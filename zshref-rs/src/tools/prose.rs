@@ -45,13 +45,17 @@ const RESOLUTION: &str = indoc! {"
 
 /// `value` column in resolver order, labelled from `index.json`.
 fn category_table(index: &Index) -> String {
-    let width = CLASSIFY_ORDER.iter().map(|c| c.len()).max().unwrap_or(0);
+    let width = CLASSIFY_ORDER
+        .iter()
+        .map(|c| c.as_str().len())
+        .max()
+        .unwrap_or(0);
     let rows: Vec<String> = CLASSIFY_ORDER
         .iter()
         .map(|c| {
             let label = index
                 .doc_category_labels
-                .get(*c)
+                .get(c.as_str())
                 .unwrap_or_else(|| panic!("index.json lacks a label for category {c}"));
             format!("  {c:<width$}      {label}")
         })

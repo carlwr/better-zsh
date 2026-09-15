@@ -1,4 +1,4 @@
-// MIRRORED-IN: zshref-rs/src/tools/record_fields.rs
+// MIRRORED-IN: zshref-rs/src/corpus.rs
 
 import { isDefined, isEmpty } from "@carlwr/typescript-extra"
 

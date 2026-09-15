@@ -7,11 +7,10 @@
 use crate::corpus::{Corpus, CLASSIFY_ORDER};
 use crate::resolver::{resolve_in, ResolvedHit};
 use crate::tools::envelope::mk_envelope;
-use crate::tools::record_fields::{record_sub_kind, record_title, str_field, str_input};
 use crate::tools::schema::{output_schema, MatchShape, Shape};
-use crate::tools::{prose, Field, Tool, ToolName};
+use crate::tools::{category_input, prose, Field, Tool, ToolName};
 use anyhow::Result;
-use serde_json::{Map, Value};
+use serde_json::{json, Map, Value};
 
 pub fn tool(corpus: &Corpus) -> Tool {
     Tool::new(
@@ -39,8 +38,8 @@ pub fn tool(corpus: &Corpus) -> Tool {
 }
 
 pub fn run(input: &Value, corpus: &Corpus) -> Result<Value> {
-    let key = str_input(input, "key");
-    let category = input.get("category").and_then(Value::as_str);
+    let key = input.get("key").and_then(Value::as_str).unwrap_or("");
+    let category = category_input(input)?;
 
     let matches_vec: Vec<Value> = if key.trim().is_empty() {
         Vec::new()
@@ -52,10 +51,10 @@ pub fn run(input: &Value, corpus: &Corpus) -> Result<Value> {
                 .collect(),
             None => CLASSIFY_ORDER
                 .iter()
-                .filter_map(|cat| {
+                .filter_map(|&cat| {
                     let h = resolve_in(corpus, cat, key)?;
-                    if h.category == "history_expn"
-                        && record_sub_kind(h.category, h.rec).as_deref() != Some("event-designator")
+                    if h.category.as_str() == "history_expn"
+                        && h.rec.sub_kind() != Some("event-designator")
                     {
                         return None;
                     }
@@ -71,22 +70,16 @@ pub fn run(input: &Value, corpus: &Corpus) -> Result<Value> {
 
 fn hit_to_match(h: &ResolvedHit<'_>) -> Value {
     let mut m = Map::new();
-    m.insert("category".into(), Value::String(h.category.to_string()));
-    m.insert("id".into(), Value::String(h.id.clone()));
-    m.insert("display".into(), Value::String(h.display.clone()));
-    m.insert(
-        "title".into(),
-        Value::String(record_title(h.category, h.rec)),
-    );
-    m.insert(
-        "mdBody".into(),
-        Value::String(str_field(h.rec, "mdBody").to_string()),
-    );
-    if let Some(sk) = record_sub_kind(h.category, h.rec) {
-        m.insert("subKind".into(), Value::String(sk));
+    m.insert("category".into(), h.category.as_str().into());
+    m.insert("id".into(), h.id.into());
+    m.insert("display".into(), h.display.into());
+    m.insert("title".into(), h.rec.title().into());
+    m.insert("mdBody".into(), h.rec.md_body().into());
+    if let Some(sk) = h.rec.sub_kind() {
+        m.insert("subKind".into(), sk.into());
     }
     if let Some(fb) = &h.feedback {
-        m.insert("feedback".into(), fb.to_json());
+        m.insert("feedback".into(), json!(fb));
     }
     Value::Object(m)
 }

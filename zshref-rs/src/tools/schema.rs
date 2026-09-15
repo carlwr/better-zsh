@@ -8,10 +8,9 @@
 //! `--help` long-about advertises the bundle's size to discourage piping
 //! it into agent context.
 
-use crate::corpus::{Corpus, DOC_CATEGORIES};
+use crate::corpus::{Corpus, DocCategory, DOC_CATEGORIES};
 use crate::resolver::ResolverFeedback;
 use crate::tools::envelope::ENVELOPE_KEYS;
-use crate::tools::record_fields::record_sub_kind;
 use crate::tools::{Field, ToolSet};
 use anyhow::Result;
 use serde_json::{json, Map, Value};
@@ -91,10 +90,10 @@ pub struct MatchShape {
 /// Envelope schema; `matches.items` is the per-category `oneOf`.
 pub fn output_schema(shape: &MatchShape, corpus: &Corpus) -> Value {
     let sub_kinds = sub_kind_enums(corpus);
-    let has_sub_kind = |cat: &str| sub_kinds.iter().any(|(c, _)| *c == cat);
+    let has_sub_kind = |cat: DocCategory| sub_kinds.iter().any(|(c, _)| *c == cat);
     let branches: Vec<Value> = DOC_CATEGORIES
         .iter()
-        .map(|cat| match_schema(cat, has_sub_kind(cat), shape))
+        .map(|&cat| match_schema(cat, has_sub_kind(cat), shape))
         .collect();
     let total: usize = corpus.categories.iter().map(|c| c.records.len()).sum();
     json!({
@@ -114,7 +113,7 @@ pub fn output_schema(shape: &MatchShape, corpus: &Corpus) -> Value {
 /// One `oneOf` branch: closed shape with `category` pinned by `const`.
 /// `subKind` is required with a closed enum where the category has one,
 /// forbidden otherwise (always-or-never per category).
-fn match_schema(cat: &str, sub_kind: bool, shape: &MatchShape) -> Value {
+fn match_schema(cat: DocCategory, sub_kind: bool, shape: &MatchShape) -> Value {
     let mut properties = Map::new();
     let mut required = vec!["category", "id", "display"];
     properties.insert("category".into(), json!({ "const": cat }));
@@ -157,7 +156,7 @@ fn match_schema(cat: &str, sub_kind: bool, shape: &MatchShape) -> Value {
 /// `DisplayString` (printable ASCII) restate the corpus-ASCII invariant
 /// the fixture and `corpus.rs` tests hold; `MdBodyString` and
 /// `TitleString` allow Unicode prose.
-fn defs(shape: &MatchShape, sub_kinds: &[(&str, Vec<String>)]) -> Value {
+fn defs(shape: &MatchShape, sub_kinds: &[(DocCategory, Vec<String>)]) -> Value {
     let mut defs = Map::new();
     defs.insert(
         "IdString".into(),
@@ -189,7 +188,7 @@ fn defs(shape: &MatchShape, sub_kinds: &[(&str, Vec<String>)]) -> Value {
 
 /// Sorted distinct `subKind` values per category, in category order;
 /// categories without any are absent.
-fn sub_kind_enums(corpus: &Corpus) -> Vec<(&'static str, Vec<String>)> {
+fn sub_kind_enums(corpus: &Corpus) -> Vec<(DocCategory, Vec<String>)> {
     corpus
         .categories
         .iter()
@@ -197,7 +196,7 @@ fn sub_kind_enums(corpus: &Corpus) -> Vec<(&'static str, Vec<String>)> {
             let values: BTreeSet<String> = cat
                 .records
                 .iter()
-                .filter_map(|rec| record_sub_kind(cat.name, rec))
+                .filter_map(|rec| rec.sub_kind().map(str::to_owned))
                 .collect();
             (!values.is_empty()).then(|| (cat.name, values.into_iter().collect()))
         })
@@ -278,7 +277,7 @@ mod tests {
             let with: usize = cat
                 .records
                 .iter()
-                .filter(|r| record_sub_kind(cat.name, r).is_some())
+                .filter(|r| r.sub_kind().is_some())
                 .count();
             assert!(
                 with == 0 || with == cat.records.len(),

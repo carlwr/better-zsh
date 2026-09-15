@@ -74,7 +74,7 @@ mod tests {
             .iter()
             .map(|x| x.as_str().expect("category is string"))
             .collect();
-        let expected: Vec<&str> = corpus.categories.iter().map(|c| c.name).collect();
+        let expected: Vec<&str> = corpus.categories.iter().map(|c| c.name.as_str()).collect();
         assert_eq!(listed, expected);
     }
 
@@ -86,7 +86,7 @@ mod tests {
         let counts = v["counts"].as_object().expect("counts object");
         for cat in &corpus.categories {
             let n = counts
-                .get(cat.name)
+                .get(cat.name.as_str())
                 .and_then(Value::as_u64)
                 .unwrap_or_else(|| panic!("missing counts.{}", cat.name));
             assert!(n > 0, "counts.{} is zero", cat.name);
