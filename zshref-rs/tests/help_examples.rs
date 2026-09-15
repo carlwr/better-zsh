@@ -43,12 +43,14 @@ fn root_workflow_examples_match_cli_output() {
     );
     for (command, shown_output) in examples {
         let actual = run_example_command(command.clone());
-        // The workflow's `docs` step picks a record with a short
-        // `mdBody` so no elision fires; `normalize_mdbody` is still safe
-        // (it's a no-op when `mdBody` matches between sides).
+        // Step 2 promises the full markdown.
+        assert!(
+            !shown_output.contains("elided"),
+            "`zshref --help` workflow example elides `mdBody`; pick a record \
+             with a shorter body (command: {command})"
+        );
         assert_eq!(
-            normalize_mdbody(&shown_output),
-            normalize_mdbody(&actual),
+            shown_output, actual,
             "`zshref --help` workflow example drifted from real CLI output \
              (command: {command})"
         );
@@ -141,7 +143,7 @@ fn run_batch_request(request: &str) -> String {
         .spawn()
         .expect("spawn zshref batch");
     // Stdin write on its own thread so wait_with_output can drain stdout
-    // concurrently — see src/batch.rs:5 for the rationale.
+    // concurrently — rationale in the `src/batch.rs` module doc.
     let mut stdin_h = child.stdin.take().expect("stdin piped");
     let payload = format!("{request}\n");
     let writer = std::thread::spawn(move || {

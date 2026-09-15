@@ -41,7 +41,7 @@ pub const ROOT_USAGE: &str = {
   zshref [ info | schema | completions <SHELL> | help [COMMAND] ]"
 };
 
-const __CHECK_ROOT_USAGE: () = assert!(
+const _: () = assert!(
     matches!(
       ROOT_USAGE.as_bytes(),
       [b'\n', b' ', b' ', d, ..] if *d != b' '
@@ -72,21 +72,17 @@ const ROOT_AFTER_HELP_HEAD: &str = indoc! {
       zshref list --category job_spec --limit 10"
 };
 
-/// Tail of the root `--help` (everything below the auto-generated
-/// `Commands:` / `Options:` sections). Static-text head + a dynamically
-/// rendered workflow example. The workflow shows the search → docs
-/// sequence on a real record so the JSON output is byte-for-byte what
-/// the user gets if they run the commands.
+/// Below clap's `Commands:` / `Options:`: the static head, then a workflow
+/// example run through the real tools so its JSON is what the user gets.
 pub fn root_after_help_tail(tool_set: &ToolSet, corpus: &Corpus) -> String {
     let workflow = workflow_example(tool_set, corpus);
     format!("{ROOT_AFTER_HELP_HEAD}\n\n{workflow}\n")
 }
 
-/// `!` is one of the most overloaded tokens in zsh (5 categories). Narrowing
-/// with `--category=conditional_op` keeps the result set to exactly two
-/// records (`!`, `!=`); fetching `!` then gives a short, self-explanatory
-/// `mdBody` ("true if exp is false."). This makes the example demonstrate
-/// (a) the search → docs sequence and (b) why `--category` matters.
+/// `!` resolves in several categories; `--category=conditional_op` narrows
+/// it to two records (`!`, `!=`), and `!`'s `mdBody` is short enough to
+/// show unelided — so the example shows both the search → docs sequence
+/// and why `category` matters.
 fn workflow_example(tool_set: &ToolSet, corpus: &Corpus) -> String {
     let search_tool = tool_set.get(ToolName::Search);
     let docs_tool = tool_set.get(ToolName::Docs);
@@ -100,19 +96,12 @@ fn workflow_example(tool_set: &ToolSet, corpus: &Corpus) -> String {
     let mut docs_out = docs_tool
         .call(&docs_in, corpus)
         .expect("workflow docs must run");
-    // Defensive: the chosen record's `mdBody` is under threshold so no
-    // elision should fire, but a future corpus change could push it over.
+    // Must stay a no-op (step 2 promises the full body); the help-example
+    // test asserts it.
     elide_for_help_example(&mut docs_out);
 
     let search_rendered = output::render(&search_out, true);
     let docs_rendered = output::render(&docs_out, true);
-    let indent = |s: &str| {
-        s.trim_end()
-            .lines()
-            .map(|l| format!("    {l}"))
-            .collect::<Vec<_>>()
-            .join("\n")
-    };
 
     formatdoc! {"
         Typical workflow:
@@ -125,8 +114,8 @@ fn workflow_example(tool_set: &ToolSet, corpus: &Corpus) -> String {
             $ zshref docs --key='!' --category=conditional_op --pretty
         {docs_block}\
         ",
-        search_block = indent(&search_rendered),
-        docs_block = indent(&docs_rendered),
+        search_block = indent_block(&search_rendered),
+        docs_block = indent_block(&docs_rendered),
     }
 }
 
@@ -229,30 +218,34 @@ pub struct ShellExample<'a> {
     pub output: &'a str,
 }
 
-/// Raw-char threshold above which a `mdBody` string in a help example is
-/// replaced with `MDBODY_ELIDE_PLACEHOLDER`. JSON strings cannot legally
-/// span physical lines, so an oversize `mdBody` would force clap to wrap
-/// inside the string and break the JSON syntax. Tuned for the example
-/// block's 10-char indent + `"mdBody": "` overhead + `\n`-as-`\\n` JSON
-/// escape inflation.
-pub const MDBODY_ELIDE_THRESHOLD: usize = 45;
+/// Columns a help page is laid out for.
+const HELP_COLUMNS: usize = 80;
+
+/// Indent of a help example's command output.
+const EXAMPLE_INDENT: &str = "    ";
+
+/// Pretty-printed JSON indent of a `matches[]` element's fields.
+const MATCH_FIELD_INDENT: usize = 6;
+
+/// Widest JSON-encoded `mdBody` a help example shows verbatim: JSON strings
+/// cannot span lines, so a wider one would make clap wrap inside the
+/// string and break the JSON.
+pub const MDBODY_ENCODED_MAX: usize =
+    HELP_COLUMNS - EXAMPLE_INDENT.len() - MATCH_FIELD_INDENT - r#""mdBody": "#.len() - ",".len();
 
 pub const MDBODY_ELIDE_PLACEHOLDER: &str = "<elided for this help display>";
 
-/// Walk a JSON `Value` and replace any `mdBody` string field whose raw
-/// length is at or above `MDBODY_ELIDE_THRESHOLD` with the placeholder.
-/// The render of `output::render` then produces an example that fits in
-/// 80 cols without clap reflow inside JSON strings. Lives in the help-
-/// rendering path so the real CLI output is unaffected.
+/// Replace every `mdBody` wider than `MDBODY_ENCODED_MAX` with the
+/// placeholder. Help-rendering path only; real CLI output is unaffected.
 pub fn elide_for_help_example(value: &mut Value) {
     match value {
         Value::Object(map) => {
             for (k, v) in map.iter_mut() {
                 if k == "mdBody" {
-                    if let Value::String(s) = v {
-                        if s.len() >= MDBODY_ELIDE_THRESHOLD {
-                            *v = Value::String(MDBODY_ELIDE_PLACEHOLDER.to_string());
-                        }
+                    let encoded =
+                        serde_json::to_string(v).map_or(usize::MAX, |e| e.chars().count());
+                    if encoded > MDBODY_ENCODED_MAX {
+                        *v = Value::String(MDBODY_ELIDE_PLACEHOLDER.to_string());
                     }
                 } else {
                     elide_for_help_example(v);
@@ -264,8 +257,7 @@ pub fn elide_for_help_example(value: &mut Value) {
     }
 }
 
-/// Render an `Example:` / `Examples:` block. Heading is singular for one
-/// example, plural for more.
+/// Render an `Example:` / `Examples:` block.
 pub fn shell_examples(items: &[ShellExample<'_>]) -> String {
     let heading = if items.len() == 1 {
         "Example:"
@@ -278,9 +270,7 @@ pub fn shell_examples(items: &[ShellExample<'_>]) -> String {
     format!("{heading}\n\n{}", bodies.join("\n\n"))
 }
 
-/// Single example block under a caller-chosen heading. Same body layout as
-/// `shell_examples` but lets the caller label the block for distinct
-/// purpose (e.g. `Recipe — …:` next to the regular `Examples:` block).
+/// One example under a caller-chosen heading (e.g. `Recipe — …:`).
 pub fn labelled_example(heading: &str, ex: ShellExample<'_>) -> String {
     format!("{heading}\n\n{}", render_one(&ex))
 }
@@ -297,14 +287,15 @@ fn render_one(ex: &ShellExample<'_>) -> String {
         })
         .collect::<Vec<_>>()
         .join("\n");
-    let indented_output = ex
-        .output
-        .trim_end()
+    format!("{indented_command}\n{}", indent_block(ex.output))
+}
+
+fn indent_block(s: &str) -> String {
+    s.trim_end()
         .lines()
-        .map(|line| format!("    {line}"))
+        .map(|line| format!("{EXAMPLE_INDENT}{line}"))
         .collect::<Vec<_>>()
-        .join("\n");
-    format!("{indented_command}\n{indented_output}")
+        .join("\n")
 }
 
 /// Upstream-zsh line for the `--version` block. `commit_short` is omitted
@@ -331,3 +322,49 @@ pub const COMPL_SHELL_HELP: &str = indoc! {"
       elvish
       powershell
     "};
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use proptest::prelude::*;
+
+    /// A `docs` envelope around one `mdBody`, as the examples render it.
+    fn docs_envelope(md_body: &str) -> Value {
+        json!({
+            "matches": [{
+                "category": "option", "id": "x", "display": "X", "title": "`X`",
+                "mdBody": md_body,
+            }],
+            "matchesReturned": 1,
+            "matchesTotal": 1,
+        })
+    }
+
+    fn encoded_width(s: &str) -> usize {
+        serde_json::to_string(s).expect("string").chars().count()
+    }
+
+    proptest! {
+        #![proptest_config(ProptestConfig::with_cases(256))]
+
+        // Newlines, quotes, backslashes and control chars inflate under
+        // JSON escaping; non-ASCII does not.
+        #[test]
+        fn elided_examples_fit_and_short_bodies_show_verbatim(
+            md_body in prop_oneof![r"[\P{C}\n\t]{0,90}", r"[\x00-\x7f]{0,90}"],
+        ) {
+            let mut v = docs_envelope(&md_body);
+            elide_for_help_example(&mut v);
+            let block = indent_block(&output::render(&v, true));
+            for line in block.lines() {
+                prop_assert!(line.chars().count() <= HELP_COLUMNS, "{line:?}");
+            }
+            let shown = v["matches"][0]["mdBody"].as_str().expect("string");
+            if encoded_width(&md_body) <= MDBODY_ENCODED_MAX {
+                prop_assert_eq!(shown, md_body.as_str());
+            } else {
+                prop_assert_eq!(shown, MDBODY_ELIDE_PLACEHOLDER);
+            }
+        }
+    }
+}
