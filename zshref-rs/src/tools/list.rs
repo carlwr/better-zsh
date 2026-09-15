@@ -5,12 +5,12 @@ use crate::corpus::Corpus;
 use crate::tools::envelope::{mk_entry, mk_envelope};
 use crate::tools::record_fields::{record_display, record_id, record_sub_kind};
 use crate::tools::schema::{category_shape, limit_shape, output_schema, MatchShape};
-use crate::tools::{prose, Field, ToolDef};
+use crate::tools::{prose, Field, Tool};
 use anyhow::Result;
 use serde_json::Value;
 
-pub fn def(corpus: &Corpus) -> ToolDef {
-    ToolDef::new(
+pub fn tool(corpus: &Corpus) -> Tool {
+    Tool::new(
         "zsh_list",
         prose::LIST_BRIEF,
         prose::list_long(),

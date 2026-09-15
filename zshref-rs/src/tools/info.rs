@@ -1,14 +1,6 @@
-//! `zshref info` — emit corpus-level introspection as JSON.
-//!
-//! Unlike the other tools, `info` has no `ToolDef` (it's a CLI-only feature,
-//! not surfaced through the MCP seam) and takes no input flags. The shape is
-//! stable but deliberately minimal; add fields here rather than scatter new
-//! `--version`-adjacent subcommands.
-//!
-//! Counts are recomputed from the loaded corpus (per category `records.len()`)
-//! rather than copied from `index.counts`: the corpus is the authoritative
-//! record source, and recomputing avoids a second drift surface (the camelCase
-//! key shape of `index.counts` differs from our snake_case category names).
+//! `zshref info` — corpus-level introspection as JSON; CLI-only, not in the
+//! tool set. Counts are recomputed from the loaded corpus rather than copied
+//! from `index.counts` (a second drift surface, with camelCase keys).
 
 use crate::corpus::Corpus;
 use anyhow::Result;
@@ -74,8 +66,6 @@ mod tests {
 
     #[test]
     fn info_categories_match_corpus_order() {
-        // `categories` must mirror embedded `index.json.docCategories` order.
-        // Guards against future refactors reordering the loaded corpus.
         let corpus = load_corpus().expect("load_corpus");
         let v = run(&corpus).expect("info::run");
         let listed: Vec<&str> = v["categories"]
@@ -90,8 +80,7 @@ mod tests {
 
     #[test]
     fn info_counts_nonzero_per_category() {
-        // Smoke: every bundled category has ≥ 1 record. An empty category
-        // would usually mean the JSON artifact failed to regenerate.
+        // An empty category usually means the JSON artifact failed to regenerate.
         let corpus = load_corpus().expect("load_corpus");
         let v = run(&corpus).expect("info::run");
         let counts = v["counts"].as_object().expect("counts object");

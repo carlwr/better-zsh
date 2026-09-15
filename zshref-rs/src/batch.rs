@@ -8,12 +8,12 @@
 //! stdin, and a parent that completes stdin before reading stdout deadlocks.
 
 use crate::corpus::Corpus;
-use crate::tools::{self, ToolDefs};
+use crate::tools::{self, ToolSet};
 use anyhow::Result;
 use serde_json::{json, Value};
 use std::io::{BufRead, Write};
 
-pub fn run(tool_defs: &ToolDefs, corpus: &Corpus) -> Result<i32> {
+pub fn run(tool_set: &ToolSet, corpus: &Corpus) -> Result<i32> {
     let stdin = std::io::stdin().lock();
     let mut stdout = std::io::stdout().lock();
     for line in stdin.lines() {
@@ -21,28 +21,28 @@ pub fn run(tool_defs: &ToolDefs, corpus: &Corpus) -> Result<i32> {
         if line.trim().is_empty() {
             continue;
         }
-        let response = handle_request(&line, tool_defs, corpus);
+        let response = handle_request(&line, tool_set, corpus);
         let s = serde_json::to_string(&response).unwrap_or_else(|_| "null".into());
         writeln!(stdout, "{s}")?;
     }
     Ok(0)
 }
 
-fn handle_request(line: &str, tool_defs: &ToolDefs, corpus: &Corpus) -> Value {
+fn handle_request(line: &str, tool_set: &ToolSet, corpus: &Corpus) -> Value {
     let req: Value = match serde_json::from_str(line) {
         Ok(v) => v,
         Err(e) => return err(format!("invalid JSON: {e}")),
     };
-    let tool = match req.get("tool").and_then(Value::as_str) {
+    let name = match req.get("tool").and_then(Value::as_str) {
         Some(s) => s,
         None => return err("missing `tool` field"),
     };
     let empty = Value::Object(Default::default());
     let raw_input = req.get("input").unwrap_or(&empty);
-    let Some(td) = tool_defs.get(tool) else {
-        return err(format!("unknown tool: {tool}"));
+    let Some(tool) = tool_set.get(name) else {
+        return err(format!("unknown tool: {name}"));
     };
-    match tools::call(td, raw_input, corpus) {
+    match tools::call(tool, raw_input, corpus) {
         Ok(output) => json!({ "ok": true, "output": output }),
         Err(e) => err(format!("{e:#}")),
     }

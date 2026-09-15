@@ -9,12 +9,12 @@ use crate::resolver::{resolve_in, ResolvedHit};
 use crate::tools::envelope::mk_envelope;
 use crate::tools::record_fields::{record_sub_kind, record_title, str_field, str_input};
 use crate::tools::schema::{category_shape, output_schema, string_shape, MatchShape};
-use crate::tools::{prose, Field, ToolDef};
+use crate::tools::{prose, Field, Tool};
 use anyhow::Result;
 use serde_json::{Map, Value};
 
-pub fn def(corpus: &Corpus) -> ToolDef {
-    ToolDef::new(
+pub fn tool(corpus: &Corpus) -> Tool {
+    Tool::new(
         "zsh_docs",
         prose::DOCS_BRIEF,
         prose::docs_long(corpus.index),

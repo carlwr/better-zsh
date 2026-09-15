@@ -24,7 +24,7 @@ Known divergence the fixture does not yet pin: `history_expn` caret shorthand wi
 - `tests/cli_invariants.rs` — deterministic invariant checks: CLI ↔ batch parity, every-category sweeps, full-corpus round-trip
 - `tests/mcp.rs` — black-box MCP client over the `zshref-mcp` binary: one stdio session per test; every successful `tools/call` validated against its `outputSchema`
 - `tests/scope_fence.rs` — the tool layer names no process, network, environment or file-system facility
-- `tests/common/mod.rs` — shared helpers: spawn-and-parse vocabulary, the crate's tool definitions, `outputSchema` validators, subcommand→tool-name map
+- `tests/common/mod.rs` — shared helpers: spawn-and-parse vocabulary, the tool set, `outputSchema` validators, subcommand→tool-name map
 - `src/resolver.rs` `#[cfg(test)]` — conformance to zsh-core's resolver fixture; `make cli-test` / `make cli-vendored-test` refresh fixture and corpus together, plain `cargo test` reads what is on disk
 
 `run_json` auto-validates every tool subcommand response against its `outputSchema` — new tests get conformance checks for free.

@@ -13,7 +13,7 @@ use crate::resolver::ResolverFeedback;
 use crate::tools::envelope::ENVELOPE_KEYS;
 use crate::tools::prose::DEFAULT_LIMIT;
 use crate::tools::record_fields::record_sub_kind;
-use crate::tools::{Field, ToolDefs};
+use crate::tools::{Field, ToolSet};
 use anyhow::Result;
 use serde_json::{json, Map, Value};
 use std::collections::BTreeSet;
@@ -195,19 +195,19 @@ fn sub_kind_enums(corpus: &Corpus) -> Vec<(&'static str, Vec<String>)> {
 
 // --- bundle ------------------------------------------------------------------
 
-pub fn run(tool_defs: &ToolDefs) -> Result<Value> {
-    Ok(build_bundle(tool_defs))
+pub fn run(tool_set: &ToolSet) -> Result<Value> {
+    Ok(build_bundle(tool_set))
 }
 
-fn build_bundle(tool_defs: &ToolDefs) -> Value {
-    let tools: Vec<Value> = tool_defs
+fn build_bundle(tool_set: &ToolSet) -> Value {
+    let tools: Vec<Value> = tool_set
         .tools
         .iter()
-        .map(|td| {
+        .map(|tool| {
             json!({
-                "name": td.name,
-                "inputSchema": td.input_schema,
-                "outputSchema": td.output_schema,
+                "name": tool.name,
+                "inputSchema": tool.input_schema,
+                "outputSchema": tool.output_schema,
             })
         })
         .collect();
@@ -219,10 +219,10 @@ fn build_bundle(tool_defs: &ToolDefs) -> Value {
 
 /// Word + leaf counts (lazily computed). Word count over pretty-printed form
 /// — upper bound for `--pretty`, slight over-estimate for compact default.
-pub fn size_hint(tool_defs: &ToolDefs) -> (usize, usize) {
+pub fn size_hint(tool_set: &ToolSet) -> (usize, usize) {
     static CACHE: OnceLock<(usize, usize)> = OnceLock::new();
     *CACHE.get_or_init(|| {
-        let bundle = build_bundle(tool_defs);
+        let bundle = build_bundle(tool_set);
         let words = serde_json::to_string_pretty(&bundle)
             .map(|s| s.split_whitespace().count())
             .unwrap_or(0);
@@ -248,7 +248,7 @@ mod tests {
     #[test]
     fn bundle_has_expected_top_level_keys() {
         let corpus = load_corpus().expect("load_corpus");
-        let v = run(&ToolDefs::build(&corpus)).expect("schema::run");
+        let v = run(&ToolSet::build(&corpus)).expect("schema::run");
         let obj = v.as_object().expect("top-level object");
         assert_eq!(obj.get("version").and_then(Value::as_u64), Some(1));
         assert!(obj.contains_key("tools"));
@@ -257,10 +257,10 @@ mod tests {
     #[test]
     fn bundle_lists_every_tool_with_input_and_output_schema() {
         let corpus = load_corpus().expect("load_corpus");
-        let defs = ToolDefs::build(&corpus);
-        let v = run(&defs).expect("schema::run");
+        let tool_set = ToolSet::build(&corpus);
+        let v = run(&tool_set).expect("schema::run");
         let tools = v["tools"].as_array().expect("tools array");
-        assert_eq!(tools.len(), defs.tools.len());
+        assert_eq!(tools.len(), tool_set.tools.len());
         for entry in tools {
             let entry = entry.as_object().expect("tool entry object");
             assert!(entry.contains_key("name"));

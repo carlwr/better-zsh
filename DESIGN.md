@@ -310,9 +310,9 @@ Per MCP spec, tools register `outputSchema`; responses include `structuredConten
 
 ## Adapters of the shared tool surface
 
-Two adapters over the same `ToolDefs`, both in the `zshref` crate: the CLI and the MCP server.
+Two adapters over the same `ToolSet`, both in the `zshref` crate: the CLI and the MCP server.
 
-Adapters walk the tool definitions (`src/tools.rs`) and dispatch through them; nothing else. The request path is shared — validate, fill schema defaults, dispatch (`tools::call`).
+Adapters walk the tool set (`src/tools.rs`) and dispatch through it; nothing else. The request path is shared — validate, fill schema defaults, dispatch (`tools::call`).
 
 Structural lock on the tool layer (the spec for its own claim): **scope fence** — `zshref-rs/tests/scope_fence.rs`.
 
@@ -413,11 +413,11 @@ External coverage:
 
 Rust, not a TS CLI: several TS CLI frameworks were tried and each fought `--help` quality (`PRINCIPLES.md`); clap did not. A small, fast, self-contained binary is the product for a tool agents invoke hundreds of times per session; single-binary TS routes give large binaries and slow startup.
 
-The tool definitions keep the marginal cost of "another adapter" low — dynamic `clap::Command` assembly walks them:
+The tool set keeps the marginal cost of "another adapter" low — dynamic `clap::Command` assembly walks it:
 
 - subcommands = tool names minus `zsh_`
 - flags from schema fragments
-- `brief` / `description` / `flag_briefs` → clap help slots (three-field split: `ToolDef` in `zshref-rs/src/tools.rs`)
+- `brief` / `description` / `flag_briefs` → clap help slots (three-field split: `Tool` in `zshref-rs/src/tools.rs`)
 
 Cross-adapter notes:
 

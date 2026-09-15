@@ -5,7 +5,7 @@
 //! 1. **Spawn-and-parse vocabulary.** `BIN`, `run_raw`, `run_json`,
 //!    `assert_envelope`, `doc_categories` — the minimum surface for
 //!    invoking the built binary and shaping its JSON responses.
-//! 2. **`outputSchema` validation.** `tool_defs`, `validator_for`,
+//! 2. **`outputSchema` validation.** `tool_set`, `validator_for`,
 //!    `validate_or_panic`, `tool_for_subcommand` — `run_json`
 //!    auto-validates every tool-subcommand response against the crate's
 //!    own schema, so new tests get conformance checks for free.
@@ -23,7 +23,7 @@ use serde_json::Value;
 use std::collections::HashMap;
 use std::process::Command;
 use std::sync::OnceLock;
-use zshref::tools::ToolDefs;
+use zshref::tools::ToolSet;
 
 /// Path to the test crate's binary under test, baked in by Cargo.
 pub const BIN: &str = env!("CARGO_BIN_EXE_zshref");
@@ -36,20 +36,20 @@ pub fn run_raw(args: &[&str]) -> std::process::Output {
 
 const NON_TOOL_SUBCOMMANDS: &[&str] = &["batch", "info", "schema", "completions", "help"];
 
-/// The tool definitions the binary under test was built from: same crate,
+/// The tool set the binary under test was built from: same crate,
 /// same data source.
-pub fn tool_defs() -> &'static ToolDefs {
-    static DEFS: OnceLock<ToolDefs> = OnceLock::new();
-    DEFS.get_or_init(|| {
+pub fn tool_set() -> &'static ToolSet {
+    static TOOLS: OnceLock<ToolSet> = OnceLock::new();
+    TOOLS.get_or_init(|| {
         let corpus = zshref::corpus::load_corpus().expect("load_corpus");
-        ToolDefs::build(&corpus)
+        ToolSet::build(&corpus)
     })
 }
 
 pub fn tool_full_names() -> &'static [String] {
     static NAMES: OnceLock<Vec<String>> = OnceLock::new();
     NAMES.get_or_init(|| {
-        tool_defs()
+        tool_set()
             .tools
             .iter()
             .map(|t| t.name.to_string())
@@ -190,14 +190,14 @@ pub fn validator_for(tool: &str) -> &'static Validator {
     static VALIDATORS: OnceLock<HashMap<String, Validator>> = OnceLock::new();
     VALIDATORS
         .get_or_init(|| {
-            tool_defs()
+            tool_set()
                 .tools
                 .iter()
-                .map(|td| {
+                .map(|t| {
                     let compiled = jsonschema::draft202012::options()
-                        .build(&td.output_schema)
-                        .unwrap_or_else(|e| panic!("compile outputSchema for {}: {e}", td.name));
-                    (td.name.to_string(), compiled)
+                        .build(&t.output_schema)
+                        .unwrap_or_else(|e| panic!("compile outputSchema for {}: {e}", t.name));
+                    (t.name.to_string(), compiled)
                 })
                 .collect()
         })

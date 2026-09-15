@@ -6,7 +6,7 @@
 
 mod common;
 
-use common::{assert_envelope, doc_categories, run_json, tool_defs, validate_or_panic, BIN};
+use common::{assert_envelope, doc_categories, run_json, tool_set, validate_or_panic, BIN};
 use serde_json::{json, Value};
 use std::process::Command;
 use std::sync::OnceLock;
@@ -56,7 +56,7 @@ fn every_category_list_is_pure_and_nonempty() {
 #[test]
 fn omit_equals_schema_default() {
     let mut checked = 0;
-    for tool in &tool_defs().tools {
+    for tool in &tool_set().tools {
         let name = tool.name;
         let sub = name.strip_prefix("zsh_").unwrap_or(name);
         let Some(props) = tool

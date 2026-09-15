@@ -157,17 +157,17 @@ fn initialize_advertises_tools_and_the_suite_preamble() {
 }
 
 #[test]
-fn tools_list_equals_the_tool_defs_in_order() {
+fn tools_list_equals_the_tool_set_in_order() {
     let mut session = Session::start();
     let listed = session.request("tools/list", json!({}));
     let listed = listed["tools"].as_array().expect("tools array");
-    let defs = &common::tool_defs().tools;
-    assert_eq!(listed.len(), defs.len());
-    for (tool, def) in listed.iter().zip(defs) {
-        assert_eq!(tool["name"], def.name);
-        assert_eq!(tool["description"], def.description, "{}", def.name);
-        assert_eq!(tool["inputSchema"], def.input_schema, "{}", def.name);
-        assert_eq!(tool["outputSchema"], def.output_schema, "{}", def.name);
+    let tools = &common::tool_set().tools;
+    assert_eq!(listed.len(), tools.len());
+    for (listed, tool) in listed.iter().zip(tools) {
+        assert_eq!(listed["name"], tool.name);
+        assert_eq!(listed["description"], tool.description, "{}", tool.name);
+        assert_eq!(listed["inputSchema"], tool.input_schema, "{}", tool.name);
+        assert_eq!(listed["outputSchema"], tool.output_schema, "{}", tool.name);
     }
     session.finish();
 }
@@ -243,7 +243,7 @@ fn search_and_list_return_identity_only_rows() {
 #[test]
 fn omitted_limit_takes_the_schema_default() {
     let mut session = Session::start();
-    let default = common::tool_defs()
+    let default = common::tool_set()
         .get("zsh_search")
         .expect("zsh_search")
         .input_schema["properties"]["limit"]["default"]

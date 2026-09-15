@@ -1,17 +1,17 @@
 //! Request input against a tool's `inputSchema`: validation and defaults.
 
-use crate::tools::ToolDef;
+use crate::tools::Tool;
 use serde_json::Value;
 
 /// Lightweight check: missing required, unknown fields, type mismatch,
 /// integer bounds. Mirrors clap's validation without a full JSON Schema
 /// validator — schemas are tiny and stable.
-pub fn validate(td: &ToolDef, input: &Value) -> Result<(), String> {
+pub fn validate(tool: &Tool, input: &Value) -> Result<(), String> {
     let obj = input
         .as_object()
         .ok_or_else(|| "`input` must be a JSON object".to_string())?;
 
-    if let Some(required) = td.input_schema.get("required").and_then(Value::as_array) {
+    if let Some(required) = tool.input_schema.get("required").and_then(Value::as_array) {
         for r in required.iter().filter_map(Value::as_str) {
             if !obj.contains_key(r) {
                 return Err(format!("missing required field: `{r}`"));
@@ -19,11 +19,15 @@ pub fn validate(td: &ToolDef, input: &Value) -> Result<(), String> {
         }
     }
 
-    let Some(props) = td.input_schema.get("properties").and_then(Value::as_object) else {
+    let Some(props) = tool
+        .input_schema
+        .get("properties")
+        .and_then(Value::as_object)
+    else {
         return Ok(());
     };
 
-    if td
+    if tool
         .input_schema
         .get("additionalProperties")
         .and_then(Value::as_bool)
@@ -66,9 +70,13 @@ pub fn validate(td: &ToolDef, input: &Value) -> Result<(), String> {
 
 /// Inject schema defaults so omitted fields (e.g. `limit`) behave as in CLI
 /// mode, where clap injects them.
-pub fn fill_defaults(td: &ToolDef, input: &Value) -> Value {
+pub fn fill_defaults(tool: &Tool, input: &Value) -> Value {
     let mut obj = input.as_object().cloned().unwrap_or_default();
-    let Some(props) = td.input_schema.get("properties").and_then(Value::as_object) else {
+    let Some(props) = tool
+        .input_schema
+        .get("properties")
+        .and_then(Value::as_object)
+    else {
         return Value::Object(obj);
     };
     for (key, spec) in props {

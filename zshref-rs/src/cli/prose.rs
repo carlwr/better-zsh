@@ -4,7 +4,7 @@
 
 use crate::corpus::Corpus;
 use crate::output;
-use crate::tools::{self, ToolDef, ToolDefs};
+use crate::tools::{self, Tool, ToolSet};
 use indoc::{formatdoc, indoc};
 use serde_json::{json, Value};
 
@@ -79,8 +79,8 @@ const ROOT_AFTER_HELP_HEAD: &str = indoc! {
 /// rendered workflow example. The workflow shows the search → docs
 /// sequence on a real record so the JSON output is byte-for-byte what
 /// the user gets if they run the commands.
-pub fn root_after_help_tail(tool_defs: &ToolDefs, corpus: &Corpus) -> String {
-    let workflow = workflow_example(tool_defs, corpus);
+pub fn root_after_help_tail(tool_set: &ToolSet, corpus: &Corpus) -> String {
+    let workflow = workflow_example(tool_set, corpus);
     format!("{ROOT_AFTER_HELP_HEAD}\n\n{workflow}\n")
 }
 
@@ -89,22 +89,24 @@ pub fn root_after_help_tail(tool_defs: &ToolDefs, corpus: &Corpus) -> String {
 /// records (`!`, `!=`); fetching `!` then gives a short, self-explanatory
 /// `mdBody` ("true if exp is false."). This makes the example demonstrate
 /// (a) the search → docs sequence and (b) why `--category` matters.
-fn workflow_example(tool_defs: &ToolDefs, corpus: &Corpus) -> String {
+fn workflow_example(tool_set: &ToolSet, corpus: &Corpus) -> String {
     let find = |name: &str| {
-        tool_defs
+        tool_set
             .get(name)
             .unwrap_or_else(|| panic!("workflow example needs the {name} tool"))
     };
-    let search_td = find("zsh_search");
-    let docs_td = find("zsh_docs");
+    let search_tool = find("zsh_search");
+    let docs_tool = find("zsh_docs");
 
     // `tools::call` fills the `limit` default the shell command gets from
     // clap; without it `dispatch` would see no `limit` and return nothing.
     let search_in = json!({ "query": "!", "category": "conditional_op" });
     let docs_in = json!({ "key": "!", "category": "conditional_op" });
 
-    let search_out = tools::call(search_td, &search_in, corpus).expect("workflow search must run");
-    let mut docs_out = tools::dispatch(docs_td, &docs_in, corpus).expect("workflow docs must run");
+    let search_out =
+        tools::call(search_tool, &search_in, corpus).expect("workflow search must run");
+    let mut docs_out =
+        tools::dispatch(docs_tool, &docs_in, corpus).expect("workflow docs must run");
     // Defensive: the chosen record's `mdBody` is under threshold so no
     // elision should fire, but a future corpus change could push it over.
     elide_for_help_example(&mut docs_out);
@@ -162,8 +164,8 @@ pub const ROOT_PRETTY_HELP: &str = indoc! {"
     Default: compact JSON
     "};
 
-pub fn batch_long(tool_defs: &ToolDefs, corpus: &Corpus) -> String {
-    let example = batch_example(tool_defs, corpus);
+pub fn batch_long(tool_set: &ToolSet, corpus: &Corpus) -> String {
+    let example = batch_example(tool_set, corpus);
     formatdoc! {r#"
         JSONL request/response mode for tests and IPC.
 
@@ -183,12 +185,12 @@ pub fn batch_long(tool_defs: &ToolDefs, corpus: &Corpus) -> String {
     "#}
 }
 
-fn batch_example(tool_defs: &ToolDefs, corpus: &Corpus) -> String {
-    let td = tool_defs
+fn batch_example(tool_set: &ToolSet, corpus: &Corpus) -> String {
+    let tool = tool_set
         .get("zsh_search")
         .expect("batch help example needs the zsh_search tool");
     let input = json!({ "query": "autolo", "limit": 1 });
-    let output = tools::dispatch(td, &input, corpus).expect("batch help example must run");
+    let output = tools::dispatch(tool, &input, corpus).expect("batch help example must run");
     let envelope = json!({ "ok": true, "output": output });
     // Real output is compact JSONL — too long to fit indented at 80 cols.
     // Pretty-print (and `| jq`) so body lines are short; the explicit
@@ -355,12 +357,12 @@ pub fn cli_tool_description(s: &str) -> String {
 
 /// Rewrite MCP-primary `zsh_*` names to `zshref *` — avoids duplicating
 /// descriptions across the CLI and MCP seam.
-pub fn rewrite_refs(s: &str, tools: &[ToolDef]) -> String {
+pub fn rewrite_refs(s: &str, tools: &[Tool]) -> String {
     let mut out = s.to_string();
-    for td in tools {
+    for tool in tools {
         out = out.replace(
-            td.name,
-            &format!("zshref {}", super::subcommand_name(td.name)),
+            tool.name,
+            &format!("zshref {}", super::subcommand_name(tool.name)),
         );
     }
     out

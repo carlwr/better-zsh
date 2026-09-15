@@ -3,7 +3,8 @@
 use anyhow::Result;
 use rmcp::model::{
     CallToolRequestParams, CallToolResponse, CallToolResult, ContentBlock, Implementation,
-    JsonObject, ListToolsResult, PaginatedRequestParams, ServerCapabilities, ServerInfo, Tool,
+    JsonObject, ListToolsResult, PaginatedRequestParams, ServerCapabilities, ServerInfo,
+    Tool as McpTool,
 };
 use rmcp::service::{RequestContext, ServerInitializeError};
 use rmcp::{ErrorData, RoleServer, ServerHandler, ServiceExt};
@@ -11,7 +12,7 @@ use serde_json::Value;
 use std::io::IsTerminal;
 use std::sync::Arc;
 use zshref::corpus::Corpus;
-use zshref::tools::ToolDefs;
+use zshref::tools::ToolSet;
 use zshref::{cli, corpus, tools};
 
 const BIN: &str = "zshref-mcp";
@@ -94,7 +95,7 @@ fn decide(args: &[String], stdin_is_terminal: bool) -> Action {
 #[tokio::main(flavor = "current_thread")]
 async fn serve() -> Result<()> {
     let corpus = corpus::load_corpus()?;
-    let server = Server::new(ToolDefs::build(&corpus), corpus);
+    let server = Server::new(ToolSet::build(&corpus), corpus);
     let running = match server.serve(rmcp::transport::stdio()).await {
         Ok(running) => running,
         // The client went away before the handshake completed: nothing to do.
@@ -106,28 +107,28 @@ async fn serve() -> Result<()> {
 }
 
 struct Server {
-    tool_defs: ToolDefs,
+    tool_set: ToolSet,
     corpus: Corpus,
-    /// The `tools/list` payload, built once from `tool_defs`.
-    tools: Vec<Tool>,
+    /// The `tools/list` payload, built once from `tool_set`.
+    tools: Vec<McpTool>,
 }
 
 impl Server {
-    fn new(tool_defs: ToolDefs, corpus: Corpus) -> Self {
-        let tools = tool_defs
+    fn new(tool_set: ToolSet, corpus: Corpus) -> Self {
+        let tools = tool_set
             .tools
             .iter()
-            .map(|td| {
-                Tool::new(
-                    td.name,
-                    td.description.clone(),
-                    schema_object(&td.input_schema),
+            .map(|tool| {
+                McpTool::new(
+                    tool.name,
+                    tool.description.clone(),
+                    schema_object(&tool.input_schema),
                 )
-                .with_raw_output_schema(schema_object(&td.output_schema))
+                .with_raw_output_schema(schema_object(&tool.output_schema))
             })
             .collect();
         Self {
-            tool_defs,
+            tool_set,
             corpus,
             tools,
         }
@@ -169,11 +170,11 @@ impl ServerHandler for Server {
         request: CallToolRequestParams,
         _context: RequestContext<RoleServer>,
     ) -> Result<CallToolResponse, ErrorData> {
-        let result = match self.tool_defs.get(&request.name) {
+        let result = match self.tool_set.get(&request.name) {
             None => error(format!("unknown tool: {}", request.name)),
-            Some(td) => {
+            Some(tool) => {
                 let input = Value::Object(request.arguments.unwrap_or_default());
-                match tools::call(td, &input, &self.corpus) {
+                match tools::call(tool, &input, &self.corpus) {
                     Ok(output) => CallToolResult::structured(output),
                     Err(err) => error(format!("{err:#}")),
                 }
