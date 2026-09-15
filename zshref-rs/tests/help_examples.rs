@@ -2,7 +2,7 @@ use std::process::Command;
 
 mod common;
 
-use common::{run_with_env, BIN};
+use common::{BIN, run_with_env};
 
 #[test]
 fn tool_help_examples_match_cli_output() {

@@ -1,7 +1,7 @@
 [package]
 name = "zshref"
 version = "0.1.0-alpha.2"
-edition = "2021"
+edition = "2024"
 description = "Offline static zsh reference, highly structured — CLI and MCP server over parsed zsh 5.9 docs, built for agent pipelines and shells"
 license = "MIT"
 # crates.io enabled pre-extraction — first alpha cut from the monorepo.

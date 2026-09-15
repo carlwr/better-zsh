@@ -12,8 +12,8 @@ use serde_json::Value;
 use std::io::IsTerminal;
 use std::sync::Arc;
 use zshref::corpus::Corpus;
-use zshref::tools::text::Target;
 use zshref::tools::ToolSet;
+use zshref::tools::text::Target;
 use zshref::{cli, corpus, tools};
 
 const BIN: &str = "zshref-mcp";

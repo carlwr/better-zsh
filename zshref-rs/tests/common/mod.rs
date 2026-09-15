@@ -123,11 +123,11 @@ pub fn run_json(args: &[&str]) -> Value {
         );
     }
     let v: Value = serde_json::from_slice(&out.stdout).expect("stdout is valid JSON");
-    if let Some(sub) = args.first() {
-        if let Some(tool) = tool_for_subcommand(sub) {
-            assert_tool_output_shape(args, &out);
-            validate_or_panic(tool, &v);
-        }
+    if let Some(sub) = args.first()
+        && let Some(tool) = tool_for_subcommand(sub)
+    {
+        assert_tool_output_shape(args, &out);
+        validate_or_panic(tool, &v);
     }
     v
 }
@@ -269,11 +269,11 @@ pub fn extract_examples_under(help: &str, headings: &[&str]) -> Vec<(String, Str
             // Skip shell-comment prompts: `    $ # ...` is a no-op the
             // user could type — useful as inline narration but not a
             // command to re-run.
-            if let Some(stripped) = line.strip_prefix("    $ ") {
-                if stripped.starts_with('#') {
-                    cursor += 1;
-                    continue;
-                }
+            if let Some(stripped) = line.strip_prefix("    $ ")
+                && stripped.starts_with('#')
+            {
+                cursor += 1;
+                continue;
             }
             break;
         }

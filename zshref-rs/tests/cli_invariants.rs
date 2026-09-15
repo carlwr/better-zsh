@@ -6,8 +6,8 @@
 
 mod common;
 
-use common::{assert_envelope, doc_categories, run_json, tool_set, validate_or_panic, BIN};
-use serde_json::{json, Value};
+use common::{BIN, assert_envelope, doc_categories, run_json, tool_set, validate_or_panic};
+use serde_json::{Value, json};
 use std::process::Command;
 use std::sync::OnceLock;
 

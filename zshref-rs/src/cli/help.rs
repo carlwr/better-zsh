@@ -6,7 +6,7 @@ use crate::corpus::Corpus;
 use crate::output;
 use crate::tools::{ToolName, ToolSet};
 use indoc::{formatdoc, indoc};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 pub const BIN: &str = "zshref";
 

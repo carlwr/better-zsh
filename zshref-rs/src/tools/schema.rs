@@ -8,11 +8,11 @@
 //! `--help` long-about advertises the bundle's size to discourage piping
 //! it into agent context.
 
-use crate::corpus::{Corpus, DocCategory, DOC_CATEGORIES};
+use crate::corpus::{Corpus, DOC_CATEGORIES, DocCategory};
 use crate::resolver::ResolverFeedback;
 use crate::tools::envelope::ENVELOPE_KEYS;
 use crate::tools::{Field, ToolSet};
-use serde_json::{json, Map, Value};
+use serde_json::{Map, Value, json};
 use std::collections::BTreeSet;
 
 /// Format version of the `zshref schema` bundle.

@@ -5,12 +5,12 @@
 
 mod common;
 
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::collections::BTreeMap;
 use std::io::{BufRead, BufReader, Read, Write};
 use std::process::{Child, ChildStdin, ChildStdout, Command, Stdio};
-use zshref::tools::text::Target;
 use zshref::tools::ToolName;
+use zshref::tools::text::Target;
 
 const BIN: &str = env!("CARGO_BIN_EXE_zshref-mcp");
 
@@ -253,9 +253,9 @@ fn search_and_list_return_identity_only_rows() {
 #[test]
 fn omitted_limit_takes_the_schema_default() {
     let mut session = Session::start();
-    let default = common::tool_set().get(ToolName::Search).input_schema["properties"]["limit"]
-        ["default"]
-        .clone();
+    let default =
+        common::tool_set().get(ToolName::Search).input_schema["properties"]["limit"]["default"]
+            .clone();
     let out = parsed(&session.call("zsh_search", json!({ "query": "e" })));
     assert!(
         out["matchesTotal"].as_u64() > default.as_u64(),

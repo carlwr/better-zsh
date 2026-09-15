@@ -5,10 +5,10 @@
 //! primary — agents read `--help` too — so: name parameters (`category`),
 //! never CLI flags (`--category`) or JSON syntax; keep the tone neutral.
 
-use super::schema::DEFAULT_LIMIT;
-use super::text::{body, Body, Prose, Target};
 use super::ToolName;
-use crate::corpus::{Index, CLASSIFY_ORDER};
+use super::schema::DEFAULT_LIMIT;
+use super::text::{Body, Prose, Target, body};
+use crate::corpus::{CLASSIFY_ORDER, Index};
 use indoc::{formatdoc, indoc};
 
 /// The suite cheat-sheet: MCP `instructions` and the tail of `zshref

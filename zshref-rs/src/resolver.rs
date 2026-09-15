@@ -6,7 +6,7 @@
 
 use crate::corpus::{Category, Corpus, DocCategory, Record};
 use serde::Serialize;
-use serde_json::{json, Map, Value};
+use serde_json::{Map, Value, json};
 
 /// Return the non-empty remainder after stripping a case-insensitive `no_`
 /// or `no` prefix from `raw`. `None` if `raw` doesn't begin with either.
@@ -246,12 +246,11 @@ fn resolve_special_function<'c>(
     if t.is_empty() {
         return None;
     }
-    if let Some(stripped) = t.strip_suffix("_functions") {
-        if crate::corpus::HOOK_NAMES.contains(&stripped) {
-            if let Some(h) = find_by_id(corpus, cat, stripped, None) {
-                return Some(h);
-            }
-        }
+    if let Some(stripped) = t.strip_suffix("_functions")
+        && crate::corpus::HOOK_NAMES.contains(&stripped)
+        && let Some(h) = find_by_id(corpus, cat, stripped, None)
+    {
+        return Some(h);
     }
     if t.starts_with("TRAP")
         && t.len() > 4
@@ -386,10 +385,10 @@ fn try_flag_key<'c>(corpus: &'c Corpus, cat: DocCategory, key: &str) -> Option<R
 fn resolve_redir<'c>(corpus: &'c Corpus, cat: DocCategory, raw: &str) -> Option<ResolvedHit<'c>> {
     // Sig-form close-variant: `> word` → its shell-safe slug `>_word`.
     let sig_slug: String = raw.split_whitespace().collect::<Vec<_>>().join("_");
-    if !sig_slug.is_empty() {
-        if let Some(h) = find_by_id(corpus, cat, &sig_slug, None) {
-            return Some(h);
-        }
+    if !sig_slug.is_empty()
+        && let Some(h) = find_by_id(corpus, cat, &sig_slug, None)
+    {
+        return Some(h);
     }
     let text = raw.trim().trim_start_matches(|c: char| c.is_ascii_digit());
     if text.is_empty() {
@@ -462,7 +461,7 @@ mod tests {
     //! TS resolvers give for pinned and generated inputs, released with the
     //! corpus.
     use super::*;
-    use crate::corpus::{load_corpus, resolver_fixture_path, DOC_CATEGORIES};
+    use crate::corpus::{DOC_CATEGORIES, load_corpus, resolver_fixture_path};
     use serde::Deserialize;
 
     #[derive(Deserialize)]

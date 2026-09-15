@@ -9,7 +9,7 @@ use crate::tools::text::Target;
 use crate::tools::{self, Field, Tool, ToolName, ToolSet};
 use anyhow::Result;
 use clap::{Arg, ArgAction, ArgMatches, Command, ValueHint};
-use serde_json::{json, Map, Value};
+use serde_json::{Map, Value, json};
 
 /// `--pretty` is accepted at any position on any subcommand, but is a no-op
 /// outside the JSON-emitting ones. `Arg::hide(true)` keeps a no-op `--pretty`

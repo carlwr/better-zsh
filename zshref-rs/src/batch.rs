@@ -10,7 +10,7 @@
 use crate::corpus::Corpus;
 use crate::tools::ToolSet;
 use anyhow::Result;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::io::{BufRead, Write};
 
 pub fn run(tool_set: &ToolSet, corpus: &Corpus) -> Result<i32> {

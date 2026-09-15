@@ -20,7 +20,7 @@ pub mod search;
 pub mod text;
 
 use crate::corpus::Corpus;
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use schema::Shape;
 use serde::de::DeserializeOwned;
 use serde_json::Value;
@@ -168,9 +168,9 @@ mod tests {
     //! Shape guards on the prose every adapter renders — not a review
     //! substitute: tone and length drift are the reviewer's.
     use super::*;
-    use crate::corpus::{load_corpus, DOC_CATEGORIES};
+    use crate::corpus::{DOC_CATEGORIES, load_corpus};
     use regex::Regex;
-    use serde_json::{json, Map};
+    use serde_json::{Map, json};
     use std::collections::BTreeSet;
     use std::sync::LazyLock;
     use text::Target;
@@ -292,11 +292,13 @@ mod tests {
         for (sub, keys) in required {
             assert_eq!(TOOLS.get(sub).input_schema["required"], keys, "{sub}");
         }
-        assert!(TOOLS
-            .get(ToolName::List)
-            .input_schema
-            .get("required")
-            .is_none());
+        assert!(
+            TOOLS
+                .get(ToolName::List)
+                .input_schema
+                .get("required")
+                .is_none()
+        );
         for tool in &TOOLS.tools {
             assert_eq!(tool.input_schema["type"], "object", "{}", tool.name);
             assert_eq!(tool.output_schema["type"], "object", "{}", tool.name);

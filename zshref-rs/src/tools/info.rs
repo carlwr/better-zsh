@@ -3,7 +3,7 @@
 //! from `index.counts` (a second drift surface, with camelCase keys).
 
 use crate::corpus::{Corpus, DocCategory};
-use serde_json::{json, Map, Value};
+use serde_json::{Map, Value, json};
 
 pub fn run(corpus: &Corpus) -> Value {
     let counts: Map<String, Value> = corpus

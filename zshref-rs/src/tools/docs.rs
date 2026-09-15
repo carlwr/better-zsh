@@ -4,11 +4,11 @@
 //! resolving category. Feedback (e.g. `NO_`-stripping → `input-negated`)
 //! is forwarded from the per-category resolver.
 
-use crate::corpus::{Corpus, DocCategory, CLASSIFY_ORDER};
-use crate::resolver::{resolve_in, ResolvedHit, ResolverFeedback};
+use crate::corpus::{CLASSIFY_ORDER, Corpus, DocCategory};
+use crate::resolver::{ResolvedHit, ResolverFeedback, resolve_in};
 use crate::tools::envelope::Envelope;
-use crate::tools::schema::{output_schema, MatchShape, Shape};
-use crate::tools::{prose, Field, Tool, ToolName};
+use crate::tools::schema::{MatchShape, Shape, output_schema};
+use crate::tools::{Field, Tool, ToolName, prose};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;

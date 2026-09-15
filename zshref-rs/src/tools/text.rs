@@ -27,11 +27,7 @@ impl Target {
 
     /// `p` when rendering at `on`, `None` otherwise.
     pub fn only(self, on: Target, p: impl IntoParagraph) -> Option<Paragraph> {
-        if self == on {
-            p.into_paragraph()
-        } else {
-            None
-        }
+        if self == on { p.into_paragraph() } else { None }
     }
 }
 

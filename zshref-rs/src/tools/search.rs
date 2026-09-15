@@ -4,11 +4,11 @@
 //! (in-tree ASCII matcher) mapped into `(0, 1)` — strictly below 1.0 so the
 //! tier is recoverable from the score. `matchesTotal` is pre-truncation.
 
-use crate::corpus::{Corpus, DocCategory, CLASSIFY_ORDER};
+use crate::corpus::{CLASSIFY_ORDER, Corpus, DocCategory};
 use crate::resolver::resolve_in;
-use crate::tools::envelope::{entries, Entry, Envelope};
-use crate::tools::schema::{default_limit, output_schema, MatchShape, Shape};
-use crate::tools::{prose, Field, Tool, ToolName};
+use crate::tools::envelope::{Entry, Envelope, entries};
+use crate::tools::schema::{MatchShape, Shape, default_limit, output_schema};
+use crate::tools::{Field, Tool, ToolName, prose};
 use anyhow::Result;
 use serde::Deserialize;
 use serde_json::Value;
