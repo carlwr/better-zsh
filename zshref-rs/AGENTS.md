@@ -47,3 +47,10 @@ For plain integration tests (exit status, stdout shape) that don't need `outputS
 - `scripts/dump-help` — `--help` output for top-level + all subcommands in one file; for diffing across changes
 - `scripts/third-party-notices` — regenerates `THIRD_PARTY_NOTICES.md` from `cargo tree`; run when `Cargo.lock` moves
 - `scripts/probe-opencode` — manual agent-client probe of the built `zshref-mcp`
+- `scripts/mcp-probe` — one MCP stdio session against any server command, as sorted JSON; for comparing launch paths
+- `scripts/archive-bins` — packs one target's release binaries into the release archive; bash, the Windows runner runs it too
+- `scripts/npm-check` — the host gate behind `make cli-npm-check`
+
+## npm packaging
+
+`npm/` — the launcher, the assembler and the package READMEs; not part of the `.crate`. Design and release mechanics: `DISTRIBUTION.md`. JS under `npm/` is formatted and linted by the root `pnpm format` / `pnpm lint`; the generated `bin/` stubs and `package.json` never enter the tree.

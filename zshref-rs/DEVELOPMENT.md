@@ -37,6 +37,8 @@ The `build.rs` auto-detects two data sources (monorepo paths vs. vendored `data/
 - `make vendor` / `vendor-clean` — populate / remove `zshref-rs/data/` from TS output (see `DATA-SYNC.md`)
 - `make cli-vendored` / `cli-vendored-test` — build/test in vendored mode
 - `make cli-package` — `cargo package --allow-dirty` (publishable-tarball smoke)
+- `make cli-npm-check` — stage the npm packages from the host build and check the launchers against the native binaries (`scripts/npm-check`)
+- `make cli-release-act` — the release workflow under `act`, dry-run (`DISTRIBUTION.md`)
 
 CI enforces `make cli-check`; run it before PRs.
 

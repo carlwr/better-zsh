@@ -57,7 +57,27 @@ zshref docs --key NO_AUTO_CD --category option | jq '.matches[0] | {display, fee
 
 ## Install
 
-Build from source. Requires a stable Rust toolchain **and** the full monorepo checkout (the `better-zsh` Node/pnpm workspace), because the bundled JSON corpus is generated from the TypeScript side and embedded at compile time:
+Prebuilt binaries for macOS (arm64, x64), Linux (x64, arm64) and Windows (x64):
+
+```sh
+# npm: both commands, or only the MCP server
+npm i -g @carlwr/zshref          # zshref + zshref-mcp
+npx -y @carlwr/zshref-mcp        # the MCP server, no install (see "MCP server" below)
+
+# GitHub Release archives, via cargo-binstall
+cargo binstall zshref
+```
+
+The npm packages carry every platform's binaries; the `zshref` / `zshref-mcp` commands they install are small launchers that spawn the bundled binary for the current platform, and nothing else — the binaries themselves spawn no subprocess. Install one of the two packages globally, not both: both own `zshref-mcp`. Archives and checksums: the [releases page](https://github.com/carlwr/zshref/releases).
+
+From crates.io, with a stable Rust toolchain (for alpha package testing only, while no stable release exists):
+
+```sh
+cargo install zshref --version 0.1.0-alpha.2                  # the CLI
+cargo install zshref --version 0.1.0-alpha.2 --features mcp   # CLI + MCP server
+```
+
+Build from source: requires the full monorepo checkout (the `better-zsh` Node/pnpm workspace), because the bundled JSON corpus is generated from the TypeScript side and embedded at compile time:
 
 ```sh
 git clone https://github.com/carlwr/better-zsh
@@ -66,13 +86,6 @@ corepack enable
 pnpm install --frozen-lockfile
 make cli            # release binary at zshref-rs/target/release/zshref
 (cd zshref-rs && cargo build --release --features mcp)   # adds target/release/zshref-mcp
-```
-
-For alpha package testing only:
-
-```sh
-cargo install zshref --version 0.1.0-alpha.2                  # the CLI
-cargo install zshref --version 0.1.0-alpha.2 --features mcp   # CLI + MCP server
 ```
 
 Homebrew distribution is also planned; the formula under [`Formula/zshref.rb`](./Formula/zshref.rb) is a pre-release scaffold. Once released, install via:
@@ -154,18 +167,18 @@ See `zshref completions --help` for other supported shells.
 
 `zshref-mcp` speaks MCP JSON-RPC over stdio; an MCP client launches it — no flags, no environment variables. For introspection, `--help` / `-h` and `--version` / `-V` are available; run in a terminal without flags it prints a hint and exits.
 
-Any MCP-aware client that can spawn a subprocess over stdio can use it:
+Any MCP-aware client that can spawn a subprocess over stdio can use it. Two forms — via npm with nothing installed, or the binary on `PATH`:
 
 ```
-command: zshref-mcp
-args:    none
+command: npx        args: -y @carlwr/zshref-mcp
+command: zshref-mcp args: none
 ```
 
-Per client:
+Per client, the `npx` form; for the binary form replace `npx -y @carlwr/zshref-mcp` with `zshref-mcp` (no args):
 
 ```sh
 # Claude Code
-claude mcp add zshref -- zshref-mcp
+claude mcp add zshref -- npx -y @carlwr/zshref-mcp
 ```
 
 ```json
@@ -174,7 +187,7 @@ claude mcp add zshref -- zshref-mcp
 // Cursor: ~/.cursor/mcp.json (global) or .cursor/mcp.json (per project), same shape.
 {
   "mcpServers": {
-    "zshref": { "command": "zshref-mcp" }
+    "zshref": { "command": "npx", "args": ["-y", "@carlwr/zshref-mcp"] }
   }
 }
 ```
@@ -184,7 +197,7 @@ claude mcp add zshref -- zshref-mcp
 // `mcp.servers` block in user/workspace settings.
 {
   "servers": {
-    "zshref": { "command": "zshref-mcp" }
+    "zshref": { "command": "npx", "args": ["-y", "@carlwr/zshref-mcp"] }
   }
 }
 ```
@@ -193,7 +206,7 @@ claude mcp add zshref -- zshref-mcp
 // Zed: settings.json
 {
   "context_servers": {
-    "zshref": { "command": { "path": "zshref-mcp" } }
+    "zshref": { "command": { "path": "npx", "args": ["-y", "@carlwr/zshref-mcp"] } }
   }
 }
 ```
@@ -202,7 +215,7 @@ claude mcp add zshref -- zshref-mcp
 // opencode: opencode.json (per project) or ~/.config/opencode/opencode.json
 {
   "mcp": {
-    "zshref": { "type": "local", "command": ["zshref-mcp"], "enabled": true }
+    "zshref": { "type": "local", "command": ["npx", "-y", "@carlwr/zshref-mcp"], "enabled": true }
   }
 }
 ```

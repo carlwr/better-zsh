@@ -160,7 +160,7 @@ Per-package `test:integration` is intentionally not one mechanism:
 
 Universal pattern: `PACKAGING.md`. Project-specific package targeting both registries: `@carlwr/zsh-core`.
 
-The Rust crate in `zshref-rs/` publishes via cargo/crates.io — see `zshref-rs/` for release conventions.
+The Rust crate in `zshref-rs/` publishes to crates.io, and its prebuilt binaries to GitHub Releases and npm — `zshref-rs/DISTRIBUTION.md`.
 
 ### `BZ_SKIP_UPSTREAM`
 

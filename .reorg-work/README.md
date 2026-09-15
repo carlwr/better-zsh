@@ -186,6 +186,11 @@ In order. A step ends with the repo's validation gates green where touched and t
 - orient skill: `overview` and `exports` learn `zshref-web`
 - this dir: outlives the steps until the Deferred list below is empty
 
+### DONE: npm distribution
+
+- `npm-dist.md` — scope, decisions (incl. those made during execution), captures, gates, follow-ups
+- _before/after:_ `dump-help`, `zshref schema`, `zshref batch` over the pinned cases, MCP `initialize` / `tools/list` / `tools/call` equal throughout — native binaries and the npm launchers alike
+
 ## Deferred
 
 Decided not to decide during the reorg. An item leaves this list once it is decided and executed, or moved to another home; this dir is deleted when the list is empty. Roughly chronological:
@@ -194,10 +199,8 @@ Decided not to decide during the reorg. An item leaves this list once it is deci
 - deploy the SPA: the hosting intent under End state (`packages/zshref-web/AGENTS.md` §Hosting intent for the prerequisites)
 - deprecate the published alpha of `@carlwr/zsh-core-tooldef` on npm and JSR + revoke the trusted-publisher grants
 - an MCP discoverability shim in the extension: register `zshref-mcp` through VS Code's MCP server definition provider API
-- npm/npx distribution of the Rust binaries: decide if + possibly arrange (if yes: probably inside the `zshref` repo, same release workflow; cargo-dist a candidate)
-  - when done:
-    - deprecate the published alpha of `@carlwr/zshref-mcp` on npm and JSR; with them, revoke the trusted-publisher grants
 - renaming: the top repo, the workspace packages, the Rust crate and its binaries
 - the `zshref-rs` split into its own repo (`zshref-rs/EXTRACTION.md`); with it, whether a thin `zshref-mcp` repo is wanted
+  - once decided: deprecate the published TS alpha of `@carlwr/zshref-mcp` — on JSR outright, on npm the alpha versions the Rust-backed package supersedes (`npm-dist.md`); with them, revoke the JSR trusted-publisher grant
 - a `zshref-web` split into its own repo — no technical driver; the payoff: the SPA's toolchain and dependency churn (SvelteKit, Vite, transformers.js) leave the workspace lockfile and root `qa`
   

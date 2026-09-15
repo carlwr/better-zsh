@@ -70,6 +70,7 @@ Use Docker Engine or another Docker-compatible daemon reachable via `docker`.
 - `act` runs its own cache server, so `actions/cache` steps store and restore across local runs — host-side, under `~/.cache/actcache`. Nothing expires there; `rm -rf ~/.cache/actcache` reclaims it.
 - The wrapper pins `ubuntu-latest` to act's documented medium runner image; set `ACT_RUNNER_IMAGE` to override that.
 - `ACT_JOB` selects the workflow job; the manual-dispatch-only `registry` job also needs `ACT_EVENT=workflow_dispatch`.
+- `ACT_WORKFLOW` selects another workflow file under `.github/workflows/` (default `ci.yml`); extra `act` flags pass through after the wrapper's own.
 - Linux-only integration dependencies are installed inside the workflow container.
 - Local `act` runs exercise the current worktree, including uncommitted changes.
 - Direct Electron entrypoints remain available for explicit manual use.
