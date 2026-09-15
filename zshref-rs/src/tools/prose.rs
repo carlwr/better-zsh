@@ -20,8 +20,8 @@ pub fn preamble(t: Target) -> Body {
     body![formatdoc! {"
         Tool → intent:
           {docs:<w$} → look up docs for a zsh key (raw token or canonical id)
-          {search:<w$} → fuzzy-match on tokens/id-s → returns ids
-          {list:<w$} → enumerate records          → returns ids
+          {search:<w$} → fuzzy-match on tokens/ids → returns ids
+          {list:<w$} → enumerate records         → returns ids
 
           (search/list emit `id`; feed back to {docs} as `key` for the body)
     "}]
@@ -66,7 +66,7 @@ pub fn docs(index: &Index) -> Prose {
     Prose::new("look up bundled zsh reference docs", |t| {
         body![
             format!("Render markdown for a zsh token or canonical id from the bundled static {tag} reference."),
-            "Omitting `category` can return multiple matches for overlapping syntax. The list under the `category` field's description is resolver order.",
+            "Omitting `category` can return multiple matches for overlapping syntax.",
             RESOLUTION,
             "Input `key` and the returned `id` may therefore differ; the returned `id` is always a valid `key` for follow-up lookups and is shell-safe (printable ASCII, no whitespace).",
             indoc! {"
@@ -75,15 +75,18 @@ pub fn docs(index: &Index) -> Prose {
                   matchesReturned    returned match count
                   matchesTotal       total match count
 
-                  Each matches[] element is an object with mandatory properties:
+                  Each matches[] element — always:
                     category           doc category
                     id                 canonical id
                     display            zsh-facing name
+                    title              record heading (markdown; not repeated in mdBody)
                     mdBody             rendered markdown
-                    subKind            optional category facet
-                    feedback           optional lossy-resolution signal
+
+                  — when applicable:
+                    subKind            category facet (categories that have one)
+                    feedback           lossy-resolution signal (`kind`, e.g. `input-negated`)
             "},
-            "If no matches, returned matches[] is empty. The exit code is still 0 (success).",
+            "No matches is not an error: matches[] is empty, matchesTotal is 0.",
             t.only(Target::Json, SAFETY),
         ]
     })
@@ -104,7 +107,16 @@ pub fn search(index: &Index) -> Prose {
                   3. prefix
                   4. fuzzy score
             "},
-            "The score is 1 for exact/resolver/prefix matches. Fuzzy matches use a score in (0,1).",
+            indoc! {"
+                Each matches[] element — always:
+                  category           doc category
+                  id                 canonical id
+                  display            zsh-facing name
+                  score              1 for exact/resolver/prefix; in (0,1) for fuzzy
+
+                — when applicable:
+                  subKind            category facet (categories that have one)
+            "},
             format!(
                 "No markdown body. Use {} for full docs.",
                 t.tool(ToolName::Docs)
@@ -131,16 +143,15 @@ pub fn list() -> Prose {
                   category omitted: default category order
                   category set: that category's corpus order
             "},
-            indoc! {r#"
-                Each match in `matches[]`:
-                {
-                  "category": "...",
-                  "id": "...",
-                  "display": "...",
-                  "subKind": "..."
-                }
-            "#},
-            "`subKind` is only present for categories with a meaningful sub-facet.",
+            indoc! {"
+                Each matches[] element — always:
+                  category           doc category
+                  id                 canonical id
+                  display            zsh-facing name
+
+                — when applicable:
+                  subKind            category facet (categories that have one)
+            "},
             t.only(Target::Json, SAFETY),
         ]
     })
@@ -206,7 +217,7 @@ pub fn limit() -> Prose {
         |_| {
             body![
                 "limit the number of matches to return",
-                "Use 0 to return only metadata.",
+                "Use 0 for the total count only (no matches).",
                 format!("Default: {DEFAULT_LIMIT}"),
             ]
         },

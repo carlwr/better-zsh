@@ -190,7 +190,6 @@ In order. A step ends with the repo's validation gates green where touched and t
 
 Decided not to decide during the reorg. An item leaves this list once it is decided and executed, or moved to another home; this dir is deleted when the list is empty. Roughly chronological:
 
-- the `zsh_docs` description text (`docs_long` in `zshref-rs/src/tools/prose.rs`), ported verbatim from tooldef: its `matches[]` property list omits `title` and files the optional `subKind` / `feedback` under "mandatory" — product text (`--help`, MCP), so a prose fix of its own
 - the NLP follow-ups recorded by the move: `packages/zshref-web/nlp/NLP.md` §Follow-ups
 - deploy the SPA: the hosting intent under End state (`packages/zshref-web/AGENTS.md` §Hosting intent for the prerequisites)
 - deprecate the published alpha of `@carlwr/zsh-core-tooldef` on npm and JSR + revoke the trusted-publisher grants
