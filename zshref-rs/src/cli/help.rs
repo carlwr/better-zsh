@@ -4,7 +4,7 @@
 
 use crate::corpus::Corpus;
 use crate::output;
-use crate::tools::{self, ToolName, ToolSet};
+use crate::tools::{ToolName, ToolSet};
 use indoc::{formatdoc, indoc};
 use serde_json::{json, Value};
 
@@ -91,15 +91,15 @@ fn workflow_example(tool_set: &ToolSet, corpus: &Corpus) -> String {
     let search_tool = tool_set.get(ToolName::Search);
     let docs_tool = tool_set.get(ToolName::Docs);
 
-    // `tools::call` fills the `limit` default the shell command gets from
-    // clap; without it `dispatch` would see no `limit` and return nothing.
     let search_in = json!({ "query": "!", "category": "conditional_op" });
     let docs_in = json!({ "key": "!", "category": "conditional_op" });
 
-    let search_out =
-        tools::call(search_tool, &search_in, corpus).expect("workflow search must run");
-    let mut docs_out =
-        tools::dispatch(docs_tool, &docs_in, corpus).expect("workflow docs must run");
+    let search_out = search_tool
+        .call(&search_in, corpus)
+        .expect("workflow search must run");
+    let mut docs_out = docs_tool
+        .call(&docs_in, corpus)
+        .expect("workflow docs must run");
     // Defensive: the chosen record's `mdBody` is under threshold so no
     // elision should fire, but a future corpus change could push it over.
     elide_for_help_example(&mut docs_out);
@@ -181,7 +181,9 @@ pub fn batch_long(tool_set: &ToolSet, corpus: &Corpus) -> String {
 fn batch_example(tool_set: &ToolSet, corpus: &Corpus) -> String {
     let tool = tool_set.get(ToolName::Search);
     let input = json!({ "query": "autolo", "limit": 1 });
-    let output = tools::dispatch(tool, &input, corpus).expect("batch help example must run");
+    let output = tool
+        .call(&input, corpus)
+        .expect("batch help example must run");
     let envelope = json!({ "ok": true, "output": output });
     // Real output is compact JSONL — too long to fit indented at 80 cols.
     // Pretty-print (and `| jq`) so body lines are short; the explicit

@@ -4,27 +4,28 @@
 //! (in-tree ASCII matcher) mapped into `(0, 1)` — strictly below 1.0 so the
 //! tier is recoverable from the score. `matchesTotal` is pre-truncation.
 
-use crate::corpus::Corpus;
+use crate::corpus::{Corpus, CLASSIFY_ORDER};
 use crate::resolver::resolve_in;
 use crate::tools::envelope::{mk_entry, mk_envelope};
 use crate::tools::record_fields::{record_display, record_id, record_sub_kind};
-use crate::tools::schema::{category_shape, limit_shape, output_schema, string_shape, MatchShape};
+use crate::tools::schema::{output_schema, MatchShape, Shape};
 use crate::tools::{prose, Field, Tool, ToolName};
 use anyhow::Result;
 use serde_json::Value;
+use std::collections::{HashMap, HashSet};
 
 pub fn tool(corpus: &Corpus) -> Tool {
     Tool::new(
         ToolName::Search,
         prose::search(corpus.index),
         vec![
-            Field::required("query", prose::query(), string_shape()),
+            Field::required("query", prose::query(), Shape::Text),
             Field::optional(
                 "category",
                 prose::filter_category(corpus.index),
-                category_shape(),
+                Shape::Category,
             ),
-            Field::optional("limit", prose::limit(), limit_shape()),
+            Field::optional("limit", prose::limit(), Shape::Limit),
         ],
         output_schema(
             &MatchShape {
@@ -37,6 +38,7 @@ pub fn tool(corpus: &Corpus) -> Tool {
     )
 }
 
+#[derive(Debug)]
 struct Entry<'c> {
     category: &'c str,
     id: String,
@@ -45,14 +47,12 @@ struct Entry<'c> {
 }
 
 pub fn run(input: &Value, corpus: &Corpus) -> Result<Value> {
-    // `query` is required by the schema; empty/whitespace → empty matches.
     let query = input
         .get("query")
         .and_then(Value::as_str)
         .unwrap_or("")
         .trim();
     let category = input.get("category").and_then(Value::as_str);
-    // Callers fill the schema default (clap / `tools::input`).
     let limit = input.get("limit").and_then(Value::as_u64).unwrap_or(0) as usize;
 
     if query.is_empty() {
@@ -62,8 +62,7 @@ pub fn run(input: &Value, corpus: &Corpus) -> Result<Value> {
     let pool = entries(corpus, category);
     let q_low = query.to_ascii_lowercase();
 
-    // Dedup: one seen-set across all four tiers.
-    let mut seen: std::collections::HashSet<(String, String)> = std::collections::HashSet::new();
+    let mut seen: HashSet<(String, String)> = HashSet::new();
     let key = |e: &Entry| -> (String, String) { (e.category.to_string(), e.id.clone()) };
 
     let (mut exact, mut prefix, mut rest): (Vec<&Entry>, Vec<&Entry>, Vec<&Entry>) =
@@ -82,14 +81,11 @@ pub fn run(input: &Value, corpus: &Corpus) -> Result<Value> {
         }
     }
 
-    // Resolver tier: per-category resolver (NO_-strip, redirection decomp,
-    // history-expansion, …). Hits not yet bucketed by exact/prefix. Walks
-    // `CLASSIFY_ORDER` unless pinned.
     let resolver_cats: Vec<&str> = match category {
         Some(c) => vec![c],
-        None => crate::corpus::CLASSIFY_ORDER.to_vec(),
+        None => CLASSIFY_ORDER.to_vec(),
     };
-    let by_key: std::collections::HashMap<(String, String), &Entry> = pool
+    let by_key: HashMap<(String, String), &Entry> = pool
         .iter()
         .map(|e| ((e.category.to_string(), e.id.clone()), e))
         .collect();
@@ -107,8 +103,7 @@ pub fn run(input: &Value, corpus: &Corpus) -> Result<Value> {
         }
     }
 
-    // Fuzzy tier: max(score(id), score(display)). Non-ASCII queries score
-    // None; the pool is ASCII-only per the corpus drift guard.
+    // A non-ASCII query scores `None`; the pool is ASCII-only (corpus drift guard).
     let mut fuzzy: Vec<(&Entry, u32)> = rest
         .iter()
         .filter(|e| !seen.contains(&key(e)))
@@ -128,8 +123,6 @@ pub fn run(input: &Value, corpus: &Corpus) -> Result<Value> {
         .chain(prefix.iter())
         .map(|e| entry_json(e, 1.0))
         .chain(fuzzy.iter().map(|(e, s)| {
-            // Map into (0, 1) — exclusive at 1.0 so fuzzy is distinguishable
-            // from exact/resolver/prefix tiers in JSON output.
             let mapped = (*s as f64 / 1000.0).min(0.999_999);
             entry_json(e, mapped)
         }));

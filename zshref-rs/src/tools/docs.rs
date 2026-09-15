@@ -8,7 +8,7 @@ use crate::corpus::{Corpus, CLASSIFY_ORDER};
 use crate::resolver::{resolve_in, ResolvedHit};
 use crate::tools::envelope::mk_envelope;
 use crate::tools::record_fields::{record_sub_kind, record_title, str_field, str_input};
-use crate::tools::schema::{category_shape, output_schema, string_shape, MatchShape};
+use crate::tools::schema::{output_schema, MatchShape, Shape};
 use crate::tools::{prose, Field, Tool, ToolName};
 use anyhow::Result;
 use serde_json::{Map, Value};
@@ -18,11 +18,11 @@ pub fn tool(corpus: &Corpus) -> Tool {
         ToolName::Docs,
         prose::docs(corpus.index),
         vec![
-            Field::required("key", prose::key(), string_shape()),
+            Field::required("key", prose::key(), Shape::Text),
             Field::optional(
                 "category",
                 prose::docs_category(corpus.index),
-                category_shape(),
+                Shape::Category,
             ),
         ],
         output_schema(

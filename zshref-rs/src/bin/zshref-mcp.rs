@@ -174,7 +174,7 @@ impl ServerHandler for Server {
             None => error(format!("unknown tool: {}", request.name)),
             Some(tool) => {
                 let input = Value::Object(request.arguments.unwrap_or_default());
-                match tools::call(tool, &input, &self.corpus) {
+                match tool.call(&input, &self.corpus) {
                     Ok(output) => CallToolResult::structured(output),
                     Err(err) => error(format!("{err:#}")),
                 }

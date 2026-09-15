@@ -21,23 +21,30 @@ use std::sync::OnceLock;
 /// Format version of the `zshref schema` bundle.
 pub const SCHEMA_VERSION: u32 = 1;
 
-/// `limit` when a `search` / `list` caller omits it; `tools::call` fills
+/// `limit` when a `search` / `list` caller omits it; `Tool::call` fills
 /// it from the schema.
 pub const DEFAULT_LIMIT: u64 = 20;
 
-// --- input -------------------------------------------------------------------
-
-pub fn string_shape() -> Value {
-    json!({ "type": "string" })
+/// An input field's value shape: its JSON Schema, and what the CLI flag
+/// parses.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum Shape {
+    Text,
+    /// Closed enum over the corpus' categories.
+    Category,
+    /// Defaults to `DEFAULT_LIMIT`. No `maximum`: a `limit` above the
+    /// corpus size clamps silently.
+    Limit,
 }
 
-pub fn category_shape() -> Value {
-    json!({ "type": "string", "enum": *DOC_CATEGORIES })
-}
-
-/// No `maximum`: a `limit` above the corpus size clamps silently.
-pub fn limit_shape() -> Value {
-    json!({ "type": "integer", "minimum": 0, "default": DEFAULT_LIMIT })
+impl Shape {
+    pub fn schema(self) -> Value {
+        match self {
+            Self::Text => json!({ "type": "string" }),
+            Self::Category => json!({ "type": "string", "enum": *DOC_CATEGORIES }),
+            Self::Limit => json!({ "type": "integer", "minimum": 0, "default": DEFAULT_LIMIT }),
+        }
+    }
 }
 
 pub fn input_schema(fields: &[Field]) -> Value {
@@ -46,6 +53,7 @@ pub fn input_schema(fields: &[Field]) -> Value {
         .map(|f| {
             let mut spec = f
                 .shape
+                .schema()
                 .as_object()
                 .cloned()
                 .expect("field shape is an object");
@@ -70,8 +78,6 @@ pub fn input_schema(fields: &[Field]) -> Value {
     schema.insert("additionalProperties".into(), json!(false));
     Value::Object(schema)
 }
-
-// --- output ------------------------------------------------------------------
 
 /// Which optional match fields a tool emits. `feedback` is an optional slot;
 /// the others are required when present.
@@ -199,8 +205,6 @@ fn sub_kind_enums(corpus: &Corpus) -> Vec<(&'static str, Vec<String>)> {
         .collect()
 }
 
-// --- bundle ------------------------------------------------------------------
-
 pub fn run(tool_set: &ToolSet) -> Result<Value> {
     Ok(build_bundle(tool_set))
 }
@@ -285,8 +289,7 @@ mod tests {
 
     #[test]
     fn sub_kind_is_always_or_never_per_category() {
-        // The branch schemas require `subKind` wherever the category has an
-        // enum; a record without one would fail validation at runtime.
+        // `match_schema` requires `subKind` wherever the category has an enum.
         let corpus = load_corpus().expect("load_corpus");
         for cat in &corpus.categories {
             let with: usize = cat

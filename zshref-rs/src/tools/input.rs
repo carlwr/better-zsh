@@ -68,8 +68,7 @@ pub fn validate(tool: &Tool, input: &Value) -> Result<(), String> {
     Ok(())
 }
 
-/// Inject schema defaults so omitted fields (e.g. `limit`) behave as in CLI
-/// mode, where clap injects them.
+/// Inject schema defaults for omitted fields (e.g. `limit`).
 pub fn fill_defaults(tool: &Tool, input: &Value) -> Value {
     let mut obj = input.as_object().cloned().unwrap_or_default();
     let Some(props) = tool

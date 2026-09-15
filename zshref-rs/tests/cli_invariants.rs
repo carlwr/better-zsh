@@ -49,10 +49,9 @@ fn every_category_list_is_pure_and_nonempty() {
 
 /// For every (tool, flag-with-default) pair: omitting the flag must
 /// produce the same CLI output as passing the flag set to the schema
-/// default. Pins the `inputSchema.default` → clap `default_value`
-/// contract in `src/cli.rs`. New flags-with-defaults are covered
-/// automatically; extend `viable_args` only if a new tool gains its
-/// first such flag.
+/// default. Pins default filling on the CLI path (`Tool::call`). New
+/// flags-with-defaults are covered automatically; extend `viable_args`
+/// only if a new tool gains its first such flag.
 #[test]
 fn omit_equals_schema_default() {
     let mut checked = 0;

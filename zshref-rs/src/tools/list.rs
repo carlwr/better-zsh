@@ -4,7 +4,7 @@
 use crate::corpus::Corpus;
 use crate::tools::envelope::{mk_entry, mk_envelope};
 use crate::tools::record_fields::{record_display, record_id, record_sub_kind};
-use crate::tools::schema::{category_shape, limit_shape, output_schema, MatchShape};
+use crate::tools::schema::{output_schema, MatchShape, Shape};
 use crate::tools::{prose, Field, Tool, ToolName};
 use anyhow::Result;
 use serde_json::Value;
@@ -17,9 +17,9 @@ pub fn tool(corpus: &Corpus) -> Tool {
             Field::optional(
                 "category",
                 prose::filter_category(corpus.index),
-                category_shape(),
+                Shape::Category,
             ),
-            Field::optional("limit", prose::limit(), limit_shape()),
+            Field::optional("limit", prose::limit(), Shape::Limit),
         ],
         output_schema(&MatchShape::default(), corpus),
         run,
@@ -28,7 +28,6 @@ pub fn tool(corpus: &Corpus) -> Tool {
 
 pub fn run(input: &Value, corpus: &Corpus) -> Result<Value> {
     let category = input.get("category").and_then(Value::as_str);
-    // Callers fill the schema default (clap / `tools::input`).
     let limit = input.get("limit").and_then(Value::as_u64).unwrap_or(0) as usize;
 
     let pool = entries(corpus, category);

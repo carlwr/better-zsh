@@ -23,6 +23,7 @@ pub mod text;
 
 use crate::corpus::Corpus;
 use anyhow::Result;
+use schema::Shape;
 use serde_json::Value;
 use std::fmt;
 use text::Prose;
@@ -75,13 +76,12 @@ pub struct Tool {
 pub struct Field {
     pub key: &'static str,
     pub prose: Prose,
-    /// JSON Schema fragment; `description` is merged in from `prose`.
-    pub shape: Value,
+    pub shape: Shape,
     pub required: bool,
 }
 
 impl Field {
-    pub fn required(key: &'static str, prose: Prose, shape: Value) -> Self {
+    pub fn required(key: &'static str, prose: Prose, shape: Shape) -> Self {
         Self {
             key,
             prose,
@@ -90,7 +90,7 @@ impl Field {
         }
     }
 
-    pub fn optional(key: &'static str, prose: Prose, shape: Value) -> Self {
+    pub fn optional(key: &'static str, prose: Prose, shape: Shape) -> Self {
         Self {
             key,
             prose,
@@ -116,6 +116,14 @@ impl Tool {
             output_schema,
             run,
         }
+    }
+
+    /// The request path of every adapter: validate against `input_schema`,
+    /// fill its defaults, run. Idempotent on filled input, so the CLI's
+    /// clap-validated input takes the same path.
+    pub fn call(&self, raw_input: &Value, corpus: &Corpus) -> Result<Value> {
+        input::validate(self, raw_input).map_err(anyhow::Error::msg)?;
+        (self.run)(&input::fill_defaults(self, raw_input), corpus)
     }
 }
 
@@ -149,19 +157,6 @@ impl ToolSet {
         name.strip_prefix(ToolName::JSON_PREFIX)
             .and_then(|stem| self.by_stem(stem))
     }
-}
-
-/// The request path for adapters that hand over raw JSON input (batch, MCP):
-/// validate against `input_schema`, fill its defaults, dispatch. The CLI
-/// arrives at `dispatch` directly — clap has already done both.
-pub fn call(tool: &Tool, raw_input: &Value, corpus: &Corpus) -> Result<Value> {
-    input::validate(tool, raw_input).map_err(anyhow::Error::msg)?;
-    dispatch(tool, &input::fill_defaults(tool, raw_input), corpus)
-}
-
-/// Run a tool over a JSON `input` object that already satisfies its `input_schema`.
-pub fn dispatch(tool: &Tool, input: &Value, corpus: &Corpus) -> Result<Value> {
-    (tool.run)(input, corpus)
 }
 
 #[cfg(test)]
@@ -394,29 +389,29 @@ mod tests {
 
     #[test]
     fn run_wires_the_corpus_through() {
-        let docs = dispatch(
-            TOOLS.get(ToolName::Docs),
-            &json!({ "key": "echo" }),
-            &CORPUS,
-        )
-        .unwrap();
+        let docs = TOOLS
+            .get(ToolName::Docs)
+            .call(&json!({ "key": "echo" }), &CORPUS)
+            .unwrap();
         assert_eq!(docs["matches"][0]["category"], "builtin");
         assert!(!docs["matches"][0]["mdBody"].as_str().unwrap().is_empty());
 
-        let search = call(
-            TOOLS.get(ToolName::Search),
-            &json!({ "query": "echo", "category": "builtin", "limit": 3 }),
-            &CORPUS,
-        )
-        .unwrap();
+        let search = TOOLS
+            .get(ToolName::Search)
+            .call(
+                &json!({ "query": "echo", "category": "builtin", "limit": 3 }),
+                &CORPUS,
+            )
+            .unwrap();
         assert_eq!(search["matches"][0]["id"], "echo");
 
-        let list = call(
-            TOOLS.get(ToolName::List),
-            &json!({ "category": "precmd_modifier", "limit": 100 }),
-            &CORPUS,
-        )
-        .unwrap();
+        let list = TOOLS
+            .get(ToolName::List)
+            .call(
+                &json!({ "category": "precmd_modifier", "limit": 100 }),
+                &CORPUS,
+            )
+            .unwrap();
         let rows = list["matches"].as_array().unwrap();
         assert!(!rows.is_empty());
         assert!(rows.iter().all(|m| m["category"] == "precmd_modifier"));

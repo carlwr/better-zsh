@@ -1,4 +1,4 @@
-//! `zshref batch` — JSONL loop over `tools::call`. Each non-empty stdin
+//! `zshref batch` — JSONL loop over `Tool::call`. Each non-empty stdin
 //! line: `{"tool":"<name>","input":{...}}` → one compact-JSON stdout line.
 //! Per-request errors are in-band; exit 0 unless stdin I/O fails.
 //!
@@ -8,7 +8,7 @@
 //! stdin, and a parent that completes stdin before reading stdout deadlocks.
 
 use crate::corpus::Corpus;
-use crate::tools::{self, ToolSet};
+use crate::tools::ToolSet;
 use anyhow::Result;
 use serde_json::{json, Value};
 use std::io::{BufRead, Write};
@@ -42,7 +42,7 @@ fn handle_request(line: &str, tool_set: &ToolSet, corpus: &Corpus) -> Value {
     let Some(tool) = tool_set.by_json(name) else {
         return err(format!("unknown tool: {name}"));
     };
-    match tools::call(tool, raw_input, corpus) {
+    match tool.call(raw_input, corpus) {
         Ok(output) => json!({ "ok": true, "output": output }),
         Err(e) => err(format!("{e:#}")),
     }

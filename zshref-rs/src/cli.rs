@@ -4,39 +4,26 @@ mod help;
 
 use crate::corpus::{Corpus, DOC_CATEGORIES};
 use crate::output;
+use crate::tools::schema::Shape;
 use crate::tools::text::Target;
 use crate::tools::{self, Field, Tool, ToolName, ToolSet};
 use anyhow::Result;
 use clap::{Arg, ArgAction, ArgMatches, Command, ValueHint};
 use serde_json::{json, Map, Value};
 
-struct Ctx<'a> {
-    tool_set: &'a ToolSet,
-    corpus: &'a Corpus,
-    pretty: bool,
-}
-
-/// Why this enum exists: `--pretty` is universally a valid request — for
-/// JSON-emitting subcommands it changes output, for everything else it's a
-/// no-op. We want both halves:
-///
-/// 1. Parse-time: `--pretty` accepted at any position on any subcommand
-///    (so `zshref info --pretty`, `zshref help --pretty` etc. don't error).
-/// 2. Tab-completion: only offer `--pretty` on subcommands where it
-///    actually changes output.
-///
-/// `Arg::hide(true)` solves (1) for `--help` rendering, but completion
-/// generation still sees hidden args. So we build two trees from the same
-/// source: `Parsing` adds hidden `--pretty` to no-op subcommands;
-/// `Completions` omits them.
+/// `--pretty` is accepted at any position on any subcommand, but is a no-op
+/// outside the JSON-emitting ones. `Arg::hide(true)` keeps a no-op `--pretty`
+/// out of `--help` yet not out of generated completions — hence two trees
+/// from one source: `Parsing` adds the hidden no-ops, `Completions` omits
+/// them.
 #[derive(Clone, Copy, Debug)]
 pub enum BuildMode {
     Parsing,
     Completions,
 }
 
-/// Wrap a subcommand that doesn't natively use `--pretty` so that, in
-/// `Parsing` mode, it still accepts the flag as a hidden no-op.
+/// In `Parsing` mode, the hidden no-op `--pretty` for a subcommand that
+/// doesn't use it.
 fn with_noop_pretty(cmd: Command, mode: BuildMode) -> Command {
     match mode {
         BuildMode::Parsing => cmd.arg(pretty_arg().hide(true)),
@@ -52,6 +39,7 @@ pub fn build_cli(tool_set: &ToolSet, corpus: &Corpus, mode: BuildMode) -> Comman
     );
 
     let mut root = Command::new(help::BIN)
+        .bin_name(help::BIN)
         .version(version_string(corpus))
         .about(help::ROOT_ABOUT)
         .override_usage(help::ROOT_USAGE)
@@ -60,17 +48,7 @@ pub fn build_cli(tool_set: &ToolSet, corpus: &Corpus, mode: BuildMode) -> Comman
         .disable_help_subcommand(true)
         .disable_help_flag(true)
         .disable_version_flag(true)
-        // Root-level `--pretty` is documented in `Options:` (the override
-        // `Usage:` block hides it). Each JSON-emitting subcommand also
-        // registers its own `--pretty`; `dispatch` OR's the two positions
-        // so `zshref --pretty docs …` and `zshref docs --pretty` are equal.
-        // Subcommands without native `--pretty` get a hidden no-op variant
-        // in `Parsing` mode — see `BuildMode`.
         .arg(pretty_arg())
-        // Root-position `--category`, mirroring root `--pretty`: documented
-        // in `Options:` (the override `Usage:` block shows `[--category=C]`
-        // per subcommand, conveying where it applies); `dispatch` forwards a
-        // root-position value to the tool subcommand.
         .arg(root_category_arg(tool_set))
         .arg(help_arg())
         .arg(version_arg());
@@ -167,7 +145,6 @@ fn build_subcommand(tool: &Tool, corpus: &Corpus) -> Command {
         .about(tool.prose.brief.to_string())
         .after_long_help(tool_after_help(tool, corpus))
         .disable_help_flag(true)
-        // Subcommand arg: `zshref docs … --pretty`.
         .arg(pretty_arg())
         .arg(help_arg());
     for field in &tool.fields {
@@ -211,8 +188,7 @@ fn tool_cli_example(tool: &Tool, corpus: &Corpus) -> String {
     let outputs: Vec<String> = pairs
         .iter()
         .map(|(_, input)| {
-            let mut value =
-                tools::dispatch(tool, input, corpus).expect("CLI help example must run");
+            let mut value = tool.call(input, corpus).expect("CLI help example must run");
             help::elide_for_help_example(&mut value);
             output::render(&value, true)
         })
@@ -239,7 +215,7 @@ fn tool_cli_example(tool: &Tool, corpus: &Corpus) -> String {
 /// the recipe shows the intended filter without bloating help output.
 fn docs_md_recipe(tool: &Tool, corpus: &Corpus) -> String {
     let input = json!({ "key": "!", "category": "conditional_op" });
-    let out = tools::dispatch(tool, &input, corpus).expect("docs md recipe must run");
+    let out = tool.call(&input, corpus).expect("docs md recipe must run");
     let md_body = out["matches"][0]["mdBody"]
         .as_str()
         .expect("docs md recipe expects matches[0].mdBody to be a string");
@@ -255,8 +231,7 @@ fn docs_md_recipe(tool: &Tool, corpus: &Corpus) -> String {
 
 fn build_arg(field: &Field) -> Arg {
     let key = field.key;
-    let spec = &field.shape;
-    let mut arg = Arg::new(key)
+    let arg = Arg::new(key)
         .long(key)
         .value_name(key.to_uppercase())
         .help(field.prose.brief.to_string())
@@ -267,42 +242,16 @@ fn build_arg(field: &Field) -> Arg {
         // zsh tokens include `-`, `-p`, fd prefixes (`2>`), etc.
         // Without this, `--key -p` errors; `--key=VALUE` is the only escape.
         .allow_hyphen_values(true);
-
-    let ty = spec.get("type").and_then(Value::as_str).unwrap_or("string");
-    match ty {
-        "integer" => {
-            let min = spec.get("minimum").and_then(Value::as_i64).unwrap_or(1);
-            let max = spec
-                .get("maximum")
-                .and_then(Value::as_i64)
-                .unwrap_or(i64::from(u32::MAX));
-            // clap range is i64; u32 parser narrows on parse.
-            arg = arg.value_parser(clap::value_parser!(u32).range(min..=max));
-            // Schema `default` → clap default: the one source, as for
-            // `tools::input`. The schema `description` already states it, so
-            // suppress clap's auto-appended "[default: …]".
-            if let Some(d) = spec.get("default").and_then(Value::as_u64) {
-                arg = arg.default_value(d.to_string()).hide_default_value(true);
-            }
-        }
-        "string"
-            // The `category` flag has a closed enum — expose as PossibleValues
-            // so clap generates a clean error + completion for bad inputs.
-            // Detected by name rather than from the schema `enum`: the list
-            // is the corpus' either way.
-            if key == "category" =>
-        {
-            arg = arg
-                .value_parser(clap::builder::PossibleValuesParser::new(
-                    DOC_CATEGORIES.as_slice(),
-                ))
-                // Description already lists categories; inline block is redundant
-                // and wraps badly at narrow widths.
-                .hide_possible_values(true);
-        }
-        _ => {}
+    match field.shape {
+        Shape::Text => arg,
+        Shape::Category => arg
+            .value_parser(clap::builder::PossibleValuesParser::new(
+                DOC_CATEGORIES.as_slice(),
+            ))
+            // The long help lists the values; clap's inline block wraps badly.
+            .hide_possible_values(true),
+        Shape::Limit => arg.value_parser(clap::value_parser!(u32)),
     }
-    arg
 }
 
 fn pretty_arg() -> Arg {
@@ -313,12 +262,9 @@ fn pretty_arg() -> Arg {
         .long_help(help::PRETTY_HELP)
 }
 
-/// Root-level `--category`. The brief and the (valid-values-listing) long
-/// help are `list`'s, so the category list can't drift from the
-/// subcommands. The generic (search/list) wording is the common
-/// denominator across tools — `docs` adds a one-match-per-category note
-/// only in its own subcommand help, which would read as inaccurate at the
-/// root where `search`/`list` also take `--category`.
+/// Root-level `--category`, with `list`'s brief and long help: the generic
+/// (search/list) wording is the common denominator — `docs`' one-match-
+/// per-category note would misread at the root.
 fn root_category_arg(tool_set: &ToolSet) -> Arg {
     let category = tool_set
         .get(ToolName::List)
@@ -335,14 +281,11 @@ fn root_category_arg(tool_set: &ToolSet) -> Arg {
         .value_parser(clap::builder::PossibleValuesParser::new(
             DOC_CATEGORIES.as_slice(),
         ))
-        // Description already lists categories; the inline block is redundant
-        // and wraps badly at narrow widths (matches the subcommand arg).
         .hide_possible_values(true)
 }
 
 fn help_arg() -> Arg {
-    // `-h` and `--help` share one row and show the same (long) help; the
-    // short/long distinction adds no value here and lets `-h` look truncated.
+    // `-h` shows the long help too; a truncated `-h` page reads as broken.
     Arg::new("help")
         .short('h')
         .long("help")
@@ -359,32 +302,22 @@ fn version_arg() -> Arg {
         .help(help::VERSION_FLAG_HELP)
 }
 
-pub fn dispatch(cmd: Command, tool_set: &ToolSet, corpus: &Corpus) -> Result<i32> {
-    let mut cmd_for_err = cmd.clone();
-    let matches = match cmd.try_get_matches_from(std::env::args_os()) {
+pub fn dispatch(mut cmd: Command, tool_set: &ToolSet, corpus: &Corpus) -> Result<i32> {
+    let matches = match cmd.try_get_matches_from_mut(std::env::args_os()) {
         Ok(m) => m,
-        Err(err) => return Ok(output::handle_clap_error(err, &mut cmd_for_err)),
+        Err(err) => return Ok(output::handle_clap_error(err, &mut cmd)),
     };
     let Some((sub_name, sub_matches)) = matches.subcommand() else {
-        return Ok(render_help(cmd_for_err, None));
+        return Ok(render_help(cmd, None));
     };
-    // `--pretty` accepted at root or on the subcommand; OR the two.
-    let ctx = Ctx {
-        tool_set,
-        corpus,
-        pretty: optional_flag(&matches, "pretty") || optional_flag(sub_matches, "pretty"),
-    };
+    let pretty = optional_flag(&matches, "pretty") || optional_flag(sub_matches, "pretty");
 
     match sub_name {
         "completions" => {
             let shell: clap_complete::Shell = *sub_matches
                 .get_one::<clap_complete::Shell>("shell")
                 .expect("clap enforces required");
-            // Rebuild from the same source with `Completions` mode so that
-            // hidden no-op `--pretty` args don't surface as tab-completion
-            // offers on info/batch/help/completions.
-            let mut cmd_for_completions =
-                build_cli(ctx.tool_set, ctx.corpus, BuildMode::Completions);
+            let mut cmd_for_completions = build_cli(tool_set, corpus, BuildMode::Completions);
             clap_complete::generate(
                 shell,
                 &mut cmd_for_completions,
@@ -394,26 +327,25 @@ pub fn dispatch(cmd: Command, tool_set: &ToolSet, corpus: &Corpus) -> Result<i32
             Ok(0)
         }
         "info" => {
-            output::emit_pretty(&tools::info::run(ctx.corpus)?);
+            output::emit_pretty(&tools::info::run(corpus)?);
             Ok(0)
         }
         "schema" => {
-            output::emit(&tools::schema::run(ctx.tool_set)?, ctx.pretty);
+            output::emit(&tools::schema::run(tool_set)?, pretty);
             Ok(0)
         }
-        "batch" => crate::batch::run(ctx.tool_set, ctx.corpus),
+        "batch" => crate::batch::run(tool_set, corpus),
         "help" => {
             let command = sub_matches.get_one::<String>("command").map(String::as_str);
-            Ok(render_help(cmd_for_err, command))
+            Ok(render_help(cmd, command))
         }
         sub => {
-            let tool = ctx
-                .tool_set
+            let tool = tool_set
                 .by_stem(sub)
                 .expect("subcommand registered from the tool set");
             let mut input = matches_to_input_value(tool, sub_matches);
             forward_root_category(&mut input, tool, &matches);
-            output::emit(&tools::dispatch(tool, &input, ctx.corpus)?, ctx.pretty);
+            output::emit(&tool.call(&input, corpus)?, pretty);
             Ok(0)
         }
     }
@@ -430,12 +362,10 @@ fn render_help(mut cmd: Command, subcommand: Option<&str>) -> i32 {
     }
 }
 
-/// Forward a root-position `--category` onto the tool input, mirroring the
-/// root-position `--pretty` handling: a value given before the subcommand
-/// (`zshref --category=C docs …`) applies when the tool accepts `category`
-/// and the subcommand position did not set it. `matches_to_input_value`
-/// (sub position) wins on conflict; clap binds a post-subcommand
-/// `--category` to the sub, so this only fires for the pre-subcommand form.
+/// A root-position `--category` (`zshref --category=C docs …`) applies when
+/// the tool takes `category` and the subcommand position did not set it.
+/// clap binds a post-subcommand `--category` to the subcommand, so only the
+/// pre-subcommand form lands here.
 fn forward_root_category(input: &mut Value, tool: &Tool, root: &ArgMatches) {
     let Ok(Some(category)) = root.try_get_one::<String>("category") else {
         return;
@@ -453,29 +383,22 @@ fn optional_flag(matches: &ArgMatches, key: &str) -> bool {
     matches.try_contains_id(key).unwrap_or(false) && matches.get_flag(key)
 }
 
-/// Convert `ArgMatches` → JSON object matching the tool's `inputSchema`.
-/// Single boundary between clap-typed values and `&Value` dispatch;
-/// `batch::run` builds the same shape from JSONL.
+/// clap matches → the tool's JSON `input` object; `batch` builds the same
+/// shape from JSONL.
 fn matches_to_input_value(tool: &Tool, matches: &ArgMatches) -> Value {
     let mut obj = Map::new();
     for field in &tool.fields {
         let key = field.key;
-        let ty = field
-            .shape
-            .get("type")
-            .and_then(Value::as_str)
-            .unwrap_or("string");
-        match ty {
-            "integer" => {
-                if let Some(v) = matches.get_one::<u32>(key) {
-                    obj.insert(key.to_string(), Value::Number((*v).into()));
-                }
-            }
-            _ => {
-                if let Some(v) = matches.get_one::<String>(key) {
-                    obj.insert(key.to_string(), Value::String(v.clone()));
-                }
-            }
+        let value = match field.shape {
+            Shape::Text | Shape::Category => matches
+                .get_one::<String>(key)
+                .map(|v| Value::String(v.clone())),
+            Shape::Limit => matches
+                .get_one::<u32>(key)
+                .map(|v| Value::Number((*v).into())),
+        };
+        if let Some(value) = value {
+            obj.insert(key.to_string(), value);
         }
     }
     Value::Object(obj)
