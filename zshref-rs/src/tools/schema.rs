@@ -16,7 +16,6 @@ use crate::tools::{Field, ToolSet};
 use anyhow::Result;
 use serde_json::{json, Map, Value};
 use std::collections::BTreeSet;
-use std::sync::OnceLock;
 
 /// Format version of the `zshref schema` bundle.
 pub const SCHEMA_VERSION: u32 = 1;
@@ -227,27 +226,11 @@ fn build_bundle(tool_set: &ToolSet) -> Value {
     })
 }
 
-/// Word + leaf counts (lazily computed). Word count over pretty-printed form
-/// — upper bound for `--pretty`, slight over-estimate for compact default.
-pub fn size_hint(tool_set: &ToolSet) -> (usize, usize) {
-    static CACHE: OnceLock<(usize, usize)> = OnceLock::new();
-    *CACHE.get_or_init(|| {
-        let bundle = build_bundle(tool_set);
-        let words = serde_json::to_string_pretty(&bundle)
-            .map(|s| s.split_whitespace().count())
-            .unwrap_or(0);
-        let leaves = count_leaves(&bundle);
-        (words, leaves)
-    })
-}
-
-/// Non-container node count (object values only, not keys).
-fn count_leaves(v: &Value) -> usize {
-    match v {
-        Value::Object(map) => map.values().map(count_leaves).sum(),
-        Value::Array(arr) => arr.iter().map(count_leaves).sum(),
-        _ => 1,
-    }
+/// Word count of the pretty-printed bundle — exact for `--pretty`, a slight
+/// over-estimate for the compact default.
+pub fn bundle_words(tool_set: &ToolSet) -> usize {
+    serde_json::to_string_pretty(&build_bundle(tool_set))
+        .map_or(0, |s| s.split_whitespace().count())
 }
 
 #[cfg(test)]
@@ -304,12 +287,5 @@ mod tests {
                 cat.records.len()
             );
         }
-    }
-
-    #[test]
-    fn count_leaves_walks_arrays_and_objects() {
-        let v = json!({"a": 1, "b": [2, 3, {"c": "x"}], "d": null});
-        // 1 (a=1) + 2 (2,3) + 1 (c="x") + 1 (d=null) = 5
-        assert_eq!(count_leaves(&v), 5);
     }
 }

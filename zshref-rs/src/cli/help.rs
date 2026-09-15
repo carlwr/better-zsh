@@ -197,7 +197,7 @@ fn batch_example(tool_set: &ToolSet, corpus: &Corpus) -> String {
     }])
 }
 
-pub fn schema_long(words: usize, _leaves: usize) -> String {
+pub fn schema_long(words: usize) -> String {
     formatdoc! {"
         Emit a JSON Schema bundle for tool inputs and outputs.
 

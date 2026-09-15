@@ -74,11 +74,11 @@ pub fn build_cli(tool_set: &ToolSet, corpus: &Corpus, mode: BuildMode) -> Comman
         mode,
     ));
 
-    let (words, leaves) = tools::schema::size_hint(tool_set);
+    let words = tools::schema::bundle_words(tool_set);
     root = root.subcommand(
         Command::new("schema")
             .about(help::schema_about(words))
-            .after_long_help(help::schema_long(words, leaves))
+            .after_long_help(help::schema_long(words))
             .disable_help_flag(true)
             .arg(pretty_arg())
             .arg(help_arg()),
