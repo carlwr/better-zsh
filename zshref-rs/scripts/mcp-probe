@@ -1,0 +1,52 @@
+#!/usr/bin/env node
+// mcp-probe <server-command...>: one MCP stdio session — initialize,
+// tools/list, one tools/call — printed as key-sorted JSON; then closes the
+// server's stdin and exits with the server's exit code. For comparing two
+// ways of launching the same server.
+
+import { spawn } from "node:child_process"
+import { createInterface } from "node:readline"
+
+const [cmd, ...args] = process.argv.slice(2)
+if (!cmd) {
+  console.error("usage: mcp-probe <server-command...>")
+  process.exit(2)
+}
+
+const child = spawn(cmd, args, { stdio: ["pipe", "pipe", "inherit"] })
+const pending = new Map()
+createInterface({ input: child.stdout }).on("line", line => {
+  const msg = JSON.parse(line)
+  if (msg.id !== undefined) pending.get(msg.id)(msg.result ?? { error: msg.error })
+})
+let nextId = 1
+const request = (method, params) =>
+  new Promise(resolve => {
+    const id = nextId++
+    pending.set(id, resolve)
+    child.stdin.write(`${JSON.stringify({ jsonrpc: "2.0", id, method, params })}\n`)
+  })
+const sortKeys = v =>
+  Array.isArray(v)
+    ? v.map(sortKeys)
+    : v && typeof v === "object"
+      ? Object.fromEntries(
+          Object.keys(v)
+            .sort()
+            .map(k => [k, sortKeys(v[k])]),
+        )
+      : v
+
+const session = {
+  initialize: await request("initialize", {
+    protocolVersion: "2025-06-18",
+    capabilities: {},
+    clientInfo: { name: "mcp-probe", version: "0" },
+  }),
+}
+child.stdin.write(`${JSON.stringify({ jsonrpc: "2.0", method: "notifications/initialized" })}\n`)
+session.toolsList = await request("tools/list", {})
+session.toolsCall = await request("tools/call", { name: "zsh_docs", arguments: { key: "echo" } })
+console.log(JSON.stringify(sortKeys(session), null, 2))
+child.stdin.end()
+process.exit((await new Promise(resolve => child.on("close", resolve))) ?? 1)

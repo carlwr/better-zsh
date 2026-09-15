@@ -1,0 +1,72 @@
+#!/usr/bin/env zsh
+# npm-check: host gate for the npm packaging. From the release binaries built
+# for the host target: archive, stage both packages, pack, install them
+# offline, then check that the launchers are indistinguishable from the
+# native binaries — help, version, exit codes, one MCP session, EOF exit —
+# plus the missing-platform error path and the `.crate` exclusion.
+emulate -LR zsh
+set -eu -o pipefail
+
+crate=${0:A:h:h}
+host=$(rustc -vV | sed -n 's/^host: //p')
+native=$crate/target/$host/release
+tmp=$(mktemp -d)
+trap 'rm -rf $tmp' EXIT
+
+msg() { print -u2 -- "npm-check: $@"; }
+die() { msg $@; exit 1; }
+same() { cmp -s $1 $2 || { diff -u $1 $2 | head -40 >&2; die "$3 differs" }; }
+
+$crate/scripts/archive-bins $host $tmp/dist >/dev/null
+node $crate/npm/assemble.mjs --archives $tmp/dist --out $tmp/npm
+
+tgz=()
+for p in $tmp/npm/*(/); do
+  tgz+=( $tmp/$(cd $p && npm pack --json --pack-destination $tmp | jq -r '.[0].filename') )
+done
+msg "packed:" ${tgz:t}
+
+# dead registry: the thin package must resolve its dependency from the
+# sibling tarball, nothing may reach the network
+npm install --prefix $tmp/prefix --no-audit --no-fund --ignore-scripts \
+  --registry http://127.0.0.1:1 $tgz >/dev/null
+mods=$tmp/prefix/node_modules
+fat=$mods/@carlwr/zshref
+thin=$mods/@carlwr/zshref-mcp
+
+# --- CLI: launcher == native ---
+N=$native/zshref
+L=$mods/.bin/zshref
+for b in N L; do
+  NO_COLOR=1 COLUMNS=80 ZSHREF=${(P)b} $crate/scripts/dump-help - | sed '/^## bin: /d' > $tmp/help-$b
+done
+same $tmp/help-N $tmp/help-L "dump-help"
+same <($N --version) <($L --version) "--version"
+$N --bogus 2>/dev/null && :; n=$?
+$L --bogus 2>/dev/null && :; l=$?
+[[ $n == $l && $n != 0 ]] || die "exit code passthrough: native $n, launcher $l"
+$L docs --key echo >/dev/null
+msg "cli: launcher == native"
+
+# --- MCP: native, fat launcher, thin launcher ---
+$crate/scripts/mcp-probe $native/zshref-mcp > $tmp/mcp-N
+$crate/scripts/mcp-probe $mods/.bin/zshref-mcp > $tmp/mcp-fat
+$crate/scripts/mcp-probe node $thin/bin/zshref-mcp.js > $tmp/mcp-thin
+same $tmp/mcp-N $tmp/mcp-fat "mcp session (fat launcher)"
+same $tmp/mcp-N $tmp/mcp-thin "mcp session (thin launcher)"
+msg "mcp: launchers == native, exit 0 on stdin EOF"
+
+# --- no binary for the platform: exit 1, stderr names the key ---
+key=$(node -p 'process.platform + "-" + process.arch')
+cp -R $fat $tmp/broken
+mv $tmp/broken/native/$key $tmp/broken/native/$key.off
+node $tmp/broken/bin/zshref.js --version 2>$tmp/err && :; code=$?
+[[ $code == 1 ]] || die "missing binary: expected exit 1, got $code"
+grep -q "no prebuilt binary for $key" $tmp/err || { cat $tmp/err >&2; die "missing binary: stderr" }
+msg "missing platform: exit 1, names $key"
+
+# --- packaging source and staging stay out of the .crate ---
+if (cd $crate && cargo package --list --allow-dirty | grep -qE '^(npm|scripts|\.aux)/'); then
+  die "npm/, scripts/ or .aux/ leaks into the .crate"
+fi
+msg "ok"

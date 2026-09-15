@@ -6,7 +6,13 @@ set -eu -o pipefail
 
 crate=${0:A:h:h}
 out=$crate/THIRD_PARTY_NOTICES.md
-triples=(aarch64-apple-darwin x86_64-unknown-linux-gnu x86_64-pc-windows-msvc)
+triples=(
+  aarch64-apple-darwin
+  x86_64-apple-darwin
+  x86_64-unknown-linux-gnu
+  aarch64-unknown-linux-gnu
+  x86_64-pc-windows-msvc
+)
 
 # one "name version<TAB>license" per crate; build-only, dev and proc-macro
 # deps excluded — they never reach the binaries

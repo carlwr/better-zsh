@@ -61,3 +61,8 @@ jobs:
         run: |
           make cli-vendored-test
           make cli-package
+
+      # The npm packages, staged from this host's binaries: launchers vs
+      # native binaries, offline install, `.crate` exclusion.
+      - name: npm packaging check
+        run: make cli-npm-check

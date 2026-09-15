@@ -20,9 +20,10 @@
       // since a bare name anchors to this dir, where neither exists.
       "!**/syntaxes",
       "!**/test-fixtures",
-      // Rust crate: drift-checked JSON under it must not be reformatted by a
-      // bare root run / the LSP.
-      "!zshref-rs"
+      // Rust crate: vendored JSON and build output must not be reformatted
+      // by a bare root run / the LSP; `npm/` is JS and stays in.
+      "!zshref-rs/data",
+      "!zshref-rs/target"
     ]
   },
   "formatter": {

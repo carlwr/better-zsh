@@ -16,11 +16,14 @@
 use std::collections::BTreeMap;
 use std::process::Command;
 
-/// Target triples the graph is resolved under. `--filter-platform` only
-/// evaluates `cfg`, so none of them has to be an installed target.
+/// Target triples the graph is resolved under: the ones the release workflow
+/// ships binaries for. `--filter-platform` only evaluates `cfg`, so none of
+/// them has to be an installed target.
 const TRIPLES: &[&str] = &[
     "aarch64-apple-darwin",
+    "x86_64-apple-darwin",
     "x86_64-unknown-linux-gnu",
+    "aarch64-unknown-linux-gnu",
     "x86_64-pc-windows-msvc",
 ];
 

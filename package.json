@@ -11,9 +11,9 @@
   "scripts": {
     "build": "node scripts/build/quiet-run.mjs build",
     "format": "node scripts/build/quiet-run.mjs format",
-    "format:root": "biome check --error-on-warnings --write scripts package.json",
+    "format:root": "biome check --error-on-warnings --write scripts package.json zshref-rs/npm",
     "lint": "node scripts/build/quiet-run.mjs lint",
-    "lint:root": "biome check --error-on-warnings scripts package.json",
+    "lint:root": "biome check --error-on-warnings scripts package.json zshref-rs/npm",
     "lint:symlinks": "scripts/list-repo-symlinks --quiet && scripts/check-claude-md-pairs --quiet",
     "lint:md": "scripts/list-maintainer-docs --quiet",
     "bootstrap:upstream": "node scripts/build/upstream-ready.mjs bootstrap",

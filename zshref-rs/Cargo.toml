@@ -21,22 +21,34 @@ rust-version = "1.88"                   # floor: rmcp 3.3
 # still be included here (cargo's packaging layer takes precedence over
 # .gitignore — exactly what lets the dual-mode build ship `data/` even
 # though it's gitignored pre-extraction). See DATA-SYNC.md.
+# gitignore-style patterns: anchored, or `README.md` matches at any depth
+# (`npm/*/README.md` would ship).
 include = [
-    "src/**/*.rs",
-    "build.rs",
-    "tests/**/*.rs",
-    "Cargo.toml",
-    "Cargo.lock",
-    "README.md",
-    "LICENSE",
-    "THIRD_PARTY_NOTICES.md",
-    "data/*.json",
+    "/src/**/*.rs",
+    "/build.rs",
+    "/tests/**/*.rs",
+    "/Cargo.toml",
+    "/Cargo.lock",
+    "/README.md",
+    "/LICENSE",
+    "/THIRD_PARTY_NOTICES.md",
+    "/data/*.json",
 ]
 
 # `mcp` adds the `zshref-mcp` binary; without it the dependency set is the
 # CLI's alone.
 [features]
 mcp = ["dep:rmcp", "dep:tokio"]
+
+# `cargo binstall zshref`: the archives the release workflow attaches to the
+# `zshref-v*` tag — flat, both binaries in each.
+[package.metadata.binstall]
+pkg-url = "{ repo }/releases/download/zshref-v{ version }/zshref-{ target }{ archive-suffix }"
+pkg-fmt = "tgz"
+bin-dir = "{ bin }{ binary-ext }"
+
+[package.metadata.binstall.overrides.x86_64-pc-windows-msvc]
+pkg-fmt = "zip"
 
 [[bin]]
 name = "zshref"

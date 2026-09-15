@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+# archive-bins <target> <out-dir>: pack the release binaries built for
+# <target> (`cargo build --release --target <target>`) with the license
+# files into <out-dir>/zshref-<target>.tar.gz — .zip for Windows targets.
+# Every binary must answer `--version` first: nothing ships unverified.
+#
+# bash, not zsh: the Windows runner runs it under `shell: bash`.
+set -eu -o pipefail
+
+target=$1
+out=$2
+crate=$(cd "$(dirname "$0")/.." && pwd)
+bindir=$crate/target/$target/release
+
+ext=
+case $target in *windows*) ext=.exe ;; esac
+
+# bin names from the manifest, not hand-listed
+bins=$(cargo metadata --no-deps --format-version 1 --manifest-path "$crate/Cargo.toml" \
+       | jq -r '.packages[0].targets[] | select(.kind | index("bin")) | .name')
+
+stage=$(mktemp -d)
+trap 'rm -rf "$stage"' EXIT
+for b in $bins; do
+  "$bindir/$b$ext" --version
+  cp "$bindir/$b$ext" "$stage/"
+done
+cp "$crate/LICENSE" "$crate/THIRD_PARTY_NOTICES.md" "$stage/"
+
+mkdir -p "$out"
+out=$(cd "$out" && pwd)
+if [ -n "$ext" ]; then
+  archive=$out/zshref-$target.zip
+  rm -f "$archive"
+  (cd "$stage" && 7z a -tzip -bso0 -bsp0 "$archive" -- *)
+else
+  archive=$out/zshref-$target.tar.gz
+  # COPYFILE_DISABLE: no `._*` AppleDouble members from a macOS tar
+  (cd "$stage" && COPYFILE_DISABLE=1 tar -czf "$archive" -- *)
+fi
+echo "wrote $archive"
