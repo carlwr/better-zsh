@@ -19,25 +19,27 @@ const MAX_APPENDED = 2
  */
 export function expandQueryForEmbedding(
   query: string,
-  rules: QueryExpansion[],
+  rules: readonly QueryExpansion[],
 ): string {
-  const hay = query.toLowerCase()
+  const has = termMatcher(query)
   const adds: string[] = []
   for (const rule of rules) {
     if (adds.length >= MAX_APPENDED) break
     const add = rule.add
-    if (wordIn(hay, add) || adds.includes(add)) continue
-    if (rule.when.some(w => wordIn(hay, w))) adds.push(add)
+    if (has(add) || adds.includes(add)) continue
+    if (rule.when.some(has)) adds.push(add)
   }
   if (adds.length === 0) return query
-  return query + " " + adds.join(" ")
+  return `${query} ${adds.join(" ")}`
 }
 
 /**
- * Whole-word match; multi-word needles match as a substring phrase. Words
- * are alphanumeric runs: triggers and canonical terms are written that way.
+ * Whether a (lowercased) term occurs in `query`: a multi-word term as a
+ * substring phrase, a word as a whole word. Words are alphanumeric runs:
+ * triggers and canonical terms are written that way.
  */
-function wordIn(hay: string, needle: string): boolean {
-  if (needle.includes(" ")) return hay.includes(needle)
-  return hay.split(/[^a-z0-9]+/).some(w => w === needle.toLowerCase())
+function termMatcher(query: string): (term: string) => boolean {
+  const hay = query.toLowerCase()
+  const words = new Set(hay.split(/[^a-z0-9]+/))
+  return term => (term.includes(" ") ? hay.includes(term) : words.has(term))
 }
