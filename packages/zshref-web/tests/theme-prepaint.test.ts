@@ -20,8 +20,8 @@ function fromThemeTs(re: RegExp, label: string): string {
 
 describe('theme pre-paint sync', () => {
   it.each([
-    ['storage key', /STORAGE_KEY\s*=\s*'([^']+)'/],
-    ['system-pref media query', /matchMedia\('([^']+)'\)/]
+    ['storage key', /STORAGE_KEY\s*=\s*['"]([^'"]+)['"]/],
+    ['system-pref media query', /matchMedia\(['"]([^'"]+)['"]\)/]
   ])('app.html mirrors theme.ts %s', (label, re) => {
     expect(appHtml, label).toContain(fromThemeTs(re, label));
   });

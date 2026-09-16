@@ -10,8 +10,8 @@
       // Pre-paint theme application (avoids flash). Read persisted or system pref.
       (function () {
         try {
-          var stored = localStorage.getItem('zshref-theme');
-          var t = stored || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+          const stored = localStorage.getItem('zshref-theme');
+          const t = stored || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
           document.documentElement.setAttribute('data-theme', t);
         } catch (e) {
           document.documentElement.setAttribute('data-theme', 'dark');
