@@ -107,11 +107,19 @@ Compression checks:
 
 Recorded during the move from the Rust CLI, deferred past its parity gates.
 
+_no re-embed, no sweep:_
+
 - the `nlp` CI job fails on GitHub since the reorg landed there (first run: https://github.com/carlwr/better-zsh/actions/runs/35072677006): `tests/nlp/fixtures.test.ts` `sanity_fixture_matches_committed` — the committed sanity fixture was generated on macOS arm64, the Linux x64 runner's scores differ by ~2e-7 (the epsilon test beside it passes); cross-platform float noise meets the equality assertion §"No committed score snapshots" exempts. Decide: round the committed scores, or assert identity + epsilon only
 - drop the resolver boost: the `resolver_increment` knob, the `boosts.resolver` debug part, the fixtures' `resolverHit` field; product mode becomes the reporters' default (one identifier per script and per report test)
 - with it, retire what only kept reports comparable to the retired CLI's captures: the `batch --debug` response shape and 6-decimal rounding of `nlp/oracle.ts`, the Rust-format names and rules of `nlp/eval/format.ts`
 - remove the `Math.fround` emulation from `rank.ts` (`Float32Array` for vectors stays); regenerates the parity and sanity goldens
+- memoize the per-record overlap haystack in `rank.ts` `wordOverlap` — rebuilt and lowercased per query, so a mechanical ranking pass takes a minute and the sweep over an hour; behaviour-preserving, touches the browser ranker
+
+_re-embed pair (one index rebuild for both):_
+
 - retrieval-text category label → zsh-core's `docCategoryLabels` (`nlp/retrieval-text.ts` derives it mechanically today); re-embeds
 - embed without padded batching (`nlp/embedder-node.ts`: padding to the longest row costs ~4× against single calls on CPU; kept for the captures' numerics); re-embeds
-- memoize the per-record overlap haystack in `rank.ts` `wordOverlap` — rebuilt and lowercased per query, so a mechanical ranking pass takes a minute and the sweep over an hour; behaviour-preserving, touches the browser ranker
+
+_deferred for now:_
+
 - SPA deploy — hosting intent in `../AGENTS.md`
