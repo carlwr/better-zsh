@@ -1,6 +1,5 @@
 // The tuning dashboard as a report.
 
-import { rustDebugString } from '../nlp/eval/format';
 import { composedBase } from '../nlp/eval/sweep';
 import { buildDashboard, renderDashboard } from '../nlp/eval/tune';
 import { reporterAssets, scriptFlags } from './_args';
@@ -19,7 +18,7 @@ const args = scriptFlags('tune-dashboard', usage, ['--fast']);
 
 const spec = process.env.BZ_TUNE_BASE ?? '';
 const candidate = spec.trim() !== '';
-if (candidate) process.stdout.write(`[base override] BZ_TUNE_BASE=${rustDebugString(spec)}\n`);
+if (candidate) process.stdout.write(`[base override] BZ_TUNE_BASE=${JSON.stringify(spec)}\n`);
 
 const assets = await reporterAssets('tune-dashboard');
 const tuning = composedBase(assets.rules.tuning, spec);

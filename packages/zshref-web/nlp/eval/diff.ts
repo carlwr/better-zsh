@@ -8,12 +8,9 @@
 // curated report is restricted to the train split (`trainOnly`); the
 // mechanical set is all train.
 
-import { rustDebugString, signed } from './format';
 import type { Split } from './metric';
 import { type GradedItem, gradeEntries, type RankAssets } from './sentence';
 import type { SentenceEntry } from './sentence-fixture';
-
-const f = Math.fround;
 
 /** One expected item's rank and gain under a tuning, with what a diff needs. */
 export interface ItemRes {
@@ -71,12 +68,12 @@ function pairs(base: readonly ItemRes[], cand: readonly ItemRes[], trainOnly: bo
   });
 }
 
-/** Items that changed rank, how many crossed the pass bar each way, and the f32 net gain delta. */
+/** Items that changed rank, how many crossed the pass bar each way, and the net gain delta. */
 export function churn(base: readonly ItemRes[], cand: readonly ItemRes[], trainOnly: boolean): Churn {
   const c: Churn = { moved: 0, up: 0, down: 0, netGain: 0 };
   for (const [b, a] of pairs(base, cand, trainOnly)) {
     if (b.rank !== a.rank) c.moved++;
-    c.netGain = f(c.netGain + f(a.gain - b.gain));
+    c.netGain += a.gain - b.gain;
     if (!passed(b) && passed(a)) c.up++;
     if (passed(b) && !passed(a)) c.down++;
   }
@@ -84,6 +81,12 @@ export function churn(base: readonly ItemRes[], cand: readonly ItemRes[], trainO
 }
 
 const MOVERS_SHOWN = 40;
+
+/** `x` at `digits` decimals, the sign always: how every report prints a delta. */
+export function signed(x: number, digits: number): string {
+  const s = x.toFixed(digits);
+  return s.startsWith('-') ? s : `+${s}`;
+}
 
 /**
  * The diff report of one set: the churn headline, then every item whose
@@ -99,13 +102,13 @@ export function renderDiffReport(
   const nItems = base.filter((b) => inScope(b, trainOnly)).length;
   const movers = pairs(base, cand, trainOnly)
     .filter(([b, a]) => b.rank !== a.rank)
-    .map(([b, a]) => ({ b, a, dg: f(a.gain - b.gain) }))
+    .map(([b, a]) => ({ b, a, dg: a.gain - b.gain }))
     .sort((x, y) => Math.abs(y.dg) - Math.abs(x.dg));
   const lines = [
     `\n[${label}] ${nItems} items, ${c.moved} moved rank; depth-crossings: ${c.up} fail→pass, ${c.down} pass→fail; Σgain Δ=${signed(c.netGain, 3)} (flat per-item, not category-normalized)`,
     ...movers.slice(0, MOVERS_SHOWN).map(({ b, a, dg }) => {
       const cross = !passed(b) && passed(a) ? ' ⬆PASS' : passed(b) && !passed(a) ? ' ⬇FAIL' : '';
-      return `  ${signed(dg, 3)}  rank ${String(b.rank).padStart(3)}→${String(a.rank).padEnd(3)}  ${b.cat}/${b.id}  q=${rustDebugString(a.query)}${cross}`;
+      return `  ${signed(dg, 3)}  rank ${String(b.rank).padStart(3)}→${String(a.rank).padEnd(3)}  ${b.cat}/${b.id}  q=${JSON.stringify(a.query)}${cross}`;
     }),
     ...(movers.length > MOVERS_SHOWN ? [`  … ${movers.length - MOVERS_SHOWN} more movers`] : [])
   ];

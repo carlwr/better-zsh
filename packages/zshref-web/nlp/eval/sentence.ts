@@ -8,7 +8,6 @@ import { promoteToTop } from '../../src/lib/ranker/lookup-map';
 import { rank } from '../../src/lib/ranker/rank';
 import { embedUnique } from '../embedder-node';
 import type { EvalAssets } from './assets';
-import { rustFixed } from './format';
 import { BETA, type EvalResult, evalResult, gain, type Vote } from './metric';
 import type { SentenceEntry, SentenceFixture, SentenceItem } from './sentence-fixture';
 
@@ -78,15 +77,12 @@ export async function evalSentence(fixture: SentenceFixture, assets: EvalAssets)
   return evalSentenceCached(fixture, vecs, assets);
 }
 
-/** `{:.3}`, as every report prints a score. */
-export const fixed3 = (x: number): string => rustFixed(x, 3);
-
 /** The report: aggregates only, holdout as a labelled overfit-watch. One
  * definition, shared by the reporter, its test and the dashboard. */
 export function renderSentence(r: EvalResult): string {
-  const head = `[sentence-fixture] total=${fixed3(r.all.total)}  train=${fixed3(r.train.total)}  holdout=${fixed3(r.holdout.total)} (overfit-watch — never tune on this)  (${r.nEntries} entries)\n`;
+  const head = `[sentence-fixture] total=${r.all.total.toFixed(3)}  train=${r.train.total.toFixed(3)}  holdout=${r.holdout.total.toFixed(3)} (overfit-watch — never tune on this)  (${r.nEntries} entries)\n`;
   const rows = [...r.all.perCategory].map(
-    ([cat, s]) => `  ${cat.padEnd(20)} ${fixed3(s)}  (n=${r.perCategoryN.get(cat) ?? 0})\n`
+    ([cat, s]) => `  ${cat.padEnd(20)} ${s.toFixed(3)}  (n=${r.perCategoryN.get(cat) ?? 0})\n`
   );
   return head + rows.join('');
 }

@@ -30,7 +30,6 @@ import { rank } from '../src/lib/ranker/rank';
 import type { Rules } from '../src/lib/ranker/rules';
 import type { RankedMatch, VectorIndex } from '../src/lib/ranker/types';
 import { DIMS, type Embedder, embedQuery, normalizeF32 } from './embedder-node';
-import { rustFixed } from './eval/format';
 import { INDEX_VERSION, viewVectors } from './index-build';
 import { f32Shortest } from './json-f32';
 import { PATHS } from './paths';
@@ -264,7 +263,7 @@ export async function buildSanityFixture({ index, rules, embedder }: SanityInput
 
 const margin = (top: Scored, runner: Scored): number => top.score - runner.score;
 
-const fixed4 = (x: number): string => rustFixed(x, 4);
+const fixed4 = (x: number): string => x.toFixed(4);
 
 /** One message per violated invariant (identity drift / floor / margin). */
 function entryFailures(e: SanityEntry): string[] {
@@ -303,7 +302,7 @@ export function renderSanity(fixture: SanityFixture): string {
   const entries = fixture.entries;
   const fails = sanityFailures(fixture);
   const ok = entries.filter((e) => entryFailures(e).length === 0).length;
-  const worst = (xs: number[]): string => rustFixed(Math.min(...xs), 3);
+  const worst = (xs: number[]): string => Math.min(...xs).toFixed(3);
   const worstFloor = worst(entries.map((e) => e.topMatch.score));
   const worstMargin = worst(entries.flatMap((e) => (e.runnerUp ? [margin(e.topMatch, e.runnerUp)] : [])));
   const detail = fails.length === 0 ? '' : `\n  ${fails.join('\n  ')}`;

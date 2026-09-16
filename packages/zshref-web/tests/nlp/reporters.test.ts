@@ -163,7 +163,7 @@ describe('reporters over the staged assets, capped', () => {
     if (skipReason) ctx.skip(skipReason);
     const base = assets.rules.tuning;
     const baseScores = scoreBench(bench, base);
-    // One f32 knob, one usize knob.
+    // One float knob, one int knob.
     const knobs: KnobKey[] = ['cat', 'sig_len'];
     const text =
       renderSweepHeader(baseScores, '') +

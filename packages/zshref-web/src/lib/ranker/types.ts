@@ -52,7 +52,7 @@ export type VectorIndex = z.infer<typeof VectorIndexSchema>;
 // Strict: an unknown key is an error. Field order = emitted key order.
 
 const float = z.number();
-const usize = z.number().int().nonnegative();
+const nat = z.number().int().nonnegative();
 
 /** Ceiling on any single effective boost/penalty, in semantic-cosine units.
  * Half the cosine range: a heavier term would dominate the semantic signal. */
@@ -84,8 +84,8 @@ const TuningShape = z.strictObject({
   }),
   penalties: z.strictObject({ category_rarity_max: float }),
   lexical: z.strictObject({
-    min_discriminating_word_len: usize,
-    min_significant_word_len: usize
+    min_discriminating_word_len: nat,
+    min_significant_word_len: nat
   })
 });
 export type Tuning = z.infer<typeof TuningShape>;

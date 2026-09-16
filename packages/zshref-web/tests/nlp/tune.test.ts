@@ -6,8 +6,7 @@
 import { loadCorpus } from '@carlwr/zsh-core';
 import { describe, expect, it } from 'vitest';
 
-import { churn, type ItemRes, perItem, renderDiffReport } from '../../nlp/eval/diff';
-import { rustDebugString, rustFixed, signed } from '../../nlp/eval/format';
+import { churn, type ItemRes, perItem, renderDiffReport, signed } from '../../nlp/eval/diff';
 import { evalMechanicalCached, LAMBDA } from '../../nlp/eval/mechanical';
 import { evalSentenceCached, gradeEntries } from '../../nlp/eval/sentence';
 import type { SentenceEntry } from '../../nlp/eval/sentence-fixture';
@@ -36,7 +35,15 @@ import {
   zeroBoosts,
   zeroedCache
 } from '../../nlp/eval/tune';
-import { buildParityIndex, SANITY_QUERIES, SANITY_VERSION, type SanityFixture, syntheticVec } from '../../nlp/fixtures';
+import {
+  buildParityIndex,
+  SANITY_FLOOR,
+  SANITY_MARGIN,
+  SANITY_QUERIES,
+  SANITY_VERSION,
+  type SanityFixture,
+  syntheticVec
+} from '../../nlp/fixtures';
 import { loadRulesYaml } from '../../nlp/rules-load';
 import { LookupIndex } from '../../src/lib/ranker/lookup-map';
 import { exactWordBoost, type Tuning } from '../../src/lib/ranker/types';
@@ -110,11 +117,11 @@ describe('ablation helpers', () => {
 });
 
 describe('overrides', () => {
-  it('applyOverride sets each knob, f32 or usize, on a copy', () => {
+  it('applyOverride sets each knob, float or int, on a copy', () => {
     const before = structuredClone(committed);
     for (const key of KNOB_KEYS) {
       const { kind } = KNOBS[key];
-      const raw = kind === 'f32' ? '0.125' : '5';
+      const raw = kind === 'float' ? '0.125' : '5';
       const t = applyOverride(committed, key, raw);
       expect(knobValue[key](t), key).toBe(Number(raw));
       // Every other knob keeps its value.
@@ -125,14 +132,14 @@ describe('overrides', () => {
     expect(committed).toEqual(before);
   });
 
-  it('f32 knobs take the f32 of the literal; usize knobs take integers only', () => {
-    expect(knobValue.cat(applyOverride(committed, 'cat', '0.1'))).toBe(Math.fround(0.1));
-    expect(knobValue.cat(applyOverride(committed, 'cat', '1e-2'))).toBe(Math.fround(0.01));
+  it('float knobs take any numeric literal; int knobs take integers only', () => {
+    expect(knobValue.cat(applyOverride(committed, 'cat', '0.1'))).toBe(0.1);
+    expect(knobValue.cat(applyOverride(committed, 'cat', '1e-2'))).toBe(0.01);
     expect(knobValue.cat(applyOverride(committed, 'cat', '-.5'))).toBe(-0.5);
     expect(knobValue.disc_len(applyOverride(committed, 'disc_len', '+4'))).toBe(4);
-    expect(() => applyOverride(committed, 'disc_len', '2.5')).toThrow(/usize/);
-    expect(() => applyOverride(committed, 'cat', 'abc')).toThrow(/f32/);
-    expect(() => applyOverride(committed, 'cat', '')).toThrow(/f32/);
+    expect(() => applyOverride(committed, 'disc_len', '2.5')).toThrow(/not a valid int/);
+    expect(() => applyOverride(committed, 'cat', 'abc')).toThrow(/not a valid float/);
+    expect(() => applyOverride(committed, 'cat', '')).toThrow(/not a valid float/);
   });
 
   it('applyOverride throws on an unknown key', () => {
@@ -142,7 +149,7 @@ describe('overrides', () => {
 
   it('overrides bypass the load-time range checks', () => {
     // MAX_SCORE_TERM would refuse this at load; a sweep point may exceed it.
-    expect(knobValue.cat(applyOverride(committed, 'cat', '0.9'))).toBe(Math.fround(0.9));
+    expect(knobValue.cat(applyOverride(committed, 'cat', '0.9'))).toBe(0.9);
   });
 
   it('composedBase parses key=value pairs, trims, skips empties', () => {
@@ -150,25 +157,25 @@ describe('overrides', () => {
     expect(composedBase(committed, '')).toEqual(committed);
     expect(composedBase(committed, ' , ')).toEqual(committed);
     const t = composedBase(committed, ' cat = 0.02 , disc_len=4,,sig_len=1');
-    expect(knobValue.cat(t)).toBe(Math.fround(0.02));
+    expect(knobValue.cat(t)).toBe(0.02);
     expect(knobValue.disc_len(t)).toBe(4);
     expect(knobValue.sig_len(t)).toBe(1);
     expect(knobValue.body(t)).toBe(knobValue.body(committed));
     // Later pairs win.
-    expect(knobValue.cat(composedBase(committed, 'cat=0.02,cat=0.04'))).toBe(Math.fround(0.04));
+    expect(knobValue.cat(composedBase(committed, 'cat=0.02,cat=0.04'))).toBe(0.04);
     expect(() => composedBase(committed, 'cat')).toThrow(/key=value/);
     expect(() => composedBase(committed, 'cat=0.02,nope=1')).toThrow(/unknown/);
   });
 
-  it('knob points are labelled {:.3} for f32 and as integers for usize', () => {
-    expect(knobLabel('f32', 0.55)).toBe('0.550');
-    expect(knobLabel('f32', 16)).toBe('16.000');
-    expect(knobLabel('usize', 3)).toBe('3');
+  it('knob points are labelled to 3 decimals for a float knob, as integers for an int one', () => {
+    expect(knobLabel('float', 0.55)).toBe('0.550');
+    expect(knobLabel('float', 16)).toBe('16.000');
+    expect(knobLabel('int', 3)).toBe('3');
     for (const key of KNOB_KEYS) {
       const { kind, points } = KNOBS[key];
       expect(points.length, key).toBeGreaterThan(1);
-      if (kind === 'usize') for (const p of points) expect(Number.isInteger(p), key).toBe(true);
-      for (const p of points) expect(knobValue[key](withKnob(committed, key, p)), key).toBe(Math.fround(p));
+      if (kind === 'int') for (const p of points) expect(Number.isInteger(p), key).toBe(true);
+      for (const p of points) expect(knobValue[key](withKnob(committed, key, p)), key).toBe(p);
     }
   });
 });
@@ -207,53 +214,11 @@ describe('churn', () => {
 });
 
 describe('report formatting', () => {
-  // The expectations are Rust's `{:.N}` / `{:?}` output for the same values
-  // (the rule the reports keep; nlp/eval/format.ts).
-  it('rustFixed rounds exact ties to even, as {:.N} does', () => {
-    const f = Math.fround;
-    expect(rustFixed(f(0.5625), 3)).toBe('0.562');
-    expect(rustFixed(f(0.8125), 3)).toBe('0.812');
-    expect(rustFixed(f(0.6875), 3)).toBe('0.688');
-    expect(rustFixed(f(0.0625), 3)).toBe('0.062');
-    expect(rustFixed(f(0.9375), 3)).toBe('0.938');
-    expect(rustFixed(f(0.03125), 4)).toBe('0.0312');
-    expect(rustFixed(f(0.09375), 4)).toBe('0.0938');
-    expect(rustFixed(0.25, 1)).toBe('0.2');
-    expect(rustFixed(2.5, 0)).toBe('2');
-    expect(rustFixed(3.5, 0)).toBe('4');
-    // A carry on the round-up.
-    expect(rustFixed(0.9995, 3)).toBe('1.000');
-    expect(rustFixed(0.99951171875, 3)).toBe('1.000');
-    // Not ties: nearest, as the binary value falls (0.45f32 is below 0.45).
-    expect(rustFixed(f(0.45), 1)).toBe('0.4');
-    expect(rustFixed(0.45, 1)).toBe('0.5');
-    expect(rustFixed(f(0.1), 3)).toBe('0.100');
-    expect(rustFixed(12.3, 1)).toBe('12.3');
-    expect(rustFixed(f(62.3), 1)).toBe('62.3');
-    expect(rustFixed(-0.5625, 3)).toBe('-0.562');
-    expect(rustFixed(-1e-9, 3)).toBe('-0.000');
-    expect(rustFixed(-0, 3)).toBe('-0.000');
-    expect(rustFixed(0, 3)).toBe('0.000');
-    expect(rustFixed(7, 3)).toBe('7.000');
-  });
-
   it('signed prints the sign always', () => {
     expect(signed(0.5, 3)).toBe('+0.500');
     expect(signed(-0.5, 3)).toBe('-0.500');
     expect(signed(0, 3)).toBe('+0.000');
     expect(signed(-0.00001, 4)).toBe('-0.0000');
-    expect(signed(-0, 3)).toBe('-0.000');
-    expect(signed(0.5625, 3)).toBe('+0.562');
-  });
-
-  it('rustDebugString escapes as {:?} does', () => {
-    expect(rustDebugString('plain')).toBe('"plain"');
-    expect(rustDebugString('say "hi"')).toBe('"say \\"hi\\""');
-    expect(rustDebugString('a\\b')).toBe('"a\\\\b"');
-    expect(rustDebugString("it's")).toBe('"it\'s"');
-    expect(rustDebugString('x\ny\tz\r\0')).toBe('"x\\ny\\tz\\r\\0"');
-    expect(rustDebugString('\x01\x7f')).toBe('"\\u{1}\\u{7f}"');
-    expect(rustDebugString('é ⬆ $?')).toBe('"é ⬆ $?"');
   });
 });
 
@@ -443,7 +408,7 @@ describe('sweep over the parity index', () => {
     for (const k of sweep.knobs) {
       expect(k.rows.map((r) => r.label)).toEqual(KNOBS[k.knob].points.map((p) => knobLabel(KNOBS[k.knob].kind, p)));
       for (const { scores } of k.rows) {
-        expect(scores.combined).toBe(Math.fround(Math.fround(LAMBDA * scores.train) + Math.fround((1 - LAMBDA) * scores.mechanical)));
+        expect(scores.combined).toBe(LAMBDA * scores.train + (1 - LAMBDA) * scores.mechanical);
         for (const v of Object.values(scores)) {
           expect(v).toBeGreaterThanOrEqual(0);
           expect(v).toBeLessThanOrEqual(1);
@@ -490,7 +455,7 @@ describe('sweep over the parity index', () => {
 describe('dashboard render over the parity index', () => {
   const sanity: SanityFixture = {
     version: SANITY_VERSION,
-    invariants: { absoluteFloor: Math.fround(0.7), minMargin: Math.fround(0.03) },
+    invariants: { absoluteFloor: SANITY_FLOOR, minMargin: SANITY_MARGIN },
     entries: SANITY_QUERIES.map((q) => ({
       query: q.query,
       topMatch: { category: q.category, id: q.id, score: 0.9 },

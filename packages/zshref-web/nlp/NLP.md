@@ -97,14 +97,10 @@ Compression checks:
 
 Recorded during the move from the Rust CLI, deferred past its parity gates.
 
-_no re-embed, no sweep:_
-
-- retire what only kept reports comparable to the retired CLI's captures: the Rust-format names and rules of `nlp/eval/format.ts`, the eval-side `Math.fround`
-
 _re-embed pair (one index rebuild for both):_
 
 - retrieval-text category label → zsh-core's `docCategoryLabels` (`nlp/retrieval-text.ts` derives it mechanically today); re-embeds
-- embed without padded batching (`nlp/embedder-node.ts`: padding to the longest row costs ~4× against single calls on CPU; kept for the captures' numerics); re-embeds
+- embed without padded batching (`nlp/embedder-node.ts`: padding to the longest row costs ~4× against single calls on CPU); re-embeds
 
 _deferred for now:_
 

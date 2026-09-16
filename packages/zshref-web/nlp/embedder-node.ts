@@ -11,10 +11,9 @@
 //   up to an ulp.
 // - Padded batches with an attention mask, `INDEX_EMBED_CHUNK` texts each —
 //   the batch shape is part of the vectors' numerics (~1e-7 against single
-//   texts), so a rebuilt index reproduces the committed sanity fixture and
-//   the recorded oracle captures only in these chunks. Padding to the
-//   longest row makes a batch slower than its texts one by one on CPU (~4×
-//   measured); dropping batching is a recorded follow-up (re-embeds).
+//   texts), so changing it re-embeds. Padding to the longest row makes a
+//   batch slower than its texts one by one on CPU (~4× measured); dropping
+//   batching is a recorded follow-up.
 
 import { basename, dirname } from 'node:path';
 import {

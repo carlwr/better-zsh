@@ -1,15 +1,9 @@
 // The eval metric; definitions and rationale: NLP.md §"Eval architecture".
-// f32 throughout, so a printed score is reproducible to the digit.
 
 import { byteOrder } from '../byte-order';
 
-const f = Math.fround;
-
 /** Global sharpness of the rank discount. */
 export const BETA = 2;
-
-/** f32 `powf`: the double power of two f32 values, rounded once. */
-const powf = (x: number, y: number): number => f(x ** y);
 
 /**
  * Normalized rank discount in (0, 1]: `D(r) = 1 / (1 + (r/d)^β)`, scaled so
@@ -17,8 +11,7 @@ const powf = (x: number, y: number): number => f(x ** y);
  * `d` is the item's target depth.
  */
 export function gain(rank: number, d: number, beta: number = BETA): number {
-  const [dd, b] = [f(d), f(beta)];
-  return f(f(1 + powf(f(1 / dd), b)) / f(1 + powf(f(f(rank) / dd), b)));
+  return (1 + (1 / d) ** beta) / (1 + (rank / d) ** beta);
 }
 
 /** Tune-on (`train`) vs held-out (`holdout`): the ranker is tuned against
@@ -43,19 +36,19 @@ export function score(votes: readonly Vote[]): Score {
   const sums = new Map<string, { gains: number; weights: number }>();
   for (const v of votes) {
     const s = sums.get(v.category) ?? { gains: 0, weights: 0 };
-    s.gains = f(s.gains + f(v.weight * v.gain));
-    s.weights = f(s.weights + v.weight);
+    s.gains += v.weight * v.gain;
+    s.weights += v.weight;
     sums.set(v.category, s);
   }
-  // Sorted before summing: the f32 sum depends on the order.
+  // Sorted before summing: the sum depends on the order.
   const perCategory = new Map(
     [...sums]
       .sort(([a], [b]) => byteOrder(a, b))
-      .map(([c, s]): [string, number] => [c, s.weights > 0 ? f(s.gains / s.weights) : 0])
+      .map(([c, s]): [string, number] => [c, s.weights > 0 ? s.gains / s.weights : 0])
   );
   let sum = 0;
-  for (const s of perCategory.values()) sum = f(sum + s);
-  return { perCategory, total: perCategory.size === 0 ? 0 : f(sum / f(perCategory.size)) };
+  for (const s of perCategory.values()) sum += s;
+  return { perCategory, total: perCategory.size === 0 ? 0 : sum / perCategory.size };
 }
 
 /** `score` over the votes of one split. */

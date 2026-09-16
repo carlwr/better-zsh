@@ -192,8 +192,8 @@ describe('eval over the parity index', () => {
     const index = buildParityIndex(corpus, rules.synonyms.index_groups);
     const assets = { index, rules, lookup: new LookupIndex({ version: 1, entries: [] }) };
     // Three items in one category at a depth far past the index's few
-    // records, so each gains exactly 1 in f32 whatever its rank; a fourth
-    // the index lacks counts as ranked just past the end.
+    // records, so each gains 1 to within rounding whatever its rank; a
+    // fourth the index lacks counts as ranked just past the end.
     const query = 'alpha';
     const fixture = parseSentenceFixture(
       versioned(
@@ -205,7 +205,7 @@ describe('eval over the parity index', () => {
     expect(r.nEntries).toBe(1);
     expect(r.perCategoryN.get('option')).toBe(3);
     expect(r.perCategoryN.get('builtin')).toBe(1);
-    expect(r.all.perCategory.get('option')).toBe(1);
+    expect(r.all.perCategory.get('option')).toBeCloseTo(1, 9);
     const missingGain = gain(index.records.length + 1, 3);
     expect(r.all.perCategory.get('builtin')).toBe(missingGain);
     expect(r.all.total).toBeCloseTo((1 + missingGain) / 2, 6);

@@ -66,7 +66,7 @@ const SentenceFixtureShape = z
       'Sentence-style queries for the natural-language search eval: hand-curated paraphrased questions, each targeting specific canonical records. Test-only.'
   });
 
-// The resolved form every consumer sees: concrete f32 depth and weight per
+// The resolved form every consumer sees: concrete depth and weight per
 // item, the split derived from the flag.
 
 export interface SentenceItem {
@@ -88,9 +88,7 @@ export interface SentenceFixture {
   entries: SentenceEntry[];
 }
 
-const f = Math.fround;
-/** Of the f32 value (the precision the metric computes in). */
-const positive = (x: number): boolean => f(x) > 0 && Number.isFinite(f(x));
+const positive = (x: number): boolean => x > 0 && Number.isFinite(x);
 
 /** The shape, then the load-time invariants (first violation reported) and
  * the resolution. Messages name entries by index only — never by query. */
@@ -115,11 +113,11 @@ export const SentenceFixtureSchema = SentenceFixtureShape.transform((raw, ctx): 
         issue(['entries', i, 'want', j, 'd'], `entry ${i} item ${j} has non-positive target depth ${d}`);
       }
       if (!positive(w)) issue(['entries', i, 'want', j, 'w'], `entry ${i} item ${j} has non-positive weight ${w}`);
-      return { category: item.cat, id: item.id, targetDepth: f(d), weight: f(w) };
+      return { category: item.cat, id: item.id, targetDepth: d, weight: w };
     });
     return { query: e.query, want, split: e.holdout ? 'holdout' : 'train' };
   });
-  return { defaultWeight: f(defaultWeight), defaultTargetDepth: f(defaultTargetDepth), entries };
+  return { defaultWeight, defaultTargetDepth, entries };
 });
 
 export const parseSentenceFixture = (yaml: string): SentenceFixture =>

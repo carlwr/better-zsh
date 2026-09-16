@@ -20,24 +20,15 @@ import { embedUnique } from '../embedder-node';
 import type { EvalAssets } from './assets';
 import { type EvalResult, evalResult } from './metric';
 import { type HardCheckTemplate, hardCheckTemplates } from './qa-score';
-import {
-  countPerCategory,
-  fixed3,
-  type GradedItem,
-  gradeEntries,
-  type RankAssets,
-  voteOf
-} from './sentence';
+import { countPerCategory, type GradedItem, gradeEntries, type RankAssets, voteOf } from './sentence';
 import type { SentenceEntry } from './sentence-fixture';
-
-const f = Math.fround;
 
 /** Curated/mechanical blend weight: `total = LAMBDA·curated_train + (1 − LAMBDA)·mechanical`. */
 export const LAMBDA = 0.5;
 
-/** The blend, in f32; one definition for every caller. */
+/** The blend; one definition for every caller. */
 export const combinedTotal = (curatedTrain: number, mechanicalTotal: number): number =>
-  f(f(LAMBDA * curatedTrain) + f(f(1 - LAMBDA) * mechanicalTotal));
+  LAMBDA * curatedTrain + (1 - LAMBDA) * mechanicalTotal;
 
 /** Every item at unit depth and weight, train split: a mechanical entry
  * demands a true top-1 surface and contributes equally. */
@@ -126,12 +117,12 @@ function sliceStats(graded: readonly GradedItem[]): SliceStat[] {
   return SLICES.map(({ label, pred }) => {
     const members = graded.filter((g) => pred(g.item.id));
     let sum = 0;
-    for (const g of members) sum = f(sum + g.gain);
+    for (const g of members) sum += g.gain;
     return {
       label,
       n: members.length,
       fails: members.filter(notTop1).length,
-      meanGain: members.length > 0 ? f(sum / f(members.length)) : 0
+      meanGain: members.length > 0 ? sum / members.length : 0
     };
   });
 }
@@ -160,14 +151,14 @@ export async function evalMechanical(entries: readonly SentenceEntry[], assets: 
 /** The component report: the total and, per category, the score with its
  * item count and #1-violation count. */
 export function renderMechanical(r: MechanicalEval): string {
-  const head = `[mechanical] total=${fixed3(r.all.total)}  (${r.nEntries} entries)\n`;
+  const head = `[mechanical] total=${r.all.total.toFixed(3)}  (${r.nEntries} entries)\n`;
   const rows = [...r.all.perCategory].map(
     ([cat, s]) =>
-      `  ${cat.padEnd(20)} ${fixed3(s)}  (n=${r.perCategoryN.get(cat) ?? 0}, #1-violations=${r.violations.get(cat) ?? 0})\n`
+      `  ${cat.padEnd(20)} ${s.toFixed(3)}  (n=${r.perCategoryN.get(cat) ?? 0}, #1-violations=${r.violations.get(cat) ?? 0})\n`
   );
   return head + rows.join('');
 }
 
 /** The blend line, after `renderMechanical` in the report. */
 export const renderCombined = (curatedTrain: number, mechanicalTotal: number): string =>
-  `[combined] curated_train=${fixed3(curatedTrain)}  mechanical=${fixed3(mechanicalTotal)}  λ=${LAMBDA}  total=${fixed3(combinedTotal(curatedTrain, mechanicalTotal))}\n`;
+  `[combined] curated_train=${curatedTrain.toFixed(3)}  mechanical=${mechanicalTotal.toFixed(3)}  λ=${LAMBDA}  total=${combinedTotal(curatedTrain, mechanicalTotal).toFixed(3)}\n`;

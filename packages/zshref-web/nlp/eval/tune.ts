@@ -15,8 +15,7 @@ import { type BareEval, buildLookupContract, evalBare } from '../contract';
 import { DIMS, embedUnique } from '../embedder-node';
 import { buildSanityFixture, renderSanity, type SanityFixture } from '../fixtures';
 import type { EvalAssets } from './assets';
-import { type Churn, churn, perItem } from './diff';
-import { rustFixed, signed } from './format';
+import { type Churn, churn, perItem, signed } from './diff';
 import {
   buildMechanical,
   combinedTotal,
@@ -28,7 +27,7 @@ import {
 import type { EvalResult } from './metric';
 import { loadQaCorpus } from './qa-corpus';
 import { hardChecks, scoreHardChecks, scoreQaCorpus, summaryJson } from './qa-score';
-import { evalSentenceCached, fixed3, type RankAssets } from './sentence';
+import { evalSentenceCached, type RankAssets } from './sentence';
 import { loadSentenceFixture } from './sentence-fixture';
 
 /** `assets` ranking with `tuning` in place of the loaded one. */
@@ -191,13 +190,13 @@ export function renderDashboard(d: Dashboard): string {
   const m = d.mechanical;
   const lines = [
     '\n=== nlp tuning dashboard ===',
-    `[sentence]  all=${fixed3(s.all.total)}  train=${fixed3(s.train.total)}  holdout=${fixed3(s.holdout.total)}  (${s.nEntries} entries)`,
+    `[sentence]  all=${s.all.total.toFixed(3)}  train=${s.train.total.toFixed(3)}  holdout=${s.holdout.total.toFixed(3)}  (${s.nEntries} entries)`,
     renderSanity(d.sanity).trimEnd(),
     `[contract] ${d.bare.bareTotal} bare entries, ${d.bare.failures.length} failures`,
     ...(m
       ? [
-          `[mechanical] ${fixed3(m.all.total)}  (${m.nEntries} entries)`,
-          `[combined]  λ·train + (1−λ)·mech = ${fixed3(LAMBDA)}·${fixed3(d.curatedTrain)} + ${fixed3(1 - LAMBDA)}·${fixed3(m.all.total)} = ${fixed3(combinedTotal(d.curatedTrain, m.all.total))}`
+          `[mechanical] ${m.all.total.toFixed(3)}  (${m.nEntries} entries)`,
+          `[combined]  λ·train + (1−λ)·mech = ${LAMBDA.toFixed(3)}·${d.curatedTrain.toFixed(3)} + ${(1 - LAMBDA).toFixed(3)}·${m.all.total.toFixed(3)} = ${combinedTotal(d.curatedTrain, m.all.total).toFixed(3)}`
         ]
       : [`[mechanical] skipped ${FAST_HINT}`]),
     '  holdout = overfit watch; never tune on it.',
@@ -214,7 +213,7 @@ export function renderDashboard(d: Dashboard): string {
         ]
       : ['\nhard slices: skipped (--fast)']),
     d.qa
-      ? `[qa] avg ${rustFixed(Math.fround(d.qa.avgPercent), 1)}%, hard-check score ${rustFixed(Math.fround(d.qa.hardPercent), 1)}% (held-out — never tune on this)`
+      ? `[qa] avg ${d.qa.avgPercent.toFixed(1)}%, hard-check score ${d.qa.hardPercent.toFixed(1)}% (held-out — never tune on this)`
       : `[qa] skipped ${FAST_HINT}`
   ];
   return `${lines.join('\n')}\n`;
@@ -238,7 +237,7 @@ function churnBlock(c: Dashboard['churn']): string {
 
 function renderComponents({ train, holdout, mech }: Components): string {
   const row = (name: string, v: Ablation): string =>
-    `  ${name.padEnd(11)}${v.map((x) => fixed3(x).padStart(8)).join('')}`;
+    `  ${name.padEnd(11)}${v.map((x) => x.toFixed(3).padStart(8)).join('')}`;
   return [
     '\ncomponent decomposition (lookup-map ON in all rows):',
     '  −embed = embedder off (boosts only); −boost = boosts off (embedder only)',
@@ -258,7 +257,7 @@ function perCategoryTable(s: EvalResult, m: MechanicalEval | null): string {
   const cats = [...new Set([...s.all.perCategory.keys(), ...(m?.all.perCategory.keys() ?? [])])].sort(byteOrder);
   const score = (x: ReadonlyMap<string, number>, c: string): string => {
     const v = x.get(c);
-    return v === undefined ? '—' : fixed3(v);
+    return v === undefined ? '—' : v.toFixed(3);
   };
   const count = (x: ReadonlyMap<string, number>, c: string): string => String(x.get(c) ?? '—');
   const rows = cats.map((c) => [
@@ -281,7 +280,7 @@ const sliceTable = (slices: readonly SliceStat[]): string =>
   boxTable(
     ['id slice', 'score', 'fail/total'],
     [false, true, true],
-    slices.map((x) => [x.label, fixed3(x.meanGain), `${x.fails}/${x.n}`])
+    slices.map((x) => [x.label, x.meanGain.toFixed(3), `${x.fails}/${x.n}`])
   );
 
 const charCount = (s: string): number => [...s].length;

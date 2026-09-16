@@ -9,16 +9,13 @@
 import type { Tuning } from '../../src/lib/ranker/types';
 import { embedUnique } from '../embedder-node';
 import type { EvalAssets } from './assets';
-import { type ItemRes, perItem, renderDiffReport } from './diff';
-import { rustDebugString, rustFixed, signed } from './format';
+import { type ItemRes, perItem, renderDiffReport, signed } from './diff';
 import { buildMechanical, combinedTotal, evalMechanicalCached } from './mechanical';
 import { evalSentenceCached } from './sentence';
 import { loadSentenceFixture, type SentenceEntry, type SentenceFixture } from './sentence-fixture';
 import { withTuning } from './tune';
 
-const f = Math.fround;
-
-type KnobKind = 'f32' | 'usize';
+type KnobKind = 'float' | 'int';
 
 interface Knob {
   kind: KnobKind;
@@ -33,37 +30,37 @@ const range = (lo: number, hi: number): number[] => Array.from({ length: hi - lo
 
 /** The rank-time knobs by `BZ_TUNE_BASE` key, in sweep order; each names one `tuning.yaml` field. */
 export const KNOBS = {
-  body: knob('f32', [0.55, 0.6, 0.65, 0.7, 0.75, 0.8], (t, v) => {
+  body: knob('float', [0.55, 0.6, 0.65, 0.7, 0.75, 0.8], (t, v) => {
     t.semantic_weights.body = v;
   }),
-  structured: knob('f32', [0.05, 0.1, 0.15, 0.2, 0.25, 0.3], (t, v) => {
+  structured: knob('float', [0.05, 0.1, 0.15, 0.2, 0.25, 0.3], (t, v) => {
     t.semantic_weights.structured = v;
   }),
-  sb_strength: knob('f32', [0, 0.06, 0.12, 0.18, 0.24, 0.3], (t, v) => {
+  sb_strength: knob('float', [0, 0.06, 0.12, 0.18, 0.24, 0.3], (t, v) => {
     t.semantic_weights.short_body.strength = v;
   }),
-  sb_length: knob('f32', [8, 16, 24, 32, 48, 64], (t, v) => {
+  sb_length: knob('float', [8, 16, 24, 32, 48, 64], (t, v) => {
     t.semantic_weights.short_body.length_scale = v;
   }),
-  cat: knob('f32', [0, 0.01, 0.02, 0.04, 0.06, 0.1], (t, v) => {
+  cat: knob('float', [0, 0.01, 0.02, 0.04, 0.06, 0.1], (t, v) => {
     t.boosts.category = v;
   }),
-  exact_inc: knob('f32', [0, 0.02, 0.04, 0.06, 0.08, 0.12], (t, v) => {
+  exact_inc: knob('float', [0, 0.02, 0.04, 0.06, 0.08, 0.12], (t, v) => {
     t.boosts.exact_word_increment = v;
   }),
-  wo_scale: knob('f32', [0.1, 0.2, 0.3, 0.4, 0.5], (t, v) => {
+  wo_scale: knob('float', [0.1, 0.2, 0.3, 0.4, 0.5], (t, v) => {
     t.boosts.word_overlap.scale = v;
   }),
-  wo_halfsat: knob('f32', [1, 2, 4, 6, 10, 16], (t, v) => {
+  wo_halfsat: knob('float', [1, 2, 4, 6, 10, 16], (t, v) => {
     t.boosts.word_overlap.half_sat = v;
   }),
-  rarity: knob('f32', [0, 0.01, 0.03, 0.06, 0.1, 0.16], (t, v) => {
+  rarity: knob('float', [0, 0.01, 0.03, 0.06, 0.1, 0.16], (t, v) => {
     t.penalties.category_rarity_max = v;
   }),
-  disc_len: knob('usize', range(2, 6), (t, v) => {
+  disc_len: knob('int', range(2, 6), (t, v) => {
     t.lexical.min_discriminating_word_len = v;
   }),
-  sig_len: knob('usize', range(1, 4), (t, v) => {
+  sig_len: knob('int', range(1, 4), (t, v) => {
     t.lexical.min_significant_word_len = v;
   })
 } satisfies Record<string, Knob>;
@@ -72,22 +69,22 @@ export const KNOB_KEYS = Object.keys(KNOBS) as KnobKey[];
 
 const isKnobKey = (s: string): s is KnobKey => Object.hasOwn(KNOBS, s);
 
-/** The point label: `{:.3}` for an f32 knob, the integer for a usize one. */
-export const knobLabel = (kind: KnobKind, v: number): string => (kind === 'f32' ? rustFixed(v, 3) : String(v));
+/** The point label: 3 decimals for a float knob, the integer for an int one. */
+export const knobLabel = (kind: KnobKind, v: number): string => (kind === 'float' ? v.toFixed(3) : String(v));
 
-const F32_LITERAL = /^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$/;
-const USIZE_LITERAL = /^\+?\d+$/;
+const FLOAT_LITERAL = /^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$/;
+const INT_LITERAL = /^\+?\d+$/;
 
 function parseKnobValue(key: KnobKey, kind: KnobKind, raw: string): number {
-  const ok = kind === 'f32' ? F32_LITERAL.test(raw) : USIZE_LITERAL.test(raw);
-  if (!ok) throw new Error(`BZ_TUNE_BASE ${key}: ${JSON.stringify(raw)} is not a ${kind} value`);
-  return kind === 'f32' ? f(Number(raw)) : Number(raw);
+  const ok = (kind === 'float' ? FLOAT_LITERAL : INT_LITERAL).test(raw);
+  if (!ok) throw new Error(`BZ_TUNE_BASE ${key}: ${JSON.stringify(raw)} is not a valid ${kind}`);
+  return Number(raw);
 }
 
 /** `tuning` with one knob at `v`; the range checks of loading do not apply. */
 export function withKnob(tuning: Tuning, key: KnobKey, v: number): Tuning {
   const t = structuredClone(tuning);
-  KNOBS[key].set(t, KNOBS[key].kind === 'f32' ? f(v) : v);
+  KNOBS[key].set(t, v);
   return t;
 }
 
@@ -187,8 +184,8 @@ export const runSweep = (bench: Bench, base: Tuning): Sweep => ({
   knobs: KNOB_KEYS.map((key) => sweepKnob(bench, base, key))
 });
 
-/** A row whose combined is within this of the base's is the base row (`|Δ| < 1e-6`, f32). */
-const BASE_EPS = f(1e-6);
+/** A row whose combined is within this of the base's is the base row. */
+const BASE_EPS = 1e-6;
 
 /**
  * Per row: ` ◄ best` on the highest combined (the last one on a tie), else
@@ -196,13 +193,13 @@ const BASE_EPS = f(1e-6);
  */
 export function sweepMarks(combined: readonly number[], baseCombined: number): string[] {
   const best = combined.reduce((bi, c, i) => (c >= (combined[bi] ?? Number.NEGATIVE_INFINITY) ? i : bi), -1);
-  return combined.map((c, i) => (i === best ? ' ◄ best' : Math.abs(f(c - baseCombined)) < BASE_EPS ? ' (base)' : ''));
+  return combined.map((c, i) => (i === best ? ' ◄ best' : Math.abs(c - baseCombined) < BASE_EPS ? ' (base)' : ''));
 }
 
-const fixed4 = (x: number): string => rustFixed(x, 4);
+const fixed4 = (x: number): string => x.toFixed(4);
 
 export const renderSweepHeader = (base: Scores, spec: string): string =>
-  `\n=== tuning sweep (one knob at a time) ===\nbase: combined=${fixed4(base.combined)}  train=${fixed4(base.train)}  holdout=${fixed4(base.holdout)}  mechanical=${fixed4(base.mechanical)}  (BZ_TUNE_BASE=${rustDebugString(spec)})\n`;
+  `\n=== tuning sweep (one knob at a time) ===\nbase: combined=${fixed4(base.combined)}  train=${fixed4(base.train)}  holdout=${fixed4(base.holdout)}  mechanical=${fixed4(base.mechanical)}  (BZ_TUNE_BASE=${JSON.stringify(spec)})\n`;
 
 export function renderKnobBlock({ knob, rows }: KnobSweep, baseCombined: number): string {
   const marks = sweepMarks(
@@ -210,7 +207,7 @@ export function renderKnobBlock({ knob, rows }: KnobSweep, baseCombined: number)
     baseCombined
   );
   const lines = rows.map(({ label, scores: s }, i) => {
-    const delta = f(s.combined - baseCombined);
+    const delta = s.combined - baseCombined;
     return `  ${label.padEnd(10)} comb=${fixed4(s.combined)} Δ=${signed(delta, 4)}  train=${fixed4(s.train)} hold=${fixed4(s.holdout)} mech=${fixed4(s.mechanical)}${marks[i] ?? ''}`;
   });
   return `\n── ${knob} ───────────────────  (base combined=${fixed4(baseCombined)})\n${lines.join('\n')}\n`;
@@ -248,7 +245,7 @@ export function renderTuneDiff(bench: Bench, base: Tuning, cand: Tuning, spec: s
   const b = benchItems(bench, base);
   const c = benchItems(bench, cand);
   return (
-    `\n=== tune diff: base vs candidate ===\ncandidate BZ_TUNE_BASE=${rustDebugString(spec)}\n` +
+    `\n=== tune diff: base vs candidate ===\ncandidate BZ_TUNE_BASE=${JSON.stringify(spec)}\n` +
     renderDiffReport('curated train', b.curated, c.curated, true) +
     renderDiffReport('mechanical', b.mechanical, c.mechanical, false)
   );
