@@ -17,7 +17,6 @@ import { type DocCategory, docCategories, docDisplay, idOf } from '@carlwr/zsh-c
 
 import { buildLookupContract } from '../contract';
 import { embedUnique } from '../embedder-node';
-import type { ResolverHitSource } from '../oracle';
 import type { EvalAssets } from './assets';
 import { type EvalResult, evalResult } from './metric';
 import { type HardCheckTemplate, hardCheckTemplates } from './qa-score';
@@ -141,10 +140,9 @@ function sliceStats(graded: readonly GradedItem[]): SliceStat[] {
 export function evalMechanicalCached(
   entries: readonly SentenceEntry[],
   vecs: ReadonlyMap<string, Float32Array>,
-  assets: RankAssets,
-  resolverHit: ResolverHitSource
+  assets: RankAssets
 ): MechanicalEval {
-  const graded = gradeEntries(entries, vecs, assets, resolverHit);
+  const graded = gradeEntries(entries, vecs, assets);
   return {
     ...evalResult(graded.map(voteOf), entries.length, countPerCategory(graded)),
     violations: countPerCategory(graded.filter(notTop1)),
@@ -153,14 +151,10 @@ export function evalMechanicalCached(
 }
 
 /** Embed every distinct query once, then `evalMechanicalCached`. */
-export async function evalMechanical(
-  entries: readonly SentenceEntry[],
-  assets: EvalAssets,
-  resolverHit: ResolverHitSource
-): Promise<MechanicalEval> {
+export async function evalMechanical(entries: readonly SentenceEntry[], assets: EvalAssets): Promise<MechanicalEval> {
   const queries = entries.map((e) => e.query);
   const vecs = await embedUnique(assets.embedder, queries, assets.rules);
-  return evalMechanicalCached(entries, vecs, assets, resolverHit);
+  return evalMechanicalCached(entries, vecs, assets);
 }
 
 /** The component report: the total and, per category, the score with its

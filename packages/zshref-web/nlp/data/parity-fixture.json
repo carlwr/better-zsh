@@ -1,5 +1,5 @@
 {
-  "version": 3,
+  "version": 4,
   "limit": 5,
   "index": {
     "version": 2,
@@ -10956,15 +10956,11 @@
         0.002517762,
         0.011875248
       ],
-      "resolverHit": {
-        "category": "option",
-        "id": "autocd"
-      },
       "expected": [
         {
           "category": "option",
           "id": "autocd",
-          "score": 0.14280638462665068
+          "score": 0.05280638462665068
         },
         {
           "category": "redirection",
@@ -12624,15 +12620,11 @@
         0.008121237,
         -0.038843296
       ],
-      "resolverHit": {
-        "category": "redirection",
-        "id": ">>_word"
-      },
       "expected": [
         {
           "category": "redirection",
           "id": ">>_word",
-          "score": 0.1814505869881581
+          "score": 0.09145058698815811
         },
         {
           "category": "builtin",

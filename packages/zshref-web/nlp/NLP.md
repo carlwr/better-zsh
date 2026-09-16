@@ -33,16 +33,6 @@ From the package dir:
 yq '.entries |= map(select(.holdout != true))' nlp/rules/sentence-fixture.yaml
 ```
 
-## Modes
-
-The ranker takes a resolver hit as input; every eval and reporter takes it as a parameter (`nlp/oracle.ts`):
-
-- _oracle_ — the default: the hit as the retired Rust CLI computed it (zsh-core's resolver over the category filter if given, else over `classifyOrder`; first hit wins)
-  - needed while that CLI's recorded captures are the reference
-- _product_ — `--product`: no hit; what the SPA does (`src/lib/search.ts`)
-
-Flipping the default to product mode goes with dropping the resolver boost (§"Follow-ups").
-
 ## Eval architecture (A / B / C)
 
 Three layers, distinct jobs:
@@ -109,8 +99,7 @@ Recorded during the move from the Rust CLI, deferred past its parity gates.
 
 _no re-embed, no sweep:_
 
-- drop the resolver boost: the `resolver_increment` knob, the `boosts.resolver` debug part, the fixtures' `resolverHit` field; product mode becomes the reporters' default (one identifier per script and per report test)
-- with it, retire what only kept reports comparable to the retired CLI's captures: the `batch --debug` response shape and 6-decimal rounding of `nlp/oracle.ts`, the Rust-format names and rules of `nlp/eval/format.ts`
+- retire what only kept reports comparable to the retired CLI's captures: the Rust-format names and rules of `nlp/eval/format.ts`, the eval-side `Math.fround`
 
 _re-embed pair (one index rebuild for both):_
 

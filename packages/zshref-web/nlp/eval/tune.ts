@@ -14,7 +14,6 @@ import { byteOrder } from '../byte-order';
 import { type BareEval, buildLookupContract, evalBare } from '../contract';
 import { DIMS, embedUnique } from '../embedder-node';
 import { buildSanityFixture, renderSanity, type SanityFixture } from '../fixtures';
-import type { ResolverHitSource } from '../oracle';
 import type { EvalAssets } from './assets';
 import { type Churn, churn, perItem } from './diff';
 import { rustFixed, signed } from './format';
@@ -59,7 +58,6 @@ export function zeroBoosts(t: Tuning): Tuning {
       ...t.boosts,
       category: 0,
       exact_word_increment: 0,
-      resolver_increment: 0,
       word_overlap: { ...t.boosts.word_overlap, scale: 0 }
     },
     penalties: { ...t.penalties, category_rarity_max: 0 }
@@ -98,7 +96,6 @@ export interface Dashboard {
 }
 
 export interface DashboardOptions {
-  resolverHit: ResolverHitSource;
   /** `tuning` is a candidate (the committed one with overrides): diff it against `assets.rules.tuning`. */
   candidate: boolean;
   /** Skip the mechanical layer and the QA. */
@@ -123,26 +120,24 @@ async function fullTier(
   assets: EvalAssets,
   live: EvalAssets,
   noBoosts: EvalAssets,
-  { resolverHit, candidate, cap }: DashboardOptions
+  { candidate, cap }: DashboardOptions
 ): Promise<FullTier> {
   // `slice(0, undefined)` is the whole array: no cap, no cut.
   const entries = buildMechanical(assets.corpus).slice(0, cap);
   const vecs = await embedUnique(assets.embedder, entries.map((e) => e.query), assets.rules);
   const qa = await loadQaCorpus();
-  const mechanical = evalMechanicalCached(entries, vecs, live, resolverHit);
+  const mechanical = evalMechanicalCached(entries, vecs, live);
   return {
     mechanical,
     mech: [
       mechanical.all.total,
-      evalMechanicalCached(entries, zeroedCache(vecs), live, resolverHit).all.total,
-      evalMechanicalCached(entries, vecs, noBoosts, resolverHit).all.total
+      evalMechanicalCached(entries, zeroedCache(vecs), live).all.total,
+      evalMechanicalCached(entries, vecs, noBoosts).all.total
     ],
-    churn: candidate
-      ? churn(perItem(entries, vecs, assets, resolverHit), perItem(entries, vecs, live, resolverHit), false)
-      : null,
+    churn: candidate ? churn(perItem(entries, vecs, assets), perItem(entries, vecs, live), false) : null,
     qa: summaryJson(
-      await scoreHardChecks(hardChecks(assets.corpus).slice(0, cap), live, resolverHit),
-      await scoreQaCorpus({ ...qa, entries: qa.entries.slice(0, cap) }, live, resolverHit)
+      await scoreHardChecks(hardChecks(assets.corpus).slice(0, cap), live),
+      await scoreQaCorpus({ ...qa, entries: qa.entries.slice(0, cap) }, live)
     )
   };
 }
@@ -154,22 +149,18 @@ async function fullTier(
  * carries the committed tuning, the churn baseline.
  */
 export async function buildDashboard(assets: EvalAssets, tuning: Tuning, opts: DashboardOptions): Promise<Dashboard> {
-  const { resolverHit, candidate, fast = false, cap } = opts;
+  const { candidate, fast = false, cap } = opts;
   const live = withTuning(assets, tuning);
   const noBoosts = withTuning(assets, zeroBoosts(tuning));
 
   const loaded = await loadSentenceFixture();
   const fixture = { ...loaded, entries: loaded.entries.slice(0, cap) };
   const curVecs = await embedUnique(assets.embedder, fixture.entries.map((e) => e.query), assets.rules);
-  const sentence = evalSentenceCached(fixture, curVecs, live, resolverHit);
-  const curNoEmbed = evalSentenceCached(fixture, zeroedCache(curVecs), live, resolverHit);
-  const curNoBoost = evalSentenceCached(fixture, curVecs, noBoosts, resolverHit);
+  const sentence = evalSentenceCached(fixture, curVecs, live);
+  const curNoEmbed = evalSentenceCached(fixture, zeroedCache(curVecs), live);
+  const curNoBoost = evalSentenceCached(fixture, curVecs, noBoosts);
   const curatedChurn = candidate
-    ? churn(
-        perItem(fixture.entries, curVecs, assets, resolverHit),
-        perItem(fixture.entries, curVecs, live, resolverHit),
-        true
-      )
+    ? churn(perItem(fixture.entries, curVecs, assets), perItem(fixture.entries, curVecs, live), true)
     : null;
   const sanity = await buildSanityFixture(live);
   const bare = evalBare(buildLookupContract(assets.corpus), assets.lookup);

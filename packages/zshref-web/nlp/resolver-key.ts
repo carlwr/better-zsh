@@ -1,6 +1,5 @@
-// The resolver's verdict on a query: the ranker's resolver-hit input in
-// oracle mode, and the canonicalizer behind the lookup map and the lookup
-// contract.
+// The resolver's verdict on a query: the canonicalizer behind the lookup
+// map and the lookup contract.
 
 import type { DocCorpus } from '@carlwr/zsh-core';
 import { lookupRaw } from '@carlwr/zsh-core/resolver';

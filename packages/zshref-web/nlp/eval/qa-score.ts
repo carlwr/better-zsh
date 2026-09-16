@@ -1,4 +1,4 @@
-// QA scoring over the oracle runner: the hard checks (templated
+// QA scoring over the Node search runner: the hard checks (templated
 // self-retrieval per record of a few categories, limit 1, category-weighted
 // pass rate) and the scored entries of the held-out corpus (weighted
 // expected sets, negatives as penalties). The report is the hard-check
@@ -10,7 +10,7 @@ import type { DocCorpus } from '@carlwr/zsh-core';
 import { type DocCategory, docDisplay, idOf } from '@carlwr/zsh-core/taxonomy';
 import { byteOrder } from '../byte-order';
 import type { Identity } from '../contract';
-import { type OracleDeps, oracleSearch, type ResolverHitSource } from '../oracle';
+import { searchNode } from '../search-node';
 import type { EvalAssets } from './assets';
 import type { QaCorpus, QaEntry } from './qa-corpus';
 
@@ -69,11 +69,6 @@ export interface HardCheckResult {
   hardScore: number;
 }
 
-const oracleDeps = (
-  { index, rules, lookup, embedder }: EvalAssets,
-  resolverHit: ResolverHitSource
-): OracleDeps => ({ index, rules, lookup, embedder, resolverHit });
-
 /** Per-category pass rates, sorted by category as the harness prints them. */
 export function hardCheckRates(
   perCat: HardCheckResult['perCat']
@@ -89,25 +84,20 @@ export function hardCheckRates(
 }
 
 /** Run `checks` (limit 1 each): a pass is the record itself at #1. */
-export async function scoreHardChecks(
-  checks: readonly HardCheck[],
-  assets: EvalAssets,
-  resolverHit: ResolverHitSource
-): Promise<HardCheckResult> {
-  const deps = oracleDeps(assets, resolverHit);
+export async function scoreHardChecks(checks: readonly HardCheck[], assets: EvalAssets): Promise<HardCheckResult> {
   const perCat: HardCheckResult['perCat'] = {};
   const details: string[] = [];
   let passed = 0;
   for (const check of checks) {
-    const top = (await oracleSearch({ query: check.query, limit: 1 }, deps)).matches[0];
+    const top = (await searchNode({ query: check.query, limit: 1 }, assets)).matches[0]?.rec;
     const pc = perCat[check.category] ?? { passed: 0, total: 0 };
     perCat[check.category] = pc;
     pc.total++;
-    if (top && top.category.id === check.category && top.id === check.id) {
+    if (top && top.category === check.category && top.id === check.id) {
       passed++;
       pc.passed++;
     } else {
-      const got = top ? `${top.category.id}/${top.id}` : '(no results)';
+      const got = top ? `${top.category}/${top.id}` : '(no results)';
       details.push(`  FAIL: "${check.query}" → got ${got}, expected ${check.category}/${check.id}`);
     }
   }
@@ -116,10 +106,8 @@ export async function scoreHardChecks(
   return { perCat, details, passed, total: checks.length, hardScore };
 }
 
-export const runHardChecks = (
-  assets: EvalAssets,
-  resolverHit: ResolverHitSource
-): Promise<HardCheckResult> => scoreHardChecks(hardChecks(assets.corpus), assets, resolverHit);
+export const runHardChecks = (assets: EvalAssets): Promise<HardCheckResult> =>
+  scoreHardChecks(hardChecks(assets.corpus), assets);
 
 export interface EntryScore {
   entryScore: number;
@@ -192,12 +180,7 @@ export function aggregateScores(scores: readonly EntryScore[]): QaScore {
 }
 
 /** One search per entry — the harness's request: `limit`, and `category` when set. */
-export async function scoreQaCorpus(
-  corpus: QaCorpus,
-  assets: EvalAssets,
-  resolverHit: ResolverHitSource
-): Promise<QaScore> {
-  const deps = oracleDeps(assets, resolverHit);
+export async function scoreQaCorpus(corpus: QaCorpus, assets: EvalAssets): Promise<QaScore> {
   const scores: EntryScore[] = [];
   for (const entry of corpus.entries) {
     const input = {
@@ -205,13 +188,8 @@ export async function scoreQaCorpus(
       limit: entry.limit,
       ...(entry.category ? { category: entry.category } : {})
     };
-    const r = await oracleSearch(input, deps);
-    scores.push(
-      scoreEntry(
-        entry,
-        r.matches.map((m) => ({ category: m.category.id, id: m.id }))
-      )
-    );
+    const r = await searchNode(input, assets);
+    scores.push(scoreEntry(entry, r.matches.map((m) => m.rec)));
   }
   return aggregateScores(scores);
 }

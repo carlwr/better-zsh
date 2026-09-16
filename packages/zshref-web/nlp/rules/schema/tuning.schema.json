@@ -48,11 +48,7 @@
         },
         "exact_word_increment": {
           "type": "number",
-          "description": "Non-negative increment for a query word equal to id/display (exact_word = category + this)."
-        },
-        "resolver_increment": {
-          "type": "number",
-          "description": "Non-negative increment for a corpus-aware resolver hit (resolver = exact_word + this); the increments keep category ≤ exact_word ≤ resolver by construction."
+          "description": "Non-negative increment for a query word equal to id/display (exact_word = category + this, so category ≤ exact_word by construction)."
         },
         "word_overlap": {
           "type": "object",
@@ -75,7 +71,6 @@
       "required": [
         "category",
         "exact_word_increment",
-        "resolver_increment",
         "word_overlap"
       ],
       "additionalProperties": false

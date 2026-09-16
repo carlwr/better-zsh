@@ -1,5 +1,5 @@
-// Pure ranker math. Inputs are pre-computed (query string, query vector,
-// optional resolver hit) so this module has no embedder / corpus dependency.
+// Pure ranker math. Inputs are pre-computed (query string, query vector)
+// so this module has no embedder / corpus dependency.
 //
 // Vectors are f32 data (`Float32Array`); the arithmetic is plain doubles.
 // Deterministic — the summation orders are fixed — so the parity fixture (a
@@ -8,11 +8,10 @@
 import type { Rules } from './rules';
 import {
   type Boosts,
-  derivedBoosts,
+  exactWordBoost,
   type IndexedRecord,
   type RankedMatch,
   type RecordText,
-  type ResolverHit,
   type SemanticScores,
   type Tuning,
   type VectorIndex
@@ -36,7 +35,6 @@ function dot(a: ArrayLike<number>, b: ArrayLike<number>): number {
 export function rank(
   query: string,
   queryVec: Float32Array,
-  resolverHit: ResolverHit | null,
   category: string | null,
   index: VectorIndex,
   rules: Rules
@@ -48,7 +46,7 @@ export function rank(
   for (const rec of index.records) {
     if (category !== null && rec.text.category !== category) continue;
     const penalty = penalties.get(rec.text.category) ?? 0;
-    out.push(scoreRecord(rec, queryVec, terms, resolverHit, penalty, rules));
+    out.push(scoreRecord(rec, queryVec, terms, penalty, rules));
   }
   out.sort((a, b) => {
     if (a.score !== b.score) return b.score - a.score;
@@ -63,7 +61,6 @@ function scoreRecord(
   rec: IndexedRecord,
   queryVec: Float32Array,
   terms: QueryTerms,
-  resolverHit: ResolverHit | null,
   categoryPenalty: number,
   rules: Rules
 ): RankedMatch {
@@ -73,12 +70,12 @@ function scoreRecord(
     expanded: dot(queryVec, rec.vectors.expanded)
   };
   const lex = recordTerms(rec.text);
-  const b = boosts(rec.text, lex, terms, resolverHit, rules);
+  const b = boosts(lex, terms, rules);
 
   const [bodyW, structW, expW] = semanticWeights(lex.bodyWords, rules.tuning.semantic_weights);
 
   const semanticScore = bodyW * semantic.body + structW * semantic.structured + expW * semantic.expanded;
-  const score = semanticScore + b.category + b.resolver + b.lexical - categoryPenalty;
+  const score = semanticScore + b.category + b.lexical - categoryPenalty;
 
   return { rec: rec.text, score, debug: { semantic, boosts: b } };
 }
@@ -181,42 +178,22 @@ function queryTerms(q: string, rules: Rules): QueryTerms {
 // --- boosts ------------------------------------------------------------------
 
 /** The boost terms. `q` is the lowercased query, as `rank` passes it. */
-export function computeBoosts(
-  rec: RecordText,
-  q: string,
-  resolverHit: ResolverHit | null,
-  rules: Rules
-): Boosts {
-  return boosts(rec, recordTerms(rec), queryTerms(q, rules), resolverHit, rules);
+export function computeBoosts(rec: RecordText, q: string, rules: Rules): Boosts {
+  return boosts(recordTerms(rec), queryTerms(q, rules), rules);
 }
 
-function boosts(
-  rec: RecordText,
-  lex: RecordTerms,
-  terms: QueryTerms,
-  resolverHit: ResolverHit | null,
-  rules: Rules
-): Boosts {
+function boosts(lex: RecordTerms, terms: QueryTerms, rules: Rules): Boosts {
   const b = rules.tuning.boosts;
-  const eff = derivedBoosts(b);
   const category = terms.q.includes(lex.categoryWord) || terms.q.includes(lex.labelWord) ? b.category : 0;
-  const resolver =
-    resolverHit && resolverHit.category === rec.category && resolverHit.id === rec.id
-      ? eff.resolver
-      : 0;
   const wordExact = terms.discriminating.some((w) => w === lex.id || w === lex.display);
   // Symbolic surface match: zsh users name operators and special parameters by
   // their literal symbol ("$?", ">>", "<<<"), which is punctuation, so
   // significantWords drops it. Match those tokens against the record's id and
   // the symbolic head of its display — the punctuation analogue of wordExact.
   const symbolExact = terms.symbols.some((t) => t === lex.id || lex.symbolHead === t);
-  const exactWord = wordExact || symbolExact ? eff.exactWord : 0;
+  const exactWord = wordExact || symbolExact ? exactWordBoost(b) : 0;
   const lexical = exactWord + overlapBoost(wordOverlap(lex.haystack, terms.words), b);
-  return {
-    category,
-    resolver,
-    lexical
-  };
+  return { category, lexical };
 }
 
 /**

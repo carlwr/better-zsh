@@ -14,11 +14,10 @@ semantic_weights:
     length_scale: 24   # body length at/above which the shift is zero
 
 boosts:
-  # Ordered by reliability via non-negative increments, keeping
-  # category ≤ exact_word ≤ resolver.
+  # Ordered by reliability via a non-negative increment, keeping
+  # category ≤ exact_word.
   category: 0.01             # query names the record's category
   exact_word_increment: 0.06 # query word equals id/display
-  resolver_increment: 0.02   # corpus-aware resolver hit
   # Lexical overlap, smoothly saturated (asymptote `scale`, half at `half_sat`).
   word_overlap:
     scale: 0.30

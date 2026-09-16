@@ -21,7 +21,6 @@ import {
   SentenceFixtureSchema
 } from '../../nlp/eval/sentence-fixture';
 import { buildParityIndex, syntheticVec } from '../../nlp/fixtures';
-import { corpusResolverHit, noResolverHit } from '../../nlp/oracle';
 import { loadRulesYaml } from '../../nlp/rules-load';
 import { rulesJsonSchemas, SENTENCE_FIXTURE_SCHEMA_FILE } from '../../nlp/rules-schema';
 import { LookupIndex } from '../../src/lib/ranker/lookup-map';
@@ -76,12 +75,10 @@ describe('committed sentence fixture', () => {
 describe('sentence eval report', () => {
   const skipReason = artifactGate('sentence eval report', [STAGED.index, STAGED.model]);
 
-  // Oracle mode (resolver hit), as the recorded captures ran; flipping the
-  // default to product mode (no hit) is a recorded follow-up.
   it('sentence_fixture_eval_report', async (ctx) => {
     if (skipReason) ctx.skip(skipReason);
     const assets = await loadEvalAssets();
-    const r = await evalSentence(await loadSentenceFixture(), assets, corpusResolverHit(assets.corpus));
+    const r = await evalSentence(await loadSentenceFixture(), assets);
     console.log(renderSentence(r).trimEnd());
     expect(Number.isFinite(r.all.total)).toBe(true);
     expect(r.all.total).toBeGreaterThanOrEqual(0);
@@ -204,7 +201,7 @@ describe('eval over the parity index', () => {
       )
     );
     const vecs = new Map([[query, syntheticVec(['query', query])]]);
-    const r = evalSentenceCached(fixture, vecs, assets, noResolverHit);
+    const r = evalSentenceCached(fixture, vecs, assets);
     expect(r.nEntries).toBe(1);
     expect(r.perCategoryN.get('option')).toBe(3);
     expect(r.perCategoryN.get('builtin')).toBe(1);

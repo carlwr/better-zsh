@@ -8,7 +8,6 @@
 
 import type { Tuning } from '../../src/lib/ranker/types';
 import { embedUnique } from '../embedder-node';
-import type { ResolverHitSource } from '../oracle';
 import type { EvalAssets } from './assets';
 import { type ItemRes, perItem, renderDiffReport } from './diff';
 import { rustDebugString, rustFixed, signed } from './format';
@@ -51,9 +50,6 @@ export const KNOBS = {
   }),
   exact_inc: knob('f32', [0, 0.02, 0.04, 0.06, 0.08, 0.12], (t, v) => {
     t.boosts.exact_word_increment = v;
-  }),
-  resolver_inc: knob('f32', [0, 0.02, 0.06, 0.1, 0.16, 0.24], (t, v) => {
-    t.boosts.resolver_increment = v;
   }),
   wo_scale: knob('f32', [0.1, 0.2, 0.3, 0.4, 0.5], (t, v) => {
     t.boosts.word_overlap.scale = v;
@@ -135,27 +131,22 @@ export interface Bench {
   curatedVecs: Map<string, Float32Array>;
   mechEntries: SentenceEntry[];
   mechVecs: Map<string, Float32Array>;
-  resolverHit: ResolverHitSource;
 }
 
 /** Embed the curated and the mechanical queries; `progress` gets the one note before the (slow) mechanical embed. */
-export async function loadBench(
-  assets: EvalAssets,
-  resolverHit: ResolverHitSource,
-  progress: (line: string) => void = () => {}
-): Promise<Bench> {
+export async function loadBench(assets: EvalAssets, progress: (line: string) => void = () => {}): Promise<Bench> {
   const fixture = await loadSentenceFixture();
   const curatedVecs = await embedUnique(assets.embedder, fixture.entries.map((e) => e.query), assets.rules);
   const mechEntries = buildMechanical(assets.corpus);
   progress(`embedding ${fixture.entries.length} curated + ${mechEntries.length} mechanical queries once…`);
   const mechVecs = await embedUnique(assets.embedder, mechEntries.map((e) => e.query), assets.rules);
-  return { assets, fixture, curatedVecs, mechEntries, mechVecs, resolverHit };
+  return { assets, fixture, curatedVecs, mechEntries, mechVecs };
 }
 
 export function scoreBench(bench: Bench, tuning: Tuning): Scores {
   const assets = withTuning(bench.assets, tuning);
-  const c = evalSentenceCached(bench.fixture, bench.curatedVecs, assets, bench.resolverHit);
-  const m = evalMechanicalCached(bench.mechEntries, bench.mechVecs, assets, bench.resolverHit);
+  const c = evalSentenceCached(bench.fixture, bench.curatedVecs, assets);
+  const m = evalMechanicalCached(bench.mechEntries, bench.mechVecs, assets);
   return {
     train: c.train.total,
     holdout: c.holdout.total,
@@ -242,8 +233,8 @@ export function renderSweep(sweep: Sweep, spec: string): string {
 export const benchItems = (bench: Bench, tuning: Tuning): { curated: ItemRes[]; mechanical: ItemRes[] } => {
   const assets = withTuning(bench.assets, tuning);
   return {
-    curated: perItem(bench.fixture.entries, bench.curatedVecs, assets, bench.resolverHit),
-    mechanical: perItem(bench.mechEntries, bench.mechVecs, assets, bench.resolverHit)
+    curated: perItem(bench.fixture.entries, bench.curatedVecs, assets),
+    mechanical: perItem(bench.mechEntries, bench.mechVecs, assets)
   };
 };
 

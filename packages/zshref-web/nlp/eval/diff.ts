@@ -8,7 +8,6 @@
 // curated report is restricted to the train split (`trainOnly`); the
 // mechanical set is all train.
 
-import type { ResolverHitSource } from '../oracle';
 import { rustDebugString, signed } from './format';
 import type { Split } from './metric';
 import { type GradedItem, gradeEntries, type RankAssets } from './sentence';
@@ -48,10 +47,9 @@ const itemRes = (g: GradedItem): ItemRes => ({
 export function perItem(
   entries: readonly SentenceEntry[],
   vecs: ReadonlyMap<string, Float32Array>,
-  assets: RankAssets,
-  resolverHit: ResolverHitSource
+  assets: RankAssets
 ): ItemRes[] {
-  return gradeEntries(entries, vecs, assets, resolverHit).map(itemRes);
+  return gradeEntries(entries, vecs, assets).map(itemRes);
 }
 
 /** Gross tallies of `cand` vs `base`; `netGain` is the signed sum they contextualize. */

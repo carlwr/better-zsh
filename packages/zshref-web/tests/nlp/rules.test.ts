@@ -18,7 +18,7 @@ import {
   SynonymsSchema,
   TuningSchema
 } from '../../nlp/rules-schema';
-import { derivedBoosts } from '../../src/lib/ranker/types';
+import { exactWordBoost } from '../../src/lib/ranker/types';
 import { assertCommittedJson, PATHS } from '../_helpers';
 
 /** The single issue of a rejected parse — the loader reports the first
@@ -49,10 +49,9 @@ describe('committed rules', () => {
     const terms = [...index_groups.flat(), ...query_expansions.flatMap((e) => [...e.when, e.add])];
     expect(terms.length).toBeGreaterThan(0);
     expect(terms.every((t) => t === t.trim().toLowerCase())).toBe(true);
-    const { exactWord, resolver } = derivedBoosts(rules.tuning.boosts);
+    const exactWord = exactWordBoost(rules.tuning.boosts);
     expect(rules.tuning.boosts.category).toBeLessThanOrEqual(exactWord);
-    expect(exactWord).toBeLessThanOrEqual(resolver);
-    expect(resolver).toBeLessThanOrEqual(MAX_SCORE_TERM);
+    expect(exactWord).toBeLessThanOrEqual(MAX_SCORE_TERM);
   });
 
   it('emit_rules_json_round_trips', async () => {
@@ -179,8 +178,8 @@ describe('tuning.yaml', () => {
     expect(
       await rejectsTuning('exact_word_increment: 0.06', 'exact_word_increment: -0.1')
     ).toMatchObject({
-      path: ['boosts'],
-      message: expect.stringMatching(/^exact_word_increment\/resolver_increment must be non-negative/)
+      path: ['boosts', 'exact_word_increment'],
+      message: expect.stringMatching(/^must be non-negative/)
     });
   });
 
@@ -222,14 +221,12 @@ describe('tuning.yaml', () => {
     });
   });
 
-  it('effective_resolver_over_max_score_term_is_rejected', async () => {
-    // The bound is on the effective term (category + increments), so a large
+  it('effective_exact_word_over_max_score_term_is_rejected', async () => {
+    // The bound is on the effective term (category + increment), so a large
     // increment trips it even when each stored scalar looks small.
-    expect(await rejectsTuning('resolver_increment: 0.02', 'resolver_increment: 0.9')).toMatchObject(
-      {
-        path: ['boosts'],
-        message: expect.stringMatching(exceedsMax('boosts effective resolver'))
-      }
-    );
+    expect(await rejectsTuning('exact_word_increment: 0.06', 'exact_word_increment: 0.9')).toMatchObject({
+      path: ['boosts'],
+      message: expect.stringMatching(exceedsMax('boosts effective exact_word'))
+    });
   });
 });

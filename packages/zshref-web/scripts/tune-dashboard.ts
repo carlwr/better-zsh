@@ -3,12 +3,11 @@
 import { rustDebugString } from '../nlp/eval/format';
 import { composedBase } from '../nlp/eval/sweep';
 import { buildDashboard, renderDashboard } from '../nlp/eval/tune';
-import { PRODUCT_FLAG, PRODUCT_USAGE, reporterAssets, scriptFlags } from './_args';
+import { reporterAssets, scriptFlags } from './_args';
 
 const usage = `\
-pnpm --filter zshref-web nlp:tune-dashboard [${PRODUCT_FLAG}] [--fast]
+pnpm --filter zshref-web nlp:tune-dashboard [--fast]
 
-${PRODUCT_USAGE}
   --fast     skip the mechanical layer and the QA (minutes of embedding);
              their rows print as skipped.
 
@@ -16,13 +15,13 @@ ${PRODUCT_USAGE}
              nlp/eval/sweep.ts KNOBS); the report is of that candidate,
              plus its churn against the committed tuning.\
 `;
-const args = scriptFlags('tune-dashboard', usage, [PRODUCT_FLAG, '--fast']);
+const args = scriptFlags('tune-dashboard', usage, ['--fast']);
 
 const spec = process.env.BZ_TUNE_BASE ?? '';
 const candidate = spec.trim() !== '';
 if (candidate) process.stdout.write(`[base override] BZ_TUNE_BASE=${rustDebugString(spec)}\n`);
 
-const { assets, resolverHit } = await reporterAssets('tune-dashboard', args);
+const assets = await reporterAssets('tune-dashboard');
 const tuning = composedBase(assets.rules.tuning, spec);
-const dash = await buildDashboard(assets, tuning, { resolverHit, candidate, fast: args.has('--fast') });
+const dash = await buildDashboard(assets, tuning, { candidate, fast: args.has('--fast') });
 process.stdout.write(renderDashboard(dash));

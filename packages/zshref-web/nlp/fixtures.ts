@@ -3,14 +3,14 @@
 //
 // - parity-fixture.json — a closed arithmetic contract: it ships the
 //   miniature index it was ranked against alongside the pre-computed
-//   `queryVec` + `resolverHit` per query, so `tests/parity.test.ts` checks
-//   the ranker's arithmetic against its own past with neither an embedder
-//   nor the full index — exactly: the ranker is deterministic over its
-//   inputs. Curated for branch coverage (resolver hit, exact-word + category
-//   boost, short-body weighting, lexical overlap).
+//   `queryVec` per query, so `tests/parity.test.ts` checks the ranker's
+//   arithmetic against its own past with neither an embedder nor the full
+//   index — exactly: the ranker is deterministic over its inputs. Curated
+//   for branch coverage (exact-word + category boost, short-body weighting,
+//   lexical overlap, symbolic match).
 //
 // - sanity-fixture.json — hand-curated "clear winner" queries through the
-//   full pipeline (embedder + resolver hit + ranker); `sanityFailures`
+//   full pipeline (embedder + ranker); `sanityFailures`
 //   enforces the invariants (top identity as curated, top score above the
 //   floor, comfortable margin over the runner-up). Pins full-stack behaviour
 //   at a coarser resolution than the parity fixture: its scores carry the
@@ -34,7 +34,6 @@ import { rustFixed } from './eval/format';
 import { INDEX_VERSION, viewVectors } from './index-build';
 import { f32Shortest } from './json-f32';
 import { PATHS } from './paths';
-import { resolverKey } from './resolver-key';
 import { corpusTexts, type IndexGroups } from './retrieval-text';
 
 // --- shapes ---------------------------------------------------------------
@@ -45,7 +44,7 @@ const IdentitySchema = z.object({ category: z.string(), id: z.string() });
 const ScoredSchema = IdentitySchema.extend({ score: z.number() });
 export type Scored = z.infer<typeof ScoredSchema>;
 
-export const PARITY_VERSION = 3;
+export const PARITY_VERSION = 4;
 export const PARITY_LIMIT = 5;
 
 export const ParityFixtureSchema = z.object({
@@ -58,7 +57,6 @@ export const ParityFixtureSchema = z.object({
     z.object({
       query: z.string(),
       queryVec: f32Vec,
-      resolverHit: IdentitySchema.optional(),
       expected: z.array(ScoredSchema)
     })
   )
@@ -103,7 +101,7 @@ type RecordRef = { category: DocCategory; id: string };
  * holdout query belongs here.
  */
 export const PARITY_QUERIES: readonly string[] = [
-  // resolver-hit branch — the option resolver normalizes "AUTO_CD" → (option, autocd).
+  // a display form: splits into overlap words, no exact-word match.
   'AUTO_CD',
   // exact-word (id) match + category-name boost.
   'setopt builtin',
@@ -118,14 +116,14 @@ export const PARITY_QUERIES: readonly string[] = [
 
 /**
  * Corpus records the fixture's miniature index is built from. Real records,
- * so resolver hits and lexical overlap stay meaningful; curated for the
- * branches `PARITY_QUERIES` aims at. Category sizes are deliberately
+ * so lexical overlap stays meaningful; curated for the branches
+ * `PARITY_QUERIES` aims at. Category sizes are deliberately
  * unequal, which pins the rarity penalty the moment its weight stops being
  * zero. Order is load-bearing — the fixture is positional.
  */
 export const PARITY_INDEX_RECORDS: readonly RecordRef[] = [
-  // resolver-hit target of the "AUTO_CD" query; two more keep this the
-  // largest category, i.e. the rarity baseline.
+  // the "AUTO_CD" query's record; two more keep this the largest category,
+  // i.e. the rarity baseline.
   { category: 'option', id: 'autocd' },
   { category: 'option', id: 'extendedglob' },
   { category: 'option', id: 'globdots' },
@@ -208,21 +206,14 @@ export function buildParityIndex(corpus: DocCorpus, indexGroups: IndexGroups): V
 
 const scored = (m: RankedMatch): Scored => ({ category: m.rec.category, id: m.rec.id, score: m.score });
 
-/** Per query: synthetic query vector, the resolver's hit over the full
- * corpus, the top `PARITY_LIMIT` of the ranker over the mini index. No
- * lookup-map promote — this pins ranker math alone. */
+/** Per query: synthetic query vector, the top `PARITY_LIMIT` of the ranker
+ * over the mini index. No lookup-map promote — this pins ranker math alone. */
 export function buildParityFixture(corpus: DocCorpus, rules: Rules): ParityFixture {
   const index = buildParityIndex(corpus, rules.synonyms.index_groups);
   const entries = PARITY_QUERIES.map((query) => {
     const queryVec = syntheticVec(['query', query]);
-    const resolverHit = resolverKey(corpus, query);
-    const ranked = rank(query, queryVec, resolverHit, null, index, rules);
-    return {
-      query,
-      queryVec,
-      ...(resolverHit ? { resolverHit } : {}),
-      expected: ranked.slice(0, PARITY_LIMIT).map(scored)
-    };
+    const ranked = rank(query, queryVec, null, index, rules);
+    return { query, queryVec, expected: ranked.slice(0, PARITY_LIMIT).map(scored) };
   });
   return { version: PARITY_VERSION, limit: PARITY_LIMIT, index, entries };
 }
@@ -246,7 +237,6 @@ export const SANITY_QUERIES: readonly SanityQuery[] = [
 ];
 
 export interface SanityInputs {
-  corpus: DocCorpus;
   index: VectorIndex;
   rules: Rules;
   embedder: Embedder;
@@ -254,14 +244,14 @@ export interface SanityInputs {
 
 /**
  * The full pipeline per curated query — embed (expansion + `query:` prefix
- * + normalize), resolver hit over the corpus, rank with no category and no
- * promote — keeping its top-1 and runner-up.
+ * + normalize), rank with no category and no promote — keeping its top-1
+ * and runner-up.
  */
-export async function buildSanityFixture({ corpus, index, rules, embedder }: SanityInputs): Promise<SanityFixture> {
+export async function buildSanityFixture({ index, rules, embedder }: SanityInputs): Promise<SanityFixture> {
   const entries: SanityEntry[] = [];
   for (const { query } of SANITY_QUERIES) {
     const queryVec = await embedQuery(embedder, query, rules);
-    const [top, runner] = rank(query, queryVec, resolverKey(corpus, query), null, index, rules);
+    const [top, runner] = rank(query, queryVec, null, index, rules);
     if (!top) throw new Error(`no matches for sanity query ${JSON.stringify(query)}`);
     entries.push({ query, topMatch: scored(top), ...(runner ? { runnerUp: scored(runner) } : {}) });
   }

@@ -30,7 +30,6 @@ import { gain } from '../../nlp/eval/metric';
 import { evalSentence } from '../../nlp/eval/sentence';
 import { loadSentenceFixture } from '../../nlp/eval/sentence-fixture';
 import { buildParityIndex, syntheticVec } from '../../nlp/fixtures';
-import { corpusResolverHit, noResolverHit } from '../../nlp/oracle';
 import { loadRulesYaml } from '../../nlp/rules-load';
 import { LookupIndex } from '../../src/lib/ranker/lookup-map';
 import { artifactGate, STAGED } from '../_helpers';
@@ -146,7 +145,7 @@ describe('eval over the parity index', () => {
       want: [{ category: r.text.category, id: r.text.id, targetDepth: TARGET_DEPTH, weight: 1 }],
       split: 'train' as const
     }));
-    const r = evalMechanicalCached(entries, vecs, assets, noResolverHit);
+    const r = evalMechanicalCached(entries, vecs, assets);
     expect(r.nEntries).toBe(entries.length);
     // One record ranks #1; every other entry is a violation of its category.
     const violations = [...r.violations.values()].reduce((a, b) => a + b, 0);
@@ -183,7 +182,7 @@ describe('mechanical eval over the staged assets', () => {
     if (skipReason) ctx.skip(skipReason);
     const assets = await loadEvalAssets();
     const entries = buildMechanical(assets.corpus).slice(0, MECHANICAL_SMOKE_LIMIT);
-    const r = await evalMechanical(entries, assets, corpusResolverHit(assets.corpus));
+    const r = await evalMechanical(entries, assets);
     expect(r.nEntries).toBe(entries.length);
     expect(r.all.total).toBeGreaterThanOrEqual(0);
     expect(r.all.total).toBeLessThanOrEqual(1);
@@ -194,9 +193,8 @@ describe('mechanical eval over the staged assets', () => {
     if (process.env.BZ_NLP_SLOW !== '1') ctx.skip('slow (embeds thousands of queries) — opt in with BZ_NLP_SLOW=1');
     if (skipReason) ctx.skip(skipReason);
     const assets = await loadEvalAssets();
-    const resolverHit = corpusResolverHit(assets.corpus);
-    const mech = await evalMechanical(buildMechanical(assets.corpus), assets, resolverHit);
-    const curated = await evalSentence(await loadSentenceFixture(), assets, resolverHit);
+    const mech = await evalMechanical(buildMechanical(assets.corpus), assets);
+    const curated = await evalSentence(await loadSentenceFixture(), assets);
     console.log((renderMechanical(mech) + renderCombined(curated.train.total, mech.all.total)).trimEnd());
     expect(mech.all.total).toBeGreaterThanOrEqual(0);
     expect(mech.all.total).toBeLessThanOrEqual(1);

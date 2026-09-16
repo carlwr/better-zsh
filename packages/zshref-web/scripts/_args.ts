@@ -3,14 +3,6 @@
 // script ungated.
 
 import { assetsMissing, type EvalAssets, loadEvalAssets } from '../nlp/eval/assets';
-import { corpusResolverHit, noResolverHit, type ResolverHitSource } from '../nlp/oracle';
-
-/** The mode flag every reporter takes, and its usage paragraph: one wording. */
-export const PRODUCT_FLAG = '--product';
-export const PRODUCT_USAGE = `\
-  ${PRODUCT_FLAG}  no resolver hit, as the SPA ranks. Default: the corpus
-             resolver's hit, as the recorded oracle captures had it.\
-`;
 
 /**
  * The flags given, or the process exits: `--help` prints `usage` (exit 0);
@@ -30,19 +22,12 @@ export function scriptFlags(name: string, usage: string, known: readonly string[
   return args;
 }
 
-/**
- * A reporter's preamble: the assets (a missing model exits 1 with the fetch
- * hint, before anything loads) and the resolver-hit source `flags` select.
- */
-export async function reporterAssets(
-  name: string,
-  flags: ReadonlySet<string>
-): Promise<{ assets: EvalAssets; resolverHit: ResolverHitSource }> {
+/** A reporter's preamble: the assets; a missing model exits 1 with the fetch hint, before anything loads. */
+export async function reporterAssets(name: string): Promise<EvalAssets> {
   const missing = assetsMissing();
   if (missing.length > 0) {
     console.error(`${name}: missing ${missing.join(', ')} — run scripts/fetch-model`);
     process.exit(1);
   }
-  const assets = await loadEvalAssets();
-  return { assets, resolverHit: flags.has(PRODUCT_FLAG) ? noResolverHit : corpusResolverHit(assets.corpus) };
+  return loadEvalAssets();
 }

@@ -52,7 +52,7 @@ describe('sanity fixture', () => {
       loadRulesYaml(),
       createNodeEmbedder()
     ]);
-    const fresh = await buildSanityFixture({ corpus, index, rules, embedder });
+    const fresh = await buildSanityFixture({ index, rules, embedder });
     await assertCommittedJson(PATHS.sanityFixture, fresh, 'UPDATE_SANITY_FIXTURE', {
       render: fixtureJson,
       expected: (v) => withinDecimals(v, SANITY_DECIMALS)

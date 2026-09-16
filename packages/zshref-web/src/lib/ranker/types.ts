@@ -76,10 +76,7 @@ const TuningShape = z.strictObject({
   boosts: z.strictObject({
     category: float.describe("Weakest signal: the query names the record's category."),
     exact_word_increment: float.describe(
-      'Non-negative increment for a query word equal to id/display (exact_word = category + this).'
-    ),
-    resolver_increment: float.describe(
-      'Non-negative increment for a corpus-aware resolver hit (resolver = exact_word + this); the increments keep category ≤ exact_word ≤ resolver by construction.'
+      'Non-negative increment for a query word equal to id/display (exact_word = category + this, so category ≤ exact_word by construction).'
     ),
     word_overlap: z
       .strictObject({ scale: float, half_sat: float })
@@ -93,11 +90,8 @@ const TuningShape = z.strictObject({
 });
 export type Tuning = z.infer<typeof TuningShape>;
 
-/** Effective exact-word and resolver boosts, chained from `category` by the increments. */
-export function derivedBoosts(b: Tuning['boosts']): { exactWord: number; resolver: number } {
-  const exactWord = b.category + b.exact_word_increment;
-  return { exactWord, resolver: exactWord + b.resolver_increment };
-}
+/** The effective exact-word boost: `category` plus its increment. */
+export const exactWordBoost = (b: Tuning['boosts']): number => b.category + b.exact_word_increment;
 
 interface Violation {
   path: (string | number)[];
@@ -126,23 +120,20 @@ function tuningViolation(t: Tuning): Violation | null {
   if (b.category < 0 || b.word_overlap.scale < 0) {
     return { path: ['boosts'], message: 'category/word_overlap.scale must be non-negative' };
   }
-  if (b.exact_word_increment < 0 || b.resolver_increment < 0) {
+  if (b.exact_word_increment < 0) {
     return {
-      path: ['boosts'],
-      message:
-        'exact_word_increment/resolver_increment must be non-negative (preserves category ≤ exact_word ≤ resolver)'
+      path: ['boosts', 'exact_word_increment'],
+      message: 'must be non-negative (preserves category ≤ exact_word)'
     };
   }
   if (b.word_overlap.half_sat <= 0) {
     return { path: ['boosts', 'word_overlap', 'half_sat'], message: 'must be positive' };
   }
   // Bound the *effective* terms (what lands on a record's score), not the
-  // stored increments — so the chained exact_word/resolver values are checked.
-  const eff = derivedBoosts(b);
+  // stored increment — so the chained exact_word value is checked.
   const bounded: [string, Violation['path'], number][] = [
     ['boosts.category', ['boosts', 'category'], b.category],
-    ['boosts effective exact_word', ['boosts'], eff.exactWord],
-    ['boosts effective resolver', ['boosts'], eff.resolver],
+    ['boosts effective exact_word', ['boosts'], exactWordBoost(b)],
     ['boosts.word_overlap.scale', ['boosts', 'word_overlap', 'scale'], b.word_overlap.scale],
     [
       'penalties.category_rarity_max',
@@ -245,7 +236,6 @@ export interface SemanticScores {
 
 export interface Boosts {
   category: number;
-  resolver: number;
   lexical: number;
 }
 

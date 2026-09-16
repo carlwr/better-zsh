@@ -28,7 +28,6 @@ import {
   scoreQaCorpus,
   summaryJson
 } from '../../nlp/eval/qa-score';
-import { corpusResolverHit } from '../../nlp/oracle';
 import type { JsonSchema } from '../../nlp/rules-schema';
 import { artifactGate, assertCommittedJson, PATHS, STAGED } from '../_helpers';
 
@@ -243,7 +242,7 @@ describe('qa scoring over the staged assets', () => {
     const checks = hardChecks(assets.corpus)
       .filter((c) => c.category === cat)
       .slice(0, 5);
-    const r = await scoreHardChecks(checks, assets, corpusResolverHit(assets.corpus));
+    const r = await scoreHardChecks(checks, assets);
     expect(Object.keys(r.perCat)).toEqual([cat]);
     expect(r.perCat[cat]).toEqual({ passed: r.passed, total: 5 });
     expect(r.total).toBe(5);
@@ -253,14 +252,14 @@ describe('qa scoring over the staged assets', () => {
 
   it('a_synthetic_entry_runs_through_the_pipeline', async (ctx) => {
     if (skipReason) ctx.skip(skipReason);
-    // A canonical option form: the lookup map promotes it to #1 in either
-    // mode; the negative names no record, so it is absent for sure.
+    // A canonical option form: the lookup map promotes it to #1; the
+    // negative names no record, so it is absent for sure.
     const corpus = QaCorpusSchema.parse({
       entries: [
         { query: 'AUTO_CD', category: 'option', limit: 3, expected: [exp('autocd', 1), exp('no-such-record', -1)] }
       ]
     });
-    const s = await scoreQaCorpus(corpus, assets, corpusResolverHit(assets.corpus));
+    const s = await scoreQaCorpus(corpus, assets);
     expect(s).toEqual({ avgScore: 1, totalWeightedScore: 2, totalExpectedWeight: 2, entries: 1, warnings: 0 });
   }, 60_000);
 });

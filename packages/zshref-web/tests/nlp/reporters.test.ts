@@ -33,7 +33,6 @@ import {
   sweepKnob
 } from '../../nlp/eval/sweep';
 import { buildDashboard, renderDashboard } from '../../nlp/eval/tune';
-import { corpusResolverHit, type ResolverHitSource } from '../../nlp/oracle';
 import { artifactGate, STAGED } from '../_helpers';
 
 const pkgDir = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -106,13 +105,11 @@ const NUM4 = String.raw`\d\.\d{4}`;
 
 describe('reporters over the staged assets, capped', () => {
   let assets: EvalAssets;
-  let resolverHit: ResolverHitSource;
   let bench: Bench;
 
   beforeAll(async () => {
     if (skipReason) return;
     assets = await loadEvalAssets();
-    resolverHit = corpusResolverHit(assets.corpus);
     const loaded = await loadSentenceFixture();
     const fixture = { ...loaded, entries: loaded.entries.slice(0, CAP) };
     const mechEntries = buildMechanical(assets.corpus).slice(0, CAP);
@@ -121,15 +118,14 @@ describe('reporters over the staged assets, capped', () => {
       fixture,
       curatedVecs: await embedUnique(assets.embedder, fixture.entries.map((e) => e.query), assets.rules),
       mechEntries,
-      mechVecs: await embedUnique(assets.embedder, mechEntries.map((e) => e.query), assets.rules),
-      resolverHit
+      mechVecs: await embedUnique(assets.embedder, mechEntries.map((e) => e.query), assets.rules)
     };
   }, 180_000);
 
   it('tune_dashboard_full_tier', async (ctx) => {
     if (skipReason) ctx.skip(skipReason);
     const tuning = composedBase(assets.rules.tuning, SPEC);
-    const dash = await buildDashboard(assets, tuning, { resolverHit, candidate: true, cap: CAP });
+    const dash = await buildDashboard(assets, tuning, { candidate: true, cap: CAP });
     expect(dash.sentence.nEntries).toBe(CAP);
     expect(dash.mechanical?.nEntries).toBe(CAP);
     expect(dash.churn?.mechanical).not.toBeNull();
@@ -212,9 +208,9 @@ describe('reporters over the staged assets, capped', () => {
 
   it('qa_score_report_with_summary_json', async (ctx) => {
     if (skipReason) ctx.skip(skipReason);
-    const hard = await scoreHardChecks(hardChecks(assets.corpus).slice(0, CAP), assets, resolverHit);
+    const hard = await scoreHardChecks(hardChecks(assets.corpus).slice(0, CAP), assets);
     const qa = await loadQaCorpus();
-    const scored = await scoreQaCorpus({ ...qa, entries: qa.entries.slice(0, CAP) }, assets, resolverHit);
+    const scored = await scoreQaCorpus({ ...qa, entries: qa.entries.slice(0, CAP) }, assets);
     const text = renderQa(hard, scored);
     const lines = text.split('\n');
     expect(text).not.toContain('NaN');

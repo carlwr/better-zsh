@@ -37,10 +37,9 @@ import {
   zeroedCache
 } from '../../nlp/eval/tune';
 import { buildParityIndex, SANITY_QUERIES, SANITY_VERSION, type SanityFixture, syntheticVec } from '../../nlp/fixtures';
-import { noResolverHit } from '../../nlp/oracle';
 import { loadRulesYaml } from '../../nlp/rules-load';
 import { LookupIndex } from '../../src/lib/ranker/lookup-map';
-import { derivedBoosts, type Tuning } from '../../src/lib/ranker/types';
+import { exactWordBoost, type Tuning } from '../../src/lib/ranker/types';
 
 const corpus = loadCorpus();
 const rules = await loadRulesYaml();
@@ -54,7 +53,6 @@ const knobValue: Record<KnobKey, (t: Tuning) => number> = {
   sb_length: (t) => t.semantic_weights.short_body.length_scale,
   cat: (t) => t.boosts.category,
   exact_inc: (t) => t.boosts.exact_word_increment,
-  resolver_inc: (t) => t.boosts.resolver_increment,
   wo_scale: (t) => t.boosts.word_overlap.scale,
   wo_halfsat: (t) => t.boosts.word_overlap.half_sat,
   rarity: (t) => t.penalties.category_rarity_max,
@@ -90,7 +88,7 @@ describe('ablation helpers', () => {
   it('zero_boosts_zeros_every_boost_term', () => {
     const t = zeroBoosts(committed);
     expect(t.boosts.category).toBe(0);
-    expect(derivedBoosts(t.boosts)).toEqual({ exactWord: 0, resolver: 0 });
+    expect(exactWordBoost(t.boosts)).toBe(0);
     expect(t.boosts.word_overlap.scale).toBe(0);
     expect(t.penalties.category_rarity_max).toBe(0);
     // Untouched: the semantic mix, the overlap's saturation, the lexical thresholds; and the input.
@@ -411,14 +409,13 @@ const parityBench = (): Bench => ({
     want: [want(i, 1)],
     split: 'train' as const
   })),
-  mechVecs: new Map(parityAssets.index.records.map((r) => [`alpha ${r.text.id}`, syntheticVec(['query', 'alpha'])])),
-  resolverHit: noResolverHit
+  mechVecs: new Map(parityAssets.index.records.map((r) => [`alpha ${r.text.id}`, syntheticVec(['query', 'alpha'])]))
 });
 
 describe('per item over the parity index', () => {
   it('is index-aligned with the entries flattened over their want sets', () => {
-    const items = perItem(parityEntries, parityVecs, parityAssets, noResolverHit);
-    const graded = gradeEntries(parityEntries, parityVecs, parityAssets, noResolverHit);
+    const items = perItem(parityEntries, parityVecs, parityAssets);
+    const graded = gradeEntries(parityEntries, parityVecs, parityAssets);
     expect(items).toHaveLength(5);
     expect(items.map((r) => [r.query, r.cat, r.id, r.split, r.depth])).toEqual(
       parityEntries.flatMap((e) => e.want.map((w) => [e.query, w.category, w.id, e.split, w.targetDepth]))
@@ -429,7 +426,7 @@ describe('per item over the parity index', () => {
       expect(r.rank).toBeLessThanOrEqual(parityAssets.index.records.length);
     }
     // The same tuning twice: no churn at all.
-    expect(churn(items, perItem(parityEntries, parityVecs, parityAssets, noResolverHit), false)).toEqual({
+    expect(churn(items, perItem(parityEntries, parityVecs, parityAssets), false)).toEqual({
       moved: 0,
       up: 0,
       down: 0,
@@ -500,9 +497,9 @@ describe('dashboard render over the parity index', () => {
       runnerUp: { category: 'option', id: 'other', score: 0.5 }
     }))
   };
-  const sentence = evalSentenceCached(parityFixture, parityVecs, parityAssets, noResolverHit);
+  const sentence = evalSentenceCached(parityFixture, parityVecs, parityAssets);
   const bench = parityBench();
-  const mechanical = evalMechanicalCached(bench.mechEntries, bench.mechVecs, parityAssets, noResolverHit);
+  const mechanical = evalMechanicalCached(bench.mechEntries, bench.mechVecs, parityAssets);
   const dashboard: Dashboard = {
     sentence,
     curatedTrain: sentence.train.total,

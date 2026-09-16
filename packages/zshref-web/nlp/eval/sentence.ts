@@ -1,13 +1,12 @@
 // The curated sentence eval (NLP.md §"Eval architecture", layer B): every
-// fixture entry ranked as search does it — resolver hit, `rank`, then the
-// lookup-map promote — and each expected item graded on its own rank.
+// fixture entry ranked as search does it — `rank`, then the lookup-map
+// promote — and each expected item graded on its own rank.
 // Embedding is tuning-independent, so `evalSentenceCached` takes the query
 // vectors as a cache: a tuning sweep embeds once and re-ranks per variant.
 
 import { promoteToTop } from '../../src/lib/ranker/lookup-map';
 import { rank } from '../../src/lib/ranker/rank';
 import { embedUnique } from '../embedder-node';
-import type { ResolverHitSource } from '../oracle';
 import type { EvalAssets } from './assets';
 import { rustFixed } from './format';
 import { BETA, type EvalResult, evalResult, gain, type Vote } from './metric';
@@ -33,13 +32,12 @@ export interface GradedItem {
 export function gradeEntries(
   entries: readonly SentenceEntry[],
   vecs: ReadonlyMap<string, Float32Array>,
-  assets: RankAssets,
-  resolverHit: ResolverHitSource
+  assets: RankAssets
 ): GradedItem[] {
   return entries.flatMap((entry) => {
     const vec = vecs.get(entry.query);
     if (!vec) throw new Error('fixture query missing from the vector cache');
-    const ranked = rank(entry.query, vec, resolverHit(entry.query), null, assets.index, assets.rules);
+    const ranked = rank(entry.query, vec, null, assets.index, assets.rules);
     promoteToTop(ranked, assets.lookup.lookup(entry.query));
     return entry.want.map((item): GradedItem => {
       const pos = ranked.findIndex((m) => m.rec.category === item.category && m.rec.id === item.id);
@@ -67,22 +65,17 @@ export function countPerCategory(graded: readonly GradedItem[]): Map<string, num
 export function evalSentenceCached(
   fixture: SentenceFixture,
   vecs: ReadonlyMap<string, Float32Array>,
-  assets: RankAssets,
-  resolverHit: ResolverHitSource
+  assets: RankAssets
 ): EvalResult {
-  const graded = gradeEntries(fixture.entries, vecs, assets, resolverHit);
+  const graded = gradeEntries(fixture.entries, vecs, assets);
   return evalResult(graded.map(voteOf), fixture.entries.length, countPerCategory(graded));
 }
 
 /** Embed every distinct fixture query once, then `evalSentenceCached`. */
-export async function evalSentence(
-  fixture: SentenceFixture,
-  assets: EvalAssets,
-  resolverHit: ResolverHitSource
-): Promise<EvalResult> {
+export async function evalSentence(fixture: SentenceFixture, assets: EvalAssets): Promise<EvalResult> {
   const queries = fixture.entries.map((e) => e.query);
   const vecs = await embedUnique(assets.embedder, queries, assets.rules);
-  return evalSentenceCached(fixture, vecs, assets, resolverHit);
+  return evalSentenceCached(fixture, vecs, assets);
 }
 
 /** `{:.3}`, as every report prints a score. */

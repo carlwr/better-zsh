@@ -4,17 +4,12 @@
 
 import { loadQaCorpus } from '../nlp/eval/qa-corpus';
 import { renderQa, runHardChecks, scoreQaCorpus } from '../nlp/eval/qa-score';
-import { PRODUCT_FLAG, PRODUCT_USAGE, reporterAssets, scriptFlags } from './_args';
+import { reporterAssets, scriptFlags } from './_args';
 
-const usage = `\
-pnpm --filter zshref-web nlp:qa-score [${PRODUCT_FLAG}]
+scriptFlags('qa-score', 'pnpm --filter zshref-web nlp:qa-score', []);
 
-${PRODUCT_USAGE}\
-`;
-const args = scriptFlags('qa-score', usage, [PRODUCT_FLAG]);
-
-const { assets, resolverHit } = await reporterAssets('qa-score', args);
+const assets = await reporterAssets('qa-score');
 const corpus = await loadQaCorpus();
-const hard = await runHardChecks(assets, resolverHit);
-const scored = await scoreQaCorpus(corpus, assets, resolverHit);
+const hard = await runHardChecks(assets);
+const scored = await scoreQaCorpus(corpus, assets);
 process.stdout.write(renderQa(hard, scored));

@@ -17,10 +17,9 @@ import {
 } from '../src/lib/ranker/rank';
 import type { Rules } from '../src/lib/ranker/rules';
 import {
-  derivedBoosts,
+  exactWordBoost,
   type IndexedRecord,
   type RecordText,
-  type ResolverHit,
   type Tuning,
   type VectorIndex
 } from '../src/lib/ranker/types';
@@ -53,8 +52,8 @@ const rec = (over: Partial<RecordText>): RecordText =>
 describe('ranker unit tests', () => {
   it('exact_id_match_gives_lexical_boost', () => {
     const r = rec({ id: 'autocd', display: 'AUTO_CD' });
-    const exact = computeBoosts(r, 'autocd', null, rules);
-    const queryWithCategory = computeBoosts(r, 'option autocd please', null, rules);
+    const exact = computeBoosts(r, 'autocd', rules);
+    const queryWithCategory = computeBoosts(r, 'option autocd please', rules);
     // Both queries contain the discriminating word "autocd" and get the
     // exact-word boost, so lexical scores can be equal.
     expect(exact.lexical).toBeGreaterThan(0);
@@ -79,9 +78,9 @@ describe('ranker unit tests', () => {
     const redir = { ...param, category: 'redirection', id: '>>_word', display: '>> word' };
     // "$?" names the `?` param; ">>" names `>>_word` via its display's
     // symbolic head — both fire the lexical boost. A prose word does not.
-    expect(computeBoosts(param, 'the $? param', null, rules).lexical).toBeGreaterThan(0);
-    expect(computeBoosts(redir, 'redirection >>', null, rules).lexical).toBeGreaterThan(0);
-    expect(computeBoosts(param, 'list background jobs', null, rules).lexical).toBe(0);
+    expect(computeBoosts(param, 'the $? param', rules).lexical).toBeGreaterThan(0);
+    expect(computeBoosts(redir, 'redirection >>', rules).lexical).toBeGreaterThan(0);
+    expect(computeBoosts(param, 'list background jobs', rules).lexical).toBe(0);
   });
 
   it('semantic_weights_derive_expanded', () => {
@@ -110,9 +109,7 @@ describe('ranker unit tests', () => {
 
   it('boosts_are_reliability_ordered', () => {
     const b = rules.tuning.boosts;
-    const eff = derivedBoosts(b);
-    expect(b.category).toBeLessThanOrEqual(eff.exactWord);
-    expect(eff.exactWord).toBeLessThanOrEqual(eff.resolver);
+    expect(b.category).toBeLessThanOrEqual(exactWordBoost(b));
   });
 
   it('overlap_boost_saturates_monotonically', () => {
@@ -142,9 +139,7 @@ describe('ranker unit tests', () => {
     // Query has more discriminating words in complete's body/structured
     // than in aliases's — overlap should favour complete.
     const q = 'prevents expansion before completion';
-    expect(computeBoosts(complete, q, null, rules).lexical).toBeGreaterThan(
-      computeBoosts(aliases, q, null, rules).lexical
-    );
+    expect(computeBoosts(complete, q, rules).lexical).toBeGreaterThan(computeBoosts(aliases, q, rules).lexical);
   });
 });
 
@@ -210,15 +205,10 @@ const arbIndex: fc.Arbitrary<VectorIndex> = fc
     records
   }));
 
-// A query, its synthetic vector, and a resolver hit on one of the index's
-// records or none.
+// A query and its synthetic vector over an index.
 const arbRanking = fc
-  .record({ index: arbIndex, query: arbQuery, hitAt: fc.option(fc.nat(), { nil: null }) })
-  .map(({ index, query, hitAt }) => {
-    const hitRec = hitAt === null ? null : index.records[hitAt % index.records.length];
-    const hit: ResolverHit | null = hitRec ? { category: hitRec.text.category, id: hitRec.text.id } : null;
-    return { index, query, queryVec: syntheticVec(['query', query]), hit };
-  });
+  .record({ index: arbIndex, query: arbQuery })
+  .map(({ index, query }) => ({ index, query, queryVec: syntheticVec(['query', query]) }));
 
 const countWords = (s: string): number => s.split(/\s+/).filter((w) => w.length > 0).length;
 
@@ -231,8 +221,8 @@ describe('rank properties', () => {
     const penalized = withTuning(rules, (t) => ({ ...t, penalties: { category_rarity_max: 0.1 } }));
     fc.assert(
       fc.property(arbRanking, fc.constantFrom(...CATEGORIES.map((c) => c.category), 'nope'), (r, cat) => {
-        const all = rank(r.query, r.queryVec, r.hit, null, r.index, penalized);
-        const filtered = rank(r.query, r.queryVec, r.hit, cat, r.index, penalized);
+        const all = rank(r.query, r.queryVec, null, r.index, penalized);
+        const filtered = rank(r.query, r.queryVec, cat, r.index, penalized);
         expect(filtered).toEqual(all.filter((m) => m.rec.category === cat));
       }),
       INDEX_RUNS
@@ -247,8 +237,8 @@ describe('rank properties', () => {
     );
     fc.assert(
       fc.property(arb, (r) => {
-        expect(rank(r.query, r.queryVec, r.hit, null, r.shuffled, rules)).toEqual(
-          rank(r.query, r.queryVec, r.hit, null, r.index, rules)
+        expect(rank(r.query, r.queryVec, null, r.shuffled, rules)).toEqual(
+          rank(r.query, r.queryVec, null, r.index, rules)
         );
       }),
       INDEX_RUNS
@@ -261,11 +251,11 @@ describe('rank properties', () => {
     const noPenalty = withTuning(rules, (t) => ({ ...t, penalties: { category_rarity_max: 0 } }));
     fc.assert(
       fc.property(arbRanking, (r) => {
-        for (const m of rank(r.query, r.queryVec, r.hit, null, r.index, noPenalty)) {
+        for (const m of rank(r.query, r.queryVec, null, r.index, noPenalty)) {
           const [bw, sw, ew] = semanticWeights(countWords(m.rec.body), noPenalty.tuning.semantic_weights);
           const { semantic, boosts } = m.debug;
           const semanticScore = bw * semantic.body + sw * semantic.structured + ew * semantic.expanded;
-          expect(m.score).toBeCloseTo(semanticScore + boosts.category + boosts.resolver + boosts.lexical, 12);
+          expect(m.score).toBeCloseTo(semanticScore + boosts.category + boosts.lexical, 12);
         }
       }),
       INDEX_RUNS
@@ -277,8 +267,8 @@ describe('rank properties', () => {
       [...q].map((c, i) => (flips[i % flips.length] ? c.toUpperCase() : c.toLowerCase())).join('');
     fc.assert(
       fc.property(arbRanking, fc.array(fc.boolean(), { minLength: 8, maxLength: 8 }), (r, flips) => {
-        expect(rank(recase(r.query, flips), r.queryVec, r.hit, null, r.index, rules)).toEqual(
-          rank(r.query, r.queryVec, r.hit, null, r.index, rules)
+        expect(rank(recase(r.query, flips), r.queryVec, null, r.index, rules)).toEqual(
+          rank(r.query, r.queryVec, null, r.index, rules)
         );
       }),
       INDEX_RUNS
@@ -311,7 +301,6 @@ const grid = (max: number): fc.Arbitrary<number> => fc.integer({ min: 0, max: ma
 const arbBoostWeights: fc.Arbitrary<BoostWeights> = fc.record({
   category: grid(0.3),
   exact_word_increment: grid(0.1),
-  resolver_increment: grid(0.1),
   word_overlap: fc.record({ scale: grid(0.5), half_sat: fc.integer({ min: 1, max: 16 }) })
 });
 
@@ -362,14 +351,11 @@ describe('boost properties', () => {
     );
   });
 
-  it('effective boosts are reliability-ordered, strictly for a positive increment', () => {
+  it('the exact-word boost is at least the category boost, strictly for a positive increment', () => {
     fc.assert(
       fc.property(arbBoostWeights, (b) => {
-        const eff = derivedBoosts(b);
-        expect(eff.exactWord).toBeGreaterThanOrEqual(b.category);
-        expect(eff.resolver).toBeGreaterThanOrEqual(eff.exactWord);
-        if (b.exact_word_increment > 0) expect(eff.exactWord).toBeGreaterThan(b.category);
-        if (b.resolver_increment > 0) expect(eff.resolver).toBeGreaterThan(eff.exactWord);
+        expect(exactWordBoost(b)).toBeGreaterThanOrEqual(b.category);
+        if (b.exact_word_increment > 0) expect(exactWordBoost(b)).toBeGreaterThan(b.category);
       })
     );
   });
