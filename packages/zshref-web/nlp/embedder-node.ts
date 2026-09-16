@@ -14,7 +14,10 @@
 //   numerics (~1e-7), and padding to the longest row made a batch several
 //   times slower than its texts one by one on CPU.
 
-import { basename, dirname } from "node:path"
+import { createHash } from "node:crypto"
+import { readdirSync, readFileSync, statSync } from "node:fs"
+import { basename, dirname, join } from "node:path"
+import { fileURLToPath } from "node:url"
 import {
   AutoModel,
   AutoTokenizer,
@@ -128,6 +131,21 @@ export async function createNodeEmbedder(
       return vectors
     },
   }
+}
+
+/**
+ * What a vector is a function of besides its text: the model id, the model
+ * files (name, size, mtime), the runtime's version and this file's source.
+ * Cached vectors carry it; a change drops them.
+ */
+export function embedderIdentity(modelDir: string = PATHS.modelDir): string {
+  const h = createHash("sha256").update(MODEL_ID).update(env.version)
+  const files = readdirSync(modelDir, { recursive: true, encoding: "utf8" })
+  for (const f of files.sort()) {
+    const st = statSync(join(modelDir, f))
+    if (st.isFile()) h.update(`${f}:${st.size}:${st.mtimeMs}`)
+  }
+  return h.update(readFileSync(fileURLToPath(import.meta.url))).digest("hex")
 }
 
 /** The text a query is embedded as: expanded (embedding-only synonyms), prefixed. */

@@ -1,5 +1,6 @@
-// What every eval and reporter needs loaded once (`EvalAssets`). A missing
-// or stale index is built in memory (about a minute) and never written —
+// What every eval and reporter needs loaded once (`EvalAssets`); the
+// embedder keeps query vectors across runs (`query-cache.ts`). A missing or
+// stale index is built in memory (about a minute) and never written —
 // `pnpm build:index` is the way to persist one; a missing model is an error,
 // since nothing here can run without it.
 
@@ -10,10 +11,15 @@ import { type DocCorpus, loadCorpus } from "@carlwr/zsh-core"
 import { LookupIndex, LookupMapSchema } from "../../src/lib/ranker/lookup-map"
 import type { Rules } from "../../src/lib/ranker/rules"
 import type { VectorIndex } from "../../src/lib/ranker/types"
-import { createNodeEmbedder, type Embedder } from "../embedder-node"
+import {
+  createNodeEmbedder,
+  type Embedder,
+  embedderIdentity,
+} from "../embedder-node"
 import { buildIndex, readIndex, validateIndex } from "../index-build"
 import { buildLookupMap } from "../lookup-map-build"
 import { PATHS } from "../paths"
+import { cachedEmbedder } from "../query-cache"
 import { loadRulesYaml } from "../rules-load"
 
 export interface EvalAssets {
@@ -48,9 +54,10 @@ export async function loadEvalAssets(): Promise<EvalAssets> {
   const corpus = loadCorpus()
   const rules = await loadRulesYaml()
   const lookup = new LookupIndex(LookupMapSchema.parse(buildLookupMap(corpus)))
-  const embedder = await createNodeEmbedder()
+  const raw = await createNodeEmbedder()
   const index =
     (await validIndexOnDisk(corpus, rules)) ??
-    (await buildIndex({ corpus, rules, embedder }))
+    (await buildIndex({ corpus, rules, embedder: raw }))
+  const embedder = cachedEmbedder(raw, PATHS.queryCache, embedderIdentity())
   return { corpus, rules, lookup, embedder, index }
 }

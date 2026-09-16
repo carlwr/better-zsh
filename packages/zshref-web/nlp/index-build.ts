@@ -16,7 +16,7 @@ import type {
 } from "../src/lib/ranker/types"
 import { corpusHash } from "./corpus-hash"
 import { DIMS, type Embedder, MODEL_ID, normalizeF32 } from "./embedder-node"
-import { f32VecJson } from "./json-f32"
+import { f32VecJson, jsonWithRawField } from "./json-f32"
 import { corpusTexts } from "./retrieval-text"
 
 export const INDEX_VERSION = 2
@@ -147,10 +147,15 @@ export function validateIndex(
  * shortest decimal for its f32 (`f32VecJson`). */
 export function indexJson(index: VectorIndex): string {
   const { version, model, dims, normalized, corpus_hash } = index
-  const head = JSON.stringify({ version, model, dims, normalized, corpus_hash })
+  const vectors = (r: IndexedRecord) =>
+    `{${VIEWS.map(v => `"${v}":${f32VecJson(r.vectors[v])}`).join(",")}}`
   const record = (r: IndexedRecord) =>
-    `{"text":${JSON.stringify(r.text)},"vectors":{${VIEWS.map(v => `"${v}":${f32VecJson(r.vectors[v])}`).join(",")}}}`
-  return `${head.slice(0, -1)},"records":[${index.records.map(record).join(",")}]}`
+    jsonWithRawField({ text: r.text }, "vectors", vectors(r))
+  return jsonWithRawField(
+    { version, model, dims, normalized, corpus_hash },
+    "records",
+    `[${index.records.map(record).join(",")}]`,
+  )
 }
 
 export async function writeIndex(

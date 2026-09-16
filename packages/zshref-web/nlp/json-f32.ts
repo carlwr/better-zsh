@@ -25,3 +25,15 @@ export function f32Shortest(v: number): string {
 /** A vector as a JSON array text of `f32Shortest` components. */
 export const f32VecJson = (v: Float32Array): string =>
   `[${Array.from(v, f32Shortest).join(",")}]`
+
+/**
+ * The object `head` as JSON with one more field spliced in last: `key`
+ * holding `rawJson`, a JSON text printed by hand (the f32 vectors above,
+ * which `JSON.stringify` would print as doubles). `head` must be non-empty.
+ */
+export const jsonWithRawField = (
+  head: Record<string, unknown>,
+  key: string,
+  rawJson: string,
+): string =>
+  `${JSON.stringify(head).slice(0, -1)},${JSON.stringify(key)}:${rawJson}}`

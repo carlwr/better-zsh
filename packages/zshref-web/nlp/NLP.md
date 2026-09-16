@@ -22,6 +22,7 @@ Held-out eval sets: `nlp/data/nlp-corpus.yaml` and the `holdout`-split entries o
 - **New domain data** (synonyms, vocab) is authored blind — by a subagent that has not read the eval sets.
 - The `train` split is not holdout; tuning against it is fine. Parity/sanity fixture inputs are not holdout either, but must not themselves be drawn from the eval sets (neither query nor target record).
 - Dashboards/reports may show holdout only as a labelled overfit-watch — never as a tuning target.
+- Derived files hold no holdout text: the query cache keys vectors by a hash of the query.
 
 A human may waive any of these by explicit, clear instruction.
 
@@ -43,7 +44,7 @@ Three layers, distinct jobs:
   - *mechanical* (`pnpm nlp:eval-mechanical`) — corpus-derived per-record entries (terse decorated forms + NL-question forms), uniform `targetDepth=1`; each has a single defined answer (one item → one vote).
   - blend `total = λ·curated_train + (1−λ)·mechanical` (λ=0.5); both evals and the dashboard print these numbers live.
   - the tuning trio (`pnpm nlp:tune-*`) moves rank-time knobs only (`BZ_TUNE_BASE` overrides; the keys: `nlp/eval/sweep.ts`), scores the blend, prints holdout as the overfit watch.
-  - cost on CPU, roughly: the curated eval seconds, every other reporter about a minute — embedding the mechanical set dominates; a knob point regrades cached score inputs (`nlp/eval/query-set.ts`)
+  - cost on CPU, roughly: the curated eval seconds, every other reporter about a minute on a first run and well under on repeats — embedding the mechanical set dominates and its vectors persist (`nlp/query-cache.ts`); a knob point regrades cached score inputs (`nlp/eval/query-set.ts`)
 - **C — QA scoring** (`pnpm nlp:qa-score`; `nlp/eval/qa-score.ts`) — in-process; an overfit watch, not where scoring quality is judged:
   - templated self-retrieval hard checks over a few categories
   - the QA corpus as a second held-out set: weighted expected sets, negatives as penalties

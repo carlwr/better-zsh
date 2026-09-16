@@ -24,7 +24,7 @@ import {
   validateIndex,
   writeIndex,
 } from "../../nlp/index-build"
-import { f32Shortest, f32VecJson } from "../../nlp/json-f32"
+import { f32Shortest, f32VecJson, jsonWithRawField } from "../../nlp/json-f32"
 import { corpusTexts } from "../../nlp/retrieval-text"
 import { loadRulesYaml } from "../../nlp/rules-load"
 import type { Rules } from "../../src/lib/ranker/rules"
@@ -89,6 +89,16 @@ describe("f32Shortest", () => {
       "[0.5,-1,0.1]",
     )
     expect(f32VecJson(new Float32Array())).toBe("[]")
+  })
+
+  it("jsonWithRawField splices the raw field last", () => {
+    expect(jsonWithRawField({ a: 1, b: "x" }, "v", "[0.1]")).toBe(
+      '{"a":1,"b":"x","v":[0.1]}',
+    )
+    expect(JSON.parse(jsonWithRawField({ a: 1 }, "k", "{}"))).toEqual({
+      a: 1,
+      k: {},
+    })
   })
 })
 

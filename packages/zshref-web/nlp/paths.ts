@@ -16,6 +16,9 @@ const dataDir = resolve(nlpDir, "data")
 // Build output (gitignored): what the SPA fetches under `/artifacts`;
 // `scripts/build-index.ts` writes it. The model: `scripts/fetch-model`.
 const artifactsDir = resolve(pkgDir, "static/artifacts")
+// Gitignored, self-maintaining: the model, and the query vectors the
+// reporters keep across runs (`query-cache.ts`; delete to reset).
+const auxDir = resolve(pkgDir, ".aux")
 
 export const PATHS = {
   tuning: resolve(rulesDir, "tuning.yaml"),
@@ -30,7 +33,8 @@ export const PATHS = {
   sanityFixture: resolve(dataDir, "sanity-fixture.json"),
   qaCorpus: resolve(dataDir, "nlp-corpus.yaml"),
   qaSchema: resolve(dataDir, "schema.json"),
-  modelDir: resolve(pkgDir, ".aux/model"),
+  modelDir: resolve(auxDir, "model"),
+  queryCache: resolve(auxDir, "query-cache.json"),
   artifactsDir,
   indexJson: resolve(artifactsDir, "index.json"),
 } as const

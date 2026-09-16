@@ -39,6 +39,7 @@ Two, both pinned:
 Both gitignored:
 
 - `scripts/fetch-model` -> `.aux/model/` — what every reporter needs (a missing or stale index is built in memory, never written)
+- `.aux/query-cache.json` — query vectors the reporters and the gated tests keep across runs; self-invalidating (`nlp/query-cache.ts`), delete to reset
 - `pnpm build:index` -> `static/artifacts/` — what `src/lib/artifacts.ts` fetches under `/artifacts`
   - an index that still validates against the corpus is kept; `--force`, `--validate`: `--help`
   - a rebuild embeds the corpus: a minute on CPU
