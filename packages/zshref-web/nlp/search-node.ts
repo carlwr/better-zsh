@@ -32,7 +32,7 @@ function isDocCategory(s: string): s is DocCategory {
 }
 
 /** Narrow a request's `category`; an unknown one is a caller error, not an empty result. */
-export function docCategory(s: string): DocCategory {
+function docCategory(s: string): DocCategory {
   if (!isDocCategory(s)) throw new Error(`unknown category ${JSON.stringify(s)}`);
   return s;
 }

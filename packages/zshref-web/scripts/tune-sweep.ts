@@ -18,7 +18,7 @@ pnpm --filter zshref-web nlp:tune-sweep
   BZ_TUNE_BASE=key=value,…  the base to sweep around (the committed tuning
              with these overrides); fold a sweep's best rows in and repeat.
 
-Takes over an hour on CPU (every knob point re-ranks the mechanical set);
+Takes tens of minutes on CPU (every knob point re-ranks the mechanical set);
 prints block by block, so a partial run is still readable.\
 `;
 scriptFlags('tune-sweep', usage, []);

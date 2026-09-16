@@ -2,7 +2,7 @@
 // miniature index (no model); with the staged index and model: a capped
 // smoke plus the full report.
 //
-// The full report embeds thousands of queries (minutes), so it is opt-in
+// The full report embeds thousands of queries, so it is opt-in
 // via `BZ_NLP_SLOW=1`, on top of the artifact gate —
 // `BZ_REQUIRE_WEB_ARTIFACTS=1` alone does not run it, so the CI `nlp` job
 // stays at the capped smoke; `pnpm nlp:eval-mechanical` is the report's
