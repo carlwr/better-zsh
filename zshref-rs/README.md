@@ -73,8 +73,8 @@ The npm packages carry every platform's binaries; the `zshref` / `zshref-mcp` co
 From crates.io, with a stable Rust toolchain (for alpha package testing only, while no stable release exists):
 
 ```sh
-cargo install zshref --version 0.1.0-alpha.2                  # the CLI
-cargo install zshref --version 0.1.0-alpha.2 --features mcp   # CLI + MCP server
+cargo install zshref --version 0.1.0-alpha.3                  # the CLI
+cargo install zshref --version 0.1.0-alpha.3 --features mcp   # CLI + MCP server
 ```
 
 Build from source: requires the full monorepo checkout (the `better-zsh` Node/pnpm workspace), because the bundled JSON corpus is generated from the TypeScript side and embedded at compile time:
