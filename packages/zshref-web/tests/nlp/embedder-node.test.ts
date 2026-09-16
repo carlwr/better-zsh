@@ -23,8 +23,6 @@ const pkgDir = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..")
 
 // A few f32 ulps: the norm of a normalized 384-vector re-summed in f64.
 const UNIT_TOL = 1e-6
-// Two padded batches of the same text differ by ~1e-7 per component.
-const SAME_MIN_COSINE = 0.999999
 
 function cosine(a: Float32Array, b: Float32Array): number {
   let s = 0
@@ -95,15 +93,13 @@ describe("node embedder", () => {
     expectUnit(await one(overLong))
   }, 60_000)
 
-  it("embeds a padded batch as it embeds each text alone", async ctx => {
+  // One model call per text: a vector never depends on its neighbours.
+  it("embeds a list exactly as it embeds each text alone", async ctx => {
     if (skipReason) ctx.skip(skipReason)
-    const batched = await e.embed(texts)
-    expect(batched).toHaveLength(texts.length)
+    const listed = await e.embed(texts)
+    expect(listed).toHaveLength(texts.length)
     for (const [i, text] of texts.entries()) {
-      const v = batched[i] ?? new Float32Array()
-      expect(cosine(v, await one(text)), `text ${i}`).toBeGreaterThanOrEqual(
-        SAME_MIN_COSINE,
-      )
+      expect(listed[i], `text ${i}`).toEqual(await one(text))
     }
   }, 60_000)
 
@@ -118,7 +114,6 @@ describe("node embedder", () => {
     expect([...map.keys()]).toEqual(["change directory", "glob qualifiers"])
     const single = await embedQuery(e, "glob qualifiers", rules)
     expectUnit(single)
-    const fromMap = map.get("glob qualifiers") ?? new Float32Array()
-    expect(cosine(single, fromMap)).toBeGreaterThanOrEqual(SAME_MIN_COSINE)
+    expect(map.get("glob qualifiers")).toEqual(single)
   }, 60_000)
 })

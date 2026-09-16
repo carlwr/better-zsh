@@ -41,7 +41,7 @@ Both gitignored:
 - `scripts/fetch-model` -> `.aux/model/` — what every reporter needs (a missing or stale index is built in memory, never written)
 - `pnpm build:index` -> `static/artifacts/` — what `src/lib/artifacts.ts` fetches under `/artifacts`
   - an index that still validates against the corpus is kept; `--force`, `--validate`: `--help`
-  - a rebuild embeds the corpus: minutes on CPU
+  - a rebuild embeds the corpus: a minute on CPU
   - the rules YAML is the editable form; the JSON is build output
 
 ## Tests
@@ -108,9 +108,6 @@ Parity asserts equality (the ranker is deterministic); sanity a tolerance (the e
 
 ## Deferred
 
-- the re-embed pair — one index rebuild for both:
-  - retrieval-text category label -> zsh-core's `docCategoryLabels` (`nlp/retrieval-text.ts` derives it mechanically today)
-  - embedding without padded batching (`nlp/embedder-node.ts`: padding to the longest row costs ~4× against single calls on CPU)
 - the SPA deploy: §"Hosting intent"
 - a split into its own repo: no technical driver; the payoff: the SPA's toolchain and dependency churn (SvelteKit, Vite, transformers.js) leave the workspace lockfile and root `qa`
 

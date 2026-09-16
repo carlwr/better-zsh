@@ -1,5 +1,5 @@
 // What every eval and reporter needs loaded once (`EvalAssets`). A missing
-// or stale index is built in memory (minutes) and never written —
+// or stale index is built in memory (about a minute) and never written —
 // `pnpm build:index` is the way to persist one; a missing model is an error,
 // since nothing here can run without it.
 

@@ -9,11 +9,10 @@
 // - L2 normalization in f32, sequential (`normalizeF32`). Callers
 //   re-normalize (index build, query embedding); f32 makes both idempotent
 //   up to an ulp.
-// - Padded batches with an attention mask, `INDEX_EMBED_CHUNK` texts each —
-//   the batch shape is part of the vectors' numerics (~1e-7 against single
-//   texts), so changing it re-embeds. Padding to the longest row makes a
-//   batch slower than its texts one by one on CPU (~4× measured); dropping
-//   batching is a recorded follow-up.
+// - One text per model call, no padding: a vector is a function of its text
+//   alone. Considered padded batches; the batch shape leaks into the
+//   numerics (~1e-7), and padding to the longest row made a batch several
+//   times slower than its texts one by one on CPU.
 
 import { basename, dirname } from "node:path"
 import {
@@ -31,9 +30,6 @@ import type { Rules } from "../src/lib/ranker/rules"
 import { PATHS } from "./paths"
 
 export { DIMS, MODEL_ID }
-
-/** Texts per model call. */
-export const INDEX_EMBED_CHUNK = 32
 
 // The model's sequence limit, and what is left for content once `[CLS]` and
 // `[SEP]` are added.
@@ -64,7 +60,6 @@ type Loaded = {
   model: PreTrainedModel
   cls: number
   sep: number
-  pad: number
 }
 
 async function load(modelDir: string): Promise<Loaded> {
@@ -86,56 +81,42 @@ async function load(modelDir: string): Promise<Loaded> {
   if (cls === undefined || sep === undefined) {
     throw new Error("tokenizer adds no [CLS]/[SEP] pair around an empty input")
   }
-  return { tokenizer, model, cls, sep, pad: tokenizer.pad_token_id }
+  return { tokenizer, model, cls, sep }
 }
 
-/** One padded batch: token rows → CLS vectors, each unit-normalized. */
-async function embedBatch(
+/** One text: its token row → the CLS vector, unit-normalized. */
+async function embedOne(
   m: Loaded,
-  texts: readonly string[],
-): Promise<Float32Array<ArrayBuffer>[]> {
-  const contents = m.tokenizer([...texts], {
+  text: string,
+): Promise<Float32Array<ArrayBuffer>> {
+  const content = m.tokenizer(text, {
     add_special_tokens: false,
     truncation: true,
     max_length: CONTENT_MAX,
     return_tensor: false,
   }).input_ids
-  const rows = contents.map(ids => [m.cls, ...ids, m.sep])
-  const n = rows.length
-  const len = Math.max(...rows.map(r => r.length))
-  const ids = new BigInt64Array(n * len).fill(BigInt(m.pad))
-  const mask = new BigInt64Array(n * len)
-  rows.forEach((row, r) => {
-    row.forEach((id, i) => {
-      ids[r * len + i] = BigInt(id)
-      mask[r * len + i] = 1n
-    })
-  })
-  const dims = [n, len]
+  const row = [m.cls, ...content, m.sep]
+  const len = row.length
+  const dims = [1, len]
   const out: { last_hidden_state: Tensor } = await m.model({
-    input_ids: new Tensor("int64", ids, dims),
-    attention_mask: new Tensor("int64", mask, dims),
-    token_type_ids: new Tensor("int64", new BigInt64Array(n * len), dims),
+    input_ids: new Tensor("int64", BigInt64Array.from(row, BigInt), dims),
+    attention_mask: new Tensor("int64", new BigInt64Array(len).fill(1n), dims),
+    token_type_ids: new Tensor("int64", new BigInt64Array(len), dims),
   })
   const hidden = out.last_hidden_state
-  const width = hidden.dims[2]
   if (
     hidden.dims.length !== 3 ||
-    width !== DIMS ||
+    hidden.dims[2] !== DIMS ||
     !(hidden.data instanceof Float32Array)
   ) {
     throw new Error(
-      `model output is ${hidden.type}[${hidden.dims.join("x")}], expected f32[..x..x${DIMS}]`,
+      `model output is ${hidden.type}[${hidden.dims.join("x")}], expected f32[1x${len}x${DIMS}]`,
     )
   }
-  const data = hidden.data
-  return rows.map((_, r) => {
-    const at = r * len * width
-    return normalizeF32(data.slice(at, at + width))
-  })
+  return normalizeF32(hidden.data.slice(0, DIMS))
 }
 
-/** Load the local model once; `embed` batches in `INDEX_EMBED_CHUNK`s. */
+/** Load the local model once; `embed` runs one model call per text. */
 export async function createNodeEmbedder(
   modelDir: string = PATHS.modelDir,
 ): Promise<Embedder> {
@@ -143,11 +124,7 @@ export async function createNodeEmbedder(
   return {
     async embed(texts) {
       const vectors: Float32Array<ArrayBuffer>[] = []
-      for (let at = 0; at < texts.length; at += INDEX_EMBED_CHUNK) {
-        vectors.push(
-          ...(await embedBatch(m, texts.slice(at, at + INDEX_EMBED_CHUNK))),
-        )
-      }
+      for (const text of texts) vectors.push(await embedOne(m, text))
       return vectors
     },
   }
@@ -173,7 +150,7 @@ export async function embedQuery(
 }
 
 /**
- * Embed every distinct query once (batched), keyed by the query string in
+ * Embed every distinct query once, keyed by the query string in
  * first-occurrence order — for evals whose entries share query strings.
  */
 export async function embedUnique(

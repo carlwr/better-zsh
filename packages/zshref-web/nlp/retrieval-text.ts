@@ -9,6 +9,7 @@
 // White_Space.
 
 import type { DocCorpus } from "@carlwr/zsh-core"
+import { type DocCategory, docCategoryLabels } from "@carlwr/zsh-core/taxonomy"
 
 import type { RecordText, Synonyms } from "../src/lib/ranker/types"
 import { projectCorpus } from "./projection"
@@ -30,7 +31,7 @@ export type IndexGroups = Synonyms["index_groups"]
 
 /** What the header lines and hints are built from. */
 export interface Identity {
-  category: string
+  category: DocCategory
   label: string
   id: string
   display: string
@@ -48,7 +49,7 @@ export function corpusTexts(
 }
 
 export function recordText(
-  cat: string,
+  cat: DocCategory,
   rec: JsonRecord,
   indexGroups: IndexGroups,
 ): RecordText {
@@ -57,7 +58,7 @@ export function recordText(
   const title = strField(rec, "_title")
   const subKind = strField(rec, "_subKind")
   const mdBody = strField(rec, "mdBody")
-  const label = categoryLabel(cat)
+  const label = docCategoryLabels[cat]
   // `mdBody` is title-less; the body view embeds the whole rendered record.
   const body = bodyText(rec, `${title}\n\n${mdBody}`)
   const ident: Identity = {
@@ -174,24 +175,6 @@ export function compactValue(value: JsonValue): string | undefined {
     if (s !== undefined) parts.push(`${keyWords(k)} ${s}`)
   }
   return nonempty(parts.join(" "))
-}
-
-const labelRewrites: ReadonlyMap<string, string> = new Map([
-  ["expn", "expansion"],
-  ["subst", "substitution"],
-  ["op", "operator"],
-  ["param", "parameter"],
-])
-
-/**
- * The retrieval-text category label: the id's words with a few tokens
- * spelled out. Not zsh-core's `docCategoryLabels` — the UI shows those; this
- * one is embedded, so switching re-embeds.
- */
-export function categoryLabel(cat: string): string {
-  return words(keyWords(cat))
-    .map(w => labelRewrites.get(w) ?? w)
-    .join(" ")
 }
 
 export const keyWords = (s: string): string => s.replace(/[_-]/g, " ")

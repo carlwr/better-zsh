@@ -1,6 +1,6 @@
 // Build the SPA's artifacts under static/artifacts/ (gitignored). Everything
 // derives from zsh-core's corpus and the rules YAML; only the index needs the
-// model (scripts/fetch-model) and minutes of CPU, so an index that still
+// model (scripts/fetch-model) and a minute of CPU, so an index that still
 // validates against the corpus is kept.
 
 import { existsSync } from "node:fs"
@@ -72,7 +72,7 @@ if (existing.ok && !args.has("--force")) {
   )
   const t0 = Date.now()
   const embedder = await createNodeEmbedder()
-  say(`model loaded (${seconds(t0)}); embedding the corpus, minutes on CPU`)
+  say(`model loaded (${seconds(t0)}); embedding the corpus, about a minute`)
   const t1 = Date.now()
   let lastReport = t1
   const index = await buildIndex({

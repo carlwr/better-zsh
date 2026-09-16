@@ -1,7 +1,6 @@
-// `categories.json`: category order + the canonical labels the UI shows
-// (dropdown, result chips). Distinct from the retrieval-text label baked
-// into `RecordText.category_label` (`retrieval-text.ts`), so the UI can
-// change wording without a re-embed.
+// `categories.json`: category order + the labels the UI shows (dropdown,
+// result chips) — the same labels the retrieval text embeds, so a label
+// change re-embeds.
 
 import { docCategories, docCategoryLabels } from "@carlwr/zsh-core/taxonomy"
 

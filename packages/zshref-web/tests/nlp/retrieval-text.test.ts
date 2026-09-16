@@ -1,10 +1,10 @@
 // Pure — synthetic records, no corpus, no staged assets.
 
+import fc from "fast-check"
 import { describe, expect, it } from "vitest"
 
 import type { Identity, JsonRecord } from "../../nlp/retrieval-text"
 import {
-  categoryLabel,
   compactValue,
   expandedText,
   hayHasWord,
@@ -87,24 +87,11 @@ describe("recordText", () => {
       desc: "  keeps `code`  and\n*stars*  ",
       mdBody: "ignored",
     }
-    expect(recordText("c", withDesc, noGroups).body).toBe(
+    expect(recordText("builtin", withDesc, noGroups).body).toBe(
       "keeps `code` and *stars*",
     )
     const noDesc: JsonRecord = { _title: "`foo_bar`", mdBody: "a *b*\n\n`c`" }
-    expect(recordText("c", noDesc, noGroups).body).toBe("foobar a b c")
-  })
-})
-
-describe("categoryLabel", () => {
-  it("category_label_rewrites_tokens_only", () => {
-    expect(categoryLabel("option")).toBe("option")
-    expect(categoryLabel("conditional_op")).toBe("conditional operator")
-    expect(categoryLabel("process_subst")).toBe("process substitution")
-  })
-
-  it("rewrites param and expn, whole tokens only", () => {
-    expect(categoryLabel("param_expn")).toBe("parameter expansion")
-    expect(categoryLabel("params")).toBe("params")
+    expect(recordText("builtin", noDesc, noGroups).body).toBe("foobar a b c")
   })
 })
 
@@ -213,5 +200,40 @@ describe("string helpers", () => {
 
   it("stripMarkdown removes backticks, asterisks and underscores only", () => {
     expect(stripMarkdown("`a` *b* _c_ -d-")).toBe("a b c -d-")
+  })
+
+  it("normalizeWs: single spaces between the words, none at the ends, idempotent", () => {
+    fc.assert(
+      fc.property(fc.string({ unit: "grapheme", maxLength: 24 }), s => {
+        const n = normalizeWs(s)
+        expect(n).toBe(
+          n
+            .split(" ")
+            .filter(w => w !== "")
+            .join(" "),
+        )
+        expect(normalizeWs(n)).toBe(n)
+        // Whitespace runs and padding are immaterial.
+        expect(normalizeWs(` \t${s.replace(/ /g, " \n ")}\u00a0`)).toBe(n)
+      }),
+    )
+  })
+
+  it("hayHasWord: a hit is a substring hit; a plain word hits itself", () => {
+    const word = fc.stringMatching(/^[a-z0-9]{1,5}$/)
+    fc.assert(
+      fc.property(
+        fc.array(word, { maxLength: 6 }).map(ws => ws.join(" ")),
+        word,
+        (hay, needle) => {
+          if (hayHasWord(hay, needle)) expect(hay).toContain(needle)
+          expect(hayHasWord(needle, needle)).toBe(true)
+          expect(hayHasWord(`${hay} ${needle}`, needle)).toBe(true)
+          expect(hayHasWord(`${hay} x${needle}`, needle)).toBe(
+            hayHasWord(hay, needle),
+          )
+        },
+      ),
+    )
   })
 })

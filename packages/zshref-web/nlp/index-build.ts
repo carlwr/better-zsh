@@ -15,13 +15,7 @@ import type {
   ViewVectors,
 } from "../src/lib/ranker/types"
 import { corpusHash } from "./corpus-hash"
-import {
-  DIMS,
-  type Embedder,
-  INDEX_EMBED_CHUNK,
-  MODEL_ID,
-  normalizeF32,
-} from "./embedder-node"
+import { DIMS, type Embedder, MODEL_ID, normalizeF32 } from "./embedder-node"
 import { f32VecJson } from "./json-f32"
 import { corpusTexts } from "./retrieval-text"
 
@@ -30,6 +24,9 @@ export const INDEX_VERSION = 2
 /** The embedded views, in the order their texts are embedded per record. */
 export const VIEWS = ["structured", "body", "expanded"] as const
 export type View = (typeof VIEWS)[number]
+
+/** Texts per `embed` call during a build; paces `onProgress` only. */
+export const PROGRESS_CHUNK = 32
 
 /** One vector per view, from `f`; the keys are exactly `VIEWS`. */
 export const viewVectors = (
@@ -49,11 +46,7 @@ export interface BuildInputs {
   onProgress?: (done: number, total: number) => void
 }
 
-/**
- * Embed every record's views. The embedder owns the batch shape, which is
- * part of the vectors' numerics — the `INDEX_EMBED_CHUNK` slices here only
- * pace `onProgress`. Minutes on CPU for the whole corpus.
- */
+/** Embed every record's views. About a minute on CPU for the whole corpus. */
 export async function buildIndex({
   corpus,
   rules,
@@ -65,12 +58,12 @@ export async function buildIndex({
     VIEWS.map(view => `passage: ${rec[view]}`),
   )
   const vectors: Float32Array<ArrayBuffer>[] = []
-  for (let at = 0; at < viewTexts.length; at += INDEX_EMBED_CHUNK) {
+  for (let at = 0; at < viewTexts.length; at += PROGRESS_CHUNK) {
     vectors.push(
-      ...(await embedder.embed(viewTexts.slice(at, at + INDEX_EMBED_CHUNK))),
+      ...(await embedder.embed(viewTexts.slice(at, at + PROGRESS_CHUNK))),
     )
     onProgress?.(
-      Math.min(at + INDEX_EMBED_CHUNK, viewTexts.length),
+      Math.min(at + PROGRESS_CHUNK, viewTexts.length),
       viewTexts.length,
     )
   }

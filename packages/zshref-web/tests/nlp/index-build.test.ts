@@ -5,18 +5,20 @@
 import { mkdtemp, rm } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
+import { memoized } from "@carlwr/typescript-extra"
 import { loadCorpus } from "@carlwr/zsh-core"
 import fc from "fast-check"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
 import { corpusHash } from "../../nlp/corpus-hash"
-import { DIMS, INDEX_EMBED_CHUNK, MODEL_ID } from "../../nlp/embedder-node"
+import { DIMS, MODEL_ID } from "../../nlp/embedder-node"
 import { syntheticVec } from "../../nlp/fixtures"
 import {
   buildIndex,
   INDEX_VERSION,
   type IndexValidation,
   indexJson,
+  PROGRESS_CHUNK,
   readIndex,
   VIEWS,
   validateIndex,
@@ -270,17 +272,19 @@ describe("buildIndex", () => {
     expect(misaligned).toEqual([])
     expect(worst).toBeLessThanOrEqual(1e-6)
     const total = index.records.length * VIEWS.length
-    expect(progress).toHaveLength(Math.ceil(total / INDEX_EMBED_CHUNK))
+    expect(progress).toHaveLength(Math.ceil(total / PROGRESS_CHUNK))
     expect(progress.at(-1)).toEqual([total, total])
   })
 })
 
 const skipReason = artifactGate("built index", [STAGED.index])
+// Read once (20 MB, schema-validated), shared by the tests below; none mutates it.
+const staged = memoized(() => readIndex(PATHS.indexJson))
 
 describe("built index", () => {
   it("validate_rejects_tampered_index", async ctx => {
     if (skipReason) ctx.skip(skipReason)
-    const index = await readIndex(PATHS.indexJson)
+    const index = await staged()
     expect(validateIndex(index, corpus, rules)).toEqual({ ok: true })
 
     rejected(
@@ -310,7 +314,7 @@ describe("built index", () => {
 
   it("every vector is unit length with the declared dims", async ctx => {
     if (skipReason) ctx.skip(skipReason)
-    const index = await readIndex(PATHS.indexJson)
+    const index = await staged()
     let worst = 0
     for (const rec of index.records) {
       for (const view of VIEWS) {

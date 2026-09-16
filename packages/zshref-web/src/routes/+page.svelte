@@ -51,7 +51,6 @@
     }),
   )
 
-  // categories.json label, not RecordText.category_label (heuristic-embedded)
   function categoryLabel(id: string): string {
     return artifacts ? lookupLabel(artifacts.categories, id) : id
   }
