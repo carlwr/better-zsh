@@ -1,0 +1,6 @@
+# Commits `git blame` should skip: mechanical restyles. GitHub's blame view
+# reads this file on its own; locally, once per clone:
+#   git config blame.ignoreRevsFile .git-blame-ignore-revs
+
+# zshref-web: adopt the workspace biome style
+71773e3d6a4e9a66a42831df5b8b8acd5b2a861b
