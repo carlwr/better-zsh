@@ -116,8 +116,8 @@ importers:
         specifier: ^0.5.2
         version: 0.5.2(fast-check@4.9.0)
       '@carlwr/typescript-extra':
-        specifier: 0.11.0
-        version: 0.11.0
+        specifier: 0.12.1
+        version: 0.12.1
       '@fast-check/vitest':
         specifier: ^0.4.1
         version: 0.4.1(vitest@4.1.11(@types/node@22.20.1)(vite@7.3.6(@types/node@22.20.1)(lightningcss@1.32.0)(tsx@4.23.13)(yaml@2.9.0)))
@@ -186,8 +186,8 @@ importers:
   packages/zsh-core:
     dependencies:
       '@carlwr/typescript-extra':
-        specifier: 0.11.0
-        version: 0.11.0
+        specifier: 0.12.1
+        version: 0.12.1
     devDependencies:
       ajv:
         specifier: ^8.20.0
@@ -205,8 +205,8 @@ importers:
         specifier: ^0.1.2
         version: 0.1.2
       '@carlwr/typescript-extra':
-        specifier: 0.11.0
-        version: 0.11.0
+        specifier: 0.12.1
+        version: 0.12.1
       '@fontsource-variable/inter':
         specifier: ^5.3.0
         version: 5.3.0
@@ -396,8 +396,8 @@ packages:
     peerDependencies:
       fast-check: ^4.6.0
 
-  '@carlwr/typescript-extra@0.11.0':
-    resolution: {integrity: sha512-3/HxCdJiDdP1Ckrh8EPbe3vW6uQ9/zBLdV9uRNVu9bDf07qn7rMAH9fQFg70d1gLSmUy62yTHmbLdm7tAtt8uw==}
+  '@carlwr/typescript-extra@0.12.1':
+    resolution: {integrity: sha512-50TVUGpfDACF+CGMjwVD27VfrYl2mKDA8RY/5gBjpSiWkRRnToVI1BGpTXnKphUdsvmWhxbwTA+vgdilM7MKxA==}
     engines: {node: '>=20.0.0'}
 
   '@emnapi/runtime@1.9.2':
@@ -3636,7 +3636,7 @@ snapshots:
     dependencies:
       fast-check: 4.9.0
 
-  '@carlwr/typescript-extra@0.11.0': {}
+  '@carlwr/typescript-extra@0.12.1': {}
 
   '@emnapi/runtime@1.9.2':
     dependencies:

@@ -48,5 +48,9 @@
       "src/**/*.ts"
     ],
     "exclude": ["src/test/**/*.ts"]
+  },
+  "minimumDependencyAge": {
+    "age": "P1D",
+    "exclude": ["npm:@carlwr/typescript-extra"]
   }
 }

@@ -13,3 +13,9 @@ allowBuilds:
   onnxruntime-node: true
   protobufjs: true
   sharp: true
+
+# pnpm >=12 defaults `minimumReleaseAge` to 24h, and a fresh install (CI)
+# refuses a lockfile entry younger than that. Own upstreams get bumped within
+# hours of publish.
+minimumReleaseAgeExclude:
+  - "@carlwr/typescript-extra"

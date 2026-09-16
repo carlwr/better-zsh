@@ -48,7 +48,7 @@
   "devDependencies": {
     "@biomejs/biome": "^2.5.12",
     "@carlwr/fastcheck-utils": "^0.5.2",
-    "@carlwr/typescript-extra": "0.11.0",
+    "@carlwr/typescript-extra": "0.12.1",
     "@fast-check/vitest": "^0.4.1",
     "@microsoft/api-extractor": "^7.59.0",
     "@types/mocha": "^10.0.10",
