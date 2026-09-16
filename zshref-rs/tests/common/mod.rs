@@ -1,16 +1,6 @@
-//! Shared helpers for the `zshref` integration test suite.
-//!
-//! Roles:
-//!
-//! 1. **Spawn-and-parse vocabulary.** `BIN`, `run_raw`, `run_json`,
-//!    `assert_envelope`, `doc_categories` — the minimum surface for
-//!    invoking the built binary and shaping its JSON responses.
-//! 2. **`outputSchema` validation.** `tool_set`, `validator_for`,
-//!    `validate_or_panic`, `tool_for_subcommand` — `run_json`
-//!    auto-validates every tool-subcommand response against the crate's
-//!    own schema, so new tests get conformance checks for free.
-//! 3. **`Example:` block parsing.** `extract_example` — pairs with
-//!    `cli/help.rs::shell_examples`.
+//! Shared helpers for the `zshref` integration test suite. `run_json`
+//! validates every tool-subcommand response against the crate's own
+//! `outputSchema`, so new tests get conformance checks for free.
 //!
 //! `#[allow(dead_code)]` because Rust compiles each `tests/*.rs` as a
 //! separate crate with its own copy of this module — items unused by
@@ -266,9 +256,6 @@ pub fn extract_examples_under(help: &str, headings: &[&str]) -> Vec<(String, Str
                 cursor += 1;
                 continue;
             }
-            // Skip shell-comment prompts: `    $ # ...` is a no-op the
-            // user could type — useful as inline narration but not a
-            // command to re-run.
             if let Some(stripped) = line.strip_prefix("    $ ")
                 && stripped.starts_with('#')
             {

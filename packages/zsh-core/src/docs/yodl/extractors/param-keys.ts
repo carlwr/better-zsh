@@ -1,6 +1,6 @@
 /**
- * Shared body-splitting for `ShellParamDoc.keys`. Used by both core and
- * module special-params extraction; the nested key-list shape is identical.
+ * Shared body-splitting for `ShellParamDoc.keys` — the nested key-list shape
+ * is identical across special-param extractors.
  *
  * Key sigs come from full `normalizeHeader(header)`, not just the first
  * `tt()` token: catches composite headers like WATCHFMT's

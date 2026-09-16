@@ -118,7 +118,6 @@ function scoreRecord(
 }
 
 function countWords(s: string): number {
-  // Whitespace-separated runs; leading/trailing whitespace counts nothing.
   return s.split(/\s+/).filter((w) => w.length > 0).length;
 }
 

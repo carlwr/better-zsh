@@ -17,8 +17,7 @@ const pkgJson = JSON.parse(
 /**
  * Entry name behind every non-glob `exports` subpath, read from the manifest
  * rather than restated, so a new subpath cannot be added without the pack
- * assertions following it. `.` -> `index`, `./foo` -> `foo` is the package-root
- * facade rule `scripts/build/module-layout.test.mjs` enforces repo-wide.
+ * assertions following it. Facade rule: `STYLE-CODE.md` §"Module layout".
  */
 const publicEntries = Object.keys(pkgJson.exports)
   .filter(sub => !sub.includes("*") && sub !== "./package.json")

@@ -1,8 +1,5 @@
-// Rules loading: the committed YAML is the positive control, every negative
-// case asserts the reason it fails.
-// The committed editor schemas are `rulesJsonSchemas()` output; the drift
-// test rewrites them under UPDATE_SCHEMAS=1 (the QA corpus schema regenerates
-// under the same variable: tests/nlp/qa-score.test.ts).
+// The committed YAML is the positive control; every negative case asserts
+// the reason it fails.
 
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';

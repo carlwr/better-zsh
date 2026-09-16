@@ -4,11 +4,8 @@ version = "0.1.0-alpha.3"
 edition = "2024"
 description = "Offline static zsh reference, highly structured — CLI and MCP server over parsed zsh 5.9 docs, built for agent pipelines and shells"
 license = "MIT"
-# crates.io enabled pre-extraction — first alpha cut from the monorepo.
 publish = true
 
-# Metadata that crates.io / docs.rs surface. Pre-extraction URLs point at
-# the monorepo; update to github.com/carlwr/zshref when repo is extracted.
 authors = ["Carl (carlwr)"]
 repository = "https://github.com/carlwr/better-zsh"
 homepage = "https://github.com/carlwr/better-zsh"
@@ -17,10 +14,9 @@ keywords = ["zsh", "shell", "cli", "reference", "mcp"]
 categories = ["command-line-utilities", "development-tools"]
 rust-version = "1.88"                   # floor: rmcp 3.3
 
-# Files that land in the published `.crate` tarball. Gitignored files can
-# still be included here (cargo's packaging layer takes precedence over
-# .gitignore — exactly what lets the dual-mode build ship `data/` even
-# though it's gitignored pre-extraction). See DATA-SYNC.md.
+# Gitignored files can still be included here (cargo's packaging layer takes
+# precedence over .gitignore — exactly what lets the dual-mode build ship
+# `data/` even though it's gitignored). See DATA-SYNC.md.
 # gitignore-style patterns: anchored, or `README.md` matches at any depth
 # (`npm/*/README.md` would ship).
 include = [
@@ -35,8 +31,7 @@ include = [
     "/data/*.json",
 ]
 
-# `mcp` adds the `zshref-mcp` binary; without it the dependency set is the
-# CLI's alone.
+# Opt-in: a CLI-only install pulls none of the MCP dependencies.
 [features]
 mcp = ["dep:rmcp", "dep:tokio"]
 

@@ -3,8 +3,7 @@
 // retired Rust CLI, 6-decimal rounding included, so the recorded oracle
 // captures stay comparable. The resolver hit is a parameter — oracle mode
 // computes it from the corpus (`corpusResolverHit`, as the captures had
-// it), product mode passes none (`noResolverHit`, what the SPA does). The
-// product path itself is src/lib/search.ts, untouched.
+// it), product mode passes none (`noResolverHit`, what the SPA does).
 
 import type { DocCorpus } from '@carlwr/zsh-core';
 import { type DocCategory, docCategories } from '@carlwr/zsh-core/taxonomy';

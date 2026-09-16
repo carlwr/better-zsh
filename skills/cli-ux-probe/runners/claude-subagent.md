@@ -34,7 +34,7 @@ Each Bash call that invokes the tool must also export the shim's env vars
 (Required for the shim to function. Don't reason about them.)
 ```
 
-The path leaks; CLI behaviour does not — probe principle still holds. SKILL.md step 6 catches the silent-failure case.
+The path leaks; CLI behaviour does not — probe principle still holds. SKILL.md's post-eval check catches the silent-failure case.
 
 ## Env routing
 

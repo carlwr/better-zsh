@@ -1,8 +1,6 @@
-// The fixture generators against their committed files (rewrite under
-// `UPDATE_PARITY_FIXTURE=1` / `UPDATE_SANITY_FIXTURE=1`), the synthetic
-// vectors, and the sanity invariants. The parity side is self-contained
-// (generated vectors, corpus in-process); the sanity build needs the staged
-// index and the model, and skips without them.
+// The fixture generators against their committed files. The parity side is
+// self-contained (generated vectors, corpus in-process); the sanity build
+// needs the staged index and the model, and skips without them.
 
 import { loadCorpus } from '@carlwr/zsh-core';
 import { beforeAll, describe, expect, it } from 'vitest';

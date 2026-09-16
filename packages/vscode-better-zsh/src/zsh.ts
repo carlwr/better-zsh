@@ -144,7 +144,7 @@ function logVersion(r: ZshRunResult) {
 
 let getMode: () => Promise<ZshMode>
 
-// Initialize to a sensible default (will be overwritten by configureZsh on activation)
+// Disabled until `configureZsh` runs.
 getMode = memoized(async () => ({ kind: "disabled" }) as ZshMode)
 
 export { buildZshEnv } from "./zsh-exec"

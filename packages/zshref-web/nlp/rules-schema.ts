@@ -1,7 +1,6 @@
 // The editor JSON Schemas (draft 2020-12) for everything under rules/: the
 // three rule files and the sentence fixture, generated from their zod shapes
-// so one definition validates the YAML, the emitted JSON and the editor. The
-// committed rules/schema/*.schema.json are `rulesJsonSchemas()` output.
+// so one definition validates the YAML, the emitted JSON and the editor.
 
 import { z } from 'zod';
 

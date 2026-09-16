@@ -1,10 +1,8 @@
 // The lookup contract: the auto-generated corpus of canonical-identifier
 // queries the search system must satisfy, plus its bare-layer evaluation.
-// `tests/lookup-contract.test.ts` consumes the committed JSON.
 //
-// One entry per (record, surface-form kind, phrasing kind), each with the
-// query, an `expectedSet` derived from corpus iteration, and the predicate
-// saying how the query must be satisfied. Two phrasing layers:
+// One entry per (record, surface-form kind, phrasing kind). Two phrasing
+// layers:
 //
 // - bare: the surface form alone (`AUTO_CD`, `setopt`) — resolves via the
 //   lookup-map hard-promote bypass, no ranker needed

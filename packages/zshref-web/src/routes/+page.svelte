@@ -28,7 +28,6 @@
     return Math.round(bytes / 1_000_000);
   }
 
-  // Collapse the category popover on any click outside it.
   function onDocPointerDown(e: MouseEvent) {
     if (catOpen && catDetails && !catDetails.contains(e.target as Node)) {
       catOpen = false;
@@ -53,8 +52,6 @@
     return artifacts ? lookupLabel(artifacts.categories, id) : id;
   }
 
-  // Record count per category, from the loaded index — drives the per-category
-  // counts shown beside each filter checkbox.
   let catCounts = $derived.by(() => {
     const m = new Map<string, number>();
     if (artifacts) {

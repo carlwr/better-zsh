@@ -1,9 +1,5 @@
-# Formula ships from a crates.io source tarball. The layout comment below
-# is about where THIS FILE lives in git — the tarball itself is vendored
-# by cargo and self-contained, so no monorepo-vs-extracted contortions.
-#
-# Pre-extraction: zshref-rs/Formula/zshref.rb
-# Post-extraction: Formula/zshref.rb (Homebrew's default tap scan path).
+# The crates.io `.crate` is self-contained (vendored data), so the formula
+# needs no monorepo-vs-extracted handling.
 # Tap via: brew tap carlwr/zshref https://github.com/carlwr/zshref.git
 
 class Zshref < Formula
@@ -20,7 +16,6 @@ class Zshref < Formula
   def install
     system "cargo", "install", *std_cargo_args
 
-    # Shell completions: `zshref completions <shell>` for each supported shell.
     generate_completions_from_executable(bin/"zshref", "completions")
   end
 
@@ -28,7 +23,6 @@ class Zshref < Formula
     output = shell_output("#{bin}/zshref --version")
     assert_match "zshref", output
 
-    # End-to-end sanity: look up the docs for a known option.
     docs = shell_output("#{bin}/zshref docs --raw AUTO_CD")
     assert_match(/"category"\s*:\s*"option"/, docs)
   end

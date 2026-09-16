@@ -1,5 +1,5 @@
-// The curated sentence eval as a report: aggregates only — the total, the
-// two splits (holdout as the overfit watch) and the per-category breakdown.
+// The curated sentence eval as a report: aggregates only (holdout as the
+// overfit watch).
 
 import { evalSentence, renderSentence } from '../nlp/eval/sentence';
 import { loadSentenceFixture } from '../nlp/eval/sentence-fixture';

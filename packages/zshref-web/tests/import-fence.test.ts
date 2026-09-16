@@ -1,12 +1,8 @@
-// The browser/Node seam. `src/` is the browser bundle; the Node-side NLP
-// (corpus access, index build, evals, fixtures) lives in `nlp/`, `scripts/`
-// and `tests/`. Nothing under `src/` may import `@carlwr/zsh-core` (any
-// subpath), a Node builtin (`node:*` or bare), the Node ONNX runtime, the
-// YAML or tsx tooling, or a relative path that leaves `src/` (`../nlp`).
-// Type-only imports count too: the seam is absolute, and `nlp/` already
-// imports its types from `src/`, the sanctioned direction. `vite build` is
-// the other half of the fence — this test names the offender before the
-// bundle breaks.
+// The browser/Node seam: nothing under `src/` (the browser bundle) may
+// import the Node side. Type-only imports count too: the seam is absolute,
+// and `nlp/` already imports its types from `src/`, the sanctioned
+// direction. `vite build` is the other half of the fence — this test names
+// the offender before the bundle breaks.
 
 import { readdirSync, readFileSync } from 'node:fs';
 import { builtinModules } from 'node:module';

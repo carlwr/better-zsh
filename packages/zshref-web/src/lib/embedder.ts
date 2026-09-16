@@ -1,6 +1,7 @@
-// BGE-small embedder via @huggingface/transformers (ORT-Web). Lazy load
-// on first embed; runtime tries WebGPU first, falls back to WASM. Model
-// assets cached by transformers.js's default browser strategy.
+// BGE-small embedder via @huggingface/transformers (ORT-Web). Lazy load on
+// first embed; runs on WASM (transformers.js's browser default — no `device`
+// is passed). Model assets cached by transformers.js's default browser
+// strategy.
 
 import type { ProgressInfo } from '@huggingface/transformers';
 import { memoizedRetry } from './memoizedRetry';
@@ -51,7 +52,7 @@ const defaultPipeline = memoizedRetry(async (): Promise<FeatureExtractionPipelin
 /**
  * Embed a query the way the index build embeds a record (nlp/embedder-node.ts)
  * apart from the prefix: `query: ` here, `passage: ` there; CLS pooling,
- * unit-normalized. Returns a 384-dim Float32Array.
+ * unit-normalized. Returns a `DIMS`-long Float32Array.
  *
  * `pipe` is for tests using a local on-disk model; production omits it.
  */

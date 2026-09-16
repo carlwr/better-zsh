@@ -5,7 +5,7 @@
  * `resolver.test.ts` can't reach — e.g. "literal wins over stripped" for
  * `option` (needs a corpus *without* the stripped form), or `subscripted`
  * feedback for `special_param` (needs a known base record without the
- * subscript). Categories tested: `option`, `special_param`.
+ * subscript).
  */
 
 import { describe, expect, test } from "vitest"

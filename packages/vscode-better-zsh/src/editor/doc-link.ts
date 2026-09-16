@@ -3,7 +3,8 @@ import { dirname, isAbsolute, join } from "node:path"
 import { commentStart } from "@carlwr/zsh-core/analysis"
 import * as vscode from "vscode"
 
-// Matches: source <path> or . <path> (at command position)
+// `source <path>` / `. <path>` wherever a word starts — not only at command
+// position.
 const SOURCE_RE = /(?:^|\s)(?:source|\.)\s+(\S+)/g
 
 export class DocLinkProvider implements vscode.DocumentLinkProvider {
@@ -20,7 +21,7 @@ export class DocLinkProvider implements vscode.DocumentLinkProvider {
         const pathStr = match[1]
         if (!pathStr) continue
 
-        // Skip variable-only paths ($VAR, ${VAR})
+        // Any `$`-leading path is skipped, not expanded.
         if (/^\$/.test(pathStr)) continue
 
         const resolved = isAbsolute(pathStr) ? pathStr : join(docDir, pathStr)
@@ -39,7 +40,7 @@ export class DocLinkProvider implements vscode.DocumentLinkProvider {
   }
 }
 
-/** Pure function: extract source/. path tokens from a line (for testing) */
+/** `source`/`.` path tokens of a line; exported for tests. */
 export function extractSourcePaths(
   line: string,
 ): { path: string; start: number }[] {

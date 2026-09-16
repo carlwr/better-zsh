@@ -1,9 +1,5 @@
 name: Release zsh-core
 
-# Triggers:
-#   - tag push `zsh-core-v*` → publish to npm + JSR, attach the release assets
-#   - workflow_dispatch → dry-run unless input `dry_run` is false
-#
 # A real release needs tokenless OIDC granted to this repo for
 # @carlwr/zsh-core, on npm (Trusted Publisher) and on JSR (linked repo).
 

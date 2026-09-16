@@ -4,15 +4,12 @@
 // (`tests/nlp/contract.test.ts` regenerates both from the corpus).
 //
 // Layer split:
-// - **Bare** entries (~1700) are tested here via lookup-map only — fast, and
+// - **Bare** entries are tested here via lookup-map only — fast, and
 //   unconditional: a missing committed input is a defect, not a skip.
-// - **Decorated** entries (~4600) are not re-tested here. They need the
+// - **Decorated** entries are not re-tested here. They need the
 //   full embed+rank pipeline; their coverage is the mechanical sentence
-//   eval (`nlp/eval/mechanical.ts`; recorded, not a hard gate).
-//   Ranker drift is pinned by `tests/parity.test.ts` (byte-equal scoring on
-//   the parity-fixture queries) and embedder integration is exercised by
-//   `tests/sanity.test.ts` (decorated-style "kshoptionprint option" queries
-//   through the full pipeline).
+//   eval (`nlp/eval/mechanical.ts`; recorded, not a hard gate). Ranker
+//   drift: `tests/parity.test.ts`; embedder integration: `tests/sanity.test.ts`.
 
 import { readFile } from 'node:fs/promises';
 import { describe, expect, it } from 'vitest';

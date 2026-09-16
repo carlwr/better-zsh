@@ -1,7 +1,6 @@
-// The oracle runner: `rounded` pure, the empty-query shape without touching
-// any dependency, and — with the staged index and model — the `batch
-// --debug` response shape and key order on two non-holdout queries. The
-// numbers themselves are pinned by the parity and sanity fixtures, not here.
+// The oracle runner's shapes; the staged index and model are needed only
+// for the two non-holdout queries. The numbers themselves are pinned by the
+// parity and sanity fixtures, not here.
 
 import { loadCorpus } from '@carlwr/zsh-core';
 import { beforeAll, describe, expect, it } from 'vitest';

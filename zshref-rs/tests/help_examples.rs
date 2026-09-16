@@ -1,3 +1,6 @@
+//! Drift guard: every `Example:` block in `--help` is re-run and must match
+//! the real output.
+
 use std::process::Command;
 
 mod common;
@@ -15,12 +18,9 @@ fn tool_help_examples_match_cli_output() {
         );
         for (command, shown_output) in examples {
             let actual = run_example_command(command.clone());
-            // `docs` examples elide long `mdBody` strings to keep the
-            // help block within 80 cols (a real `mdBody` would force clap
-            // to wrap inside a JSON string and break syntax). Normalize
-            // `mdBody` to a sentinel on both sides — drift detection
-            // stays on every other field; `mdBody` content is verified
-            // separately by the docs renderer tests.
+            // Help elides wide `mdBody`s (why: `MDBODY_ENCODED_MAX`); normalize
+            // both sides to a sentinel so drift detection stays on every other
+            // field.
             assert_eq!(
                 normalize_mdbody(&shown_output),
                 normalize_mdbody(&actual),

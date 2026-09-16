@@ -244,7 +244,6 @@ const extraInputs: { readonly [K in DocCategory]?: ExtraInputs<K> } = {
   special_function: d => [`${d.name}_functions`],
 }
 
-/** Every record's id, its display form where it differs, and `extraInputs`. */
 function recordInputs<K extends DocCategory>(
   corpus: DocCorpus,
   cat: K,

@@ -8,7 +8,6 @@ import { categoriesJson } from '../../nlp/categories';
 import { assertCommittedJson, PATHS } from '../_helpers';
 
 describe('categories.json', () => {
-  // Regenerate and compare, or rewrite the committed file under UPDATE_CATEGORIES_JSON=1.
   it('categories_json_matches_committed_file', async () => {
     await assertCommittedJson(PATHS.categoriesJson, categoriesJson(), 'UPDATE_CATEGORIES_JSON');
   });

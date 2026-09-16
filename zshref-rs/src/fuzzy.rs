@@ -36,10 +36,9 @@ pub fn score(pattern: &str, haystack: &str) -> Option<u32> {
         return None;
     }
 
-    // Base 100; +200 for a match at position 0; +15 per adjacent matched
-    // pair; +10 per match on a word boundary (`_ - . /`, space, start);
-    // −1 per offset of the first match; −len/8 to favour denser hits.
-    // Computed in i64, clamped to ≥ 1.
+    // Additive weights; the length penalty favours denser hits. i64 so the
+    // penalties may take the sum below zero before the ≥ 1 clamp (`score`
+    // promises a positive value).
     let mut s: i64 = 100;
     if positions[0] == 0 {
         s += 200;

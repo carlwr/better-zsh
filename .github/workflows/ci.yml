@@ -140,6 +140,9 @@ jobs:
             libxtst6 \
             unzip \
             xvfb
+      # The VS Code download is deliberately uncached: a cache lets the test
+      # harness silently fall back to an already-downloaded version when the
+      # update service is unreachable; uncached, that fails hard.
       - run: xvfb-run -a pnpm testINTERACTIVE:electron
       # Container-only: VS Code's shell-env resolution defeats PATH isolation
       # on macOS.

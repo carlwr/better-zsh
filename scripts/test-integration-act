@@ -1,4 +1,6 @@
 #!/usr/bin/env zsh
+# Run one CI workflow job locally through `act`. Knobs: the ACT_* variables
+# below; further `act` flags pass through after `--`.
 
 emulate -L zsh
 setopt errexit nounset pipefail
@@ -7,7 +9,9 @@ setopt errexit nounset pipefail
 cd ${0:A:h}/..
 
 wf=.github/workflows/${ACT_WORKFLOW:-ci.yml}
+# a manual-dispatch-only job also needs ACT_EVENT=workflow_dispatch
 job=${ACT_JOB:-integration}
+# what `ubuntu-latest` maps to: act's documented medium image
 img=${ACT_RUNNER_IMAGE:-catthehacker/ubuntu:act-latest}
 
 die() { print -u2 -r -- "$@"; exit 1; }
@@ -29,6 +33,8 @@ if [[ ${1:-} == -- ]]; then
 	shift
 fi
 
+# Apple Silicon: match the local runtime and skip act's architecture warning;
+# linux/amd64 when GitHub-hosted fidelity matters more than speed or stability.
 arch=${ACT_CONTAINER_ARCHITECTURE:-}
 if [[ -z $arch && $(uname -s) == Darwin && $(uname -m) == arm64 ]]; then
 	arch=linux/arm64

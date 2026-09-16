@@ -1,20 +1,7 @@
-//! `--pretty` is universally a valid request:
-//!
-//!   * On JSON-emitting subcommands (docs / search / list / schema, plus
-//!     `info` which is always pretty), passing `--pretty` produces indented
-//!     output regardless of whether the flag sits before or after the
-//!     subcommand.
-//!   * On subcommands where pretty is meaningless (`batch`, `help`,
-//!     `completions`), passing `--pretty` must be silently accepted as
-//!     a no-op rather than rejected.
-//!
-//! Single matrix test pinning the invariant — the small added parse-time
-//! surface from `BuildMode::Parsing` (hidden `--pretty` on no-op subs) is
-//! what makes this rule hold; this test is the guard against regression.
-//!
-//! Differential tab-completion offers (only docs/search/list/schema) come
-//! from `BuildMode::Completions`. Completions are intentionally not
-//! integration-tested per project policy.
+//! `--pretty` is a valid request at any position on any subcommand: indented
+//! output where the subcommand emits JSON, a silent no-op elsewhere. The
+//! parse-time surface making that hold is `BuildMode::Parsing`; this matrix
+//! test is its regression guard.
 
 use std::process::Command;
 
@@ -98,9 +85,6 @@ fn pretty_is_valid_in_any_position_on_json_emitting_subs() {
                 out.status.code(),
                 String::from_utf8_lossy(&out.stderr),
             );
-            // Whenever --pretty was passed (in any position), OR the
-            // subcommand is always-pretty, stdout should be indented JSON.
-            // `info` is always-pretty; the others switch on the flag.
             let pretty_requested = matches!(pos, Position::Root | Position::Sub | Position::Both);
             let always_pretty = *sub == "info";
             let expect_pretty = pretty_requested || always_pretty;

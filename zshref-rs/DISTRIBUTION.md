@@ -12,8 +12,8 @@ How the `zshref` binaries reach users, and why in that shape. Mechanics: `.githu
 One tag, `zshref-v<version>`, feeds every channel.
 
 - crates.io — the source crate; `cargo install zshref --features mcp`
-- GitHub Release archives — one per target, both binaries plus license files, `SHA256SUMS`, build-provenance attestation; `cargo binstall zshref` reads them (`[package.metadata.binstall]` in `Cargo.toml`)
-- npm `@carlwr/zshref` — every target's binaries in one package, a launcher per bin (`npm/launch.js`); bins `zshref`, `zshref-mcp`
+- GitHub Release archives — one per target, with `SHA256SUMS` and a build-provenance attestation; `cargo binstall zshref` reads them (`[package.metadata.binstall]` in `Cargo.toml`)
+- npm `@carlwr/zshref` — every target's binaries in one package, a launcher per bin (`npm/launch.js`)
 - npm `@carlwr/zshref-mcp` — bin `zshref-mcp` over an exact-version dependency on the fat package; the `npx -y` form MCP clients want
 
 Targets: the workflow's build matrix. The same list sits in `tests/msrv.rs` and `scripts/third-party-notices` — three languages, no practical single source; a target change touches all three. macOS x64 stays while it costs nothing (cross-built on the arm64 runner; ~26 % of macOS Homebrew installs at the time of writing) and goes with its GitHub runner, expected around fall 2027. No musl: no request.

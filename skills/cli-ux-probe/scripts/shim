@@ -123,17 +123,16 @@ record=$(jq -nc \
 
 # Outer-subshell `>>` keeps the write fd open across the lock region. An
 # inner `>>` re-opens inside the lock and tears at ~20% under 50-way
-# concurrency (POSIX close-releases-all-locks).
+# concurrency (POSIX close-releases-all-locks). Re-stress after changing the
+# lock pattern.
 : >> "$trace"
 (
   zsystem flock "$trace"
   print -r -- "$record"
 ) >> "$trace"
 
-# concurrent first-burst marker writes are race-tolerant
-# failures append to $f_invalid for triage
-#
-# schema-check the first record; short-circuit thereafter via $trace.validated. Failures land in $trace.invalid. scripts/validate-trace re-checks all records post-hoc.
+# Schema-check the first record only (drift check); concurrent first-burst
+# marker writes are race-tolerant. Failures append to $f_invalid for triage.
 f_marker=$trace.validated
 if [[ ! -e $f_marker ]]
 then

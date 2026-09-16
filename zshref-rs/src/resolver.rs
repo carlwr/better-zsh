@@ -8,8 +8,8 @@ use crate::corpus::{Category, Corpus, DocCategory, Record};
 use serde::Serialize;
 use serde_json::{Map, Value, json};
 
-/// Return the non-empty remainder after stripping a case-insensitive `no_`
-/// or `no` prefix from `raw`. `None` if `raw` doesn't begin with either.
+/// Lowercased remainder — possibly empty — after stripping a case-insensitive
+/// `no_` or `no` prefix from `raw`. `None` if `raw` begins with neither.
 pub fn strip_no_prefix(raw: &str) -> Option<String> {
     let lower = raw.trim().to_ascii_lowercase();
     lower

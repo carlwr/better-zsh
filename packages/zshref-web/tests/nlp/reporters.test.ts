@@ -1,14 +1,11 @@
 // The reporters (scripts/*.ts) as entry points and as pipelines — so none
 // can rot unnoticed. Ungated: every tsx script in the manifest, spawned for
-// real — `--help` prints its usage, an unknown argument exits 2 — decided
-// before any asset loads. With the staged index and model: the report paths
-// the per-module tests do not reach, all on one capped bench (the first few
-// entries of every input) so the gated suite stays fast — the full-tier
-// dashboard (mechanical rows, hard slices, the `[qa]` row, mechanical
-// churn), the sweep as the reporter composes it, the diff of a
-// `BZ_TUNE_BASE` candidate, and the QA report with its `SUMMARY_JSON`.
-// Structure only: no assertion holds a number from a real eval, and nothing
-// rendered is printed (NLP.md: no committed scores; holdout never printed).
+// real — arguments are decided before any asset loads. With the staged
+// index and model: the report paths the per-module tests do not reach, all
+// on one capped bench (the first few entries of every input) so the gated
+// suite stays fast. Structure only: no assertion holds a number from a real
+// eval, and nothing rendered is printed (NLP.md: no committed scores;
+// holdout never printed).
 
 import { execFile } from 'node:child_process';
 import { readdirSync, readFileSync } from 'node:fs';

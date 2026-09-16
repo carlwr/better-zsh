@@ -1,7 +1,6 @@
 // The vector index: build from the corpus (embed the three retrieval-text
 // views per record), validate against the corpus it claims to be built from,
-// read and write `index.json`. The browser reads the file through
-// `src/lib/ranker/index-loader.ts`.
+// read and write `index.json`.
 
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
@@ -37,10 +36,9 @@ export interface BuildInputs {
 }
 
 /**
- * Embed every record's views (`passage: ` + text; the embedder owns the
- * batch shape, which is part of the vectors' numerics — the
- * `INDEX_EMBED_CHUNK` slices here only pace `onProgress`), re-normalize in
- * f32, stamp the corpus hash, validate. Minutes on CPU for the whole corpus.
+ * Embed every record's views. The embedder owns the batch shape, which is
+ * part of the vectors' numerics — the `INDEX_EMBED_CHUNK` slices here only
+ * pace `onProgress`. Minutes on CPU for the whole corpus.
  */
 export async function buildIndex({ corpus, rules, embedder, onProgress }: BuildInputs): Promise<VectorIndex> {
   const texts = corpusTexts(corpus, rules.synonyms.index_groups);
@@ -80,10 +78,8 @@ export async function buildIndex({ corpus, rules, embedder, onProgress }: BuildI
 }
 
 /**
- * Is `index` an index of this corpus under these rules? Checks header
- * before records: version, model, dims, corpus hash, the normalized flag,
- * record count, then per record the full retrieval text and every view's
- * length. No unit-length check — the flag is trusted.
+ * Is `index` an index of this corpus under these rules? No unit-length
+ * check — the `normalized` flag is trusted.
  */
 export function validateIndex(index: VectorIndex, corpus: DocCorpus, rules: Rules): IndexValidation {
   const fail = (reason: string): IndexValidation => ({ ok: false, reason });

@@ -20,7 +20,7 @@ unzip -q $vsix -d $unz
 pkg=$unz/extension/package.json
 [[ -f $pkg ]] || die "bad vsix ($pkg)"
 
-# Read the bundled manifest to recover the versioned extension dir name.
+# VS Code extensions-dir layout: `<publisher>.<name>-<version>`.
 ext_id=$(node -e 'const fs = require("node:fs"); const pkg = JSON.parse(fs.readFileSync(process.argv[1], "utf8")); process.stdout.write(`${pkg.publisher}.${pkg.name}-${pkg.version}`)' "$pkg")
 exts=$tmp/exts
 mkdir -p $exts

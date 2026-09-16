@@ -84,7 +84,8 @@ function parseSeq(src: string, start: number, stop?: ")"): ParseResult {
     const macro = parseMacroAt(src, pos)
     if (!macro) {
       // Vendored docs sometimes contain literal parenthesized text inside a
-      // macro arg; only an unmatched outer `)` should close the arg.
+      // macro arg (`tt(AUTO_CD) (tt(-J))`); only an unmatched outer `)`
+      // should close the arg.
       if (src[pos] === "(") parenDepth++
       if (src[pos] === ")" && parenDepth > 0) parenDepth--
       text += src[pos]

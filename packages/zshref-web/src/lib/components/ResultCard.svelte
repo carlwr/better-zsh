@@ -1,6 +1,6 @@
 <script lang="ts">
   // Presentational: all input via props, so its structure is unit-testable in
-  // isolation (tests/ResultCard.svelte.test.ts).
+  // isolation.
   import type { RankedMatch } from '$lib/ranker/types';
   import { recordHref } from '$lib/view';
   import { renderInline } from '$lib/markdown';

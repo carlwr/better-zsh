@@ -1,7 +1,6 @@
-// Node embedder over the local model: shape and unit norm, determinism,
-// truncation of an over-long input, and padded batches reproducing the
-// single-text vectors. Skipped without the model (`scripts/fetch-model`);
-// `normalizeF32` and the fetch script's model-id pin always run.
+// Node embedder over the local model; skipped without it
+// (`scripts/fetch-model`). `normalizeF32` and the fetch script's model-id
+// pin always run.
 
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';

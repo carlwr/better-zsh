@@ -1,10 +1,3 @@
-/**
- * @module
- * Parsed zsh doc corpus — eager, cached, immutable.
- *
- * Resolver layer (raw → `Documented<K>`) lives next door in `resolver.ts`.
- */
-
 import { readFileSync } from "node:fs"
 import { join } from "node:path"
 import { cached, cachedUnary } from "@carlwr/typescript-extra"
@@ -75,9 +68,7 @@ type CategoryLoader = {
   [K in DocCategory]: (gn: GetNodes) => readonly DocRecordMap[K][]
 }
 
-// Pre-parse fixups for known upstream-doc typos, applied to the shared-file
-// parse. Direct extractor callers (tests) get the same input via each
-// extractor's own string branch.
+// Pre-parse fixups for known upstream-doc typos.
 const fileFixups: Readonly<
   Partial<Record<CorpusYodlFile, (yo: string) => string>>
 > = {
@@ -183,9 +174,9 @@ function buildCategoryMap<K extends DocCategory>(
 
 /** Load the full parsed doc corpus. Eager, cached, immutable. */
 export const loadCorpus: () => DocCorpus = cached(() => {
-  // Parse each .yo file at most once: several categories share a file (expn.yo
-  // covers 6 categories, grammar.yo and params.yo 2 each), and parseNodes is
-  // the dominant cost. `cachedUnary` keeps the lookup lazy and per-file.
+  // Parse each .yo file at most once: several categories share a file, and
+  // parseNodes is the dominant cost. `cachedUnary` keeps the lookup lazy and
+  // per-file.
   const getNodes: GetNodes = cachedUnary(file => {
     const raw = readFileSync(join(dataDir, file), "utf8")
     return parseNodes(fileFixups[file]?.(raw) ?? raw)

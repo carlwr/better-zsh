@@ -158,7 +158,7 @@ function verify(asset: Asset, root: string): string {
   return dataHash
 }
 
-/** Stage → tar → unpack → verify → checksum; returns the verified corpus identity. */
+/** Returns the verified corpus identity. */
 function pack(asset: Asset): string {
   const tarball = join(outDir, `${baseOf(asset)}.tar.gz`)
   const tmp = mkdtempSync(join(tmpdir(), `${baseOf(asset)}-`))

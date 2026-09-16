@@ -1,7 +1,4 @@
 // The three rule files as one bundle: their shapes by name, and the loader.
-// The browser passes the fetched `rules/*.json` through `loadRules` once at
-// startup; the Node side feeds it the YAML (nlp/rules-load.ts). The ranker
-// reads the result as `Rules`.
 
 import type { z } from 'zod';
 

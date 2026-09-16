@@ -1,9 +1,5 @@
 name: Release zshref (Rust crate)
 
-# Triggers:
-#   - tag push `zshref-v*` → GitHub Release archives, npm, crates.io
-#   - workflow_dispatch → dry-run unless input `dry_run` is false
-#
 # A real release needs, granted to this repo and this workflow file:
 #   - crates.io Trusted Publishing for `zshref`
 #   - npm Trusted Publishing for `@carlwr/zshref` and `@carlwr/zshref-mcp`
@@ -74,16 +70,12 @@ jobs:
         id: mode
         run: echo "publish=${{ github.event_name == 'push' || inputs.dry_run == false }}" | tee -a "$GITHUB_OUTPUT"
 
-      - name: Hygiene (fmt + clippy)
-        run: make cli-check
+      - run: make cli-check
 
-      - name: Tests (fixture parity + drift-guards + fuzz)
-        run: make cli-test
+      - run: make cli-test
 
-      # Vendors the JSON, then proves the packaged tarball compiles standalone
-      # with every feature on.
-      - name: Vendored-mode package check
-        run: make cli-package
+      # Proves the packaged tarball compiles standalone.
+      - run: make cli-package
 
       # The build matrix has no Node: the vendored data travels as an artifact.
       # upload-artifact v5: the newest whose upload protocol act's artifact
@@ -127,8 +119,8 @@ jobs:
           name: vendored-data
           path: zshref-rs/data
 
-      # The x64 binaries are smoke-run on the arm64 runner; a no-op where
-      # Rosetta is already installed.
+      # `archive-bins` smoke-runs the x64 binaries on the arm64 runner; a no-op
+      # where Rosetta is already installed.
       - if: matrix.target == 'x86_64-apple-darwin'
         run: sudo softwareupdate --install-rosetta --agree-to-license
 
@@ -138,7 +130,6 @@ jobs:
           ZSHREF_DATA_SOURCE: vendored
         run: cargo build --release --locked --features mcp --target ${{ matrix.target }}
 
-      # Runs every binary (`--version`), then packs the archive.
       - name: Archive
         shell: bash
         run: zshref-rs/scripts/archive-bins ${{ matrix.target }} zshref-rs/.aux/dist

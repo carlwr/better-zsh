@@ -3,12 +3,7 @@
  * Render-quality heuristics over the rendered markdown corpus. Each entry
  * is a shape-detector returning the prose / fence-open lines that matched
  * in a given record body. A drift test pins the matched set against a
- * frozen `DocPieceId` offender list.
- *
- * No structural distinction between "zero-tolerance" and "calibrated"
- * patterns: a heuristic with no listed offenders is zero-tolerance by
- * virtue of the empty list. New offender → test fails; resolved offender
- * no longer matching → test also fails (positive drift prompts list shrink).
+ * frozen `DocPieceId` offender list (contract: `known-offenders.ts`).
  */
 
 import { moduleNames } from "../../docs/taxonomy.ts"
@@ -165,10 +160,10 @@ const flagKeyedDefText = {
  * Standalone paragraph that *looks like a heading*: short, starts capital,
  * no terminal punctuation, no embedded sentence structure.
  *
- * Common source: upstream Yodl uses `em(Title)` as a fake section title
- * inside an item body (Yodl has no in-body `sect()`), and the renderer
- * strips the `em(...)` wrapper to bare title-cased text. Also catches
- * "see X" reference paragraphs that text-stitching failed to join.
+ * Common source: upstream `em(Title)` fake section titles that the
+ * standalone-`em()` heading promotion cannot reach (chained
+ * `em(...)tt(...)em(...)`). Also catches "see X" reference paragraphs that
+ * text-stitching failed to join.
  *
  * Intentionally loose; some real prose flags too — those go on the
  * offender list.
@@ -201,10 +196,6 @@ const paramShouldBeCoded = {
   },
 } satisfies Heuristic
 
-// Module-path tails for the bare-prefix regex below: every entry is what
-// follows `zsh/` in a canonical `ModuleName`. Multi-segment paths like
-// `db/gdbm` and `net/socket` are preserved verbatim so the regex (which
-// matches `/`-separated segments after `zsh/`) can hit them.
 const ZSH_MODULES: ReadonlySet<string> = new Set(
   moduleNames.map(m => m.slice("zsh/".length)),
 )
@@ -281,7 +272,7 @@ const moduleShouldBeCoded = {
   },
 } satisfies Heuristic
 
-// --- code-span scanner (shared with `unbalanced-backticks`) -----------------
+// --- code-span scanner ------------------------------------------------------
 
 function hasUnmatchedCodeSpanOpener(line: string): boolean {
   let i = 0

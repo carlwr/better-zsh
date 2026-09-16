@@ -67,10 +67,4 @@ If you touch tests, look for conciseness wins unless that would hide intent.
 
 ## Testing tools
 
-Examples of established patterns:
-
-- Vitest for unit tests.
-- Mocha for Electron tests.
-- `fast-check` via `@fast-check/vitest`.
-
-When property-based-test primitives are unavailable in a given version, fall back to constructive primitives (`fc.mapToConstant(...)` + `fc.array(...)`, etc.).
+Established tools: the workspace-root `devDependencies`. When property-based-test primitives are unavailable in a given version, fall back to constructive primitives (`fc.mapToConstant(...)` + `fc.array(...)`, etc.).

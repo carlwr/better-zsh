@@ -1,6 +1,5 @@
-// Build side of the lookup map: drift against the committed JSON, and the
-// canonical-form coverage over the asymmetric per-category surface-form
-// shapes. Pure on corpus + resolver — no staged assets, always runs.
+// Build side of the lookup map. Pure on corpus + resolver — no staged
+// assets, always runs.
 
 import { loadCorpus } from '@carlwr/zsh-core';
 import { describe, expect, it } from 'vitest';
@@ -11,7 +10,6 @@ import { assertCommittedJson, PATHS } from '../_helpers';
 const corpus = loadCorpus();
 
 describe('lookup map', () => {
-  // Regenerate and compare, or rewrite the committed file under UPDATE_LOOKUP_MAP=1.
   it('lookup_map_matches_committed', async () => {
     await assertCommittedJson(PATHS.lookupMap, buildLookupMap(corpus), 'UPDATE_LOOKUP_MAP');
   });

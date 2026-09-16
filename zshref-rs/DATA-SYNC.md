@@ -5,7 +5,7 @@ read-when: cross-repo TS→Rust data-sync design; dual-mode build; vendoring
 
 # Cross-repo data-sync design — TS → Rust
 
-> **Status.** Landed as the dual-mode build (option 6 below). This file records the rationale and trade-offs; the mechanics live in `build.rs` (top doc-comment + `data_source` selection) and `src/corpus.rs` (`cfg`-gated path macros). Extraction-day cleanup items live in `EXTRACTION.md`.
+> **Status.** Landed as the dual-mode build (option 6 below). This file records the rationale and trade-offs. Extraction-day cleanup items live in `EXTRACTION.md`.
 
 ## Problem shape
 
@@ -13,7 +13,7 @@ The Rust binaries embed the corpus (~1 MB at time of writing) as JSON via `inclu
 
 A second generated file rides along: the resolver conformance fixture. Test input, not embedded — `cargo test` reads it from wherever the corpus JSONs come from, and it ships in the `.crate` because the tests do.
 
-zsh-core releases both as assets on its release tag — one tarball for the corpus JSON with its schemas, one for the fixture, each with a checksum file, both carrying the same `dataHash` (`packages/zsh-core/scripts/pack-release.ts`). Vendoring is those two assets and nothing else.
+zsh-core releases both as assets on its release tag (`packages/zsh-core/scripts/pack-release.ts`). Vendoring is those two assets and nothing else.
 
 Two lifecycles to satisfy:
 
@@ -46,7 +46,7 @@ The vendored half of (5) for post-extraction, combined with monorepo-path auto-d
 
 - Pre-release, dev: nothing changes — monorepo path auto-detected, no `data/` needed.
 - Pre-release, publish: the vendor target populates `data/`; `cargo publish` ships it.
-- Post-extraction: the monorepo branch becomes dead code (deletable); the vendored branch stays.
+- Post-extraction: vendored mode only.
 
 ### Why auto-detect, not a feature flag?
 
@@ -54,11 +54,10 @@ A feature flag (`--features vendored`) would need `default-features = ["vendored
 
 ### Mechanics — see code
 
-- `build.rs` top doc-comment summarises the data-source selection rules; the implementation enforces them, and its `rerun-if-*` directives say when a mode switch is re-detected.
-- `src/corpus.rs` uses `cfg`-gated path macros so each binary contains bytes from exactly one source; the fixture's path fn beside them follows the same selection.
-- Vendoring and the standalone package check: the repo-root `Makefile`.
-
-Gitignored `data/` still enters the published `.crate`: `Cargo.toml`'s `include` list overrides `.gitignore` for packaging.
+- `build.rs` — data-source selection, and when a mode switch is re-detected
+- `src/corpus.rs` — `cfg`-gated paths: each binary embeds bytes from exactly one source; the fixture path follows the same selection
+- `Cargo.toml` `include` — ships the gitignored `data/` in the `.crate`
+- vendoring and the standalone package check: the repo-root `Makefile`
 
 ## Testability
 
@@ -68,7 +67,7 @@ Both modes have make targets (the repo-root `Makefile`); `make cli-package` is t
 
 Two kinds of drift to worry about:
 
-- **TS source → vendored `data/`.** Anyone who edits TS source but forgets to re-vendor would ship stale data. Guard: CI builds and tests in vendored mode and also builds the publishable tarball standalone. Stale vendored data surfaces as a test or package-build failure before publish.
+- **TS source → vendored `data/`.** Anyone who edits TS source but forgets to re-vendor would ship stale data. Guard: the vendored-mode test and standalone package make targets — CI runs both, the release workflow the package check — so stale data fails before publish.
 - **Schema drift (Rust structs vs. TS JSON shape).** Taxonomy order and category→file mapping load directly from `index.json`, so those tables have no Rust-side mirror to drift. The compile-time `include_bytes!` filename inventory in `corpus.rs` must cover every indexed file; the corpus loader and its tests fail otherwise. Per-record field-shape drift is covered by record-level Rust tests and the schema validation of every tool response in the test suite.
 - **Resolver drift (the one behaviour mirror).** The fixture pins what the TS resolvers answer, per category, for pinned and generated inputs; `resolver.rs`'s test replays it. Its `dataHash` must equal the embedded `index.json`'s, so a fixture from another corpus build fails before any case runs.
 

@@ -1,8 +1,5 @@
-// The tuning trio (nlp/eval/{tune,sweep,diff}.ts): the ablation helpers,
-// the `BZ_TUNE_BASE` override syntax knob by knob, churn and the diff
-// report on hand-made items, the sweep marks and row layout on synthetic
-// rows, the box table's characters and alignment, and the reports'
-// structure over the parity fixture's miniature index (no model). The
+// The tuning trio (nlp/eval/{tune,sweep,diff}.ts) on hand-made items,
+// synthetic rows and the parity fixture's miniature index (no model); the
 // reporters over the staged assets are smoked in reporters.test.ts. No
 // assertion holds a number from a real eval.
 

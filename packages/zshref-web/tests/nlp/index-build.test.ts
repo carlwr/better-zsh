@@ -1,7 +1,5 @@
-// Index build: f32 number printing, `writeIndex` → `readIndex` round trip,
-// and validation — its check order on a synthetic index (pure, always runs),
-// and `validate_rejects_tampered_index` on the built index (skipped until
-// `build:index` has run).
+// Pure on a synthetic index, except `validate_rejects_tampered_index` on
+// the built one (skipped until `build:index` has run).
 
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';

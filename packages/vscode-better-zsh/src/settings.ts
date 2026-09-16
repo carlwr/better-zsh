@@ -7,7 +7,7 @@ import {
   zshPathSetting,
 } from "./settings-metadata"
 
-// ── Config keys (constructed from config section; only this module knows the suffixes) ──
+// ── Config keys ──
 
 const ZSH_PATH_KEY = settingFullKey(zshPathSetting)
 const DIAGNOSTICS_ENABLED_KEY = settingFullKey(diagnosticsEnabledSetting)

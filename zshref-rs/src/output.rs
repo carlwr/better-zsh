@@ -97,10 +97,6 @@ fn write_to_stderr(err: &clap::Error) {
     };
 }
 
-/// Mirror the relevant `anstream::AutoStream` color gates:
-///   NO_COLOR (non-empty)          → never
-///   CLICOLOR_FORCE (non-0 value)  → always
-///   otherwise                     → destination stream `.is_terminal()`
 fn stdout_wants_color() -> bool {
     stream_wants_color(std::io::stdout().is_terminal())
 }
@@ -109,6 +105,8 @@ fn stderr_wants_color() -> bool {
     stream_wants_color(std::io::stderr().is_terminal())
 }
 
+/// Mirrors `anstream::AutoStream`'s color gates: clap's `err.print()` goes
+/// through anstream, so the two paths must agree.
 fn stream_wants_color(is_terminal: bool) -> bool {
     if env_nonempty("NO_COLOR") {
         return false;

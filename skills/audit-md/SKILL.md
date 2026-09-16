@@ -9,20 +9,7 @@ Audit and fix maintainer-audience `.md` files against the project's markdown sty
 
 ## META: about this skill
 
-> Source of truth lives under `$REPO_ROOT/skills/audit-md/`. For discoverability from different agent tools, symlinks point into this directory from tool-specific roots:
->
-> ```
-> $REPO_ROOT/.agents/skills/audit-md
-> $REPO_ROOT/.claude/skills/audit-md
-> $REPO_ROOT/.cursor/rules/audit-md.mdc
-> $REPO_ROOT/.opencode/skills/audit-md
-> ```
->
-> <!-- Enumerating these concrete paths is deliberate: they are not easily inferrable. -->
->
-> **When editing:** always write to the physical files under `$REPO_ROOT/skills/audit-md/`, even if the path you see came via a symlink.
->
-> **Procedural-only:** this skill must remain purely procedural — no depending on content owned by other docs. Policy and rationale: `STYLE-MD.md`.
+> Source of truth: `$REPO_ROOT/skills/audit-md/`; tool-specific roots reach it through symlinks (`scripts/list-repo-symlinks`). Edit the physical files only, even if the path you see came via a symlink.
 
 ## Procedure
 

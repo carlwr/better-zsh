@@ -301,11 +301,7 @@ function renderSeq(nodes: YNodeSeq, mode: RenderMode): string {
   return nodes.map(node => renderNode(node, mode)).join("")
 }
 
-/**
- * Macros that render to the empty string regardless of args — union of the
- * invisible set (above) and the structural delimiters that, unlike invisible
- * macros, DO break paragraph-bound scans around `em(...)`.
- */
+/** Macros that render to the empty string regardless of args. */
 const EMPTY_RENDER_MACROS: ReadonlySet<string> = new Set([
   ...INVISIBLE_MACROS,
   ...STRUCTURAL_EMPTY_MACROS,

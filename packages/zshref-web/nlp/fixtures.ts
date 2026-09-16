@@ -1,6 +1,5 @@
 // The two committed NLP fixtures: their shapes, generators, and the checks
-// over them. `tests/nlp/fixtures.test.ts` drift-checks and (under
-// `UPDATE_*_FIXTURE=1`) rewrites the files.
+// over them.
 //
 // - parity-fixture.json — a closed arithmetic contract: it ships the
 //   miniature index it was ranked against alongside the pre-computed

@@ -1,12 +1,7 @@
 //! Property-based tests for the `zshref` CLI (proptest).
 //!
 //! Each property uses `ProptestConfig::with_cases(...)` to keep the whole
-//! file under ~15s wall-clock. Saved failure seeds are in
-//! `tests/properties.proptest-regressions` and auto-replayed before any
-//! novel cases.
-//!
-//! Deterministic, non-property `#[test]` cases live alongside in
-//! `tests/cli_invariants.rs`.
+//! file under ~15s wall-clock.
 
 mod common;
 
@@ -20,9 +15,8 @@ use serde_json::Value;
 /// `feedback: { kind: "input-negated" }`.
 const KNOWN_OPTIONS: &[&str] = &["AUTOCD", "AUTO_CD", "NOTIFY", "PROMPT_CR", "CORRECT"];
 
-/// A small strategy producing zsh keys with a high docs hit-rate.
-/// Covers the prompt-listed union (options, builtins, reserved words,
-/// redir sigils). Free fuzzing is covered by the smoke tests below.
+/// A small strategy producing zsh keys with a high docs hit-rate across
+/// categories. Free fuzzing is covered by the smoke tests below.
 fn known_raw() -> impl Strategy<Value = &'static str> {
     prop_oneof![
         Just("AUTO_CD"),
@@ -72,9 +66,7 @@ proptest! {
     /// docs round-trip: when `docs --key=KEY` resolves, the first hit's
     /// canonical `(category, id)` re-queries to the same id under
     /// `docs --category=C --key=ID` — pins direct-hit precedence (see
-    /// DESIGN.md §"`lookupRaw`: direct ∥ resolver"). The strategy covers
-    /// reserved words (`while`), complex commands (`[[`), redir sigils
-    /// (`<<<`), builtins (`echo`), and options. Property-level companion
+    /// DESIGN.md §"`lookupRaw`: direct ∥ resolver"). Property-level companion
     /// to the exhaustive `docs_roundtrip_over_corpus` in `cli_invariants.rs`.
     #[test]
     fn docs_self_roundtrip(key in known_raw()) {
@@ -83,8 +75,6 @@ proptest! {
         for m in matches {
             let cat = m.get("category").and_then(Value::as_str).expect("category");
             let id = m.get("id").and_then(Value::as_str).expect("id");
-            // Re-query with `--category` set to the resolved category;
-            // direct lookup of the canonical id must round-trip.
             let r = run_json(&["docs", "--key", id, "--category", cat]);
             let (rm, _, _) = assert_envelope(&r);
             prop_assert!(

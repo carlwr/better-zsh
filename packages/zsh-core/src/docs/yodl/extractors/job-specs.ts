@@ -19,7 +19,7 @@ const SPEC_TABLE: readonly { key: string; kind: JobSpecKind }[] = [
 ]
 
 // Header shapes mix literal (`%%`, `%-`) and templated (`%)var(number)`)
-// forms; map to canonical key by header position — six-form set is closed.
+// forms; map to canonical key by header position — the form set is closed.
 export function parseJobSpecs(yo: YodlSrc): readonly JobSpecDoc[] {
   return extractFirstSitemList(extractSectBody(yo, SECTION)).flatMap(
     (item, i) => {

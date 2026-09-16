@@ -1,9 +1,7 @@
 # yaml-language-server: $schema=./schema/tuning.schema.json
 #
-# Rank-time constants (no re-embed on change). The math + prior-encoding live
-# in src/lib/ranker/rank.ts; the structure encodes the priors: the third semantic weight is
-# derived (sum 1 by construction), boosts are an ordered base+increments chain,
-# overlap saturates smoothly.
+# Rank-time constants (no re-embed on change). The math: src/lib/ranker/rank.ts;
+# the structure here encodes the priors — each section says which.
 
 semantic_weights:
   # Mix over the embedding views. `expanded` is derived as 1 − body − structured
@@ -19,8 +17,8 @@ boosts:
   # Ordered by reliability via non-negative increments, keeping
   # category ≤ exact_word ≤ resolver.
   category: 0.01             # query names the record's category
-  exact_word_increment: 0.06 # query word equals id/display → exact_word 0.07
-  resolver_increment: 0.02   # corpus-aware resolver hit    → resolver   0.09
+  exact_word_increment: 0.06 # query word equals id/display
+  resolver_increment: 0.02   # corpus-aware resolver hit
   # Lexical overlap, smoothly saturated (asymptote `scale`, half at `half_sat`).
   word_overlap:
     scale: 0.30

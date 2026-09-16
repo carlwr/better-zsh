@@ -9,16 +9,7 @@ Probe a CLI for UX problems: agents-under-test (AUTs) use it; orchestrator obser
 
 ## META
 
-> Source: `$REPO_ROOT/skills/cli-ux-probe/`. Tool-discovery symlinks:
->
-> - `$REPO_ROOT/.agents/skills/cli-ux-probe`
-> - `$REPO_ROOT/.claude/skills/cli-ux-probe`
-> - `$REPO_ROOT/.cursor/rules/cli-ux-probe.mdc`
-> - `$REPO_ROOT/.opencode/skills/cli-ux-probe`
->
-> <!-- Enumerating these concrete paths is deliberate: they are not easily inferrable. -->
->
-> Edit the physical files only.
+> Source: `$REPO_ROOT/skills/cli-ux-probe/`; tool-specific roots reach it through symlinks (`scripts/list-repo-symlinks`). Edit the physical files only.
 >
 > `_meta/` holds meta-test artifacts for exercising and auditing this skill — orchestrators must not list or read files under `_meta/` unless the human user explicitly directs them to.
 >
@@ -173,7 +164,7 @@ PATH/leakage answers land in the AUT's final message **text**, not the trace —
 ## Trace
 
 - JSONL, one record per shim invocation. Canonical shape: `scripts/trace.schema.json`.
-- Shim validates the **first** record per session (drift check; later calls short-circuit via a `<trace>.validated` marker). Failures: `<trace>.invalid` — orchestrator gates on its presence.
+- Shim schema-checks the first record per session; failures land in `<trace>.invalid` — orchestrator gates on its presence.
 - `scripts/validate-trace <trace>` re-validates post-hoc (thin wrapper over `check-jsonschema`). Run for thorough per-record QA.
 - `parent_cmd` is best-effort via `ps`:
   - informative when caller is `<shell> -c '<line>'` (typical agent shell tools)
@@ -184,7 +175,7 @@ PATH/leakage answers land in the AUT's final message **text**, not the trace —
   - trace file is JSON-clean: jq encodes control bytes as `\u00xx` automatically, so the trace itself is safe even when the AUT pumped binary stdin
   - `jq -r` un-escapes — raw control bytes / ANSI then reach the consumer. Strip downstream when feeding to a terminal/grep: `tr -d '\000-\010\013-\037'`, or `jq -R 'gsub("[\\x00-\\x1f]"; "?")'`
 - Shim buffers I/O — good for noninteractive CLIs, not stream timing or stdout/stderr interleaving.
-- Concurrent writes serialized via `zsystem flock`; validated at 50-way concurrency. Re-stress if you change the lock pattern.
+- Concurrent invocations are safe (writes are serialized).
 
 ### Analysis (jq)
 
@@ -232,7 +223,7 @@ Filters: `scripts/post-help-top`, `scripts/post-help-sub` — jq scripts, usage 
 
 ### PATH-routing failure
 
-If `$TRACE` is empty after a probe, the AUT invoked **a different same-named binary** instead of the shim. Step 6 of the canonical session shape catches this; to diagnose:
+If `$TRACE` is empty after a probe, the AUT invoked **a different same-named binary** instead of the shim. The canonical session shape's post-eval check catches this; to diagnose:
 
 ```sh
 command -v <cli-name>            # what the AUT's PATH resolves to (run via the runner)
@@ -299,13 +290,13 @@ Each session self-contained. Artifact = committed CLI change, not transcript. Re
 
 ## Files
 
-- `scripts/shim` — generic zsh trace wrapper; symlinked under target's name
-- `scripts/trace.schema.json` — JSON Schema for trace records (canonical spec)
-- `scripts/validate-trace` — thin `check-jsonschema` invoker; non-zero exit on any malformed line
-- `scripts/post-help-top`, `scripts/post-help-sub` — jq filter files: emit AUT invocations after the first top-level / per-subcommand help call
-- `runners/<name>.md` — per-runner invocation, isolation, model + system-prompt control, leakage caveats
+Each file says what it is (script header, schema `description`).
 
-Adding a runner: write `runners/<name>.md`; no edits here.
+- `scripts/shim`
+- `scripts/trace.schema.json`
+- `scripts/validate-trace`
+- `scripts/post-help-top`, `scripts/post-help-sub`
+- `runners/<name>.md` — per-runner invocation, isolation and caveats; adding a runner means adding one, no edits here
 
 ## Security - rules
 

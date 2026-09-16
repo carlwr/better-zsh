@@ -3,10 +3,8 @@ emulate -LR zsh
 set -eu -o pipefail
 zmodload zsh/stat
 #
-# Download the local BGE-small ONNX model + tokenizer files into
-# .aux/model/ (this package). That directory is gitignored and is the one
-# input not reproducible from this repo; the Node embedder reads it for the
-# index build and for every model-gated test.
+# Download the BGE-small ONNX model + tokenizer files into .aux/model/ (this
+# package; gitignored) — the one input not reproducible from this repo.
 
 me=${0:t}
 webDir=${0:A:h:h}

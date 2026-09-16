@@ -1,8 +1,3 @@
-/**
- * Table-driven extractors composing `parseModuleByRegions` or
- * `mergeBuiltinsByName(parseModuleBuiltins(...))`. Non-trivial modules keep
- * their own files; truly flat ones live in `trivial.ts`.
- */
 import type { CorpusYodlFile } from "../../../source-files.ts"
 import type { ModuleName } from "../../../taxonomy.ts"
 import type { BuiltinDoc, CondOpDoc, ShellParamDoc } from "../../../types.ts"

@@ -1,12 +1,8 @@
 // The tuning dashboard: every rank-time signal the manual tuning loop
-// watches, in one report — the curated sentence split scores, the sanity
-// invariants, the bare contract, the mechanical component and the combined
-// blend, the churn of a candidate tuning against the committed one, the
-// embedder-vs-boosts ablation, the per-category and hard-slice tables, and
-// the held-out QA score as an overfit watch. Every number comes from the
-// same eval functions the tests use, so the dashboard cannot drift from
-// them; the QA row too is computed in-process (nlp/eval/qa-score.ts), over
-// the dashboard's own tuning.
+// watches, in one report (`Dashboard`); holdout and QA are overfit watches.
+// Every number comes from the same eval functions the tests use, so the
+// dashboard cannot drift from them; the QA row too is computed in-process
+// (nlp/eval/qa-score.ts), over the dashboard's own tuning.
 //
 // Tiers: `fast` skips the mechanical layer and the QA (both embed thousands
 // of queries) and renders their rows as skipped; `cap` keeps every layer but

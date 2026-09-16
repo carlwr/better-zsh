@@ -1,6 +1,5 @@
 // Artifact gating, on-disk loaders and the compare-or-rewrite helper shared
-// by the tests. The fixture shapes live with their generators in
-// nlp/fixtures.ts; the loaders are re-exported here.
+// by the tests.
 
 import { existsSync } from 'node:fs';
 import { readFile, writeFile } from 'node:fs/promises';

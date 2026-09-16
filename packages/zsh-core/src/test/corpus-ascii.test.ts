@@ -8,9 +8,8 @@
  *   `\n` and `\t`; Unicode allowed (upstream prose carries em-dashes etc.).
  *
  * Rationale: id strings must be shell-safe and URL/CLI-friendly. The Rust
- * fuzzy scorer (`zshref-rs/src/fuzzy.rs`) is ASCII-only; non-ASCII
- * identifiers would silently fall through to "no fuzzy match" for the
- * affected records.
+ * crate's fuzzy scorer is ASCII-only; non-ASCII identifiers would silently
+ * fall through to "no fuzzy match" for the affected records.
  */
 
 import { describe, expect, test } from "vitest"

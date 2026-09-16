@@ -1,32 +1,19 @@
 # AGENTS.md — `@carlwr/zsh-core`
 
-Library:
-
-- typed zsh-knowledge corpus
-- brand types
-- render
-- analysis
-- resolver
-
 ## Layout rules
 
 - `src/docs/yodl/core/` — shared Yodl parsing machinery only.
 - `src/docs/yodl/extractors/` — corpus-specific extraction into zsh doc records.
+- `src/docs/yodl/extractors/modules/` — quirky modules get their own file; table-driven region modules go in `by-regions.ts`, flat lists in `trivial.ts`.
 - `src/analysis/facts.ts` — public fact-model surface. Keep scanner mechanics and heuristics in sibling modules.
 
 ## Package imports
-
-Prefer explicit subpaths so dependency arrows stay visible and rollups stay legible.
 
 Canonical subpath list: `package.json` `exports`; per-subpath surface: `dist/types/*.d.ts`.
 
 ## Gotchas
 
-**Yodl macro args can contain literal parentheses:** a `)` only closes the current macro arg when it closes the outermost level. Matters for corpus forms like `tt(AUTO_CD) (tt(-J))`.
-
-**Yodl macro detection allows digit-adjacent macros:** vendored docs contain forms like `1tt(})`, so a preceding digit must not suppress macro parsing even though a preceding letter or underscore should.
-
-**Static entrypoint fence:** a test in `src/test/` walks the import graph from the static entrypoints and rejects reached files that import execution/network/env APIs. The whole public surface is execution-free — hosts that run a zsh binary own that code (the extension's `zsh-exec.ts`), never zsh-core.
+**Static entrypoint fence:** the whole public surface is execution-, network- and env-free; hosts that run a zsh binary own that code, never zsh-core. Enforced by a test in `src/test/`.
 
 ## Reference-dump review workflow
 
@@ -35,7 +22,7 @@ When adding or changing parsing/rendering, dump the full rendered corpus and ins
 - Prefer actual zsh usage over raw upstream notation.
 - Option docs: `zsh` forms first, category last, plain-zsh defaults over emulation forms.
 - Preserve visible prose unless there is a strong reason to change user-facing output.
-- Generate: use build script `dump:refs [OUTDIR]` (default `.aux/refs`). Diff dumps before/after edits to spot regressions.
+- Generate: `dump:refs [OUTDIR]`. Diff dumps before/after edits to spot regressions.
 - Review: for one-category changes read that category's file; for cross-cutting changes scan `all.md`.
-- Drift catchers: `src/test/render/heuristics.ts` (rules) + `known-offenders.ts` (typed frozen list). Empty list = zero-tolerance; non-empty entries carry per-entry justifications.
+- Drift catchers: `src/test/render/heuristics.ts` + `known-offenders.ts` (contract in its header).
 - When a bug is found: prefer widening a heuristic so the family is caught corpus-wide; fall back to a targeted regression test only when a general heuristic is not tractable.

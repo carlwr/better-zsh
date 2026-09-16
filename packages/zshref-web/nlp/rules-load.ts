@@ -31,9 +31,9 @@ export async function loadRulesYaml(paths: RulePaths = PATHS): Promise<Rules> {
 }
 
 /**
- * Write `tuning.json`, `stopwords.json`, `synonyms.json` into `dir` — the
- * validated form, so `synonyms.json` carries the normalized terms the SPA
- * replays before its own query embedding. Key order = shape order.
+ * Write one JSON per `RULE_FILES` into `dir` — the validated form, so
+ * `synonyms.json` carries the normalized terms the SPA replays before its
+ * own query embedding. Key order = shape order.
  */
 export async function emitRulesJson(dir: string, rules?: Rules): Promise<void> {
   const r = rules ?? (await loadRulesYaml());

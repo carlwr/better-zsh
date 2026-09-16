@@ -40,7 +40,6 @@ After a dispatch round, or as a standalone audit:
 - **UX problems found in the target are AUT material — do not fix them.** Even if obvious. They are the artefacts the probe surfaces.
 - **Subagent runner inherits parent context.** Useful for skill development / smoke; not for clean isolation signal. Cross-runner triangulation needs the process runners.
 - **Sanity probes are cheap → bundle into one invocation.** Skip the eval if any required probe fails.
-- **After edits:** `pnpm format && pnpm qa` before returning. For `.md` edits, follow the project's pre-return audit per `STYLE-MD.md`.
 
 ## Anti-patterns
 

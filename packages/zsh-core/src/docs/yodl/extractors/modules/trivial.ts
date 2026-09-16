@@ -1,6 +1,6 @@
 /**
  * Modules whose entire .yo file is a single flat builtin-list or
- * special-param-list with no quirks. Non-trivial modules keep their own.
+ * special-param-list with no quirks.
  */
 import type { CorpusYodlFile } from "../../../source-files.ts"
 import type { ModuleName } from "../../../taxonomy.ts"

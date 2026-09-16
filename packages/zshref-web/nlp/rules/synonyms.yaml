@@ -1,19 +1,17 @@
 # yaml-language-server: $schema=./schema/synonyms.schema.json
 #
-# Two synonym mechanisms. Keep BOTH lists short — the embedding model already
-# bridges most generic English synonymy, so extra entries mostly add noise.
-# Restraint rationale + measurements: NLP.md, nlp-observations.md. Authored
-# blind to the eval sets (see NLP.md).
+# Two synonym mechanisms; restraint rules + rationale: NLP.md §"Synonyms".
+# Authored blind to the eval sets (NLP.md).
 #
-# index_groups — symmetric, INDEX-TIME. If any member matches a record (whole
+# index_groups — symmetric, INDEX-TIME: if any member matches a record (whole
 #   word / phrase), the others are appended to its `expanded` view before
 #   embedding. Machinery kept; intentionally empty — the model already clusters
 #   these, and symmetric injection dilutes a disciplined corpus.
 #
-# query_expansions — directional, QUERY-TIME, EMBEDDING-ONLY. If any `when`
+# query_expansions — directional, QUERY-TIME, EMBEDDING-ONLY: if any `when`
 #   trigger matches the query, the single canonical `add` term is appended to
-#   the string that gets embedded — never to the lexical-overlap bag. Maps
-#   colloquial user vocabulary onto the corpus's canonical term.
+#   the string that gets embedded. Maps colloquial user vocabulary onto the
+#   corpus's canonical term.
 
 index_groups: []
 

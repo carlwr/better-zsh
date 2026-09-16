@@ -30,8 +30,8 @@ const sharedExports: string[] = Object.keys(pkg.exports)
   .filter(sub => !sub.includes("*") && sub !== "./package.json")
   .sort()
 
-// Package-root facade behind each shared subpath, e.g. "./render.ts" — the
-// layout rule `scripts/build/module-layout.test.mjs` enforces repo-wide.
+// Package-root facade behind each shared subpath (`STYLE-CODE.md` §"Module
+// layout").
 const entryModules: string[] = sharedExports
   .map(sub => (sub === "." ? "./index.ts" : `${sub}.ts`))
   .sort()

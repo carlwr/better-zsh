@@ -1,9 +1,7 @@
-// Build the SPA's artifacts under static/artifacts/ (gitignored) — the set
-// src/lib/artifacts.ts fetches: index.json, rules/{tuning,stopwords,
-// synonyms}.json, categories.json, lookup-map.json. Everything derives from
-// zsh-core's corpus and the rules YAML; only the index needs the model
-// (scripts/fetch-model) and minutes of CPU, so an index that still validates
-// against the corpus is kept.
+// Build the SPA's artifacts under static/artifacts/ (gitignored). Everything
+// derives from zsh-core's corpus and the rules YAML; only the index needs the
+// model (scripts/fetch-model) and minutes of CPU, so an index that still
+// validates against the corpus is kept.
 
 import { existsSync } from 'node:fs';
 import { writeFile } from 'node:fs/promises';

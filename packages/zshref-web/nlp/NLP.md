@@ -52,7 +52,7 @@ Three layers, distinct jobs:
   - *curated* (`pnpm nlp:eval-sentence`) — the hand-authored sentence fixture; per-entry `targetDepth` + `weight` + `split`.
   - *mechanical* (`pnpm nlp:eval-mechanical`) — corpus-derived per-record entries (terse decorated forms + NL-question forms), uniform `targetDepth=1`; each has a single defined answer (one item → one vote).
   - blend `total = λ·curated_train + (1−λ)·mechanical` (λ=0.5); both evals and the dashboard print these numbers live.
-  - the tuning trio — `pnpm nlp:tune-dashboard`, `nlp:tune-sweep`, `nlp:tune-diff` — moves rank-time knobs only (`BZ_TUNE_BASE` overrides; the keys: `nlp/eval/sweep.ts`), scores the blend, prints holdout as the overfit watch.
+  - the tuning trio (`pnpm nlp:tune-*`) moves rank-time knobs only (`BZ_TUNE_BASE` overrides; the keys: `nlp/eval/sweep.ts`), scores the blend, prints holdout as the overfit watch.
   - cost on CPU, roughly: an eval or the diff a minute or two, the dashboard several minutes, the sweep over an hour (every knob point re-ranks the whole mechanical set) — run a sweep only when a knob change is actually on the table
 - **C — QA scoring** (`pnpm nlp:qa-score`; `nlp/eval/qa-score.ts`) — in-process; an overfit watch, not where scoring quality is judged:
   - templated self-retrieval hard checks over a few categories

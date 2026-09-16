@@ -1,13 +1,7 @@
 import { createHash } from "node:crypto"
 import { type DocCategory, docCategories } from "./taxonomy.ts"
 
-// Each category contributes a JSON data file, a camelCase count key, and a
-// PascalCase schema root name. All three derive from one `base` string:
-//   file   = `${base}.json`
-//   count  = camelCase(base)
-//   schema = `${PascalCase(base)}Json`
-// Default base is the category name with `_` → `-` and a trailing `s`. Two
-// categories deviate from the simple plural-s rule and need explicit overrides.
+// Per-category file, count key and schema root all derive from one `base`.
 const baseOverrides = {
   glob_op: "glob-operators",
   comp_utility: "comp-utils",
@@ -72,8 +66,7 @@ export function schemaFile(file: string): string {
   return file.replace(/\.json$/, ".schema.json")
 }
 
-// The resolver conformance fixture is a release asset of its own; its
-// `artifacts/` subdir, file and schema root derive from one base.
+// The resolver conformance fixture is a release asset of its own.
 const fixtureBase = "resolver-fixture"
 export const resolverFixture = {
   dir: fixtureBase,

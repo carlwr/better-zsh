@@ -255,13 +255,6 @@ export const docDisplay = <K extends DocCategory>(
   }
 }
 
-/**
- * Optional typed sub-facet of a doc record; `undefined` when a category has
- * no meaningful subKind. Surfaces record-level fields (`HistoryKind`,
- * `ParamExpnSubKind`, `CondArity`, ...) so consumers (MCP search results) can
- * give more structure than a bare id list.
- */
-// Categories with a sub-facet override `noSub`; `docSubKind` materializes all.
 const noSub = (_: unknown) => undefined
 
 type SubKindFn<K extends DocCategory> = (
@@ -285,6 +278,12 @@ const subKindOverrides: Partial<SubKindFnMap> = {
   special_function: d => d.kind,
 }
 
+/**
+ * Optional typed sub-facet of a doc record; `undefined` when a category has
+ * no meaningful subKind. Surfaces record-level fields (`HistoryKind`,
+ * `ParamExpnSubKind`, `CondArity`, ...) so consumers (MCP search results) can
+ * give more structure than a bare id list.
+ */
 export const docSubKind: SubKindFnMap = Object.fromEntries(
   docCategories.map(cat => [cat, subKindOverrides[cat] ?? noSub]),
 ) as SubKindFnMap

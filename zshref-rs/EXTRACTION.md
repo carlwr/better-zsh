@@ -34,7 +34,7 @@ The day `zshref` (this crate) leaves the `better-zsh` monorepo for its own repo,
   - drop the pre-release banner and the "planned" caveats
 - `DEVELOPMENT.md`:
   - drop the pre-release note
-  - rebuild rules: `make vendor` instead of `pnpm --filter … build`
+  - rebuild rules: `make vendor` instead of the artifact-building targets
   - drop the `zshref-rs/` path prefixes
 - this file: deleted
 

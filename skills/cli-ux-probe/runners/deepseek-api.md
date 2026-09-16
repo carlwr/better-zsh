@@ -1,6 +1,6 @@
 # Runner: deepseek-api
 
-Direct calls to Deepseek's chat-completions API (`https://api.deepseek.com/v1`) via the stdlib-only wrapper at `scripts/aut-deepseek`. Bypasses opencode (which truncates `--format json` for Deepseek) to get accurate token data + `reasoning_content`.
+Direct calls to Deepseek's chat-completions API via the stdlib-only wrapper at `scripts/aut-deepseek`. Bypasses opencode (which truncates `--format json` for Deepseek) to get accurate token data + `reasoning_content`.
 
 Use when:
 - token accuracy matters (e.g. measuring token-efficiency between conditions)
@@ -27,18 +27,14 @@ DEEPSEEK_API_KEY="$DEEPSEEK_API_KEY" \
   > "$run_dir/stdout.txt" 2> "$run_dir/stderr.txt"
 ```
 
-Defaults / knobs:
+Knobs: `aut-deepseek --help` (defaults: its `parse_args`). When to reach for two of them:
 
-- `--model` — `deepseek-v4-flash` or `deepseek-v4-pro` (per `/v1/models`)
-- `--reasoning-effort` — `low | medium | high | max | xhigh` (omit for the model's default)
-- `--max-rounds` — caps assistant↔tool turns (default 20)
-- `--timeout-per-call` — per HTTP request (default 180s; raise for v4-pro at high effort)
-- `--retries` — exp-backoff on transient errors (default 2)
-- `--no-tools` — register no tools (omits the `bash` tool entirely). For pure-prediction setups where the AUT must answer from priors — see `methods/comparative-arms.md`. Without this flag, AUTs given prediction tasks will often execute the expression via `bash` to compute the answer.
+- `--timeout-per-call` — raise for v4-pro at high effort
+- `--no-tools` — pure-prediction arms (`methods/comparative-arms.md`): with a `bash` tool, AUTs given prediction tasks will often execute the expression to compute the answer
 
 ## Auth
 
-`DEEPSEEK_API_KEY` env. Direct HTTP — no auth.json, no keychain. The OpenAI Python SDK is *not* required (script uses `urllib`).
+`DEEPSEEK_API_KEY` env. Direct HTTP — no auth.json, no keychain.
 
 ## Model selection
 
@@ -53,10 +49,7 @@ None applied. Direct API → no baked-in system prompt. All instruction lives in
 
 ## Output collection
 
-- `final.txt` — last assistant `content` (the AUT's final answer)
-- `transcript.json` — list of rounds: content, `reasoning_content`, tool_calls, finish_reason, per-round usage
-- `usage.json` — **single JSON object** (one-pass `json.load`-able; contrast `codex` and `opencode` which emit JSONL). Totals: `prompt_tokens`, `completion_tokens`, **`reasoning_tokens`**, `cache_hit_tokens`, `cache_miss_tokens`, `rounds`, `shim_invocations`
-- trace JSONL — written by the shim as usual; primary CLI-usage evidence
+Files under `--out-dir`: the script's docstring. `usage.json` is a **single JSON object** (one-pass `json.load`-able; contrast `codex` and `opencode`, which emit JSONL). Trace JSONL is written by the shim as usual — primary CLI-usage evidence.
 
 ## Token usage
 

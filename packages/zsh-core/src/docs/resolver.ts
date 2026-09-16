@@ -44,7 +44,6 @@ import {
 import { type Documented, type RedirDoc, redirSlugFromSig } from "./types.ts"
 
 // --- Resolvers --------------------------------------------------------------
-// `resolve(corpus, cat, raw)` dispatches through `resolverOverrides` below.
 
 type Resolver<K extends DocCategory> = (
   c: DocCorpus,
@@ -289,8 +288,7 @@ function resolveParamSubscript(
  * first, then the `[...]` subscript close-variant. Wider user-expression
  * parsing stays out of scope (PRINCIPLES.md §"Resolver scope balance").
  *
- * Module-private; shared with `specialParamFeedback`. Public path:
- * `resolve` + `resolverFeedback`.
+ * Public path: `resolve` + `resolverFeedback`.
  */
 function resolveSpecialParam(
   c: DocCorpus,
@@ -358,8 +356,8 @@ const HOOK_FN_SET: ReadonlySet<string> = new Set(hookNames)
  * Special-function resolver. Literal first for hook names and literal TRAP*
  * names. Two compositional fallbacks for the patterns zsh exposes:
  *
- * - `^(chpwd|periodic|precmd|preexec|zshaddhistory|zshexit)_functions$` →
- *   matching hook record (companion array is the same concept).
+ * - `<hook>_functions` for a name in `hookNames` → matching hook record
+ *   (companion array is the same concept).
  * - `^TRAP[A-Z0-9]+$` → `TRAPNAL` template record.
  *
  * No signal-name validation: `kill -l` is host-level (zsh-aware, not
@@ -384,16 +382,15 @@ function matchSpecialFunctionKey(t: string): string | undefined {
   return undefined
 }
 
+const NO_PREFIX_RE = /^no_?/i
+
 /**
  * Option resolver. Literal first (so `NOTIFY` → `notify`, not stripped
  * `tify`); falls back to `no_`-stripped form. Negated pathway surfaces via
  * `resolverFeedback` as `{ kind: "input-negated" }`.
  *
- * Module-private; shared with `optionFeedback`. Public path: `resolve` +
- * `resolverFeedback`.
+ * Public path: `resolve` + `resolverFeedback`.
  */
-const NO_PREFIX_RE = /^no_?/i
-
 function resolveOption(
   corpus: DocCorpus,
   raw: string,
@@ -474,9 +471,6 @@ export function lookupRaw<K extends DocCategory>(
 }
 
 // --- Resolver feedback ------------------------------------------------------
-// Closed kind-tagged union, parametric over `DocCategory` via
-// `feedbackOverrides` (fallback `noFeedback`). See DESIGN.md §"Resolver
-// feedback channel" and PRINCIPLES.md §"Resolver feedback".
 
 /**
  * Lossy-resolution feedback. Closed kind-tagged union; consumers route

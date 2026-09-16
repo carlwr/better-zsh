@@ -1,6 +1,4 @@
-// Query expansion: the named cases (trigger appends, whole-word only,
-// capped, no duplicate), then properties over generated rule sets and
-// queries.
+// Named cases, then properties over generated rule sets and queries.
 
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';

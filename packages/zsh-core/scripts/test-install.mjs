@@ -5,13 +5,10 @@ import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 
 /**
- * End-to-end install smoke: pack zsh-core, npm-install the tarball into a
- * fresh temp dir, and prove a consumer can import the root plus several
- * focused subpaths, load the corpus, resolve an option, and render markdown.
- * Catches the class of bug where `exports` declares a subpath that doesn't
- * actually resolve — which `test:pack` only partially covers (it asserts
- * files are present in the tarball, not that `node` successfully resolves
- * them).
+ * End-to-end install smoke. Catches the class of bug where `exports` declares
+ * a subpath that doesn't actually resolve — which `test:pack` only partially
+ * covers (it asserts files are present in the tarball, not that `node`
+ * successfully resolves them).
  *
  * Temp dirs live under `os.tmpdir()` — outside the workspace — so npm's
  * upward node_modules walk cannot find the repo's install.
@@ -56,8 +53,7 @@ try {
     stdio: ["ignore", "ignore", "inherit"],
   })
 
-  // Driver: touch the root and representative focused subpaths, exercise the
-  // happy path end-to-end, print a marker on success.
+  // Representative subpaths, not every one.
   const driver = `
 import { loadCorpus } from "@carlwr/zsh-core"
 import { commentStart } from "@carlwr/zsh-core/analysis"

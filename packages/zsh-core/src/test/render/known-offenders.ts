@@ -39,18 +39,10 @@ export const knownOffenders: Readonly<
 
   // --- calibrated: known imperfect rendering accepted for now --------------
 
-  // Records documenting enumerated key/option sets as flat
-  // "<key> <Description sentence>" lines. After tightening the heuristic to
-  // anchor at column 0, depth-2 nested value lists inside parent prose
-  // blocks (indented 2-4 spaces) no longer false-positive.
   "lc-keyed-deftext": [],
 
-  // Flag-style "<-x> <Description sentence>" residuals after the depth-1
-  // capture. After tightening the heuristic to anchor at column 0, depth-2
-  // nested forms (indented bullet-continuation content) no longer
-  // false-positive — `comp_utility:_arguments` was cleared by this. Remaining
-  // hits are real flat-prose flag rows at column 0 (extractor limitations,
-  // not heuristic bugs):
+  // Real flat-prose flag rows at column 0 (extractor limitations, not
+  // heuristic bugs):
   //
   // - `builtin:zcompile` — documents its flag set as flat prose, no
   //   upstream `startitem()` block.
@@ -61,9 +53,7 @@ export const knownOffenders: Readonly<
     pid("complex_command", "function"),
   ],
 
-  // Standalone short paragraphs that look like headings. After single-em()
-  // fake-headings are promoted to real markdown headings, remaining hits
-  // are real false positives, not bugs:
+  // Real false positives, not bugs:
   //
   // - `builtin:functions` — upstream uses a multi-em chain
   //   `em(The )tt(-M)em( and )tt(+M)em( flags)` as a fake heading. The
@@ -83,20 +73,12 @@ export const knownOffenders: Readonly<
     pid("param_expn_flag", "I"),
   ],
 
-  // Bare `$param` references in prose (outside fenced/inline code).
-  // Currently empty across the vendored corpus — every upstream parameter
-  // ref is wrapped in `tt(...)`, which renders as backticks. Kept as a
-  // drift catcher.
+  // Empty: every upstream parameter ref is wrapped in `tt(...)`.
   "param-not-coded": [],
 
-  // Bare `zsh/<modname>` references in prose — records mentioning a known
-  // module without the upstream `tt(...)` wrap. Backticking is a future
-  // renderer concern; the check captures them today.
-  //
-  // - `builtin:sched` — desc contains "in the zsh/datetime module" from an
-  //   `ifzman()` conditional that renders as plain prose.
-  // - `builtin:zpty` — desc contains "The zsh/system Module" from an
-  //   `ifzman()` conditional rendered as plain prose.
+  // Backticking is a future renderer concern. All five: an
+  // `ifnzman(noderef(The zsh/<mod> Module))` cross-ref renders its node
+  // title as plain prose, and the title carries the bare module name.
   "module-not-coded": [
     pid("builtin", "sched"),
     pid("builtin", "zpty"),
@@ -105,15 +87,8 @@ export const knownOffenders: Readonly<
     pid("special_param", "zsh_scheduled_events"),
   ],
 
-  // Paragraph begins with an orphaned terminal-punctuation char (`. ` /
-  // `, ` / `; ` / `: ` / `! ` / `? `) followed by a capitalized sentence.
-  // Almost always a rendering bug where surrounding markup ate the
-  // previous word and stranded its trailing punctuation.
   "orphan-leading-punct": [],
 
-  // Paragraph contains only short backticked tokens. Catches `xitem`/
-  // `sxitem` alias headers that escaped their structured-list context and
-  // rendered standalone. Should stay empty: any new offender means a
-  // nested-list parse miss.
+  // A new offender means a nested-list parse miss.
   "stranded-backtick-tokens": [],
 }

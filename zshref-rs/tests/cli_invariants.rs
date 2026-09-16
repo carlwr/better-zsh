@@ -11,17 +11,9 @@ use serde_json::{Value, json};
 use std::process::Command;
 use std::sync::OnceLock;
 
-/// Deterministic sweep across every `doc_categories()` entry. Pairs with
-/// the property tests (which sample random categories and may miss a newly
-/// added one within their `with_cases` budget) by guaranteeing each category
-/// is exercised at least once per run: `list --category C` must return
-/// records that all carry `category == C`, and the category must contain
-/// at least one record (no empty taxonomy entries).
-///
-/// Adding a new category to zsh-core → the baked corpus automatically
-/// extends this sweep; no test code change is needed. If a
-/// new category ships without records (or leaks records from another
-/// category), this test fails.
+/// Every `doc_categories()` entry: `list --category C` returns only `C`
+/// records, and at least one. A new zsh-core category extends the sweep
+/// with no test change.
 #[test]
 fn every_category_list_is_pure_and_nonempty() {
     let cats = doc_categories();
@@ -220,9 +212,7 @@ fn limit_above_corpus_clamps_silently() {
 }
 
 /// Every (category, id) in the bundled corpus must round-trip through
-/// `docs --category C --key ID`. Generalizes `docs_self_roundtrip` from
-/// a 7-key option list to all categories without hand-typed inputs;
-/// runs as one `batch` invocation to keep the cost flat.
+/// `docs --category C --key ID`; one `batch` invocation keeps the cost flat.
 #[test]
 fn docs_roundtrip_over_corpus() {
     let recs = all_records();
@@ -307,9 +297,8 @@ fn run_batch(requests: &[Value]) -> Vec<Value> {
         .stderr(Stdio::piped())
         .spawn()
         .expect("spawn zshref batch");
-    // Write stdin on its own thread; `wait_with_output` drains stdout/stderr
-    // concurrently. Without this split the parent can block writing stdin
-    // while the child blocks writing stdout (~1MB out vs ~64KB pipe buffer).
+    // Stdin write on its own thread so `wait_with_output` can drain stdout
+    // concurrently — rationale in the `src/batch.rs` module doc.
     let mut stdin_h = child.stdin.take().expect("stdin piped");
     let writer = std::thread::spawn(move || {
         stdin_h

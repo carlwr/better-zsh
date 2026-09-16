@@ -13,7 +13,6 @@ import { assertCommittedJson, PATHS } from '../_helpers';
 const corpus = loadCorpus();
 
 describe('lookup contract', () => {
-  // Regenerate and compare, or rewrite the committed file under UPDATE_LOOKUP_CONTRACT=1.
   it('lookup_contract_matches_committed', async () => {
     await assertCommittedJson(
       PATHS.lookupContract,

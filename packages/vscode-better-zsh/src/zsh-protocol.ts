@@ -1,7 +1,4 @@
-/**
- * Pure request builders and response parsers for talking to a zsh process.
- * Execution lives in `zsh-exec.ts`; gating in `zsh.ts`.
- */
+/** Pure request builders and response parsers for talking to a zsh process. */
 import type { ZshRunReq } from "./zsh-exec"
 
 /** Base args for all zsh invocations: `-f` (NO_RCS) to skip user rc files. */

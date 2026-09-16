@@ -4,15 +4,11 @@
 
 ## Note: pre-release, monorepo
 
-This document describes dev workflows during the monorepo phase. Post-extraction, rebuild/test commands change (the `pnpm --filter` steps are replaced by the cross-repo data-sync mechanism) — see `EXTRACTION.md` for the transition plan.
+Monorepo-phase workflows; what changes at extraction: `EXTRACTION.md`.
 
 ---
 
-Rust crate — the `zshref` CLI and, behind the `mcp` feature, the `zshref-mcp` MCP server — bundling the TS-generated corpus JSONs (`packages/zsh-core/artifacts/json/*.json`, built by `pnpm --filter @carlwr/zsh-core build`) via `include_bytes!`.
-
-A second artifact, the resolver conformance fixture (`packages/zsh-core/artifacts/resolver-fixture/`), is read by `cargo test` rather than embedded; it is vendored next to the corpus and ships in the `.crate` so the tests run from a downloaded crate.
-
-Because data is embedded at compile time, rebuild after Rust or artifact changes.
+Rust crate — the `zshref` CLI and, behind the `mcp` feature, the `zshref-mcp` MCP server — embedding zsh-core's corpus JSONs at compile time: rebuild after Rust or artifact changes.
 
 The `build.rs` auto-detects two data sources (monorepo paths vs. vendored `data/`) — see `DATA-SYNC.md` for the design. Pre-extraction the monorepo path is what you'll hit during normal dev; vendored mode exists for `cargo publish` validation.
 
@@ -40,10 +36,10 @@ From repo root: `./zshref-rs/target/debug/zshref <args>`.
 ## Testing
 
 ```sh
-cargo test --all-features   # proptests, schema/help smoke, resolver-fixture conformance, MCP stdio session
+cargo test --all-features
 ```
 
-`scripts/probe-opencode` drives the built `zshref-mcp` through a real agent client (opencode); manual, not in CI.
+Manual, outside CI: `scripts/probe-opencode` (`--help`).
 
 ## Test/use zsh completions manually
 

@@ -2,10 +2,8 @@ import * as assert from "node:assert"
 import * as vscode from "vscode"
 import { hoverText, openText } from "./helpers"
 
-// Hover wiring through the VS Code API: each test asserts only that the right
-// doc record is dispatched at the given cursor position and that the hover
-// content mentions the head token. Rendering content and format are
-// `@carlwr/zsh-core`'s concern, verified in its unit tests.
+// Wiring only: the right record at the cursor. Content and format are
+// zsh-core's concern, verified in its unit tests.
 
 suite("ZshHoverProvider", () => {
   test("builtin command head", async () => {

@@ -34,7 +34,6 @@ const fixtureDir = join(pkgDir, "artifacts", resolverFixture.dir)
 /**
  * One bundle per non-glob `exports` subpath, read from the manifest rather
  * than restated: a subpath added without a bundle would resolve to nothing.
- * Same derivation as `scripts/test-pack.ts`, which asserts the published shape.
  */
 const publicEntries: string[] = Object.keys(
   (
@@ -97,11 +96,8 @@ function writeJsonArtifacts() {
     // Rust crate) as the source of truth — no Rust-side mirror.
     docCategories: [...docCategories],
     classifyOrder: [...classifyOrder],
-    /** Per-category JSON filename — pairs `docCategories[i]` with the file holding its records. */
     categoryFiles,
-    /** Human-readable per-category labels — SoT for display surfaces. */
     docCategoryLabels: { ...docCategoryLabels },
-    /** Hook base names used by the special_function resolver (`*_functions` suffix pattern). */
     hookNames: [...hookNames],
   }
 

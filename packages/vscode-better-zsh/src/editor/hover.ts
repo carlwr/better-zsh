@@ -196,15 +196,11 @@ export class HoverProvider implements vscode.HoverProvider {
   }
 
   private optionAt(token: string): DocPieceId | undefined {
-    // Direct form — `resolve` handles `no_` negation and the `NOTIFY` /
-    // `NO_NOTIFY` ambiguity corpus-aware. The lossy-normalization signal is
-    // discarded here; see the top-of-file note on hover UX for negated
-    // options.
+    // Direct form; the negation feedback is discarded — see the top-of-file note.
     const direct = resolve(this.corpus, "option", token)
     if (direct) return direct
 
-    // Short-flag form: `-J` / `+J` look up the aliased option via the
-    // local flagMap secondary index (extension UX, not corpus identity).
+    // Short-flag form: `-J` / `+J`.
     const short = token.match(/^([+-])([A-Za-z0-9])$/)
     if (!short?.[1] || !short[2]) return
     const hits = this.flagMap
@@ -298,7 +294,7 @@ function opBoundary(ch: string | undefined): boolean {
   return ch === undefined || /[\s[\]]/.test(ch)
 }
 
-/** Find a fact of the given kind whose span text equals `token`. Returns undefined if token is undefined. */
+/** Find a fact of the given kind whose span text equals `token`. */
 function factAt<K extends LineFact["kind"]>(
   facts: readonly LineFact[],
   line: string,

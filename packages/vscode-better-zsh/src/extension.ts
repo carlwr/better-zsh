@@ -41,7 +41,6 @@ export async function activate(ctx: vscode.ExtensionContext) {
     }),
   )
 
-  // Parsed data from vendored .yo files (always available, no zsh needed)
   // Keep semi-static language knowledge bundled and ready immediately; host
   // zsh is reserved for diagnostics/tokenization paths where execution matters.
   const corpus = loadCorpus()

@@ -1,9 +1,5 @@
 name: Release better-zsh (VS Code extension)
 
-# Triggers:
-#   - tag push `ext-v*` → publish to Marketplace + Open VSX
-#   - workflow_dispatch → dry-run unless input `dry_run` is false
-#
 # Auth for a real release:
 #   - secrets.VSCE_PAT — Azure DevOps PAT, Marketplace publish rights for
 #     publisher `carlwr`
@@ -41,8 +37,7 @@ jobs:
           echo "tag=$tag_version pkg=$pkg_version"
           [ "$tag_version" = "$pkg_version" ] || { echo "tag mismatch vs package.json"; exit 1; }
 
-      - name: Build + check + test + package VSIX
-        working-directory: packages/vscode-better-zsh
+      - working-directory: packages/vscode-better-zsh
         run: pnpm vsix
 
       - name: Upload VSIX as workflow artifact

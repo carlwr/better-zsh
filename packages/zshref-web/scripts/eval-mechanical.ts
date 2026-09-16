@@ -1,6 +1,4 @@
-// The mechanical sentence eval as a report: the component total with the
-// per-category breakdown and #1-violation counts, then the `[combined]`
-// blend with the curated fixture's train split. Slow: it embeds every
+// The mechanical sentence eval as a report. Slow: it embeds every
 // mechanical query (thousands).
 
 import { buildMechanical, evalMechanical, renderCombined, renderMechanical } from '../nlp/eval/mechanical';

@@ -60,6 +60,6 @@ Web and NLP specifics live under `packages/zshref-web/`; Rust crate specifics un
 
 ## Pointers
 
-- `zshref-rs/AGENTS.md` — Rust crate
-- `packages/zshref-web/AGENTS.md` — SPA: stack, upstreams, build, tests, hosting intent
-- `packages/zshref-web/nlp/NLP.md` — the NLP module; holdout rules
+- `zshref-rs/AGENTS.md`
+- `packages/zshref-web/AGENTS.md`
+- `packages/zshref-web/nlp/NLP.md`

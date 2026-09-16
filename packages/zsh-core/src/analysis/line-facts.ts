@@ -35,10 +35,9 @@ const TRANSPARENT: ReadonlySet<string> = new Set([
 //     past tests pinned this as load-bearing for command-position features.
 //
 // Extension reserved-word painting is broader (consumes `corpus.reserved_word`
-// directly). See DESIGN.md §"Reserved word: an enumeration-primary doc category"
-// and `packages/vscode-better-zsh/src/editor/semantic-tokens.ts`.
+// directly). See DESIGN.md §"Reserved word: an enumeration-primary doc category".
 //
-// Exact membership pinned by `src/test/analysis/cmd-position-keywords-lockin.test.ts`.
+// Exact membership is pinned by a lock-in test under `src/test/analysis/`.
 const KEYWORD_HEADS: ReadonlySet<string> = new Set([
   "if",
   "then",

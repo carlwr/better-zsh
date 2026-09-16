@@ -1,9 +1,8 @@
 //! MSRV drift guard: no resolved dependency may require a newer Rust than the
 //! declared `rust-version`.
 //!
-//! CI builds on `dtolnay/rust-toolchain@stable` with no MSRV job, so an
-//! understated floor is invisible there — it surfaces only when a user on the
-//! declared version tries to build.
+//! Nothing builds on the declared floor itself (CI runs stable), so an
+//! understated floor surfaces only when a user on that version tries to build.
 //!
 //! Reads `cargo metadata` with every feature on — one floor covers every
 //! `cargo install` form — which needs no network while `Cargo.lock` is

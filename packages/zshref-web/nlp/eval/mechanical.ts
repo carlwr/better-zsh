@@ -8,11 +8,9 @@
 //   display form (`nlQuestions`); `special_param` also gets a `$`-prefixed
 //   variant ("what is the $# parameter").
 //
-// The entries fold into the same metric as the curated fixture (`gain`,
-// `score`, `BETA`); the combined total blends curated `train` and
-// mechanical via `LAMBDA`. Two diagnostics ride along — reported, never
-// gated, never tuned toward: the per-category count of entries whose record
-// did not rank #1, and the id-shape slices.
+// Two diagnostics ride along — reported, never gated, never tuned toward:
+// the per-category count of entries whose record did not rank #1, and the
+// id-shape slices.
 
 import type { DocCorpus } from '@carlwr/zsh-core';
 import { type DocCategory, docCategories, docDisplay, idOf } from '@carlwr/zsh-core/taxonomy';

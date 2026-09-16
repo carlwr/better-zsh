@@ -1,8 +1,7 @@
-// Build side of the lookup map (`src/lib/ranker/lookup-map.ts` is the
-// consumer): enumerate the canonical surface forms per category, let the
-// resolver canonicalize each, keep the one-to-one mappings. Close-variant
-// fuzziness (extra spaces, dashes, mixed case outside the enumerated forms)
-// is deliberately not in the map; the ranker handles it.
+// Build side of the lookup map: enumerate the canonical surface forms per
+// category, let the resolver canonicalize each, keep the one-to-one
+// mappings. Close-variant fuzziness (extra spaces, dashes, mixed case outside
+// the enumerated forms) is deliberately not in the map; the ranker handles it.
 
 import type { DocCorpus } from '@carlwr/zsh-core';
 import {

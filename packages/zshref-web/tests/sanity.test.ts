@@ -1,8 +1,7 @@
 // Product-mode sanity smoke: the SPA's own pipeline — the production
-// `embedQuery` (src/lib/embedder.ts, over the local model in transformers.js
-// local-models mode → no network), the embedding-only query expansion,
-// `rank` with no resolver hit — must land the curated top-1 of each
-// sanity-fixture.json query.
+// `embedQuery` (over the local model in transformers.js local-models mode →
+// no network), the embedding-only query expansion, `rank` with no resolver
+// hit — must land the curated top-1 of each sanity-fixture.json query.
 //
 // The fixture itself is generated in oracle mode (Node embedder, resolver
 // hit as input) by nlp/fixtures.ts; its exact reproduction and the invariants

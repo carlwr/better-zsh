@@ -1,7 +1,6 @@
-// The mechanical eval: the question templates, the built set's shape (pure
-// on the corpus), the blend and the slices on synthetic input, the eval
-// chain over the parity fixture's miniature index (no model), and — with
-// the staged index and model — a capped smoke plus the full report.
+// The mechanical eval. The eval chain runs over the parity fixture's
+// miniature index (no model); with the staged index and model: a capped
+// smoke plus the full report.
 //
 // The full report embeds thousands of queries (minutes), so it is opt-in
 // via `BZ_NLP_SLOW=1`, on top of the artifact gate —

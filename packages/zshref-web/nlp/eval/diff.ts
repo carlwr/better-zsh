@@ -1,5 +1,4 @@
-// Per-item ranks and gross churn between two tunings, for the tune
-// dashboard (nlp/eval/tune.ts) and the tune diff reporter. The aggregate
+// Per-item ranks and gross churn between two tunings. The aggregate
 // scores are per-category-normalized means: a candidate that flips a
 // hundred items can move the headline by under 0.01, and that move is a
 // net. This recovers the discrete signal — each item's rank under a

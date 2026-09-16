@@ -1,7 +1,6 @@
-// Argument handling and the asset preamble shared by the tsx entry points
-// beside this file. Arguments are decided before any asset loads — `--help`
-// and a refused argument cost no model — so tests/nlp/reporters.test.ts
-// spawns every script ungated.
+// Arguments are decided before any asset loads — `--help` and a refused
+// argument cost no model — so tests/nlp/reporters.test.ts spawns every
+// script ungated.
 
 import { assetsMissing, type EvalAssets, loadEvalAssets } from '../nlp/eval/assets';
 import { corpusResolverHit, noResolverHit, type ResolverHitSource } from '../nlp/oracle';

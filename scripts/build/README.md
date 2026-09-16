@@ -32,6 +32,4 @@ Rationale only. Exact commands live in `package.json` and nearby scripts.
 
 ## Enforcement
 
-- `pnpm test:scripts` / `pnpm qa`: every `scripts/build/*.test.mjs` (see `build-tasks.mjs`). Wrapper behavior lives in `quiet-run.test.mjs`; other gates are sibling files in that directory.
-- Real-script silence: `smokeScripts` list in `quiet-run.test.mjs`.
-- New front-facing pnpm scripts: add to `smokeScripts` so `qa` catches drift.
+- `pnpm test:scripts` / `pnpm qa`: every `scripts/build/*.test.mjs` (see `build-tasks.mjs`).

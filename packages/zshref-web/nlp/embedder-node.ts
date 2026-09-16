@@ -1,7 +1,6 @@
 // Node-side BGE-small embedder: @huggingface/transformers on onnxruntime-node
-// over the pinned local model (`scripts/fetch-model` → `.aux/model/`), for
-// the index build, the evals and the model-gated tests. The browser keeps its
-// own pipeline (src/lib/embedder.ts); this one defines the index's numerics:
+// over the pinned local model (`scripts/fetch-model` → `.aux/model/`). It
+// defines the index's numerics:
 //
 // - HF-tokenizers truncation: content cut to 510 tokens, then `[CLS] … [SEP]`.
 //   The pipeline's own truncation cuts after adding the specials, which drops

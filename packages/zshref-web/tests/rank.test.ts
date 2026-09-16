@@ -1,8 +1,6 @@
-// The ranker on its own merits: the unit tests inherited from the port, then
-// properties over small synthetic indexes (records with hand-made text and
-// `syntheticVec` vectors, the committed rules and mutated copies). The
-// parity fixture pins the arithmetic against its past; these pin what the
-// arithmetic must mean.
+// The parity fixture pins the arithmetic against its past; these tests pin
+// what the arithmetic must mean — unit cases, then properties over small
+// synthetic indexes.
 
 import fc from 'fast-check';
 import { beforeAll, describe, expect, it } from 'vitest';

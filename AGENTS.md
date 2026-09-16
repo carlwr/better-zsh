@@ -41,89 +41,41 @@ All symlinked files are printed by the `overview` script. For symlinked files, e
 
 Pre-1.0 everything (including public APIs) can still move freely.
 
-## See also
-
-- `skills/orient/` — discovery scripts and reading paths
-
-## Architecture (summary)
-
-`zsh-core` has three orthogonal domains (details: `DESIGN.md`):
-
-- **A — Parsed Documentation** (`src/docs/`) — static vendored zsh knowledge
-- **B — Fact Extraction** (`src/analysis/`) — coarse annotations about user code
-- **C — Markdown Rendering** (`src/render/`) — doc records -> markdown
-
-Sanctioned brand crossing inside `zsh-core`: `resolve(corpus, cat, raw)`.
-
-Repo layering (layout, arrows and their invariants: `REPO-SHAPE.md`):
-
-- `zsh-core` owns corpus, analysis, rendering, and resolver primitives; it is the only producer.
-- `zshref-rs` consumes zsh-core's release assets (corpus JSON, resolver fixture) and owns the tool set; its adapters consume that.
-- Editor features compose `zsh-core` primitives directly.
-- `zshref-web` consumes `zsh-core` at build time only — its search index; the browser bundle is zsh-core-free.
-- No "candidate in, markdown out" shortcut in `zsh-core`; consumers compose `resolve()` + `renderDoc()`.
+## Project-specific code rules
 
 ### zsh-core package imports
 
 Prefer explicit subpaths from `@carlwr/zsh-core` so dependency arrows stay visible and rollups stay legible. Subpath inventory: `packages/zsh-core/AGENTS.md`.
 
-### Tool layer + adapters
-
-Principle: the tool layer consumes zsh-core; adapters consume the tool layer. Do not add zsh-core query APIs just to support an adapter.
-
-Static, read-only, no-execution posture is a product feature. Enforcement: `zshref-rs/tests/scope_fence.rs`.
-
-## Project-specific code rules
-
 ### Never enumerate or count `DocCategory`
 
 Hand-written category lists drift. Same posture for other closed zsh-core unions (e.g. `ResolverFeedback` kinds).
 
-- In JSDoc, comments, docs: give examples, not exhaustive lists.
-- No hard-coded category counts in prose.
+- JSDoc, comments, docs: examples, not exhaustive lists; no hard-coded counts.
 - Runtime strings and JSON Schema `enum` values interpolate from canonical zsh-core exports — in the Rust crate, from the embedded `index.json` and corpus — never hand-typed.
-- Category-indexed tables belong in zsh-core, structurally complete; consumers import them. Prefer mapped types so structure enforces completeness by construction. A compile-time guard is the fallback for tables that can't be derived (e.g. runtime order tuples).
-
-Rationale: `DESIGN.md`, `PRINCIPLES.md`.
-
-### Resolver vs analysis
-
-A resolver answers one narrow question: whether a raw candidate names a documented corpus item. Close-variant normalization belongs there; parsing surrounding user expressions belongs in analysis. See `PRINCIPLES.md`.
+- Category-indexed tables: `DESIGN.md` §"Category-indexed artifacts belong in zsh-core".
 
 ### Rendered reference prose
 
-Rendered reference text is shared by extension hovers, tools, and the CLI. Treat wording as user-facing zsh documentation, not extension-local UI copy. Parsing/rendering conventions and dump-review workflow: `packages/zsh-core/AGENTS.md`.
+Rendered reference text is shared by extension hovers, tools, and the CLI. Treat wording as user-facing zsh documentation, not extension-local UI copy. Conventions and dump-review workflow: `packages/zsh-core/AGENTS.md`.
 
-### `DocRecordMap` precedents (when shaping a new doc category)
+### Root dev dependencies
 
-- array fields for composite data
-- `SyntaxDocBase` extension for sig-shaped records
-- `args` arrays for parameterized flags
-
-Follow when they model the domain — see `PRINCIPLES.md`.
-
-### Other tools
-
-`@carlwr/typescript-extra` and `@carlwr/fastcheck-utils` are workspace-root dev dependencies. Keep them even when temporarily unused; individual packages may add or drop based on actual use.
+`@carlwr/typescript-extra` and `@carlwr/fastcheck-utils` stay workspace-root dev dependencies even when temporarily unused; individual packages add or drop them per actual use.
 
 ### TS↔Rust mirror discipline
 
-For TS↔Rust mirrors (`// MIRRORED-IN:` / `// MIRROR-OF:`), a rename touches both sides; behaviour is pinned by the resolver fixture (see `DESIGN.md`).
+For TS↔Rust mirrors (`// MIRRORED-IN:` / `// MIRROR-OF:`), a rename touches both sides; behaviour is pinned by the resolver fixture (`DESIGN.md`).
 
 ## Validation before returning
 
-Pre-commit gate: `pnpm qa` runs quiet success output for:
-
-- typecheck
-- lint
-- unit tests
+Pre-commit gate: `pnpm qa` — quiet on success; composition: `scripts/build/build-tasks.mjs`.
 
 Related:
 
 - Full logs: `pnpm qa:verbose`.
 - Escalation order: `TESTING.md`.
 - Build-script rationale: `scripts/build/README.md`.
-- Bare `pnpm test` skips typecheck.
 
 ```sh
 # after any edits:
@@ -145,22 +97,17 @@ pnpm format && pnpm qa && pnpm test:pack && pnpm test:integration
 Universal pattern: `TESTING.md`. Project-specific consent-required markers:
 
 - `*INTERACTIVE*` — takes over the desktop (VS Code/Electron); macOS steals focus.
-- `*REGISTRY*` / `verifyREGISTRY` — depends on currently-published npm/JSR state; in CI: own job, manual dispatch only.
+- `*REGISTRY*` / `verifyREGISTRY` — depends on currently-published npm/JSR state.
 
 Discover scary scripts via the markers: `jq '.scripts | keys' package.json packages/*/package.json | rg 'REGISTRY|INTERACTIVE'`.
 
-Per-package `test:integration` is intentionally not one mechanism:
-
-- extension: `act`
-- workspace: delegates via `pnpm -r --if-present`
+Per-package `test:integration` is intentionally not one mechanism; each `packages/*/package.json` picks its own.
 
 ## Packaging
 
 ### npm + JSR dual publish
 
 Universal pattern: `PACKAGING.md`. Project-specific package targeting both registries: `@carlwr/zsh-core`.
-
-The Rust crate in `zshref-rs/` publishes to crates.io, and its prebuilt binaries to GitHub Releases and npm — `zshref-rs/DISTRIBUTION.md`.
 
 ### `BZ_SKIP_UPSTREAM`
 
@@ -173,25 +120,15 @@ Universal pattern: `PACKAGING.md`. Project-specific bindings:
 
 Mid-wipe, the TS LSP can emit transient TS7016 ghosts for `<pkg>/dist/*` — ignore. Only a stale upstream is rebuilt, so the window is narrow.
 
-## Repo tooling
+## Repo conventions
 
-### Repo symlinks
+### Lint scripts
 
-- `scripts/list-repo-symlinks` — enumerates non-ignored symlinks; flags broken targets.
-- `scripts/check-claude-md-pairs` — every `AGENTS.md` has a sibling `CLAUDE.md`.
-- Editing a symlink writes through to its target.
-- Both gate `pnpm qa` via `pnpm lint:symlinks` (quiet mode).
+Each has `--help`; all gate `pnpm qa`:
 
-### Maintainer-docs index
-
-- `scripts/list-maintainer-docs` — lists every `.md` with `audience: maintainer` frontmatter; `--quiet` validates frontmatter shape.
-- Gates `pnpm qa` via `pnpm lint:md`.
-
-### CI dependency caching
-
-- `.github/actions/setup-node-pnpm` — Node, pnpm, store cache, frozen install; the repo's only `node-version` site. Every job needing Node uses it instead of open-coding those steps. One call per job.
-- Cargo side: `Swatinem/rust-cache` in the Rust workflow.
-- VS Code downloads: deliberately uncached — a cache lets the test harness silently fall back to an already-downloaded version when the update service is unreachable; uncached, that fails hard.
+- `scripts/list-repo-symlinks`
+- `scripts/check-claude-md-pairs`
+- `scripts/list-maintainer-docs`
 
 ### One organization at a time
 
@@ -210,12 +147,8 @@ Agents may not edit `SECURITY.md`; tell the user and suggest updates. Likely tri
 
 ### Keeping the orientation skill fresh
 
-Source of truth: `$REPO_ROOT/skills/orient/`. Tool-specific discovery may use symlinks. Hard rules live alongside — see `skills/orient/SKILL.md`.
-
-Structural-change notes:
-
-- New public API needs no skill update; the `.d.ts` rollup reflects it.
-- A new common entry-point directory needs a reading-path update.
+- a new public API needs no skill update — the `.d.ts` rollup reflects it
+- a directory-structure change: re-run the discovery scripts; fix what breaks
 
 ## Git; commits
 

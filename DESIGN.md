@@ -168,13 +168,7 @@ Authoritative homes:
 
 ## Why `DocCategory` is a closed `as const` array
 
-- `docCategories` — runtime list
-- `DocCategory = typeof docCategories[number]`
-- compile-time completeness guard (for a runtime tuple, which can't be a mapped type):
-  - `_AssertClassifyOrder*` — `taxonomy.ts`
-- structural completeness via mapped types (no explicit guard):
-  - `DocCorpus` — `{ readonly [K in DocCategory]: DocMap<K> }`
-  - `resolverFeedbackKindSchemas` — keyed by `ResolverFeedback["kind"]` (`resolver.ts`)
+One runtime list yields the type, iteration and every category-keyed mapped type, so completeness is a compile error rather than a test. Mechanics, and the guard for a runtime tuple whose order matters: `taxonomy.ts`.
 
 ### Category-indexed artifacts belong in zsh-core
 
@@ -186,15 +180,7 @@ Any "one entry per `DocCategory`" table lives in zsh-core behind a structural co
 
 ### Identity per record, display separately
 
-Each record keeps its domain identity in a category-specific field:
-
-- `name`
-- `op`
-- `flag`
-- `key`
-- `slug`
-
-The parametric `docId` table gives uniform access without renaming fields. `docDisplay` is the public display function — divergence from id and consumer guidance: its JSDoc in `zsh-core/taxonomy`.
+Category-specific identity fields behind the parametric `docId` table: `PRINCIPLES.md` §"Category types". `docDisplay` is the public display function — divergence from id and consumer guidance: its JSDoc in `zsh-core/taxonomy`.
 
 Ids are **shell-safe slugs** — printable ASCII, no whitespace, non-empty. The surface `sig`/`_display` fields keep the human-readable form (with spaces, placeholders). Invariants enforced by `packages/zsh-core/src/test/corpus-ascii.test.ts`.
 
@@ -301,7 +287,7 @@ Parser and renderer are layered: the parser may capture structure the renderer c
 
 ## Output schemas (crate-owned)
 
-- Each tool's `outputSchema` (JSON Schema 2020-12) is generated beside its implementation in the `zshref` crate (`src/tools/schema.rs`): envelope, per-category `oneOf` branches, shared `$defs`.
+- Each tool's `outputSchema` is generated in the `zshref` crate beside its implementation (`src/tools/schema.rs`).
 - `subKind` enums and the record total come from the loaded corpus; feedback kinds from the resolver.
 - Cross-cutting "co-released schema precision" rationale: PRINCIPLES.md.
 - Drift enforced at test time: every tool response the crate's test suite sees is validated against its schema (`zshref-rs/tests/common/`).
@@ -312,21 +298,11 @@ Per MCP spec, tools register `outputSchema`; responses include `structuredConten
 
 Two adapters over the same `ToolSet`, both in the `zshref` crate: the CLI and the MCP server.
 
-Adapters walk the tool set (`src/tools.rs`) and dispatch through it; nothing else. The request path is shared — `Tool::call`: one typed decode, run, encode; `Input` defaults are mirrored in `inputSchema.default`.
+Adapters walk the tool set (`src/tools.rs`) and dispatch through it; nothing else — one shared request path, `Tool::call`.
 
 Structural lock on the tool layer (the spec for its own claim): **scope fence** — `zshref-rs/tests/scope_fence.rs`.
 
-Three tools, intent-split:
-
-- `zsh_docs` — lookup with markdown body (unifies former classify/lookup/describe-style flows)
-- `zsh_search` — fuzzy discovery
-- `zsh_list` — enumeration
-
-Notes:
-
-- per-tool surface: `zshref-rs/README.md` §Tools
-- `zsh_search` and `zsh_list` stay separate — "search with no query" would be a silent footgun
-- uniform output envelope keeps adapters simple
+Tools are intent-split — lookup with markdown body, fuzzy discovery, enumeration — and stay separate: "search with no query" would be a silent footgun. A uniform output envelope keeps adapters simple. Per-tool surface: `zshref-rs/README.md`.
 
 Rejected alternatives:
 
@@ -407,28 +383,21 @@ Why fuzzy at all:
 
 External coverage:
 
-- `zshref-rs/README.md` — user-facing surface and conventions
-- `zshref-rs/DATA-SYNC.md` — dual-mode build, bundled corpus
-- `CLI-POLICY.md` — stream / color discipline
+- `zshref-rs/README.md`
+- `zshref-rs/DATA-SYNC.md`
+- `CLI-POLICY.md`
 
 Rust, not a TS CLI: several TS CLI frameworks were tried and each fought `--help` quality (`PRINCIPLES.md`); clap did not. A small, fast, self-contained binary is the product for a tool agents invoke hundreds of times per session; single-binary TS routes give large binaries and slow startup.
 
-The tool set keeps the marginal cost of "another adapter" low — dynamic `clap::Command` assembly walks it:
-
-- subcommands = each tool's `ToolName` stem (`docs`; `zsh_docs` on the JSON surface)
-- flags from each tool's fields
-- one `Prose` (`brief`, `long` per target) per tool and per field → clap help slots (`zshref-rs/src/tools/text.rs`)
+The tool set keeps the marginal cost of "another adapter" low — the CLI assembles its `clap::Command` by walking it (`zshref-rs/src/cli.rs`), tool and field prose included.
 
 Cross-adapter notes:
 
 - **Corpus metadata** — `zshref info`; MCP `initialize` carries only the suite preamble (`instructions`) and the crate version.
-- **`zshref schema`**:
-  - emits `inputSchema` + `outputSchema` per tool as one JSON bundle for codegen/validation
-  - no per-tool subcommand (would fight clap conventions); cherry-pick with `jq`
+- **`zshref schema`** — one bundle, no per-tool subcommand: that would fight clap conventions.
 - **Maintenance posture**:
   - re-vendor cadence measured in years
   - no runtime plugins
-  - `make cli-package` in CI
 
 ---
 

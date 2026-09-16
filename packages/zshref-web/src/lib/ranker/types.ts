@@ -1,7 +1,5 @@
-// JSON shapes the browser loads: the index (`index.json`, written by
-// nlp/index-build.ts) and the rules (`rules/*.json`, emitted by
-// nlp/rules-load.ts from the YAML). zod schemas validate at load time; types
-// derive from them so drift = type error.
+// JSON shapes the browser loads: the index and the rules. zod schemas
+// validate at load time; types derive from them so drift = type error.
 
 import { z } from 'zod';
 
@@ -48,12 +46,10 @@ export const VectorIndexSchema = z.object({
 });
 export type VectorIndex = z.infer<typeof VectorIndexSchema>;
 
-// Rule shapes — the source of truth for the rule YAML files (tuning,
-// stopwords, synonyms). The Node side (nlp/rules-load.ts) validates the YAML
-// with them, normalizes, and emits the JSON the browser loads through the
-// same shapes; the editor schemas under rules/schema/ are generated from them
-// (nlp/rules-schema.ts). Strict: an unknown key is an error. Field order =
-// emitted key order.
+// Rule shapes — the source of truth for the rule YAML files: the Node side
+// validates and normalizes the YAML with them and emits the JSON the browser
+// loads through the same shapes; the editor schemas are generated from them.
+// Strict: an unknown key is an error. Field order = emitted key order.
 
 const f = Math.fround;
 const f32 = z.number();

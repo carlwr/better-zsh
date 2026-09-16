@@ -1,9 +1,8 @@
-// The curated sentence eval: the metric on synthetic votes, the fixture
-// shape on inline YAML, the committed fixture loaded blind (counts and
-// record existence only — nothing of an entry is printed), and — with the
-// staged index and model — the eval report, aggregates only. The eval chain
-// itself (rank → promote → own-rank vote, missing item past the end) runs
-// over the parity fixture's miniature index, so it needs no model.
+// The curated sentence eval. The committed fixture is loaded blind (counts
+// and record existence only — nothing of an entry is printed); with the
+// staged index and model, the report, aggregates only. The eval chain
+// itself runs over the parity fixture's miniature index, so it needs no
+// model.
 
 import { loadCorpus } from '@carlwr/zsh-core';
 import { docCategories } from '@carlwr/zsh-core/taxonomy';

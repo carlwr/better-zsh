@@ -3,21 +3,10 @@
  *
  * No `findex` per function — function names are embedded in arity-class prose
  * paragraphs. Strategy: extract tt() tokens from the relevant sentences and
- * synthesize a MathfuncDoc per function.
+ * synthesize a MathfuncDoc per function; functions outside the arity-class
+ * paragraphs get hand-written records.
  *
- * Arity classes identified by keyword anchors in the source text:
- * - "single floating point argument" → arity-1 float, sig: name(x)
- * - "two floating point arguments" → arity-2 float, sig: name(x, y)
- * - "integer first argument and a floating point second" → sig: name(n, x)
- * - "floating point first argument and an integer second" → sig: name(x, n)
- * - atan: special (optional 2nd arg) → sig: ["atan(x)", "atan(x, y)"]
- * - ilogb: returns int → sig: ilogb(x)
- * - signgam: no args, returns int → sig: signgam()
- * - abs: no conversion → sig: abs(x)
- * - float/int: conversion → sig: float(x) / int(x)
- * - rand48: optional arg → sig: ["rand48()", "rand48(seed)"]
- *
- * "min, max, sum" are explicitly excluded (autoloadable, not in this module).
+ * `min`, `max`, `sum` are excluded (autoloadable, not in this module).
  */
 import type { NonEmpty } from "@carlwr/typescript-extra"
 import { mkDocumented } from "../../../brands.ts"

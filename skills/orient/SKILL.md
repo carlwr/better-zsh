@@ -1,6 +1,6 @@
 ---
 name: orient
-description: Orient quickly in the better-zsh monorepo. Use at the start of any work session, when adding features, debugging, or navigating unfamiliar code. Provides discovery scripts and reading-path strategies rather than hardcoded filenames.
+description: Orient quickly in the better-zsh monorepo. Use at the start of any work session, when adding features, debugging, or navigating unfamiliar code. Provides discovery scripts rather than hardcoded filenames.
 ---
 
 # Orientation: better-zsh monorepo
@@ -9,22 +9,9 @@ This skill adds navigation strategies and discovery scripts. Tool-agnostic postu
 
 ## META: about this skill
 
-> Source of truth lives under `$REPO_ROOT/skills/orient/`. For discoverability from different agent tools, symlinks point into this directory from tool-specific roots. Those roots today are:
->
-> ```
-> $REPO_ROOT/.agents/
-> $REPO_ROOT/.claude/
-> $REPO_ROOT/.cursor/
-> $REPO_ROOT/.opencode/
-> ```
->
-> <!-- Enumerating these concrete paths is deliberate: they are not easily inferrable. -->
->
-> **When editing:** always write to the physical files under `$REPO_ROOT/skills/orient/`, even if the path you see came via a symlink.
+> Source of truth: `$REPO_ROOT/skills/orient/`; tool-specific roots reach it through symlinks (`scripts/list-repo-symlinks`). Edit the physical files only, even if the path you see came via a symlink.
 
 ## Discovery scripts (always-fresh orientation)
-
-Rather than listing files that may become stale, this project prefers executable scripts that produce always-current output.
 
 Always run (general project overview):
 ```sh
@@ -33,7 +20,7 @@ Always run (general project overview):
 
 Run selectively (TS packages only):
 ```sh
-# print exports (grep-friendly; out lines are "<filename> <identifier>"):
+# print exports (see --help):
 ./skills/orient/scripts/exports zsh-core
 ./skills/orient/scripts/exports vscode-better-zsh
 ./skills/orient/scripts/exports zshref-web
@@ -53,13 +40,3 @@ rg "^export.*(function|const|type|interface|class) SymbolName" --type ts
 # Find all usages
 rg "\bsymbolName\b" --type ts
 ```
-
----
-
-## Keeping this skill fresh
-
-- Update discovery scripts when the directory structure changes in ways that break them.
-- Design rationale belongs outside this skill:
-  - source comments
-  - `PRINCIPLES.md`
-  - `DESIGN.md`

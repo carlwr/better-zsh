@@ -9,8 +9,8 @@
 #   2 — setup error (unreadable file, missing schema)
 #
 # Empty-trace == exit 0 by design: "trace populated" is a separate check
-# (see SKILL.md canonical session step 6); validate-trace only asks
-# "do the records that exist match the schema?".
+# (the post-eval step of SKILL.md's canonical session shape); validate-trace
+# only asks "do the records that exist match the schema?".
 #
 # Usage:  validate-trace <path/to/trace.jsonl>
 

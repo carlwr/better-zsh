@@ -25,7 +25,7 @@ When a TS package targets both npm (compiled `dist`) and JSR (source-form):
 
 ## Release wiring
 
-`.github/workflows/release-*.yml` headers own each package's trigger tag pattern and auth prerequisites. Don't restate them.
+`.github/workflows/release-*.yml` own each package's trigger (the `on:` block) and auth prerequisites (the header). Don't restate them.
 
 Invariants those headers don't carry:
 

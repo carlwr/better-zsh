@@ -24,13 +24,11 @@ export class SemanticTokensProvider
   private builtins: Set<string>
   // Painting policy for command-position tokens that are zsh-manual reserved
   // words but which the analyzer treats as ordinary command heads (e.g.
-  // `declare`, `typeset`, `local`, `export`, `integer`, `float`, `readonly`,
-  // `foreach`, `repeat`, `end`, `nocorrect`). The analyzer's keyword set
-  // (`KEYWORD_HEADS` in `analysis/line-facts.ts`) is deliberately narrower
-  // for command-position semantics; the extension uses `corpus.reserved_word`
-  // as the painting source so the editor renders the manual's full reserved
-  // list as keywords. See DESIGN.md §"Reserved word: an enumeration-primary
-  // doc category".
+  // `declare`, `local`, `repeat`). The analyzer's keyword set is deliberately
+  // narrower for command-position semantics; `corpus.reserved_word` is the
+  // painting source so the editor renders the manual's full reserved list as
+  // keywords. See DESIGN.md §"Reserved word: an enumeration-primary doc
+  // category".
   private reservedWordPainting: Set<string>
 
   constructor(builtinNames: string[], reservedWordNames: readonly string[]) {

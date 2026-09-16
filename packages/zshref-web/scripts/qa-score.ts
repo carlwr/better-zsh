@@ -1,7 +1,6 @@
-// The QA harness scoring (nlp/eval/qa-score.ts) over the staged assets:
-// the hard checks, then the held-out corpus. Prints the hard-check section
-// and the summary lines only — nlp-corpus.yaml is a held-out set (NLP.md),
-// so no per-entry line ever prints.
+// The QA harness scoring as a report. Prints the hard-check section and the
+// summary lines only — the QA corpus is a held-out set (NLP.md), so no
+// per-entry line ever prints.
 
 import { loadQaCorpus } from '../nlp/eval/qa-corpus';
 import { renderQa, runHardChecks, scoreQaCorpus } from '../nlp/eval/qa-score';

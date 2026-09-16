@@ -1,8 +1,6 @@
-// `corpus_hash`: identifies the corpus an index was built from. Inputs:
-// package version, the upstream zsh tag, then per category its name and per
-// record the compact JSON of the projected record, length-prefixed. Its only
-// job is "was this index built from this corpus?" — a rebuilt index carries
-// a fresh hash either way.
+// `corpus_hash`: identifies the corpus an index was built from. Its only job
+// is "was this index built from this corpus?" — a rebuilt index carries a
+// fresh hash either way.
 
 import { createHash } from 'node:crypto';
 import type { DocCorpus } from '@carlwr/zsh-core';

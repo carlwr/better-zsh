@@ -1,8 +1,6 @@
-// The QA scoring: the entry arithmetic on synthetic inputs (each case pins
-// one rule of the harness), the aggregate, the report's line shapes, the
-// hard-check enumeration over the corpus, and the corpus loading through
-// its shape. With the staged index and model: the hard checks on a capped
-// slice and one synthetic entry through the whole pipeline. The held-out
+// The QA scoring on synthetic inputs (each case pins one rule of the
+// harness); with the staged index and model, a capped slice of the hard
+// checks and one synthetic entry through the whole pipeline. The held-out
 // corpus is loaded (that is the loader's job) and never printed.
 
 import { loadCorpus } from '@carlwr/zsh-core';

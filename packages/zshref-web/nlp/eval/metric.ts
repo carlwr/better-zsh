@@ -1,9 +1,5 @@
-// The eval metric (NLP.md §"Eval architecture"): each expected item is one
-// vote, graded on its own rank by `gain`; a category scores the weighted
-// mean of its votes, the total the unweighted mean over categories — so a
-// category with 100 votes counts as much as one with 5. f32 throughout, so
-// a printed score is reproducible to the digit. β and the target depths
-// are fixed human-judgment values, never tuning knobs.
+// The eval metric; definitions and rationale: NLP.md §"Eval architecture".
+// f32 throughout, so a printed score is reproducible to the digit.
 
 import { byteOrder } from '../byte-order';
 

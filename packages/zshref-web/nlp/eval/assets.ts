@@ -1,7 +1,7 @@
-// What every eval and reporter needs loaded once: corpus, rules, lookup map,
-// embedder, index. A missing or stale index is built in memory (minutes) and
-// never written — `pnpm build:index` is the way to persist one; a missing
-// model is an error, since nothing here can run without it.
+// What every eval and reporter needs loaded once (`EvalAssets`). A missing
+// or stale index is built in memory (minutes) and never written —
+// `pnpm build:index` is the way to persist one; a missing model is an error,
+// since nothing here can run without it.
 
 import { existsSync } from 'node:fs';
 

@@ -27,12 +27,6 @@ export const redirSlugFromSig = (sig: string): string =>
 // Two phantom brands indexed on DocCategory. Distinction is provenance only —
 // neither carries corpus-membership proof; that's the resolver layer's job.
 //
-//   Observed<K>    Normalized K-shaped token from user code / untrusted
-//                  source. Produced by `mkObserved` or fact extraction.
-//   Documented<K>  Normalized K-shaped identifier that is a key in
-//                  `corpus[K]`. Produced by Yodl extractors via
-//                  `mkDocumented` and by the resolver layer.
-//
 // Normalization is shared (one `norm[K]` table); the brand split prevents
 // conflating user-code tokens with corpus identities.
 //
@@ -73,9 +67,6 @@ export type Observed<K extends DocCategory> = K extends "precmd_modifier"
   : K extends "process_subst"
     ? ProcessSubstOp
     : string & { readonly __observed: K }
-
-// Smart constructors (`mkObserved`, `mkDocumented`) live in `brands.ts`;
-// `normalizeOptName` in `normalize-option.ts` (mirrored in zshref-rs).
 
 // --- Closed literal unions --------------------------------------------------
 
@@ -507,7 +498,7 @@ export interface ZleWidgetDoc extends SyntaxDocBase {
   readonly kind: ZleWidgetKind
   readonly section: ZleWidgetSubsection
   /**
-   * Nested item list inside the widget body (currently just
+   * Nested item list inside the widget body (e.g.
    * `history-incremental-search-backward`). When present, `desc` is the
    * intro; renderer composes intro → sub-items → `outro`.
    */
@@ -557,8 +548,8 @@ export interface ArithOpDoc extends SyntaxDocBase {
 /**
  * Special-function kind.
  *
- * - `hook`: companion-array callback (chpwd, periodic, precmd, preexec, zshaddhistory, zshexit).
- * - `trap-literal`: specifically named trap (TRAPDEBUG, TRAPEXIT, TRAPZERR, TRAPERR).
+ * - `hook`: companion-array callback (e.g. `precmd`, `chpwd`); names in `hookNames`.
+ * - `trap-literal`: specifically named trap (e.g. `TRAPEXIT`, `TRAPZERR`).
  * - `trap-template`: `TRAPNAL` template where NAL is any signal name (`man 7 signal`).
  */
 export type SpecialFunctionKind = "hook" | "trap-literal" | "trap-template"

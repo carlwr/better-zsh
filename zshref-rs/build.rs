@@ -1,16 +1,10 @@
 //! Data-source auto-detect for the embedded corpus.
 //!
 //! `src/corpus.rs` embeds JSONs via `include_bytes!`, which takes a literal
-//! path. The path is picked at compile time via `cfg(data_source = "...")`,
-//! set here from what exists on disk:
+//! path, so the source is picked at compile time via `cfg(data_source = "...")`
+//! — set here from `ZSHREF_DATA_SOURCE` or what exists on disk.
 //!
-//!   ZSHREF_DATA_SOURCE=...              explicit override ("vendored"/"monorepo")
-//!   zshref-rs/data/                     present → cfg(data_source="vendored")
-//!   ../packages/.../artifacts/json/     present → cfg(data_source="monorepo")
-//!   neither                             compile error with actionable message
-//!
-//! Post-extraction the monorepo branch is dead; drop it and everything
-//! collapses to the vendored mode. Design: DATA-SYNC.md.
+//! Design: DATA-SYNC.md.
 
 use std::{
     env,
