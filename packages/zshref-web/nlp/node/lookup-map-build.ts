@@ -9,12 +9,11 @@ import {
   type DocRecordMap,
   docCategories,
   docDisplay,
-  idOf,
 } from "@carlwr/zsh-core/taxonomy"
 import type { LookupEntry, LookupMap } from "../core/lookup-map"
-import type { ResolverHit } from "../core/types"
-import { byteOrder } from "./byte-order"
-import { resolverKey } from "./resolver-key"
+import { byteOrder } from "../core/text"
+import { compareRecordIds, type ResolverHit } from "../core/types"
+import { identityOf, resolverKey } from "./resolver-key"
 
 export const LOOKUP_MAP_VERSION = 1
 
@@ -83,15 +82,13 @@ export function surfaceFormsFor<K extends DocCategory>(
   rec: DocRecordMap[K],
 ): readonly SurfaceForm[] {
   return surfaceForms[cat](
-    idOf(cat, rec) as string,
+    identityOf(cat, rec).id,
     docDisplay(cat, rec),
   ).filter(s => s.form !== "")
 }
 
 const compareEntries = (a: LookupEntry, b: LookupEntry): number =>
-  byteOrder(a.raw, b.raw) ||
-  byteOrder(a.category, b.category) ||
-  byteOrder(a.id, b.id)
+  byteOrder(a.raw, b.raw) || compareRecordIds(a, b)
 
 /**
  * Every enumerated surface form the resolver canonicalizes, sorted by (raw,

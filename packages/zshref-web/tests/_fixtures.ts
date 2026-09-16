@@ -1,14 +1,16 @@
 // Shared fixtures. Pure (no IO); excluded from the test glob (not *.test.ts).
 
+import { lookupIndex } from "../nlp/core/lookup-map"
 import {
   DIMS,
   type IndexedRecord,
+  perView,
   type RecordText,
   type VectorIndex,
   type ViewVectors,
 } from "../nlp/core/types"
-import { syntheticVec } from "../nlp/node/fixtures"
-import { INDEX_VERSION, viewVectors } from "../nlp/node/index-build"
+import { syntheticVec } from "../nlp/core/vec"
+import { INDEX_VERSION } from "../nlp/node/index-build"
 
 export function makeRecordText(over: Partial<RecordText> = {}): RecordText {
   return {
@@ -27,7 +29,7 @@ export function makeRecordText(over: Partial<RecordText> = {}): RecordText {
 
 /** A record's view vectors, synthetic: a function of its identity and the view. */
 export const syntheticVectors = (category: string, id: string): ViewVectors =>
-  viewVectors(view => syntheticVec([category, id, view]))
+  perView(view => syntheticVec([category, id, view]))
 
 /** The index envelope around `records` (synthetic vectors expected). */
 export const syntheticIndexOf = (records: IndexedRecord[]): VectorIndex => ({
@@ -49,3 +51,6 @@ export const syntheticIndex = (
       vectors: syntheticVectors(category, id),
     })),
   )
+
+/** A lookup that hits nothing: the ranker alone decides the order. */
+export const emptyLookup = () => lookupIndex({ version: 1, entries: [] })

@@ -7,19 +7,6 @@ import { z } from "zod"
 import { RULE_FILES, RULE_SCHEMAS, type RuleFile } from "../core/rules"
 import { SentenceFixtureSchema } from "./eval/sentence-fixture"
 
-export {
-  RULE_FILES,
-  RULE_SCHEMAS,
-  type RuleFile,
-  type Rules,
-} from "../core/rules"
-export {
-  MAX_SCORE_TERM,
-  StopwordsSchema,
-  SynonymsSchema,
-  TuningSchema,
-} from "../core/types"
-
 export type RuleSchemaFile = `${RuleFile}.schema.json`
 export const SENTENCE_FIXTURE_SCHEMA_FILE = "sentence-fixture.schema.json"
 /** Everything under rules/schema/. */

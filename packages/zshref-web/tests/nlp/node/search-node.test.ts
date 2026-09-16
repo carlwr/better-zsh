@@ -2,11 +2,10 @@
 // (`tests/nlp/core/search.test.ts`): the category narrowing, the defaults.
 
 import { beforeAll, describe, expect, it } from "vitest"
-import { LookupIndex } from "../../../nlp/core/lookup-map"
-import { syntheticVec } from "../../../nlp/node/fixtures"
+import { syntheticVec } from "../../../nlp/core/vec"
 import { loadRulesYaml } from "../../../nlp/node/rules-load"
 import { type SearchDeps, searchNode } from "../../../nlp/node/search-node"
-import { syntheticIndex } from "../../_fixtures"
+import { emptyLookup, syntheticIndex } from "../../_fixtures"
 
 const ids = ["a", "b", "c", "d", "e", "f"]
 const index = syntheticIndex([
@@ -19,7 +18,7 @@ beforeAll(async () => {
   deps = {
     index,
     rules: await loadRulesYaml(),
-    lookup: new LookupIndex({ version: 1, entries: [] }),
+    lookup: emptyLookup(),
     embedder: {
       embed: async texts => texts.map(t => syntheticVec(["query", t])),
     },

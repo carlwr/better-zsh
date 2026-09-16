@@ -9,12 +9,11 @@ import { createNodeEmbedder } from "../../../nlp/node/embedder-node"
 import {
   buildParityFixture,
   buildSanityFixture,
-  fixtureJson,
   loadSanityFixture,
   renderSanity,
   sanityFailures,
-  syntheticVec,
 } from "../../../nlp/node/fixtures"
+import { fixtureJson } from "../../../nlp/node/json-f32"
 import { loadRulesYaml } from "../../../nlp/node/rules-load"
 import {
   artifactGate,
@@ -36,17 +35,6 @@ describe("parity fixture", () => {
       "UPDATE_PARITY_FIXTURE",
       { render: fixtureJson },
     )
-  })
-
-  it("synthetic_vec_is_deterministic_and_unit", () => {
-    const v = syntheticVec(["option", "autocd", "body"])
-    expect(v).toEqual(syntheticVec(["option", "autocd", "body"]))
-    let sum = 0
-    for (const x of v) sum += x * x
-    expect(Math.abs(Math.sqrt(sum) - 1)).toBeLessThanOrEqual(1e-6)
-    // Keyed by identity; the part separator keeps ("ab","c") off ("a","bc").
-    expect(syntheticVec(["option", "autocd", "expanded"])).not.toEqual(v)
-    expect(syntheticVec(["ab", "c"])).not.toEqual(syntheticVec(["a", "bc"]))
   })
 })
 

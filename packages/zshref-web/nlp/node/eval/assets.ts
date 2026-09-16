@@ -8,7 +8,11 @@ import { existsSync } from "node:fs"
 
 import { type DocCorpus, loadCorpus } from "@carlwr/zsh-core"
 
-import { LookupIndex, LookupMapSchema } from "../../core/lookup-map"
+import {
+  type LookupIndex,
+  LookupMapSchema,
+  lookupIndex,
+} from "../../core/lookup-map"
 import type { Rules } from "../../core/rules"
 import type { VectorIndex } from "../../core/types"
 import {
@@ -30,9 +34,11 @@ export interface EvalAssets {
   index: VectorIndex
 }
 
-export function assetsMissing(): string[] {
-  return [PATHS.modelDir].filter(p => !existsSync(p))
-}
+/** Null with the model staged; else why nothing can run, with the fix. */
+export const modelMissing = (): string | null =>
+  existsSync(PATHS.modelDir)
+    ? null
+    : `no model at ${PATHS.modelDir} — run scripts/fetch-model`
 
 /** The on-disk index when it is an index of this corpus; null when missing or stale. */
 async function validIndexOnDisk(
@@ -45,15 +51,11 @@ async function validIndexOnDisk(
 }
 
 export async function loadEvalAssets(): Promise<EvalAssets> {
-  const missing = assetsMissing()
-  if (missing.length > 0) {
-    throw new Error(
-      `NLP assets missing: ${missing.join(", ")} — run scripts/fetch-model`,
-    )
-  }
+  const missing = modelMissing()
+  if (missing) throw new Error(missing)
   const corpus = loadCorpus()
   const rules = await loadRulesYaml()
-  const lookup = new LookupIndex(LookupMapSchema.parse(buildLookupMap(corpus)))
+  const lookup = lookupIndex(LookupMapSchema.parse(buildLookupMap(corpus)))
   const raw = await createNodeEmbedder()
   const index =
     (await validIndexOnDisk(corpus, rules)) ??

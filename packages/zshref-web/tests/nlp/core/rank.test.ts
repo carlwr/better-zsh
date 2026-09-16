@@ -1,40 +1,42 @@
 // The parity fixture pins the arithmetic against its past; these tests pin
 // what the arithmetic must mean — unit cases, then properties over small
-// synthetic indexes.
+// synthetic indexes (`tests/_arbs.ts`).
 
 import fc from "fast-check"
 import { beforeAll, describe, expect, it } from "vitest"
 import {
+  categoryCounts,
+  categoryPenalties,
   computeBoosts,
   overlapBoost,
+  queryWords,
   rank,
+  recordTerms,
   semanticWeights,
   symbolHead,
   symbolTokens,
 } from "../../../nlp/core/rank"
-import type { Rules } from "../../../nlp/core/rules"
 import {
   exactWordBoost,
-  type IndexedRecord,
-  type RecordText,
+  MAX_SCORE_TERM,
+  type Rules,
   type Tuning,
-  type VectorIndex,
-} from "../../../nlp/core/types"
-import { syntheticVec } from "../../../nlp/node/fixtures"
+} from "../../../nlp/core/rules"
+import { type RecordText, recordKey } from "../../../nlp/core/types"
 import { loadRulesYaml } from "../../../nlp/node/rules-load"
 import {
-  makeRecordText,
-  syntheticIndexOf,
-  syntheticVectors,
-} from "../../_fixtures"
+  arbBoostWeights,
+  arbIndex,
+  arbRanking,
+  arbSemanticWeights,
+  type SemanticWeights,
+} from "../../_arbs"
+import { makeRecordText } from "../../_fixtures"
 
 let rules: Rules
 beforeAll(async () => {
   rules = await loadRulesYaml()
 })
-
-type SemanticWeights = Tuning["semantic_weights"]
-type BoostWeights = Tuning["boosts"]
 
 const withTuning = (r: Rules, patch: (t: Tuning) => Tuning): Rules => ({
   ...r,
@@ -68,12 +70,10 @@ const rec = (over: Partial<RecordText>): RecordText =>
 describe("ranker unit tests", () => {
   it("exact_id_match_gives_lexical_boost", () => {
     const r = rec({ id: "autocd", display: "AUTO_CD" })
-    const exact = computeBoosts(r, "autocd", rules)
-    const queryWithCategory = computeBoosts(r, "option autocd please", rules)
-    // Both queries contain the discriminating word "autocd" and get the
-    // exact-word boost, so lexical scores can be equal.
-    expect(exact.lexical).toBeGreaterThan(0)
-    expect(queryWithCategory.category).toBeGreaterThan(0)
+    expect(computeBoosts(r, "autocd", rules).lexical).toBeGreaterThan(0)
+    expect(
+      computeBoosts(r, "option autocd please", rules).category,
+    ).toBeGreaterThan(0)
   })
 
   it("symbol_tokens_strip_sigil_and_keep_operators", () => {
@@ -175,94 +175,78 @@ describe("ranker unit tests", () => {
   })
 })
 
+// --- query tokenization ------------------------------------------------------
+
+const arbAsciiText = fc.string({ unit: "grapheme-ascii", maxLength: 24 })
+
+describe("query token properties", () => {
+  it("symbol tokens: lowercased, whitespace-free, unquoted, at most one `$` peeled, each from a query token", () => {
+    fc.assert(
+      fc.property(arbAsciiText, q => {
+        const tokens = q.split(/\s+/).filter(t => t !== "")
+        for (const t of symbolTokens(q)) {
+          expect(t).not.toBe("")
+          expect(t).toBe(t.toLowerCase())
+          expect(t).not.toMatch(/\s|^['"`]|['"`]$/)
+          expect(tokens.some(tok => tok.toLowerCase().includes(t))).toBe(true)
+        }
+      }),
+    )
+  })
+
+  it("symbol head: a non-empty prefix of the display bearing no alphanumeric or space, else null", () => {
+    fc.assert(
+      fc.property(arbAsciiText, display => {
+        const head = symbolHead(display)
+        if (head === null)
+          expect(display === "" || /^[A-Za-z0-9 ]/.test(display)).toBe(true)
+        else {
+          expect(display.startsWith(head)).toBe(true)
+          expect(head).not.toMatch(/[A-Za-z0-9 ]/)
+          expect(display.slice(head.length)).toMatch(/^$|^[A-Za-z0-9 ]/)
+        }
+      }),
+    )
+  })
+
+  it("query words: alphanumeric runs of the query, the generic stopwords dropped, order kept", () => {
+    fc.assert(
+      fc.property(arbAsciiText, q => {
+        const words = queryWords(q.toLowerCase(), rules.stopwords)
+        for (const w of words) {
+          expect(w).toMatch(/^[a-z0-9]*$/)
+          expect(rules.stopwords.generic).not.toContain(w)
+        }
+        const runs = q.toLowerCase().split(/[^a-z0-9]+/)
+        expect(words).toEqual(
+          runs.filter(w => w !== "" && !rules.stopwords.generic.includes(w)),
+        )
+      }),
+    )
+  })
+})
+
 // --- synthetic indexes -------------------------------------------------------
-
-const CATEGORIES = [
-  { category: "option", category_label: "option" },
-  { category: "builtin", category_label: "builtin" },
-  { category: "special_param", category_label: "special parameter" },
-]
-const IDENTITIES = [
-  { id: "aliases", display: "ALIASES" },
-  { id: "autocd", display: "AUTO_CD" },
-  { id: "setopt", display: "setopt" },
-  { id: "echo", display: "echo" },
-  { id: "?", display: "?" },
-  { id: ">>_word", display: ">> word" },
-]
-// Discriminating words, stopwords (`that`, `with`), category names, a
-// too-short word, and the symbols the lexical path special-cases.
-const WORDS = [
-  "alias",
-  "expand",
-  "glob",
-  "history",
-  "prompt",
-  "complete",
-  "redirect",
-  "file",
-  "output",
-  "that",
-  "with",
-  "option",
-  "builtin",
-  "special",
-  "parameter",
-  "autocd",
-  "setopt",
-  "to",
-  "$?",
-  ">>",
-  '"$0"',
-  "<<<",
-]
-
-const arbText = (max: number): fc.Arbitrary<string> =>
-  fc
-    .array(fc.constantFrom(...WORDS), { maxLength: max })
-    .map(ws => ws.join(" "))
-
-const arbQuery: fc.Arbitrary<string> = fc
-  .tuple(arbText(6), fc.string({ unit: "grapheme-ascii", maxLength: 6 }))
-  .map(([words, noise]) => `${words} ${noise}`)
-
-const arbRecord: fc.Arbitrary<IndexedRecord> = fc
-  .record({
-    cat: fc.constantFrom(...CATEGORIES),
-    ident: fc.constantFrom(...IDENTITIES),
-    structured: arbText(6),
-    body: arbText(30),
-    expanded: arbText(6),
-  })
-  .map(({ cat, ident, structured, body, expanded }) => ({
-    text: rec({ ...cat, ...ident, structured, body, expanded }),
-    vectors: syntheticVectors(cat.category, ident.id),
-  }))
-
-// Identities unique, as in a real index: the sort is total only then.
-const arbIndex: fc.Arbitrary<VectorIndex> = fc
-  .uniqueArray(arbRecord, {
-    minLength: 1,
-    maxLength: 7,
-    selector: r => `${r.text.category}\0${r.text.id}`,
-  })
-  .map(syntheticIndexOf)
-
-// A query and its synthetic vector over an index.
-const arbRanking = fc
-  .record({ index: arbIndex, query: arbQuery })
-  .map(({ index, query }) => ({
-    index,
-    query,
-    queryVec: syntheticVec(["query", query]),
-  }))
-
-const countWords = (s: string): number =>
-  s.split(/\s+/).filter(w => w.length > 0).length
 
 const INDEX_RUNS = { numRuns: 60 }
 
 describe("rank properties", () => {
+  it("ranks every record once, by score descending", () => {
+    fc.assert(
+      fc.property(arbRanking, r => {
+        const ranked = rank(r.query, r.queryVec, r.index, rules)
+        expect(ranked.map(m => recordKey(m.rec)).sort()).toEqual(
+          r.index.records.map(x => recordKey(x.text)).sort(),
+        )
+        for (let i = 1; i < ranked.length; i++) {
+          const [a, b] = [ranked[i - 1], ranked[i]]
+          if (a && b) expect(a.score).toBeGreaterThanOrEqual(b.score)
+        }
+      }),
+      INDEX_RUNS,
+    )
+  })
+
   it("is invariant under a permutation of the index records", () => {
     const arb = arbRanking.chain(r =>
       fc
@@ -292,7 +276,7 @@ describe("rank properties", () => {
       fc.property(arbRanking, r => {
         for (const m of rank(r.query, r.queryVec, r.index, noPenalty)) {
           const [bw, sw, ew] = semanticWeights(
-            countWords(m.rec.body),
+            recordTerms(m.rec).bodyWords,
             noPenalty.tuning.semantic_weights,
           )
           const { semantic, boosts } = m.debug
@@ -332,37 +316,39 @@ describe("rank properties", () => {
   })
 })
 
+describe("category penalty properties", () => {
+  it("0 for the largest category, at most the max, larger the rarer the category", () => {
+    fc.assert(
+      fc.property(
+        arbIndex,
+        fc.double({ min: 0, max: MAX_SCORE_TERM, noNaN: true }),
+        (index, max) => {
+          const r = withTuning(rules, t => ({
+            ...t,
+            penalties: { category_rarity_max: max },
+          }))
+          const counts = categoryCounts(index)
+          const penalties = categoryPenalties(index, r)
+          const largest = Math.max(...counts.values())
+          expect([...penalties.keys()]).toEqual([...counts.keys()])
+          for (const [cat, n] of counts) {
+            const p = penalties.get(cat) ?? Number.NaN
+            expect(p).toBeGreaterThanOrEqual(0)
+            expect(p).toBeLessThanOrEqual(max)
+            if (n === largest) expect(p).toBe(0)
+            for (const [rarer, m] of counts)
+              if (m <= n) expect(penalties.get(rarer)).toBeGreaterThanOrEqual(p)
+          }
+        },
+      ),
+      INDEX_RUNS,
+    )
+  })
+})
+
 // --- weights and boosts ------------------------------------------------------
 
-const unit = fc.double({ min: 0, max: 1, noNaN: true })
-
-// structured ≤ 1 − body, as the range check admits.
-const arbSemanticWeights: fc.Arbitrary<SemanticWeights> = fc
-  .record({
-    body: unit,
-    frac: unit,
-    strength: unit,
-    length_scale: fc.double({ min: 1, max: 100, noNaN: true }),
-  })
-  .map(({ body, frac, strength, length_scale }) => ({
-    body,
-    structured: (1 - body) * frac,
-    short_body: { strength, length_scale },
-  }))
-
 const arbBodyWords = fc.nat({ max: 200 })
-
-// Boost weights on a 1e-3 grid.
-const grid = (max: number): fc.Arbitrary<number> =>
-  fc.integer({ min: 0, max: max * 1000 }).map(i => i / 1000)
-const arbBoostWeights: fc.Arbitrary<BoostWeights> = fc.record({
-  category: grid(0.3),
-  exact_word_increment: grid(0.1),
-  word_overlap: fc.record({
-    scale: grid(0.5),
-    half_sat: fc.integer({ min: 1, max: 16 }),
-  }),
-})
 
 describe("semantic weight properties", () => {
   it("lie on the simplex: non-negative, summing to 1 within eps", () => {

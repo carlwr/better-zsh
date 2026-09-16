@@ -5,7 +5,7 @@
 // the anti-swamp guard: lexical credit for a synonym would promote records that
 // merely contain the literal token.
 
-import type { QueryExpansion } from "./types"
+import type { QueryExpansion } from "./rules"
 
 // A short cap: even with one canonical term per rule, several rules firing on a
 // 1-2 word query would pull its embedding toward a generic centroid. Bounding

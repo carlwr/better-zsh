@@ -7,11 +7,13 @@
 // a negative's presence) is counted, never printed with its query.
 
 import type { DocCorpus } from "@carlwr/zsh-core"
-import { type DocCategory, docDisplay, idOf } from "@carlwr/zsh-core/taxonomy"
-import { byteOrder } from "../byte-order"
-import type { Identity } from "../contract"
+import { type DocCategory, docDisplay } from "@carlwr/zsh-core/taxonomy"
+import { byteOrder } from "../../core/text"
+import { type RecordId, recordKey, sameRecord } from "../../core/types"
+import { identityOf } from "../resolver-key"
 import { searchNode } from "../search-node"
 import type { EvalAssets } from "./assets"
+import { mean } from "./metric"
 import type { QaCorpus, QaEntry } from "./qa-corpus"
 
 export type HardCheckTemplate = (display: string) => string
@@ -38,9 +40,8 @@ export const hardCheckTemplates: Partial<
 export const hardCheckCategories = (): DocCategory[] =>
   Object.keys(hardCheckTemplates) as DocCategory[]
 
-export interface HardCheck {
+export interface HardCheck extends RecordId {
   category: DocCategory
-  id: string
   query: string
 }
 
@@ -51,7 +52,7 @@ export function hardChecks(corpus: DocCorpus): HardCheck[] {
     if (template === undefined) return []
     return [...corpus[category].values()].map(rec => ({
       category,
-      id: idOf(category, rec) as string,
+      id: identityOf(category, rec).id,
       query: template(docDisplay(category, rec)),
     }))
   })
@@ -93,38 +94,36 @@ export async function scoreHardChecks(
 ): Promise<HardCheckResult> {
   const perCat: HardCheckResult["perCat"] = {}
   const details: string[] = []
-  let passed = 0
   for (const check of checks) {
     const top = (await searchNode({ query: check.query, limit: 1 }, assets))
       .matches[0]?.rec
     const pc = perCat[check.category] ?? { passed: 0, total: 0 }
     perCat[check.category] = pc
     pc.total++
-    if (top && top.category === check.category && top.id === check.id) {
-      passed++
-      pc.passed++
-    } else {
-      const got = top ? `${top.category}/${top.id}` : "(no results)"
+    if (top && sameRecord(top, check)) pc.passed++
+    else
       details.push(
-        `  FAIL: "${check.query}" → got ${got}, expected ${check.category}/${check.id}`,
+        `  FAIL: "${check.query}" → got ${top ? recordKey(top) : "(no results)"}, expected ${recordKey(check)}`,
       )
-    }
   }
   const rates = hardCheckRates(perCat)
-  const hardScore = rates.length
-    ? rates.reduce((a, r) => a + r.pct, 0) / rates.length
-    : 0
-  return { perCat, details, passed, total: checks.length, hardScore }
+  return {
+    perCat,
+    details,
+    passed: rates.reduce((a, r) => a + r.passed, 0),
+    total: checks.length,
+    hardScore: mean(rates.map(r => r.pct)),
+  }
 }
 
 export const runHardChecks = (assets: EvalAssets): Promise<HardCheckResult> =>
   scoreHardChecks(hardChecks(assets.corpus), assets)
 
 export interface EntryScore {
-  entryScore: number
-  entryExpectedWeight: number
+  score: number
+  expectedWeight: number
   /** Distinct positive expected items found. */
-  numMatched: number
+  matched: number
   /** A negative item present, or a positive one absent. */
   warnings: number
 }
@@ -138,28 +137,26 @@ export interface EntryScore {
  */
 export function scoreEntry(
   entry: QaEntry,
-  matches: readonly Identity[],
+  matches: readonly RecordId[],
 ): EntryScore {
   const topN = entry.topN ?? entry.limit
   const weight = entry.weight
   const scorable = matches.slice(0, topN)
   const seen = new Set<string>()
-  let entryScore = 0
-  let entryExpectedWeight = 0
+  let score = 0
+  let expectedWeight = 0
   let warnings = 0
   for (const exp of entry.expected) {
-    const key = `${exp.category}/${exp.id}`
-    const present = scorable.some(
-      m => m.category === exp.category && m.id === exp.id,
-    )
+    const key = recordKey(exp)
+    const present = scorable.some(m => sameRecord(m, exp))
     const absW = Math.abs(exp.score) * weight
-    entryExpectedWeight += absW
+    expectedWeight += absW
     if (exp.score < 0) {
       if (present) {
-        entryScore += exp.score * weight
+        score += exp.score * weight
         warnings++
       } else {
-        entryScore += absW
+        score += absW
       }
       continue
     }
@@ -169,9 +166,9 @@ export function scoreEntry(
     }
     if (seen.has(key)) continue
     seen.add(key)
-    entryScore += exp.score * weight
+    score += exp.score * weight
   }
-  return { entryScore, entryExpectedWeight, numMatched: seen.size, warnings }
+  return { score, expectedWeight, matched: seen.size, warnings }
 }
 
 export interface QaScore {
@@ -184,11 +181,8 @@ export interface QaScore {
 }
 
 export function aggregateScores(scores: readonly EntryScore[]): QaScore {
-  const totalWeightedScore = scores.reduce((a, s) => a + s.entryScore, 0)
-  const totalExpectedWeight = scores.reduce(
-    (a, s) => a + s.entryExpectedWeight,
-    0,
-  )
+  const totalWeightedScore = scores.reduce((a, s) => a + s.score, 0)
+  const totalExpectedWeight = scores.reduce((a, s) => a + s.expectedWeight, 0)
   return {
     avgScore:
       totalExpectedWeight > 0 ? totalWeightedScore / totalExpectedWeight : 0,

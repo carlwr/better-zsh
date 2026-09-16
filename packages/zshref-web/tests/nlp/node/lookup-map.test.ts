@@ -3,7 +3,7 @@
 
 import { loadCorpus } from "@carlwr/zsh-core"
 import { describe, expect, it } from "vitest"
-import { LookupIndex } from "../../../nlp/core/lookup-map"
+import { lookupIndex } from "../../../nlp/core/lookup-map"
 import { buildLookupMap } from "../../../nlp/node/lookup-map-build"
 import { assertCommittedJson, PATHS } from "../../_helpers"
 
@@ -18,31 +18,22 @@ describe("lookup map", () => {
     )
   })
 
-  it("known_canonical_forms_resolve", () => {
-    const idx = new LookupIndex(buildLookupMap(corpus))
-    const cases: readonly (readonly [string, string, string])[] = [
-      ["AUTO_CD", "option", "autocd"],
-      ["auto_cd", "option", "autocd"],
-      ["autocd", "option", "autocd"],
-      ["NO_AUTO_CD", "option", "autocd"],
-      ["no_autocd", "option", "autocd"],
-      ["setopt", "builtin", "setopt"],
-      ["fc", "builtin", "fc"],
-      ["chdir", "builtin", "chdir"],
-      ["_arguments", "comp_utility", "_arguments"],
-    ]
-    for (const [raw, category, id] of cases) {
-      expect(idx.lookup(raw), `lookup ${JSON.stringify(raw)}`).toEqual({
-        category,
-        id,
-      })
-    }
-  })
+  const idx = lookupIndex(buildLookupMap(corpus))
 
-  // `SETOPT` is not an enumerated builtin form (the canonical one is the
-  // lowercase id), so it reaches `setopt` via the lowercase fallback.
-  it("lowercase_fallback_resolves", () => {
-    const idx = new LookupIndex(buildLookupMap(corpus))
-    expect(idx.lookup("SETOPT")).toEqual({ category: "builtin", id: "setopt" })
+  it.each([
+    ["AUTO_CD", "option", "autocd"],
+    ["auto_cd", "option", "autocd"],
+    ["autocd", "option", "autocd"],
+    ["NO_AUTO_CD", "option", "autocd"],
+    ["no_autocd", "option", "autocd"],
+    ["setopt", "builtin", "setopt"],
+    // Not an enumerated builtin form (the canonical one is the lowercase
+    // id): reached via the lowercase fallback.
+    ["SETOPT", "builtin", "setopt"],
+    ["fc", "builtin", "fc"],
+    ["chdir", "builtin", "chdir"],
+    ["_arguments", "comp_utility", "_arguments"],
+  ])("%j resolves to %s/%s", (raw, category, id) => {
+    expect(idx.lookup(raw)).toEqual({ category, id })
   })
 })

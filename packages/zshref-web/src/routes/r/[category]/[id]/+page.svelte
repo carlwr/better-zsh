@@ -30,11 +30,10 @@
       loadError,
       ready: artifacts !== null,
       found: artifacts
-        ? findRecord(artifacts.index.records, params.category, params.id)?.text
+        ? findRecord(artifacts.index.records, params)?.text
         : undefined,
       categories: artifacts?.categories ?? [],
-      category: params.category,
-      id: params.id,
+      want: params,
     }),
   )
 </script>

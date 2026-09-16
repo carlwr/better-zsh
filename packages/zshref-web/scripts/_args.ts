@@ -3,9 +3,9 @@
 // ungated.
 
 import {
-  assetsMissing,
   type EvalAssets,
   loadEvalAssets,
+  modelMissing,
 } from "../nlp/node/eval/assets"
 
 /**
@@ -32,11 +32,9 @@ export function scriptFlags(
 
 /** A reporter's preamble: the assets; a missing model exits 1 with the fetch hint, before anything loads. */
 export async function reporterAssets(name: string): Promise<EvalAssets> {
-  const missing = assetsMissing()
-  if (missing.length > 0) {
-    console.error(
-      `${name}: missing ${missing.join(", ")} — run scripts/fetch-model`,
-    )
+  const missing = modelMissing()
+  if (missing) {
+    console.error(`${name}: ${missing}`)
     process.exit(1)
   }
   return loadEvalAssets()

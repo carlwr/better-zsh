@@ -5,7 +5,7 @@
 
 import { z } from "zod"
 
-import type { RankedMatch, ResolverHit } from "./types"
+import { type RankedMatch, type ResolverHit, sameRecord } from "./types"
 
 export const LookupEntrySchema = z.object({
   raw: z.string(),
@@ -20,49 +20,39 @@ export const LookupMapSchema = z.object({
 })
 export type LookupMap = z.infer<typeof LookupMapSchema>
 
-/** O(1) lookup wrapper built once at load time. */
-export class LookupIndex {
-  private readonly byRaw: Map<string, { category: string; id: string }>
+/** The map as a lookup: built once at load time, O(1) per query. */
+export interface LookupIndex {
+  /** The canonical entry for `query`, if one exists: verbatim, then a
+   * lowercase fallback so e.g. `SETOPT` finds the lowercased builtin id. */
+  lookup(query: string): ResolverHit | null
+}
 
-  constructor(map: LookupMap) {
-    this.byRaw = new Map()
-    for (const e of map.entries) {
-      this.byRaw.set(e.raw, { category: e.category, id: e.id })
-    }
-  }
-
-  /** Resolve `query` to `(category, id)` if a canonical entry exists.
-   * Tries verbatim, then a lowercase fallback so e.g. `SETOPT` finds the
-   * lowercased builtin id. */
-  lookup(query: string): { category: string; id: string } | null {
-    const q = query.trim()
-    if (q === "") return null
-    const hit = this.byRaw.get(q)
-    if (hit) return hit
-    const lower = q.toLowerCase()
-    if (lower !== q) {
-      return this.byRaw.get(lower) ?? null
-    }
-    return null
+export function lookupIndex(map: LookupMap): LookupIndex {
+  const byRaw = new Map<string, ResolverHit>(
+    map.entries.map(e => [e.raw, { category: e.category, id: e.id }]),
+  )
+  return {
+    lookup(query) {
+      const q = query.trim()
+      if (q === "") return null
+      const hit = byRaw.get(q)
+      if (hit) return hit
+      const lower = q.toLowerCase()
+      return lower === q ? null : (byRaw.get(lower) ?? null)
+    },
   }
 }
 
 /**
- * Hard-promote `hit` (the lookup map's claim for the query) to slot 0 of
- * `ranked`, if present; slots 1..N keep ranker order. In place. The one
- * promote, shared by product search and the Node-side evals (the parity and
- * sanity fixtures rank without it).
+ * `ranked` with `hit` (the lookup map's claim for the query) at slot 0 when
+ * present; the rest keep ranker order. The one promote, shared by product
+ * search and the Node-side evals (the parity and sanity fixtures rank
+ * without it).
  */
 export function promoteToTop(
-  ranked: RankedMatch[],
+  ranked: readonly RankedMatch[],
   hit: ResolverHit | null,
-): void {
-  if (hit === null) return
-  const pos = ranked.findIndex(
-    m => m.rec.category === hit.category && m.rec.id === hit.id,
-  )
-  if (pos > 0) {
-    const [found] = ranked.splice(pos, 1)
-    if (found) ranked.unshift(found)
-  }
+): RankedMatch[] {
+  const found = hit && ranked.find(m => sameRecord(m.rec, hit))
+  return found ? [found, ...ranked.filter(m => m !== found)] : [...ranked]
 }

@@ -6,9 +6,15 @@ import { mkdir, readFile, writeFile } from "node:fs/promises"
 import { join } from "node:path"
 import { parse as parseYaml } from "yaml"
 
-import { loadRules, type Rules } from "../core/rules"
+import {
+  byRuleFile,
+  loadRules,
+  RULE_FILES,
+  type RuleFile,
+  type Rules,
+  ruleJsonFile,
+} from "../core/rules"
 import { PATHS } from "./paths"
-import { RULE_FILES, type RuleFile } from "./rules-schema"
 
 export type RulePaths = Record<RuleFile, string>
 
@@ -23,12 +29,8 @@ async function readYaml(path: string): Promise<unknown> {
  * lowercased — a phrase term like `process ID` never matches the lowercased
  * haystack otherwise). */
 export async function loadRulesYaml(paths: RulePaths = PATHS): Promise<Rules> {
-  const [tuning, stopwords, synonyms] = await Promise.all([
-    readYaml(paths.tuning),
-    readYaml(paths.stopwords),
-    readYaml(paths.synonyms),
-  ])
-  return loadRules({ tuning, stopwords, synonyms })
+  const yamls = await Promise.all(RULE_FILES.map(f => readYaml(paths[f])))
+  return loadRules(byRuleFile((_, at) => yamls[at]))
 }
 
 /**
@@ -40,6 +42,8 @@ export async function emitRulesJson(dir: string, rules?: Rules): Promise<void> {
   const r = rules ?? (await loadRulesYaml())
   await mkdir(dir, { recursive: true })
   await Promise.all(
-    RULE_FILES.map(f => writeFile(join(dir, `${f}.json`), prettyJson(r[f]))),
+    RULE_FILES.map(f =>
+      writeFile(join(dir, ruleJsonFile(f)), prettyJson(r[f])),
+    ),
   )
 }

@@ -2,6 +2,7 @@
 
 import { describe, expect, it } from "vitest"
 import { loadArtifacts } from "../../../nlp/browser/artifacts"
+import { RULE_FILES, ruleJsonFile } from "../../../nlp/core/rules"
 import { artifactGate, PATHS, readData, STAGED } from "../../_helpers"
 
 const skipReason = artifactGate("artifact loader", [STAGED.index])
@@ -9,11 +10,11 @@ const skipReason = artifactGate("artifact loader", [STAGED.index])
 // Rule URLs resolve to YAML sources; `readData` handles the format switch.
 const URL_TO_PATH: Record<string, string> = {
   "/artifacts/index.json": PATHS.indexJson,
-  "/artifacts/rules/tuning.json": PATHS.tuning,
-  "/artifacts/rules/stopwords.json": PATHS.stopwords,
-  "/artifacts/rules/synonyms.json": PATHS.synonyms,
   "/artifacts/categories.json": PATHS.categoriesJson,
   "/artifacts/lookup-map.json": PATHS.lookupMap,
+  ...Object.fromEntries(
+    RULE_FILES.map(f => [`/artifacts/rules/${ruleJsonFile(f)}`, PATHS[f]]),
+  ),
 }
 
 // Only implements the `Response` members used by `loadArtifacts`.

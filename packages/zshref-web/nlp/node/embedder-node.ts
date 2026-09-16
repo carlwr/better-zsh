@@ -18,6 +18,7 @@ import { createHash } from "node:crypto"
 import { readdirSync, readFileSync, statSync } from "node:fs"
 import { basename, dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
+import { hasAtleastTwo } from "@carlwr/typescript-extra"
 import {
   AutoModel,
   AutoTokenizer,
@@ -29,6 +30,7 @@ import {
 import type { Rules } from "../core/rules"
 import { queryEmbedText } from "../core/search"
 import { DIMS, MODEL_ID } from "../core/types"
+import { normalizeF32 } from "../core/vec"
 import { PATHS } from "./paths"
 
 // The model's sequence limit, and what is left for content once `[CLS]` and
@@ -41,20 +43,6 @@ export type Embedder = {
   embed(texts: readonly string[]): Promise<Float32Array<ArrayBuffer>[]>
 }
 
-/**
- * Unit-normalize `v` in place: f32 sequential `sqrt(Σx²)`, divide only if
- * the norm is positive. Returns `v`.
- */
-export function normalizeF32<B extends ArrayBufferLike>(
-  v: Float32Array<B>,
-): Float32Array<B> {
-  let sum = 0
-  for (const x of v) sum = Math.fround(sum + Math.fround(x * x))
-  const norm = Math.fround(Math.sqrt(sum))
-  if (norm > 0) for (let i = 0; i < v.length; i++) v[i] = (v[i] ?? 0) / norm
-  return v
-}
-
 type Loaded = {
   tokenizer: PreTrainedTokenizer
   model: PreTrainedModel
@@ -62,25 +50,32 @@ type Loaded = {
   sep: number
 }
 
-async function load(modelDir: string): Promise<Loaded> {
-  // transformers.js resolves `<localModelPath>/<modelId>`: point one level up
-  // from the model dir so the model id is its leaf name.
+/**
+ * Point transformers.js at the on-disk model, Hub off. It resolves
+ * `<localModelPath>/<modelId>`, so the id to load by is the dir's leaf
+ * name: returned.
+ */
+export function useLocalModel(modelDir: string = PATHS.modelDir): string {
   env.allowRemoteModels = false
   env.allowLocalModels = true
   env.localModelPath = dirname(modelDir)
-  const id = basename(modelDir)
+  return basename(modelDir)
+}
+
+async function load(modelDir: string): Promise<Loaded> {
+  const id = useLocalModel(modelDir)
   const [tokenizer, model] = await Promise.all([
     AutoTokenizer.from_pretrained(id),
     AutoModel.from_pretrained(id, { dtype: "fp32" }),
   ])
   // The specials as the tokenizer adds them around an empty input.
-  const [cls, sep] = tokenizer("", {
+  const ids = tokenizer("", {
     add_special_tokens: true,
     return_tensor: false,
   }).input_ids
-  if (cls === undefined || sep === undefined) {
+  if (!hasAtleastTwo(ids))
     throw new Error("tokenizer adds no [CLS]/[SEP] pair around an empty input")
-  }
+  const [cls, sep] = ids
   return { tokenizer, model, cls, sep }
 }
 

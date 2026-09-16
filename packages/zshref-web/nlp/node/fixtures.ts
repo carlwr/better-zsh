@@ -2,23 +2,19 @@
 // over them.
 //
 // - parity-fixture.json — a closed arithmetic contract: it ships the
-//   miniature index it was ranked against alongside the pre-computed
-//   `queryVec` per query, so `tests/nlp/core/parity.test.ts` checks the ranker's
-//   arithmetic against its own past with neither an embedder nor the full
-//   index — exactly: the ranker is deterministic over its inputs. Curated
-//   for branch coverage (exact-word + category boost, short-body weighting,
-//   lexical overlap, symbolic match).
+//   miniature index it was ranked against and the pre-computed `queryVec`
+//   per query, so the parity test checks the ranker's arithmetic against
+//   its own past with neither an embedder nor the full index — exactly: the
+//   ranker is deterministic over its inputs. Curated for branch coverage
+//   (exact-word + category boost, short-body weighting, lexical overlap,
+//   symbolic match).
 //
 // - sanity-fixture.json — hand-curated "clear winner" queries through the
-//   full pipeline (embedder + ranker); `sanityFailures`
-//   enforces the invariants (top identity as curated, top score above the
-//   floor, comfortable margin over the runner-up). Pins full-stack behaviour
-//   at a coarser resolution than the parity fixture: its scores carry the
-//   embedder runtime's platform noise, so they are asserted within a
-//   tolerance, never exactly.
-//
-// Vectors print as the shortest decimal per f32 component, scores as the
-// doubles they are (`fixtureJson`).
+//   full pipeline (embedder + ranker); `sanityFailures` enforces the
+//   invariants (top identity as curated, top score above the floor, a
+//   margin over the runner-up). Pins full-stack behaviour at a coarser
+//   resolution: its scores carry the embedder runtime's platform noise, so
+//   they are asserted within a tolerance, never exactly.
 
 import { readFile } from "node:fs/promises"
 import type { DocCorpus } from "@carlwr/zsh-core"
@@ -28,19 +24,24 @@ import { z } from "zod"
 import { loadVectorIndex } from "../core/index-loader"
 import { rank } from "../core/rank"
 import type { Rules } from "../core/rules"
-import { DIMS, type RankedMatch, type VectorIndex } from "../core/types"
-import { type Embedder, embedQuery, normalizeF32 } from "./embedder-node"
-import { INDEX_VERSION, viewVectors } from "./index-build"
-import { f32Shortest } from "./json-f32"
+import {
+  DIMS,
+  F32VecSchema,
+  perView,
+  type RankedMatch,
+  RecordIdSchema,
+  sameRecord,
+  type VectorIndex,
+} from "../core/types"
+import { syntheticVec } from "../core/vec"
+import { type Embedder, embedQuery } from "./embedder-node"
+import { INDEX_VERSION } from "./index-build"
 import { PATHS } from "./paths"
 import { corpusTexts, type IndexGroups } from "./retrieval-text"
 
 // --- shapes ---------------------------------------------------------------
 
-const f32Vec = z.array(z.number()).transform(a => new Float32Array(a))
-
-const IdentitySchema = z.object({ category: z.string(), id: z.string() })
-const ScoredSchema = IdentitySchema.extend({ score: z.number() })
+const ScoredSchema = RecordIdSchema.extend({ score: z.number() })
 export type Scored = z.infer<typeof ScoredSchema>
 
 export const PARITY_VERSION = 4
@@ -55,7 +56,7 @@ export const ParityFixtureSchema = z.object({
   entries: z.array(
     z.object({
       query: z.string(),
-      queryVec: f32Vec,
+      queryVec: F32VecSchema,
       expected: z.array(ScoredSchema),
     }),
   ),
@@ -149,48 +150,6 @@ export const PARITY_INDEX_RECORDS: readonly RecordRef[] = [
  */
 export const PARITY_INDEX_TAG = "synthetic:parity-fixture"
 
-const MASK64 = (1n << 64n) - 1n
-
-/** FNV-1a over each part's UTF-8 bytes; a trailing 0xff separates the parts,
- * so ("ab", "c") and ("a", "bc") do not collide. */
-function fnv1a(parts: readonly string[]): bigint {
-  let h = 0xcbf29ce484222325n
-  for (const p of parts) {
-    for (const b of [...new TextEncoder().encode(p), 0xff]) {
-      h ^= BigInt(b)
-      h = (h * 0x100000001b3n) & MASK64
-    }
-  }
-  return h
-}
-
-/**
- * Stand-in for an embedding: a fixed-seed stream keyed by the vector's
- * identity (splitmix64 seeded by `fnv1a(key) | 1`, u64 wrapping via 64-bit
- * masking), normalized like a real one. Parity asserts that the ranker's
- * arithmetic agrees with its own past, never that retrieval is good — so
- * the numbers need to be reproducible, not meaningful, and generating them
- * is what keeps the 127M model out of the contract.
- */
-export function syntheticVec(
-  key: readonly string[],
-): Float32Array<ArrayBuffer> {
-  let state = fnv1a(key) | 1n
-  const v = new Float32Array(DIMS)
-  for (let i = 0; i < DIMS; i++) {
-    state = (state + 0x9e3779b97f4a7c15n) & MASK64
-    let z = state
-    z = ((z ^ (z >> 30n)) * 0xbf58476d1ce4e5b9n) & MASK64
-    z = ((z ^ (z >> 27n)) * 0x94d049bb133111ebn) & MASK64
-    z ^= z >> 31n
-    // Top 24 bits over 2^23: every step is exact in f32, so the spread over
-    // [-1, 1) carries no rounding bias (the typed-array store is the f32 cast).
-    v[i] = Number(z >> 40n) / 8388608 - 1
-  }
-  normalizeF32(v)
-  return v
-}
-
 /** The miniature index: the curated records' real retrieval text, synthetic vectors. */
 export function buildParityIndex(
   corpus: DocCorpus,
@@ -205,7 +164,7 @@ export function buildParityIndex(
       )
     return {
       text,
-      vectors: viewVectors(view => syntheticVec([category, id, view])),
+      vectors: perView(view => syntheticVec([category, id, view])),
     }
   })
   return {
@@ -308,7 +267,7 @@ function entryFailures(e: SanityEntry): string[] {
   const want = SANITY_QUERIES.find(q => q.query === e.query)
   if (!want) {
     out.push(`${label}: not a curated sanity query`)
-  } else if (top.category !== want.category || top.id !== want.id) {
+  } else if (!sameRecord(top, want)) {
     out.push(
       `${label}: top identity drifted from curated expected_top (got ${top.category}/${top.id}, want ${want.category}/${want.id})`,
     )
@@ -346,47 +305,4 @@ export function renderSanity(fixture: SanityFixture): string {
   )
   const detail = fails.length === 0 ? "" : `\n  ${fails.join("\n  ")}`
   return `[sanity] ${ok}/${entries.length} hold  floor≥${SANITY_FLOOR} (worst ${worstFloor})  margin≥${SANITY_MARGIN} (worst ${worstMargin})${detail}\n`
-}
-
-// --- JSON ------------------------------------------------------------------
-
-/**
- * A fixture as committed: pretty (2-space, as `JSON.stringify` lays it out),
- * a `Float32Array` as a plain array of the shortest decimal per f32
- * component, any other number as `JSON.stringify` prints it (a non-finite
- * one is a generator bug and throws), `undefined` fields omitted, trailing
- * newline.
- */
-export function fixtureJson(value: unknown): string {
-  return `${pretty(value, "")}\n`
-}
-
-function pretty(v: unknown, indent: string): string {
-  if (typeof v === "number") {
-    if (!Number.isFinite(v))
-      throw new Error(`fixtureJson: ${v} is not a finite number`)
-    return JSON.stringify(v)
-  }
-  if (typeof v === "string" || typeof v === "boolean" || v === null)
-    return JSON.stringify(v)
-  const inner = `${indent}  `
-  const block = (open: string, items: string[], close: string): string =>
-    items.length === 0
-      ? open + close
-      : `${open}\n${items.map(x => inner + x).join(",\n")}\n${indent}${close}`
-  if (v instanceof Float32Array)
-    return block("[", Array.from(v, f32Shortest), "]")
-  if (Array.isArray(v))
-    return block(
-      "[",
-      v.map(x => pretty(x, inner)),
-      "]",
-    )
-  if (typeof v === "object") {
-    const fields = Object.entries(v)
-      .filter(([, x]) => x !== undefined)
-      .map(([k, x]) => `${JSON.stringify(k)}: ${pretty(x, inner)}`)
-    return block("{", fields, "}")
-  }
-  throw new Error(`fixtureJson: cannot serialize a ${typeof v}`)
 }

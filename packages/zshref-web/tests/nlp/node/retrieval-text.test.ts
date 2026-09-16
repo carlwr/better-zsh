@@ -3,7 +3,11 @@
 import fc from "fast-check"
 import { describe, expect, it } from "vitest"
 
-import type { Identity, JsonRecord } from "../../../nlp/node/retrieval-text"
+import type {
+  Identity,
+  JsonRecord,
+  JsonValue,
+} from "../../../nlp/node/retrieval-text"
 import {
   compactValue,
   expandedText,
@@ -117,6 +121,45 @@ describe("hayHasWord", () => {
 })
 
 describe("compactValue", () => {
+  // JSON values with identifier-like keys, as projected records have.
+  const arbJson = fc.letrec<{ value: JsonValue }>(tie => ({
+    value: fc.oneof(
+      { depthSize: "small" },
+      fc.constant(null),
+      fc.boolean(),
+      fc.integer(),
+      fc.string({ unit: "grapheme", maxLength: 6 }),
+      fc.array(tie("value"), { maxLength: 3 }),
+      fc.dictionary(fc.stringMatching(/^[a-z_]{1,4}$/), tie("value"), {
+        maxKeys: 3,
+      }),
+    ),
+  })).value
+
+  /** The words of every leaf and key: all a compact value may be made of. */
+  const wordsOf = (value: JsonValue): string[] => {
+    if (value === null) return []
+    if (typeof value !== "object") return normalizeWs(String(value)).split(" ")
+    if (Array.isArray(value)) return value.flatMap(wordsOf)
+    return Object.entries(value).flatMap(([k, v]) => [
+      ...keyWords(k).split(" "),
+      ...wordsOf(v),
+    ])
+  }
+
+  it("is undefined or one non-blank line of single-spaced words, each from a leaf or a key", () => {
+    fc.assert(
+      fc.property(arbJson, value => {
+        const s = compactValue(value)
+        if (s === undefined) return
+        expect(s).toBe(normalizeWs(s))
+        expect(s).not.toBe("")
+        const allowed = new Set(wordsOf(value))
+        for (const w of s.split(" ")) expect(allowed).toContain(w)
+      }),
+    )
+  })
+
   it("normalizes strings and drops blanks and nulls", () => {
     expect(compactValue("  a \n b ")).toBe("a b")
     expect(compactValue("   ")).toBeUndefined()
@@ -173,6 +216,43 @@ describe("expandedText", () => {
     // "hist" is not a whole word in the hay; "histsize" is (from the id).
     expect(expandedText(ident, "the history size", groups)).toBe(
       "special parameter\nspecial param\nHISTSIZE\n$HISTSIZE\nhist\nlength",
+    )
+  })
+
+  const arbWord = fc.stringMatching(/^[a-z]{1,4}$/)
+  const arbGroups = fc.array(
+    fc.uniqueArray(arbWord, { minLength: 2, maxLength: 3 }),
+    { maxLength: 4 },
+  )
+  const arbBody = fc.array(arbWord, { maxLength: 8 }).map(ws => ws.join(" "))
+
+  it("the identity's word forms first, then per group hit as a whole word its absent members; no hint twice", () => {
+    fc.assert(
+      fc.property(arbGroups, arbBody, (groups, body) => {
+        const hints = expandedText(ident, body, groups).split("\n")
+        const own = [
+          "special parameter",
+          "special param",
+          "HISTSIZE",
+          "$HISTSIZE",
+        ]
+        expect(hints.slice(0, own.length)).toEqual(own)
+        expect(new Set(hints).size).toBe(hints.length)
+        const hay = [
+          ident.category,
+          ident.label,
+          ident.id,
+          ident.display,
+          ident.subKind,
+          body,
+        ].join(" ")
+        const want = groups.flatMap(g =>
+          g.some(m => hayHasWord(hay, m))
+            ? g.filter(m => !hayHasWord(hay, m))
+            : [],
+        )
+        expect(hints.slice(own.length)).toEqual([...new Set(want)])
+      }),
     )
   })
 

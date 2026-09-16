@@ -10,8 +10,8 @@
 // cuts each input to its first entries, so the reporter smoke runs the whole
 // path in seconds.
 
-import type { Tuning } from "../../core/types"
-import { byteOrder } from "../byte-order"
+import type { Tuning } from "../../core/rules"
+import { byteOrder } from "../../core/text"
 import { type BareEval, buildLookupContract, evalBare } from "../contract"
 import {
   buildSanityFixture,

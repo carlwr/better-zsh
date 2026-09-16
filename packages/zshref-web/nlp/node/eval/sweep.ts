@@ -7,7 +7,9 @@
 // fold the best row into `BZ_TUNE_BASE`, repeat (one knob at a time misses
 // interactions).
 
-import type { Tuning } from "../../core/types"
+import { trim } from "@carlwr/typescript-extra"
+
+import type { Tuning } from "../../core/rules"
 import type { EvalAssets } from "./assets"
 import { type ItemRes, itemsOf, renderDiffReport, signed } from "./diff"
 import {
@@ -162,7 +164,7 @@ export function composedBase(
 ): Tuning {
   return (spec ?? "")
     .split(",")
-    .map(kv => kv.trim())
+    .map(trim)
     .filter(kv => kv !== "")
     .reduce((t, kv) => {
       const at = kv.indexOf("=")

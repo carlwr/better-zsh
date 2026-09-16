@@ -3,15 +3,40 @@
 
 import { existsSync } from "node:fs"
 import { readFile, writeFile } from "node:fs/promises"
+import type { DocCorpus } from "@carlwr/zsh-core"
+import { docCategories } from "@carlwr/zsh-core/taxonomy"
 import { expect } from "vitest"
 import { parse as parseYaml } from "yaml"
-import type { VectorIndex } from "../nlp/core/types"
+import type { Rules } from "../nlp/core/rules"
+import type { RecordId, VectorIndex } from "../nlp/core/types"
+import type { RankAssets } from "../nlp/node/eval/sentence"
+import { buildParityIndex } from "../nlp/node/fixtures"
 import { readIndex } from "../nlp/node/index-build"
 import { PATHS } from "../nlp/node/paths"
 import { prettyJson } from "../nlp/node/rules-load"
+import { emptyLookup } from "./_fixtures"
 
 export { loadParityFixture, loadSanityFixture } from "../nlp/node/fixtures"
 export { PATHS, STAGED } from "../nlp/node/paths"
+
+/** Ranking assets over the parity fixture's miniature index (no model); the lookup hits nothing unless given. */
+export const parityRankAssets = (
+  corpus: DocCorpus,
+  rules: Rules,
+  lookup = emptyLookup(),
+): RankAssets => ({
+  index: buildParityIndex(corpus, rules.synonyms.index_groups),
+  rules,
+  lookup,
+})
+
+/** Whether `corpus` holds a record of that identity; an unknown category is a miss. The cast peels the key brand. */
+export const inCorpus = (corpus: DocCorpus, r: RecordId): boolean =>
+  docCategories.some(
+    cat =>
+      cat === r.category &&
+      (corpus[cat] as ReadonlyMap<string, unknown>).has(r.id),
+  )
 
 /**
  * Reason for `ctx.skip(reason)`; null when everything in `needs` is staged.

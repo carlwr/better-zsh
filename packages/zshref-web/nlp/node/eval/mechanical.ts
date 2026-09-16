@@ -12,17 +12,19 @@
 // the per-category count of entries whose record did not rank #1, and the
 // id-shape slices.
 
+import { isDefined } from "@carlwr/typescript-extra"
 import type { DocCorpus } from "@carlwr/zsh-core"
 import {
   type DocCategory,
   docCategories,
   docDisplay,
-  idOf,
 } from "@carlwr/zsh-core/taxonomy"
 
+import type { RecordId } from "../../core/types"
 import { buildLookupContract } from "../contract"
+import { identityOf } from "../resolver-key"
 import type { EvalAssets } from "./assets"
-import type { EvalResult } from "./metric"
+import { type EvalResult, mean } from "./metric"
 import { type HardCheckTemplate, hardCheckTemplates } from "./qa-score"
 import {
   countPerCategory,
@@ -60,18 +62,14 @@ const nlQuestionExtras: Partial<Record<DocCategory, HardCheckTemplate>> = {
 
 /** The NL questions over a record's display form; none for a category outside the templated ones. */
 export function nlQuestions(category: DocCategory, display: string): string[] {
-  return [hardCheckTemplates[category], nlQuestionExtras[category]].flatMap(
-    t => (t ? [t(display)] : []),
-  )
+  return [hardCheckTemplates[category], nlQuestionExtras[category]]
+    .filter(isDefined)
+    .map(t => t(display))
 }
 
-const mechanicalEntry = (
-  query: string,
-  category: string,
-  id: string,
-): SentenceEntry => ({
+const mechanicalEntry = (query: string, record: RecordId): SentenceEntry => ({
   query,
-  want: [{ category, id, targetDepth: TARGET_DEPTH, weight: 1 }],
+  want: [{ ...record, targetDepth: TARGET_DEPTH, weight: 1 }],
   split: "train",
 })
 
@@ -83,13 +81,13 @@ const mechanicalEntry = (
 export function buildMechanical(corpus: DocCorpus): SentenceEntry[] {
   const decorated = buildLookupContract(corpus)
     .entries.filter(e => e.phrasingKind !== "bare")
-    .map(e => mechanicalEntry(e.query, e.record.category, e.record.id))
+    .map(e => mechanicalEntry(e.query, e.record))
   const questions = docCategories.flatMap(cat =>
     [...corpus[cat].values()].flatMap(rec => {
-      const id = idOf(cat, rec) as string
-      if (id === "") return []
+      const record = identityOf(cat, rec)
+      if (record.id === "") return []
       return nlQuestions(cat, docDisplay(cat, rec)).map(q =>
-        mechanicalEntry(q, cat, id),
+        mechanicalEntry(q, record),
       )
     }),
   )
@@ -143,13 +141,11 @@ const notTop1 = (g: GradedItem): boolean => g.rank !== 1
 function sliceStats(graded: readonly GradedItem[]): SliceStat[] {
   return SLICES.map(({ label, pred }) => {
     const members = graded.filter(g => pred(g.item.id))
-    let sum = 0
-    for (const g of members) sum += g.gain
     return {
       label,
       n: members.length,
       fails: members.filter(notTop1).length,
-      meanGain: members.length > 0 ? sum / members.length : 0,
+      meanGain: mean(members.map(g => g.gain)),
     }
   })
 }

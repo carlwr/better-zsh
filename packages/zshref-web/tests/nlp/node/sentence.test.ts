@@ -5,10 +5,10 @@
 // model.
 
 import { loadCorpus } from "@carlwr/zsh-core"
-import { docCategories } from "@carlwr/zsh-core/taxonomy"
+import fc from "fast-check"
 import { describe, expect, it } from "vitest"
 import { parse as parseYaml } from "yaml"
-import { LookupIndex } from "../../../nlp/core/lookup-map"
+import { syntheticVec } from "../../../nlp/core/vec"
 import { loadEvalAssets } from "../../../nlp/node/eval/assets"
 import {
   BETA,
@@ -31,13 +31,17 @@ import {
   SENTENCE_FIXTURE_VERSION,
   SentenceFixtureSchema,
 } from "../../../nlp/node/eval/sentence-fixture"
-import { buildParityIndex, syntheticVec } from "../../../nlp/node/fixtures"
 import { loadRulesYaml } from "../../../nlp/node/rules-load"
 import {
   rulesJsonSchemas,
   SENTENCE_FIXTURE_SCHEMA_FILE,
 } from "../../../nlp/node/rules-schema"
-import { artifactGate, STAGED } from "../../_helpers"
+import {
+  artifactGate,
+  inCorpus,
+  parityRankAssets,
+  STAGED,
+} from "../../_helpers"
 
 const corpus = loadCorpus()
 
@@ -60,26 +64,16 @@ describe("committed sentence fixture", () => {
   it("sentence_fixture_loads_and_validates", async () => {
     const f = await loadSentenceFixture()
     expect(f.entries.length).toBeGreaterThan(0)
-    // Shape spot-check; the load invariants did the rest.
-    for (const e of f.entries) {
-      expect(e.query.trim()).not.toBe("")
-      for (const item of e.want) expect(item.weight).toBeGreaterThan(0)
-    }
+    for (const e of f.entries) expect(e.query.trim()).not.toBe("")
   })
 
   /** Every expected item names a corpus record. Pure on the corpus. A
    * missing holdout item is reported by position only. */
   it("sentence_fixture_expected_records_exist", async () => {
     const f = await loadSentenceFixture()
-    const known = new Map(
-      docCategories.map(cat => [
-        cat as string,
-        new Set<string>(corpus[cat].keys()),
-      ]),
-    )
     const missing = f.entries.flatMap((e, i) =>
       e.want.flatMap((item, j) => {
-        if (known.get(item.category)?.has(item.id)) return []
+        if (inCorpus(corpus, item)) return []
         const at = `entry ${i} item ${j}`
         return [
           e.split === "train"
@@ -163,55 +157,105 @@ describe("gain", () => {
     for (const d of [2, 4])
       expect(gain(d, d, BETA)).toBeCloseTo((1 + (1 / d) ** BETA) / 2, 6)
   })
+
+  // Depths on a half-unit grid: two distinct ones differ by enough to order the gains.
+  const arbDepth = fc.integer({ min: 1, max: 100 }).map(i => i / 2)
+  const arbRank = fc.integer({ min: 1, max: 5000 })
+
+  it("is 1 at rank 1, in (0, 1], strictly decreasing in the rank, and increasing in the depth", () => {
+    fc.assert(
+      fc.property(arbRank, arbDepth, arbDepth, (rank, d, d2) => {
+        expect(gain(1, d, BETA)).toBeCloseTo(1, 12)
+        const g = gain(rank, d, BETA)
+        expect(g).toBeGreaterThan(0)
+        expect(g).toBeLessThanOrEqual(1 + 1e-12)
+        expect(gain(rank + 1, d, BETA)).toBeLessThan(g)
+        if (rank > 1 && d2 > d) expect(gain(rank, d2, BETA)).toBeGreaterThan(g)
+      }),
+    )
+  })
+})
+
+describe("score properties", () => {
+  const arbVote: fc.Arbitrary<Vote> = fc.record({
+    category: fc.constantFrom("a", "b", "c"),
+    weight: fc.double({ min: 0.1, max: 5, noNaN: true }),
+    gain: fc.double({ min: 0, max: 1, noNaN: true }),
+    split: fc.constantFrom<Split>("train", "holdout"),
+  })
+
+  it("every score is in [0, 1]; per category the weighted mean, sorted; the total their plain mean", () => {
+    fc.assert(
+      fc.property(fc.array(arbVote, { maxLength: 12 }), votes => {
+        const s = score(votes)
+        const cats = [...new Set(votes.map(v => v.category))].sort()
+        expect([...s.perCategory.keys()]).toEqual(cats)
+        for (const c of cats) {
+          const mine = votes.filter(v => v.category === c)
+          const w = mine.reduce((a, v) => a + v.weight, 0)
+          const g = mine.reduce((a, v) => a + v.weight * v.gain, 0)
+          expect(s.perCategory.get(c)).toBeCloseTo(g / w, 9)
+        }
+        const means = [...s.perCategory.values()]
+        expect(s.total).toBeCloseTo(
+          means.length ? means.reduce((a, b) => a + b, 0) / means.length : 0,
+          9,
+        )
+        expect(s.total).toBeGreaterThanOrEqual(0)
+        expect(s.total).toBeLessThanOrEqual(1 + 1e-12)
+      }),
+    )
+  })
 })
 
 describe("fixture shape", () => {
-  it("item_override_resolution", () => {
-    const f = parseSentenceFixture(
-      versioned(
-        "entries:\n  - query: alpha\n    want:\n      - { cat: a0, id: X, d: 5, w: 7 }\n      - { cat: a0, id: Y }\n",
-      ),
-    )
-    expect(f.entries[0]?.want).toEqual([
-      { category: "a0", id: "X", targetDepth: 5, weight: 7 },
-      {
-        category: "a0",
-        id: "Y",
-        targetDepth: DEFAULT_TARGET_DEPTH,
-        weight: DEFAULT_WEIGHT,
-      },
-    ])
+  const arbNum = fc.double({ min: 0.5, max: 8, noNaN: true })
+  const optional = <T>(arb: fc.Arbitrary<T>) =>
+    fc.option(arb, { nil: undefined })
+  const arbRaw = fc.record({
+    version: fc.constant(SENTENCE_FIXTURE_VERSION),
+    "default-weight": optional(arbNum),
+    "default-target-depth": optional(arbNum),
+    entries: fc.array(
+      fc.record({
+        query: fc.constantFrom("a", "b"),
+        want: fc.array(
+          fc.record({
+            cat: fc.constantFrom("c", "d"),
+            id: fc.constantFrom("x", "y"),
+            d: optional(arbNum),
+            w: optional(arbNum),
+          }),
+          { minLength: 1, maxLength: 3 },
+        ),
+        holdout: optional(fc.boolean()),
+      }),
+      { maxLength: 3 },
+    ),
   })
 
-  it("omitted_item_values_inherit_fixture_defaults", () => {
-    const f = parseSentenceFixture(
-      versioned(
-        "default-weight: 2.0\ndefault-target-depth: 5.0\nentries:\n  - query: alpha\n    want:\n      - {cat: c, id: i}\n      - {cat: c, id: j, w: 0.5, d: 1}\n",
-      ),
+  it("resolves an item's depth and weight: its own, else the fixture's default, else the built-in; the split from the flag", () => {
+    fc.assert(
+      fc.property(arbRaw, raw => {
+        const f = SentenceFixtureSchema.parse(raw)
+        const weight = raw["default-weight"] ?? DEFAULT_WEIGHT
+        const depth = raw["default-target-depth"] ?? DEFAULT_TARGET_DEPTH
+        expect(f).toEqual({
+          defaultWeight: weight,
+          defaultTargetDepth: depth,
+          entries: raw.entries.map(e => ({
+            query: e.query,
+            split: e.holdout ? "holdout" : "train",
+            want: e.want.map(i => ({
+              category: i.cat,
+              id: i.id,
+              targetDepth: i.d ?? depth,
+              weight: i.w ?? weight,
+            })),
+          })),
+        })
+      }),
     )
-    expect(f.defaultWeight).toBe(2)
-    expect(f.defaultTargetDepth).toBe(5)
-    const [omitted, explicit] = f.entries[0]?.want ?? []
-    expect(omitted).toMatchObject({ weight: 2, targetDepth: 5 })
-    expect(explicit).toMatchObject({ weight: 0.5, targetDepth: 1 })
-  })
-
-  it("fixture_defaults_fall_back_when_omitted", () => {
-    const f = parseSentenceFixture(
-      versioned("entries:\n  - query: alpha\n    want: [{cat: c, id: i}]\n"),
-    )
-    expect(f.defaultWeight).toBe(1)
-    expect(f.defaultTargetDepth).toBe(3)
-    expect(f.entries[0]?.want[0]).toMatchObject({ weight: 1, targetDepth: 3 })
-  })
-
-  it("holdout_flag_drives_split", () => {
-    const f = parseSentenceFixture(
-      versioned(
-        "entries:\n  - query: a\n    want: [{cat: c, id: i}]\n  - query: b\n    want: [{cat: c, id: j}]\n    holdout: true\n  - query: c\n    want: [{cat: c, id: k}]\n    holdout: false\n",
-      ),
-    )
-    expect(f.entries.map(e => e.split)).toEqual(["train", "holdout", "train"])
   })
 
   it("rejects a stale version, an empty want-set, a non-positive value, an unknown key", () => {
@@ -244,13 +288,8 @@ describe("fixture shape", () => {
 
 describe("eval over the parity index", () => {
   it("multi_item_entry_yields_one_vote_per_item", async () => {
-    const rules = await loadRulesYaml()
-    const index = buildParityIndex(corpus, rules.synonyms.index_groups)
-    const assets = {
-      index,
-      rules,
-      lookup: new LookupIndex({ version: 1, entries: [] }),
-    }
+    const assets = parityRankAssets(corpus, await loadRulesYaml())
+    const { index } = assets
     // Three items in one category at a depth far past the index's few
     // records, so each gains 1 to within rounding whatever its rank; a
     // fourth the index lacks counts as ranked just past the end.

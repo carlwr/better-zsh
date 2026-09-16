@@ -8,7 +8,6 @@
 import {
   categoryNamed,
   categoryPenalties,
-  dot,
   isDiscriminating,
   isSignificant,
   NO_SEMANTIC,
@@ -19,6 +18,8 @@ import {
   symbolExact,
   symbolTokens,
 } from "../../core/rank"
+import { perView, type RecordId, VIEWS } from "../../core/types"
+import { dot } from "../../core/vec"
 import type { EvalAssets } from "./assets"
 import { BETA, type EvalResult, gain } from "./metric"
 import {
@@ -33,7 +34,7 @@ import type { SentenceEntry } from "./sentence-fixture"
 export interface PairCache {
   /** `queryWords` of the lowercased query. */
   words: string[]
-  /** Per record: the structured, body and expanded view dots. */
+  /** Per record: the view dots, in `VIEWS` order. */
   semantic: Float64Array
   /** Per record: `categoryNamed`. */
   named: Uint8Array
@@ -52,6 +53,10 @@ export interface QuerySet {
 const HIT = 1
 const EQUAL = 2
 
+/** Each view's slot within a record's `semantic` block. */
+const AT = perView((_, at) => at)
+const V = VIEWS.length
+
 function pairCache(
   query: string,
   vec: Float32Array,
@@ -62,15 +67,14 @@ function pairCache(
   const symbols = symbolTokens(q)
   const n = index.records.length
   const w = words.length
-  const semantic = new Float64Array(3 * n)
+  const semantic = new Float64Array(V * n)
   const named = new Uint8Array(n)
   const symbol = new Uint8Array(n)
   const hits = new Uint8Array(w * n)
   index.records.forEach((rec, r) => {
     const lex = recordTerms(rec.text)
-    semantic[3 * r] = dot(vec, rec.vectors.structured)
-    semantic[3 * r + 1] = dot(vec, rec.vectors.body)
-    semantic[3 * r + 2] = dot(vec, rec.vectors.expanded)
+    for (const view of VIEWS)
+      semantic[V * r + AT[view]] = dot(vec, rec.vectors[view])
     named[r] = categoryNamed(lex, q) ? 1 : 0
     symbol[r] = symbolExact(lex, symbols) ? 1 : 0
     words.forEach((word, i) => {
@@ -111,8 +115,7 @@ export interface GradeOptions {
   noEmbed?: boolean
 }
 
-type RecordRef = { category: string; id: string }
-const refKey = (ref: RecordRef): string => `${ref.category}\0${ref.id}`
+const refKey = (ref: RecordId): string => `${ref.category}\0${ref.id}`
 
 /** The index's per-record constants of one grading. */
 interface Records {
@@ -162,9 +165,9 @@ function scoreQuery(
       semantic: noEmbed
         ? NO_SEMANTIC
         : {
-            structured: c.semantic[3 * r] ?? 0,
-            body: c.semantic[3 * r + 1] ?? 0,
-            expanded: c.semantic[3 * r + 2] ?? 0,
+            structured: c.semantic[V * r + AT.structured] ?? 0,
+            body: c.semantic[V * r + AT.body] ?? 0,
+            expanded: c.semantic[V * r + AT.expanded] ?? 0,
           },
       categoryNamed: c.named[r] === 1,
       exactWord,
@@ -205,7 +208,7 @@ export function gradeQuerySet(
 ): GradedItem[] {
   const recs = recordsOf(assets)
   const n = recs.cats.length
-  const indexOf = (ref: RecordRef): number => recs.at.get(refKey(ref)) ?? -1
+  const indexOf = (ref: RecordId): number => recs.at.get(refKey(ref)) ?? -1
   const scores = new Float64Array(n)
   return set.entries.flatMap(entry => {
     const c = set.cache.get(entry.query)

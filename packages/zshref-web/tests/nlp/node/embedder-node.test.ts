@@ -1,18 +1,17 @@
 // Node embedder over the local model; skipped without it
-// (`scripts/fetch-model`). `normalizeF32` and the fetch script's model-id
-// pin always run.
+// (`scripts/fetch-model`). The fetch script's model-id pin always runs.
 
 import { readFileSync } from "node:fs"
 import { resolve } from "node:path"
 import { beforeAll, describe, expect, it } from "vitest"
 
 import { DIMS, MODEL_ID } from "../../../nlp/core/types"
+import { dot } from "../../../nlp/core/vec"
 import {
   createNodeEmbedder,
   type Embedder,
   embedQuery,
   embedUnique,
-  normalizeF32,
 } from "../../../nlp/node/embedder-node"
 import { loadRulesYaml } from "../../../nlp/node/rules-load"
 import { artifactGate, PATHS, STAGED } from "../../_helpers"
@@ -20,28 +19,10 @@ import { artifactGate, PATHS, STAGED } from "../../_helpers"
 // A few f32 ulps: the norm of a normalized 384-vector re-summed in f64.
 const UNIT_TOL = 1e-6
 
-function cosine(a: Float32Array, b: Float32Array): number {
-  let s = 0
-  for (let i = 0; i < a.length; i++) s += (a[i] ?? 0) * (b[i] ?? 0)
-  return s
-}
-
 function expectUnit(v: Float32Array): void {
   expect(v.length).toBe(DIMS)
-  expect(Math.abs(Math.sqrt(cosine(v, v)) - 1)).toBeLessThanOrEqual(UNIT_TOL)
+  expect(Math.abs(Math.sqrt(dot(v, v)) - 1)).toBeLessThanOrEqual(UNIT_TOL)
 }
-
-describe("normalizeF32", () => {
-  it("makes a unit vector, in place", () => {
-    const v = new Float32Array([3, 4])
-    expect(normalizeF32(v)).toBe(v)
-    expect([...v]).toEqual([Math.fround(0.6), Math.fround(0.8)])
-  })
-
-  it("leaves the zero vector alone", () => {
-    expect([...normalizeF32(new Float32Array(3))]).toEqual([0, 0, 0])
-  })
-})
 
 /** The fetch script names the model too (a shell script cannot import it); `MODEL_ID` is the definition. */
 it("fetch-model pins MODEL_ID", () => {

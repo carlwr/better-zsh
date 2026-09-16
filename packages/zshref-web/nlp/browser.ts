@@ -7,5 +7,10 @@ export type { ModelProgress } from "./browser/embedder"
 export { onModelProgress } from "./browser/embedder"
 export { search } from "./browser/search"
 export { categoryCounts } from "./core/rank"
-export type { Category, RankedMatch, RecordText } from "./core/types"
-export { categoryLabel } from "./core/types"
+export type {
+  Category,
+  RankedMatch,
+  RecordId,
+  RecordText,
+} from "./core/types"
+export { categoryLabel, recordKey, sameRecord } from "./core/types"

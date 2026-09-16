@@ -9,6 +9,7 @@ import fc from "fast-check"
 import { beforeAll, describe, expect, it } from "vitest"
 import type { z } from "zod"
 
+import { type RecordId, recordKey, sameRecord } from "../../../nlp/core/types"
 import { type EvalAssets, loadEvalAssets } from "../../../nlp/node/eval/assets"
 import {
   loadQaCorpus,
@@ -49,112 +50,73 @@ const q = { query: "q" }
 const isSchema = (s: unknown): s is JsonSchema =>
   typeof s === "object" && s !== null && !Array.isArray(s)
 
+const abc = [hit("option", "a"), hit("option", "b"), hit("option", "c")]
+
 describe("scoreEntry", () => {
-  it("positive_present_scores_its_score", () => {
-    const s = scoreEntry(entry({ ...q, expected: [exp("a", 2)] }), [
-      hit("option", "a"),
-    ])
-    expect(s).toEqual<EntryScore>({
-      entryScore: 2,
-      entryExpectedWeight: 2,
-      numMatched: 1,
-      warnings: 0,
-    })
-  })
-
-  it("positive_absent_scores_nothing_and_warns", () => {
-    const s = scoreEntry(entry({ ...q, expected: [exp("a", 2)] }), [
-      hit("option", "b"),
-    ])
-    expect(s).toEqual<EntryScore>({
-      entryScore: 0,
-      entryExpectedWeight: 2,
-      numMatched: 0,
-      warnings: 1,
-    })
-  })
-
-  it("negative_absent_earns_its_magnitude", () => {
-    const s = scoreEntry(entry({ ...q, expected: [exp("a", -3)] }), [
-      hit("option", "b"),
-    ])
-    expect(s).toEqual<EntryScore>({
-      entryScore: 3,
-      entryExpectedWeight: 3,
-      numMatched: 0,
-      warnings: 0,
-    })
-  })
-
-  it("negative_present_penalizes_and_warns", () => {
-    const s = scoreEntry(entry({ ...q, expected: [exp("a", -3)] }), [
-      hit("option", "a"),
-    ])
-    expect(s).toEqual<EntryScore>({
-      entryScore: -3,
-      entryExpectedWeight: 3,
-      numMatched: 0,
-      warnings: 1,
-    })
-  })
-
-  it("duplicate_expected_scores_once_but_weighs_every_time", () => {
-    const s = scoreEntry(
-      entry({ ...q, expected: [exp("a", 1), exp("a", 1)] }),
+  it.each<
+    [
+      rule: string,
+      entry: Omit<z.input<typeof QaEntrySchema>, "query">,
+      matches: RecordId[],
+      want: Partial<EntryScore>,
+    ]
+  >([
+    [
+      "a positive present scores its score",
+      { expected: [exp("a", 2)] },
       [hit("option", "a")],
-    )
-    expect(s).toEqual<EntryScore>({
-      entryScore: 1,
-      entryExpectedWeight: 2,
-      numMatched: 1,
-      warnings: 0,
-    })
-  })
-
-  it("identity_is_category_and_id", () => {
-    const s = scoreEntry(entry({ ...q, expected: [exp("a", 1, "builtin")] }), [
-      hit("option", "a"),
-    ])
-    expect(s.numMatched).toBe(0)
-  })
-
-  it("top_n_below_limit_narrows_the_scorable_window", () => {
-    const matches = [hit("option", "a"), hit("option", "b"), hit("option", "c")]
-    const e = entry({
-      ...q,
-      limit: 3,
-      topN: 2,
-      expected: [exp("b", 1), exp("c", 1)],
-    })
-    expect(scoreEntry(e, matches)).toMatchObject({
-      entryScore: 1,
-      numMatched: 1,
-      warnings: 1,
-    })
-  })
-
-  it("top_n_defaults_to_limit", () => {
-    const matches = [hit("option", "a"), hit("option", "b"), hit("option", "c")]
-    const e = entry({ ...q, limit: 2, expected: [exp("c", 1)] })
-    expect(scoreEntry(e, matches)).toMatchObject({
-      entryScore: 0,
-      numMatched: 0,
-    })
-  })
-
-  it("weight_scales_score_and_expected_weight_alike", () => {
-    const e = entry({
-      ...q,
-      weight: 0.5,
-      expected: [exp("a", 2), exp("b", -4)],
-    })
-    const s = scoreEntry(e, [hit("option", "a")])
-    expect(s).toEqual<EntryScore>({
-      entryScore: 3,
-      entryExpectedWeight: 3,
-      numMatched: 1,
-      warnings: 0,
-    })
+      { score: 2, expectedWeight: 2, matched: 1, warnings: 0 },
+    ],
+    [
+      "a positive absent scores nothing and warns",
+      { expected: [exp("a", 2)] },
+      [hit("option", "b")],
+      { score: 0, expectedWeight: 2, matched: 0, warnings: 1 },
+    ],
+    [
+      "a negative absent earns its magnitude",
+      { expected: [exp("a", -3)] },
+      [hit("option", "b")],
+      { score: 3, expectedWeight: 3, matched: 0, warnings: 0 },
+    ],
+    [
+      "a negative present penalizes and warns",
+      { expected: [exp("a", -3)] },
+      [hit("option", "a")],
+      { score: -3, expectedWeight: 3, matched: 0, warnings: 1 },
+    ],
+    [
+      "a duplicate expected scores once but weighs every time",
+      { expected: [exp("a", 1), exp("a", 1)] },
+      [hit("option", "a")],
+      { score: 1, expectedWeight: 2, matched: 1, warnings: 0 },
+    ],
+    [
+      "identity is category and id",
+      { expected: [exp("a", 1, "builtin")] },
+      [hit("option", "a")],
+      { matched: 0 },
+    ],
+    [
+      "topN below limit narrows the scorable window",
+      { limit: 3, topN: 2, expected: [exp("b", 1), exp("c", 1)] },
+      abc,
+      { score: 1, matched: 1, warnings: 1 },
+    ],
+    [
+      "topN defaults to limit",
+      { limit: 2, expected: [exp("c", 1)] },
+      abc,
+      { score: 0, matched: 0 },
+    ],
+    [
+      "weight scales score and expected weight alike",
+      { weight: 0.5, expected: [exp("a", 2), exp("b", -4)] },
+      [hit("option", "a")],
+      { score: 3, expectedWeight: 3, matched: 1, warnings: 0 },
+    ],
+  ])("%s", (_, over, matches, want) => {
+    expect(scoreEntry(entry({ ...q, ...over }), matches)).toMatchObject(want)
   })
 
   it("defaults_come_from_the_shape", () => {
@@ -186,33 +148,36 @@ describe("scoreEntry properties", () => {
     })
     .map(e => entry({ ...q, ...e }))
 
-  it("the score lies within ±the expected weight; each positive item counts once; a warning per item missed", () => {
+  it("the score: per negative its magnitude when absent, its score when present; per positive its score once per record when present; a warning per item missed", () => {
     fc.assert(
       fc.property(
         arbEntry,
         fc.array(arbHit, { maxLength: 6 }),
         (e, matches) => {
           const s = scoreEntry(e, matches)
-          expect(s.entryExpectedWeight).toBeCloseTo(
-            e.expected.reduce((a, x) => a + Math.abs(x.score) * e.weight, 0),
-            9,
-          )
-          expect(s.entryScore).toBeGreaterThanOrEqual(
-            -s.entryExpectedWeight - 1e-9,
-          )
-          expect(s.entryScore).toBeLessThanOrEqual(s.entryExpectedWeight + 1e-9)
           const window = matches.slice(0, e.topN ?? e.limit)
-          const present = (x: { category: string; id: string }) =>
-            window.some(m => m.category === x.category && m.id === x.id)
-          const positives = e.expected.filter(x => x.score >= 0)
-          expect(s.numMatched).toBe(
-            new Set(positives.filter(present).map(x => `${x.category}/${x.id}`))
-              .size,
-          )
-          expect(s.warnings).toBe(
-            e.expected.filter(x => (x.score < 0 ? present(x) : !present(x)))
-              .length,
-          )
+          const present = (x: RecordId) => window.some(m => sameRecord(m, x))
+          const scored = new Set<string>()
+          let score = 0
+          for (const x of e.expected) {
+            if (x.score < 0)
+              score += (present(x) ? x.score : -x.score) * e.weight
+            else if (present(x) && !scored.has(recordKey(x))) {
+              scored.add(recordKey(x))
+              score += x.score * e.weight
+            }
+          }
+          expect(s).toEqual<EntryScore>({
+            score: expect.closeTo(score, 9),
+            expectedWeight: expect.closeTo(
+              e.expected.reduce((a, x) => a + Math.abs(x.score) * e.weight, 0),
+              9,
+            ),
+            matched: scored.size,
+            warnings: e.expected.filter(x =>
+              x.score < 0 ? present(x) : !present(x),
+            ).length,
+          })
         },
       ),
     )
@@ -220,16 +185,11 @@ describe("scoreEntry properties", () => {
 })
 
 describe("aggregateScores", () => {
-  const score = (
-    entryScore: number,
-    entryExpectedWeight: number,
+  const scored = (
+    score: number,
+    expectedWeight: number,
     warnings = 0,
-  ): EntryScore => ({
-    entryScore,
-    entryExpectedWeight,
-    numMatched: 0,
-    warnings,
-  })
+  ): EntryScore => ({ score, expectedWeight, matched: 0, warnings })
 
   it("empty_corpus_averages_zero", () => {
     expect(aggregateScores([])).toEqual({
@@ -241,8 +201,8 @@ describe("aggregateScores", () => {
     })
   })
 
-  it("average_is_the_ratio_of_the_totals", () => {
-    const a = aggregateScores([score(1, 2, 1), score(2, 2), score(-1, 4, 1)])
+  it("the average is the ratio of the totals", () => {
+    const a = aggregateScores([scored(1, 2, 1), scored(2, 2), scored(-1, 4, 1)])
     expect(a).toEqual({
       avgScore: 0.25,
       totalWeightedScore: 2,
@@ -250,6 +210,32 @@ describe("aggregateScores", () => {
       entries: 3,
       warnings: 2,
     })
+  })
+
+  it("sums the entries; the average is 0 without expected weight", () => {
+    const arbScored = fc.record({
+      score: fc.double({ min: -5, max: 5, noNaN: true }),
+      expectedWeight: fc.double({ min: 0, max: 5, noNaN: true }),
+      matched: fc.nat({ max: 3 }),
+      warnings: fc.nat({ max: 3 }),
+    })
+    fc.assert(
+      fc.property(fc.array(arbScored, { maxLength: 6 }), scores => {
+        const sum = (f: (s: EntryScore) => number) =>
+          scores.reduce((a, s) => a + f(s), 0)
+        const a = aggregateScores(scores)
+        expect(a).toEqual({
+          avgScore:
+            sum(s => s.expectedWeight) > 0
+              ? sum(s => s.score) / sum(s => s.expectedWeight)
+              : 0,
+          totalWeightedScore: sum(s => s.score),
+          totalExpectedWeight: sum(s => s.expectedWeight),
+          entries: scores.length,
+          warnings: sum(s => s.warnings),
+        })
+      }),
+    )
   })
 })
 
@@ -298,7 +284,7 @@ describe("renderQa", () => {
     hardScore: 75,
   }
   const scored = aggregateScores([
-    { entryScore: 1.5, entryExpectedWeight: 2, numMatched: 1, warnings: 1 },
+    { score: 1.5, expectedWeight: 2, matched: 1, warnings: 1 },
   ])
 
   it("prints_the_hard_section_then_the_summary_lines", () => {
@@ -324,7 +310,7 @@ describe("renderQa", () => {
 
   it("summary_json_rounds_to_one_decimal", () => {
     const s = aggregateScores([
-      { entryScore: 1, entryExpectedWeight: 3, numMatched: 1, warnings: 0 },
+      { score: 1, expectedWeight: 3, matched: 1, warnings: 0 },
     ])
     expect(summaryJson({ ...hard, hardScore: 33.333 }, s)).toEqual({
       avgPercent: 33.3,

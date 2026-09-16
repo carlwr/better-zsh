@@ -13,30 +13,20 @@ import {
   DIMS,
   type IndexedRecord,
   MODEL_ID,
+  perView,
   type VectorIndex,
-  type ViewVectors,
+  VIEWS,
 } from "../core/types"
+import { normalizeF32 } from "../core/vec"
 import { corpusHash } from "./corpus-hash"
-import { type Embedder, normalizeF32 } from "./embedder-node"
+import type { Embedder } from "./embedder-node"
 import { f32VecJson, jsonWithRawField } from "./json-f32"
 import { corpusTexts } from "./retrieval-text"
 
 export const INDEX_VERSION = 2
 
-/** The embedded views, in the order their texts are embedded per record. */
-export const VIEWS = ["structured", "body", "expanded"] as const
-export type View = (typeof VIEWS)[number]
-
 /** Texts per `embed` call during a build; paces `onProgress` only. */
 export const PROGRESS_CHUNK = 32
-
-/** One vector per view, from `f`; the keys are exactly `VIEWS`. */
-export const viewVectors = (
-  f: (view: View, at: number) => Float32Array<ArrayBuffer>,
-): ViewVectors =>
-  Object.fromEntries(
-    VIEWS.map((view, at) => [view, f(view, at)]),
-  ) as ViewVectors
 
 export type IndexValidation = { ok: true } | { ok: false; reason: string }
 
@@ -84,7 +74,7 @@ export async function buildIndex({
   }
   const records: IndexedRecord[] = texts.map((text, i) => ({
     text,
-    vectors: viewVectors((_, at) => vec(i * VIEWS.length + at)),
+    vectors: perView((_, at) => vec(i * VIEWS.length + at)),
   }))
 
   const index: VectorIndex = {

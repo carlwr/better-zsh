@@ -2,22 +2,26 @@
 // synthetic vectors; the `built index` tests read the staged one (skipped
 // until `build:index` has run).
 
-import { mkdtemp, rm } from "node:fs/promises"
+import { mkdtemp } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { memoized } from "@carlwr/typescript-extra"
+import { escapeRegExp, memoized } from "@carlwr/typescript-extra"
+import { rm_rf } from "@carlwr/typescript-extra/node"
 import { loadCorpus } from "@carlwr/zsh-core"
 import fc from "fast-check"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
+import { loadVectorIndex } from "../../../nlp/core/index-loader"
 import type { Rules } from "../../../nlp/core/rules"
 import {
   DIMS,
   type IndexedRecord,
   MODEL_ID,
+  perView,
   type VectorIndex,
+  VIEWS,
 } from "../../../nlp/core/types"
+import { syntheticVec } from "../../../nlp/core/vec"
 import { corpusHash } from "../../../nlp/node/corpus-hash"
-import { syntheticVec } from "../../../nlp/node/fixtures"
 import {
   buildIndex,
   INDEX_VERSION,
@@ -25,17 +29,12 @@ import {
   indexJson,
   PROGRESS_CHUNK,
   readIndex,
-  VIEWS,
   validateIndex,
   writeIndex,
 } from "../../../nlp/node/index-build"
-import {
-  f32Shortest,
-  f32VecJson,
-  jsonWithRawField,
-} from "../../../nlp/node/json-f32"
 import { corpusTexts } from "../../../nlp/node/retrieval-text"
 import { loadRulesYaml } from "../../../nlp/node/rules-load"
+import { makeRecordText } from "../../_fixtures"
 import { artifactGate, PATHS, STAGED } from "../../_helpers"
 
 const corpus = loadCorpus()
@@ -48,66 +47,6 @@ const rejected = (v: IndexValidation, reason: RegExp): void => {
   expect(v.ok).toBe(false)
   if (!v.ok) expect(v.reason).toMatch(reason)
 }
-
-describe("f32Shortest", () => {
-  it("prints the obvious cases", () => {
-    const cases: [number, string][] = [
-      [0.5, "0.5"],
-      [1, "1"],
-      [-0, "0"],
-      [Math.fround(0.1), "0.1"],
-      [Math.fround(-0.023456), "-0.023456"],
-      [Math.fround(1.5e-7), "1.5e-7"],
-    ]
-    for (const [v, s] of cases) expect(f32Shortest(v), String(v)).toBe(s)
-  })
-
-  it("rejects what JSON cannot carry or an f32 cannot hold", () => {
-    for (const v of [Number.NaN, Number.POSITIVE_INFINITY, 0.1, 1e40]) {
-      expect(() => f32Shortest(v), String(v)).toThrow(/not a finite f32/)
-    }
-  })
-
-  // Any finite f32 — subnormals, huge and tiny values included: the printed
-  // form reads back to the same f32, carries at most 9 significant digits,
-  // and is valid JSON.
-  const arbF32 = fc.float({ noNaN: true, noDefaultInfinity: true })
-
-  it("round-trips every finite f32 in at most 9 significant digits", () => {
-    fc.assert(
-      fc.property(arbF32, v => {
-        const s = f32Shortest(v)
-        // `===`: what every reader compares with; `-0` prints as `0`.
-        expect(Math.fround(Number(s)) === v, s).toBe(true)
-        expect(JSON.parse(s)).toBe(Number(s))
-        expect(
-          s
-            .replace(/e[+-]\d+$/, "")
-            .replace(/[-.]/g, "")
-            .replace(/^0+/, "").length,
-        ).toBeLessThanOrEqual(9)
-      }),
-      { numRuns: 2000 },
-    )
-  })
-
-  it("f32VecJson is a JSON array of the components", () => {
-    expect(f32VecJson(new Float32Array([0.5, -1, Math.fround(0.1)]))).toBe(
-      "[0.5,-1,0.1]",
-    )
-    expect(f32VecJson(new Float32Array())).toBe("[]")
-  })
-
-  it("jsonWithRawField splices the raw field last", () => {
-    expect(jsonWithRawField({ a: 1, b: "x" }, "v", "[0.1]")).toBe(
-      '{"a":1,"b":"x","v":[0.1]}',
-    )
-    expect(JSON.parse(jsonWithRawField({ a: 1 }, "k", "{}"))).toEqual({
-      a: 1,
-      k: {},
-    })
-  })
-})
 
 const tinyIndex = (): VectorIndex => {
   const text = (id: string, subKind?: string) => ({
@@ -145,7 +84,7 @@ describe("indexJson / writeIndex / readIndex", () => {
   beforeAll(async () => {
     dir = await mkdtemp(join(tmpdir(), "index-build-"))
   })
-  afterAll(() => rm(dir, { recursive: true, force: true }))
+  afterAll(() => rm_rf(dir))
 
   it("is compact, header keys first, with shortest-f32 components", () => {
     const json = indexJson(tinyIndex())
@@ -167,6 +106,54 @@ describe("indexJson / writeIndex / readIndex", () => {
     await writeIndex(path, index)
     expect(await readIndex(path)).toEqual(index)
   })
+
+  // Any index shape: arbitrary finite f32 vectors of a few dims (`-0`
+  // reads back as `0`, so it is not generated), record text with a
+  // `sub_kind` or without, any header strings.
+  const arbVector = fc
+    .float32Array({
+      minLength: 2,
+      maxLength: 4,
+      noNaN: true,
+      noDefaultInfinity: true,
+    })
+    .map(v => v.map(x => (x === 0 ? 0 : x)))
+  const arbIndex: fc.Arbitrary<VectorIndex> = fc.record({
+    version: fc.constant(INDEX_VERSION),
+    model: fc.string(),
+    dims: fc.nat(),
+    normalized: fc.boolean(),
+    corpus_hash: fc.string(),
+    records: fc.array(
+      fc.record({
+        text: fc
+          .record({
+            id: fc.string(),
+            body: fc.string(),
+            sub_kind: fc.option(fc.string({ minLength: 1 }), {
+              nil: undefined,
+            }),
+          })
+          .map(({ sub_kind, ...t }) =>
+            makeRecordText(sub_kind === undefined ? t : { ...t, sub_kind }),
+          ),
+        vectors: fc
+          .tuple(arbVector, arbVector, arbVector)
+          .map(vs => perView((_, at) => vs[at] ?? new Float32Array())),
+      }),
+      { maxLength: 3 },
+    ),
+  })
+
+  it("indexJson reads back equal through the production loader, for any index", () => {
+    fc.assert(
+      fc.property(arbIndex, index => {
+        const json = indexJson(index)
+        expect(json).not.toContain("\n")
+        expect(loadVectorIndex(JSON.parse(json))).toEqual(index)
+      }),
+    )
+  })
 })
 
 describe("validateIndex", () => {
@@ -180,11 +167,7 @@ describe("validateIndex", () => {
     corpus_hash: corpusHash(corpus),
     records: corpusTexts(corpus, rules.synonyms.index_groups).map(text => ({
       text,
-      vectors: {
-        structured: new Float32Array(DIMS),
-        body: new Float32Array(DIMS),
-        expanded: new Float32Array(DIMS),
-      },
+      vectors: perView(() => new Float32Array(DIMS)),
     })),
   })
 
@@ -227,7 +210,7 @@ describe("validateIndex", () => {
         "record text",
         { records: [tamperedText, ...base.records.slice(1)] },
         new RegExp(
-          `record 0 is ${first.text.category}/${first.text.id}, expected ${first.text.category}/`,
+          `record 0 is ${escapeRegExp(`${first.text.category}/${first.text.id}, expected ${first.text.category}/`)}`,
         ),
       ],
     ]
@@ -337,9 +320,7 @@ describe("built index", () => {
       for (const view of VIEWS) {
         const v = rec.vectors[view]
         expect(v.length).toBe(index.dims)
-        let s = 0
-        for (const x of v) s += x * x
-        worst = Math.max(worst, Math.abs(Math.sqrt(s) - 1))
+        worst = Math.max(worst, Math.abs(Math.hypot(...v) - 1))
       }
     }
     expect(worst).toBeLessThanOrEqual(1e-6)

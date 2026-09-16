@@ -4,9 +4,18 @@
 
 import { memoizedRetry } from "@carlwr/typescript-extra"
 import { loadVectorIndex } from "../core/index-loader"
-import { LookupIndex, LookupMapSchema } from "../core/lookup-map"
-import type { Rules } from "../core/rules"
-import { loadRules } from "../core/rules"
+import {
+  type LookupIndex,
+  LookupMapSchema,
+  lookupIndex,
+} from "../core/lookup-map"
+import {
+  byRuleFile,
+  loadRules,
+  RULE_FILES,
+  type Rules,
+  ruleJsonFile,
+} from "../core/rules"
 import type { Category, VectorIndex } from "../core/types"
 import { CategoriesSchema } from "../core/types"
 
@@ -22,29 +31,19 @@ export interface Artifacts {
 export async function loadArtifacts(
   fetcher: typeof fetch = fetch,
 ): Promise<Artifacts> {
-  const [
-    indexJson,
-    tuningJson,
-    stopwordsJson,
-    synonymsJson,
-    categoriesJson,
-    lookupMapJson,
-  ] = await Promise.all([
-    getJson(fetcher, `${BASE}/index.json`),
-    getJson(fetcher, `${BASE}/rules/tuning.json`),
-    getJson(fetcher, `${BASE}/rules/stopwords.json`),
-    getJson(fetcher, `${BASE}/rules/synonyms.json`),
-    getJson(fetcher, `${BASE}/categories.json`),
-    getJson(fetcher, `${BASE}/lookup-map.json`),
-  ])
+  const [indexJson, categoriesJson, lookupMapJson, ...ruleJsons] =
+    await Promise.all([
+      getJson(fetcher, `${BASE}/index.json`),
+      getJson(fetcher, `${BASE}/categories.json`),
+      getJson(fetcher, `${BASE}/lookup-map.json`),
+      ...RULE_FILES.map(f =>
+        getJson(fetcher, `${BASE}/rules/${ruleJsonFile(f)}`),
+      ),
+    ])
   const index = loadVectorIndex(indexJson)
-  const rules = loadRules({
-    tuning: tuningJson,
-    stopwords: stopwordsJson,
-    synonyms: synonymsJson,
-  })
+  const rules = loadRules(byRuleFile((_, at) => ruleJsons[at]))
   const categories = CategoriesSchema.parse(categoriesJson).categories
-  const lookup = new LookupIndex(LookupMapSchema.parse(lookupMapJson))
+  const lookup = lookupIndex(LookupMapSchema.parse(lookupMapJson))
   return { index, rules, categories, lookup }
 }
 

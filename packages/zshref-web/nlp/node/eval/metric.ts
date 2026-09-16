@@ -1,9 +1,13 @@
 // The eval metric; definitions and rationale: NLP.md §"Eval architecture".
 
-import { byteOrder } from "../byte-order"
+import { byteOrder } from "../../core/text"
 
 /** Global sharpness of the rank discount. */
 export const BETA = 2
+
+/** The arithmetic mean; 0 of nothing. */
+export const mean = (xs: readonly number[]): number =>
+  xs.length === 0 ? 0 : xs.reduce((a, x) => a + x, 0) / xs.length
 
 /**
  * Normalized rank discount in (0, 1]: `D(r) = 1 / (1 + (r/d)^β)`, scaled so
@@ -49,12 +53,7 @@ export function score(votes: readonly Vote[]): Score {
         s.weights > 0 ? s.gains / s.weights : 0,
       ]),
   )
-  let sum = 0
-  for (const s of perCategory.values()) sum += s
-  return {
-    perCategory,
-    total: perCategory.size === 0 ? 0 : sum / perCategory.size,
-  }
+  return { perCategory, total: mean([...perCategory.values()]) }
 }
 
 /** `score` over the votes of one split. */

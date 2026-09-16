@@ -6,6 +6,7 @@
 
 import { promoteToTop } from "../../core/lookup-map"
 import { rank } from "../../core/rank"
+import { sameRecord } from "../../core/types"
 import { embedUnique } from "../embedder-node"
 import type { EvalAssets } from "./assets"
 import { BETA, type EvalResult, evalResult, gain, type Vote } from "./metric"
@@ -40,12 +41,12 @@ export function gradeEntries(
   return entries.flatMap(entry => {
     const vec = vecs.get(entry.query)
     if (!vec) throw new Error("fixture query missing from the vector cache")
-    const ranked = rank(entry.query, vec, assets.index, assets.rules)
-    promoteToTop(ranked, assets.lookup.lookup(entry.query))
+    const ranked = promoteToTop(
+      rank(entry.query, vec, assets.index, assets.rules),
+      assets.lookup.lookup(entry.query),
+    )
     return entry.want.map((item): GradedItem => {
-      const pos = ranked.findIndex(
-        m => m.rec.category === item.category && m.rec.id === item.id,
-      )
+      const pos = ranked.findIndex(m => sameRecord(m.rec, item))
       const itemRank = pos === -1 ? ranked.length + 1 : pos + 1
       return {
         entry,

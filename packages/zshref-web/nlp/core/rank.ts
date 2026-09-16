@@ -5,32 +5,28 @@
 // Deterministic — the summation orders are fixed — so the parity fixture (a
 // golden of this ranker's own past output) pins every score exactly.
 
-import type { Rules } from "./rules"
+import {
+  exactWordBoost,
+  type Rules,
+  type Stopwords,
+  type Tuning,
+} from "./rules"
 import {
   type Boosts,
-  exactWordBoost,
+  compareRecordIds,
   type IndexedRecord,
+  perView,
   type RankedMatch,
   type RecordText,
   type SemanticScores,
-  type Stopwords,
-  type Tuning,
   type VectorIndex,
 } from "./types"
+import { dot } from "./vec"
 
 function clamp01(x: number): number {
   if (x < 0) return 0
   if (x > 1) return 1
   return x
-}
-
-export function dot(a: ArrayLike<number>, b: ArrayLike<number>): number {
-  // Stops at the shorter; in practice both are DIMS-length, so the `?? 0`
-  // fallbacks never trigger (i stays in range).
-  let s = 0
-  const n = Math.min(a.length, b.length)
-  for (let i = 0; i < n; i++) s += (a[i] ?? 0) * (b[i] ?? 0)
-  return s
 }
 
 export function rank(
@@ -41,23 +37,17 @@ export function rank(
 ): RankedMatch[] {
   const terms = queryTerms(query.toLowerCase(), rules)
   const penalties = categoryPenalties(index, rules)
-  const out = index.records.map(rec =>
-    scoreRecord(
-      rec,
-      queryVec,
-      terms,
-      penalties.get(rec.text.category) ?? 0,
-      rules,
-    ),
-  )
-  out.sort((a, b) => {
-    if (a.score !== b.score) return b.score - a.score
-    if (a.rec.category !== b.rec.category)
-      return a.rec.category < b.rec.category ? -1 : 1
-    if (a.rec.id !== b.rec.id) return a.rec.id < b.rec.id ? -1 : 1
-    return 0
-  })
-  return out
+  return index.records
+    .map(rec =>
+      scoreRecord(
+        rec,
+        queryVec,
+        terms,
+        penalties.get(rec.text.category) ?? 0,
+        rules,
+      ),
+    )
+    .sort((a, b) => b.score - a.score || compareRecordIds(a.rec, b.rec))
 }
 
 function scoreRecord(
@@ -67,11 +57,7 @@ function scoreRecord(
   categoryPenalty: number,
   rules: Rules,
 ): RankedMatch {
-  const semantic: SemanticScores = {
-    structured: dot(queryVec, rec.vectors.structured),
-    body: dot(queryVec, rec.vectors.body),
-    expanded: dot(queryVec, rec.vectors.expanded),
-  }
+  const semantic = perView(view => dot(queryVec, rec.vectors[view]))
   const { score, boosts } = scoreOf(
     { semantic, ...lexicalInputs(recordTerms(rec.text), terms) },
     rules.tuning,
@@ -181,13 +167,10 @@ export function categoryPenalties(
   rules: Rules,
 ): Map<string, number> {
   const counts = categoryCounts(index)
-  let maxRecords = 0
-  for (const c of counts.values()) if (c > maxRecords) maxRecords = c
-  const out = new Map<string, number>()
-  for (const [cat, count] of counts) {
-    out.set(cat, categoryPenalty(count, maxRecords, rules))
-  }
-  return out
+  const maxRecords = Math.max(0, ...counts.values())
+  return new Map(
+    [...counts].map(([cat, n]) => [cat, categoryPenalty(n, maxRecords, rules)]),
+  )
 }
 
 // --- lexical inputs ----------------------------------------------------------
@@ -260,11 +243,7 @@ export function computeBoosts(
 }
 
 /** Every view dot at 0: what zero query vectors score. */
-export const NO_SEMANTIC: SemanticScores = {
-  structured: 0,
-  body: 0,
-  expanded: 0,
-}
+export const NO_SEMANTIC: SemanticScores = perView(() => 0)
 
 /** The lowercased query names the record's category id or label. */
 export const categoryNamed = (lex: RecordTerms, q: string): boolean =>
@@ -300,16 +279,10 @@ export function isDiscriminating(word: string, rules: Rules): boolean {
 }
 
 /** Query words found in the haystack, as substrings ("cd" is in "autocd"). */
-export function wordOverlap(
+export const wordOverlap = (
   haystack: string,
   words: readonly string[],
-): number {
-  let count = 0
-  for (const w of words) {
-    if (haystack.includes(w)) count++
-  }
-  return count
-}
+): number => words.filter(w => haystack.includes(w)).length
 
 /**
  * Literal symbol tokens in `q`: whitespace tokens that bear punctuation or are
@@ -343,12 +316,14 @@ export function symbolHead(display: string): string | null {
 }
 
 /**
- * The lowercased query's overlap candidates: split on non-alphanumerics,
- * generic stopwords dropped, every length kept — `isSignificant` is the
- * tuning's length threshold.
+ * The lowercased query's overlap candidates: its alphanumeric runs, generic
+ * stopwords dropped, every length kept — `isSignificant` is the tuning's
+ * length threshold.
  */
 export function queryWords(q: string, sw: Stopwords): string[] {
-  return q.split(/[^A-Za-z0-9]+/).filter(w => !sw.generic.includes(w))
+  return q
+    .split(/[^A-Za-z0-9]+/)
+    .filter(w => w !== "" && !sw.generic.includes(w))
 }
 
 export const isSignificant = (word: string, t: Tuning): boolean =>

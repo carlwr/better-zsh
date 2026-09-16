@@ -1,31 +1,30 @@
-// The consumer side of the lookup map: `promoteToTop` on hand-made rankings
-// (the build side and the map's coverage: tests/nlp/node/lookup-map.test.ts).
+// The consumer side of the lookup map: `lookupIndex` and `promoteToTop` on
+// hand-made maps and rankings, then as properties (the build side and the
+// map's coverage: tests/nlp/node/lookup-map.test.ts).
 
+import fc from "fast-check"
 import { describe, expect, it } from "vitest"
-import { promoteToTop } from "../../../nlp/core/lookup-map"
-import type { RankedMatch, RecordText } from "../../../nlp/core/types"
+import { lookupIndex, promoteToTop } from "../../../nlp/core/lookup-map"
+import { NO_SEMANTIC } from "../../../nlp/core/rank"
+import {
+  type RankedMatch,
+  type RecordId,
+  recordKey,
+  sameRecord,
+} from "../../../nlp/core/types"
+import { makeRecordText } from "../../_fixtures"
 
-const rec = (category: string, id: string): RecordText => ({
-  category,
-  category_label: category,
-  id,
-  display: id,
-  title: "",
-  md_body: "",
-  structured: "",
-  body: "",
-  expanded: "",
+const match = (category: string, id: string, score: number): RankedMatch => ({
+  rec: makeRecordText({ category, category_label: category, id, display: id }),
+  score,
+  debug: { semantic: NO_SEMANTIC, boosts: { category: 0, lexical: 0 } },
 })
-const ranked = (): RankedMatch[] =>
-  [rec("option", "a"), rec("builtin", "b"), rec("option", "c")].map((r, i) => ({
-    rec: r,
-    score: 1 - i / 10,
-    debug: {
-      semantic: { structured: 0, body: 0, expanded: 0 },
-      boosts: { category: 0, resolver: 0, lexical: 0 },
-    },
-  }))
-const ids = (rs: RankedMatch[]): string[] => rs.map(m => m.rec.id)
+const ranked: readonly RankedMatch[] = [
+  match("option", "a", 1),
+  match("builtin", "b", 0.9),
+  match("option", "c", 0.8),
+]
+const ids = (rs: readonly RankedMatch[]): string[] => rs.map(m => m.rec.id)
 
 describe("promoteToTop", () => {
   it.each([
@@ -46,8 +45,72 @@ describe("promoteToTop", () => {
     ],
     ["no hit, no change", null, ["a", "b", "c"]],
   ])("%s", (_, hit, want) => {
-    const rs = ranked()
-    promoteToTop(rs, hit)
-    expect(ids(rs)).toEqual(want)
+    expect(ids(promoteToTop(ranked, hit))).toEqual(want)
+    expect(ids(ranked)).toEqual(["a", "b", "c"])
+  })
+})
+
+// --- properties ---------------------------------------------------------------
+
+const arbId = fc.stringMatching(/^[a-z?>_]{1,3}$/)
+const arbRecordId: fc.Arbitrary<RecordId> = fc.record({
+  category: fc.constantFrom("option", "builtin", "redirection"),
+  id: arbId,
+})
+/** Distinct identities, scores descending as the ranker leaves them. */
+const arbRanked: fc.Arbitrary<RankedMatch[]> = fc
+  .uniqueArray(arbRecordId, { maxLength: 8, selector: recordKey })
+  .map(recs => recs.map((r, i) => match(r.category, r.id, 1 - i / 10)))
+
+describe("promoteToTop properties", () => {
+  it("a permutation: the hit at slot 0 when present, the others in their order; else no change", () => {
+    fc.assert(
+      fc.property(
+        arbRanked,
+        fc.option(arbRecordId, { nil: null }),
+        (before, hit) => {
+          const after = promoteToTop(before, hit)
+          const present =
+            hit !== null && before.some(m => sameRecord(m.rec, hit))
+          if (!present) {
+            expect(after).toEqual(before)
+            return
+          }
+          expect(after[0]?.rec).toEqual(expect.objectContaining(hit))
+          expect(after.slice(1)).toEqual(
+            before.filter(m => !sameRecord(m.rec, hit)),
+          )
+        },
+      ),
+    )
+  })
+})
+
+const arbMap = fc.uniqueArray(
+  fc.record({
+    raw: fc.stringMatching(/^[A-Za-z_]{1,4}$/),
+    category: fc.constant("option"),
+    id: arbId,
+  }),
+  { maxLength: 6, selector: e => e.raw },
+)
+
+describe("lookupIndex properties", () => {
+  it("resolves the trimmed query verbatim, else lowercased, else not at all", () => {
+    fc.assert(
+      fc.property(
+        arbMap,
+        fc.stringMatching(/^[A-Za-z_]{0,4}$/),
+        fc.constantFrom("", " ", "\t", "  "),
+        (entries, q, pad) => {
+          const idx = lookupIndex({ version: 1, entries })
+          const byRaw = new Map(
+            entries.map(e => [e.raw, { category: e.category, id: e.id }]),
+          )
+          const want = byRaw.get(q) ?? byRaw.get(q.toLowerCase()) ?? null
+          expect(idx.lookup(`${pad}${q}${pad}`)).toEqual(q === "" ? null : want)
+        },
+      ),
+    )
   })
 })

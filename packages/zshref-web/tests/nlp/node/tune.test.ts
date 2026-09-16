@@ -6,8 +6,12 @@
 import { loadCorpus } from "@carlwr/zsh-core"
 import fc from "fast-check"
 import { describe, expect, it } from "vitest"
-import { LookupIndex } from "../../../nlp/core/lookup-map"
-import { exactWordBoost, type Tuning } from "../../../nlp/core/types"
+import {
+  exactWordBoost,
+  type Tuning,
+  TuningSchema,
+} from "../../../nlp/core/rules"
+import { syntheticVec } from "../../../nlp/core/vec"
 import {
   churn,
   type ItemRes,
@@ -50,15 +54,14 @@ import {
   zeroBoosts,
 } from "../../../nlp/node/eval/tune"
 import {
-  buildParityIndex,
   SANITY_FLOOR,
   SANITY_MARGIN,
   SANITY_QUERIES,
   SANITY_VERSION,
   type SanityFixture,
-  syntheticVec,
 } from "../../../nlp/node/fixtures"
 import { loadRulesYaml } from "../../../nlp/node/rules-load"
+import { parityRankAssets } from "../../_helpers"
 
 const corpus = loadCorpus()
 const rules = await loadRulesYaml()
@@ -95,11 +98,7 @@ describe("ablation helpers", () => {
   })
 
   it("withTuning swaps the tuning and nothing else", () => {
-    const assets = {
-      index: buildParityIndex(corpus, rules.synonyms.index_groups),
-      rules,
-      lookup: new LookupIndex({ version: 1, entries: [] }),
-    }
+    const assets = parityRankAssets(corpus, rules)
     const t = zeroBoosts(committed)
     const a = withTuning(assets, t)
     expect(a.rules.tuning).toBe(t)
@@ -203,6 +202,16 @@ describe("overrides", () => {
           )
       }),
     )
+  })
+
+  /** A sweep's best row must be committable: every point loads. */
+  it("every knob point of the committed tuning passes the load-time checks", () => {
+    for (const key of KNOB_KEYS)
+      for (const p of KNOBS[key].points)
+        expect(
+          TuningSchema.safeParse(withKnob(committed, key, p)).success,
+          `${key}=${p}`,
+        ).toBe(true)
   })
 
   it("knob points are labelled to 3 decimals for a float knob, as integers for an int one", () => {
@@ -469,11 +478,7 @@ describe("sweep marks and rows", () => {
 
 // --- over the parity fixture's miniature index (no model) ---------------------
 
-const parityAssets = {
-  index: buildParityIndex(corpus, rules.synonyms.index_groups),
-  rules,
-  lookup: new LookupIndex({ version: 1, entries: [] }),
-}
+const parityAssets = parityRankAssets(corpus, rules)
 const record = (i: number) => {
   const r = parityAssets.index.records[i]
   if (!r) throw new Error("parity index has 9 records")

@@ -18,16 +18,21 @@ import {
   docCategories,
   docCategoryLabels,
   docDisplay,
-  idOf,
 } from "@carlwr/zsh-core/taxonomy"
 import type { LookupIndex } from "../core/lookup-map"
-import { byteOrder } from "./byte-order"
+import { byteOrder } from "../core/text"
+import {
+  compareRecordIds,
+  type RecordId,
+  recordKey,
+  sameRecord,
+} from "../core/types"
 import {
   type SurfaceFormKind,
   surfaceFormKinds,
   surfaceFormsFor,
 } from "./lookup-map-build"
-import { resolverKey } from "./resolver-key"
+import { identityOf, resolverKey } from "./resolver-key"
 
 export const LOOKUP_CONTRACT_VERSION = 1
 
@@ -45,15 +50,13 @@ export type PhrasingKind = (typeof phrasingKinds)[number]
 export const predicates = ["top1-in-set"] as const
 export type Predicate = (typeof predicates)[number]
 
-export type Identity = { category: string; id: string }
-
 export type ContractEntry = {
   query: string
-  record: Identity
+  record: RecordId
   surfaceFormKind: SurfaceFormKind
   phrasingKind: PhrasingKind
   predicate: Predicate
-  expectedSet: readonly Identity[]
+  expectedSet: readonly RecordId[]
 }
 
 export type LookupContract = {
@@ -72,7 +75,7 @@ export function buildLookupContract(corpus: DocCorpus): LookupContract {
   for (const cat of docCategories) {
     const label = docCategoryLabels[cat]
     for (const rec of corpus[cat].values()) {
-      const record: Identity = { category: cat, id: idOf(cat, rec) as string }
+      const record = identityOf(cat, rec)
       for (const { form, kind } of surfaceFormsFor(cat, rec)) {
         const expectedSet = expectedSetFor(corpus, form)
         if (expectedSet.length === 0) continue
@@ -108,20 +111,17 @@ function dedupedPhrasings(
   form: string,
   cat: string,
   label: string,
-): readonly (readonly [string, PhrasingKind])[] {
-  const phrasings: readonly (readonly [string, PhrasingKind])[] = [
+): [query: string, kind: PhrasingKind][] {
+  const phrasings: [string, PhrasingKind][] = [
     [form, "bare"],
     [`${label} ${form}`, "label-prefix"],
     [`${form} ${label}`, "label-suffix"],
     [`${cat} ${form}`, "id-prefix"],
     [`${form} ${cat}`, "id-suffix"],
   ]
-  const seen = new Set<string>()
-  return phrasings.filter(([query]) => {
-    if (seen.has(query)) return false
-    seen.add(query)
-    return true
-  })
+  return phrasings.filter(
+    ([query], i) => phrasings.findIndex(([q]) => q === query) === i,
+  )
 }
 
 /**
@@ -129,38 +129,35 @@ function dedupedPhrasings(
  * verdict plus id/display equality in any category. Usually a single member;
  * `top1-in-set` accepts any member at slot 0.
  */
-function expectedSetFor(corpus: DocCorpus, query: string): readonly Identity[] {
-  const found: Identity[] = []
+function expectedSetFor(corpus: DocCorpus, query: string): readonly RecordId[] {
+  const found: RecordId[] = []
   const hit = resolverKey(corpus, query)
   if (hit) found.push(hit)
   for (const cat of docCategories) {
     for (const rec of corpus[cat].values()) {
-      const id = idOf(cat, rec) as string
-      if (id === query || docDisplay(cat, rec) === query)
-        found.push({ category: cat, id })
+      const identity = identityOf(cat, rec)
+      if (identity.id === query || docDisplay(cat, rec) === query)
+        found.push(identity)
     }
   }
-  return dedupeSorted(found.sort(compareIdentity))
+  return dedupeSorted(found.sort(compareRecordIds))
 }
 
-const dedupeSorted = (sorted: readonly Identity[]): readonly Identity[] =>
+const dedupeSorted = (sorted: readonly RecordId[]): readonly RecordId[] =>
   sorted.filter((x, i) => {
     const prev = sorted[i - 1]
-    return prev === undefined || compareIdentity(prev, x) !== 0
+    return prev === undefined || !sameRecord(prev, x)
   })
-
-const compareIdentity = (a: Identity, b: Identity): number =>
-  byteOrder(a.category, b.category) || byteOrder(a.id, b.id)
 
 /** Lexicographic: element-wise, then the shorter first. */
 function compareIdentityLists(
-  a: readonly Identity[],
-  b: readonly Identity[],
+  a: readonly RecordId[],
+  b: readonly RecordId[],
 ): number {
   for (const [i, x] of a.entries()) {
     const y = b[i]
     if (y === undefined) return 1
-    const c = compareIdentity(x, y)
+    const c = compareRecordIds(x, y)
     if (c !== 0) return c
   }
   return a.length - b.length
@@ -176,7 +173,7 @@ const comparePredicate = variantOrder(predicates)
 
 const compareEntries = (a: ContractEntry, b: ContractEntry): number =>
   byteOrder(a.query, b.query) ||
-  compareIdentity(a.record, b.record) ||
+  compareRecordIds(a.record, b.record) ||
   compareSurfaceFormKind(a.surfaceFormKind, b.surfaceFormKind) ||
   comparePhrasingKind(a.phrasingKind, b.phrasingKind) ||
   comparePredicate(a.predicate, b.predicate) ||
@@ -185,10 +182,10 @@ const compareEntries = (a: ContractEntry, b: ContractEntry): number =>
 // --- Bare-layer evaluation ---------------------------------------------------
 
 const predicateHolds: {
-  readonly [P in Predicate]: (entry: ContractEntry, top: Identity) => boolean
+  readonly [P in Predicate]: (entry: ContractEntry, top: RecordId) => boolean
 } = {
   "top1-in-set": (entry, top) =>
-    entry.expectedSet.some(e => compareIdentity(e, top) === 0),
+    entry.expectedSet.some(e => sameRecord(e, top)),
 }
 
 /** Bare layer: the lookup-map hard-promote subsumes the canonical-form path, so a hit there is the test. */
@@ -197,10 +194,9 @@ function barePredicateHolds(entry: ContractEntry, idx: LookupIndex): boolean {
   return top !== null && predicateHolds[entry.predicate](entry, top)
 }
 
-const identityText = (i: Identity): string => `${i.category}/${i.id}`
 const formatFailure = (e: ContractEntry): string =>
-  `  query=${JSON.stringify(e.query)} record=${identityText(e.record)} surface=${e.surfaceFormKind}` +
-  ` phrasing=${e.phrasingKind} expected=[${e.expectedSet.map(identityText).join(", ")}]`
+  `  query=${JSON.stringify(e.query)} record=${recordKey(e.record)} surface=${e.surfaceFormKind}` +
+  ` phrasing=${e.phrasingKind} expected=[${e.expectedSet.map(recordKey).join(", ")}]`
 
 export type BareEval = {
   bareTotal: number

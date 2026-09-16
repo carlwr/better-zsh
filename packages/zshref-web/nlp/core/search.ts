@@ -42,9 +42,9 @@ export async function search(args: SearchArgs): Promise<SearchResult> {
   const cats = args.categories
   // Filtered after ranking, never by a narrower index: the category
   // penalties derive from full-index counts.
-  const ranked = rank(q, queryVec, args.index, args.rules).filter(
+  const kept = rank(q, queryVec, args.index, args.rules).filter(
     m => cats === null || cats.has(m.rec.category),
   )
-  promoteToTop(ranked, args.lookup.lookup(q))
+  const ranked = promoteToTop(kept, args.lookup.lookup(q))
   return { matches: ranked.slice(0, args.limit), total: ranked.length }
 }

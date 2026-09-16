@@ -10,7 +10,8 @@
         "minItems": 2,
         "type": "array",
         "items": {
-          "type": "string"
+          "type": "string",
+          "minLength": 1
         }
       }
     },
@@ -25,12 +26,14 @@
             "minItems": 1,
             "type": "array",
             "items": {
-              "type": "string"
+              "type": "string",
+              "minLength": 1
             },
             "description": "Colloquial trigger words / phrases (matched whole word / phrase). Any casing; normalized to lowercase at load."
           },
           "add": {
             "type": "string",
+            "minLength": 1,
             "description": "Canonical term appended for embedding. One term by design; any casing, normalized to lowercase at load."
           }
         },

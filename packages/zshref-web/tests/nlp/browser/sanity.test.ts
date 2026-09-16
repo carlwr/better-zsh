@@ -15,7 +15,6 @@
 // on the local mmap'd model — the "~127 MB download" is the browser's
 // first-visit cost, not this test. Skipped if artifacts aren't staged.
 
-import { dirname } from "node:path"
 import { isNonEmpty } from "@carlwr/typescript-extra"
 import { beforeAll, describe, expect, it } from "vitest"
 import {
@@ -26,13 +25,13 @@ import { rank } from "../../../nlp/core/rank"
 import type { Rules } from "../../../nlp/core/rules"
 import { queryEmbedText } from "../../../nlp/core/search"
 import type { VectorIndex } from "../../../nlp/core/types"
+import { useLocalModel } from "../../../nlp/node/embedder-node"
 import { loadRulesYaml } from "../../../nlp/node/rules-load"
 import { errMsg } from "../../../src/lib/errors"
 import {
   artifactGate,
   loadIndexFromDisk,
   loadSanityFixture,
-  PATHS,
   STAGED,
 } from "../../_helpers"
 
@@ -87,13 +86,8 @@ describe("full-pipeline sanity", () => {
 })
 
 async function loadLocalPipeline(): Promise<FeatureExtractionPipeline> {
-  const tx = await import("@huggingface/transformers")
-  tx.env.allowRemoteModels = false
-  tx.env.allowLocalModels = true
-  // transformers.js resolves `<localModelPath>/<modelId>` — point one level
-  // up from PATHS.modelDir so the modelId is the leaf dir name ("model").
-  tx.env.localModelPath = dirname(PATHS.modelDir)
-  return (await tx.pipeline("feature-extraction", "model", {
+  const { pipeline } = await import("@huggingface/transformers")
+  return (await pipeline("feature-extraction", useLocalModel(), {
     dtype: "fp32",
   })) as unknown as FeatureExtractionPipeline
 }

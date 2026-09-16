@@ -2,8 +2,10 @@
 // the embed text, the category set, the promote, the cut. Scores are the
 // parity fixture's business.
 
+import { allUnique } from "@carlwr/typescript-extra"
+import fc from "fast-check"
 import { beforeAll, describe, expect, it } from "vitest"
-import { LookupIndex } from "../../../nlp/core/lookup-map"
+import { lookupIndex } from "../../../nlp/core/lookup-map"
 import type { Rules } from "../../../nlp/core/rules"
 import {
   queryEmbedText,
@@ -11,8 +13,10 @@ import {
   type SearchResult,
   search,
 } from "../../../nlp/core/search"
-import { syntheticVec } from "../../../nlp/node/fixtures"
+import { recordKey } from "../../../nlp/core/types"
+import { syntheticVec } from "../../../nlp/core/vec"
 import { loadRulesYaml } from "../../../nlp/node/rules-load"
+import { arbIndex, arbLookup, arbQuery } from "../../_arbs"
 import { syntheticIndex } from "../../_fixtures"
 
 const index = syntheticIndex([
@@ -21,7 +25,7 @@ const index = syntheticIndex([
   ["builtin", "cd"],
   ["builtin", "echo"],
 ])
-const lookup = new LookupIndex({
+const lookup = lookupIndex({
   version: 1,
   entries: [{ raw: "AUTO_CD", category: "option", id: "autocd" }],
 })
@@ -43,8 +47,7 @@ const run = (query: string, over: Partial<SearchArgs> = {}) =>
     categories: null,
     ...over,
   })
-const keys = (r: SearchResult) =>
-  r.matches.map(m => `${m.rec.category}/${m.rec.id}`)
+const keys = (r: SearchResult) => r.matches.map(m => recordKey(m.rec))
 
 describe("search", () => {
   it("a blank query is the empty result, before any embed", async () => {
@@ -80,5 +83,55 @@ describe("search", () => {
     const r = await run("cd", { limit: 1 })
     expect(r.matches).toHaveLength(1)
     expect(r.total).toBe(index.records.length)
+  })
+})
+
+describe("search properties", () => {
+  const arbArgs = arbIndex.chain(index =>
+    fc.record({
+      index: fc.constant(index),
+      lookup: arbLookup(index),
+      query: fc.oneof(
+        arbQuery,
+        fc.constantFrom(...index.records.map(r => ` ${r.text.id} `)),
+      ),
+      limit: fc.integer({ min: 0, max: 8 }),
+      categories: fc.option(
+        fc
+          .uniqueArray(
+            fc.constantFrom("option", "builtin", "special_param", "x"),
+          )
+          .map(cs => new Set<string>(cs)),
+        { nil: null },
+      ),
+    }),
+  )
+
+  it("total is the kept records' count, the matches its first `limit`, the lookup hit first when kept", async () => {
+    await fc.assert(
+      fc.asyncProperty(arbArgs, async a => {
+        const r = await search({ ...a, embed, rules })
+        const q = a.query.trim()
+        const kept = a.index.records.filter(
+          x => a.categories === null || a.categories.has(x.text.category),
+        )
+        if (q === "") {
+          expect(r).toEqual({ matches: [], total: 0 })
+          return
+        }
+        expect(r.total).toBe(kept.length)
+        expect(r.matches).toHaveLength(Math.min(a.limit, kept.length))
+        const hit = a.lookup.lookup(q)
+        const hitKept =
+          hit && kept.some(x => recordKey(x.text) === recordKey(hit))
+        if (hitKept && a.limit > 0) expect(keys(r)[0]).toBe(recordKey(hit))
+        // Every match is a kept record, each at most once.
+        const ks = keys(r)
+        expect(allUnique(ks)).toBe(true)
+        for (const k of ks)
+          expect(kept.map(x => recordKey(x.text))).toContain(k)
+      }),
+      { numRuns: 60 },
+    )
   })
 })

@@ -109,11 +109,15 @@ describe("findRecord", () => {
   ]
 
   it("matches category+id, not id alone", () => {
-    expect(findRecord(records, "param", "echo")).toBe(records[2])
+    expect(findRecord(records, { category: "param", id: "echo" })).toBe(
+      records[2],
+    )
   })
 
   it("undefined when no match", () => {
-    expect(findRecord(records, "builtin", "PATH")).toBeUndefined()
+    expect(
+      findRecord(records, { category: "builtin", id: "PATH" }),
+    ).toBeUndefined()
   })
 })
 
@@ -124,8 +128,7 @@ describe("recordView", () => {
     ready: true,
     found: record,
     categories: [{ id: "builtin", label: "Builtins" }],
-    category: "builtin",
-    id: "echo",
+    want: { category: "builtin", id: "echo" },
   }
 
   it.each<[RecordView["kind"], Partial<RecordViewInputs>]>([
@@ -149,7 +152,11 @@ describe("recordView", () => {
 
   it("not-found names the permalink", () => {
     expect(
-      recordView({ ...FOUND, found: undefined, category: "param", id: "PATH" }),
+      recordView({
+        ...FOUND,
+        found: undefined,
+        want: { category: "param", id: "PATH" },
+      }),
     ).toEqual({
       kind: "not-found",
       message: "no record at /r/param/PATH",

@@ -1,10 +1,11 @@
 // Named cases, then properties over generated rule sets and queries.
 
+import { allUnique, withoutFirstSubstring } from "@carlwr/typescript-extra"
 import fc from "fast-check"
 import { describe, expect, it } from "vitest"
 
 import { expandQueryForEmbedding } from "../../../nlp/core/query-expand"
-import type { QueryExpansion } from "../../../nlp/core/types"
+import type { QueryExpansion } from "../../../nlp/core/rules"
 
 const rule = (when: string[], add: string): QueryExpansion => ({ when, add })
 
@@ -79,10 +80,8 @@ const wordIn = (hay: string, needle: string): boolean =>
     ? hay.toLowerCase().includes(needle)
     : words(hay).includes(needle)
 /** The terms `expanded` appended to `query`. */
-const appended = (query: string, expanded: string): string[] => {
-  expect(expanded.startsWith(query)).toBe(true)
-  return expanded === query ? [] : words(expanded.slice(query.length))
-}
+const appended = (query: string, expanded: string): string[] =>
+  words(withoutFirstSubstring(query, expanded))
 
 describe("expandQueryForEmbedding properties", () => {
   it("is deterministic and append-only: ≤ 2 distinct canonical terms absent from the query", () => {
@@ -92,7 +91,7 @@ describe("expandQueryForEmbedding properties", () => {
         expect(expandQueryForEmbedding(q, rules)).toBe(e)
         const adds = appended(q, e)
         expect(adds.length).toBeLessThanOrEqual(2)
-        expect(new Set(adds).size).toBe(adds.length)
+        expect(allUnique(adds)).toBe(true)
         for (const a of adds) {
           expect(rules.some(r => r.add === a)).toBe(true)
           expect(wordIn(q, a)).toBe(false)

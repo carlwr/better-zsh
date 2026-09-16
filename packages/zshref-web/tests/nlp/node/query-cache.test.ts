@@ -4,18 +4,19 @@
 // without it).
 
 import { readFileSync } from "node:fs"
-import { mkdir, mkdtemp, rm, utimes, writeFile } from "node:fs/promises"
+import { mkdir, mkdtemp, utimes, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
+import { rm_rf } from "@carlwr/typescript-extra/node"
 import fc from "fast-check"
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest"
 
 import { DIMS } from "../../../nlp/core/types"
+import { syntheticVec } from "../../../nlp/core/vec"
 import {
   type Embedder,
   embedderIdentity,
 } from "../../../nlp/node/embedder-node"
-import { syntheticVec } from "../../../nlp/node/fixtures"
 import {
   cachedEmbedder,
   loadQueryCache,
@@ -28,7 +29,7 @@ let dir: string
 beforeAll(async () => {
   dir = await mkdtemp(join(tmpdir(), "query-cache-"))
 })
-afterAll(() => rm(dir, { recursive: true, force: true }))
+afterAll(() => rm_rf(dir))
 
 /** Synthetic vectors, counting the texts it is asked for. */
 function counting(): Embedder & { asked: string[] } {

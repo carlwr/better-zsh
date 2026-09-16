@@ -3,8 +3,19 @@
 
 import type { DocCorpus } from "@carlwr/zsh-core"
 import { lookupRaw } from "@carlwr/zsh-core/resolver"
-import { classifyOrder, type DocCategory } from "@carlwr/zsh-core/taxonomy"
-import type { ResolverHit } from "../core/types"
+import {
+  classifyOrder,
+  type DocCategory,
+  type DocRecordMap,
+  idOf,
+} from "@carlwr/zsh-core/taxonomy"
+import type { RecordId, ResolverHit } from "../core/types"
+
+/** A corpus record's identity as the NLP carries it: the brand peeled. */
+export const identityOf = <K extends DocCategory>(
+  cat: K,
+  rec: DocRecordMap[K],
+): RecordId => ({ category: cat, id: idOf(cat, rec) as string })
 
 /**
  * Direct-or-resolver lookup within one category: trimmed `_id` equality

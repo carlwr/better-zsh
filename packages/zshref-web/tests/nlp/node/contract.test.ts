@@ -5,7 +5,7 @@
 
 import { loadCorpus } from "@carlwr/zsh-core"
 import { describe, expect, it } from "vitest"
-import { LookupIndex } from "../../../nlp/core/lookup-map"
+import { lookupIndex } from "../../../nlp/core/lookup-map"
 import { buildLookupContract, evalBare } from "../../../nlp/node/contract"
 import { buildLookupMap } from "../../../nlp/node/lookup-map-build"
 import { assertCommittedJson, PATHS } from "../../_helpers"
@@ -22,7 +22,7 @@ describe("lookup contract", () => {
   })
 
   it("lookup_contract_holds", () => {
-    const idx = new LookupIndex(buildLookupMap(corpus))
+    const idx = lookupIndex(buildLookupMap(corpus))
     const e = evalBare(buildLookupContract(corpus), idx)
     console.log(
       `[contract bare] ${e.bareTotal} entries, ${e.failures.length} failures (skipped ${e.skippedDecorated} decorated)`,

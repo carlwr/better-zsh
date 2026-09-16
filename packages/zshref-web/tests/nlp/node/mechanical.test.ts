@@ -8,10 +8,11 @@
 // stays at the capped smoke; `pnpm nlp:eval-mechanical` is the report's
 // day-to-day form.
 
+import { isSingle, memoized } from "@carlwr/typescript-extra"
 import { loadCorpus } from "@carlwr/zsh-core"
 import { docCategories, docDisplay } from "@carlwr/zsh-core/taxonomy"
 import { describe, expect, it } from "vitest"
-import { LookupIndex } from "../../../nlp/core/lookup-map"
+import { syntheticVec } from "../../../nlp/core/vec"
 import { buildLookupContract } from "../../../nlp/node/contract"
 import { loadEvalAssets } from "../../../nlp/node/eval/assets"
 import {
@@ -29,9 +30,13 @@ import {
 import { gain } from "../../../nlp/node/eval/metric"
 import { evalSentence } from "../../../nlp/node/eval/sentence"
 import { loadSentenceFixture } from "../../../nlp/node/eval/sentence-fixture"
-import { buildParityIndex, syntheticVec } from "../../../nlp/node/fixtures"
 import { loadRulesYaml } from "../../../nlp/node/rules-load"
-import { artifactGate, STAGED } from "../../_helpers"
+import {
+  artifactGate,
+  inCorpus,
+  parityRankAssets,
+  STAGED,
+} from "../../_helpers"
 
 const corpus = loadCorpus()
 
@@ -84,19 +89,13 @@ describe("build", () => {
     )
     expect(entries.slice(decorated.length).map(e => e.query)).toEqual(questions)
 
-    const known = new Map(
-      docCategories.map(cat => [
-        cat as string,
-        new Set<string>(corpus[cat].keys()),
-      ]),
-    )
     for (const e of entries) {
       expect(e.query.trim()).not.toBe("")
       expect(e.split).toBe("train")
-      expect(e.want).toHaveLength(1)
+      if (!isSingle(e.want)) throw new Error("one item per entry")
       const [item] = e.want
       expect(item).toMatchObject({ targetDepth: TARGET_DEPTH, weight: 1 })
-      expect(known.get(item?.category ?? "")?.has(item?.id ?? "")).toBe(true)
+      expect(inCorpus(corpus, item)).toBe(true)
     }
   })
 
@@ -153,14 +152,9 @@ describe("slices", () => {
 
 describe("eval over the parity index", () => {
   it("tallies violations and slices per graded item", async () => {
-    const rules = await loadRulesYaml()
-    const index = buildParityIndex(corpus, rules.synonyms.index_groups)
     // No lookup map: the ranker alone decides the order.
-    const assets = {
-      index,
-      rules,
-      lookup: new LookupIndex({ version: 1, entries: [] }),
-    }
+    const assets = parityRankAssets(corpus, await loadRulesYaml())
+    const { index } = assets
     const query = "alpha"
     const vecs = new Map([[query, syntheticVec(["query", query])]])
     const entries = index.records.map(r => ({
@@ -215,15 +209,13 @@ describe("mechanical eval over the staged assets", () => {
     STAGED.index,
     STAGED.model,
   ])
+  const assets = memoized(loadEvalAssets)
 
   it("mechanical_smoke", async ctx => {
     if (skipReason) ctx.skip(skipReason)
-    const assets = await loadEvalAssets()
-    const entries = buildMechanical(assets.corpus).slice(
-      0,
-      MECHANICAL_SMOKE_LIMIT,
-    )
-    const r = await evalMechanical(entries, assets)
+    const a = await assets()
+    const entries = buildMechanical(a.corpus).slice(0, MECHANICAL_SMOKE_LIMIT)
+    const r = await evalMechanical(entries, a)
     expect(r.nEntries).toBe(entries.length)
     expect(r.all.total).toBeGreaterThanOrEqual(0)
     expect(r.all.total).toBeLessThanOrEqual(1)
@@ -236,9 +228,9 @@ describe("mechanical eval over the staged assets", () => {
     if (process.env.BZ_NLP_SLOW !== "1")
       ctx.skip("slow (embeds thousands of queries) — opt in with BZ_NLP_SLOW=1")
     if (skipReason) ctx.skip(skipReason)
-    const assets = await loadEvalAssets()
-    const mech = await evalMechanical(buildMechanical(assets.corpus), assets)
-    const curated = await evalSentence(await loadSentenceFixture(), assets)
+    const a = await assets()
+    const mech = await evalMechanical(buildMechanical(a.corpus), a)
+    const curated = await evalSentence(await loadSentenceFixture(), a)
     console.log(
       (
         renderMechanical(mech) +

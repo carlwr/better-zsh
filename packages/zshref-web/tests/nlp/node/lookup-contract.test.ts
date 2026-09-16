@@ -15,7 +15,8 @@
 import { readFile } from "node:fs/promises"
 import { describe, expect, it } from "vitest"
 import { z } from "zod"
-import { LookupIndex, LookupMapSchema } from "../../../nlp/core/lookup-map"
+import { LookupMapSchema, lookupIndex } from "../../../nlp/core/lookup-map"
+import { RecordIdSchema } from "../../../nlp/core/types"
 import {
   evalBare,
   LOOKUP_CONTRACT_VERSION,
@@ -25,18 +26,16 @@ import {
 import { surfaceFormKinds } from "../../../nlp/node/lookup-map-build"
 import { PATHS } from "../../_helpers"
 
-const IdentitySchema = z.object({ category: z.string(), id: z.string() })
-
 const LookupContractSchema = z.object({
   version: z.literal(LOOKUP_CONTRACT_VERSION),
   entries: z.array(
     z.object({
       query: z.string(),
-      record: IdentitySchema,
+      record: RecordIdSchema,
       surfaceFormKind: z.enum(surfaceFormKinds),
       phrasingKind: z.enum(phrasingKinds),
       predicate: z.enum(predicates),
-      expectedSet: z.array(IdentitySchema),
+      expectedSet: z.array(RecordIdSchema),
     }),
   ),
 })
@@ -52,7 +51,7 @@ describe("lookup contract (bare layer)", () => {
       readJson(PATHS.lookupMap),
     ])
     const contract = LookupContractSchema.parse(contractRaw)
-    const idx = new LookupIndex(LookupMapSchema.parse(mapRaw))
+    const idx = lookupIndex(LookupMapSchema.parse(mapRaw))
     const e = evalBare(contract, idx)
     console.log(
       `[contract bare] ${e.bareTotal} entries, ${e.failures.length} failures ` +

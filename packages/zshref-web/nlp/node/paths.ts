@@ -4,6 +4,8 @@
 import { dirname, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 
+import { byRuleFile } from "../core/rules"
+
 const pkgDir = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..")
 const nlpDir = resolve(pkgDir, "nlp")
 
@@ -22,9 +24,7 @@ const auxDir = resolve(pkgDir, ".aux")
 
 export const PATHS = {
   pkgDir,
-  tuning: resolve(rulesDir, "tuning.yaml"),
-  stopwords: resolve(rulesDir, "stopwords.yaml"),
-  synonyms: resolve(rulesDir, "synonyms.yaml"),
+  ...byRuleFile(f => resolve(rulesDir, `${f}.yaml`)),
   sentenceFixture: resolve(rulesDir, "sentence-fixture.yaml"),
   rulesSchemaDir: resolve(rulesDir, "schema"),
   categoriesJson: resolve(dataDir, "categories.json"),

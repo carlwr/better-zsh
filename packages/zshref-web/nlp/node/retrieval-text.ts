@@ -8,13 +8,14 @@
 // Lowercasing and alphanumeric tests are ASCII-only; whitespace is Unicode
 // White_Space.
 
+import { isDefined } from "@carlwr/typescript-extra"
 import type { DocCorpus } from "@carlwr/zsh-core"
 import { type DocCategory, docCategoryLabels } from "@carlwr/zsh-core/taxonomy"
 
-import type { RecordText, Synonyms } from "../core/types"
+import type { Synonyms } from "../core/rules"
+import { asciiLower } from "../core/text"
+import type { RecordText } from "../core/types"
 import { projectCorpus } from "./projection"
-
-export type { RecordText } from "../core/types"
 
 export type JsonValue =
   | string
@@ -53,26 +54,23 @@ export function recordText(
   rec: JsonRecord,
   indexGroups: IndexGroups,
 ): RecordText {
-  const id = strField(rec, "_id")
-  const display = strField(rec, "_display")
   const title = strField(rec, "_title")
   const subKind = strField(rec, "_subKind")
   const mdBody = strField(rec, "mdBody")
-  const label = docCategoryLabels[cat]
-  // `mdBody` is title-less; the body view embeds the whole rendered record.
-  const body = bodyText(rec, `${title}\n\n${mdBody}`)
   const ident: Identity = {
     category: cat,
-    label,
-    id,
-    display,
+    label: docCategoryLabels[cat],
+    id: strField(rec, "_id"),
+    display: strField(rec, "_display"),
     ...(subKind !== "" ? { subKind } : {}),
   }
+  // `mdBody` is title-less; the body view embeds the whole rendered record.
+  const body = bodyText(rec, `${title}\n\n${mdBody}`)
   return {
     category: cat,
-    category_label: label,
-    id,
-    display,
+    category_label: ident.label,
+    id: ident.id,
+    display: ident.display,
     ...(subKind !== "" ? { sub_kind: subKind } : {}),
     title,
     md_body: mdBody,
@@ -160,17 +158,14 @@ export function compactValue(value: JsonValue): string | undefined {
   if (typeof value === "boolean" || typeof value === "number")
     return String(value)
   if (Array.isArray(value)) {
-    const parts = value
-      .map(compactValue)
-      .filter(s => s !== undefined && s !== "")
-    return nonempty(parts.join(" "))
+    return nonempty(value.map(compactValue).filter(isDefined).join(" "))
   }
   const parts: string[] = []
   for (const [k, v] of Object.entries(value)) {
     const s = compactValue(v)
     if (s !== undefined) parts.push(`${keyWords(k)} ${s}`)
   }
-  return nonempty(parts.join(" "))
+  return nonempty(normalizeWs(parts.join(" ")))
 }
 
 export const keyWords = (s: string): string => s.replace(/[_-]/g, " ")
@@ -187,9 +182,6 @@ const words = (s: string): string[] => s.split(wsRun).filter(w => w !== "")
 
 const nonempty = (s: string): string | undefined =>
   words(s).length === 0 ? undefined : s
-
-const asciiLower = (s: string): string =>
-  s.replace(/[A-Z]+/g, m => m.toLowerCase())
 
 const isAsciiAlnum = (s: string): boolean => /^[0-9A-Za-z]+$/.test(s)
 
