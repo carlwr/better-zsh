@@ -6,9 +6,9 @@ import {
   evalMechanical,
   renderCombined,
   renderMechanical,
-} from "../nlp/eval/mechanical"
-import { evalSentence } from "../nlp/eval/sentence"
-import { loadSentenceFixture } from "../nlp/eval/sentence-fixture"
+} from "../nlp/node/eval/mechanical"
+import { evalSentence } from "../nlp/node/eval/sentence"
+import { loadSentenceFixture } from "../nlp/node/eval/sentence-fixture"
 import { reporterAssets, scriptFlags } from "./_args"
 
 scriptFlags(

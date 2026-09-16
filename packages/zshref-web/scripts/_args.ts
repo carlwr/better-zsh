@@ -1,12 +1,12 @@
 // Arguments are decided before any asset loads — `--help` and a refused
-// argument cost no model — so tests/nlp/reporters.test.ts spawns every
-// script ungated.
+// argument cost no model — so `reporters.test.ts` spawns every script
+// ungated.
 
 import {
   assetsMissing,
   type EvalAssets,
   loadEvalAssets,
-} from "../nlp/eval/assets"
+} from "../nlp/node/eval/assets"
 
 /**
  * The flags given, or the process exits: `--help` prints `usage` (exit 0);

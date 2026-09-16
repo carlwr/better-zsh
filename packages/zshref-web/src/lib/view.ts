@@ -1,8 +1,7 @@
 // Pure page-presentation logic: testable without a DOM, templates are thin
 // switches over it. Same posture as markdown.ts.
 
-import { type Category, categoryLabel } from "./artifacts"
-import type { RecordText } from "./ranker/types"
+import { type Category, categoryLabel, type RecordText } from "$nlp"
 
 // Check order is the contract: earlier wins, so an error or cold embedder is
 // never masked by a later results/empty branch.

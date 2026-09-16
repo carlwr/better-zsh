@@ -2,14 +2,14 @@
 // `BZ_TUNE_BASE` candidate — the names behind a sweep delta. Holdout is
 // never printed (NLP.md).
 
-import { composedBase, loadBench, renderTuneDiff } from "../nlp/eval/sweep"
+import { composedBase, loadBench, renderTuneDiff } from "../nlp/node/eval/sweep"
 import { reporterAssets, scriptFlags, tuneBaseSpec } from "./_args"
 
 const usage = `\
 BZ_TUNE_BASE=key=value,… pnpm --filter zshref-web nlp:tune-diff
 
   BZ_TUNE_BASE  the candidate (required): overrides over the committed
-             tuning; the keys are nlp/eval/sweep.ts KNOBS.\
+             tuning; the keys are nlp/node/eval/sweep.ts KNOBS.\
 `
 scriptFlags("tune-diff", usage, [])
 

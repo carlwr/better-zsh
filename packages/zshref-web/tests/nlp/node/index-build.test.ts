@@ -1,0 +1,347 @@
+// Model-free: a synthetic index, and `buildIndex` over the corpus with
+// synthetic vectors; the `built index` tests read the staged one (skipped
+// until `build:index` has run).
+
+import { mkdtemp, rm } from "node:fs/promises"
+import { tmpdir } from "node:os"
+import { join } from "node:path"
+import { memoized } from "@carlwr/typescript-extra"
+import { loadCorpus } from "@carlwr/zsh-core"
+import fc from "fast-check"
+import { afterAll, beforeAll, describe, expect, it } from "vitest"
+import type { Rules } from "../../../nlp/core/rules"
+import {
+  DIMS,
+  type IndexedRecord,
+  MODEL_ID,
+  type VectorIndex,
+} from "../../../nlp/core/types"
+import { corpusHash } from "../../../nlp/node/corpus-hash"
+import { syntheticVec } from "../../../nlp/node/fixtures"
+import {
+  buildIndex,
+  INDEX_VERSION,
+  type IndexValidation,
+  indexJson,
+  PROGRESS_CHUNK,
+  readIndex,
+  VIEWS,
+  validateIndex,
+  writeIndex,
+} from "../../../nlp/node/index-build"
+import {
+  f32Shortest,
+  f32VecJson,
+  jsonWithRawField,
+} from "../../../nlp/node/json-f32"
+import { corpusTexts } from "../../../nlp/node/retrieval-text"
+import { loadRulesYaml } from "../../../nlp/node/rules-load"
+import { artifactGate, PATHS, STAGED } from "../../_helpers"
+
+const corpus = loadCorpus()
+let rules: Rules
+beforeAll(async () => {
+  rules = await loadRulesYaml()
+})
+
+const rejected = (v: IndexValidation, reason: RegExp): void => {
+  expect(v.ok).toBe(false)
+  if (!v.ok) expect(v.reason).toMatch(reason)
+}
+
+describe("f32Shortest", () => {
+  it("prints the obvious cases", () => {
+    const cases: [number, string][] = [
+      [0.5, "0.5"],
+      [1, "1"],
+      [-0, "0"],
+      [Math.fround(0.1), "0.1"],
+      [Math.fround(-0.023456), "-0.023456"],
+      [Math.fround(1.5e-7), "1.5e-7"],
+    ]
+    for (const [v, s] of cases) expect(f32Shortest(v), String(v)).toBe(s)
+  })
+
+  it("rejects what JSON cannot carry or an f32 cannot hold", () => {
+    for (const v of [Number.NaN, Number.POSITIVE_INFINITY, 0.1, 1e40]) {
+      expect(() => f32Shortest(v), String(v)).toThrow(/not a finite f32/)
+    }
+  })
+
+  // Any finite f32 — subnormals, huge and tiny values included: the printed
+  // form reads back to the same f32, carries at most 9 significant digits,
+  // and is valid JSON.
+  const arbF32 = fc.float({ noNaN: true, noDefaultInfinity: true })
+
+  it("round-trips every finite f32 in at most 9 significant digits", () => {
+    fc.assert(
+      fc.property(arbF32, v => {
+        const s = f32Shortest(v)
+        // `===`: what every reader compares with; `-0` prints as `0`.
+        expect(Math.fround(Number(s)) === v, s).toBe(true)
+        expect(JSON.parse(s)).toBe(Number(s))
+        expect(
+          s
+            .replace(/e[+-]\d+$/, "")
+            .replace(/[-.]/g, "")
+            .replace(/^0+/, "").length,
+        ).toBeLessThanOrEqual(9)
+      }),
+      { numRuns: 2000 },
+    )
+  })
+
+  it("f32VecJson is a JSON array of the components", () => {
+    expect(f32VecJson(new Float32Array([0.5, -1, Math.fround(0.1)]))).toBe(
+      "[0.5,-1,0.1]",
+    )
+    expect(f32VecJson(new Float32Array())).toBe("[]")
+  })
+
+  it("jsonWithRawField splices the raw field last", () => {
+    expect(jsonWithRawField({ a: 1, b: "x" }, "v", "[0.1]")).toBe(
+      '{"a":1,"b":"x","v":[0.1]}',
+    )
+    expect(JSON.parse(jsonWithRawField({ a: 1 }, "k", "{}"))).toEqual({
+      a: 1,
+      k: {},
+    })
+  })
+})
+
+const tinyIndex = (): VectorIndex => {
+  const text = (id: string, subKind?: string) => ({
+    category: "option",
+    category_label: "option",
+    id,
+    display: id.toUpperCase(),
+    ...(subKind === undefined ? {} : { sub_kind: subKind }),
+    title: `\`${id}\``,
+    md_body: "body",
+    structured: `id: ${id}`,
+    body: `${id} does things`,
+    expanded: "option",
+  })
+  const vectors = (seed: number) => ({
+    structured: new Float32Array([seed, 0.5, -0.25]),
+    body: new Float32Array([Math.fround(0.1), seed, 1e-7]),
+    expanded: new Float32Array([0, 0.75, Math.fround(seed * 0.3)]),
+  })
+  return {
+    version: INDEX_VERSION,
+    model: MODEL_ID,
+    dims: 3,
+    normalized: true,
+    corpus_hash: "ab".repeat(32),
+    records: [
+      { text: text("autocd"), vectors: vectors(1) },
+      { text: text("globdots", "x"), vectors: vectors(2) },
+    ],
+  }
+}
+
+describe("indexJson / writeIndex / readIndex", () => {
+  let dir: string
+  beforeAll(async () => {
+    dir = await mkdtemp(join(tmpdir(), "index-build-"))
+  })
+  afterAll(() => rm(dir, { recursive: true, force: true }))
+
+  it("is compact, header keys first, with shortest-f32 components", () => {
+    const json = indexJson(tinyIndex())
+    expect(json).not.toContain("\n")
+    expect(
+      json.startsWith(
+        `{"version":${INDEX_VERSION},"model":"${MODEL_ID}","dims":3,"normalized":true,"corpus_hash":"`,
+      ),
+    ).toBe(true)
+    expect(json).toContain('"records":[{"text":{"category":"option",')
+    expect(json).toContain(
+      '"vectors":{"structured":[1,0.5,-0.25],"body":[0.1,1,1e-7],"expanded":[0,0.75,0.3]}}',
+    )
+  })
+
+  it("round-trips through the production loader", async () => {
+    const index = tinyIndex()
+    const path = join(dir, "nested", "index.json")
+    await writeIndex(path, index)
+    expect(await readIndex(path)).toEqual(index)
+  })
+})
+
+describe("validateIndex", () => {
+  // A structurally valid index of this corpus without the model: the vectors
+  // are zero (no unit-length check, by design — the flag is trusted).
+  const zeroIndex = (): VectorIndex => ({
+    version: INDEX_VERSION,
+    model: MODEL_ID,
+    dims: DIMS,
+    normalized: true,
+    corpus_hash: corpusHash(corpus),
+    records: corpusTexts(corpus, rules.synonyms.index_groups).map(text => ({
+      text,
+      vectors: {
+        structured: new Float32Array(DIMS),
+        body: new Float32Array(DIMS),
+        expanded: new Float32Array(DIMS),
+      },
+    })),
+  })
+
+  it("accepts a zero-vector index of this corpus", () => {
+    expect(validateIndex(zeroIndex(), corpus, rules)).toEqual({ ok: true })
+  })
+
+  it("checks header before records", () => {
+    const base = zeroIndex()
+    const first = base.records[0]
+    if (!first) throw new Error("empty corpus")
+    const tamperedText: IndexedRecord = {
+      ...first,
+      text: { ...first.text, body: `${first.text.body} x` },
+    }
+    const cases: [string, Partial<VectorIndex>, RegExp][] = [
+      [
+        "version",
+        { version: 1, model: "other" },
+        /unsupported nlp index version 1/,
+      ],
+      ["model", { model: "other", dims: 1 }, /model is other, expected/],
+      ["dims", { dims: 1, corpus_hash: "x" }, /dims is 1, expected/],
+      [
+        "corpus hash",
+        { corpus_hash: "x", normalized: false },
+        /corpus hash does not match/,
+      ],
+      [
+        "normalized",
+        { normalized: false, records: [] },
+        /not marked normalized/,
+      ],
+      [
+        "record count",
+        { records: base.records.slice(1) },
+        /has \d+ records, expected \d+/,
+      ],
+      [
+        "record text",
+        { records: [tamperedText, ...base.records.slice(1)] },
+        new RegExp(
+          `record 0 is ${first.text.category}/${first.text.id}, expected ${first.text.category}/`,
+        ),
+      ],
+    ]
+    for (const [label, patch, reason] of cases) {
+      const v = validateIndex({ ...base, ...patch }, corpus, rules)
+      expect(v.ok, label).toBe(false)
+      if (!v.ok) expect(v.reason, label).toMatch(reason)
+    }
+  })
+
+  // The rules are an input of the expected text: a synonym group the index
+  // was not built with changes some record's expanded view.
+  it("rejects an index built under other synonym groups", () => {
+    const group = ["autocd", "a synonym no record mentions"]
+    const other: Rules = {
+      ...rules,
+      synonyms: { ...rules.synonyms, index_groups: [group] },
+    }
+    rejected(
+      validateIndex(zeroIndex(), corpus, other),
+      /nlp index record \d+ is /,
+    )
+  })
+})
+
+// The model swapped for `syntheticVec`. What nothing else pins is the
+// view ↔ vector alignment: a wrong interleave still validates, and a real
+// build would show it only as ranking quality.
+describe("buildIndex", () => {
+  it("each view slot holds the vector embedded for its own passage text, unit length; progress paced by chunk", async () => {
+    const embedded = new Map<string, Float32Array>()
+    const progress: [number, number][] = []
+    const index = await buildIndex({
+      corpus,
+      rules,
+      embedder: {
+        embed: async texts =>
+          texts.map(t => {
+            const v = syntheticVec([t])
+            embedded.set(t, v)
+            return v
+          }),
+      },
+      onProgress: (done, total) => progress.push([done, total]),
+    })
+    expect(validateIndex(index, corpus, rules)).toEqual({ ok: true })
+    // By value: view texts repeat across records, so the map holds one array per text.
+    const misaligned: string[] = []
+    let worst = 0
+    for (const rec of index.records) {
+      for (const view of VIEWS) {
+        const v = rec.vectors[view]
+        const want = embedded.get(`passage: ${rec.text[view]}`)
+        if (!want || v.some((x, k) => x !== want[k]))
+          misaligned.push(`${rec.text.category}/${rec.text.id}.${view}`)
+        worst = Math.max(worst, Math.abs(Math.hypot(...v) - 1))
+      }
+    }
+    expect(misaligned).toEqual([])
+    expect(worst).toBeLessThanOrEqual(1e-6)
+    const total = index.records.length * VIEWS.length
+    expect(progress).toHaveLength(Math.ceil(total / PROGRESS_CHUNK))
+    expect(progress.at(-1)).toEqual([total, total])
+  })
+})
+
+const skipReason = artifactGate("built index", [STAGED.index])
+// Read once (20 MB, schema-validated), shared by the tests below; none mutates it.
+const staged = memoized(() => readIndex(PATHS.indexJson))
+
+describe("built index", () => {
+  it("validate_rejects_tampered_index", async ctx => {
+    if (skipReason) ctx.skip(skipReason)
+    const index = await staged()
+    expect(validateIndex(index, corpus, rules)).toEqual({ ok: true })
+
+    rejected(
+      validateIndex({ ...index, corpus_hash: "0".repeat(64) }, corpus, rules),
+      /corpus hash/,
+    )
+    rejected(
+      validateIndex(
+        { ...index, records: index.records.slice(0, -1) },
+        corpus,
+        rules,
+      ),
+      /records, expected/,
+    )
+
+    const [first, ...rest] = index.records
+    if (!first) throw new Error("empty index")
+    const truncated: IndexedRecord = {
+      ...first,
+      vectors: { ...first.vectors, body: first.vectors.body.slice(0, 1) },
+    }
+    rejected(
+      validateIndex({ ...index, records: [truncated, ...rest] }, corpus, rules),
+      /view body has 1 dims/,
+    )
+  })
+
+  it("every vector is unit length with the declared dims", async ctx => {
+    if (skipReason) ctx.skip(skipReason)
+    const index = await staged()
+    let worst = 0
+    for (const rec of index.records) {
+      for (const view of VIEWS) {
+        const v = rec.vectors[view]
+        expect(v.length).toBe(index.dims)
+        let s = 0
+        for (const x of v) s += x * x
+        worst = Math.max(worst, Math.abs(Math.sqrt(s) - 1))
+      }
+    }
+    expect(worst).toBeLessThanOrEqual(1e-6)
+  })
+})

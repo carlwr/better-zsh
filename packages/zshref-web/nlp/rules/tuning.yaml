@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=./schema/tuning.schema.json
 #
-# Rank-time constants (no re-embed on change). The math: src/lib/ranker/rank.ts;
+# Rank-time constants (no re-embed on change). The math: nlp/core/rank.ts;
 # the structure here encodes the priors — each section says which.
 
 semantic_weights:

@@ -19,7 +19,7 @@ rev=5c38ec7c405ec4b44b94cc5a9bb96e735b38267a
 # <path>:<bytes>. The revision pins the content; the size catches a
 # truncated or interrupted download.
 # `onnx/model.onnx` plus the four tokenizer files are what transformers.js
-# loads in local-models mode (nlp/embedder-node.ts).
+# loads in local-models mode (nlp/node/embedder-node.ts).
 files=(
   onnx/model.onnx:133093490
   tokenizer.json:711396

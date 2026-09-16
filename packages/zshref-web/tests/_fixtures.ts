@@ -1,6 +1,6 @@
 // Shared fixtures. Pure (no IO); excluded from the test glob (not *.test.ts).
 
-import type { RecordText } from "../src/lib/ranker/types"
+import type { RecordText } from "../nlp/core/types"
 
 export function makeRecordText(over: Partial<RecordText> = {}): RecordText {
   return {

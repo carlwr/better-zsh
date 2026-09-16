@@ -1,10 +1,10 @@
 <script lang="ts">
   import { page } from "$app/state"
-  import { type Artifacts, getArtifacts } from "$lib/artifacts"
   import Md from "$lib/components/Md.svelte"
   import { errMsg } from "$lib/errors"
   import { renderInline } from "$lib/markdown"
   import { findRecord, recordView } from "$lib/view"
+  import { type Artifacts, getArtifacts } from "$nlp"
 
   let artifacts = $state<Artifacts | null>(null)
   let loadError = $state("")

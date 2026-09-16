@@ -1,7 +1,7 @@
 // The tuning dashboard as a report.
 
-import { composedBase } from "../nlp/eval/sweep"
-import { buildDashboard, renderDashboard } from "../nlp/eval/tune"
+import { composedBase } from "../nlp/node/eval/sweep"
+import { buildDashboard, renderDashboard } from "../nlp/node/eval/tune"
 import { reporterAssets, scriptFlags, tuneBaseSpec } from "./_args"
 
 const usage = `\
@@ -11,7 +11,7 @@ pnpm --filter zshref-web nlp:tune-dashboard [--fast]
              embed thousands of queries); their rows print as skipped.
 
   BZ_TUNE_BASE=key=value,…  overrides over the committed tuning (the keys:
-             nlp/eval/sweep.ts KNOBS); the report is of that candidate,
+             nlp/node/eval/sweep.ts KNOBS); the report is of that candidate,
              plus its churn against the committed tuning.\
 `
 const args = scriptFlags("tune-dashboard", usage, ["--fast"])

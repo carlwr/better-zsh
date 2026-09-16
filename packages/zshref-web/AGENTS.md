@@ -14,14 +14,17 @@ Decisions only; the dependency list is `package.json`:
 
 Alternatives ruled out: React / Elm / PureScript front-ends; per-record SSG (records are dynamic at runtime); a Rust ranker compiled to WASM (the NLP is TS end-to-end: one language, one embedder); in-browser index building (too slow for first load).
 
-## Layout: the browser/Node seam
+## Layout: the tiers
 
-- `src/` — the browser bundle: routes, components, `src/lib/{artifacts,embedder,search}.ts`, the ranker under `src/lib/ranker/`
-- `nlp/` — the Node side: everything that reads the corpus or the model; the evals under `nlp/eval/`; every path, and what each dir holds: `nlp/paths.ts`
-- `scripts/` — the `tsx` entry points behind the `package.json` scripts, and `fetch-model`
-- `tests/` — Vitest; `tests/nlp/` for the Node side
+- `nlp/` — the NLP as one unit; three tiers, each importing only downward:
+  - `nlp/core/` — runtime-agnostic: artifact shapes, rules schemas, the ranker
+  - `nlp/browser/` — the SPA's runtime: embedder (ORT-Web), search, artifact fetch; `nlp/browser.ts` — the facade, the app's one door
+  - `nlp/node/` — everything that reads the corpus or the model; the evals under `nlp/node/eval/`; every path, and what each dir holds: `nlp/node/paths.ts`
+- `src/` — the app only; reaches `nlp/` through `$nlp` (`kit.alias`, `svelte.config.js`), nothing else
+- `scripts/` — the `tsx` entry points behind the `package.json` scripts, and `fetch-model`; the node tier's CLI face, so they import it deep
+- `tests/` — Vitest; `tests/app/`, `tests/nlp/{core,browser,node}/` by the tier under test; helpers and the fence at `tests/`
 
-The seam is a static import fence, not a package boundary — `tests/import-fence.test.ts` names what `src/` may not import; `vite build` is the fence's other half. `nlp/` imports its types from `src/` — the sanctioned direction.
+The seams are a static import fence, not package boundaries — `tests/import-fence.test.ts` holds the tier table (what each may import); `vite build` is the fence's other half. `nlp/` never imports `src/`: a later package split is a `git mv` plus configs.
 
 ## Upstreams
 
@@ -31,7 +34,7 @@ Two, both pinned:
   - every script reading it carries a `pre*` hook -> `upstream-ready.mjs ensure` (`PACKAGING.md`; `BZ_SKIP_UPSTREAM`: root `AGENTS.md`)
   - the browser bundle is zsh-core-free: the index carries each record's markdown body
 - **Hugging Face Hub** at runtime — the browser embedder downloads the model on first visit
-  - model id: `MODEL_ID` in `src/lib/embedder.ts`; `scripts/fetch-model` repeats it, drift-checked by a test
+  - model id: `MODEL_ID` in `nlp/core/types.ts`; `scripts/fetch-model` repeats it, drift-checked by a test
   - the revision is pinned in `scripts/fetch-model` only; the browser pipeline names none
 
 ## Model and artifacts
@@ -39,8 +42,8 @@ Two, both pinned:
 Both gitignored:
 
 - `scripts/fetch-model` -> `.aux/model/` — what every reporter needs (a missing or stale index is built in memory, never written)
-- `.aux/query-cache.json` — query vectors the reporters and the gated tests keep across runs; self-invalidating (`nlp/query-cache.ts`), delete to reset
-- `pnpm build:index` -> `static/artifacts/` — what `src/lib/artifacts.ts` fetches under `/artifacts`
+- `.aux/query-cache.json` — query vectors the reporters and the gated tests keep across runs; self-invalidating (`nlp/node/query-cache.ts`), delete to reset
+- `pnpm build:index` -> `static/artifacts/` — what `nlp/browser/artifacts.ts` fetches under `/artifacts`
   - an index that still validates against the corpus is kept; `--force`, `--validate`: `--help`
   - a rebuild embeds the corpus: a minute on CPU
   - the rules YAML is the editable form; the JSON is build output
@@ -49,7 +52,7 @@ Both gitignored:
 
 The package-specific part of `TESTING.md`:
 
-- `pnpm test` is model-free by default: a test needing a gitignored input (`STAGED` in `nlp/paths.ts`) skips via `artifactGate` (`tests/_helpers.ts`)
+- `pnpm test` is model-free by default: a test needing a gitignored input (`STAGED` in `nlp/node/paths.ts`) skips via `artifactGate` (`tests/_helpers.ts`)
   - `pnpm run test --reporter=verbose` prints the reason (bare `pnpm test` hands `--reporter` to pnpm itself)
   - committed inputs get no gate: their absence is a defect
 - `BZ_REQUIRE_WEB_ARTIFACTS=1` flips skip -> fail
@@ -63,21 +66,21 @@ One mechanism, `assertCommittedJson` (`tests/_helpers.ts`): compare, or rewrite 
 
 <!-- concrete on purpose: the regeneration contract; `rg UPDATE_ tests/` verifies -->
 
-| variable | regenerates | test |
+| variable | regenerates | test (`tests/nlp/node/`) |
 |---|---|---|
-| `UPDATE_CATEGORIES_JSON` | `nlp/data/categories.json` | `tests/nlp/categories.test.ts` |
-| `UPDATE_LOOKUP_MAP` | `nlp/data/lookup-map.json` | `tests/nlp/lookup-map.test.ts` |
-| `UPDATE_LOOKUP_CONTRACT` | `nlp/data/lookup-contract.json` | `tests/nlp/contract.test.ts` |
-| `UPDATE_PARITY_FIXTURE` | `nlp/data/parity-fixture.json` | `tests/nlp/fixtures.test.ts` |
-| `UPDATE_SANITY_FIXTURE` | `nlp/data/sanity-fixture.json` — needs the model and the index | `tests/nlp/fixtures.test.ts` |
-| `UPDATE_SCHEMAS` | `nlp/rules/schema/*.schema.json`, `nlp/data/schema.json` | `tests/nlp/rules.test.ts`, `tests/nlp/qa-score.test.ts` |
+| `UPDATE_CATEGORIES_JSON` | `nlp/data/categories.json` | `categories.test.ts` |
+| `UPDATE_LOOKUP_MAP` | `nlp/data/lookup-map.json` | `lookup-map.test.ts` |
+| `UPDATE_LOOKUP_CONTRACT` | `nlp/data/lookup-contract.json` | `contract.test.ts` |
+| `UPDATE_PARITY_FIXTURE` | `nlp/data/parity-fixture.json` | `fixtures.test.ts` |
+| `UPDATE_SANITY_FIXTURE` | `nlp/data/sanity-fixture.json` — needs the model and the index | `fixtures.test.ts` |
+| `UPDATE_SCHEMAS` | `nlp/rules/schema/*.schema.json`, `nlp/data/schema.json` | `rules.test.ts`, `qa-score.test.ts` |
 
 ## Parity and sanity fixtures
 
-TS goldens generated by `nlp/fixtures.ts` (its header: what each pins); two tiers with disjoint failure modes:
+TS goldens generated by `nlp/node/fixtures.ts` (its header: what each pins); two tiers with disjoint failure modes:
 
-- parity-fixture red -> ranker math diverged; `tests/parity.test.ts` — no embedder, no staged inputs
-- sanity-fixture red -> embedder integration broke, or ranker drift; `tests/sanity.test.ts` (the browser pipeline) and `tests/nlp/fixtures.test.ts` (the Node one) — each header says what it checks
+- parity-fixture red -> ranker math diverged; `tests/nlp/core/parity.test.ts` — no embedder, no staged inputs
+- sanity-fixture red -> embedder integration broke, or ranker drift; `tests/nlp/browser/sanity.test.ts` and `tests/nlp/node/fixtures.test.ts` — each header says what it checks
 
 Parity asserts equality (the ranker is deterministic); sanity a tolerance (the embedder runtime carries platform noise).
 
@@ -88,7 +91,7 @@ Parity asserts equality (the ranker is deterministic); sanity a tolerance (the e
 
 ## Holdout hygiene
 
-`nlp/NLP.md` — binding for every edit under `nlp/` and `src/lib/ranker/`.
+`nlp/NLP.md` — binding for every edit under `nlp/`.
 
 ## Routes
 

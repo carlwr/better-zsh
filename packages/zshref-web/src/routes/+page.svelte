@@ -1,15 +1,17 @@
 <script lang="ts">
+  import ResultCard from "$lib/components/ResultCard.svelte"
+  import { errMsg } from "$lib/errors"
+  import { recordKey, summaryLine, viewState } from "$lib/view"
   import {
     type Artifacts,
+    categoryCounts,
     getArtifacts,
     categoryLabel as lookupLabel,
-  } from "$lib/artifacts"
-  import ResultCard from "$lib/components/ResultCard.svelte"
-  import { type ModelProgress, onModelProgress } from "$lib/embedder"
-  import { errMsg } from "$lib/errors"
-  import type { RankedMatch } from "$lib/ranker/types"
-  import { search } from "$lib/search"
-  import { recordKey, summaryLine, viewState } from "$lib/view"
+    type ModelProgress,
+    onModelProgress,
+    type RankedMatch,
+    search,
+  } from "$nlp"
 
   let artifacts = $state<Artifacts | null>(null)
   let artifactsErr = $state("")
@@ -55,15 +57,9 @@
     return artifacts ? lookupLabel(artifacts.categories, id) : id
   }
 
-  let catCounts = $derived.by(() => {
-    const m = new Map<string, number>()
-    if (artifacts) {
-      for (const r of artifacts.index.records) {
-        m.set(r.text.category, (m.get(r.text.category) ?? 0) + 1)
-      }
-    }
-    return m
-  })
+  let catCounts = $derived(
+    artifacts ? categoryCounts(artifacts.index) : new Map<string, number>(),
+  )
 
   let allCatIds = $derived(artifacts ? artifacts.categories.map(c => c.id) : [])
   let allSelected = $derived(

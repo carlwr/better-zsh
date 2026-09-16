@@ -9,7 +9,7 @@ import {
   SWEEP_FOOTER,
   scoreBench,
   sweepKnob,
-} from "../nlp/eval/sweep"
+} from "../nlp/node/eval/sweep"
 import { reporterAssets, scriptFlags, tuneBaseSpec } from "./_args"
 
 const usage = `\

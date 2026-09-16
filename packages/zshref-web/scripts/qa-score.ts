@@ -2,8 +2,12 @@
 // summary lines only — the QA corpus is a held-out set (NLP.md), so no
 // per-entry line ever prints.
 
-import { loadQaCorpus } from "../nlp/eval/qa-corpus"
-import { renderQa, runHardChecks, scoreQaCorpus } from "../nlp/eval/qa-score"
+import { loadQaCorpus } from "../nlp/node/eval/qa-corpus"
+import {
+  renderQa,
+  runHardChecks,
+  scoreQaCorpus,
+} from "../nlp/node/eval/qa-score"
 import { reporterAssets, scriptFlags } from "./_args"
 
 scriptFlags("qa-score", "pnpm --filter zshref-web nlp:qa-score", [])

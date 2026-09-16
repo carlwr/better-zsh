@@ -3,8 +3,8 @@
   // isolation.
 
   import { renderInline } from "$lib/markdown"
-  import type { RankedMatch } from "$lib/ranker/types"
   import { recordHref } from "$lib/view"
+  import type { RankedMatch } from "$nlp"
   import ClampedBody from "./ClampedBody.svelte"
 
   let { match, label }: { match: RankedMatch; label: string } = $props()

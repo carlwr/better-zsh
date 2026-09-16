@@ -8,18 +8,22 @@ import { writeFile } from "node:fs/promises"
 import { join } from "node:path"
 import { loadCorpus } from "@carlwr/zsh-core"
 
-import { categoriesJson } from "../nlp/categories"
-import { createNodeEmbedder } from "../nlp/embedder-node"
+import { categoriesJson } from "../nlp/node/categories"
+import { createNodeEmbedder } from "../nlp/node/embedder-node"
 import {
   buildIndex,
   type IndexValidation,
   readIndex,
   validateIndex,
   writeIndex,
-} from "../nlp/index-build"
-import { buildLookupMap } from "../nlp/lookup-map-build"
-import { PATHS } from "../nlp/paths"
-import { emitRulesJson, loadRulesYaml, prettyJson } from "../nlp/rules-load"
+} from "../nlp/node/index-build"
+import { buildLookupMap } from "../nlp/node/lookup-map-build"
+import { PATHS } from "../nlp/node/paths"
+import {
+  emitRulesJson,
+  loadRulesYaml,
+  prettyJson,
+} from "../nlp/node/rules-load"
 import { scriptFlags } from "./_args"
 
 const usage = `\

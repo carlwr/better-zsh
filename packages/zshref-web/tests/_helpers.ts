@@ -5,14 +5,13 @@ import { existsSync } from "node:fs"
 import { readFile, writeFile } from "node:fs/promises"
 import { expect } from "vitest"
 import { parse as parseYaml } from "yaml"
+import type { VectorIndex } from "../nlp/core/types"
+import { readIndex } from "../nlp/node/index-build"
+import { PATHS } from "../nlp/node/paths"
+import { prettyJson } from "../nlp/node/rules-load"
 
-import { readIndex } from "../nlp/index-build"
-import { PATHS } from "../nlp/paths"
-import { prettyJson } from "../nlp/rules-load"
-import type { VectorIndex } from "../src/lib/ranker/types"
-
-export { loadParityFixture, loadSanityFixture } from "../nlp/fixtures"
-export { PATHS, STAGED } from "../nlp/paths"
+export { loadParityFixture, loadSanityFixture } from "../nlp/node/fixtures"
+export { PATHS, STAGED } from "../nlp/node/paths"
 
 /**
  * Reason for `ctx.skip(reason)`; null when everything in `needs` is staged.

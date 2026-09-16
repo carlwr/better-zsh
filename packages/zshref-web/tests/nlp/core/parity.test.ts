@@ -1,0 +1,40 @@
+// Parity test: the ranker, fed the miniature index and pre-computed query
+// vectors that parity-fixture.json carries, must reproduce the fixture's
+// ranked scores exactly. No embedder and no staged artifacts, so the
+// contract stays inside ordinary CI.
+
+import { beforeAll, describe, expect, it } from "vitest"
+import { rank } from "../../../nlp/core/rank"
+import type { Rules } from "../../../nlp/core/rules"
+import { loadRulesYaml } from "../../../nlp/node/rules-load"
+import { loadParityFixture } from "../../_helpers"
+
+describe("ranker parity", () => {
+  let rules: Rules
+
+  beforeAll(async () => {
+    rules = await loadRulesYaml()
+  })
+
+  it("reproduces fixture scores exactly", async () => {
+    const fixture = await loadParityFixture()
+    // A regeneration that emitted nothing would otherwise loop zero times.
+    expect(fixture.entries.length).toBeGreaterThan(0)
+    expect(fixture.index.records.length).toBeGreaterThan(0)
+    for (const entry of fixture.entries) {
+      const ranked = rank(
+        entry.query,
+        entry.queryVec,
+        null,
+        fixture.index,
+        rules,
+      )
+      const got = ranked.slice(0, fixture.limit).map(m => ({
+        category: m.rec.category,
+        id: m.rec.id,
+        score: m.score,
+      }))
+      expect(got, `query: ${entry.query}`).toEqual(entry.expected)
+    }
+  })
+})

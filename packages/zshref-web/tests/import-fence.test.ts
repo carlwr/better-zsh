@@ -1,16 +1,58 @@
-// The browser/Node seam: nothing under `src/` (the browser bundle) may
-// import the Node side. Type-only imports count too: the seam is absolute,
-// and `nlp/` already imports its types from `src/`, the sanctioned
-// direction. `vite build` is the other half of the fence — this test names
-// the offender before the bundle breaks.
+// The layering fence. Every source file sits in one tier; each tier's imports
+// are a table (`TIERS`), not prose. Pinned: the browser bundle (`nlp/core`,
+// `nlp/browser`, `src`) carries no Node builtin and no Node-side package, and
+// each of its tiers reaches only the tiers beneath it; the Node side
+// (`nlp/node`, `scripts`) never imports the browser modules or the app; the
+// app's one door into `nlp/` is the `$nlp` alias — the facade file, not the
+// dir. Type-only imports count too: the seam is absolute. `vite build` is the
+// fence's other half — this test names the offender before the bundle breaks.
 
 import { readdirSync, readFileSync } from "node:fs"
 import { builtinModules } from "node:module"
-import { dirname, join, relative, resolve } from "node:path"
-import { fileURLToPath } from "node:url"
+import { dirname, isAbsolute, join, relative, resolve } from "node:path"
 import { describe, expect, it } from "vitest"
+import { PATHS } from "../nlp/node/paths"
 
-const srcDir = resolve(dirname(fileURLToPath(import.meta.url)), "..", "src")
+const pkgDir = PATHS.pkgDir
+
+interface Tier {
+  name: string
+  /** Package-relative dirs; a file root (`nlp/browser.ts`) is named without its extension. */
+  roots: string[]
+  /** No Node builtin, no `FORBIDDEN_PACKAGES`. */
+  browser: boolean
+  /** The `$…` specifiers the tier may use; none by default. */
+  alias?: RegExp
+  /** Relative imports must land under one of these. */
+  within?: string[]
+  /** Relative imports must land under none of these. */
+  deny?: string[]
+}
+
+const TIERS: Tier[] = [
+  { name: "core", roots: ["nlp/core"], browser: true, within: ["nlp/core"] },
+  {
+    name: "browser",
+    roots: ["nlp/browser"],
+    browser: true,
+    within: ["nlp/browser", "nlp/core"],
+  },
+  {
+    name: "src",
+    roots: ["src"],
+    browser: true,
+    within: ["src"],
+    alias: /^(\$lib|\$app)(\/|$)|^\$nlp$/,
+  },
+  {
+    name: "node",
+    roots: ["nlp/node", "scripts"],
+    browser: false,
+    deny: ["nlp/browser", "src"],
+  },
+]
+
+const WALKED = ["src", "nlp", "scripts"]
 
 const SOURCE_RE = /\.(ts|mts|js|mjs|svelte)$/
 
@@ -59,64 +101,109 @@ function importsOf(file: string): Import[] {
 const isPackage = (spec: string, pkg: string): boolean =>
   spec === pkg || spec.startsWith(`${pkg}/`)
 
+const isBuiltin = (spec: string): boolean =>
+  spec.startsWith("node:") ||
+  NODE_BUILTINS.has(spec) ||
+  NODE_BUILTINS.has(spec.split("/")[0] ?? "")
+
+/** `path` (absolute, extension-less) is `root` or beneath it. */
+function under(path: string, root: string): boolean {
+  const rel = relative(resolve(pkgDir, root), path)
+  return rel === "" || !(rel.startsWith("..") || isAbsolute(rel))
+}
+
+const tierOf = (file: string): Tier | undefined => {
+  const path = file.replace(/\.[^/.]+$/, "")
+  return TIERS.find(t => t.roots.some(r => under(path, r)))
+}
+
 /** Why `specifier`, imported from `file`, breaches the fence; null if it does not. */
 function breach(file: string, specifier: string): string | null {
-  if (specifier.startsWith("node:")) return "Node builtin"
-  if (
-    NODE_BUILTINS.has(specifier) ||
-    NODE_BUILTINS.has(specifier.split("/")[0] ?? "")
-  ) {
-    return "Node builtin"
-  }
-  const pkg = FORBIDDEN_PACKAGES.find(p => isPackage(specifier, p))
-  if (pkg) return `Node-side package ${pkg}`
+  const tier = tierOf(file)
+  if (!tier) return "untiered source file"
+  if (specifier.startsWith("$"))
+    return tier.alias?.test(specifier) ? null : `no such alias for ${tier.name}`
   if (specifier.startsWith(".")) {
     const target = resolve(dirname(file), specifier)
-    const rel = relative(srcDir, target)
-    if (rel.startsWith("..")) return "leaves src/"
+    const hit = tier.deny?.find(d => under(target, d))
+    if (hit) return `${tier.name} reaches ${hit}`
+    if (tier.within && !tier.within.some(w => under(target, w)))
+      return `leaves ${tier.name}`
+    return null
   }
-  return null
+  if (!tier.browser) return null
+  if (isBuiltin(specifier)) return "Node builtin"
+  const pkg = FORBIDDEN_PACKAGES.find(p => isPackage(specifier, p))
+  return pkg ? `Node-side package ${pkg}` : null
 }
 
 describe("import fence", () => {
-  const imports = [...walk(srcDir)].flatMap(importsOf)
+  const files = WALKED.flatMap(d => [...walk(resolve(pkgDir, d))])
+  const imports = files.flatMap(importsOf)
 
-  it("sees the bundle", () => {
-    // A scanner that finds nothing would pass vacuously.
-    expect(imports.length).toBeGreaterThan(10)
+  // A scanner that finds nothing would pass vacuously.
+  it.each(TIERS)("sees the $name tier", tier => {
+    expect(imports.filter(i => tierOf(i.file) === tier).length).toBeGreaterThan(
+      0,
+    )
   })
 
-  it("src/ imports nothing from the Node side", () => {
+  it("every source file sits in a tier", () => {
+    const stray = files.filter(f => !tierOf(f)).map(f => relative(pkgDir, f))
+    expect(stray).toEqual([])
+  })
+
+  it("every import stays in its tier's table", () => {
     const offenders = imports.flatMap(i => {
       const why = breach(i.file, i.specifier)
       return why
-        ? [`${relative(srcDir, i.file)}:${i.line}  ${i.specifier}  (${why})`]
+        ? [`${relative(pkgDir, i.file)}:${i.line}  ${i.specifier}  (${why})`]
         : []
     })
     expect(
       offenders,
-      `imports crossing the src/ fence:\n${offenders.join("\n")}`,
+      `imports crossing the fence:\n${offenders.join("\n")}`,
     ).toEqual([])
   })
 
-  const lib = join(srcDir, "lib", "x.ts")
   it.each([
-    ["node:fs", "Node builtin"],
-    ["fs/promises", "Node builtin"],
-    ["path", "Node builtin"],
-    ["@carlwr/zsh-core", "Node-side package @carlwr/zsh-core"],
-    ["@carlwr/zsh-core/taxonomy", "Node-side package @carlwr/zsh-core"],
-    ["onnxruntime-node", "Node-side package onnxruntime-node"],
-    ["yaml", "Node-side package yaml"],
-    ["../../nlp/paths", "leaves src/"],
-    ["../../tests/_helpers", "leaves src/"],
-    ["./ranker/rank", null],
-    ["../app.css", null],
-    ["$lib/search", null],
-    ["$app/state", null],
-    ["@huggingface/transformers", null],
-    ["zod", null],
-  ])("classifies %s as %s", (specifier, why) => {
-    expect(breach(lib, specifier)).toBe(why)
+    ["src/lib/x.ts", "node:fs", "Node builtin"],
+    ["src/lib/x.ts", "fs/promises", "Node builtin"],
+    ["src/lib/x.ts", "path", "Node builtin"],
+    ["src/lib/x.ts", "@carlwr/zsh-core", "Node-side package @carlwr/zsh-core"],
+    [
+      "src/lib/x.ts",
+      "@carlwr/zsh-core/taxonomy",
+      "Node-side package @carlwr/zsh-core",
+    ],
+    ["src/lib/x.ts", "onnxruntime-node", "Node-side package onnxruntime-node"],
+    ["src/lib/x.ts", "../../nlp/node/paths", "leaves src"],
+    ["src/lib/x.ts", "../../nlp/browser", "leaves src"],
+    ["src/lib/x.ts", "../../tests/_helpers", "leaves src"],
+    ["src/lib/x.ts", "$nlp/core/rank", "no such alias for src"],
+    ["src/lib/x.ts", "./view", null],
+    ["src/lib/x.ts", "../app.css", null],
+    ["src/lib/x.ts", "$lib/view", null],
+    ["src/lib/x.ts", "$app/state", null],
+    ["src/lib/x.ts", "$nlp", null],
+    ["nlp/browser/x.ts", "yaml", "Node-side package yaml"],
+    ["nlp/browser/x.ts", "../node/paths", "leaves browser"],
+    ["nlp/browser/x.ts", "../core/rank", null],
+    ["nlp/browser/x.ts", "@huggingface/transformers", null],
+    ["nlp/browser.ts", "./browser/search", null],
+    ["nlp/core/x.ts", "../browser/search", "leaves core"],
+    ["nlp/core/x.ts", "../node/paths", "leaves core"],
+    ["nlp/core/x.ts", "$nlp", "no such alias for core"],
+    ["nlp/core/x.ts", "zod", null],
+    ["nlp/node/x.ts", "node:fs", null],
+    ["nlp/node/x.ts", "yaml", null],
+    ["nlp/node/x.ts", "../browser/search", "node reaches nlp/browser"],
+    ["nlp/node/x.ts", "../browser", "node reaches nlp/browser"],
+    ["nlp/node/x.ts", "../core/rank", null],
+    ["scripts/x.ts", "../src/lib/errors", "node reaches src"],
+    ["scripts/x.ts", "../nlp/node/paths", null],
+    ["tests/x.ts", "./_helpers", "untiered source file"],
+  ])("%s importing %s: %s", (file, specifier, why) => {
+    expect(breach(resolve(pkgDir, file), specifier)).toBe(why)
   })
 })

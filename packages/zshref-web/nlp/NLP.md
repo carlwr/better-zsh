@@ -5,13 +5,13 @@ read-when: working on zshref-web's NLP (ranker, index, rules, evals) or its held
 
 # NLP
 
-Local semantic retrieval over zsh-core records: the query embedded with BGE-small, ranked against a precomputed vector index, a lookup-map promote on top. Code: `src/lib/ranker/` (the browser ranker) and `nlp/` (the Node side: index build, rules, evals). Layout, toolchain, tests: `../AGENTS.md`.
+Local semantic retrieval over zsh-core records: the query embedded with BGE-small, ranked against a precomputed vector index, a lookup-map promote on top. Code: `nlp/`; layout, toolchain, tests: `../AGENTS.md`.
 
 ## Hard rules: holdout isolation
 
 Held-out eval sets: `nlp/data/nlp-corpus.yaml` and the `holdout`-split entries of `nlp/rules/sentence-fixture.yaml`. Steering anything toward them is leakage — hardcoded boosts/hints that memorized these queries were removed; do not reintroduce the pattern.
 
-- **No editing NLP code or data with a holdout set in context.** "NLP" = anything under `nlp/` (incl. `rules/*.yaml`) and `src/lib/ranker/`. If you have read either eval set this session, delegate the edit to a fresh subagent that has not.
+- **No editing NLP code or data with a holdout set in context.** "NLP" = anything under `nlp/` (incl. `rules/*.yaml`). If you have read either eval set this session, delegate the edit to a fresh subagent that has not.
 - **Touch a holdout set only via a subagent** that edits no NLP logic and whose reply leaks nothing about it — none of:
   - queries
   - expected records
@@ -38,14 +38,14 @@ yq '.entries |= map(select(.holdout != true))' nlp/rules/sentence-fixture.yaml
 
 Three layers, distinct jobs:
 
-- **A — bare lookup contract** (committed `nlp/data/lookup-contract.json`; `tests/lookup-contract.test.ts`) — deterministic must-pass. Every bare canonical surface form resolves via the lookup-map hard-promote. Pure corpus/resolver, no ranker.
-- **B — sentence eval** (`nlp/eval/`) — the tunable scoring source of truth. Two sources, one continuous discount metric:
+- **A — bare lookup contract** (committed `nlp/data/lookup-contract.json`; `tests/nlp/node/lookup-contract.test.ts`) — deterministic must-pass. Every bare canonical surface form resolves via the lookup-map hard-promote. Pure corpus/resolver, no ranker.
+- **B — sentence eval** (`nlp/node/eval/`) — the tunable scoring source of truth. Two sources, one continuous discount metric:
   - *curated* (`pnpm nlp:eval-sentence`) — the hand-authored sentence fixture; per-entry `targetDepth` + `weight` + `split`.
   - *mechanical* (`pnpm nlp:eval-mechanical`) — corpus-derived per-record entries (terse decorated forms + NL-question forms), uniform `targetDepth=1`; each has a single defined answer (one item → one vote).
   - blend `total = λ·curated_train + (1−λ)·mechanical` (λ=0.5); both evals and the dashboard print these numbers live.
-  - the tuning trio (`pnpm nlp:tune-*`) moves rank-time knobs only (`BZ_TUNE_BASE` overrides; the keys: `nlp/eval/sweep.ts`), scores the blend, prints holdout as the overfit watch.
-  - cost on CPU, roughly: the curated eval seconds, every other reporter about a minute on a first run and well under on repeats — embedding the mechanical set dominates and its vectors persist (`nlp/query-cache.ts`); a knob point regrades cached score inputs (`nlp/eval/query-set.ts`)
-- **C — QA scoring** (`pnpm nlp:qa-score`; `nlp/eval/qa-score.ts`) — in-process; an overfit watch, not where scoring quality is judged:
+  - the tuning trio (`pnpm nlp:tune-*`) moves rank-time knobs only (`BZ_TUNE_BASE` overrides; the keys: `nlp/node/eval/sweep.ts`), scores the blend, prints holdout as the overfit watch.
+  - cost on CPU, roughly: the curated eval seconds, every other reporter about a minute on a first run and well under on repeats — embedding the mechanical set dominates and its vectors persist (`nlp/node/query-cache.ts`); a knob point regrades cached score inputs (`nlp/node/eval/query-set.ts`)
+- **C — QA scoring** (`pnpm nlp:qa-score`; `nlp/node/eval/qa-score.ts`) — in-process; an overfit watch, not where scoring quality is judged:
   - templated self-retrieval hard checks over a few categories
   - the QA corpus as a second held-out set: weighted expected sets, negatives as penalties
   - prints the hard-check section and the summary lines only
@@ -69,8 +69,8 @@ Exempt: the lookup/parity/sanity fixtures — asserted by equality, the sanity s
 Two mechanisms in `nlp/rules/synonyms.yaml` (index-time `index_groups`, query-time `query_expansions`). Field notes + measurements: `nlp-observations.md`.
 
 - **Keep both lists short.** The model already bridges most generic synonymy (`nlp-observations.md`); add a term only after an ON/OFF probe shows it's missed.
-- **Query expansion is embedding-only.** `query_expansions` append to the *embedded* query string only; the raw query still drives lexical boosts (`src/lib/ranker/rank.ts` `wordOverlap` / exact-word). Feeding expansions into the lexical bag promotes literal-name records and swamps short queries — don't.
-- **Minimal RHS + cap.** One canonical `add` per rule, capped append count (`src/lib/ranker/query-expand.ts`). Don't grow `add` into a bag, or short queries collapse toward a generic centroid.
+- **Query expansion is embedding-only.** `query_expansions` append to the *embedded* query string only; the raw query still drives lexical boosts (`nlp/core/rank.ts` `wordOverlap` / exact-word). Feeding expansions into the lexical bag promotes literal-name records and swamps short queries — don't.
+- **Minimal RHS + cap.** One canonical `add` per rule, capped append count (`nlp/core/query-expand.ts`). Don't grow `add` into a bag, or short queries collapse toward a generic centroid.
 
 ## Measurements (2026-05-19)
 
