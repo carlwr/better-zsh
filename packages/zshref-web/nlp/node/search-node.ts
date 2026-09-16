@@ -1,14 +1,12 @@
-// The Node twin of `nlp/browser/search.ts` — the search pipeline (embed → rank →
-// lookup-map promote) over the Node embedder, for the evals; the two share
-// the ranker and the result shape.
+// The core search pipeline over the Node embedder, for the evals.
 
 import { type DocCategory, docCategories } from "@carlwr/zsh-core/taxonomy"
 
-import { type LookupIndex, promoteToTop } from "../core/lookup-map"
-import { rank } from "../core/rank"
+import type { LookupIndex } from "../core/lookup-map"
 import type { Rules } from "../core/rules"
-import type { SearchResult, VectorIndex } from "../core/types"
-import { type Embedder, embedQuery } from "./embedder-node"
+import { type SearchResult, search } from "../core/search"
+import type { VectorIndex } from "../core/types"
+import { type Embedder, embedText } from "./embedder-node"
 
 export interface SearchInput {
   query: string
@@ -41,21 +39,16 @@ export async function searchNode(
   input: SearchInput,
   deps: SearchDeps,
 ): Promise<SearchResult> {
-  const query = input.query.trim()
-  if (query === "") return { matches: [], total: 0 }
-  const category =
-    input.category === undefined ? undefined : docCategory(input.category)
-  // Expansion is embedding-only: the raw query drives the lexical boosts.
-  const queryVec = await embedQuery(deps.embedder, query, deps.rules)
-  const mapHit0 = deps.lookup.lookup(query)
-  const mapHit =
-    mapHit0 && (category === undefined || mapHit0.category === category)
-      ? mapHit0
-      : null
-  const ranked = rank(query, queryVec, category ?? null, deps.index, deps.rules)
-  promoteToTop(ranked, mapHit)
-  return {
-    matches: ranked.slice(0, input.limit ?? DEFAULT_LIMIT),
-    total: ranked.length,
-  }
+  return search({
+    query: input.query,
+    embed: text => embedText(deps.embedder, text),
+    index: deps.index,
+    rules: deps.rules,
+    lookup: deps.lookup,
+    limit: input.limit ?? DEFAULT_LIMIT,
+    categories:
+      input.category === undefined
+        ? null
+        : new Set([docCategory(input.category)]),
+  })
 }

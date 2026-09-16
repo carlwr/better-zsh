@@ -40,7 +40,7 @@ export function gradeEntries(
   return entries.flatMap(entry => {
     const vec = vecs.get(entry.query)
     if (!vec) throw new Error("fixture query missing from the vector cache")
-    const ranked = rank(entry.query, vec, null, assets.index, assets.rules)
+    const ranked = rank(entry.query, vec, assets.index, assets.rules)
     promoteToTop(ranked, assets.lookup.lookup(entry.query))
     return entry.want.map((item): GradedItem => {
       const pos = ranked.findIndex(

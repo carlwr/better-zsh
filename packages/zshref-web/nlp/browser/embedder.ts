@@ -51,18 +51,18 @@ const defaultPipeline = memoizedRetry(
 )
 
 /**
- * Embed a query the way the index build embeds a record (the Node embedder)
- * apart from the prefix: `query: ` here, `passage: ` there; CLS pooling,
- * unit-normalized. Returns a `DIMS`-long Float32Array.
+ * Embed one text the way the index build embeds a record (the Node embedder):
+ * CLS pooling, unit-normalized; a `DIMS`-long Float32Array. Prefix-free —
+ * search passes `queryEmbedText`'s output.
  *
  * `pipe` is for tests using a local on-disk model; production omits it.
  */
-export async function embedQuery(
-  query: string,
+export async function embedText(
+  text: string,
   pipe?: FeatureExtractionPipeline,
 ): Promise<Float32Array> {
   const p = pipe ?? (await defaultPipeline())
-  const out = await p(`query: ${query}`, { pooling: "cls", normalize: true })
+  const out = await p(text, { pooling: "cls", normalize: true })
   if (out.data.length !== DIMS) {
     throw new Error(
       `embedder returned ${out.data.length} dims, expected ${DIMS}`,

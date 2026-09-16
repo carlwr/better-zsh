@@ -22,13 +22,7 @@ describe("ranker parity", () => {
     expect(fixture.entries.length).toBeGreaterThan(0)
     expect(fixture.index.records.length).toBeGreaterThan(0)
     for (const entry of fixture.entries) {
-      const ranked = rank(
-        entry.query,
-        entry.queryVec,
-        null,
-        fixture.index,
-        rules,
-      )
+      const ranked = rank(entry.query, entry.queryVec, fixture.index, rules)
       const got = ranked.slice(0, fixture.limit).map(m => ({
         category: m.rec.category,
         id: m.rec.id,

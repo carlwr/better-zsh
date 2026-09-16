@@ -17,7 +17,7 @@ Alternatives ruled out: React / Elm / PureScript front-ends; per-record SSG (rec
 ## Layout: the tiers
 
 - `nlp/` — the NLP as one unit; three tiers, each importing only downward:
-  - `nlp/core/` — runtime-agnostic: artifact shapes, rules schemas, the ranker
+  - `nlp/core/` — runtime-agnostic: artifact shapes, rules schemas, ranker, search pipeline
   - `nlp/browser/` — the SPA's runtime: embedder (ORT-Web), search, artifact fetch; `nlp/browser.ts` — the facade, the app's one door
   - `nlp/node/` — everything that reads the corpus or the model; the evals under `nlp/node/eval/`; every path, and what each dir holds: `nlp/node/paths.ts`
 - `src/` — the app only; reaches `nlp/` through `$nlp` (`kit.alias`, `svelte.config.js`), nothing else

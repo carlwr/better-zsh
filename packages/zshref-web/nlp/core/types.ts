@@ -310,10 +310,4 @@ export interface RankedMatch {
   debug: RankDebug
 }
 
-export interface SearchResult {
-  matches: RankedMatch[]
-  /** Matches before the `limit` cut. */
-  total: number
-}
-
 export type ResolverHit = { category: string; id: string }

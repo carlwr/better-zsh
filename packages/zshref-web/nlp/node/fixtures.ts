@@ -233,7 +233,7 @@ export function buildParityFixture(
   const index = buildParityIndex(corpus, rules.synonyms.index_groups)
   const entries = PARITY_QUERIES.map(query => {
     const queryVec = syntheticVec(["query", query])
-    const ranked = rank(query, queryVec, null, index, rules)
+    const ranked = rank(query, queryVec, index, rules)
     return {
       query,
       queryVec,
@@ -280,7 +280,7 @@ export async function buildSanityFixture({
   const entries: SanityEntry[] = []
   for (const { query } of SANITY_QUERIES) {
     const queryVec = await embedQuery(embedder, query, rules)
-    const [top, runner] = rank(query, queryVec, null, index, rules)
+    const [top, runner] = rank(query, queryVec, index, rules)
     if (!top)
       throw new Error(`no matches for sanity query ${JSON.stringify(query)}`)
     entries.push({

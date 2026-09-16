@@ -1,15 +1,15 @@
 // Browser-pipeline sanity smoke: the SPA's own pipeline — the production
-// `embedQuery` (over the local model in transformers.js local-models mode →
-// no network), the embedding-only query expansion, `rank` — must land the
-// curated top-1 of each sanity-fixture.json query.
+// `embedText` (over the local model in transformers.js local-models mode →
+// no network) of the query's embed text, `rank` — must land the curated
+// top-1 of each sanity-fixture.json query.
 //
 // The fixture itself is generated over the Node embedder by
 // nlp/node/fixtures.ts; its reproduction (within a tolerance) and the
 // invariants (floor, margin) are `tests/nlp/node/fixtures.test.ts`. Here the
 // score check is loose: the browser pipeline's numerics may drift from the
 // Node embedder's by a little (measured ~0 on these queries). The lookup-map
-// promote of `search.ts` is not replayed: no curated query is a bare
-// canonical form, so it could not fire.
+// promote of `nlp/core/search.ts` is not replayed: no curated query is a
+// bare canonical form, so it could not fire.
 //
 // Fast (~1-2s) despite the 127 MB model: Node uses native onnxruntime-node
 // on the local mmap'd model — the "~127 MB download" is the browser's
@@ -19,12 +19,12 @@ import { dirname } from "node:path"
 import { isNonEmpty } from "@carlwr/typescript-extra"
 import { beforeAll, describe, expect, it } from "vitest"
 import {
-  embedQuery,
+  embedText,
   type FeatureExtractionPipeline,
 } from "../../../nlp/browser/embedder"
-import { expandQueryForEmbedding } from "../../../nlp/core/query-expand"
 import { rank } from "../../../nlp/core/rank"
 import type { Rules } from "../../../nlp/core/rules"
+import { queryEmbedText } from "../../../nlp/core/search"
 import type { VectorIndex } from "../../../nlp/core/types"
 import { loadRulesYaml } from "../../../nlp/node/rules-load"
 import { errMsg } from "../../../src/lib/errors"
@@ -70,11 +70,8 @@ describe("full-pipeline sanity", () => {
     const fixture = await loadSanityFixture()
     expect(fixture.entries.length).toBeGreaterThan(0)
     for (const entry of fixture.entries) {
-      const v = await embedQuery(
-        expandQueryForEmbedding(entry.query, rules.synonyms.query_expansions),
-        pipe,
-      )
-      const ranked = rank(entry.query, v, null, index, rules)
+      const v = await embedText(queryEmbedText(entry.query, rules), pipe)
+      const ranked = rank(entry.query, v, index, rules)
       if (!isNonEmpty(ranked))
         throw new Error(`no matches for query: ${entry.query}`)
       const got = ranked[0]

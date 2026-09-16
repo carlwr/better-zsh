@@ -36,19 +36,20 @@ export function dot(a: ArrayLike<number>, b: ArrayLike<number>): number {
 export function rank(
   query: string,
   queryVec: Float32Array,
-  category: string | null,
   index: VectorIndex,
   rules: Rules,
 ): RankedMatch[] {
   const terms = queryTerms(query.toLowerCase(), rules)
   const penalties = categoryPenalties(index, rules)
-
-  const out: RankedMatch[] = []
-  for (const rec of index.records) {
-    if (category !== null && rec.text.category !== category) continue
-    const penalty = penalties.get(rec.text.category) ?? 0
-    out.push(scoreRecord(rec, queryVec, terms, penalty, rules))
-  }
+  const out = index.records.map(rec =>
+    scoreRecord(
+      rec,
+      queryVec,
+      terms,
+      penalties.get(rec.text.category) ?? 0,
+      rules,
+    ),
+  )
   out.sort((a, b) => {
     if (a.score !== b.score) return b.score - a.score
     if (a.rec.category !== b.rec.category)

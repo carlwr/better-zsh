@@ -22,7 +22,11 @@ import {
 } from "../../../nlp/core/types"
 import { syntheticVec } from "../../../nlp/node/fixtures"
 import { loadRulesYaml } from "../../../nlp/node/rules-load"
-import { makeRecordText } from "../../_fixtures"
+import {
+  makeRecordText,
+  syntheticIndexOf,
+  syntheticVectors,
+} from "../../_fixtures"
 
 let rules: Rules
 beforeAll(async () => {
@@ -230,17 +234,10 @@ const arbRecord: fc.Arbitrary<IndexedRecord> = fc
     body: arbText(30),
     expanded: arbText(6),
   })
-  .map(({ cat, ident, structured, body, expanded }) => {
-    const vec = (view: string) => syntheticVec([cat.category, ident.id, view])
-    return {
-      text: rec({ ...cat, ...ident, structured, body, expanded }),
-      vectors: {
-        structured: vec("structured"),
-        body: vec("body"),
-        expanded: vec("expanded"),
-      },
-    }
-  })
+  .map(({ cat, ident, structured, body, expanded }) => ({
+    text: rec({ ...cat, ...ident, structured, body, expanded }),
+    vectors: syntheticVectors(cat.category, ident.id),
+  }))
 
 // Identities unique, as in a real index: the sort is total only then.
 const arbIndex: fc.Arbitrary<VectorIndex> = fc
@@ -249,14 +246,7 @@ const arbIndex: fc.Arbitrary<VectorIndex> = fc
     maxLength: 7,
     selector: r => `${r.text.category}\0${r.text.id}`,
   })
-  .map(records => ({
-    version: 2,
-    model: "synthetic",
-    dims: records[0]?.vectors.body.length ?? 0,
-    normalized: true,
-    corpus_hash: "synthetic",
-    records,
-  }))
+  .map(syntheticIndexOf)
 
 // A query and its synthetic vector over an index.
 const arbRanking = fc
@@ -273,27 +263,6 @@ const countWords = (s: string): number =>
 const INDEX_RUNS = { numRuns: 60 }
 
 describe("rank properties", () => {
-  it("category filter ≡ rank-then-filter, penalties from the full index", () => {
-    // A non-zero rarity penalty is what makes the two differ if the filtered
-    // run counted only its own category.
-    const penalized = withTuning(rules, t => ({
-      ...t,
-      penalties: { category_rarity_max: 0.1 },
-    }))
-    fc.assert(
-      fc.property(
-        arbRanking,
-        fc.constantFrom(...CATEGORIES.map(c => c.category), "nope"),
-        (r, cat) => {
-          const all = rank(r.query, r.queryVec, null, r.index, penalized)
-          const filtered = rank(r.query, r.queryVec, cat, r.index, penalized)
-          expect(filtered).toEqual(all.filter(m => m.rec.category === cat))
-        },
-      ),
-      INDEX_RUNS,
-    )
-  })
-
   it("is invariant under a permutation of the index records", () => {
     const arb = arbRanking.chain(r =>
       fc
@@ -304,8 +273,8 @@ describe("rank properties", () => {
     )
     fc.assert(
       fc.property(arb, r => {
-        expect(rank(r.query, r.queryVec, null, r.shuffled, rules)).toEqual(
-          rank(r.query, r.queryVec, null, r.index, rules),
+        expect(rank(r.query, r.queryVec, r.shuffled, rules)).toEqual(
+          rank(r.query, r.queryVec, r.index, rules),
         )
       }),
       INDEX_RUNS,
@@ -321,7 +290,7 @@ describe("rank properties", () => {
     }))
     fc.assert(
       fc.property(arbRanking, r => {
-        for (const m of rank(r.query, r.queryVec, null, r.index, noPenalty)) {
+        for (const m of rank(r.query, r.queryVec, r.index, noPenalty)) {
           const [bw, sw, ew] = semanticWeights(
             countWords(m.rec.body),
             noPenalty.tuning.semantic_weights,
@@ -354,8 +323,8 @@ describe("rank properties", () => {
         fc.array(fc.boolean(), { minLength: 8, maxLength: 8 }),
         (r, flips) => {
           expect(
-            rank(recase(r.query, flips), r.queryVec, null, r.index, rules),
-          ).toEqual(rank(r.query, r.queryVec, null, r.index, rules))
+            rank(recase(r.query, flips), r.queryVec, r.index, rules),
+          ).toEqual(rank(r.query, r.queryVec, r.index, rules))
         },
       ),
       INDEX_RUNS,

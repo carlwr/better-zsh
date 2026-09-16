@@ -26,8 +26,8 @@ import {
   type PreTrainedTokenizer,
   Tensor,
 } from "@huggingface/transformers"
-import { expandQueryForEmbedding } from "../core/query-expand"
 import type { Rules } from "../core/rules"
+import { queryEmbedText } from "../core/search"
 import { DIMS, MODEL_ID } from "../core/types"
 import { PATHS } from "./paths"
 
@@ -145,24 +145,23 @@ export function embedderIdentity(modelDir: string = PATHS.modelDir): string {
   return h.update(readFileSync(fileURLToPath(import.meta.url))).digest("hex")
 }
 
-/** The text a query is embedded as: expanded (embedding-only synonyms), prefixed. */
-export function queryEmbedText(query: string, rules: Rules): string {
-  return `query: ${expandQueryForEmbedding(query, rules.synonyms.query_expansions)}`
+/** Embed one text, re-normalized. */
+export async function embedText(
+  e: Embedder,
+  text: string,
+): Promise<Float32Array> {
+  const [v] = await e.embed([text])
+  if (!v)
+    throw new Error(`embedder returned no vector for ${JSON.stringify(text)}`)
+  return normalizeF32(v)
 }
 
 /** Embed one query as search does: expand, prefix, embed, normalize. */
-export async function embedQuery(
+export const embedQuery = (
   e: Embedder,
   query: string,
   rules: Rules,
-): Promise<Float32Array> {
-  const [v] = await e.embed([queryEmbedText(query, rules)])
-  if (!v)
-    throw new Error(
-      `embedder returned no vector for query ${JSON.stringify(query)}`,
-    )
-  return normalizeF32(v)
-}
+): Promise<Float32Array> => embedText(e, queryEmbedText(query, rules))
 
 /**
  * Embed every distinct query once, keyed by the query string in
