@@ -70,14 +70,14 @@ export function rank(
   index: VectorIndex,
   rules: Rules
 ): RankedMatch[] {
-  const q = query.toLowerCase();
+  const terms = queryTerms(query.toLowerCase(), rules);
   const penalties = categoryPenalties(index, rules);
 
   const out: RankedMatch[] = [];
   for (const rec of index.records) {
     if (category !== null && rec.text.category !== category) continue;
     const penalty = penalties.get(rec.text.category) ?? 0;
-    out.push(scoreRecord(rec, queryVec, q, resolverHit, penalty, rules));
+    out.push(scoreRecord(rec, queryVec, terms, resolverHit, penalty, rules));
   }
   out.sort((a, b) => {
     if (a.score !== b.score) return b.score - a.score;
@@ -91,7 +91,7 @@ export function rank(
 function scoreRecord(
   rec: IndexedRecord,
   queryVec: Float32Array,
-  q: string,
+  terms: QueryTerms,
   resolverHit: ResolverHit | null,
   categoryPenalty: number,
   rules: Rules
@@ -101,10 +101,10 @@ function scoreRecord(
     body: dot(queryVec, rec.vectors.body),
     expanded: dot(queryVec, rec.vectors.expanded)
   };
-  const b = computeBoosts(rec.text, q, resolverHit, rules);
+  const lex = recordTerms(rec.text);
+  const b = boosts(rec.text, lex, terms, resolverHit, rules);
 
-  const bodyWords = countWords(rec.text.body);
-  const [bodyW, structW, expW] = semanticWeights(bodyWords, rules.tuning.semantic_weights);
+  const [bodyW, structW, expW] = semanticWeights(lex.bodyWords, rules.tuning.semantic_weights);
 
   const semanticScore = fAdd(
     fMul(bodyW, semantic.body),
@@ -159,6 +159,62 @@ function categoryPenalties(index: VectorIndex, rules: Rules): Map<string, number
   return out;
 }
 
+// --- lexical inputs ----------------------------------------------------------
+
+/** A record's lexical surface, lowercased where the boosts compare it. */
+interface RecordTerms {
+  id: string;
+  display: string;
+  symbolHead: string | null;
+  categoryWord: string;
+  labelWord: string;
+  /** The overlap haystack: every text view of the record. */
+  haystack: string;
+  bodyWords: number;
+}
+
+// A record's terms are a function of its (immutable) text alone, so they
+// are derived once per record object and live as long as it does: a
+// ranking pass lowercases each record's text once, not once per query.
+const recordTermsOf = new WeakMap<RecordText, RecordTerms>();
+
+function recordTerms(rec: RecordText): RecordTerms {
+  const memo = recordTermsOf.get(rec);
+  if (memo) return memo;
+  const display = rec.display.toLowerCase();
+  const t: RecordTerms = {
+    id: rec.id.toLowerCase(),
+    display,
+    symbolHead: symbolHead(display),
+    categoryWord: rec.category.toLowerCase(),
+    labelWord: rec.category_label.toLowerCase(),
+    haystack: `${rec.id} ${rec.display} ${rec.structured} ${rec.body} ${rec.expanded}`.toLowerCase(),
+    bodyWords: countWords(rec.body)
+  };
+  recordTermsOf.set(rec, t);
+  return t;
+}
+
+/** The lowercased query and the token views the boosts read, once per ranking. */
+interface QueryTerms {
+  q: string;
+  words: string[];
+  discriminating: string[];
+  symbols: string[];
+}
+
+function queryTerms(q: string, rules: Rules): QueryTerms {
+  const words = significantWords(q, rules);
+  return {
+    q,
+    words,
+    discriminating: words.filter((w) => isDiscriminating(w, rules)),
+    symbols: symbolTokens(q)
+  };
+}
+
+// --- boosts ------------------------------------------------------------------
+
 /** The boost terms. `q` is the lowercased query, as `rank` passes it. */
 export function computeBoosts(
   rec: RecordText,
@@ -166,30 +222,31 @@ export function computeBoosts(
   resolverHit: ResolverHit | null,
   rules: Rules
 ): Boosts {
+  return boosts(rec, recordTerms(rec), queryTerms(q, rules), resolverHit, rules);
+}
+
+function boosts(
+  rec: RecordText,
+  lex: RecordTerms,
+  terms: QueryTerms,
+  resolverHit: ResolverHit | null,
+  rules: Rules
+): Boosts {
   const b = rules.tuning.boosts;
   const eff = derivedBoosts(b);
-  const categoryWord = rec.category.toLowerCase();
-  const labelWord = rec.category_label.toLowerCase();
-  const category = q.includes(categoryWord) || q.includes(labelWord) ? f(b.category) : 0;
+  const category = terms.q.includes(lex.categoryWord) || terms.q.includes(lex.labelWord) ? f(b.category) : 0;
   const resolver =
     resolverHit && resolverHit.category === rec.category && resolverHit.id === rec.id
       ? eff.resolver
       : 0;
-  const id = rec.id.toLowerCase();
-  const display = rec.display.toLowerCase();
-  const wordExact = significantWords(q, rules)
-    .filter((w) => isDiscriminating(w, rules))
-    .some((w) => {
-      const lw = w.toLowerCase();
-      return lw === id || lw === display;
-    });
+  const wordExact = terms.discriminating.some((w) => w === lex.id || w === lex.display);
   // Symbolic surface match: zsh users name operators and special parameters by
   // their literal symbol ("$?", ">>", "<<<"), which is punctuation, so
   // significantWords drops it. Match those tokens against the record's id and
   // the symbolic head of its display — the punctuation analogue of wordExact.
-  const symbolExact = symbolTokens(q).some((t) => t === id || symbolHead(display) === t);
+  const symbolExact = terms.symbols.some((t) => t === lex.id || lex.symbolHead === t);
   const exactWord = wordExact || symbolExact ? eff.exactWord : 0;
-  const lexical = f(exactWord + overlapBoost(wordOverlap(rec, q, rules), b));
+  const lexical = f(exactWord + overlapBoost(wordOverlap(lex.haystack, terms.words), b));
   return {
     category,
     resolver,
@@ -210,18 +267,16 @@ export function overlapBoost(n: number, b: Tuning['boosts']): number {
 
 function isDiscriminating(word: string, rules: Rules): boolean {
   if (word.length < rules.tuning.lexical.min_discriminating_word_len) return false;
-  const lower = word.toLowerCase();
   const sw = rules.stopwords;
-  if (sw.generic.some((s) => s === lower)) return false;
-  if (sw.discriminating_extra.some((s) => s === lower)) return false;
+  if (sw.generic.some((s) => s === word)) return false;
+  if (sw.discriminating_extra.some((s) => s === word)) return false;
   return true;
 }
 
-function wordOverlap(rec: RecordText, q: string, rules: Rules): number {
-  const recText = `${rec.id} ${rec.display} ${rec.structured} ${rec.body} ${rec.expanded}`.toLowerCase();
+function wordOverlap(haystack: string, words: readonly string[]): number {
   let count = 0;
-  for (const w of significantWords(q, rules)) {
-    if (recText.includes(w)) count++;
+  for (const w of words) {
+    if (haystack.includes(w)) count++;
   }
   return count;
 }

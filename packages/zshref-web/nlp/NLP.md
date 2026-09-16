@@ -113,7 +113,6 @@ _no re-embed, no sweep:_
 - drop the resolver boost: the `resolver_increment` knob, the `boosts.resolver` debug part, the fixtures' `resolverHit` field; product mode becomes the reporters' default (one identifier per script and per report test)
 - with it, retire what only kept reports comparable to the retired CLI's captures: the `batch --debug` response shape and 6-decimal rounding of `nlp/oracle.ts`, the Rust-format names and rules of `nlp/eval/format.ts`
 - remove the `Math.fround` emulation from `rank.ts` (`Float32Array` for vectors stays); regenerates the parity and sanity goldens
-- memoize the per-record overlap haystack in `rank.ts` `wordOverlap` — rebuilt and lowercased per query, so a mechanical ranking pass takes a minute and the sweep over an hour; behaviour-preserving, touches the browser ranker
 
 _re-embed pair (one index rebuild for both):_
 
