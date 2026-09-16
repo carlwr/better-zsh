@@ -2,8 +2,8 @@
 // (SvelteKit static folder), written by `pnpm build:index`. Loads are
 // zod-validated.
 
+import { memoizedRetry } from "@carlwr/typescript-extra"
 import { z } from "zod"
-import { memoizedRetry } from "./memoizedRetry"
 import { loadVectorIndex } from "./ranker/index-loader"
 import { LookupIndex, LookupMapSchema } from "./ranker/lookup-map"
 import type { Rules } from "./ranker/rules"
@@ -62,8 +62,9 @@ export async function loadArtifacts(
 }
 
 // Cached production load: the index (~20 MB) is parsed and validated once and
-// shared across route navigations / deep-links. Tests call
-// `loadArtifacts(fetcher)` directly to stay network-free.
+// shared across route navigations / deep-links; a transient fetch failure is
+// not cached, so the next call re-attempts. Tests call `loadArtifacts(fetcher)`
+// directly to stay network-free.
 export const getArtifacts = memoizedRetry(loadArtifacts)
 
 async function getJson(fetcher: typeof fetch, url: string): Promise<unknown> {

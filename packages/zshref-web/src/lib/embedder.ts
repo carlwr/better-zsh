@@ -1,10 +1,10 @@
 // BGE-small embedder via @huggingface/transformers (ORT-Web). Lazy load on
-// first embed; runs on WASM (transformers.js's browser default — no `device`
-// is passed). Model assets cached by transformers.js's default browser
-// strategy.
+// first embed, re-attempted after a failed Hub download; runs on WASM
+// (transformers.js's browser default — no `device` is passed). Model assets
+// cached by transformers.js's default browser strategy.
 
+import { memoizedRetry } from "@carlwr/typescript-extra"
 import type { ProgressInfo } from "@huggingface/transformers"
-import { memoizedRetry } from "./memoizedRetry"
 
 export const MODEL_ID = "BAAI/bge-small-en-v1.5"
 export const DIMS = 384
