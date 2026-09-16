@@ -14,8 +14,7 @@ resolvers against the conformance fixture `zsh-core` emits beside them.
 Anything that alters those artifacts — taxonomy changes, new record
 fields, resolver behaviour — is a cross-language change.
 
-`make cli` / `make cli-test` rebuild the TS artifacts before Rust runs; a
-resolver change that the Rust mirror does not follow fails `make cli-test`.
+A resolver change the Rust mirror does not follow fails `make cli-test`.
 How the artifacts reach the crate — here, and once it lives in its own repo:
 `zshref-rs/DATA-SYNC.md`.
 

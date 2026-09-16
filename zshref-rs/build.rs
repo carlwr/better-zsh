@@ -29,8 +29,8 @@ fn main() {
     // editions and check-cfg-aware compilers accept the two values.
     println!("cargo:rustc-check-cfg=cfg(data_source, values(\"vendored\", \"monorepo\"))");
 
-    // Re-detect on the override changing (every make target sets it) or a
-    // present candidate vanishing (`make vendor-clean`). A missing path
+    // Re-detect on the override changing or a present
+    // candidate vanishing (`make vendor-clean`). A missing path
     // would re-run this script — and rebuild the crate — on every build, so
     // an appearing candidate is only seen through the override. The
     // embedded files themselves are tracked by rustc's dep-info.

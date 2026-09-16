@@ -9,7 +9,7 @@ Universal patterns for build, packaging, and release. Project-specific package n
 
 ## Makefile conventions
 
-- `.PHONY: <target>` inline on its own line directly above each target block — not one grouped declaration at the top. Keeps diffs minimal as targets come and go.
+- per-target `.PHONY` directly above each target block — not one grouped declaration at the top. Keeps diffs minimal as targets come and go.
 - No top-of-file prose duplicating the target list.
 
 ## Dual-registry publishing (npm + JSR)

@@ -56,22 +56,13 @@ A feature flag (`--features vendored`) would need `default-features = ["vendored
 
 - `build.rs` top doc-comment summarises the data-source selection rules; the implementation enforces them, and its `rerun-if-*` directives say when a mode switch is re-detected.
 - `src/corpus.rs` uses `cfg`-gated path macros so each binary contains bytes from exactly one source; the fixture's path fn beside them follows the same selection.
-- The vendor target refreshes the local `data/` from the two release assets — in the monorepo, the sibling's `artifacts/` they are packed from; after extraction, the tarballs downloaded at the pinned tag and checked against their checksums — and forces vendored mode for downstream checks.
-- The package target runs `cargo package --allow-dirty` to prove the publishable tarball builds standalone with no monorepo visible.
+- Vendoring and the standalone package check: the repo-root `Makefile`.
 
 Gitignored `data/` still enters the published `.crate`: `Cargo.toml`'s `include` list overrides `.gitignore` for packaging.
 
-## Testability matrix
+## Testability
 
-|                          | monorepo mode | vendored mode | extraction simulation |
-| ------------------------ | :-----------: | :-----------: | :-------------------: |
-| `make cli`               | ✓             |               |                       |
-| `make cli-test`          | ✓             |               |                       |
-| `make cli-vendored`      |               | ✓             |                       |
-| `make cli-vendored-test` |               | ✓             |                       |
-| `make cli-package`       |               | ✓             | ✓                     |
-
-`make cli-package` is the extraction simulation: cargo unpacks the tarball into `target/package/zshref-<version>/` and compiles it standalone — no monorepo visible. If that build passes, extraction-day `cargo build` will too.
+Both modes have make targets (the repo-root `Makefile`); `make cli-package` is the extraction simulation: cargo unpacks the tarball into `target/package/zshref-<version>/` and compiles it standalone — no monorepo visible. If that build passes, extraction-day `cargo build` will too.
 
 ## Drift guarantees
 

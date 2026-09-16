@@ -8,7 +8,7 @@
 //! Reads `cargo metadata` with every feature on — one floor covers every
 //! `cargo install` form — which needs no network while `Cargo.lock` is
 //! current, and compares numerically (`1.9` outranks `1.85` lexically, but not
-//! as a version). `make cli-test` gates it.
+//! as a version).
 //! Resolution is filtered per release-relevant triple: unfiltered metadata
 //! drags in wasm/wasi-only packages nothing here ever compiles, while a
 //! host-only filter would make the verdict differ per machine.

@@ -21,26 +21,10 @@ The `build.rs` auto-detects two data sources (monorepo paths vs. vendored `data/
 | What changed | What to run |
 |---|---|
 | Pure Rust only (tool prose and schemas included) | `cargo build` |
-| Corpus (zsh-core docs/types) | `make cli-debug` (runs TS build first) |
-| Resolver behaviour (zsh-core `resolver.ts`) | `make cli-test` (refreshes the conformance fixture, then runs `cargo test`) |
+| Corpus (zsh-core docs/types) | `make cli-debug` |
+| Resolver behaviour (zsh-core `resolver.ts`) | `make cli-test` |
 
-`make cli-debug` depends on `make artifacts`, which builds zsh-core. For vendored-mode dev (e.g. verifying what `cargo publish` will see), use `make cli-vendored` / `make cli-vendored-test` instead.
-
-## Make targets (from repo root)
-
-- `make artifacts` — rebuild TS JSON only
-- `make cli-debug` — TS artifacts + `cargo build`
-- `make cli` — TS artifacts + `cargo build --release`
-- `make cli-test` — TS artifacts + `cargo test --all-features`
-- `make cli-clean` — `cargo clean`
-- `make cli-fmt` / `cli-fmt-check` / `cli-clippy` / `cli-check` — formatting + lint
-- `make vendor` / `vendor-clean` — populate / remove `zshref-rs/data/` from TS output (see `DATA-SYNC.md`)
-- `make cli-vendored` / `cli-vendored-test` — build/test in vendored mode
-- `make cli-package` — `cargo package --allow-dirty` (publishable-tarball smoke)
-- `make cli-npm-check` — stage the npm packages from the host build and check the launchers against the native binaries (`scripts/npm-check`)
-- `make cli-release-act` — the release workflow under `act`, dry-run (`DISTRIBUTION.md`)
-
-CI enforces `make cli-check`; run it before PRs.
+Every target: the repo-root `Makefile`; CI's selection of them: `.github/workflows/ci-rust.yml`.
 
 ## Fast dev loop
 

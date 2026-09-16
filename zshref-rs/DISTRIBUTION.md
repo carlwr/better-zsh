@@ -37,12 +37,7 @@ Targets: the workflow's build matrix. The same list sits in `tests/msrv.rs` and 
 
 ## Rehearsal
 
-```sh
-make cli-npm-check     # host: archive, stage, pack, offline install, launcher == native
-make cli-release-act   # act: every job on the aarch64 Linux row, both publishes --dry-run
-```
-
-`make cli-release-act` maps `ubuntu-24.04-arm` onto act's Ubuntu image; on Apple Silicon that is the one row act can build natively. Only a real tag exercises:
+`make cli-npm-check` and `make cli-release-act` — what each covers: the repo-root `Makefile`. Only a real tag exercises:
 
 - the macOS and Windows rows (Rosetta on the runner, `7z`)
 - OIDC: npm provenance, crates.io token exchange
