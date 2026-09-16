@@ -4,17 +4,23 @@
 // assertion holds a number from a real eval.
 
 import { loadCorpus } from "@carlwr/zsh-core"
+import fc from "fast-check"
 import { describe, expect, it } from "vitest"
 
 import {
   churn,
   type ItemRes,
-  perItem,
+  itemsOf,
   renderDiffReport,
   signed,
 } from "../../nlp/eval/diff"
-import { evalMechanicalCached, LAMBDA } from "../../nlp/eval/mechanical"
-import { evalSentenceCached, gradeEntries } from "../../nlp/eval/sentence"
+import { evalMechanicalGraded, LAMBDA } from "../../nlp/eval/mechanical"
+import {
+  buildQuerySet,
+  evalQuerySet,
+  gradeQuerySet,
+} from "../../nlp/eval/query-set"
+import { gradeEntries } from "../../nlp/eval/sentence"
 import type { SentenceEntry } from "../../nlp/eval/sentence-fixture"
 import {
   applyOverride,
@@ -36,10 +42,11 @@ import {
 import {
   boxTable,
   type Dashboard,
+  label,
+  num,
   renderDashboard,
   withTuning,
   zeroBoosts,
-  zeroedCache,
 } from "../../nlp/eval/tune"
 import {
   buildParityIndex,
@@ -58,20 +65,8 @@ const corpus = loadCorpus()
 const rules = await loadRulesYaml()
 const committed = rules.tuning
 
-/** The same field each knob sets, read back — the assertion side of the KNOBS table. */
-const knobValue: Record<KnobKey, (t: Tuning) => number> = {
-  body: t => t.semantic_weights.body,
-  structured: t => t.semantic_weights.structured,
-  sb_strength: t => t.semantic_weights.short_body.strength,
-  sb_length: t => t.semantic_weights.short_body.length_scale,
-  cat: t => t.boosts.category,
-  exact_inc: t => t.boosts.exact_word_increment,
-  wo_scale: t => t.boosts.word_overlap.scale,
-  wo_halfsat: t => t.boosts.word_overlap.half_sat,
-  rarity: t => t.penalties.category_rarity_max,
-  disc_len: t => t.lexical.min_discriminating_word_len,
-  sig_len: t => t.lexical.min_significant_word_len,
-}
+/** A knob's value in a tuning. */
+const knobValue = (key: KnobKey, t: Tuning): number => KNOBS[key].get(t)
 
 const item = (over: Partial<ItemRes>): ItemRes => ({
   query: "q",
@@ -85,19 +80,6 @@ const item = (over: Partial<ItemRes>): ItemRes => ({
 })
 
 describe("ablation helpers", () => {
-  it("zeroed_cache_is_all_zero_same_keys", () => {
-    const vecs = new Map([
-      ["a", new Float32Array(384).fill(0.3)],
-      ["b", new Float32Array(384).fill(-0.1)],
-    ])
-    const z = zeroedCache(vecs)
-    expect([...z.keys()]).toEqual(["a", "b"])
-    for (const v of z.values()) {
-      expect(v).toHaveLength(384)
-      expect(v.every(x => x === 0)).toBe(true)
-    }
-  })
-
   it("zero_boosts_zeros_every_boost_term", () => {
     const t = zeroBoosts(committed)
     expect(t.boosts.category).toBe(0)
@@ -135,12 +117,12 @@ describe("overrides", () => {
       const { kind } = KNOBS[key]
       const raw = kind === "float" ? "0.125" : "5"
       const t = applyOverride(committed, key, raw)
-      expect(knobValue[key](t), key).toBe(Number(raw))
+      expect(knobValue(key, t), key).toBe(Number(raw))
       // Every other knob keeps its value.
       for (const other of KNOB_KEYS) {
         if (other !== key)
-          expect(knobValue[other](t), `${key} left ${other}`).toBe(
-            knobValue[other](committed),
+          expect(knobValue(other, t), `${key} left ${other}`).toBe(
+            knobValue(other, committed),
           )
       }
     }
@@ -148,12 +130,12 @@ describe("overrides", () => {
   })
 
   it("float knobs take any numeric literal; int knobs take integers only", () => {
-    expect(knobValue.cat(applyOverride(committed, "cat", "0.1"))).toBe(0.1)
-    expect(knobValue.cat(applyOverride(committed, "cat", "1e-2"))).toBe(0.01)
-    expect(knobValue.cat(applyOverride(committed, "cat", "-.5"))).toBe(-0.5)
-    expect(knobValue.disc_len(applyOverride(committed, "disc_len", "+4"))).toBe(
-      4,
-    )
+    expect(knobValue("cat", applyOverride(committed, "cat", "0.1"))).toBe(0.1)
+    expect(knobValue("cat", applyOverride(committed, "cat", "1e-2"))).toBe(0.01)
+    expect(knobValue("cat", applyOverride(committed, "cat", "-.5"))).toBe(-0.5)
+    expect(
+      knobValue("disc_len", applyOverride(committed, "disc_len", "+4")),
+    ).toBe(4)
     expect(() => applyOverride(committed, "disc_len", "2.5")).toThrow(
       /not a valid int/,
     )
@@ -174,7 +156,7 @@ describe("overrides", () => {
 
   it("overrides bypass the load-time range checks", () => {
     // MAX_SCORE_TERM would refuse this at load; a sweep point may exceed it.
-    expect(knobValue.cat(applyOverride(committed, "cat", "0.9"))).toBe(0.9)
+    expect(knobValue("cat", applyOverride(committed, "cat", "0.9"))).toBe(0.9)
   })
 
   it("composedBase parses key=value pairs, trims, skips empties", () => {
@@ -182,16 +164,46 @@ describe("overrides", () => {
     expect(composedBase(committed, "")).toEqual(committed)
     expect(composedBase(committed, " , ")).toEqual(committed)
     const t = composedBase(committed, " cat = 0.02 , disc_len=4,,sig_len=1")
-    expect(knobValue.cat(t)).toBe(0.02)
-    expect(knobValue.disc_len(t)).toBe(4)
-    expect(knobValue.sig_len(t)).toBe(1)
-    expect(knobValue.body(t)).toBe(knobValue.body(committed))
+    expect(knobValue("cat", t)).toBe(0.02)
+    expect(knobValue("disc_len", t)).toBe(4)
+    expect(knobValue("sig_len", t)).toBe(1)
+    expect(knobValue("body", t)).toBe(knobValue("body", committed))
     // Later pairs win.
-    expect(knobValue.cat(composedBase(committed, "cat=0.02,cat=0.04"))).toBe(
+    expect(knobValue("cat", composedBase(committed, "cat=0.02,cat=0.04"))).toBe(
       0.04,
     )
     expect(() => composedBase(committed, "cat")).toThrow(/key=value/)
     expect(() => composedBase(committed, "cat=0.02,nope=1")).toThrow(/unknown/)
+  })
+
+  // Any assignment of knob values, in any order, reads back through the
+  // spec — the last one for a repeated key — and touches no other knob.
+  const arbAssignments = fc.array(
+    fc
+      .constantFrom(...KNOB_KEYS)
+      .chain(key =>
+        fc.tuple(
+          fc.constant(key),
+          KNOBS[key].kind === "int"
+            ? fc.integer({ min: 0, max: 9 })
+            : fc.integer({ min: 0, max: 999 }).map(i => i / 1000),
+        ),
+      ),
+    { maxLength: 6 },
+  )
+
+  it("composedBase reads back any assignment; every other knob keeps the committed value", () => {
+    fc.assert(
+      fc.property(arbAssignments, assignments => {
+        const spec = assignments.map(([k, v]) => `${k}=${v}`).join(",")
+        const t = composedBase(committed, spec)
+        const last = new Map(assignments)
+        for (const key of KNOB_KEYS)
+          expect(knobValue(key, t), key).toBe(
+            last.get(key) ?? knobValue(key, committed),
+          )
+      }),
+    )
   })
 
   it("knob points are labelled to 3 decimals for a float knob, as integers for an int one", () => {
@@ -204,7 +216,7 @@ describe("overrides", () => {
       if (kind === "int")
         for (const p of points) expect(Number.isInteger(p), key).toBe(true)
       for (const p of points)
-        expect(knobValue[key](withKnob(committed, key, p)), key).toBe(p)
+        expect(knobValue(key, withKnob(committed, key, p)), key).toBe(p)
     }
   })
 })
@@ -238,6 +250,44 @@ describe("churn", () => {
       netGain: 0,
     })
     expect(() => churn(base, cand.slice(1), false)).toThrow(/aligned/)
+  })
+
+  const arbItem: fc.Arbitrary<ItemRes> = fc.record({
+    query: fc.constantFrom("q", "r"),
+    cat: fc.constantFrom("option", "builtin"),
+    id: fc.constantFrom("x", "y"),
+    split: fc.constantFrom("train" as const, "holdout" as const),
+    rank: fc.integer({ min: 1, max: 12 }),
+    gain: fc.double({ min: 0, max: 1, noNaN: true }),
+    depth: fc.integer({ min: 1, max: 4 }),
+  })
+  const arbPair = fc
+    .array(fc.tuple(arbItem, arbItem), { maxLength: 8 })
+    .map(ps => [ps.map(([b]) => b), ps.map(([, c]) => c)] as const)
+
+  it("the same items churn nothing; crossings are movers; netGain is the gain sum of the scope", () => {
+    fc.assert(
+      fc.property(arbPair, fc.boolean(), ([base, cand], trainOnly) => {
+        expect(churn(base, base, trainOnly)).toEqual({
+          moved: 0,
+          up: 0,
+          down: 0,
+          netGain: 0,
+        })
+        const c = churn(base, cand, trainOnly)
+        expect(c.up + c.down).toBeLessThanOrEqual(c.moved)
+        const scope = base.flatMap((b, i) =>
+          !trainOnly || b.split === "train" ? [[b, cand[i]] as const] : [],
+        )
+        expect(c.moved).toBe(
+          scope.filter(([b, a]) => a && b.rank !== a.rank).length,
+        )
+        expect(c.netGain).toBeCloseTo(
+          scope.reduce((s, [b, a]) => s + ((a?.gain ?? 0) - b.gain), 0),
+          9,
+        )
+      }),
+    )
   })
 
   it("a pass is rank at or above the depth", () => {
@@ -314,8 +364,7 @@ describe("diff report", () => {
 describe("box table", () => {
   it("draws the frame, pads by character count, aligns per column", () => {
     const t = boxTable(
-      ["category", "mech", "n"],
-      [false, true, true],
+      [label("category"), num("mech"), num("n")],
       [
         ["builtin", "0.912", "12"],
         ["zle_widget", "—", "·"],
@@ -337,7 +386,7 @@ describe("box table", () => {
   })
 
   it("a header wider than every cell sets the width; no rows is a frame", () => {
-    expect(boxTable(["id slice", "score"], [false, true], [])).toBe(
+    expect(boxTable([label("id slice"), num("score")], [])).toBe(
       "┌──────────┬───────┐\n│ id slice │ score │\n├──────────┼───────┤\n└──────────┴───────┘\n",
     )
   })
@@ -363,6 +412,29 @@ describe("sweep marks and rows", () => {
     expect(sweepMarks([0.6 + 1e-8, 0.61], 0.6)).toEqual([" (base)", " ◄ best"])
     expect(sweepMarks([0.6 + 1e-4, 0.61], 0.6)).toEqual(["", " ◄ best"])
     expect(sweepMarks([], 0.6)).toEqual([])
+  })
+
+  it("exactly one best row when there are rows; (base) only within the epsilon", () => {
+    const score = fc.integer({ min: 0, max: 1000 }).map(i => i / 1000)
+    fc.assert(
+      fc.property(
+        fc.array(score, { maxLength: 8 }),
+        score,
+        (combined, base) => {
+          const marks = sweepMarks(combined, base)
+          expect(marks).toHaveLength(combined.length)
+          expect(marks.filter(m => m === " ◄ best")).toHaveLength(
+            combined.length === 0 ? 0 : 1,
+          )
+          const best = marks.indexOf(" ◄ best")
+          if (best !== -1) expect(combined[best]).toBe(Math.max(...combined))
+          marks.forEach((m, i) => {
+            if (m === " (base)") expect(combined[i]).toBe(base)
+            if (m === "" && i !== best) expect(combined[i]).not.toBe(base)
+          })
+        },
+      ),
+    )
   })
 
   it("renderKnobBlock lays out the header and one row per point", () => {
@@ -421,13 +493,19 @@ const parityEntries: SentenceEntry[] = [
 const parityVecs = new Map(
   parityEntries.map(e => [e.query, syntheticVec(["query", e.query])]),
 )
-const parityFixture = {
-  defaultWeight: 1,
-  defaultTargetDepth: 3,
-  entries: parityEntries,
-}
+const paritySet = buildQuerySet(parityEntries, parityVecs, parityAssets)
+const mechEntries: SentenceEntry[] = parityAssets.index.records.map((r, i) => ({
+  query: `alpha ${r.text.id}`,
+  want: [want(i, 1)],
+  split: "train",
+}))
+const mechSet = buildQuerySet(
+  mechEntries,
+  new Map(mechEntries.map(e => [e.query, syntheticVec(["query", "alpha"])])),
+  parityAssets,
+)
 
-/** A bench over the mini index: the caches pre-filled, the embedder never reached. */
+/** A bench over the mini index: the sets pre-built, the embedder never reached. */
 const parityBench = (): Bench => ({
   assets: {
     ...parityAssets,
@@ -435,28 +513,17 @@ const parityBench = (): Bench => ({
     embedder: {
       embed: () =>
         Promise.reject(
-          new Error("the bench embeds nothing: its caches are pre-filled"),
+          new Error("the bench embeds nothing: its sets are pre-built"),
         ),
     },
   },
-  fixture: parityFixture,
-  curatedVecs: parityVecs,
-  mechEntries: parityAssets.index.records.map((r, i) => ({
-    query: `alpha ${r.text.id}`,
-    want: [want(i, 1)],
-    split: "train" as const,
-  })),
-  mechVecs: new Map(
-    parityAssets.index.records.map(r => [
-      `alpha ${r.text.id}`,
-      syntheticVec(["query", "alpha"]),
-    ]),
-  ),
+  curated: paritySet,
+  mechanical: mechSet,
 })
 
 describe("per item over the parity index", () => {
   it("is index-aligned with the entries flattened over their want sets", () => {
-    const items = perItem(parityEntries, parityVecs, parityAssets)
+    const items = itemsOf(gradeQuerySet(paritySet, parityAssets))
     const graded = gradeEntries(parityEntries, parityVecs, parityAssets)
     expect(items).toHaveLength(5)
     expect(items.map(r => [r.query, r.cat, r.id, r.split, r.depth])).toEqual(
@@ -473,7 +540,7 @@ describe("per item over the parity index", () => {
     }
     // The same tuning twice: no churn at all.
     expect(
-      churn(items, perItem(parityEntries, parityVecs, parityAssets), false),
+      churn(items, itemsOf(gradeQuerySet(paritySet, parityAssets)), false),
     ).toEqual({
       moved: 0,
       up: 0,
@@ -580,16 +647,13 @@ describe("dashboard render over the parity index", () => {
       runnerUp: { category: "option", id: "other", score: 0.5 },
     })),
   }
-  const sentence = evalSentenceCached(parityFixture, parityVecs, parityAssets)
-  const bench = parityBench()
-  const mechanical = evalMechanicalCached(
-    bench.mechEntries,
-    bench.mechVecs,
-    parityAssets,
+  const sentence = evalQuerySet(paritySet, parityAssets)
+  const mechanical = evalMechanicalGraded(
+    gradeQuerySet(mechSet, parityAssets),
+    mechEntries.length,
   )
   const dashboard: Dashboard = {
     sentence,
-    curatedTrain: sentence.train.total,
     sanity,
     bare: { bareTotal: 3, failures: [], skippedDecorated: 2 },
     mechanical,

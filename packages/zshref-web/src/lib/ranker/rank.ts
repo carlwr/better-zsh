@@ -13,6 +13,7 @@ import {
   type RankedMatch,
   type RecordText,
   type SemanticScores,
+  type Stopwords,
   type Tuning,
   type VectorIndex,
 } from "./types"
@@ -23,7 +24,7 @@ function clamp01(x: number): number {
   return x
 }
 
-function dot(a: ArrayLike<number>, b: ArrayLike<number>): number {
+export function dot(a: ArrayLike<number>, b: ArrayLike<number>): number {
   // Stops at the shorter; in practice both are DIMS-length, so the `?? 0`
   // fallbacks never trigger (i stays in range).
   let s = 0
@@ -70,21 +71,67 @@ function scoreRecord(
     body: dot(queryVec, rec.vectors.body),
     expanded: dot(queryVec, rec.vectors.expanded),
   }
-  const lex = recordTerms(rec.text)
-  const b = boosts(lex, terms, rules)
-
-  const [bodyW, structW, expW] = semanticWeights(
-    lex.bodyWords,
-    rules.tuning.semantic_weights,
+  const { score, boosts } = scoreOf(
+    { semantic, ...lexicalInputs(recordTerms(rec.text), terms) },
+    rules.tuning,
+    categoryPenalty,
   )
+  return { rec: rec.text, score, debug: { semantic, boosts } }
+}
 
+/** A (query, record) pair's lexical score inputs, the tuning's thresholds applied. */
+export interface LexicalInputs {
+  /** The query names the record's category. */
+  categoryNamed: boolean
+  /** A discriminating query word equals the id or display, or a symbol token the id or the display's symbolic head. */
+  exactWord: boolean
+  /** Significant query words found in the record's text. */
+  overlap: number
+  bodyWords: number
+}
+
+/** Everything a (query, record) score is computed from. */
+export interface ScoreInputs extends LexicalInputs {
+  semantic: SemanticScores
+}
+
+function lexicalInputs(lex: RecordTerms, terms: QueryTerms): LexicalInputs {
+  return {
+    categoryNamed: categoryNamed(lex, terms.q),
+    exactWord:
+      terms.discriminating.some(w => w === lex.id || w === lex.display) ||
+      symbolExact(lex, terms.symbols),
+    overlap: wordOverlap(lex.haystack, terms.words),
+    bodyWords: lex.bodyWords,
+  }
+}
+
+/**
+ * The score and the boosts it carries: the semantic mix, plus category and
+ * lexical boosts, minus the category penalty. The one scoring expression —
+ * the tuning bench recombines cached inputs through it.
+ */
+export function scoreOf(
+  s: ScoreInputs,
+  tuning: Tuning,
+  categoryPenalty: number,
+): { score: number; boosts: Boosts } {
+  const b = tuning.boosts
+  const category = s.categoryNamed ? b.category : 0
+  const exactWord = s.exactWord ? exactWordBoost(b) : 0
+  const lexical = exactWord + overlapBoost(s.overlap, b)
+  const [bodyW, structW, expW] = semanticWeights(
+    s.bodyWords,
+    tuning.semantic_weights,
+  )
   const semanticScore =
-    bodyW * semantic.body +
-    structW * semantic.structured +
-    expW * semantic.expanded
-  const score = semanticScore + b.category + b.lexical - categoryPenalty
-
-  return { rec: rec.text, score, debug: { semantic, boosts: b } }
+    bodyW * s.semantic.body +
+    structW * s.semantic.structured +
+    expW * s.semantic.expanded
+  return {
+    score: semanticScore + category + lexical - categoryPenalty,
+    boosts: { category, lexical },
+  }
 }
 
 function countWords(s: string): number {
@@ -118,7 +165,8 @@ function categoryPenalty(
   return rules.tuning.penalties.category_rarity_max * clamp01(rarity)
 }
 
-function categoryPenalties(
+/** The rarity penalty per category of the index. */
+export function categoryPenalties(
   index: VectorIndex,
   rules: Rules,
 ): Map<string, number> {
@@ -138,7 +186,7 @@ function categoryPenalties(
 // --- lexical inputs ----------------------------------------------------------
 
 /** A record's lexical surface, lowercased where the boosts compare it. */
-interface RecordTerms {
+export interface RecordTerms {
   id: string
   display: string
   symbolHead: string | null
@@ -154,7 +202,7 @@ interface RecordTerms {
 // ranking pass lowercases each record's text once, not once per query.
 const recordTermsOf = new WeakMap<RecordText, RecordTerms>()
 
-function recordTerms(rec: RecordText): RecordTerms {
+export function recordTerms(rec: RecordText): RecordTerms {
   const memo = recordTermsOf.get(rec)
   if (memo) return memo
   const display = rec.display.toLowerCase()
@@ -181,7 +229,9 @@ interface QueryTerms {
 }
 
 function queryTerms(q: string, rules: Rules): QueryTerms {
-  const words = significantWords(q, rules)
+  const words = queryWords(q, rules.stopwords).filter(w =>
+    isSignificant(w, rules.tuning),
+  )
   return {
     q,
     words,
@@ -198,30 +248,31 @@ export function computeBoosts(
   q: string,
   rules: Rules,
 ): Boosts {
-  return boosts(recordTerms(rec), queryTerms(q, rules), rules)
+  const lexical = lexicalInputs(recordTerms(rec), queryTerms(q, rules))
+  return scoreOf({ semantic: NO_SEMANTIC, ...lexical }, rules.tuning, 0).boosts
 }
 
-function boosts(lex: RecordTerms, terms: QueryTerms, rules: Rules): Boosts {
-  const b = rules.tuning.boosts
-  const category =
-    terms.q.includes(lex.categoryWord) || terms.q.includes(lex.labelWord)
-      ? b.category
-      : 0
-  const wordExact = terms.discriminating.some(
-    w => w === lex.id || w === lex.display,
-  )
-  // Symbolic surface match: zsh users name operators and special parameters by
-  // their literal symbol ("$?", ">>", "<<<"), which is punctuation, so
-  // significantWords drops it. Match those tokens against the record's id and
-  // the symbolic head of its display — the punctuation analogue of wordExact.
-  const symbolExact = terms.symbols.some(
-    t => t === lex.id || lex.symbolHead === t,
-  )
-  const exactWord = wordExact || symbolExact ? exactWordBoost(b) : 0
-  const lexical =
-    exactWord + overlapBoost(wordOverlap(lex.haystack, terms.words), b)
-  return { category, lexical }
+/** Every view dot at 0: what zero query vectors score. */
+export const NO_SEMANTIC: SemanticScores = {
+  structured: 0,
+  body: 0,
+  expanded: 0,
 }
+
+/** The lowercased query names the record's category id or label. */
+export const categoryNamed = (lex: RecordTerms, q: string): boolean =>
+  q.includes(lex.categoryWord) || q.includes(lex.labelWord)
+
+/**
+ * Symbolic surface match: zsh users name operators and special parameters by
+ * their literal symbol ("$?", ">>", "<<<"), which is punctuation, so
+ * `queryWords` drops it. Match those tokens against the record's id and the
+ * symbolic head of its display — the punctuation analogue of an exact word.
+ */
+export const symbolExact = (
+  lex: RecordTerms,
+  symbols: readonly string[],
+): boolean => symbols.some(t => t === lex.id || lex.symbolHead === t)
 
 /**
  * Smooth saturating lexical-overlap boost over the overlap count `n`:
@@ -233,16 +284,19 @@ export function overlapBoost(n: number, b: Tuning["boosts"]): number {
   return (wo.scale * n) / (n + wo.half_sat)
 }
 
-function isDiscriminating(word: string, rules: Rules): boolean {
-  if (word.length < rules.tuning.lexical.min_discriminating_word_len)
-    return false
-  const sw = rules.stopwords
-  if (sw.generic.some(s => s === word)) return false
-  if (sw.discriminating_extra.some(s => s === word)) return false
-  return true
+/** A significant word distinctive enough to qualify a record for the exact-word boost. */
+export function isDiscriminating(word: string, rules: Rules): boolean {
+  return (
+    word.length >= rules.tuning.lexical.min_discriminating_word_len &&
+    !rules.stopwords.discriminating_extra.includes(word)
+  )
 }
 
-function wordOverlap(haystack: string, words: readonly string[]): number {
+/** Query words found in the haystack, as substrings ("cd" is in "autocd"). */
+export function wordOverlap(
+  haystack: string,
+  words: readonly string[],
+): number {
   let count = 0
   for (const w of words) {
     if (haystack.includes(w)) count++
@@ -253,7 +307,7 @@ function wordOverlap(haystack: string, words: readonly string[]): number {
 /**
  * Literal symbol tokens in `q`: whitespace tokens that bear punctuation or are
  * `$`-sigiled parameter refs, lowercased, with surrounding quotes and one
- * leading `$` stripped ("$?" -> "?"). Exactly what significantWords discards,
+ * leading `$` stripped ("$?" -> "?"). Exactly what queryWords discards,
  * yet how zsh names its operators and special parameters.
  */
 export function symbolTokens(q: string): string[] {
@@ -281,14 +335,14 @@ export function symbolHead(display: string): string | null {
   return end > 0 ? display.slice(0, end) : null
 }
 
-function significantWords(s: string, rules: Rules): string[] {
-  const min = rules.tuning.lexical.min_significant_word_len
-  const sw = rules.stopwords
-  const out: string[] = []
-  for (const word of s.split(/[^A-Za-z0-9]+/)) {
-    if (word.length < min) continue
-    if (sw.generic.some(stop => stop === word)) continue
-    out.push(word)
-  }
-  return out
+/**
+ * The lowercased query's overlap candidates: split on non-alphanumerics,
+ * generic stopwords dropped, every length kept — `isSignificant` is the
+ * tuning's length threshold.
+ */
+export function queryWords(q: string, sw: Stopwords): string[] {
+  return q.split(/[^A-Za-z0-9]+/).filter(w => !sw.generic.includes(w))
 }
+
+export const isSignificant = (word: string, t: Tuning): boolean =>
+  word.length >= t.lexical.min_significant_word_len

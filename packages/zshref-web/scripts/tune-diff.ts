@@ -3,7 +3,7 @@
 // never printed (NLP.md).
 
 import { composedBase, loadBench, renderTuneDiff } from "../nlp/eval/sweep"
-import { reporterAssets, scriptFlags } from "./_args"
+import { reporterAssets, scriptFlags, tuneBaseSpec } from "./_args"
 
 const usage = `\
 BZ_TUNE_BASE=key=value,… pnpm --filter zshref-web nlp:tune-diff
@@ -13,7 +13,7 @@ BZ_TUNE_BASE=key=value,… pnpm --filter zshref-web nlp:tune-diff
 `
 scriptFlags("tune-diff", usage, [])
 
-const spec = process.env.BZ_TUNE_BASE ?? ""
+const spec = tuneBaseSpec()
 if (spec.trim() === "") {
   console.error(
     "tune-diff: set BZ_TUNE_BASE=<candidate> (key=value,…) to diff against the committed tuning",

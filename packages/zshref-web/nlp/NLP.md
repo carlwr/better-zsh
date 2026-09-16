@@ -43,7 +43,7 @@ Three layers, distinct jobs:
   - *mechanical* (`pnpm nlp:eval-mechanical`) — corpus-derived per-record entries (terse decorated forms + NL-question forms), uniform `targetDepth=1`; each has a single defined answer (one item → one vote).
   - blend `total = λ·curated_train + (1−λ)·mechanical` (λ=0.5); both evals and the dashboard print these numbers live.
   - the tuning trio (`pnpm nlp:tune-*`) moves rank-time knobs only (`BZ_TUNE_BASE` overrides; the keys: `nlp/eval/sweep.ts`), scores the blend, prints holdout as the overfit watch.
-  - cost on CPU, roughly: the curated eval seconds, the mechanical eval or the diff a minute, the dashboard a few minutes, the sweep tens of minutes (every knob point re-ranks the whole mechanical set) — run a sweep only when a knob change is actually on the table
+  - cost on CPU, roughly: the curated eval seconds, every other reporter about a minute — embedding the mechanical set dominates; a knob point regrades cached score inputs (`nlp/eval/query-set.ts`)
 - **C — QA scoring** (`pnpm nlp:qa-score`; `nlp/eval/qa-score.ts`) — in-process; an overfit watch, not where scoring quality is judged:
   - templated self-retrieval hard checks over a few categories
   - the QA corpus as a second held-out set: weighted expected sets, negatives as penalties

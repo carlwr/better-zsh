@@ -113,7 +113,7 @@ export const PARITY_QUERIES: readonly string[] = [
   // short query — exercises short-body weighting in the top results.
   "glob qualifier flags",
   // symbolic surface match — an operator token against a record's display
-  // head, the branch `significantWords` deliberately drops.
+  // head, the branch `queryWords` deliberately drops.
   ">> file",
 ]
 

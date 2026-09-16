@@ -41,3 +41,6 @@ export async function reporterAssets(name: string): Promise<EvalAssets> {
   }
   return loadEvalAssets()
 }
+
+/** The `BZ_TUNE_BASE` candidate spec; empty when unset. */
+export const tuneBaseSpec = (): string => process.env.BZ_TUNE_BASE ?? ""

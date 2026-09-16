@@ -262,7 +262,7 @@ describe("eval over the parity index", () => {
       ),
     )
     const vecs = new Map([[query, syntheticVec(["query", query])]])
-    const r = evalSentenceCached(fixture, vecs, assets)
+    const r = evalSentenceCached(fixture.entries, vecs, assets)
     expect(r.nEntries).toBe(1)
     expect(r.perCategoryN.get("option")).toBe(3)
     expect(r.perCategoryN.get("builtin")).toBe(1)

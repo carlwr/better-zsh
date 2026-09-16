@@ -1,8 +1,9 @@
 // The tuning dashboard: every rank-time signal the manual tuning loop
 // watches, in one report (`Dashboard`); holdout and QA are overfit watches.
-// Every number comes from the same eval functions the tests use, so the
-// dashboard cannot drift from them; the QA row too is computed in-process
-// (nlp/eval/qa-score.ts), over the dashboard's own tuning.
+// Every number comes from the same metric the evals use, over the cached
+// grading a test pins to the reference (`query-set.ts`); the QA row too is
+// computed in-process (nlp/eval/qa-score.ts), over the dashboard's own
+// tuning.
 //
 // Tiers: `fast` skips the mechanical layer and the QA (both embed thousands
 // of queries) and renders their rows as skipped; `cap` keeps every layer but
@@ -12,18 +13,17 @@
 import type { Tuning } from "../../src/lib/ranker/types"
 import { byteOrder } from "../byte-order"
 import { type BareEval, buildLookupContract, evalBare } from "../contract"
-import { DIMS, embedUnique } from "../embedder-node"
 import {
   buildSanityFixture,
   renderSanity,
   type SanityFixture,
 } from "../fixtures"
 import type { EvalAssets } from "./assets"
-import { type Churn, churn, perItem, signed } from "./diff"
+import { type Churn, churn, itemsOf, signed } from "./diff"
 import {
   buildMechanical,
   combinedTotal,
-  evalMechanicalCached,
+  evalMechanicalGraded,
   LAMBDA,
   type MechanicalEval,
   type SliceStat,
@@ -32,11 +32,18 @@ import type { EvalResult } from "./metric"
 import { loadQaCorpus } from "./qa-corpus"
 import {
   hardChecks,
+  type QaSummary,
   scoreHardChecks,
   scoreQaCorpus,
   summaryJson,
 } from "./qa-score"
-import { evalSentenceCached, type RankAssets } from "./sentence"
+import {
+  embedQuerySet,
+  evalQuerySet,
+  gradeQuerySet,
+  type QuerySet,
+} from "./query-set"
+import type { RankAssets } from "./sentence"
 import { loadSentenceFixture } from "./sentence-fixture"
 
 /** `assets` ranking with `tuning` in place of the loaded one. */
@@ -47,17 +54,6 @@ export const withTuning = <A extends RankAssets>(
   ...assets,
   rules: { ...assets.rules, tuning },
 })
-
-/**
- * All-zero replacement for an embedded query cache (same keys, zero
- * vectors): `dot(0, v) = 0`, so every semantic view scores 0 and the
- * ranking falls to the boosts and the lookup-map promote alone.
- */
-export function zeroedCache(
-  vecs: ReadonlyMap<string, Float32Array>,
-): Map<string, Float32Array> {
-  return new Map([...vecs.keys()].map(k => [k, new Float32Array(DIMS)]))
-}
 
 /**
  * The tuning with every lexical-boost term and the rarity penalty zeroed,
@@ -88,15 +84,9 @@ export interface Components {
   mech: Ablation | null
 }
 
-export interface QaSummary {
-  avgPercent: number
-  hardPercent: number
-}
-
 export interface Dashboard {
+  /** The curated eval; its `train` total is one half of the combined blend. */
   sentence: EvalResult
-  /** Curated `train` total — one half of the combined blend. */
-  curatedTrain: number
   sanity: SanityFixture
   bare: BareEval
   /** Null in the fast tier. */
@@ -129,37 +119,66 @@ interface FullTier {
   qa: QaSummary
 }
 
+/** The tunings a set is graded under. */
+interface Tunings {
+  /** The committed tuning: the churn baseline. */
+  committed: EvalAssets
+  live: EvalAssets
+  noBoosts: EvalAssets
+}
+
+/** A set's eval under the live tuning and its two ablations. */
+interface Gradings {
+  live: EvalResult
+  noEmbed: EvalResult
+  noBoosts: EvalResult
+}
+
+const gradings = (
+  set: QuerySet,
+  t: Tunings,
+  live: EvalResult = evalQuerySet(set, t.live),
+): Gradings => ({
+  live,
+  noEmbed: evalQuerySet(set, t.live, { noEmbed: true }),
+  noBoosts: evalQuerySet(set, t.noBoosts),
+})
+
+const ablation = (g: Gradings, total: (r: EvalResult) => number): Ablation => [
+  total(g.live),
+  total(g.noEmbed),
+  total(g.noBoosts),
+]
+
+/** Churn of the live tuning against the committed one over `set`. */
+const churnOf = (set: QuerySet, t: Tunings, trainOnly: boolean): Churn =>
+  churn(
+    itemsOf(gradeQuerySet(set, t.committed)),
+    itemsOf(gradeQuerySet(set, t.live)),
+    trainOnly,
+  )
+
 async function fullTier(
-  assets: EvalAssets,
-  live: EvalAssets,
-  noBoosts: EvalAssets,
+  t: Tunings,
   { candidate, cap }: DashboardOptions,
 ): Promise<FullTier> {
+  const { committed, live } = t
   // `slice(0, undefined)` is the whole array: no cap, no cut.
-  const entries = buildMechanical(assets.corpus).slice(0, cap)
-  const vecs = await embedUnique(
-    assets.embedder,
-    entries.map(e => e.query),
-    assets.rules,
+  const set = await embedQuerySet(
+    buildMechanical(committed.corpus).slice(0, cap),
+    committed,
   )
   const qa = await loadQaCorpus()
-  const mechanical = evalMechanicalCached(entries, vecs, live)
+  const mechanical = evalMechanicalGraded(
+    gradeQuerySet(set, live),
+    set.entries.length,
+  )
   return {
     mechanical,
-    mech: [
-      mechanical.all.total,
-      evalMechanicalCached(entries, zeroedCache(vecs), live).all.total,
-      evalMechanicalCached(entries, vecs, noBoosts).all.total,
-    ],
-    churn: candidate
-      ? churn(
-          perItem(entries, vecs, assets),
-          perItem(entries, vecs, live),
-          false,
-        )
-      : null,
+    mech: ablation(gradings(set, t, mechanical), r => r.all.total),
+    churn: candidate ? churnOf(set, t, false) : null,
     qa: summaryJson(
-      await scoreHardChecks(hardChecks(assets.corpus).slice(0, cap), live),
+      await scoreHardChecks(hardChecks(committed.corpus).slice(0, cap), live),
       await scoreQaCorpus({ ...qa, entries: qa.entries.slice(0, cap) }, live),
     ),
   }
@@ -167,9 +186,9 @@ async function fullTier(
 
 /**
  * Every dashboard signal for `tuning`. The curated and (full tier) the
- * mechanical queries are embedded once and re-ranked for the live tuning
- * and its two ablations; the sanity fixture is rebuilt fresh. `assets`
- * carries the committed tuning, the churn baseline.
+ * mechanical queries are embedded and cached once, then graded under the
+ * live tuning and its two ablations; the sanity fixture is rebuilt fresh.
+ * `assets` carries the committed tuning, the churn baseline.
  */
 export async function buildDashboard(
   assets: EvalAssets,
@@ -178,47 +197,29 @@ export async function buildDashboard(
 ): Promise<Dashboard> {
   const { candidate, fast = false, cap } = opts
   const live = withTuning(assets, tuning)
-  const noBoosts = withTuning(assets, zeroBoosts(tuning))
+  const t: Tunings = {
+    committed: assets,
+    live,
+    noBoosts: withTuning(assets, zeroBoosts(tuning)),
+  }
 
-  const loaded = await loadSentenceFixture()
-  const fixture = { ...loaded, entries: loaded.entries.slice(0, cap) }
-  const curVecs = await embedUnique(
-    assets.embedder,
-    fixture.entries.map(e => e.query),
-    assets.rules,
-  )
-  const sentence = evalSentenceCached(fixture, curVecs, live)
-  const curNoEmbed = evalSentenceCached(fixture, zeroedCache(curVecs), live)
-  const curNoBoost = evalSentenceCached(fixture, curVecs, noBoosts)
-  const curatedChurn = candidate
-    ? churn(
-        perItem(fixture.entries, curVecs, assets),
-        perItem(fixture.entries, curVecs, live),
-        true,
-      )
-    : null
+  const fixture = await loadSentenceFixture()
+  const curated = await embedQuerySet(fixture.entries.slice(0, cap), assets)
+  const cur = gradings(curated, t)
+  const curatedChurn = candidate ? churnOf(curated, t, true) : null
   const sanity = await buildSanityFixture(live)
   const bare = evalBare(buildLookupContract(assets.corpus), assets.lookup)
-  const full = fast ? null : await fullTier(assets, live, noBoosts, opts)
+  const full = fast ? null : await fullTier(t, opts)
 
   return {
-    sentence,
-    curatedTrain: sentence.train.total,
+    sentence: cur.live,
     sanity,
     bare,
     mechanical: full?.mechanical ?? null,
     qa: full?.qa ?? null,
     components: {
-      train: [
-        sentence.train.total,
-        curNoEmbed.train.total,
-        curNoBoost.train.total,
-      ],
-      holdout: [
-        sentence.holdout.total,
-        curNoEmbed.holdout.total,
-        curNoBoost.holdout.total,
-      ],
+      train: ablation(cur, r => r.train.total),
+      holdout: ablation(cur, r => r.holdout.total),
       mech: full?.mech ?? null,
     },
     churn: curatedChurn
@@ -234,6 +235,7 @@ const FAST_HINT = "(--fast; run `pnpm nlp:tune-dashboard` without it)"
 export function renderDashboard(d: Dashboard): string {
   const s = d.sentence
   const m = d.mechanical
+  const train = s.train.total
   const lines = [
     "\n=== nlp tuning dashboard ===",
     `[sentence]  all=${s.all.total.toFixed(3)}  train=${s.train.total.toFixed(3)}  holdout=${s.holdout.total.toFixed(3)}  (${s.nEntries} entries)`,
@@ -242,7 +244,7 @@ export function renderDashboard(d: Dashboard): string {
     ...(m
       ? [
           `[mechanical] ${m.all.total.toFixed(3)}  (${m.nEntries} entries)`,
-          `[combined]  λ·train + (1−λ)·mech = ${LAMBDA.toFixed(3)}·${d.curatedTrain.toFixed(3)} + ${(1 - LAMBDA).toFixed(3)}·${m.all.total.toFixed(3)} = ${combinedTotal(d.curatedTrain, m.all.total).toFixed(3)}`,
+          `[combined]  λ·train + (1−λ)·mech = ${LAMBDA.toFixed(3)}·${train.toFixed(3)} + ${(1 - LAMBDA).toFixed(3)}·${m.all.total.toFixed(3)} = ${combinedTotal(train, m.all.total).toFixed(3)}`,
         ]
       : [`[mechanical] skipped ${FAST_HINT}`]),
     "  holdout = overfit watch; never tune on it.",
@@ -325,37 +327,45 @@ function perCategoryTable(s: EvalResult, m: MechanicalEval | null): string {
     count(s.perCategoryN, c),
   ])
   return boxTable(
-    ["category", "mech", "fix", "hold", "all", "n:mec", "n:cur"],
-    [false, true, true, true, true, true, true],
+    [
+      label("category"),
+      ...["mech", "fix", "hold", "all", "n:mec", "n:cur"].map(num),
+    ],
     rows,
   )
 }
 
 const sliceTable = (slices: readonly SliceStat[]): string =>
   boxTable(
-    ["id slice", "score", "fail/total"],
-    [false, true, true],
+    [label("id slice"), num("score"), num("fail/total")],
     slices.map(x => [x.label, x.meanGain.toFixed(3), `${x.fails}/${x.n}`]),
   )
+
+/** A column: its header, and whether its cells align right (numbers) or left (labels). */
+export interface Column {
+  head: string
+  right: boolean
+}
+export const label = (head: string): Column => ({ head, right: false })
+export const num = (head: string): Column => ({ head, right: true })
 
 const charCount = (s: string): number => [...s].length
 
 /**
- * A Unicode box table; `right` selects right-alignment per column (numbers
- * right, labels left), widths fit the widest cell (in characters, not
- * bytes), one space of padding each side.
+ * A Unicode box table; widths fit the widest cell of each column (in
+ * characters, not bytes), one space of padding each side. A row shorter
+ * than the columns is padded with empty cells.
  */
 export function boxTable(
-  headers: readonly string[],
-  right: readonly boolean[],
+  cols: readonly Column[],
   rows: readonly (readonly string[])[],
 ): string {
-  const w = headers.map((h, i) =>
-    Math.max(charCount(h), ...rows.map(r => charCount(r[i] ?? ""))),
+  const w = cols.map((c, i) =>
+    Math.max(charCount(c.head), ...rows.map(r => charCount(r[i] ?? ""))),
   )
   const rule = (l: string, mid: string, r: string): string =>
     `${l}${w.map(wi => "─".repeat(wi + 2)).join(mid)}${r}`
   const row = (cells: readonly string[]): string =>
-    `│${cells.map((c, i) => ` ${right[i] ? c.padStart(w[i] ?? 0) : c.padEnd(w[i] ?? 0)} │`).join("")}`
-  return `${[rule("┌", "┬", "┐"), row(headers), rule("├", "┼", "┤"), ...rows.map(row), rule("└", "┴", "┘")].join("\n")}\n`
+    `│${cols.map((c, i) => ` ${c.right ? (cells[i] ?? "").padStart(w[i] ?? 0) : (cells[i] ?? "").padEnd(w[i] ?? 0)} │`).join("")}`
+  return `${[rule("┌", "┬", "┐"), row(cols.map(c => c.head)), rule("├", "┼", "┤"), ...rows.map(row), rule("└", "┴", "┘")].join("\n")}\n`
 }

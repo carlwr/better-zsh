@@ -10,7 +10,7 @@ import {
   scoreBench,
   sweepKnob,
 } from "../nlp/eval/sweep"
-import { reporterAssets, scriptFlags } from "./_args"
+import { reporterAssets, scriptFlags, tuneBaseSpec } from "./_args"
 
 const usage = `\
 pnpm --filter zshref-web nlp:tune-sweep
@@ -18,14 +18,14 @@ pnpm --filter zshref-web nlp:tune-sweep
   BZ_TUNE_BASE=key=value,…  the base to sweep around (the committed tuning
              with these overrides); fold a sweep's best rows in and repeat.
 
-Takes tens of minutes on CPU (every knob point re-ranks the mechanical set);
-prints block by block, so a partial run is still readable.\
+About a minute on CPU, most of it embedding the mechanical set once;
+prints block by block.\
 `
 scriptFlags("tune-sweep", usage, [])
 
 const assets = await reporterAssets("tune-sweep")
 const bench = await loadBench(assets, console.error)
-const spec = process.env.BZ_TUNE_BASE ?? ""
+const spec = tuneBaseSpec()
 const base = composedBase(assets.rules.tuning, spec)
 const baseScores = scoreBench(bench, base)
 // Block by block, so a partial sweep is still readable.

@@ -222,11 +222,13 @@ export async function scoreQaCorpus(
   return aggregateScores(scores)
 }
 
+export interface QaSummary {
+  avgPercent: number
+  hardPercent: number
+}
+
 /** The `SUMMARY_JSON` payload: what the tune dashboard reads. */
-export function summaryJson(
-  hard: HardCheckResult,
-  scored: QaScore,
-): { avgPercent: number; hardPercent: number } {
+export function summaryJson(hard: HardCheckResult, scored: QaScore): QaSummary {
   return {
     avgPercent: +(scored.avgScore * 100).toFixed(1),
     hardPercent: +hard.hardScore.toFixed(1),

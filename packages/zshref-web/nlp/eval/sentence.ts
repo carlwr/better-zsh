@@ -1,8 +1,8 @@
 // The curated sentence eval (NLP.md §"Eval architecture", layer B): every
 // fixture entry ranked as search does it — `rank`, then the lookup-map
-// promote — and each expected item graded on its own rank.
-// Embedding is tuning-independent, so `evalSentenceCached` takes the query
-// vectors as a cache: a tuning sweep embeds once and re-ranks per variant.
+// promote — and each expected item graded on its own rank. `gradeEntries`
+// is the reference grading; the tuning bench regrades cached score inputs
+// instead, pinned equal to it.
 
 import { promoteToTop } from "../../src/lib/ranker/lookup-map"
 import { rank } from "../../src/lib/ranker/rank"
@@ -75,27 +75,40 @@ export function countPerCategory(
   return n
 }
 
-export function evalSentenceCached(
-  fixture: SentenceFixture,
+/** Every distinct entry query embedded once, by query. */
+export const embedEntries = (
+  entries: readonly SentenceEntry[],
+  assets: EvalAssets,
+): Promise<Map<string, Float32Array>> =>
+  embedUnique(
+    assets.embedder,
+    entries.map(e => e.query),
+    assets.rules,
+  )
+
+/** The eval of already-graded items from `nEntries` entries. */
+export const evalGraded = (
+  graded: readonly GradedItem[],
+  nEntries: number,
+): EvalResult =>
+  evalResult(graded.map(voteOf), nEntries, countPerCategory(graded))
+
+export const evalSentenceCached = (
+  entries: readonly SentenceEntry[],
   vecs: ReadonlyMap<string, Float32Array>,
   assets: RankAssets,
-): EvalResult {
-  const graded = gradeEntries(fixture.entries, vecs, assets)
-  return evalResult(
-    graded.map(voteOf),
-    fixture.entries.length,
-    countPerCategory(graded),
-  )
-}
+): EvalResult => evalGraded(gradeEntries(entries, vecs, assets), entries.length)
 
-/** Embed every distinct fixture query once, then `evalSentenceCached`. */
+/** `evalSentenceCached` over freshly embedded queries. */
 export async function evalSentence(
-  fixture: SentenceFixture,
+  { entries }: SentenceFixture,
   assets: EvalAssets,
 ): Promise<EvalResult> {
-  const queries = fixture.entries.map(e => e.query)
-  const vecs = await embedUnique(assets.embedder, queries, assets.rules)
-  return evalSentenceCached(fixture, vecs, assets)
+  return evalSentenceCached(
+    entries,
+    await embedEntries(entries, assets),
+    assets,
+  )
 }
 
 /** The report: aggregates only, holdout as a labelled overfit-watch. One

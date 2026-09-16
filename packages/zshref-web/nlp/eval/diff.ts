@@ -9,8 +9,7 @@
 // mechanical set is all train.
 
 import type { Split } from "./metric"
-import { type GradedItem, gradeEntries, type RankAssets } from "./sentence"
-import type { SentenceEntry } from "./sentence-fixture"
+import type { GradedItem } from "./sentence"
 
 /** One expected item's rank and gain under a tuning, with what a diff needs. */
 export interface ItemRes {
@@ -26,28 +25,21 @@ export interface ItemRes {
 /** A pass = ranked at or above the item's target depth (mechanical: 1; curated default: 3). */
 export const passed = (r: ItemRes): boolean => r.rank <= r.depth
 
-const itemRes = (g: GradedItem): ItemRes => ({
-  query: g.entry.query,
-  cat: g.item.category,
-  id: g.item.id,
-  split: g.entry.split,
-  rank: g.rank,
-  gain: g.gain,
-  depth: g.item.targetDepth,
-})
-
 /**
- * Every item's rank and gain, over the same chain as the evals (rank →
- * promote → own rank). Index-aligned with `entries` flattened over each
- * `want` set, so two calls with different tunings zip 1:1 for `churn`.
+ * The graded items as a diff reads them. Index-aligned with the entries
+ * flattened over each `want` set, so two gradings under different tunings
+ * zip 1:1 for `churn`.
  */
-export function perItem(
-  entries: readonly SentenceEntry[],
-  vecs: ReadonlyMap<string, Float32Array>,
-  assets: RankAssets,
-): ItemRes[] {
-  return gradeEntries(entries, vecs, assets).map(itemRes)
-}
+export const itemsOf = (graded: readonly GradedItem[]): ItemRes[] =>
+  graded.map(g => ({
+    query: g.entry.query,
+    cat: g.item.category,
+    id: g.item.id,
+    split: g.entry.split,
+    rank: g.rank,
+    gain: g.gain,
+    depth: g.item.targetDepth,
+  }))
 
 /** Gross tallies of `cand` vs `base`; `netGain` is the signed sum they contextualize. */
 export interface Churn {

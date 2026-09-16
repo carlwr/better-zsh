@@ -21,16 +21,16 @@ import {
 } from "@carlwr/zsh-core/taxonomy"
 
 import { buildLookupContract } from "../contract"
-import { embedUnique } from "../embedder-node"
 import type { EvalAssets } from "./assets"
-import { type EvalResult, evalResult } from "./metric"
+import type { EvalResult } from "./metric"
 import { type HardCheckTemplate, hardCheckTemplates } from "./qa-score"
 import {
   countPerCategory,
+  embedEntries,
+  evalGraded,
   type GradedItem,
   gradeEntries,
   type RankAssets,
-  voteOf,
 } from "./sentence"
 import type { SentenceEntry } from "./sentence-fixture"
 
@@ -155,27 +155,39 @@ function sliceStats(graded: readonly GradedItem[]): SliceStat[] {
 }
 
 /** Rank and grade the pre-built entries against an embedded query cache, plus the diagnostics. */
-export function evalMechanicalCached(
-  entries: readonly SentenceEntry[],
-  vecs: ReadonlyMap<string, Float32Array>,
-  assets: RankAssets,
+/** The mechanical eval of already-graded items from `nEntries` entries. */
+export function evalMechanicalGraded(
+  graded: readonly GradedItem[],
+  nEntries: number,
 ): MechanicalEval {
-  const graded = gradeEntries(entries, vecs, assets)
   return {
-    ...evalResult(graded.map(voteOf), entries.length, countPerCategory(graded)),
+    ...evalGraded(graded, nEntries),
     violations: countPerCategory(graded.filter(notTop1)),
     slices: sliceStats(graded),
   }
 }
 
-/** Embed every distinct query once, then `evalMechanicalCached`. */
+export function evalMechanicalCached(
+  entries: readonly SentenceEntry[],
+  vecs: ReadonlyMap<string, Float32Array>,
+  assets: RankAssets,
+): MechanicalEval {
+  return evalMechanicalGraded(
+    gradeEntries(entries, vecs, assets),
+    entries.length,
+  )
+}
+
+/** `evalMechanicalCached` over freshly embedded queries. */
 export async function evalMechanical(
   entries: readonly SentenceEntry[],
   assets: EvalAssets,
 ): Promise<MechanicalEval> {
-  const queries = entries.map(e => e.query)
-  const vecs = await embedUnique(assets.embedder, queries, assets.rules)
-  return evalMechanicalCached(entries, vecs, assets)
+  return evalMechanicalCached(
+    entries,
+    await embedEntries(entries, assets),
+    assets,
+  )
 }
 
 /** The component report: the total and, per category, the score with its

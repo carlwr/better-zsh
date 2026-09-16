@@ -269,7 +269,7 @@ describe("reporters over the staged assets, capped", () => {
       "=== tune diff: base vs candidate ===",
       `candidate BZ_TUNE_BASE="${SPEC}"`,
     ])
-    const trainEntries = bench.fixture.entries.filter(e => e.split === "train")
+    const trainEntries = bench.curated.entries.filter(e => e.split === "train")
     const trainItems = trainEntries.reduce((n, e) => n + e.want.length, 0)
     const heads = lines.filter(l => l.startsWith("["))
     expect(heads[0]).toMatch(
@@ -281,7 +281,7 @@ describe("reporters over the staged assets, capped", () => {
     expect(heads).toHaveLength(2)
     // Holdout stays out: every mover names a train or a mechanical query.
     const printable = new Set(
-      [...trainEntries, ...bench.mechEntries].map(e => e.query),
+      [...trainEntries, ...bench.mechanical.entries].map(e => e.query),
     )
     const movers = lines.filter(l => l.includes("  q="))
     for (const l of movers) {

@@ -1,81 +1,116 @@
 // One-knob-at-a-time rank-time tuning sweep, and the `BZ_TUNE_BASE`
 // override syntax it shares with the dashboard and the diff. Rank-time
 // knobs never re-embed, so the curated and mechanical queries are embedded
-// once (`loadBench`) and re-ranked per variant. The objective is the
-// dashboard's combined blend; `holdout` is printed as the overfit watch,
-// never optimized. The greedy loop: sweep, fold the best row into
-// `BZ_TUNE_BASE`, repeat (one knob at a time misses interactions).
+// and their score inputs cached once (`loadBench`), then regraded per
+// variant. The objective is the dashboard's combined blend; `holdout` is
+// printed as the overfit watch, never optimized. The greedy loop: sweep,
+// fold the best row into `BZ_TUNE_BASE`, repeat (one knob at a time misses
+// interactions).
 
 import type { Tuning } from "../../src/lib/ranker/types"
-import { embedUnique } from "../embedder-node"
 import type { EvalAssets } from "./assets"
-import { type ItemRes, perItem, renderDiffReport, signed } from "./diff"
+import { type ItemRes, itemsOf, renderDiffReport, signed } from "./diff"
 import {
   buildMechanical,
   combinedTotal,
-  evalMechanicalCached,
+  evalMechanicalGraded,
 } from "./mechanical"
-import { evalSentenceCached } from "./sentence"
 import {
-  loadSentenceFixture,
-  type SentenceEntry,
-  type SentenceFixture,
-} from "./sentence-fixture"
+  embedQuerySet,
+  evalQuerySet,
+  gradeQuerySet,
+  type QuerySet,
+} from "./query-set"
+import { loadSentenceFixture } from "./sentence-fixture"
 import { withTuning } from "./tune"
 
 type KnobKind = "float" | "int"
+
+/** The keys of `S` holding a number. */
+type NumberKey<S> = { [K in keyof S]: S[K] extends number ? K : never }[keyof S]
 
 interface Knob {
   kind: KnobKind
   /** The sweep's points, each replacing the base value. */
   points: readonly number[]
+  get: (t: Tuning) => number
   /** Sets the knob on a private copy of the tuning. */
   set: (t: Tuning, v: number) => void
 }
 
-const knob = (
+/** A knob is one numeric `field` of a `section` of the tuning: `get` and `set` share the address. */
+const knob = <S extends object>(
   kind: KnobKind,
   points: readonly number[],
-  set: Knob["set"],
-): Knob => ({ kind, points, set })
+  section: (t: Tuning) => S,
+  field: NumberKey<S>,
+): Knob => ({
+  kind,
+  points,
+  get: t => section(t)[field] as number,
+  set: (t, v) => {
+    section(t)[field] = v as S[NumberKey<S>]
+  },
+})
 const range = (lo: number, hi: number): number[] =>
   Array.from({ length: hi - lo + 1 }, (_, i) => lo + i)
 
+const sw = (t: Tuning) => t.semantic_weights
+const boosts = (t: Tuning) => t.boosts
+
 /** The rank-time knobs by `BZ_TUNE_BASE` key, in sweep order; each names one `tuning.yaml` field. */
 export const KNOBS = {
-  body: knob("float", [0.55, 0.6, 0.65, 0.7, 0.75, 0.8], (t, v) => {
-    t.semantic_weights.body = v
-  }),
-  structured: knob("float", [0.05, 0.1, 0.15, 0.2, 0.25, 0.3], (t, v) => {
-    t.semantic_weights.structured = v
-  }),
-  sb_strength: knob("float", [0, 0.06, 0.12, 0.18, 0.24, 0.3], (t, v) => {
-    t.semantic_weights.short_body.strength = v
-  }),
-  sb_length: knob("float", [8, 16, 24, 32, 48, 64], (t, v) => {
-    t.semantic_weights.short_body.length_scale = v
-  }),
-  cat: knob("float", [0, 0.01, 0.02, 0.04, 0.06, 0.1], (t, v) => {
-    t.boosts.category = v
-  }),
-  exact_inc: knob("float", [0, 0.02, 0.04, 0.06, 0.08, 0.12], (t, v) => {
-    t.boosts.exact_word_increment = v
-  }),
-  wo_scale: knob("float", [0.1, 0.2, 0.3, 0.4, 0.5], (t, v) => {
-    t.boosts.word_overlap.scale = v
-  }),
-  wo_halfsat: knob("float", [1, 2, 4, 6, 10, 16], (t, v) => {
-    t.boosts.word_overlap.half_sat = v
-  }),
-  rarity: knob("float", [0, 0.01, 0.03, 0.06, 0.1, 0.16], (t, v) => {
-    t.penalties.category_rarity_max = v
-  }),
-  disc_len: knob("int", range(2, 6), (t, v) => {
-    t.lexical.min_discriminating_word_len = v
-  }),
-  sig_len: knob("int", range(1, 4), (t, v) => {
-    t.lexical.min_significant_word_len = v
-  }),
+  body: knob("float", [0.55, 0.6, 0.65, 0.7, 0.75, 0.8], sw, "body"),
+  structured: knob(
+    "float",
+    [0.05, 0.1, 0.15, 0.2, 0.25, 0.3],
+    sw,
+    "structured",
+  ),
+  sb_strength: knob(
+    "float",
+    [0, 0.06, 0.12, 0.18, 0.24, 0.3],
+    t => sw(t).short_body,
+    "strength",
+  ),
+  sb_length: knob(
+    "float",
+    [8, 16, 24, 32, 48, 64],
+    t => sw(t).short_body,
+    "length_scale",
+  ),
+  cat: knob("float", [0, 0.01, 0.02, 0.04, 0.06, 0.1], boosts, "category"),
+  exact_inc: knob(
+    "float",
+    [0, 0.02, 0.04, 0.06, 0.08, 0.12],
+    boosts,
+    "exact_word_increment",
+  ),
+  wo_scale: knob(
+    "float",
+    [0.1, 0.2, 0.3, 0.4, 0.5],
+    t => boosts(t).word_overlap,
+    "scale",
+  ),
+  wo_halfsat: knob(
+    "float",
+    [1, 2, 4, 6, 10, 16],
+    t => boosts(t).word_overlap,
+    "half_sat",
+  ),
+  rarity: knob(
+    "float",
+    [0, 0.01, 0.03, 0.06, 0.1, 0.16],
+    t => t.penalties,
+    "category_rarity_max",
+  ),
+  disc_len: knob(
+    "int",
+    range(2, 6),
+    t => t.lexical,
+    "min_discriminating_word_len",
+  ),
+  sig_len: knob("int", range(1, 4), t => t.lexical, "min_significant_word_len"),
 } satisfies Record<string, Knob>
 export type KnobKey = keyof typeof KNOBS
 export const KNOB_KEYS = Object.keys(KNOBS) as KnobKey[]
@@ -149,48 +184,41 @@ export interface Scores {
   combined: number
 }
 
-/** Assets plus both query caches, embedded once for every variant. */
+/** Assets plus both query sets, embedded and cached once for every variant. */
 export interface Bench {
   assets: EvalAssets
-  fixture: SentenceFixture
-  curatedVecs: Map<string, Float32Array>
-  mechEntries: SentenceEntry[]
-  mechVecs: Map<string, Float32Array>
+  curated: QuerySet
+  mechanical: QuerySet
 }
 
 /**
- * Embed the curated and the mechanical queries; `progress` gets the one note
- * before the (slow) mechanical embed. `cap` cuts each set to its first
- * entries — the reporter smoke's tier, as `DashboardOptions.cap`.
+ * Embed and cache the curated and the mechanical queries; `progress` gets
+ * the one note before the (slow) mechanical embed. `cap` cuts each set to
+ * its first entries — the reporter smoke's tier, as `DashboardOptions.cap`.
  */
 export async function loadBench(
   assets: EvalAssets,
   progress: (line: string) => void = () => {},
   cap?: number,
 ): Promise<Bench> {
-  const loaded = await loadSentenceFixture()
-  const fixture = { ...loaded, entries: loaded.entries.slice(0, cap) }
-  const curatedVecs = await embedUnique(
-    assets.embedder,
-    fixture.entries.map(e => e.query),
-    assets.rules,
-  )
+  const fixture = await loadSentenceFixture()
+  const curatedEntries = fixture.entries.slice(0, cap)
   const mechEntries = buildMechanical(assets.corpus).slice(0, cap)
   progress(
-    `embedding ${fixture.entries.length} curated + ${mechEntries.length} mechanical queries once…`,
+    `embedding ${curatedEntries.length} curated + ${mechEntries.length} mechanical queries once…`,
   )
-  const mechVecs = await embedUnique(
-    assets.embedder,
-    mechEntries.map(e => e.query),
-    assets.rules,
-  )
-  return { assets, fixture, curatedVecs, mechEntries, mechVecs }
+  const curated = await embedQuerySet(curatedEntries, assets)
+  const mechanical = await embedQuerySet(mechEntries, assets)
+  return { assets, curated, mechanical }
 }
 
 export function scoreBench(bench: Bench, tuning: Tuning): Scores {
   const assets = withTuning(bench.assets, tuning)
-  const c = evalSentenceCached(bench.fixture, bench.curatedVecs, assets)
-  const m = evalMechanicalCached(bench.mechEntries, bench.mechVecs, assets)
+  const c = evalQuerySet(bench.curated, assets)
+  const m = evalMechanicalGraded(
+    gradeQuerySet(bench.mechanical, assets),
+    bench.mechanical.entries.length,
+  )
   return {
     train: c.train.total,
     holdout: c.holdout.total,
@@ -298,8 +326,8 @@ export const benchItems = (
 ): { curated: ItemRes[]; mechanical: ItemRes[] } => {
   const assets = withTuning(bench.assets, tuning)
   return {
-    curated: perItem(bench.fixture.entries, bench.curatedVecs, assets),
-    mechanical: perItem(bench.mechEntries, bench.mechVecs, assets),
+    curated: itemsOf(gradeQuerySet(bench.curated, assets)),
+    mechanical: itemsOf(gradeQuerySet(bench.mechanical, assets)),
   }
 }
 
