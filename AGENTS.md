@@ -155,8 +155,10 @@ Agents may not edit `SECURITY.md`; tell the user and suggest updates. Likely tri
 If making commits:
 
 - pre-release commits need not be perfectly atomic
-- subject line max 55 chars
+- subject line: **imperative**, every clause — `cap x; test y`, never `x cap; y tests` or `x pads`
+- subject line max 55 chars; shorter is better
 - **subject line only** — **commit bodies are FORBIDDEN**
+- history rewrites: `WORKFLOW.md`
 
 _Any SUBAGENTS that may commit **must** be given the above instructions._
 

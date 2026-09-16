@@ -1,6 +1,6 @@
 ---
 audience: maintainer
-read-when: renames, refactors, design decisions, research-agent rules, shell discipline
+read-when: renames, refactors, design decisions, research-agent rules, shell discipline, git history rewrites
 ---
 
 # WORKFLOW.md
@@ -74,6 +74,16 @@ Typecheck and type-only checks are not enough: identifiers also live in:
 - test titles, string literals
 
 Missed prose references become silent drift.
+
+## Git history rewrites
+
+Never past the upstream (`origin/main`). For local commits, the safe order:
+
+- land first: the intended end state exists as a linear history with a clean working copy — temp commits are fine
+- backup-tag that commit
+- rewrite
+- assert the new `HEAD` tree is byte-equal to the tag's
+- only then drop the tag
 
 ## Recording design decisions
 
