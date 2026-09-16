@@ -158,18 +158,24 @@ export interface Bench {
   mechVecs: Map<string, Float32Array>
 }
 
-/** Embed the curated and the mechanical queries; `progress` gets the one note before the (slow) mechanical embed. */
+/**
+ * Embed the curated and the mechanical queries; `progress` gets the one note
+ * before the (slow) mechanical embed. `cap` cuts each set to its first
+ * entries — the reporter smoke's tier, as `DashboardOptions.cap`.
+ */
 export async function loadBench(
   assets: EvalAssets,
   progress: (line: string) => void = () => {},
+  cap?: number,
 ): Promise<Bench> {
-  const fixture = await loadSentenceFixture()
+  const loaded = await loadSentenceFixture()
+  const fixture = { ...loaded, entries: loaded.entries.slice(0, cap) }
   const curatedVecs = await embedUnique(
     assets.embedder,
     fixture.entries.map(e => e.query),
     assets.rules,
   )
-  const mechEntries = buildMechanical(assets.corpus)
+  const mechEntries = buildMechanical(assets.corpus).slice(0, cap)
   progress(
     `embedding ${fixture.entries.length} curated + ${mechEntries.length} mechanical queries once…`,
   )

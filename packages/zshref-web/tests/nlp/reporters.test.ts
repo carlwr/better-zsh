@@ -14,9 +14,7 @@ import { dirname, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 import { beforeAll, describe, expect, it } from "vitest"
 
-import { embedUnique } from "../../nlp/embedder-node"
 import { type EvalAssets, loadEvalAssets } from "../../nlp/eval/assets"
-import { buildMechanical } from "../../nlp/eval/mechanical"
 import { loadQaCorpus } from "../../nlp/eval/qa-corpus"
 import {
   hardChecks,
@@ -24,12 +22,12 @@ import {
   scoreHardChecks,
   scoreQaCorpus,
 } from "../../nlp/eval/qa-score"
-import { loadSentenceFixture } from "../../nlp/eval/sentence-fixture"
 import {
   type Bench,
   composedBase,
   KNOBS,
   type KnobKey,
+  loadBench,
   renderKnobBlock,
   renderSweepHeader,
   renderTuneDiff,
@@ -134,24 +132,7 @@ describe("reporters over the staged assets, capped", () => {
   beforeAll(async () => {
     if (skipReason) return
     assets = await loadEvalAssets()
-    const loaded = await loadSentenceFixture()
-    const fixture = { ...loaded, entries: loaded.entries.slice(0, CAP) }
-    const mechEntries = buildMechanical(assets.corpus).slice(0, CAP)
-    bench = {
-      assets,
-      fixture,
-      curatedVecs: await embedUnique(
-        assets.embedder,
-        fixture.entries.map(e => e.query),
-        assets.rules,
-      ),
-      mechEntries,
-      mechVecs: await embedUnique(
-        assets.embedder,
-        mechEntries.map(e => e.query),
-        assets.rules,
-      ),
-    }
+    bench = await loadBench(assets, () => {}, CAP)
   }, 180_000)
 
   it("tune_dashboard_full_tier", async ctx => {

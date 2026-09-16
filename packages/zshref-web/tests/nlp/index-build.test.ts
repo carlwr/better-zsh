@@ -1,15 +1,19 @@
-// Pure on a synthetic index, except `validate_rejects_tampered_index` on
-// the built one (skipped until `build:index` has run).
+// Model-free: a synthetic index, and `buildIndex` over the corpus with
+// synthetic vectors; the `built index` tests read the staged one (skipped
+// until `build:index` has run).
 
 import { mkdtemp, rm } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { loadCorpus } from "@carlwr/zsh-core"
+import fc from "fast-check"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
 import { corpusHash } from "../../nlp/corpus-hash"
-import { DIMS, MODEL_ID } from "../../nlp/embedder-node"
+import { DIMS, INDEX_EMBED_CHUNK, MODEL_ID } from "../../nlp/embedder-node"
+import { syntheticVec } from "../../nlp/fixtures"
 import {
+  buildIndex,
   INDEX_VERSION,
   type IndexValidation,
   indexJson,
@@ -55,34 +59,27 @@ describe("f32Shortest", () => {
     }
   })
 
-  // Random bit patterns (a fixed xorshift seed): subnormals, huge and tiny
-  // values included; every printed form reads back to the same f32 and
-  // carries at most 9 significant digits.
-  it("round-trips random f32 bit patterns", () => {
-    const bits = new Uint32Array(1)
-    const asF32 = new Float32Array(bits.buffer)
-    let x = 0x9e3779b9
-    const next = (): number => {
-      x ^= x << 13
-      x ^= x >>> 17
-      x ^= x << 5
-      bits[0] = x >>> 0
-      return asF32[0] ?? 0
-    }
-    let checked = 0
-    while (checked < 5000) {
-      const v = next()
-      if (!Number.isFinite(v)) continue
-      const s = f32Shortest(v)
-      expect(Math.fround(Number(s)), s).toBe(v)
-      expect(
-        s
-          .replace(/e[+-]\d+$/, "")
-          .replace(/[-.]/g, "")
-          .replace(/^0+/, "").length,
-      ).toBeLessThanOrEqual(9)
-      checked++
-    }
+  // Any finite f32 — subnormals, huge and tiny values included: the printed
+  // form reads back to the same f32, carries at most 9 significant digits,
+  // and is valid JSON.
+  const arbF32 = fc.float({ noNaN: true, noDefaultInfinity: true })
+
+  it("round-trips every finite f32 in at most 9 significant digits", () => {
+    fc.assert(
+      fc.property(arbF32, v => {
+        const s = f32Shortest(v)
+        // `===`: what every reader compares with; `-0` prints as `0`.
+        expect(Math.fround(Number(s)) === v, s).toBe(true)
+        expect(JSON.parse(s)).toBe(Number(s))
+        expect(
+          s
+            .replace(/e[+-]\d+$/, "")
+            .replace(/[-.]/g, "")
+            .replace(/^0+/, "").length,
+        ).toBeLessThanOrEqual(9)
+      }),
+      { numRuns: 2000 },
+    )
   })
 
   it("f32VecJson is a JSON array of the components", () => {
@@ -234,6 +231,47 @@ describe("validateIndex", () => {
       validateIndex(zeroIndex(), corpus, other),
       /nlp index record \d+ is /,
     )
+  })
+})
+
+// The model swapped for `syntheticVec`. What nothing else pins is the
+// view ↔ vector alignment: a wrong interleave still validates, and a real
+// build would show it only as ranking quality.
+describe("buildIndex", () => {
+  it("each view slot holds the vector embedded for its own passage text, unit length; progress paced by chunk", async () => {
+    const embedded = new Map<string, Float32Array>()
+    const progress: [number, number][] = []
+    const index = await buildIndex({
+      corpus,
+      rules,
+      embedder: {
+        embed: async texts =>
+          texts.map(t => {
+            const v = syntheticVec([t])
+            embedded.set(t, v)
+            return v
+          }),
+      },
+      onProgress: (done, total) => progress.push([done, total]),
+    })
+    expect(validateIndex(index, corpus, rules)).toEqual({ ok: true })
+    // By value: view texts repeat across records, so the map holds one array per text.
+    const misaligned: string[] = []
+    let worst = 0
+    for (const rec of index.records) {
+      for (const view of VIEWS) {
+        const v = rec.vectors[view]
+        const want = embedded.get(`passage: ${rec.text[view]}`)
+        if (!want || v.some((x, k) => x !== want[k]))
+          misaligned.push(`${rec.text.category}/${rec.text.id}.${view}`)
+        worst = Math.max(worst, Math.abs(Math.hypot(...v) - 1))
+      }
+    }
+    expect(misaligned).toEqual([])
+    expect(worst).toBeLessThanOrEqual(1e-6)
+    const total = index.records.length * VIEWS.length
+    expect(progress).toHaveLength(Math.ceil(total / INDEX_EMBED_CHUNK))
+    expect(progress.at(-1)).toEqual([total, total])
   })
 })
 
