@@ -59,15 +59,13 @@ Per layer:
   - workarounds
   - "why not the obvious alternative"
   - kept local: no specific other-file paths or sibling-identifier names
-- **File-header comments** — the first lines of a source/config file. Locally essential only. Never:
+- **File-header comments** — the first lines of a source/config file. Locally essential only; implementing from a plan, plan prose is intent — re-derive header text from the file's own purpose. Never:
   - claim global state about other files or packages
   - restate what the file already expresses:
     - filename
     - location
     - structure
   - restate design decisions whose home is elsewhere
-
-  Implementing from a plan: plan prose is intent — re-derive header text from the destination file's own purpose.
 - **Cross-cutting principles doc** — read before designing a feature or doc category; edit when a tradeoff genuinely shifts.
 - **Subsystem rationale doc** — subsystem-level "why":
   - name load-bearing types and APIs
@@ -77,12 +75,10 @@ Per layer:
     - "see API docs"
     - one representative example
   - cross-link to the principles doc instead of restating
-- **Operational notes** (e.g. `DEVELOPMENT.md`) — repo- or package-local:
+- **Operational notes** (e.g. `DEVELOPMENT.md`) — repo- or package-local; not repo-wide policy, principles or subsystem rationale:
   - package-specific invariants
   - build/test/release mechanics
   - pointers to truth
-
-  Not repo-wide policy, principles or subsystem rationale.
 - **Contributor conventions** (e.g. `AGENTS.md`):
   - style
   - testing
@@ -104,14 +100,12 @@ What rots is the specific: paths, identifiers, version pins, counts, UI click-pa
 
 - Prefer the least specific wording that still carries the claim — constraints and intent over enumerated specifics, patterns over exact filenames.
 - Where the data already lives, pull it (an `rg` query, a script call) instead of hand-maintaining prose; what is pulled cannot drift. Reach for this lever often.
-- Cheaply derivable detail: point at the source and state the invariant instead of copying. Sources:
+- Cheaply derivable detail: point at the source and state the invariant instead of copying; when a copy is unavoidable, add a drift guard. Sources:
   - manifests
   - build files
   - workflows
   - scripts
   - tests
-
-  When a copy is unavoidable, add a drift guard.
 - Stale text is a signal about the claim itself — prefer deleting or generalizing it over correcting in place.
 - After substantive code changes, audit the relevant `.md` for stale or restructure-worthy mentions. Phrasing what code *truly is* needs implementer context — a doc-only pass cannot make these calls.
 

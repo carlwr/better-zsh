@@ -22,19 +22,18 @@ Pipeline exit = last stage, so `cargo test | tail` swallows a failed producer. P
 
 - Worked on from multiple agent tools — contributor docs and skills stay tool-agnostic.
 - Operational-notes scope stays local — package-local in package, repo-wide policy in root docs.
-- Public repo. Treat as public:
-  - checked-in docs
-  - skills
-  - handoffs
-  - workflow comments
-
-  Forbidden:
-  - secrets
-  - tokens
-  - recovery codes
-  - session material
-
-  OK when operationally necessary: secret names, high-level auth posture.
+- Public repo:
+  - treat as public:
+    - checked-in docs
+    - skills
+    - handoffs
+    - workflow comments
+  - forbidden:
+    - secrets
+    - tokens
+    - recovery codes
+    - session material
+  - OK when operationally necessary: secret names, high-level auth posture
 - Snapshot/handoff docs declare their staleness posture near the top and stay short. Orientation notes, not specs or runbooks, unless written as one.
 
 ## Research-agent proposals

@@ -26,17 +26,10 @@ Audit and fix maintainer-audience `.md` files against the project's markdown sty
 
 ## Procedure
 
-1. **Enumerate target files.** Capture the union of:
+1. **Enumerate target files — none skipped**, fixtures, scratch notes and the markdown-style file itself included (auditing the rule source against its own rules is not circular). The union of:
    - maintainer-audience docs — run `scripts/list-maintainer-docs`
    - all `AGENTS.md` files in the repo
    - all `.md` files under `skills/`
-
-   Every file in the union is in scope: **no file is skipped**, including:
-   - fixtures
-   - scratch notes
-   - the markdown-style file itself
-
-   Auditing the rule source against its own rules is not circular.
 
 2. **Read style rules.** Locate the markdown-style file — any maintainer-audience `.md` whose `read-when:` references markdown editing — typically `STYLE-MD.md`. Read it in full at the start of each pass. From this point on, the audit relies on those rules; this skill does not restate or summarise them.
 

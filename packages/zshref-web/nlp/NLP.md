@@ -18,8 +18,7 @@ Held-out eval sets: `nlp/data/nlp-corpus.yaml` and the `holdout`-split entries o
   - scores
   - counts
   - paraphrases
-
-  The parent verifies this before proceeding.
+- **The parent verifies** the reply leaks nothing before proceeding.
 - **New domain data** (synonyms, vocab) is authored blind — by a subagent that has not read the eval sets.
 - The `train` split is not holdout; tuning against it is fine. Parity/sanity fixture inputs are not holdout either, but must not themselves be drawn from the eval sets (neither query nor target record).
 - Dashboards/reports may show holdout only as a labelled overfit-watch — never as a tuning target.

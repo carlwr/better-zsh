@@ -341,11 +341,10 @@ Commands:
   - increase code volume
   - are sensitive to framework bumps
   - transfer testing burden from the framework dep to our own code
-
-  Depending on the trade-off, consider:
-  - demoting a **MUST** to a **SHOULD**
-  - adding to a known-policy-violations list (if any)
-  - similar accommodations
+  - depending on the trade-off, consider:
+    - demoting a **MUST** to a **SHOULD**
+    - adding to a known-policy-violations list (if any)
+    - similar accommodations
 
 ## References
 
