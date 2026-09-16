@@ -33,16 +33,14 @@ second line\
 
 ## Comments
 
-Mandatory before editing or reviewing any comment: `STYLE-MD.md` §"Stale-proofing".
+Mandatory before editing or reviewing any comment: `STYLE-MD.md` §"Content: code is the ground truth".
 
 ## Conciseness
 
 - Prefer short identifiers.
 - Collapse repeated patterns into shared helpers.
 - Decide conciseness consciously; a mild clarity tradeoff may still be worth it.
-- Steering metric: `wc -w` (or `wc -c`); never `wc -l`. Line count is a structural shape signal (too big -> split), not a content metric.
-- Counter the line-count-as-conciseness bias actively in any agent-facing prose.
-- For conciseness-only changes: at minimum, do not grow `wc -w`.
+- Metric and line-count bias: `STYLE-MD.md` §"Conciseness".
 
 ## Single source of truth
 
