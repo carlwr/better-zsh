@@ -36,13 +36,18 @@ export function artifactGate(label: string, needs: readonly string[]): string | 
  * the file is (re)written from `generated`; otherwise it must exist and equal
  * `generated` as parsed JSON (formatting is free to differ). `render` is the
  * writer, so a fixture with its own number printing round-trips through it
- * before the comparison.
+ * before the comparison; `expected` maps the generated value to what the
+ * committed one must equal — the identity unless a golden admits a
+ * tolerance (`withinDecimals`).
  */
 export async function assertCommittedJson(
   path: string,
   generated: unknown,
   envVar: string,
-  render: (value: unknown) => string = prettyJson
+  {
+    render = prettyJson,
+    expected = (v) => v
+  }: { render?: (value: unknown) => string; expected?: (generated: unknown) => unknown } = {}
 ): Promise<void> {
   const text = render(generated);
   if (process.env[envVar] === '1') {
@@ -52,7 +57,21 @@ export async function assertCommittedJson(
   if (!existsSync(path)) {
     throw new Error(`${path} is missing — generate it with ${envVar}=1`);
   }
-  expect(JSON.parse(await readFile(path, 'utf8'))).toEqual(JSON.parse(text));
+  expect(JSON.parse(await readFile(path, 'utf8'))).toEqual(expected(JSON.parse(text)));
+}
+
+/**
+ * `value` with every number an `expect.closeTo(number, digits)` matcher:
+ * `toEqual` then admits float noise below half a unit in the `digits`-th
+ * decimal and nothing else — structure and strings stay exact.
+ */
+export function withinDecimals(value: unknown, digits: number): unknown {
+  if (typeof value === 'number') return expect.closeTo(value, digits);
+  if (Array.isArray(value)) return value.map((x) => withinDecimals(x, digits));
+  if (value !== null && typeof value === 'object') {
+    return Object.fromEntries(Object.entries(value).map(([k, x]) => [k, withinDecimals(x, digits)]));
+  }
+  return value;
 }
 
 export async function readData(path: string): Promise<unknown> {

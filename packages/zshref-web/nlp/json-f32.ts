@@ -1,4 +1,4 @@
-// JSON number printing for f32 data (index vectors, fixture scores): the
+// JSON number printing for f32 data (index and fixture vectors): the
 // shortest decimal that reads back to the same f32. `JSON.stringify` prints
 // a number as a double: an f32 read back from JSON is exact in f64, so it
 // would print its full expansion (`0.10000000149011612` for the f32 nearest

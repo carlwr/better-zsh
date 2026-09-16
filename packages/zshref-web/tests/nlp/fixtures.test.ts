@@ -3,7 +3,7 @@
 // needs the staged index and the model, and skips without them.
 
 import { loadCorpus } from '@carlwr/zsh-core';
-import { beforeAll, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 import { createNodeEmbedder } from '../../nlp/embedder-node';
 import {
@@ -12,19 +12,18 @@ import {
   fixtureJson,
   loadSanityFixture,
   renderSanity,
-  type SanityFixture,
   sanityFailures,
   syntheticVec
 } from '../../nlp/fixtures';
 import { loadRulesYaml } from '../../nlp/rules-load';
-import { artifactGate, assertCommittedJson, loadIndexFromDisk, PATHS, STAGED } from '../_helpers';
+import { artifactGate, assertCommittedJson, loadIndexFromDisk, PATHS, STAGED, withinDecimals } from '../_helpers';
 
 const corpus = loadCorpus();
 
 describe('parity fixture', () => {
   it('parity_fixture_matches_committed', async () => {
     const fixture = buildParityFixture(corpus, await loadRulesYaml());
-    await assertCommittedJson(PATHS.parityFixture, fixture, 'UPDATE_PARITY_FIXTURE', fixtureJson);
+    await assertCommittedJson(PATHS.parityFixture, fixture, 'UPDATE_PARITY_FIXTURE', { render: fixtureJson });
   });
 
   it('synthetic_vec_is_deterministic_and_unit', () => {
@@ -39,50 +38,26 @@ describe('parity fixture', () => {
   });
 });
 
+/** Decimals a rebuilt sanity score must agree to: the embedder runtime differs across platforms by ~1e-7. */
+const SANITY_DECIMALS = 5;
+
 describe('sanity fixture', () => {
   const skipReason = artifactGate('sanity fixture build', [STAGED.index, STAGED.model]);
-  let fresh: SanityFixture;
 
-  beforeAll(async () => {
-    if (skipReason) return;
+  // Identities and structure exact, scores within `SANITY_DECIMALS`.
+  it('sanity_fixture_reproduces_committed_within_eps', async (ctx) => {
+    if (skipReason) ctx.skip(skipReason);
     const [index, rules, embedder] = await Promise.all([
       loadIndexFromDisk(),
       loadRulesYaml(),
       createNodeEmbedder()
     ]);
-    fresh = await buildSanityFixture({ corpus, index, rules, embedder });
+    const fresh = await buildSanityFixture({ corpus, index, rules, embedder });
+    await assertCommittedJson(PATHS.sanityFixture, fresh, 'UPDATE_SANITY_FIXTURE', {
+      render: fixtureJson,
+      expected: (v) => withinDecimals(v, SANITY_DECIMALS)
+    });
   }, 180_000);
-
-  // A rebuilt fixture against the committed one: identities exact, scores
-  // within the embedder's drift — the tolerance the exact check below does
-  // not have, so an embedder runtime change shows here as a delta, not as
-  // a diff.
-  it('sanity_fixture_reproduces_committed_within_eps', async (ctx) => {
-    if (skipReason) ctx.skip(skipReason);
-    const committed = await loadSanityFixture();
-    const ids = (s: { category: string; id: string } | undefined) => s && { category: s.category, id: s.id };
-    let maxDelta = 0;
-    expect(fresh.entries.length).toBe(committed.entries.length);
-    for (const [i, got] of fresh.entries.entries()) {
-      const want = committed.entries[i];
-      if (!want) throw new Error('length checked');
-      expect(got.query).toBe(want.query);
-      expect(ids(got.topMatch), got.query).toEqual(ids(want.topMatch));
-      expect(ids(got.runnerUp), got.query).toEqual(ids(want.runnerUp));
-      maxDelta = Math.max(
-        maxDelta,
-        Math.abs(got.topMatch.score - want.topMatch.score),
-        Math.abs((got.runnerUp?.score ?? 0) - (want.runnerUp?.score ?? 0))
-      );
-    }
-    console.log(`[sanity eps] max |Δscore| = ${maxDelta.toExponential(3)}`);
-    expect(maxDelta).toBeLessThanOrEqual(1e-5);
-  });
-
-  it('sanity_fixture_matches_committed', async (ctx) => {
-    if (skipReason) ctx.skip(skipReason);
-    await assertCommittedJson(PATHS.sanityFixture, fresh, 'UPDATE_SANITY_FIXTURE', fixtureJson);
-  });
 
   // Over the committed file, so it always runs: identity as curated, top
   // above the floor, margin over the runner-up. Failure → re-curate the

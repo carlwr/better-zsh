@@ -10964,27 +10964,27 @@
         {
           "category": "option",
           "id": "autocd",
-          "score": 0.14280641
+          "score": 0.14280638462665068
         },
         {
           "category": "redirection",
           "id": ">_word",
-          "score": 0.026711289
+          "score": 0.026711288641104752
         },
         {
           "category": "builtin",
           "id": "unsetopt",
-          "score": 0.02450392
+          "score": 0.02450391807593371
         },
         {
           "category": "builtin",
           "id": "setopt",
-          "score": 0.024073638
+          "score": 0.024073644124292776
         },
         {
           "category": "option",
           "id": "globdots",
-          "score": 0.014224002
+          "score": 0.014223999119595744
         }
       ]
     },
@@ -11380,27 +11380,27 @@
         {
           "category": "builtin",
           "id": "setopt",
-          "score": 0.24288794
+          "score": 0.24288791369857787
         },
         {
           "category": "builtin",
           "id": "unsetopt",
-          "score": 0.087815806
+          "score": 0.08781578660458243
         },
         {
           "category": "redirection",
           "id": ">_word",
-          "score": 0.030727578
+          "score": 0.030727584497370668
         },
         {
           "category": "glob_qualifier",
           "id": ".",
-          "score": 0.023500303
+          "score": 0.023500303938135646
         },
         {
           "category": "redirection",
           "id": ">>_word",
-          "score": 0.011766335
+          "score": 0.011766324134963833
         }
       ]
     },
@@ -11796,27 +11796,27 @@
         {
           "category": "redirection",
           "id": ">>_word",
-          "score": 0.1745457
+          "score": 0.17454568254451303
         },
         {
           "category": "redirection",
           "id": ">_word",
-          "score": 0.14276642
+          "score": 0.1427663961770973
         },
         {
           "category": "option",
           "id": "extendedglob",
-          "score": 0.13088039
+          "score": 0.13088039630166393
         },
         {
           "category": "builtin",
           "id": "setopt",
-          "score": 0.1157206
+          "score": 0.11572059583537511
         },
         {
           "category": "glob_qualifier",
           "id": ".",
-          "score": 0.09659751
+          "score": 0.09659750984497556
         }
       ]
     },
@@ -12212,27 +12212,27 @@
         {
           "category": "glob_qualifier",
           "id": "f",
-          "score": 0.14625426
+          "score": 0.14625427456395085
         },
         {
           "category": "option",
           "id": "autocd",
-          "score": 0.12048587
+          "score": 0.12048583433874373
         },
         {
           "category": "builtin",
           "id": "unsetopt",
-          "score": 0.105371304
+          "score": 0.10537130603055977
         },
         {
           "category": "glob_qualifier",
           "id": ".",
-          "score": 0.09731011
+          "score": 0.09731011380028425
         },
         {
           "category": "option",
           "id": "extendedglob",
-          "score": 0.08839525
+          "score": 0.08839524622009358
         }
       ]
     },
@@ -12632,27 +12632,27 @@
         {
           "category": "redirection",
           "id": ">>_word",
-          "score": 0.1814506
+          "score": 0.1814505869881581
         },
         {
           "category": "builtin",
           "id": "setopt",
-          "score": 0.06496185
+          "score": 0.06496188257318251
         },
         {
           "category": "option",
           "id": "globdots",
-          "score": 0.0641943
+          "score": 0.0641943018211723
         },
         {
           "category": "glob_qualifier",
           "id": "f",
-          "score": 0.05762937
+          "score": 0.05762935531369551
         },
         {
           "category": "option",
           "id": "extendedglob",
-          "score": 0.029092591
+          "score": 0.02909258255874793
         }
       ]
     }

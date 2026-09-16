@@ -1,7 +1,7 @@
 // Parity test: the ranker, fed the miniature index and pre-computed query
 // vectors that parity-fixture.json carries, must reproduce the fixture's
-// ranked scores at f32 precision. No embedder and no staged artifacts, so
-// the contract stays inside ordinary CI.
+// ranked scores exactly. No embedder and no staged artifacts, so the
+// contract stays inside ordinary CI.
 
 import { beforeAll, describe, expect, it } from 'vitest';
 import { loadRulesYaml } from '../nlp/rules-load';
@@ -16,7 +16,7 @@ describe('ranker parity', () => {
     rules = await loadRulesYaml();
   });
 
-  it('reproduces fixture scores at f32 precision', async () => {
+  it('reproduces fixture scores exactly', async () => {
     const fixture = await loadParityFixture();
     // A regeneration that emitted nothing would otherwise loop zero times.
     expect(fixture.entries.length).toBeGreaterThan(0);
@@ -24,8 +24,6 @@ describe('ranker parity', () => {
     for (const entry of fixture.entries) {
       const resolverHit = entry.resolverHit ?? null;
       const ranked = rank(entry.query, entry.queryVec, resolverHit, null, fixture.index, rules);
-      // Both sides are f32 values: the ranker computes in f32, the fixture
-      // schema frounds on load.
       const got = ranked.slice(0, fixture.limit).map((m) => ({
         category: m.rec.category,
         id: m.rec.id,

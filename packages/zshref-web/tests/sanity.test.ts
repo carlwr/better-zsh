@@ -4,14 +4,15 @@
 // hit — must land the curated top-1 of each sanity-fixture.json query.
 //
 // The fixture itself is generated in oracle mode (Node embedder, resolver
-// hit as input) by nlp/fixtures.ts; its exact reproduction and the invariants
-// (floor, margin) are `tests/nlp/fixtures.test.ts`. Here the score check is
-// loose: product mode passes no resolver hit, so a curated query the
-// resolver resolves would score `derivedBoosts(...).resolver` below the
-// fixture (none does today), and the browser pipeline's numerics may drift
-// from the Node embedder's by a little (measured ~0 on these queries). The
-// lookup-map promote of `search.ts` is not replayed: no curated query is a
-// bare canonical form, so it could not fire.
+// hit as input) by nlp/fixtures.ts; its reproduction (within a tolerance)
+// and the invariants (floor, margin) are `tests/nlp/fixtures.test.ts`. Here
+// the score check is loose: product mode passes no resolver hit, so a
+// curated query the resolver resolves would score
+// `derivedBoosts(...).resolver` below the fixture (none does today), and the
+// browser pipeline's numerics may drift from the Node embedder's by a little
+// (measured ~0 on these queries). The lookup-map promote of `search.ts` is
+// not replayed: no curated query is a bare canonical form, so it could not
+// fire.
 //
 // Fast (~1-2s) despite the 127 MB model: Node uses native onnxruntime-node
 // on the local mmap'd model — the "~127 MB download" is the browser's

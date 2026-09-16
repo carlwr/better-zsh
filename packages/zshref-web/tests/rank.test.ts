@@ -26,8 +26,6 @@ import {
 } from '../src/lib/ranker/types';
 import { makeRecordText } from './_fixtures';
 
-const f = Math.fround;
-
 let rules: Rules;
 beforeAll(async () => {
   rules = await loadRulesYaml();
@@ -113,7 +111,7 @@ describe('ranker unit tests', () => {
   it('boosts_are_reliability_ordered', () => {
     const b = rules.tuning.boosts;
     const eff = derivedBoosts(b);
-    expect(f(b.category)).toBeLessThanOrEqual(eff.exactWord);
+    expect(b.category).toBeLessThanOrEqual(eff.exactWord);
     expect(eff.exactWord).toBeLessThanOrEqual(eff.resolver);
   });
 
@@ -257,7 +255,7 @@ describe('rank properties', () => {
     );
   });
 
-  it('score = Σ debug parts, f32 in the ranker’s association order', () => {
+  it('score = weighted semantic views + Σ boosts', () => {
     // The rarity penalty is the one score term outside `debug`; off, so the
     // parts account for the whole score whatever the committed knob says.
     const noPenalty = withTuning(rules, (t) => ({ ...t, penalties: { category_rarity_max: 0 } }));
@@ -266,13 +264,8 @@ describe('rank properties', () => {
         for (const m of rank(r.query, r.queryVec, r.hit, null, r.index, noPenalty)) {
           const [bw, sw, ew] = semanticWeights(countWords(m.rec.body), noPenalty.tuning.semantic_weights);
           const { semantic, boosts } = m.debug;
-          let s = 0;
-          for (const x of [f(bw * semantic.body), f(sw * semantic.structured), f(ew * semantic.expanded)]) {
-            s = f(s + x);
-          }
-          let score = 0;
-          for (const x of [s, boosts.category, boosts.resolver, boosts.lexical]) score = f(score + x);
-          expect(m.score).toBe(score);
+          const semanticScore = bw * semantic.body + sw * semantic.structured + ew * semantic.expanded;
+          expect(m.score).toBeCloseTo(semanticScore + boosts.category + boosts.resolver + boosts.lexical, 12);
         }
       }),
       INDEX_RUNS
@@ -297,24 +290,23 @@ describe('rank properties', () => {
 
 const unit = fc.double({ min: 0, max: 1, noNaN: true });
 
-// f32 values with structured ≤ 1 − body exactly, as the range check admits.
+// structured ≤ 1 − body, as the range check admits.
 const arbSemanticWeights: fc.Arbitrary<SemanticWeights> = fc
   .record({
-    body: unit.map(f),
+    body: unit,
     frac: unit,
-    strength: unit.map(f),
-    length_scale: fc.double({ min: 1, max: 100, noNaN: true }).map(f)
+    strength: unit,
+    length_scale: fc.double({ min: 1, max: 100, noNaN: true })
   })
   .map(({ body, frac, strength, length_scale }) => ({
     body,
-    structured: f(f(1 - body) * frac),
+    structured: (1 - body) * frac,
     short_body: { strength, length_scale }
   }));
 
 const arbBodyWords = fc.nat({ max: 200 });
 
-// Boost weights on a 1e-3 grid: an increment that small is still many f32
-// ulps at these magnitudes, so "> 0" means "strictly larger" after rounding.
+// Boost weights on a 1e-3 grid.
 const grid = (max: number): fc.Arbitrary<number> => fc.integer({ min: 0, max: max * 1000 }).map((i) => i / 1000);
 const arbBoostWeights: fc.Arbitrary<BoostWeights> = fc.record({
   category: grid(0.3),
@@ -324,7 +316,7 @@ const arbBoostWeights: fc.Arbitrary<BoostWeights> = fc.record({
 });
 
 describe('semantic weight properties', () => {
-  it('lie on the simplex: non-negative, summing to 1 within f32 eps', () => {
+  it('lie on the simplex: non-negative, summing to 1 within eps', () => {
     fc.assert(
       fc.property(arbSemanticWeights, arbBodyWords, (w, n) => {
         const [b, s, e] = semanticWeights(n, w);
@@ -344,7 +336,7 @@ describe('semantic weight properties', () => {
         // strength moves body → expanded, capped by body.
         expect(semanticWeights(Math.ceil(w.short_body.length_scale), w)).toEqual(base);
         const shift = Math.min(w.short_body.strength, w.body);
-        expect(semanticWeights(0, w)).toEqual([f(w.body - shift), w.structured, f(base[2] + shift)]);
+        expect(semanticWeights(0, w)).toEqual([w.body - shift, w.structured, base[2] + shift]);
         const [b0, s0, e0] = semanticWeights(n, w);
         const [b1, s1, e1] = semanticWeights(n + 1, w);
         expect(b1).toBeGreaterThanOrEqual(b0);
@@ -363,7 +355,7 @@ describe('boost properties', () => {
         expect(overlapBoost(0, b)).toBe(0);
         const at = overlapBoost(n, b);
         expect(at).toBeGreaterThanOrEqual(0);
-        expect(at).toBeLessThanOrEqual(f(b.word_overlap.scale));
+        expect(at).toBeLessThanOrEqual(b.word_overlap.scale);
         expect(overlapBoost(n + 1, b)).toBeGreaterThanOrEqual(at);
         expect(Math.abs(overlapBoost(b.word_overlap.half_sat, b) - b.word_overlap.scale / 2)).toBeLessThanOrEqual(1e-6);
       })
@@ -373,12 +365,10 @@ describe('boost properties', () => {
   it('effective boosts are reliability-ordered, strictly for a positive increment', () => {
     fc.assert(
       fc.property(arbBoostWeights, (b) => {
-        // The category boost lands on a score as f32, like the derived two.
-        const category = f(b.category);
         const eff = derivedBoosts(b);
-        expect(eff.exactWord).toBeGreaterThanOrEqual(category);
+        expect(eff.exactWord).toBeGreaterThanOrEqual(b.category);
         expect(eff.resolver).toBeGreaterThanOrEqual(eff.exactWord);
-        if (b.exact_word_increment > 0) expect(eff.exactWord).toBeGreaterThan(category);
+        if (b.exact_word_increment > 0) expect(eff.exactWord).toBeGreaterThan(b.category);
         if (b.resolver_increment > 0) expect(eff.resolver).toBeGreaterThan(eff.exactWord);
       })
     );

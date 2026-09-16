@@ -71,7 +71,7 @@ Metric — the scored unit is each (expectedSet item, query) pair; an entry just
 
 Scores, QA averages, and #1-violation counts are **never** committed — not in a file, comment, constant, or doc. A committed number drifts with the model/corpus into a false invariant, and committing holdout figures breaks the isolation rules above. Judge a change by re-running both evals before and after the edit and comparing — never a recalled or committed value.
 
-Exempt: the lookup/parity/sanity fixtures, asserted by equality. Their numbers pin *behaviour*, not *quality* — determinism is the point of committing them.
+Exempt: the lookup/parity/sanity fixtures — asserted by equality, the sanity scores within a tolerance. Their numbers pin *behaviour*, not *quality* — determinism is the point of committing them.
 
 ## Synonyms: restraint + anti-swamp
 
@@ -109,10 +109,8 @@ Recorded during the move from the Rust CLI, deferred past its parity gates.
 
 _no re-embed, no sweep:_
 
-- the `nlp` CI job fails on GitHub since the reorg landed there (first run: https://github.com/carlwr/better-zsh/actions/runs/35072677006): `tests/nlp/fixtures.test.ts` `sanity_fixture_matches_committed` — the committed sanity fixture was generated on macOS arm64, the Linux x64 runner's scores differ by ~2e-7 (the epsilon test beside it passes); cross-platform float noise meets the equality assertion §"No committed score snapshots" exempts. Decide: round the committed scores, or assert identity + epsilon only
 - drop the resolver boost: the `resolver_increment` knob, the `boosts.resolver` debug part, the fixtures' `resolverHit` field; product mode becomes the reporters' default (one identifier per script and per report test)
 - with it, retire what only kept reports comparable to the retired CLI's captures: the `batch --debug` response shape and 6-decimal rounding of `nlp/oracle.ts`, the Rust-format names and rules of `nlp/eval/format.ts`
-- remove the `Math.fround` emulation from `rank.ts` (`Float32Array` for vectors stays); regenerates the parity and sanity goldens
 
 _re-embed pair (one index rebuild for both):_
 

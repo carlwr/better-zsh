@@ -51,8 +51,7 @@ export type VectorIndex = z.infer<typeof VectorIndexSchema>;
 // loads through the same shapes; the editor schemas are generated from them.
 // Strict: an unknown key is an error. Field order = emitted key order.
 
-const f = Math.fround;
-const f32 = z.number();
+const float = z.number();
 const usize = z.number().int().nonnegative();
 
 /** Ceiling on any single effective boost/penalty, in semantic-cosine units.
@@ -61,32 +60,32 @@ export const MAX_SCORE_TERM = 0.5;
 
 const TuningShape = z.strictObject({
   semantic_weights: z.strictObject({
-    body: f32.describe(
+    body: float.describe(
       'Mix over the embedding views. Only body and structured are stored; expanded is derived as 1 − body − structured (on the simplex by construction).'
     ),
-    structured: f32,
+    structured: float,
     short_body: z
       .strictObject({
-        strength: f32.describe('Max shift, at body length 0.'),
-        length_scale: f32.describe('Body length at/above which the shift is zero.')
+        strength: float.describe('Max shift, at body length 0.'),
+        length_scale: float.describe('Body length at/above which the shift is zero.')
       })
       .describe(
         'Sparse-body deformation: shifts mass body → expanded as a body shortens, so short records lean on structured/expanded text.'
       )
   }),
   boosts: z.strictObject({
-    category: f32.describe("Weakest signal: the query names the record's category."),
-    exact_word_increment: f32.describe(
+    category: float.describe("Weakest signal: the query names the record's category."),
+    exact_word_increment: float.describe(
       'Non-negative increment for a query word equal to id/display (exact_word = category + this).'
     ),
-    resolver_increment: f32.describe(
+    resolver_increment: float.describe(
       'Non-negative increment for a corpus-aware resolver hit (resolver = exact_word + this); the increments keep category ≤ exact_word ≤ resolver by construction.'
     ),
     word_overlap: z
-      .strictObject({ scale: f32, half_sat: f32 })
+      .strictObject({ scale: float, half_sat: float })
       .describe('Smooth saturating overlap boost: asymptote `scale`, half of it at `half_sat`.')
   }),
-  penalties: z.strictObject({ category_rarity_max: f32 }),
+  penalties: z.strictObject({ category_rarity_max: float }),
   lexical: z.strictObject({
     min_discriminating_word_len: usize,
     min_significant_word_len: usize
@@ -94,11 +93,10 @@ const TuningShape = z.strictObject({
 });
 export type Tuning = z.infer<typeof TuningShape>;
 
-/** Effective exact-word and resolver boosts, chained from `category` by the
- * increments; f32, as the ranker applies them. */
+/** Effective exact-word and resolver boosts, chained from `category` by the increments. */
 export function derivedBoosts(b: Tuning['boosts']): { exactWord: number; resolver: number } {
-  const exactWord = f(f(b.category) + f(b.exact_word_increment));
-  return { exactWord, resolver: f(exactWord + f(b.resolver_increment)) };
+  const exactWord = b.category + b.exact_word_increment;
+  return { exactWord, resolver: exactWord + b.resolver_increment };
 }
 
 interface Violation {
@@ -106,15 +104,14 @@ interface Violation {
   message: string;
 }
 
-// Range checks in a fixed order; the first violation is the error. Values
-// compare as f32, as the ranker reads them.
+// Range checks in a fixed order; the first violation is the error.
 function tuningViolation(t: Tuning): Violation | null {
   const sw = t.semantic_weights;
   const b = t.boosts;
   if (sw.body < 0 || sw.structured < 0) {
     return { path: ['semantic_weights'], message: 'body/structured must be non-negative' };
   }
-  if (f(f(sw.body) + f(sw.structured)) > f(1 + 1e-4)) {
+  if (sw.body + sw.structured > 1 + 1e-4) {
     return {
       path: ['semantic_weights'],
       message: 'body + structured must be ≤ 1 (expanded is derived as 1 − body − structured)'
@@ -154,7 +151,7 @@ function tuningViolation(t: Tuning): Violation | null {
     ]
   ];
   for (const [name, path, value] of bounded) {
-    if (f(value) > MAX_SCORE_TERM) {
+    if (value > MAX_SCORE_TERM) {
       return {
         path,
         message: `${name}: ${value} exceeds MAX_SCORE_TERM ${MAX_SCORE_TERM} (a term that large would swamp the semantic signal)`

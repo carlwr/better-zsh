@@ -4,19 +4,21 @@
 // - parity-fixture.json — a closed arithmetic contract: it ships the
 //   miniature index it was ranked against alongside the pre-computed
 //   `queryVec` + `resolverHit` per query, so `tests/parity.test.ts` checks
-//   the ranker's f32 arithmetic against its own past with neither an
-//   embedder nor the full index. Curated for branch coverage (resolver hit,
-//   exact-word + category boost, short-body weighting, lexical overlap).
+//   the ranker's arithmetic against its own past with neither an embedder
+//   nor the full index — exactly: the ranker is deterministic over its
+//   inputs. Curated for branch coverage (resolver hit, exact-word + category
+//   boost, short-body weighting, lexical overlap).
 //
 // - sanity-fixture.json — hand-curated "clear winner" queries through the
 //   full pipeline (embedder + resolver hit + ranker); `sanityFailures`
 //   enforces the invariants (top identity as curated, top score above the
 //   floor, comfortable margin over the runner-up). Pins full-stack behaviour
-//   at a coarser resolution than the parity fixture.
+//   at a coarser resolution than the parity fixture: its scores carry the
+//   embedder runtime's platform noise, so they are asserted within a
+//   tolerance, never exactly.
 //
-// Every number in either file is an f32 value, printed as its shortest
-// decimal (`fixtureJson`); the schemas `Math.fround` on load so a parsed
-// score is the f32 that was printed, not the double nearest its decimal.
+// Vectors print as the shortest decimal per f32 component, scores as the
+// doubles they are (`fixtureJson`).
 
 import { readFile } from 'node:fs/promises';
 import type { DocCorpus } from '@carlwr/zsh-core';
@@ -37,11 +39,10 @@ import { corpusTexts, type IndexGroups } from './retrieval-text';
 
 // --- shapes ---------------------------------------------------------------
 
-const f32 = z.number().transform(Math.fround);
 const f32Vec = z.array(z.number()).transform((a) => new Float32Array(a));
 
 const IdentitySchema = z.object({ category: z.string(), id: z.string() });
-const ScoredSchema = IdentitySchema.extend({ score: f32 });
+const ScoredSchema = IdentitySchema.extend({ score: z.number() });
 export type Scored = z.infer<typeof ScoredSchema>;
 
 export const PARITY_VERSION = 3;
@@ -65,12 +66,12 @@ export const ParityFixtureSchema = z.object({
 export type ParityFixture = z.infer<typeof ParityFixtureSchema>;
 
 export const SANITY_VERSION = 1;
-export const SANITY_FLOOR = Math.fround(0.7);
-export const SANITY_MARGIN = Math.fround(0.03);
+export const SANITY_FLOOR = 0.7;
+export const SANITY_MARGIN = 0.03;
 
 export const SanityFixtureSchema = z.object({
   version: z.literal(SANITY_VERSION),
-  invariants: z.object({ absoluteFloor: f32, minMargin: f32 }),
+  invariants: z.object({ absoluteFloor: z.number(), minMargin: z.number() }),
   entries: z.array(
     z.object({
       query: z.string(),
@@ -271,8 +272,9 @@ export async function buildSanityFixture({ corpus, index, rules, embedder }: San
   };
 }
 
-/** f32, as the fixture stores scores. */
-const margin = (top: Scored, runner: Scored): number => Math.fround(top.score - runner.score);
+const margin = (top: Scored, runner: Scored): number => top.score - runner.score;
+
+const fixed4 = (x: number): string => rustFixed(x, 4);
 
 /** One message per violated invariant (identity drift / floor / margin). */
 function entryFailures(e: SanityEntry): string[] {
@@ -288,13 +290,13 @@ function entryFailures(e: SanityEntry): string[] {
     );
   }
   if (top.score < SANITY_FLOOR) {
-    out.push(`${label}: top score ${f32Shortest(top.score)} below absoluteFloor ${f32Shortest(SANITY_FLOOR)}`);
+    out.push(`${label}: top score ${fixed4(top.score)} below absoluteFloor ${SANITY_FLOOR}`);
   }
   if (e.runnerUp) {
     const m = margin(top, e.runnerUp);
     if (m < SANITY_MARGIN) {
       out.push(
-        `${label}: margin ${f32Shortest(m)} below minMargin ${f32Shortest(SANITY_MARGIN)} (top ${f32Shortest(top.score)}, runnerUp ${f32Shortest(e.runnerUp.score)})`
+        `${label}: margin ${fixed4(m)} below minMargin ${SANITY_MARGIN} (top ${fixed4(top.score)}, runnerUp ${fixed4(e.runnerUp.score)})`
       );
     }
   }
@@ -315,34 +317,38 @@ export function renderSanity(fixture: SanityFixture): string {
   const worstFloor = worst(entries.map((e) => e.topMatch.score));
   const worstMargin = worst(entries.flatMap((e) => (e.runnerUp ? [margin(e.topMatch, e.runnerUp)] : [])));
   const detail = fails.length === 0 ? '' : `\n  ${fails.join('\n  ')}`;
-  return `[sanity] ${ok}/${entries.length} hold  floor≥${f32Shortest(SANITY_FLOOR)} (worst ${worstFloor})  margin≥${f32Shortest(SANITY_MARGIN)} (worst ${worstMargin})${detail}\n`;
+  return `[sanity] ${ok}/${entries.length} hold  floor≥${SANITY_FLOOR} (worst ${worstFloor})  margin≥${SANITY_MARGIN} (worst ${worstMargin})${detail}\n`;
 }
 
 // --- JSON ------------------------------------------------------------------
 
 /**
  * A fixture as committed: pretty (2-space, as `JSON.stringify` lays it out),
- * every number the shortest decimal for its f32 (a non-f32 number is a
- * generator bug and throws), vectors as plain arrays, `undefined` fields
- * omitted, trailing newline.
+ * a `Float32Array` as a plain array of the shortest decimal per f32
+ * component, any other number as `JSON.stringify` prints it (a non-finite
+ * one is a generator bug and throws), `undefined` fields omitted, trailing
+ * newline.
  */
 export function fixtureJson(value: unknown): string {
   return `${pretty(value, '')}\n`;
 }
 
 function pretty(v: unknown, indent: string): string {
-  if (typeof v === 'number') return f32Shortest(v);
+  if (typeof v === 'number') {
+    if (!Number.isFinite(v)) throw new Error(`fixtureJson: ${v} is not a finite number`);
+    return JSON.stringify(v);
+  }
   if (typeof v === 'string' || typeof v === 'boolean' || v === null) return JSON.stringify(v);
   const inner = `${indent}  `;
-  if (Array.isArray(v) || v instanceof Float32Array) {
-    const items = Array.from(v as ArrayLike<unknown>, (x) => `${inner}${pretty(x, inner)}`);
-    return items.length === 0 ? '[]' : `[\n${items.join(',\n')}\n${indent}]`;
-  }
+  const block = (open: string, items: string[], close: string): string =>
+    items.length === 0 ? open + close : `${open}\n${items.map((x) => inner + x).join(',\n')}\n${indent}${close}`;
+  if (v instanceof Float32Array) return block('[', Array.from(v, f32Shortest), ']');
+  if (Array.isArray(v)) return block('[', v.map((x) => pretty(x, inner)), ']');
   if (typeof v === 'object') {
     const fields = Object.entries(v)
       .filter(([, x]) => x !== undefined)
-      .map(([k, x]) => `${inner}${JSON.stringify(k)}: ${pretty(x, inner)}`);
-    return fields.length === 0 ? '{}' : `{\n${fields.join(',\n')}\n${indent}}`;
+      .map(([k, x]) => `${JSON.stringify(k)}: ${pretty(x, inner)}`);
+    return block('{', fields, '}');
   }
   throw new Error(`fixtureJson: cannot serialize a ${typeof v}`);
 }

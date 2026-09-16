@@ -1,10 +1,9 @@
 // Pure ranker math. Inputs are pre-computed (query string, query vector,
 // optional resolver hit) so this module has no embedder / corpus dependency.
 //
-// f32 math: every floating-point op funnels through Math.fround, and vector
-// data flows through Float32Array, so a score is a function of the f32
-// values the index carries and the parity fixture (a golden of this
-// ranker's own past output) pins the arithmetic byte for byte.
+// Vectors are f32 data (`Float32Array`); the arithmetic is plain doubles.
+// Deterministic — the summation orders are fixed — so the parity fixture (a
+// golden of this ranker's own past output) pins every score exactly.
 
 import type { Rules } from './rules';
 import {
@@ -19,32 +18,6 @@ import {
   type VectorIndex
 } from './types';
 
-const f = Math.fround;
-
-function fAdd(...xs: number[]): number {
-  // Left fold from 0: the f32 sum depends on the order, and the parity
-  // fixture pins this one.
-  let s = 0;
-  for (const x of xs) s = f(s + x);
-  return s;
-}
-
-function fMul(a: number, b: number): number {
-  return f(a * b);
-}
-
-function fSub(a: number, b: number): number {
-  return f(a - b);
-}
-
-function fDiv(a: number, b: number): number {
-  return f(a / b);
-}
-
-function fLn(x: number): number {
-  return f(Math.log(x));
-}
-
 function clamp01(x: number): number {
   if (x < 0) return 0;
   if (x > 1) return 1;
@@ -56,9 +29,7 @@ function dot(a: ArrayLike<number>, b: ArrayLike<number>): number {
   // fallbacks never trigger (i stays in range).
   let s = 0;
   const n = Math.min(a.length, b.length);
-  for (let i = 0; i < n; i++) {
-    s = f(s + f((a[i] ?? 0) * (b[i] ?? 0)));
-  }
+  for (let i = 0; i < n; i++) s += (a[i] ?? 0) * (b[i] ?? 0);
   return s;
 }
 
@@ -106,13 +77,8 @@ function scoreRecord(
 
   const [bodyW, structW, expW] = semanticWeights(lex.bodyWords, rules.tuning.semantic_weights);
 
-  const semanticScore = fAdd(
-    fMul(bodyW, semantic.body),
-    fMul(structW, semantic.structured),
-    fMul(expW, semantic.expanded)
-  );
-
-  const score = fSub(fAdd(semanticScore, b.category, b.resolver, b.lexical), categoryPenalty);
+  const semanticScore = bodyW * semantic.body + structW * semantic.structured + expW * semantic.expanded;
+  const score = semanticScore + b.category + b.resolver + b.lexical - categoryPenalty;
 
   return { rec: rec.text, score, debug: { semantic, boosts: b } };
 }
@@ -131,18 +97,17 @@ export function semanticWeights(
   bodyWords: number,
   sw: Tuning['semantic_weights']
 ): [number, number, number] {
-  const body = f(sw.body);
-  const structured = f(sw.structured);
-  const expanded = fSub(fSub(1, body), structured);
-  const ramp = Math.max(fSub(1, fDiv(f(bodyWords), f(sw.short_body.length_scale))), 0);
-  const shift = Math.min(Math.max(fMul(f(sw.short_body.strength), ramp), 0), body);
-  return [fSub(body, shift), structured, fAdd(expanded, shift)];
+  const { body, structured } = sw;
+  const expanded = 1 - body - structured;
+  const ramp = Math.max(1 - bodyWords / sw.short_body.length_scale, 0);
+  const shift = Math.min(Math.max(sw.short_body.strength * ramp, 0), body);
+  return [body - shift, structured, expanded + shift];
 }
 
 function categoryPenalty(recordCount: number, maxRecords: number, rules: Rules): number {
   if (maxRecords <= 1) return 0;
-  const rarity = f(1 - f(fLn(Math.max(recordCount, 1)) / fLn(maxRecords)));
-  return fMul(f(rules.tuning.penalties.category_rarity_max), clamp01(rarity));
+  const rarity = 1 - Math.log(Math.max(recordCount, 1)) / Math.log(maxRecords);
+  return rules.tuning.penalties.category_rarity_max * clamp01(rarity);
 }
 
 function categoryPenalties(index: VectorIndex, rules: Rules): Map<string, number> {
@@ -234,7 +199,7 @@ function boosts(
 ): Boosts {
   const b = rules.tuning.boosts;
   const eff = derivedBoosts(b);
-  const category = terms.q.includes(lex.categoryWord) || terms.q.includes(lex.labelWord) ? f(b.category) : 0;
+  const category = terms.q.includes(lex.categoryWord) || terms.q.includes(lex.labelWord) ? b.category : 0;
   const resolver =
     resolverHit && resolverHit.category === rec.category && resolverHit.id === rec.id
       ? eff.resolver
@@ -246,7 +211,7 @@ function boosts(
   // the symbolic head of its display — the punctuation analogue of wordExact.
   const symbolExact = terms.symbols.some((t) => t === lex.id || lex.symbolHead === t);
   const exactWord = wordExact || symbolExact ? eff.exactWord : 0;
-  const lexical = f(exactWord + overlapBoost(wordOverlap(lex.haystack, terms.words), b));
+  const lexical = exactWord + overlapBoost(wordOverlap(lex.haystack, terms.words), b);
   return {
     category,
     resolver,
@@ -260,9 +225,8 @@ function boosts(
  * `half_sat`.
  */
 export function overlapBoost(n: number, b: Tuning['boosts']): number {
-  const nf = f(n);
   const wo = b.word_overlap;
-  return fDiv(fMul(f(wo.scale), nf), fAdd(nf, f(wo.half_sat)));
+  return (wo.scale * n) / (n + wo.half_sat);
 }
 
 function isDiscriminating(word: string, rules: Rules): boolean {
