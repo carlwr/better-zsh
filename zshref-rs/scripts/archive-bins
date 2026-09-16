@@ -15,9 +15,9 @@ bindir=$crate/target/$target/release
 ext=
 case $target in *windows*) ext=.exe ;; esac
 
-# bin names from the manifest, not hand-listed
+# bin names from the manifest, not hand-listed; jq on Windows emits CRLF
 bins=$(cargo metadata --no-deps --format-version 1 --manifest-path "$crate/Cargo.toml" \
-       | jq -r '.packages[0].targets[] | select(.kind | index("bin")) | .name')
+       | jq -r '.packages[0].targets[] | select(.kind | index("bin")) | .name' | tr -d '\r')
 
 stage=$(mktemp -d)
 trap 'rm -rf "$stage"' EXIT
