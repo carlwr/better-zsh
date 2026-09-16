@@ -16,7 +16,7 @@ import type { QaCorpus, QaEntry } from "./qa-corpus"
 
 export type HardCheckTemplate = (display: string) => string
 
-// The harness's `formats`, in its order (= the FAIL-line order). A templated
+// The templated categories, in report order. A templated
 // question uses the record's display form (what a user types: AUTO_CD, not
 // autocd) and the canonical category word, so the check tests category+id
 // retrieval, not phrasing. Left out: the sig/template categories (a bare
@@ -64,7 +64,7 @@ export interface CatStat {
 
 export interface HardCheckResult {
   perCat: Partial<Record<DocCategory, CatStat>>
-  /** The harness's FAIL lines, in check order; corpus-derived, printable. */
+  /** The FAIL lines, in check order; corpus-derived, printable. */
   details: string[]
   passed: number
   total: number
@@ -72,7 +72,7 @@ export interface HardCheckResult {
   hardScore: number
 }
 
-/** Per-category pass rates, sorted by category as the harness prints them. */
+/** Per-category pass rates, sorted by category. */
 export function hardCheckRates(
   perCat: HardCheckResult["perCat"],
 ): { category: string; pct: number; passed: number; total: number }[] {
@@ -199,7 +199,7 @@ export function aggregateScores(scores: readonly EntryScore[]): QaScore {
   }
 }
 
-/** One search per entry — the harness's request: `limit`, and `category` when set. */
+/** One search per entry: its `limit`, and `category` when set. */
 export async function scoreQaCorpus(
   corpus: QaCorpus,
   assets: EvalAssets,
@@ -227,7 +227,7 @@ export interface QaSummary {
   hardPercent: number
 }
 
-/** The `SUMMARY_JSON` payload: what the tune dashboard reads. */
+/** The report's machine-readable summary (`SUMMARY_JSON`); the dashboard's QA row. */
 export function summaryJson(hard: HardCheckResult, scored: QaScore): QaSummary {
   return {
     avgPercent: +(scored.avgScore * 100).toFixed(1),
@@ -235,7 +235,7 @@ export function summaryJson(hard: HardCheckResult, scored: QaScore): QaSummary {
   }
 }
 
-/** The harness's stdout minus its per-entry section: hard checks, then the summary. */
+/** The report: hard checks, then the summary; no per-entry section (NLP.md). */
 export function renderQa(hard: HardCheckResult, scored: QaScore): string {
   const lines = [
     "=== Hard checks (per-category self-retrieval) ===",

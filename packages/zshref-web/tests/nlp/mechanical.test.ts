@@ -40,7 +40,7 @@ const corpus = loadCorpus()
 const MECHANICAL_SMOKE_LIMIT = 16
 
 describe("nl questions", () => {
-  it("nl_question_templates_seven_categories", () => {
+  it("every templated category yields a question of its display form", () => {
     for (const [cat, display] of [
       ["builtin", "fc"],
       ["special_param", "PATH"],

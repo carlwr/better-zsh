@@ -153,11 +153,7 @@ export function hayHasWord(hay: string, needle: string): boolean {
   return hay.split(/[^0-9A-Za-z]/).some(w => asciiLower(w) === lower)
 }
 
-/**
- * A field value on one line, or undefined when there is nothing to say.
- * Numbers print as serde does; the corpus holds small integers only, where
- * `String(n)` and `Number::to_string` agree.
- */
+/** A field value on one line, or undefined when there is nothing to say. */
 export function compactValue(value: JsonValue): string | undefined {
   if (value === null) return undefined
   if (typeof value === "string") return nonempty(normalizeWs(value))

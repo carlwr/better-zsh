@@ -48,7 +48,7 @@ export const combinedTotal = (
 export const TARGET_DEPTH = 1
 
 // The QA hard-check questions plus a `$`-prefixed `special_param` form and a
-// `zle_widget` form the harness lacks. The `$NAME` form is what users
+// `zle_widget` form the hard checks lack. The `$NAME` form is what users
 // actually type; neither the resolver (it only strips `IDENT[subscript]`)
 // nor the lookup map (bare names) reaches it, so unlike a bare form it is
 // never hard-promoted — genuine ranker signal for the `$NAME`-in-a-sentence
@@ -154,7 +154,6 @@ function sliceStats(graded: readonly GradedItem[]): SliceStat[] {
   })
 }
 
-/** Rank and grade the pre-built entries against an embedded query cache, plus the diagnostics. */
 /** The mechanical eval of already-graded items from `nEntries` entries. */
 export function evalMechanicalGraded(
   graded: readonly GradedItem[],
@@ -167,6 +166,7 @@ export function evalMechanicalGraded(
   }
 }
 
+/** Rank and grade the pre-built entries against an embedded query cache, plus the diagnostics. */
 export function evalMechanicalCached(
   entries: readonly SentenceEntry[],
   vecs: ReadonlyMap<string, Float32Array>,

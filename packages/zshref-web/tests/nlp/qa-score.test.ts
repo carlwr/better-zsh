@@ -1,10 +1,11 @@
-// The QA scoring on synthetic inputs (each case pins one rule of the
-// harness); with the staged index and model, a capped slice of the hard
+// The QA scoring on synthetic inputs (each case pins one scoring rule);
+// with the staged index and model, a capped slice of the hard
 // checks and one synthetic entry through the whole pipeline. The held-out
 // corpus is loaded (that is the loader's job) and never printed.
 
 import { loadCorpus } from "@carlwr/zsh-core"
 import { docCategories } from "@carlwr/zsh-core/taxonomy"
+import fc from "fast-check"
 import { beforeAll, describe, expect, it } from "vitest"
 import type { z } from "zod"
 
@@ -156,6 +157,60 @@ describe("scoreEntry", () => {
       limit: 20,
       weight: 1,
     })
+  })
+})
+
+describe("scoreEntry properties", () => {
+  const arbHit = fc.record({
+    category: fc.constantFrom("option", "builtin"),
+    id: fc.constantFrom("a", "b", "c"),
+  })
+  const arbEntry = fc
+    .record({
+      limit: fc.integer({ min: 1, max: 4 }),
+      topN: fc.option(fc.integer({ min: 1, max: 4 }), { nil: undefined }),
+      weight: fc.double({ min: 0, max: 3, noNaN: true }),
+      expected: fc.array(
+        arbHit.chain(h =>
+          fc
+            .double({ min: -3, max: 3, noNaN: true })
+            .map(score => ({ ...h, score })),
+        ),
+        { minLength: 1, maxLength: 5 },
+      ),
+    })
+    .map(e => entry({ ...q, ...e }))
+
+  it("the score lies within ±the expected weight; each positive item counts once; a warning per item missed", () => {
+    fc.assert(
+      fc.property(
+        arbEntry,
+        fc.array(arbHit, { maxLength: 6 }),
+        (e, matches) => {
+          const s = scoreEntry(e, matches)
+          expect(s.entryExpectedWeight).toBeCloseTo(
+            e.expected.reduce((a, x) => a + Math.abs(x.score) * e.weight, 0),
+            9,
+          )
+          expect(s.entryScore).toBeGreaterThanOrEqual(
+            -s.entryExpectedWeight - 1e-9,
+          )
+          expect(s.entryScore).toBeLessThanOrEqual(s.entryExpectedWeight + 1e-9)
+          const window = matches.slice(0, e.topN ?? e.limit)
+          const present = (x: { category: string; id: string }) =>
+            window.some(m => m.category === x.category && m.id === x.id)
+          const positives = e.expected.filter(x => x.score >= 0)
+          expect(s.numMatched).toBe(
+            new Set(positives.filter(present).map(x => `${x.category}/${x.id}`))
+              .size,
+          )
+          expect(s.warnings).toBe(
+            e.expected.filter(x => (x.score < 0 ? present(x) : !present(x)))
+              .length,
+          )
+        },
+      ),
+    )
   })
 })
 

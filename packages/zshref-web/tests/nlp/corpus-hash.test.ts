@@ -65,7 +65,7 @@ describe("hashInputs", () => {
     for (const c of changed) expect(hashInputs(c)).not.toBe(h)
   })
 
-  it("is field-delimited: shifting text between fields changes the hash", () => {
+  it("keys its fields: shifting text between them changes the hash", () => {
     const a = hashInputs({ version: "ab", tag: "c", categories: [] })
     const b = hashInputs({ version: "a", tag: "bc", categories: [] })
     expect(a).not.toBe(b)

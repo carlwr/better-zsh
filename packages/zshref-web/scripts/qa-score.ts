@@ -1,4 +1,4 @@
-// The QA harness scoring as a report. Prints the hard-check section and the
+// The QA scoring as a report. Prints the hard-check section and the
 // summary lines only — the QA corpus is a held-out set (NLP.md), so no
 // per-entry line ever prints.
 

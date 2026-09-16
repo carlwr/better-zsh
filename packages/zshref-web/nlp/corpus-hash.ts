@@ -25,21 +25,6 @@ export function corpusHash(corpus: DocCorpus): string {
   })
 }
 
-/** SHA-256 hex over NUL-terminated fields; record lengths are UTF-8 byte counts. */
-export function hashInputs({ version, tag, categories }: HashInputs): string {
-  const h = createHash("sha256")
-  const field = (s: string) => h.update(s, "utf8").update(NUL)
-  field(version)
-  field(tag)
-  for (const { name, records } of categories) {
-    field(name)
-    for (const rec of records) {
-      const json = JSON.stringify(rec)
-      field(String(Buffer.byteLength(json, "utf8")))
-      field(json)
-    }
-  }
-  return h.digest("hex")
-}
-
-const NUL = Buffer.from([0])
+/** SHA-256 hex of the inputs' JSON. */
+export const hashInputs = (inputs: HashInputs): string =>
+  createHash("sha256").update(JSON.stringify(inputs), "utf8").digest("hex")
