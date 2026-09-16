@@ -13,14 +13,15 @@
  */
 export function f32Shortest(v: number): string {
   if (!Number.isFinite(v) || Math.fround(v) !== v) {
-    throw new Error(`f32Shortest: ${v} is not a finite f32 value`);
+    throw new Error(`f32Shortest: ${v} is not a finite f32 value`)
   }
   for (let p = 1; p <= 9; p++) {
-    const s = v.toPrecision(p);
-    if (Math.fround(Number(s)) === v) return s;
+    const s = v.toPrecision(p)
+    if (Math.fround(Number(s)) === v) return s
   }
-  throw new Error(`f32Shortest: no 9-digit decimal round-trips ${v}`);
+  throw new Error(`f32Shortest: no 9-digit decimal round-trips ${v}`)
 }
 
 /** A vector as a JSON array text of `f32Shortest` components. */
-export const f32VecJson = (v: Float32Array): string => `[${Array.from(v, f32Shortest).join(',')}]`;
+export const f32VecJson = (v: Float32Array): string =>
+  `[${Array.from(v, f32Shortest).join(",")}]`

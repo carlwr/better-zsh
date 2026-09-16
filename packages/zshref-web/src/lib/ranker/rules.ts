@@ -1,25 +1,25 @@
 // The three rule files as one bundle: their shapes by name, and the loader.
 
-import type { z } from 'zod';
+import type { z } from "zod"
 
-import { StopwordsSchema, SynonymsSchema, TuningSchema } from './types';
+import { StopwordsSchema, SynonymsSchema, TuningSchema } from "./types"
 
 // Canonical key source: file base names (`<name>.yaml`, `<name>.json`,
 // `<name>.schema.json`) in emission order.
 export const RULE_SCHEMAS = {
   tuning: TuningSchema,
   stopwords: StopwordsSchema,
-  synonyms: SynonymsSchema
-} as const;
-export type RuleFile = keyof typeof RULE_SCHEMAS;
-export const RULE_FILES = Object.keys(RULE_SCHEMAS) as RuleFile[];
+  synonyms: SynonymsSchema,
+} as const
+export type RuleFile = keyof typeof RULE_SCHEMAS
+export const RULE_FILES = Object.keys(RULE_SCHEMAS) as RuleFile[]
 
-export type Rules = { [K in RuleFile]: z.output<(typeof RULE_SCHEMAS)[K]> };
+export type Rules = { [K in RuleFile]: z.output<(typeof RULE_SCHEMAS)[K]> }
 
 export function loadRules(input: Record<RuleFile, unknown>): Rules {
   return {
     tuning: TuningSchema.parse(input.tuning),
     stopwords: StopwordsSchema.parse(input.stopwords),
-    synonyms: SynonymsSchema.parse(input.synonyms)
-  };
+    synonyms: SynonymsSchema.parse(input.synonyms),
+  }
 }

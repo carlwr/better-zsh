@@ -15,73 +15,85 @@
 // on the local mmap'd model — the "~127 MB download" is the browser's
 // first-visit cost, not this test. Skipped if artifacts aren't staged.
 
-import { dirname } from 'node:path';
-import { isNonEmpty } from '@carlwr/typescript-extra';
-import { beforeAll, describe, expect, it } from 'vitest';
-import { loadRulesYaml } from '../nlp/rules-load';
-import { embedQuery, type FeatureExtractionPipeline } from '../src/lib/embedder';
-import { errMsg } from '../src/lib/errors';
-import { expandQueryForEmbedding } from '../src/lib/ranker/query-expand';
-import { rank } from '../src/lib/ranker/rank';
-import type { Rules } from '../src/lib/ranker/rules';
-import type { VectorIndex } from '../src/lib/ranker/types';
-import { artifactGate, loadIndexFromDisk, loadSanityFixture, PATHS, STAGED } from './_helpers';
+import { dirname } from "node:path"
+import { isNonEmpty } from "@carlwr/typescript-extra"
+import { beforeAll, describe, expect, it } from "vitest"
+import { loadRulesYaml } from "../nlp/rules-load"
+import { embedQuery, type FeatureExtractionPipeline } from "../src/lib/embedder"
+import { errMsg } from "../src/lib/errors"
+import { expandQueryForEmbedding } from "../src/lib/ranker/query-expand"
+import { rank } from "../src/lib/ranker/rank"
+import type { Rules } from "../src/lib/ranker/rules"
+import type { VectorIndex } from "../src/lib/ranker/types"
+import {
+  artifactGate,
+  loadIndexFromDisk,
+  loadSanityFixture,
+  PATHS,
+  STAGED,
+} from "./_helpers"
 
-const skipReason = artifactGate('full-pipeline sanity', [STAGED.index, STAGED.model]);
+const skipReason = artifactGate("full-pipeline sanity", [
+  STAGED.index,
+  STAGED.model,
+])
 
 // Browser pipeline vs Node embedder, in score units.
-const EMBEDDER_DRIFT = 0.01;
+const EMBEDDER_DRIFT = 0.01
 
-describe('full-pipeline sanity', () => {
-  let index: VectorIndex;
-  let rules: Rules;
-  let pipe: FeatureExtractionPipeline | null = null;
-  let pipeErr = '';
+describe("full-pipeline sanity", () => {
+  let index: VectorIndex
+  let rules: Rules
+  let pipe: FeatureExtractionPipeline | null = null
+  let pipeErr = ""
 
   beforeAll(async () => {
-    if (skipReason) return;
-    [index, rules] = await Promise.all([loadIndexFromDisk(), loadRulesYaml()]);
+    if (skipReason) return
+    ;[index, rules] = await Promise.all([loadIndexFromDisk(), loadRulesYaml()])
     try {
-      pipe = await loadLocalPipeline();
+      pipe = await loadLocalPipeline()
     } catch (e) {
-      pipeErr = errMsg(e);
-      console.warn(`[sanity] pipeline load failed: ${pipeErr}`);
+      pipeErr = errMsg(e)
+      console.warn(`[sanity] pipeline load failed: ${pipeErr}`)
     }
-  }, 180_000);
+  }, 180_000)
 
-  it('top-1 matches curated identity', async (ctx) => {
-    if (skipReason) ctx.skip(skipReason);
+  it("top-1 matches curated identity", async ctx => {
+    if (skipReason) ctx.skip(skipReason)
 
     if (!pipe) {
-      throw new Error(`pipeline load failed: ${pipeErr}`);
+      throw new Error(`pipeline load failed: ${pipeErr}`)
     }
-    const fixture = await loadSanityFixture();
-    expect(fixture.entries.length).toBeGreaterThan(0);
+    const fixture = await loadSanityFixture()
+    expect(fixture.entries.length).toBeGreaterThan(0)
     for (const entry of fixture.entries) {
       const v = await embedQuery(
         expandQueryForEmbedding(entry.query, rules.synonyms.query_expansions),
-        pipe
-      );
-      const ranked = rank(entry.query, v, null, index, rules);
-      if (!isNonEmpty(ranked)) throw new Error(`no matches for query: ${entry.query}`);
-      const got = ranked[0];
+        pipe,
+      )
+      const ranked = rank(entry.query, v, null, index, rules)
+      if (!isNonEmpty(ranked))
+        throw new Error(`no matches for query: ${entry.query}`)
+      const got = ranked[0]
       expect(
         { category: got.rec.category, id: got.rec.id },
-        `query: ${entry.query}`
-      ).toEqual({ category: entry.topMatch.category, id: entry.topMatch.id });
-      expect(got.score).toBeGreaterThanOrEqual(fixture.invariants.absoluteFloor - EMBEDDER_DRIFT);
+        `query: ${entry.query}`,
+      ).toEqual({ category: entry.topMatch.category, id: entry.topMatch.id })
+      expect(got.score).toBeGreaterThanOrEqual(
+        fixture.invariants.absoluteFloor - EMBEDDER_DRIFT,
+      )
     }
-  }, 180_000);
-});
+  }, 180_000)
+})
 
 async function loadLocalPipeline(): Promise<FeatureExtractionPipeline> {
-  const tx = await import('@huggingface/transformers');
-  tx.env.allowRemoteModels = false;
-  tx.env.allowLocalModels = true;
+  const tx = await import("@huggingface/transformers")
+  tx.env.allowRemoteModels = false
+  tx.env.allowLocalModels = true
   // transformers.js resolves `<localModelPath>/<modelId>` — point one level
   // up from PATHS.modelDir so the modelId is the leaf dir name ("model").
-  tx.env.localModelPath = dirname(PATHS.modelDir);
-  return (await tx.pipeline('feature-extraction', 'model', {
-    dtype: 'fp32'
-  })) as unknown as FeatureExtractionPipeline;
+  tx.env.localModelPath = dirname(PATHS.modelDir)
+  return (await tx.pipeline("feature-extraction", "model", {
+    dtype: "fp32",
+  })) as unknown as FeatureExtractionPipeline
 }

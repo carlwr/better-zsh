@@ -1,10 +1,10 @@
 // The resolver's verdict on a query: the canonicalizer behind the lookup
 // map and the lookup contract.
 
-import type { DocCorpus } from '@carlwr/zsh-core';
-import { lookupRaw } from '@carlwr/zsh-core/resolver';
-import { classifyOrder, type DocCategory } from '@carlwr/zsh-core/taxonomy';
-import type { ResolverHit } from '../src/lib/ranker/types';
+import type { DocCorpus } from "@carlwr/zsh-core"
+import { lookupRaw } from "@carlwr/zsh-core/resolver"
+import { classifyOrder, type DocCategory } from "@carlwr/zsh-core/taxonomy"
+import type { ResolverHit } from "../src/lib/ranker/types"
 
 /**
  * Direct-or-resolver lookup within one category: trimmed `_id` equality
@@ -13,7 +13,7 @@ import type { ResolverHit } from '../src/lib/ranker/types';
  * alone is not — it never checks the literal key in template-keyed
  * categories (`!n` resolves to `!str`).
  */
-export const resolveIn = lookupRaw;
+export const resolveIn = lookupRaw
 
 /**
  * First hit over `[category]` if given, else over `classifyOrder`. No
@@ -22,12 +22,13 @@ export const resolveIn = lookupRaw;
 export function resolverKey(
   corpus: DocCorpus,
   query: string,
-  category?: DocCategory
+  category?: DocCategory,
 ): ResolverHit | null {
-  const cats: readonly DocCategory[] = category === undefined ? classifyOrder : [category];
+  const cats: readonly DocCategory[] =
+    category === undefined ? classifyOrder : [category]
   for (const cat of cats) {
-    const hit = resolveIn(corpus, cat, query);
-    if (hit) return { category: hit.category, id: hit.id as string };
+    const hit = resolveIn(corpus, cat, query)
+    if (hit) return { category: hit.category, id: hit.id as string }
   }
-  return null;
+  return null
 }

@@ -6,33 +6,33 @@
 // (it is zsh-core-free): the pre-computed lookup map is its canonical-form
 // resolution.
 
-import { embedQuery } from './embedder';
-import { type LookupIndex, promoteToTop } from './ranker/lookup-map';
-import { expandQueryForEmbedding } from './ranker/query-expand';
-import { rank } from './ranker/rank';
-import type { Rules } from './ranker/rules';
-import type { RankedMatch, VectorIndex } from './ranker/types';
+import { embedQuery } from "./embedder"
+import { type LookupIndex, promoteToTop } from "./ranker/lookup-map"
+import { expandQueryForEmbedding } from "./ranker/query-expand"
+import { rank } from "./ranker/rank"
+import type { Rules } from "./ranker/rules"
+import type { RankedMatch, VectorIndex } from "./ranker/types"
 
 export interface SearchResult {
-  matches: RankedMatch[];
+  matches: RankedMatch[]
   /** Matches before the `limit` cut. */
-  total: number;
+  total: number
 }
 
 export async function search(args: {
-  query: string;
-  index: VectorIndex;
-  rules: Rules;
-  lookup: LookupIndex;
-  limit?: number;
-  categories?: string[] | null;
+  query: string
+  index: VectorIndex
+  rules: Rules
+  lookup: LookupIndex
+  limit?: number
+  categories?: string[] | null
 }): Promise<SearchResult> {
-  const q = args.query.trim();
-  if (q === '') return { matches: [], total: 0 };
+  const q = args.query.trim()
+  if (q === "") return { matches: [], total: 0 }
   // Expansion is embedding-only: raw `q` drives lexical boosts in `rank`.
   const queryVec = await embedQuery(
-    expandQueryForEmbedding(q, args.rules.synonyms.query_expansions)
-  );
+    expandQueryForEmbedding(q, args.rules.synonyms.query_expansions),
+  )
   // Multi-category filter is applied here, post-rank, not pushed into `rank`:
   // category penalties derive from full-corpus counts, so filtering the ranked
   // output is score-identical to filtering inside `rank`, and keeps
@@ -42,12 +42,15 @@ export async function search(args: {
   // (so [] keeps nothing). The caller passes null when every category is ticked,
   // which is both the unfiltered fast path and robust to a record whose category
   // is absent from the checkbox list.
-  const cats = args.categories == null ? null : new Set(args.categories);
-  const ranked0 = rank(q, queryVec, null, args.index, args.rules);
-  const ranked = cats ? ranked0.filter((m) => cats.has(m.rec.category)) : ranked0;
-  const mapHit = args.lookup.lookup(q);
-  promoteToTop(ranked, mapHit && (cats === null || cats.has(mapHit.category)) ? mapHit : null);
-  const total = ranked.length;
-  const matches = ranked.slice(0, args.limit ?? 20);
-  return { matches, total };
+  const cats = args.categories == null ? null : new Set(args.categories)
+  const ranked0 = rank(q, queryVec, null, args.index, args.rules)
+  const ranked = cats ? ranked0.filter(m => cats.has(m.rec.category)) : ranked0
+  const mapHit = args.lookup.lookup(q)
+  promoteToTop(
+    ranked,
+    mapHit && (cats === null || cats.has(mapHit.category)) ? mapHit : null,
+  )
+  const total = ranked.length
+  const matches = ranked.slice(0, args.limit ?? 20)
+  return { matches, total }
 }

@@ -1,36 +1,40 @@
 <script lang="ts">
-  import { getArtifacts, categoryLabel as lookupLabel, type Artifacts } from '$lib/artifacts';
-  import { onModelProgress, type ModelProgress } from '$lib/embedder';
-  import { errMsg } from '$lib/errors';
-  import { search } from '$lib/search';
-  import type { RankedMatch } from '$lib/ranker/types';
-  import ResultCard from '$lib/components/ResultCard.svelte';
-  import { recordKey, summaryLine, viewState } from '$lib/view';
+  import {
+    type Artifacts,
+    getArtifacts,
+    categoryLabel as lookupLabel,
+  } from "$lib/artifacts"
+  import ResultCard from "$lib/components/ResultCard.svelte"
+  import { type ModelProgress, onModelProgress } from "$lib/embedder"
+  import { errMsg } from "$lib/errors"
+  import type { RankedMatch } from "$lib/ranker/types"
+  import { search } from "$lib/search"
+  import { recordKey, summaryLine, viewState } from "$lib/view"
 
-  let artifacts = $state<Artifacts | null>(null);
-  let artifactsErr = $state('');
-  let searchErr = $state('');
-  let query = $state('');
-  let selectedCats = $state<string[]>([]); // ticked categories; initialised to all on load
-  let catOpen = $state(false); // category popover open?
-  let catDetails: HTMLDetailsElement | undefined = $state();
-  let limit = $state(20);
-  let matches = $state<RankedMatch[]>([]);
-  let total = $state(0);
-  let searching = $state(false);
-  let firstRun = $state(true);
-  let embedderReady = $state(false); // gates the first-run download hint
-  let modelProgress = $state<ModelProgress | null>(null); // live one-time download
+  let artifacts = $state<Artifacts | null>(null)
+  let artifactsErr = $state("")
+  let searchErr = $state("")
+  let query = $state("")
+  let selectedCats = $state<string[]>([]) // ticked categories; initialised to all on load
+  let catOpen = $state(false) // category popover open?
+  let catDetails: HTMLDetailsElement | undefined = $state()
+  let limit = $state(20)
+  let matches = $state<RankedMatch[]>([])
+  let total = $state(0)
+  let searching = $state(false)
+  let firstRun = $state(true)
+  let embedderReady = $state(false) // gates the first-run download hint
+  let modelProgress = $state<ModelProgress | null>(null) // live one-time download
 
-  onModelProgress((p) => (modelProgress = p));
+  onModelProgress(p => (modelProgress = p))
 
   function mb(bytes: number): number {
-    return Math.round(bytes / 1_000_000);
+    return Math.round(bytes / 1_000_000)
   }
 
   function onDocPointerDown(e: MouseEvent) {
     if (catOpen && catDetails && !catDetails.contains(e.target as Node)) {
-      catOpen = false;
+      catOpen = false
     }
   }
 
@@ -43,64 +47,68 @@
       embedderReady,
       searchErr,
       firstRun,
-      matchCount: matches.length
-    })
-  );
+      matchCount: matches.length,
+    }),
+  )
 
   // categories.json label, not RecordText.category_label (heuristic-embedded)
   function categoryLabel(id: string): string {
-    return artifacts ? lookupLabel(artifacts.categories, id) : id;
+    return artifacts ? lookupLabel(artifacts.categories, id) : id
   }
 
   let catCounts = $derived.by(() => {
-    const m = new Map<string, number>();
+    const m = new Map<string, number>()
     if (artifacts) {
       for (const r of artifacts.index.records) {
-        m.set(r.text.category, (m.get(r.text.category) ?? 0) + 1);
+        m.set(r.text.category, (m.get(r.text.category) ?? 0) + 1)
       }
     }
-    return m;
-  });
+    return m
+  })
 
-  let allCatIds = $derived(artifacts ? artifacts.categories.map((c) => c.id) : []);
+  let allCatIds = $derived(artifacts ? artifacts.categories.map(c => c.id) : [])
   let allSelected = $derived(
-    allCatIds.length > 0 && selectedCats.length === allCatIds.length
-  );
+    allCatIds.length > 0 && selectedCats.length === allCatIds.length,
+  )
   let catSummary = $derived(
-    allSelected ? 'all' : selectedCats.length === 0 ? 'none' : `${selectedCats.length} selected`
-  );
+    allSelected
+      ? "all"
+      : selectedCats.length === 0
+        ? "none"
+        : `${selectedCats.length} selected`,
+  )
 
   // First-run model fetch: show real bytes while downloading, a neutral note
   // once bytes are in and we're embedding/ranking.
   let coldMsg = $derived.by(() => {
-    const p = modelProgress;
+    const p = modelProgress
     if (p && p.totalBytes > 0 && p.loadedBytes < p.totalBytes) {
-      return `loading the embedding model… ${mb(p.loadedBytes)} / ${mb(p.totalBytes)} MB`;
+      return `loading the embedding model… ${mb(p.loadedBytes)} / ${mb(p.totalBytes)} MB`
     }
-    return 'preparing the embedding model…';
-  });
+    return "preparing the embedding model…"
+  })
 
   $effect(() => {
     void (async () => {
       try {
-        artifacts = await getArtifacts();
+        artifacts = await getArtifacts()
         // Start with every category ticked; filtering is by un-ticking.
-        selectedCats = artifacts.categories.map((c) => c.id);
+        selectedCats = artifacts.categories.map(c => c.id)
       } catch (e) {
-        artifactsErr = errMsg(e);
+        artifactsErr = errMsg(e)
       }
-    })();
-  });
+    })()
+  })
 
   async function run() {
-    if (!artifacts || query.trim() === '') {
-      matches = [];
-      total = 0;
-      return;
+    if (!artifacts || query.trim() === "") {
+      matches = []
+      total = 0
+      return
     }
-    searching = true;
-    firstRun = false;
-    searchErr = '';
+    searching = true
+    firstRun = false
+    searchErr = ""
     try {
       const r = await search({
         query,
@@ -109,23 +117,23 @@
         lookup: artifacts.lookup,
         limit,
         // all ticked → null (no filter); otherwise the ticked set ([] = none)
-        categories: allSelected ? null : selectedCats
-      });
-      matches = r.matches;
-      total = r.total;
-      embedderReady = true;
+        categories: allSelected ? null : selectedCats,
+      })
+      matches = r.matches
+      total = r.total
+      embedderReady = true
     } catch (e) {
-      searchErr = errMsg(e);
-      matches = [];
-      total = 0;
+      searchErr = errMsg(e)
+      matches = []
+      total = 0
     } finally {
-      searching = false;
+      searching = false
     }
   }
 
   function handleSubmit(e: Event) {
-    e.preventDefault();
-    run();
+    e.preventDefault()
+    run()
   }
 
   // Examples span the input styles the search handles well, to show none is
@@ -133,14 +141,14 @@
   // canonical identifier (resolver-routed via the lookup map). The first two go
   // through the embedder + ranker and need no exact identifier knowledge.
   const examples = [
-    { hint: 'a question', q: 'how do I make globbing case-insensitive?' },
-    { hint: 'a description', q: 'run a command before each prompt' },
-    { hint: 'an identifier', q: 'AUTO_CD' }
-  ] as const;
+    { hint: "a question", q: "how do I make globbing case-insensitive?" },
+    { hint: "a description", q: "run a command before each prompt" },
+    { hint: "an identifier", q: "AUTO_CD" },
+  ] as const
 
   function runExample(q: string) {
-    query = q;
-    run();
+    query = q
+    run()
   }
 </script>
 

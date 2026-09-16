@@ -8,12 +8,12 @@
     <title>zshref</title>
     <script>
       // Pre-paint theme application (avoids flash). Read persisted or system pref.
-      (function () {
+      (() => {
         try {
           const stored = localStorage.getItem('zshref-theme');
           const t = stored || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
           document.documentElement.setAttribute('data-theme', t);
-        } catch (e) {
+        } catch {
           document.documentElement.setAttribute('data-theme', 'dark');
         }
       })();

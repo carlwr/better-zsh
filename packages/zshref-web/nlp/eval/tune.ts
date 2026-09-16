@@ -9,40 +9,54 @@
 // cuts each input to its first entries, so the reporter smoke runs the whole
 // path in seconds.
 
-import type { Tuning } from '../../src/lib/ranker/types';
-import { byteOrder } from '../byte-order';
-import { type BareEval, buildLookupContract, evalBare } from '../contract';
-import { DIMS, embedUnique } from '../embedder-node';
-import { buildSanityFixture, renderSanity, type SanityFixture } from '../fixtures';
-import type { EvalAssets } from './assets';
-import { type Churn, churn, perItem, signed } from './diff';
+import type { Tuning } from "../../src/lib/ranker/types"
+import { byteOrder } from "../byte-order"
+import { type BareEval, buildLookupContract, evalBare } from "../contract"
+import { DIMS, embedUnique } from "../embedder-node"
+import {
+  buildSanityFixture,
+  renderSanity,
+  type SanityFixture,
+} from "../fixtures"
+import type { EvalAssets } from "./assets"
+import { type Churn, churn, perItem, signed } from "./diff"
 import {
   buildMechanical,
   combinedTotal,
   evalMechanicalCached,
   LAMBDA,
   type MechanicalEval,
-  type SliceStat
-} from './mechanical';
-import type { EvalResult } from './metric';
-import { loadQaCorpus } from './qa-corpus';
-import { hardChecks, scoreHardChecks, scoreQaCorpus, summaryJson } from './qa-score';
-import { evalSentenceCached, type RankAssets } from './sentence';
-import { loadSentenceFixture } from './sentence-fixture';
+  type SliceStat,
+} from "./mechanical"
+import type { EvalResult } from "./metric"
+import { loadQaCorpus } from "./qa-corpus"
+import {
+  hardChecks,
+  scoreHardChecks,
+  scoreQaCorpus,
+  summaryJson,
+} from "./qa-score"
+import { evalSentenceCached, type RankAssets } from "./sentence"
+import { loadSentenceFixture } from "./sentence-fixture"
 
 /** `assets` ranking with `tuning` in place of the loaded one. */
-export const withTuning = <A extends RankAssets>(assets: A, tuning: Tuning): A => ({
+export const withTuning = <A extends RankAssets>(
+  assets: A,
+  tuning: Tuning,
+): A => ({
   ...assets,
-  rules: { ...assets.rules, tuning }
-});
+  rules: { ...assets.rules, tuning },
+})
 
 /**
  * All-zero replacement for an embedded query cache (same keys, zero
  * vectors): `dot(0, v) = 0`, so every semantic view scores 0 and the
  * ranking falls to the boosts and the lookup-map promote alone.
  */
-export function zeroedCache(vecs: ReadonlyMap<string, Float32Array>): Map<string, Float32Array> {
-  return new Map([...vecs.keys()].map((k) => [k, new Float32Array(DIMS)]));
+export function zeroedCache(
+  vecs: ReadonlyMap<string, Float32Array>,
+): Map<string, Float32Array> {
+  return new Map([...vecs.keys()].map(k => [k, new Float32Array(DIMS)]))
 }
 
 /**
@@ -57,88 +71,98 @@ export function zeroBoosts(t: Tuning): Tuning {
       ...t.boosts,
       category: 0,
       exact_word_increment: 0,
-      word_overlap: { ...t.boosts.word_overlap, scale: 0 }
+      word_overlap: { ...t.boosts.word_overlap, scale: 0 },
     },
-    penalties: { ...t.penalties, category_rarity_max: 0 }
-  };
+    penalties: { ...t.penalties, category_rarity_max: 0 },
+  }
 }
 
 /** A metric under the live tuning, with the embedder off, with the boosts off. */
-export type Ablation = [full: number, noEmbed: number, noBoost: number];
+export type Ablation = [full: number, noEmbed: number, noBoost: number]
 
 /** Embedder-vs-boosts decomposition; the lookup-map promote stays on in every column. */
 export interface Components {
-  train: Ablation;
-  holdout: Ablation;
+  train: Ablation
+  holdout: Ablation
   /** Null in the fast tier. */
-  mech: Ablation | null;
+  mech: Ablation | null
 }
 
 export interface QaSummary {
-  avgPercent: number;
-  hardPercent: number;
+  avgPercent: number
+  hardPercent: number
 }
 
 export interface Dashboard {
-  sentence: EvalResult;
+  sentence: EvalResult
   /** Curated `train` total — one half of the combined blend. */
-  curatedTrain: number;
-  sanity: SanityFixture;
-  bare: BareEval;
+  curatedTrain: number
+  sanity: SanityFixture
+  bare: BareEval
   /** Null in the fast tier. */
-  mechanical: MechanicalEval | null;
+  mechanical: MechanicalEval | null
   /** Null in the fast tier. */
-  qa: QaSummary | null;
-  components: Components;
+  qa: QaSummary | null
+  components: Components
   /** Churn of the candidate vs the committed tuning; null without a candidate. Mechanical: full tier only. */
-  churn: { curated: Churn; mechanical: Churn | null } | null;
+  churn: { curated: Churn; mechanical: Churn | null } | null
 }
 
 export interface DashboardOptions {
   /** `tuning` is a candidate (the committed one with overrides): diff it against `assets.rules.tuning`. */
-  candidate: boolean;
+  candidate: boolean
   /** Skip the mechanical layer and the QA. */
-  fast?: boolean;
+  fast?: boolean
   /**
    * Smoke tier: every eval input cut to its first `cap` entries — the
    * curated fixture, the mechanical set, the hard checks, the QA corpus.
    * The report then has the dashboard's shape and none of its meaning.
    */
-  cap?: number;
+  cap?: number
 }
 
 /** The full tier's extra signals: the mechanical layer, its ablation and churn, and the QA. */
 interface FullTier {
-  mechanical: MechanicalEval;
-  mech: Ablation;
-  churn: Churn | null;
-  qa: QaSummary;
+  mechanical: MechanicalEval
+  mech: Ablation
+  churn: Churn | null
+  qa: QaSummary
 }
 
 async function fullTier(
   assets: EvalAssets,
   live: EvalAssets,
   noBoosts: EvalAssets,
-  { candidate, cap }: DashboardOptions
+  { candidate, cap }: DashboardOptions,
 ): Promise<FullTier> {
   // `slice(0, undefined)` is the whole array: no cap, no cut.
-  const entries = buildMechanical(assets.corpus).slice(0, cap);
-  const vecs = await embedUnique(assets.embedder, entries.map((e) => e.query), assets.rules);
-  const qa = await loadQaCorpus();
-  const mechanical = evalMechanicalCached(entries, vecs, live);
+  const entries = buildMechanical(assets.corpus).slice(0, cap)
+  const vecs = await embedUnique(
+    assets.embedder,
+    entries.map(e => e.query),
+    assets.rules,
+  )
+  const qa = await loadQaCorpus()
+  const mechanical = evalMechanicalCached(entries, vecs, live)
   return {
     mechanical,
     mech: [
       mechanical.all.total,
       evalMechanicalCached(entries, zeroedCache(vecs), live).all.total,
-      evalMechanicalCached(entries, vecs, noBoosts).all.total
+      evalMechanicalCached(entries, vecs, noBoosts).all.total,
     ],
-    churn: candidate ? churn(perItem(entries, vecs, assets), perItem(entries, vecs, live), false) : null,
+    churn: candidate
+      ? churn(
+          perItem(entries, vecs, assets),
+          perItem(entries, vecs, live),
+          false,
+        )
+      : null,
     qa: summaryJson(
       await scoreHardChecks(hardChecks(assets.corpus).slice(0, cap), live),
-      await scoreQaCorpus({ ...qa, entries: qa.entries.slice(0, cap) }, live)
-    )
-  };
+      await scoreQaCorpus({ ...qa, entries: qa.entries.slice(0, cap) }, live),
+    ),
+  }
 }
 
 /**
@@ -147,23 +171,35 @@ async function fullTier(
  * and its two ablations; the sanity fixture is rebuilt fresh. `assets`
  * carries the committed tuning, the churn baseline.
  */
-export async function buildDashboard(assets: EvalAssets, tuning: Tuning, opts: DashboardOptions): Promise<Dashboard> {
-  const { candidate, fast = false, cap } = opts;
-  const live = withTuning(assets, tuning);
-  const noBoosts = withTuning(assets, zeroBoosts(tuning));
+export async function buildDashboard(
+  assets: EvalAssets,
+  tuning: Tuning,
+  opts: DashboardOptions,
+): Promise<Dashboard> {
+  const { candidate, fast = false, cap } = opts
+  const live = withTuning(assets, tuning)
+  const noBoosts = withTuning(assets, zeroBoosts(tuning))
 
-  const loaded = await loadSentenceFixture();
-  const fixture = { ...loaded, entries: loaded.entries.slice(0, cap) };
-  const curVecs = await embedUnique(assets.embedder, fixture.entries.map((e) => e.query), assets.rules);
-  const sentence = evalSentenceCached(fixture, curVecs, live);
-  const curNoEmbed = evalSentenceCached(fixture, zeroedCache(curVecs), live);
-  const curNoBoost = evalSentenceCached(fixture, curVecs, noBoosts);
+  const loaded = await loadSentenceFixture()
+  const fixture = { ...loaded, entries: loaded.entries.slice(0, cap) }
+  const curVecs = await embedUnique(
+    assets.embedder,
+    fixture.entries.map(e => e.query),
+    assets.rules,
+  )
+  const sentence = evalSentenceCached(fixture, curVecs, live)
+  const curNoEmbed = evalSentenceCached(fixture, zeroedCache(curVecs), live)
+  const curNoBoost = evalSentenceCached(fixture, curVecs, noBoosts)
   const curatedChurn = candidate
-    ? churn(perItem(fixture.entries, curVecs, assets), perItem(fixture.entries, curVecs, live), true)
-    : null;
-  const sanity = await buildSanityFixture(live);
-  const bare = evalBare(buildLookupContract(assets.corpus), assets.lookup);
-  const full = fast ? null : await fullTier(assets, live, noBoosts, opts);
+    ? churn(
+        perItem(fixture.entries, curVecs, assets),
+        perItem(fixture.entries, curVecs, live),
+        true,
+      )
+    : null
+  const sanity = await buildSanityFixture(live)
+  const bare = evalBare(buildLookupContract(assets.corpus), assets.lookup)
+  const full = fast ? null : await fullTier(assets, live, noBoosts, opts)
 
   return {
     sentence,
@@ -173,50 +209,60 @@ export async function buildDashboard(assets: EvalAssets, tuning: Tuning, opts: D
     mechanical: full?.mechanical ?? null,
     qa: full?.qa ?? null,
     components: {
-      train: [sentence.train.total, curNoEmbed.train.total, curNoBoost.train.total],
-      holdout: [sentence.holdout.total, curNoEmbed.holdout.total, curNoBoost.holdout.total],
-      mech: full?.mech ?? null
+      train: [
+        sentence.train.total,
+        curNoEmbed.train.total,
+        curNoBoost.train.total,
+      ],
+      holdout: [
+        sentence.holdout.total,
+        curNoEmbed.holdout.total,
+        curNoBoost.holdout.total,
+      ],
+      mech: full?.mech ?? null,
     },
-    churn: curatedChurn ? { curated: curatedChurn, mechanical: full?.churn ?? null } : null
-  };
+    churn: curatedChurn
+      ? { curated: curatedChurn, mechanical: full?.churn ?? null }
+      : null,
+  }
 }
 
 // --- rendering --------------------------------------------------------------
 
-const FAST_HINT = '(--fast; run `pnpm nlp:tune-dashboard` without it)';
+const FAST_HINT = "(--fast; run `pnpm nlp:tune-dashboard` without it)"
 
 export function renderDashboard(d: Dashboard): string {
-  const s = d.sentence;
-  const m = d.mechanical;
+  const s = d.sentence
+  const m = d.mechanical
   const lines = [
-    '\n=== nlp tuning dashboard ===',
+    "\n=== nlp tuning dashboard ===",
     `[sentence]  all=${s.all.total.toFixed(3)}  train=${s.train.total.toFixed(3)}  holdout=${s.holdout.total.toFixed(3)}  (${s.nEntries} entries)`,
     renderSanity(d.sanity).trimEnd(),
     `[contract] ${d.bare.bareTotal} bare entries, ${d.bare.failures.length} failures`,
     ...(m
       ? [
           `[mechanical] ${m.all.total.toFixed(3)}  (${m.nEntries} entries)`,
-          `[combined]  λ·train + (1−λ)·mech = ${LAMBDA.toFixed(3)}·${d.curatedTrain.toFixed(3)} + ${(1 - LAMBDA).toFixed(3)}·${m.all.total.toFixed(3)} = ${combinedTotal(d.curatedTrain, m.all.total).toFixed(3)}`
+          `[combined]  λ·train + (1−λ)·mech = ${LAMBDA.toFixed(3)}·${d.curatedTrain.toFixed(3)} + ${(1 - LAMBDA).toFixed(3)}·${m.all.total.toFixed(3)} = ${combinedTotal(d.curatedTrain, m.all.total).toFixed(3)}`,
         ]
       : [`[mechanical] skipped ${FAST_HINT}`]),
-    '  holdout = overfit watch; never tune on it.',
+    "  holdout = overfit watch; never tune on it.",
     churnBlock(d.churn),
     renderComponents(d.components),
-    '\nper category — curated split vs mechanical:',
-    '  mech=mechanical  fix=cur.train  hold=cur.holdout  all=cur.both',
+    "\nper category — curated split vs mechanical:",
+    "  mech=mechanical  fix=cur.train  hold=cur.holdout  all=cur.both",
     perCategoryTable(s, m).trimEnd(),
     ...(m
       ? [
-          '\nhard slices (mechanical; fail = expected record not #1):',
-          '  cross-cutting & overlapping (a 1-char punct id is in both)',
-          sliceTable(m.slices).trimEnd()
+          "\nhard slices (mechanical; fail = expected record not #1):",
+          "  cross-cutting & overlapping (a 1-char punct id is in both)",
+          sliceTable(m.slices).trimEnd(),
         ]
-      : ['\nhard slices: skipped (--fast)']),
+      : ["\nhard slices: skipped (--fast)"]),
     d.qa
       ? `[qa] avg ${d.qa.avgPercent.toFixed(1)}%, hard-check score ${d.qa.hardPercent.toFixed(1)}% (held-out — never tune on this)`
-      : `[qa] skipped ${FAST_HINT}`
-  ];
-  return `${lines.join('\n')}\n`;
+      : `[qa] skipped ${FAST_HINT}`,
+  ]
+  return `${lines.join("\n")}\n`
 }
 
 /**
@@ -224,28 +270,31 @@ export function renderDashboard(d: Dashboard): string {
  * headline scores cannot carry: a candidate that flips 100 items and nets
  * +0.005 is churning, not improving.
  */
-function churnBlock(c: Dashboard['churn']): string {
-  if (!c) return '\nchurn vs committed baseline: no candidate (set BZ_TUNE_BASE=<overrides> to diff)';
+function churnBlock(c: Dashboard["churn"]): string {
+  if (!c)
+    return "\nchurn vs committed baseline: no candidate (set BZ_TUNE_BASE=<overrides> to diff)"
   const row = (name: string, x: Churn): string =>
-    `  ${name.padEnd(13)}${String(x.moved).padStart(4)} moved │ ${String(x.up).padStart(3)} fail→pass ${String(x.down).padStart(3)} pass→fail │ Σgain Δ ${signed(x.netGain, 3)} (net)`;
+    `  ${name.padEnd(13)}${String(x.moved).padStart(4)} moved │ ${String(x.up).padStart(3)} fail→pass ${String(x.down).padStart(3)} pass→fail │ Σgain Δ ${signed(x.netGain, 3)} (net)`
   return [
-    '\nchurn vs committed baseline (gross counts — a small score Δ hides large churn):',
-    row('curated train', c.curated),
-    c.mechanical ? row('mechanical', c.mechanical) : '  mechanical   skipped (--fast)'
-  ].join('\n');
+    "\nchurn vs committed baseline (gross counts — a small score Δ hides large churn):",
+    row("curated train", c.curated),
+    c.mechanical
+      ? row("mechanical", c.mechanical)
+      : "  mechanical   skipped (--fast)",
+  ].join("\n")
 }
 
 function renderComponents({ train, holdout, mech }: Components): string {
   const row = (name: string, v: Ablation): string =>
-    `  ${name.padEnd(11)}${v.map((x) => x.toFixed(3).padStart(8)).join('')}`;
+    `  ${name.padEnd(11)}${v.map(x => x.toFixed(3).padStart(8)).join("")}`
   return [
-    '\ncomponent decomposition (lookup-map ON in all rows):',
-    '  −embed = embedder off (boosts only); −boost = boosts off (embedder only)',
-    `  ${''.padEnd(11)}${['full', '−embed', '−boost'].map((h) => h.padStart(8)).join('')}`,
-    row('cur.train', train),
-    row('cur.hold', holdout),
-    mech ? row('mechanical', mech) : '  mechanical  skipped (--fast)'
-  ].join('\n');
+    "\ncomponent decomposition (lookup-map ON in all rows):",
+    "  −embed = embedder off (boosts only); −boost = boosts off (embedder only)",
+    `  ${"".padEnd(11)}${["full", "−embed", "−boost"].map(h => h.padStart(8)).join("")}`,
+    row("cur.train", train),
+    row("cur.hold", holdout),
+    mech ? row("mechanical", mech) : "  mechanical  skipped (--fast)",
+  ].join("\n")
 }
 
 /**
@@ -254,47 +303,59 @@ function renderComponents({ train, holdout, mech }: Components): string {
  * source; `·` = the mechanical column in the fast tier.
  */
 function perCategoryTable(s: EvalResult, m: MechanicalEval | null): string {
-  const cats = [...new Set([...s.all.perCategory.keys(), ...(m?.all.perCategory.keys() ?? [])])].sort(byteOrder);
+  const cats = [
+    ...new Set([
+      ...s.all.perCategory.keys(),
+      ...(m?.all.perCategory.keys() ?? []),
+    ]),
+  ].sort(byteOrder)
   const score = (x: ReadonlyMap<string, number>, c: string): string => {
-    const v = x.get(c);
-    return v === undefined ? '—' : v.toFixed(3);
-  };
-  const count = (x: ReadonlyMap<string, number>, c: string): string => String(x.get(c) ?? '—');
-  const rows = cats.map((c) => [
+    const v = x.get(c)
+    return v === undefined ? "—" : v.toFixed(3)
+  }
+  const count = (x: ReadonlyMap<string, number>, c: string): string =>
+    String(x.get(c) ?? "—")
+  const rows = cats.map(c => [
     c,
-    m ? score(m.all.perCategory, c) : '·',
+    m ? score(m.all.perCategory, c) : "·",
     score(s.train.perCategory, c),
     score(s.holdout.perCategory, c),
     score(s.all.perCategory, c),
-    m ? count(m.perCategoryN, c) : '·',
-    count(s.perCategoryN, c)
-  ]);
+    m ? count(m.perCategoryN, c) : "·",
+    count(s.perCategoryN, c),
+  ])
   return boxTable(
-    ['category', 'mech', 'fix', 'hold', 'all', 'n:mec', 'n:cur'],
+    ["category", "mech", "fix", "hold", "all", "n:mec", "n:cur"],
     [false, true, true, true, true, true, true],
-    rows
-  );
+    rows,
+  )
 }
 
 const sliceTable = (slices: readonly SliceStat[]): string =>
   boxTable(
-    ['id slice', 'score', 'fail/total'],
+    ["id slice", "score", "fail/total"],
     [false, true, true],
-    slices.map((x) => [x.label, x.meanGain.toFixed(3), `${x.fails}/${x.n}`])
-  );
+    slices.map(x => [x.label, x.meanGain.toFixed(3), `${x.fails}/${x.n}`]),
+  )
 
-const charCount = (s: string): number => [...s].length;
+const charCount = (s: string): number => [...s].length
 
 /**
  * A Unicode box table; `right` selects right-alignment per column (numbers
  * right, labels left), widths fit the widest cell (in characters, not
  * bytes), one space of padding each side.
  */
-export function boxTable(headers: readonly string[], right: readonly boolean[], rows: readonly (readonly string[])[]): string {
-  const w = headers.map((h, i) => Math.max(charCount(h), ...rows.map((r) => charCount(r[i] ?? ''))));
+export function boxTable(
+  headers: readonly string[],
+  right: readonly boolean[],
+  rows: readonly (readonly string[])[],
+): string {
+  const w = headers.map((h, i) =>
+    Math.max(charCount(h), ...rows.map(r => charCount(r[i] ?? ""))),
+  )
   const rule = (l: string, mid: string, r: string): string =>
-    `${l}${w.map((wi) => '─'.repeat(wi + 2)).join(mid)}${r}`;
+    `${l}${w.map(wi => "─".repeat(wi + 2)).join(mid)}${r}`
   const row = (cells: readonly string[]): string =>
-    `│${cells.map((c, i) => ` ${right[i] ? c.padStart(w[i] ?? 0) : c.padEnd(w[i] ?? 0)} │`).join('')}`;
-  return `${[rule('┌', '┬', '┐'), row(headers), rule('├', '┼', '┤'), ...rows.map(row), rule('└', '┴', '┘')].join('\n')}\n`;
+    `│${cells.map((c, i) => ` ${right[i] ? c.padStart(w[i] ?? 0) : c.padEnd(w[i] ?? 0)} │`).join("")}`
+  return `${[rule("┌", "┬", "┐"), row(headers), rule("├", "┼", "┤"), ...rows.map(row), rule("└", "┴", "┘")].join("\n")}\n`
 }

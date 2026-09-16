@@ -4,4 +4,5 @@
 // is ASCII, pinned by zsh-core's corpus test. Not `localeCompare`, which is
 // locale-dependent.
 
-export const byteOrder = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
+export const byteOrder = (a: string, b: string): number =>
+  a < b ? -1 : a > b ? 1 : 0

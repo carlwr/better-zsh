@@ -6,17 +6,17 @@
 // nothing prints an entry of the holdout split; `trainOnly` is the view for
 // anything that does.
 
-import { readFile } from 'node:fs/promises';
-import { parse as parseYaml } from 'yaml';
-import { z } from 'zod';
+import { readFile } from "node:fs/promises"
+import { parse as parseYaml } from "yaml"
+import { z } from "zod"
 
-import { PATHS } from '../paths';
-import type { Split } from './metric';
+import { PATHS } from "../paths"
+import type { Split } from "./metric"
 
-export const SENTENCE_FIXTURE_VERSION = 4;
+export const SENTENCE_FIXTURE_VERSION = 4
 /** The built-in fallbacks when the fixture sets no `default-weight` / `default-target-depth`. */
-export const DEFAULT_WEIGHT = 1;
-export const DEFAULT_TARGET_DEPTH = 3;
+export const DEFAULT_WEIGHT = 1
+export const DEFAULT_TARGET_DEPTH = 3
 
 // The YAML as authored (the editor schema's input side); numbers as YAML
 // reads them, `holdout` and the defaults optional.
@@ -25,14 +25,17 @@ const ExpectedItemShape = z
   .strictObject({
     cat: z.string(),
     id: z.string(),
-    d: z.number().optional().describe('Target depth; overrides `default-target-depth`.'),
-    w: z.number().optional().describe('Weight; overrides `default-weight`.')
+    d: z
+      .number()
+      .optional()
+      .describe("Target depth; overrides `default-target-depth`."),
+    w: z.number().optional().describe("Weight; overrides `default-weight`."),
   })
   .meta({
-    title: 'ExpectedItem',
+    title: "ExpectedItem",
     description:
-      "One scored item within an entry's `want` set. Each item is graded on its OWN rank and contributes one vote; an N-item entry carries N votes."
-  });
+      "One scored item within an entry's `want` set. Each item is graded on its OWN rank and contributes one vote; an N-item entry carries N votes.",
+  })
 
 const SentenceEntryShape = z
   .strictObject({
@@ -41,94 +44,116 @@ const SentenceEntryShape = z
     holdout: z
       .boolean()
       .default(false)
-      .describe('Held out from tuning when `true`; absent (the default) ⇒ train. `false` is accepted but redundant.')
+      .describe(
+        "Held out from tuning when `true`; absent (the default) ⇒ train. `false` is accepted but redundant.",
+      ),
   })
-  .meta({ title: 'SentenceEntry' });
+  .meta({ title: "SentenceEntry" })
 
 const SentenceFixtureShape = z
   .strictObject({
     version: z.literal(SENTENCE_FIXTURE_VERSION),
-    'default-weight': z
+    "default-weight": z
       .number()
       .default(DEFAULT_WEIGHT)
-      .describe(`Weight applied to items that omit \`w\`; ${DEFAULT_WEIGHT} when the fixture omits the field too.`),
-    'default-target-depth': z
+      .describe(
+        `Weight applied to items that omit \`w\`; ${DEFAULT_WEIGHT} when the fixture omits the field too.`,
+      ),
+    "default-target-depth": z
       .number()
       .default(DEFAULT_TARGET_DEPTH)
       .describe(
-        `Target depth applied to items that omit \`d\`; ${DEFAULT_TARGET_DEPTH} when the fixture omits the field too.`
+        `Target depth applied to items that omit \`d\`; ${DEFAULT_TARGET_DEPTH} when the fixture omits the field too.`,
       ),
-    entries: z.array(SentenceEntryShape)
+    entries: z.array(SentenceEntryShape),
   })
   .meta({
-    title: 'SentenceFixture',
+    title: "SentenceFixture",
     description:
-      'Sentence-style queries for the natural-language search eval: hand-curated paraphrased questions, each targeting specific canonical records. Test-only.'
-  });
+      "Sentence-style queries for the natural-language search eval: hand-curated paraphrased questions, each targeting specific canonical records. Test-only.",
+  })
 
 // The resolved form every consumer sees: concrete depth and weight per
 // item, the split derived from the flag.
 
 export interface SentenceItem {
-  category: string;
-  id: string;
-  targetDepth: number;
-  weight: number;
+  category: string
+  id: string
+  targetDepth: number
+  weight: number
 }
 
 export interface SentenceEntry {
-  query: string;
-  want: SentenceItem[];
-  split: Split;
+  query: string
+  want: SentenceItem[]
+  split: Split
 }
 
 export interface SentenceFixture {
-  defaultWeight: number;
-  defaultTargetDepth: number;
-  entries: SentenceEntry[];
+  defaultWeight: number
+  defaultTargetDepth: number
+  entries: SentenceEntry[]
 }
 
-const positive = (x: number): boolean => x > 0 && Number.isFinite(x);
+const positive = (x: number): boolean => x > 0 && Number.isFinite(x)
 
 /** The shape, then the load-time invariants (first violation reported) and
  * the resolution. Messages name entries by index only — never by query. */
-export const SentenceFixtureSchema = SentenceFixtureShape.transform((raw, ctx): SentenceFixture => {
-  const issue = (path: (string | number)[], message: string): void => {
-    ctx.issues.push({ code: 'custom', input: raw, path, message });
-  };
-  const defaultWeight = raw['default-weight'];
-  const defaultTargetDepth = raw['default-target-depth'];
-  if (!positive(defaultWeight)) {
-    issue(['default-weight'], `must be positive and finite, got ${defaultWeight}`);
-  }
-  if (!positive(defaultTargetDepth)) {
-    issue(['default-target-depth'], `must be positive and finite, got ${defaultTargetDepth}`);
-  }
-  const entries = raw.entries.map((e, i): SentenceEntry => {
-    if (e.want.length === 0) issue(['entries', i, 'want'], `entry ${i} has an empty want-set`);
-    const want = e.want.map((item, j): SentenceItem => {
-      const d = item.d ?? defaultTargetDepth;
-      const w = item.w ?? defaultWeight;
-      if (!positive(d)) {
-        issue(['entries', i, 'want', j, 'd'], `entry ${i} item ${j} has non-positive target depth ${d}`);
-      }
-      if (!positive(w)) issue(['entries', i, 'want', j, 'w'], `entry ${i} item ${j} has non-positive weight ${w}`);
-      return { category: item.cat, id: item.id, targetDepth: d, weight: w };
-    });
-    return { query: e.query, want, split: e.holdout ? 'holdout' : 'train' };
-  });
-  return { defaultWeight, defaultTargetDepth, entries };
-});
+export const SentenceFixtureSchema = SentenceFixtureShape.transform(
+  (raw, ctx): SentenceFixture => {
+    const issue = (path: (string | number)[], message: string): void => {
+      ctx.issues.push({ code: "custom", input: raw, path, message })
+    }
+    const defaultWeight = raw["default-weight"]
+    const defaultTargetDepth = raw["default-target-depth"]
+    if (!positive(defaultWeight)) {
+      issue(
+        ["default-weight"],
+        `must be positive and finite, got ${defaultWeight}`,
+      )
+    }
+    if (!positive(defaultTargetDepth)) {
+      issue(
+        ["default-target-depth"],
+        `must be positive and finite, got ${defaultTargetDepth}`,
+      )
+    }
+    const entries = raw.entries.map((e, i): SentenceEntry => {
+      if (e.want.length === 0)
+        issue(["entries", i, "want"], `entry ${i} has an empty want-set`)
+      const want = e.want.map((item, j): SentenceItem => {
+        const d = item.d ?? defaultTargetDepth
+        const w = item.w ?? defaultWeight
+        if (!positive(d)) {
+          issue(
+            ["entries", i, "want", j, "d"],
+            `entry ${i} item ${j} has non-positive target depth ${d}`,
+          )
+        }
+        if (!positive(w))
+          issue(
+            ["entries", i, "want", j, "w"],
+            `entry ${i} item ${j} has non-positive weight ${w}`,
+          )
+        return { category: item.cat, id: item.id, targetDepth: d, weight: w }
+      })
+      return { query: e.query, want, split: e.holdout ? "holdout" : "train" }
+    })
+    return { defaultWeight, defaultTargetDepth, entries }
+  },
+)
 
 export const parseSentenceFixture = (yaml: string): SentenceFixture =>
-  SentenceFixtureSchema.parse(parseYaml(yaml));
+  SentenceFixtureSchema.parse(parseYaml(yaml))
 
-export async function loadSentenceFixture(path: string = PATHS.sentenceFixture): Promise<SentenceFixture> {
-  return parseSentenceFixture(await readFile(path, 'utf8'));
+export async function loadSentenceFixture(
+  path: string = PATHS.sentenceFixture,
+): Promise<SentenceFixture> {
+  return parseSentenceFixture(await readFile(path, "utf8"))
 }
 
 /** The tune-on split: the only entries anything may print. */
 export const trainOnly = (fixture: SentenceFixture): SentenceFixture => ({
   ...fixture,
-  entries: fixture.entries.filter((e) => e.split === 'train')
-});
+  entries: fixture.entries.filter(e => e.split === "train"),
+})

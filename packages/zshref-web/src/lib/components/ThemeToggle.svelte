@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { theme, toggleTheme } from '$lib/theme';
+  import { theme, toggleTheme } from "$lib/theme"
 </script>
 
 <button

@@ -1,18 +1,18 @@
 // Artifact gating, on-disk loaders and the compare-or-rewrite helper shared
 // by the tests.
 
-import { existsSync } from 'node:fs';
-import { readFile, writeFile } from 'node:fs/promises';
-import { expect } from 'vitest';
-import { parse as parseYaml } from 'yaml';
+import { existsSync } from "node:fs"
+import { readFile, writeFile } from "node:fs/promises"
+import { expect } from "vitest"
+import { parse as parseYaml } from "yaml"
 
-import { readIndex } from '../nlp/index-build';
-import { PATHS } from '../nlp/paths';
-import { prettyJson } from '../nlp/rules-load';
-import type { VectorIndex } from '../src/lib/ranker/types';
+import { readIndex } from "../nlp/index-build"
+import { PATHS } from "../nlp/paths"
+import { prettyJson } from "../nlp/rules-load"
+import type { VectorIndex } from "../src/lib/ranker/types"
 
-export { loadParityFixture, loadSanityFixture } from '../nlp/fixtures';
-export { PATHS, STAGED } from '../nlp/paths';
+export { loadParityFixture, loadSanityFixture } from "../nlp/fixtures"
+export { PATHS, STAGED } from "../nlp/paths"
 
 /**
  * Reason for `ctx.skip(reason)`; null when everything in `needs` is staged.
@@ -21,14 +21,17 @@ export { PATHS, STAGED } from '../nlp/paths';
  * artifacts. `needs` is per-test on purpose: gating a test on the 127M model
  * it never loads makes deleting the model silently skip it.
  */
-export function artifactGate(label: string, needs: readonly string[]): string | null {
-  const missing = needs.filter((p) => !existsSync(p));
-  if (missing.length === 0) return null;
-  const msg = `${label}: not staged locally — ${missing.join(', ')}`;
-  if (process.env.BZ_REQUIRE_WEB_ARTIFACTS === '1') {
-    throw new Error(`${msg} (BZ_REQUIRE_WEB_ARTIFACTS=1)`);
+export function artifactGate(
+  label: string,
+  needs: readonly string[],
+): string | null {
+  const missing = needs.filter(p => !existsSync(p))
+  if (missing.length === 0) return null
+  const msg = `${label}: not staged locally — ${missing.join(", ")}`
+  if (process.env.BZ_REQUIRE_WEB_ARTIFACTS === "1") {
+    throw new Error(`${msg} (BZ_REQUIRE_WEB_ARTIFACTS=1)`)
   }
-  return msg;
+  return msg
 }
 
 /**
@@ -46,18 +49,23 @@ export async function assertCommittedJson(
   envVar: string,
   {
     render = prettyJson,
-    expected = (v) => v
-  }: { render?: (value: unknown) => string; expected?: (generated: unknown) => unknown } = {}
+    expected = v => v,
+  }: {
+    render?: (value: unknown) => string
+    expected?: (generated: unknown) => unknown
+  } = {},
 ): Promise<void> {
-  const text = render(generated);
-  if (process.env[envVar] === '1') {
-    await writeFile(path, text);
-    return;
+  const text = render(generated)
+  if (process.env[envVar] === "1") {
+    await writeFile(path, text)
+    return
   }
   if (!existsSync(path)) {
-    throw new Error(`${path} is missing — generate it with ${envVar}=1`);
+    throw new Error(`${path} is missing — generate it with ${envVar}=1`)
   }
-  expect(JSON.parse(await readFile(path, 'utf8'))).toEqual(expected(JSON.parse(text)));
+  expect(JSON.parse(await readFile(path, "utf8"))).toEqual(
+    expected(JSON.parse(text)),
+  )
 }
 
 /**
@@ -66,18 +74,21 @@ export async function assertCommittedJson(
  * decimal and nothing else — structure and strings stay exact.
  */
 export function withinDecimals(value: unknown, digits: number): unknown {
-  if (typeof value === 'number') return expect.closeTo(value, digits);
-  if (Array.isArray(value)) return value.map((x) => withinDecimals(x, digits));
-  if (value !== null && typeof value === 'object') {
-    return Object.fromEntries(Object.entries(value).map(([k, x]) => [k, withinDecimals(x, digits)]));
+  if (typeof value === "number") return expect.closeTo(value, digits)
+  if (Array.isArray(value)) return value.map(x => withinDecimals(x, digits))
+  if (value !== null && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value).map(([k, x]) => [k, withinDecimals(x, digits)]),
+    )
   }
-  return value;
+  return value
 }
 
 export async function readData(path: string): Promise<unknown> {
-  const text = await readFile(path, 'utf8');
-  return path.endsWith('.yaml') ? parseYaml(text) : JSON.parse(text);
+  const text = await readFile(path, "utf8")
+  return path.endsWith(".yaml") ? parseYaml(text) : JSON.parse(text)
 }
 
 /** The staged index, schema-validated (not corpus-validated: that is `validateIndex`'s test). */
-export const loadIndexFromDisk = (): Promise<VectorIndex> => readIndex(PATHS.indexJson);
+export const loadIndexFromDisk = (): Promise<VectorIndex> =>
+  readIndex(PATHS.indexJson)

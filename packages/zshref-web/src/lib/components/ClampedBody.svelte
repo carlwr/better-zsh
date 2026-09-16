@@ -5,34 +5,35 @@
   // whole body. The toggle only appears when the body actually overflows the
   // clamp — measured with a ResizeObserver because <Md> renders async, so the
   // body grows after first paint.
-  import Md from './Md.svelte';
+  import Md from "./Md.svelte"
 
-  let { source }: { source: string } = $props();
+  let { source }: { source: string } = $props()
 
   // Clamp the preview to ~15rem, but only bother clamping when a worthwhile
   // amount is hidden (CLAMP_REM + MIN_HIDDEN_REM). A body that pokes just past
   // the clamp is shown whole instead of behind a "show more" that reveals one
   // stingy line. scrollHeight is the full content height in either state, so
   // the measurement is independent of whether the clamp is currently applied.
-  const CLAMP_REM = 15;
-  const MIN_HIDDEN_REM = 4;
+  const CLAMP_REM = 15
+  const MIN_HIDDEN_REM = 4
 
-  let expanded = $state(false);
-  let overflowing = $state(false);
-  let el = $state<HTMLDivElement>();
+  let expanded = $state(false)
+  let overflowing = $state(false)
+  let el = $state<HTMLDivElement>()
 
   $effect(() => {
-    const node = el;
-    if (!node) return;
+    const node = el
+    if (!node) return
     const measure = () => {
-      const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
-      overflowing = node.scrollHeight > (CLAMP_REM + MIN_HIDDEN_REM) * rem;
-    };
-    const ro = new ResizeObserver(measure);
-    ro.observe(node);
-    measure();
-    return () => ro.disconnect();
-  });
+      const rem =
+        parseFloat(getComputedStyle(document.documentElement).fontSize) || 16
+      overflowing = node.scrollHeight > (CLAMP_REM + MIN_HIDDEN_REM) * rem
+    }
+    const ro = new ResizeObserver(measure)
+    ro.observe(node)
+    measure()
+    return () => ro.disconnect()
+  })
 </script>
 
 <div class="clamp" class:clamped={overflowing && !expanded} bind:this={el}>

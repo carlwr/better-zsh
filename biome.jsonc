@@ -29,6 +29,13 @@
   "formatter": {
     "useEditorconfig": true
   },
+  // Svelte (and HTML) files: keep <script>/<style> content indented — the
+  // default flattens it to column 0.
+  "html": {
+    "formatter": {
+      "indentScriptAndStyle": true
+    }
+  },
   "javascript": {
     "formatter": {
       "semicolons": "asNeeded",

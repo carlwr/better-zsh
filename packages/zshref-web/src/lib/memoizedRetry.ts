@@ -5,14 +5,14 @@
 // failure must not wedge later attempts.
 
 export function memoizedRetry<T>(f: () => Promise<T>): () => Promise<T> {
-  let cached: Promise<T> | null = null;
+  let cached: Promise<T> | null = null
   return () => {
     if (!cached) {
-      cached = f().catch((e) => {
-        cached = null;
-        throw e;
-      });
+      cached = f().catch(e => {
+        cached = null
+        throw e
+      })
     }
-    return cached;
-  };
+    return cached
+  }
 }

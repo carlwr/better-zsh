@@ -1,8 +1,8 @@
 // The tuning dashboard as a report.
 
-import { composedBase } from '../nlp/eval/sweep';
-import { buildDashboard, renderDashboard } from '../nlp/eval/tune';
-import { reporterAssets, scriptFlags } from './_args';
+import { composedBase } from "../nlp/eval/sweep"
+import { buildDashboard, renderDashboard } from "../nlp/eval/tune"
+import { reporterAssets, scriptFlags } from "./_args"
 
 const usage = `\
 pnpm --filter zshref-web nlp:tune-dashboard [--fast]
@@ -13,14 +13,18 @@ pnpm --filter zshref-web nlp:tune-dashboard [--fast]
   BZ_TUNE_BASE=key=value,…  overrides over the committed tuning (the keys:
              nlp/eval/sweep.ts KNOBS); the report is of that candidate,
              plus its churn against the committed tuning.\
-`;
-const args = scriptFlags('tune-dashboard', usage, ['--fast']);
+`
+const args = scriptFlags("tune-dashboard", usage, ["--fast"])
 
-const spec = process.env.BZ_TUNE_BASE ?? '';
-const candidate = spec.trim() !== '';
-if (candidate) process.stdout.write(`[base override] BZ_TUNE_BASE=${JSON.stringify(spec)}\n`);
+const spec = process.env.BZ_TUNE_BASE ?? ""
+const candidate = spec.trim() !== ""
+if (candidate)
+  process.stdout.write(`[base override] BZ_TUNE_BASE=${JSON.stringify(spec)}\n`)
 
-const assets = await reporterAssets('tune-dashboard');
-const tuning = composedBase(assets.rules.tuning, spec);
-const dash = await buildDashboard(assets, tuning, { candidate, fast: args.has('--fast') });
-process.stdout.write(renderDashboard(dash));
+const assets = await reporterAssets("tune-dashboard")
+const tuning = composedBase(assets.rules.tuning, spec)
+const dash = await buildDashboard(assets, tuning, {
+  candidate,
+  fast: args.has("--fast"),
+})
+process.stdout.write(renderDashboard(dash))

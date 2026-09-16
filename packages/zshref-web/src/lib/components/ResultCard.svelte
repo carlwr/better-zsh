@@ -1,12 +1,13 @@
 <script lang="ts">
   // Presentational: all input via props, so its structure is unit-testable in
   // isolation.
-  import type { RankedMatch } from '$lib/ranker/types';
-  import { recordHref } from '$lib/view';
-  import { renderInline } from '$lib/markdown';
-  import ClampedBody from './ClampedBody.svelte';
 
-  let { match, label }: { match: RankedMatch; label: string } = $props();
+  import { renderInline } from "$lib/markdown"
+  import type { RankedMatch } from "$lib/ranker/types"
+  import { recordHref } from "$lib/view"
+  import ClampedBody from "./ClampedBody.svelte"
+
+  let { match, label }: { match: RankedMatch; label: string } = $props()
 </script>
 
 <li>

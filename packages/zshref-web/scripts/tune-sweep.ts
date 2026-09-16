@@ -8,9 +8,9 @@ import {
   renderSweepHeader,
   SWEEP_FOOTER,
   scoreBench,
-  sweepKnob
-} from '../nlp/eval/sweep';
-import { reporterAssets, scriptFlags } from './_args';
+  sweepKnob,
+} from "../nlp/eval/sweep"
+import { reporterAssets, scriptFlags } from "./_args"
 
 const usage = `\
 pnpm --filter zshref-web nlp:tune-sweep
@@ -20,17 +20,19 @@ pnpm --filter zshref-web nlp:tune-sweep
 
 Takes tens of minutes on CPU (every knob point re-ranks the mechanical set);
 prints block by block, so a partial run is still readable.\
-`;
-scriptFlags('tune-sweep', usage, []);
+`
+scriptFlags("tune-sweep", usage, [])
 
-const assets = await reporterAssets('tune-sweep');
-const bench = await loadBench(assets, console.error);
-const spec = process.env.BZ_TUNE_BASE ?? '';
-const base = composedBase(assets.rules.tuning, spec);
-const baseScores = scoreBench(bench, base);
+const assets = await reporterAssets("tune-sweep")
+const bench = await loadBench(assets, console.error)
+const spec = process.env.BZ_TUNE_BASE ?? ""
+const base = composedBase(assets.rules.tuning, spec)
+const baseScores = scoreBench(bench, base)
 // Block by block, so a partial sweep is still readable.
-process.stdout.write(renderSweepHeader(baseScores, spec));
+process.stdout.write(renderSweepHeader(baseScores, spec))
 for (const key of KNOB_KEYS) {
-  process.stdout.write(renderKnobBlock(sweepKnob(bench, base, key), baseScores.combined));
+  process.stdout.write(
+    renderKnobBlock(sweepKnob(bench, base, key), baseScores.combined),
+  )
 }
-process.stdout.write(SWEEP_FOOTER);
+process.stdout.write(SWEEP_FOOTER)

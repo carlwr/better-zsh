@@ -8,64 +8,77 @@
 // Lowercasing and alphanumeric tests are ASCII-only; whitespace is Unicode
 // White_Space.
 
-import type { DocCorpus } from '@carlwr/zsh-core';
+import type { DocCorpus } from "@carlwr/zsh-core"
 
-import type { RecordText, Synonyms } from '../src/lib/ranker/types';
-import { projectCorpus } from './projection';
+import type { RecordText, Synonyms } from "../src/lib/ranker/types"
+import { projectCorpus } from "./projection"
 
-export type { RecordText } from '../src/lib/ranker/types';
+export type { RecordText } from "../src/lib/ranker/types"
 
-export type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
+export type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | JsonValue[]
+  | { [key: string]: JsonValue }
 /** A projected record as JSON (insertion-ordered keys). */
-export type JsonRecord = { readonly [key: string]: JsonValue };
+export type JsonRecord = { readonly [key: string]: JsonValue }
 
 /** `synonyms.json` `index_groups`, normalized (trimmed, lowercased) at rules load. */
-export type IndexGroups = Synonyms['index_groups'];
+export type IndexGroups = Synonyms["index_groups"]
 
 /** What the header lines and hints are built from. */
 export interface Identity {
-  category: string;
-  label: string;
-  id: string;
-  display: string;
-  subKind?: string;
+  category: string
+  label: string
+  id: string
+  display: string
+  subKind?: string
 }
 
 /** All records in index order: `docCategories` order, corpus map order within. */
-export function corpusTexts(corpus: DocCorpus, indexGroups: IndexGroups): RecordText[] {
+export function corpusTexts(
+  corpus: DocCorpus,
+  indexGroups: IndexGroups,
+): RecordText[] {
   return projectCorpus(corpus).flatMap(({ category, records }) =>
-    records.map((rec) => recordText(category, asJson(rec), indexGroups))
-  );
+    records.map(rec => recordText(category, asJson(rec), indexGroups)),
+  )
 }
 
-export function recordText(cat: string, rec: JsonRecord, indexGroups: IndexGroups): RecordText {
-  const id = strField(rec, '_id');
-  const display = strField(rec, '_display');
-  const title = strField(rec, '_title');
-  const subKind = strField(rec, '_subKind');
-  const mdBody = strField(rec, 'mdBody');
-  const label = categoryLabel(cat);
+export function recordText(
+  cat: string,
+  rec: JsonRecord,
+  indexGroups: IndexGroups,
+): RecordText {
+  const id = strField(rec, "_id")
+  const display = strField(rec, "_display")
+  const title = strField(rec, "_title")
+  const subKind = strField(rec, "_subKind")
+  const mdBody = strField(rec, "mdBody")
+  const label = categoryLabel(cat)
   // `mdBody` is title-less; the body view embeds the whole rendered record.
-  const body = bodyText(rec, `${title}\n\n${mdBody}`);
+  const body = bodyText(rec, `${title}\n\n${mdBody}`)
   const ident: Identity = {
     category: cat,
     label,
     id,
     display,
-    ...(subKind !== '' ? { subKind } : {})
-  };
+    ...(subKind !== "" ? { subKind } : {}),
+  }
   return {
     category: cat,
     category_label: label,
     id,
     display,
-    ...(subKind !== '' ? { sub_kind: subKind } : {}),
+    ...(subKind !== "" ? { sub_kind: subKind } : {}),
     title,
     md_body: mdBody,
     structured: structuredText(ident, rec),
     body,
-    expanded: expandedText(ident, body, indexGroups)
-  };
+    expanded: expandedText(ident, body, indexGroups),
+  }
 }
 
 /** Header lines, then every projected field in emission order. */
@@ -75,20 +88,20 @@ export function structuredText(ident: Identity, rec: JsonRecord): string {
     `category id: ${ident.category}`,
     `id: ${ident.id}`,
     `display: ${ident.display}`,
-    ...(ident.subKind !== undefined ? [`subKind: ${ident.subKind}`] : [])
-  ];
+    ...(ident.subKind !== undefined ? [`subKind: ${ident.subKind}`] : []),
+  ]
   for (const [key, value] of Object.entries(rec)) {
-    if (key.startsWith('_') || key === 'mdBody' || key === 'desc') continue;
-    const s = compactValue(value);
-    if (s !== undefined) lines.push(`${keyWords(key)}: ${s}`);
+    if (key.startsWith("_") || key === "mdBody" || key === "desc") continue
+    const s = compactValue(value)
+    if (s !== undefined) lines.push(`${keyWords(key)}: ${s}`)
   }
-  return lines.join('\n');
+  return lines.join("\n")
 }
 
 /** `desc` as is when present; else the markdown-stripped `fullMd`. */
 export function bodyText(rec: JsonRecord, fullMd: string): string {
-  const desc = strField(rec, 'desc');
-  return desc !== '' ? normalizeWs(desc) : normalizeWs(stripMarkdown(fullMd));
+  const desc = strField(rec, "desc")
+  return desc !== "" ? normalizeWs(desc) : normalizeWs(stripMarkdown(fullMd))
 }
 
 /**
@@ -96,24 +109,30 @@ export function bodyText(rec: JsonRecord, fullMd: string): string {
  * index-time synonym group with a member in the record (whole word or
  * phrase) its members not already there. Hints keep their case.
  */
-export function expandedText(ident: Identity, body: string, indexGroups: IndexGroups): string {
-  const { category, label, id, display, subKind } = ident;
-  const hay = asciiLower([category, label, id, display, subKind ?? '', body].join(' '));
-  const hints: string[] = [];
+export function expandedText(
+  ident: Identity,
+  body: string,
+  indexGroups: IndexGroups,
+): string {
+  const { category, label, id, display, subKind } = ident
+  const hay = asciiLower(
+    [category, label, id, display, subKind ?? "", body].join(" "),
+  )
+  const hints: string[] = []
   const add = (text: string) => {
-    const t = normalizeWs(text);
-    if (t !== '' && !hints.includes(t)) hints.push(t);
-  };
-  add(label);
-  add(keyWords(category));
-  add(keyWords(id));
-  add(keyWords(display));
+    const t = normalizeWs(text)
+    if (t !== "" && !hints.includes(t)) hints.push(t)
+  }
+  add(label)
+  add(keyWords(category))
+  add(keyWords(id))
+  add(keyWords(display))
   for (const group of indexGroups) {
-    if (group.some((m) => hayHasWord(hay, m))) {
-      for (const m of group) if (!hayHasWord(hay, m)) add(m);
+    if (group.some(m => hayHasWord(hay, m))) {
+      for (const m of group) if (!hayHasWord(hay, m)) add(m)
     }
   }
-  return hints.join('\n');
+  return hints.join("\n")
 }
 
 /**
@@ -121,12 +140,16 @@ export function expandedText(ident: Identity, body: string, indexGroups: IndexGr
  * non-alphanumeric ASCII character needles (e.g. "%") use substring match.
  */
 export function hayHasWord(hay: string, needle: string): boolean {
-  if (needle.includes(' ')) return hay.includes(needle);
-  if (needle.length === 1 && needle.charCodeAt(0) < 0x80 && !isAsciiAlnum(needle)) {
-    return hay.includes(needle);
+  if (needle.includes(" ")) return hay.includes(needle)
+  if (
+    needle.length === 1 &&
+    needle.charCodeAt(0) < 0x80 &&
+    !isAsciiAlnum(needle)
+  ) {
+    return hay.includes(needle)
   }
-  const lower = asciiLower(needle);
-  return hay.split(/[^0-9A-Za-z]/).some((w) => asciiLower(w) === lower);
+  const lower = asciiLower(needle)
+  return hay.split(/[^0-9A-Za-z]/).some(w => asciiLower(w) === lower)
 }
 
 /**
@@ -135,27 +158,30 @@ export function hayHasWord(hay: string, needle: string): boolean {
  * `String(n)` and `Number::to_string` agree.
  */
 export function compactValue(value: JsonValue): string | undefined {
-  if (value === null) return undefined;
-  if (typeof value === 'string') return nonempty(normalizeWs(value));
-  if (typeof value === 'boolean' || typeof value === 'number') return String(value);
+  if (value === null) return undefined
+  if (typeof value === "string") return nonempty(normalizeWs(value))
+  if (typeof value === "boolean" || typeof value === "number")
+    return String(value)
   if (Array.isArray(value)) {
-    const parts = value.map(compactValue).filter((s) => s !== undefined && s !== '');
-    return nonempty(parts.join(' '));
+    const parts = value
+      .map(compactValue)
+      .filter(s => s !== undefined && s !== "")
+    return nonempty(parts.join(" "))
   }
-  const parts: string[] = [];
+  const parts: string[] = []
   for (const [k, v] of Object.entries(value)) {
-    const s = compactValue(v);
-    if (s !== undefined) parts.push(`${keyWords(k)} ${s}`);
+    const s = compactValue(v)
+    if (s !== undefined) parts.push(`${keyWords(k)} ${s}`)
   }
-  return nonempty(parts.join(' '));
+  return nonempty(parts.join(" "))
 }
 
 const labelRewrites: ReadonlyMap<string, string> = new Map([
-  ['expn', 'expansion'],
-  ['subst', 'substitution'],
-  ['op', 'operator'],
-  ['param', 'parameter']
-]);
+  ["expn", "expansion"],
+  ["subst", "substitution"],
+  ["op", "operator"],
+  ["param", "parameter"],
+])
 
 /**
  * The retrieval-text category label: the id's words with a few tokens
@@ -164,32 +190,36 @@ const labelRewrites: ReadonlyMap<string, string> = new Map([
  */
 export function categoryLabel(cat: string): string {
   return words(keyWords(cat))
-    .map((w) => labelRewrites.get(w) ?? w)
-    .join(' ');
+    .map(w => labelRewrites.get(w) ?? w)
+    .join(" ")
 }
 
-export const keyWords = (s: string): string => s.replace(/[_-]/g, ' ');
+export const keyWords = (s: string): string => s.replace(/[_-]/g, " ")
 
-export const normalizeWs = (s: string): string => words(s).join(' ');
+export const normalizeWs = (s: string): string => words(s).join(" ")
 
-export const stripMarkdown = (s: string): string => s.replace(/[`*_]/g, '');
+export const stripMarkdown = (s: string): string => s.replace(/[`*_]/g, "")
 
 // Unicode White_Space; JS `\s` differs at U+0085 and U+FEFF.
-const wsRun = /[\t\n\v\f\r \u0085\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]+/;
+const wsRun =
+  /[\t\n\v\f\r \u0085\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]+/
 
-const words = (s: string): string[] => s.split(wsRun).filter((w) => w !== '');
+const words = (s: string): string[] => s.split(wsRun).filter(w => w !== "")
 
-const nonempty = (s: string): string | undefined => (words(s).length === 0 ? undefined : s);
+const nonempty = (s: string): string | undefined =>
+  words(s).length === 0 ? undefined : s
 
-const asciiLower = (s: string): string => s.replace(/[A-Z]+/g, (m) => m.toLowerCase());
+const asciiLower = (s: string): string =>
+  s.replace(/[A-Z]+/g, m => m.toLowerCase())
 
-const isAsciiAlnum = (s: string): boolean => /^[0-9A-Za-z]+$/.test(s);
+const isAsciiAlnum = (s: string): boolean => /^[0-9A-Za-z]+$/.test(s)
 
 /** A record's string field; `''` when absent or not a string. */
 const strField = (rec: JsonRecord, key: string): string => {
-  const v = rec[key];
-  return typeof v === 'string' ? v : '';
-};
+  const v = rec[key]
+  return typeof v === "string" ? v : ""
+}
 
 /** The projected record as its JSON text reads back. */
-const asJson = (rec: object): JsonRecord => JSON.parse(JSON.stringify(rec)) as JsonRecord;
+const asJson = (rec: object): JsonRecord =>
+  JSON.parse(JSON.stringify(rec)) as JsonRecord

@@ -11,15 +11,20 @@
 //   eval (`nlp/eval/mechanical.ts`; recorded, not a hard gate). Ranker
 //   drift: `tests/parity.test.ts`; embedder integration: `tests/sanity.test.ts`.
 
-import { readFile } from 'node:fs/promises';
-import { describe, expect, it } from 'vitest';
-import { z } from 'zod';
-import { evalBare, LOOKUP_CONTRACT_VERSION, phrasingKinds, predicates } from '../nlp/contract';
-import { surfaceFormKinds } from '../nlp/lookup-map-build';
-import { LookupIndex, LookupMapSchema } from '../src/lib/ranker/lookup-map';
-import { PATHS } from './_helpers';
+import { readFile } from "node:fs/promises"
+import { describe, expect, it } from "vitest"
+import { z } from "zod"
+import {
+  evalBare,
+  LOOKUP_CONTRACT_VERSION,
+  phrasingKinds,
+  predicates,
+} from "../nlp/contract"
+import { surfaceFormKinds } from "../nlp/lookup-map-build"
+import { LookupIndex, LookupMapSchema } from "../src/lib/ranker/lookup-map"
+import { PATHS } from "./_helpers"
 
-const IdentitySchema = z.object({ category: z.string(), id: z.string() });
+const IdentitySchema = z.object({ category: z.string(), id: z.string() })
 
 const LookupContractSchema = z.object({
   version: z.literal(LOOKUP_CONTRACT_VERSION),
@@ -30,28 +35,28 @@ const LookupContractSchema = z.object({
       surfaceFormKind: z.enum(surfaceFormKinds),
       phrasingKind: z.enum(phrasingKinds),
       predicate: z.enum(predicates),
-      expectedSet: z.array(IdentitySchema)
-    })
-  )
-});
+      expectedSet: z.array(IdentitySchema),
+    }),
+  ),
+})
 
 async function readJson(path: string): Promise<unknown> {
-  return JSON.parse(await readFile(path, 'utf8'));
+  return JSON.parse(await readFile(path, "utf8"))
 }
 
-describe('lookup contract (bare layer)', () => {
-  it('every bare entry resolves via the lookup map', async () => {
+describe("lookup contract (bare layer)", () => {
+  it("every bare entry resolves via the lookup map", async () => {
     const [contractRaw, mapRaw] = await Promise.all([
       readJson(PATHS.lookupContract),
-      readJson(PATHS.lookupMap)
-    ]);
-    const contract = LookupContractSchema.parse(contractRaw);
-    const idx = new LookupIndex(LookupMapSchema.parse(mapRaw));
-    const e = evalBare(contract, idx);
+      readJson(PATHS.lookupMap),
+    ])
+    const contract = LookupContractSchema.parse(contractRaw)
+    const idx = new LookupIndex(LookupMapSchema.parse(mapRaw))
+    const e = evalBare(contract, idx)
     console.log(
       `[contract bare] ${e.bareTotal} entries, ${e.failures.length} failures ` +
-        `(skipped ${e.skippedDecorated} decorated — covered by the mechanical sentence eval)`
-    );
-    expect(e.failures, e.failures.join('\n')).toEqual([]);
-  });
-});
+        `(skipped ${e.skippedDecorated} decorated — covered by the mechanical sentence eval)`,
+    )
+    expect(e.failures, e.failures.join("\n")).toEqual([])
+  })
+})

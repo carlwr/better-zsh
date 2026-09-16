@@ -6,92 +6,114 @@
 // never optimized. The greedy loop: sweep, fold the best row into
 // `BZ_TUNE_BASE`, repeat (one knob at a time misses interactions).
 
-import type { Tuning } from '../../src/lib/ranker/types';
-import { embedUnique } from '../embedder-node';
-import type { EvalAssets } from './assets';
-import { type ItemRes, perItem, renderDiffReport, signed } from './diff';
-import { buildMechanical, combinedTotal, evalMechanicalCached } from './mechanical';
-import { evalSentenceCached } from './sentence';
-import { loadSentenceFixture, type SentenceEntry, type SentenceFixture } from './sentence-fixture';
-import { withTuning } from './tune';
+import type { Tuning } from "../../src/lib/ranker/types"
+import { embedUnique } from "../embedder-node"
+import type { EvalAssets } from "./assets"
+import { type ItemRes, perItem, renderDiffReport, signed } from "./diff"
+import {
+  buildMechanical,
+  combinedTotal,
+  evalMechanicalCached,
+} from "./mechanical"
+import { evalSentenceCached } from "./sentence"
+import {
+  loadSentenceFixture,
+  type SentenceEntry,
+  type SentenceFixture,
+} from "./sentence-fixture"
+import { withTuning } from "./tune"
 
-type KnobKind = 'float' | 'int';
+type KnobKind = "float" | "int"
 
 interface Knob {
-  kind: KnobKind;
+  kind: KnobKind
   /** The sweep's points, each replacing the base value. */
-  points: readonly number[];
+  points: readonly number[]
   /** Sets the knob on a private copy of the tuning. */
-  set: (t: Tuning, v: number) => void;
+  set: (t: Tuning, v: number) => void
 }
 
-const knob = (kind: KnobKind, points: readonly number[], set: Knob['set']): Knob => ({ kind, points, set });
-const range = (lo: number, hi: number): number[] => Array.from({ length: hi - lo + 1 }, (_, i) => lo + i);
+const knob = (
+  kind: KnobKind,
+  points: readonly number[],
+  set: Knob["set"],
+): Knob => ({ kind, points, set })
+const range = (lo: number, hi: number): number[] =>
+  Array.from({ length: hi - lo + 1 }, (_, i) => lo + i)
 
 /** The rank-time knobs by `BZ_TUNE_BASE` key, in sweep order; each names one `tuning.yaml` field. */
 export const KNOBS = {
-  body: knob('float', [0.55, 0.6, 0.65, 0.7, 0.75, 0.8], (t, v) => {
-    t.semantic_weights.body = v;
+  body: knob("float", [0.55, 0.6, 0.65, 0.7, 0.75, 0.8], (t, v) => {
+    t.semantic_weights.body = v
   }),
-  structured: knob('float', [0.05, 0.1, 0.15, 0.2, 0.25, 0.3], (t, v) => {
-    t.semantic_weights.structured = v;
+  structured: knob("float", [0.05, 0.1, 0.15, 0.2, 0.25, 0.3], (t, v) => {
+    t.semantic_weights.structured = v
   }),
-  sb_strength: knob('float', [0, 0.06, 0.12, 0.18, 0.24, 0.3], (t, v) => {
-    t.semantic_weights.short_body.strength = v;
+  sb_strength: knob("float", [0, 0.06, 0.12, 0.18, 0.24, 0.3], (t, v) => {
+    t.semantic_weights.short_body.strength = v
   }),
-  sb_length: knob('float', [8, 16, 24, 32, 48, 64], (t, v) => {
-    t.semantic_weights.short_body.length_scale = v;
+  sb_length: knob("float", [8, 16, 24, 32, 48, 64], (t, v) => {
+    t.semantic_weights.short_body.length_scale = v
   }),
-  cat: knob('float', [0, 0.01, 0.02, 0.04, 0.06, 0.1], (t, v) => {
-    t.boosts.category = v;
+  cat: knob("float", [0, 0.01, 0.02, 0.04, 0.06, 0.1], (t, v) => {
+    t.boosts.category = v
   }),
-  exact_inc: knob('float', [0, 0.02, 0.04, 0.06, 0.08, 0.12], (t, v) => {
-    t.boosts.exact_word_increment = v;
+  exact_inc: knob("float", [0, 0.02, 0.04, 0.06, 0.08, 0.12], (t, v) => {
+    t.boosts.exact_word_increment = v
   }),
-  wo_scale: knob('float', [0.1, 0.2, 0.3, 0.4, 0.5], (t, v) => {
-    t.boosts.word_overlap.scale = v;
+  wo_scale: knob("float", [0.1, 0.2, 0.3, 0.4, 0.5], (t, v) => {
+    t.boosts.word_overlap.scale = v
   }),
-  wo_halfsat: knob('float', [1, 2, 4, 6, 10, 16], (t, v) => {
-    t.boosts.word_overlap.half_sat = v;
+  wo_halfsat: knob("float", [1, 2, 4, 6, 10, 16], (t, v) => {
+    t.boosts.word_overlap.half_sat = v
   }),
-  rarity: knob('float', [0, 0.01, 0.03, 0.06, 0.1, 0.16], (t, v) => {
-    t.penalties.category_rarity_max = v;
+  rarity: knob("float", [0, 0.01, 0.03, 0.06, 0.1, 0.16], (t, v) => {
+    t.penalties.category_rarity_max = v
   }),
-  disc_len: knob('int', range(2, 6), (t, v) => {
-    t.lexical.min_discriminating_word_len = v;
+  disc_len: knob("int", range(2, 6), (t, v) => {
+    t.lexical.min_discriminating_word_len = v
   }),
-  sig_len: knob('int', range(1, 4), (t, v) => {
-    t.lexical.min_significant_word_len = v;
-  })
-} satisfies Record<string, Knob>;
-export type KnobKey = keyof typeof KNOBS;
-export const KNOB_KEYS = Object.keys(KNOBS) as KnobKey[];
+  sig_len: knob("int", range(1, 4), (t, v) => {
+    t.lexical.min_significant_word_len = v
+  }),
+} satisfies Record<string, Knob>
+export type KnobKey = keyof typeof KNOBS
+export const KNOB_KEYS = Object.keys(KNOBS) as KnobKey[]
 
-const isKnobKey = (s: string): s is KnobKey => Object.hasOwn(KNOBS, s);
+const isKnobKey = (s: string): s is KnobKey => Object.hasOwn(KNOBS, s)
 
 /** The point label: 3 decimals for a float knob, the integer for an int one. */
-export const knobLabel = (kind: KnobKind, v: number): string => (kind === 'float' ? v.toFixed(3) : String(v));
+export const knobLabel = (kind: KnobKind, v: number): string =>
+  kind === "float" ? v.toFixed(3) : String(v)
 
-const FLOAT_LITERAL = /^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$/;
-const INT_LITERAL = /^\+?\d+$/;
+const FLOAT_LITERAL = /^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$/
+const INT_LITERAL = /^\+?\d+$/
 
 function parseKnobValue(key: KnobKey, kind: KnobKind, raw: string): number {
-  const ok = (kind === 'float' ? FLOAT_LITERAL : INT_LITERAL).test(raw);
-  if (!ok) throw new Error(`BZ_TUNE_BASE ${key}: ${JSON.stringify(raw)} is not a valid ${kind}`);
-  return Number(raw);
+  const ok = (kind === "float" ? FLOAT_LITERAL : INT_LITERAL).test(raw)
+  if (!ok)
+    throw new Error(
+      `BZ_TUNE_BASE ${key}: ${JSON.stringify(raw)} is not a valid ${kind}`,
+    )
+  return Number(raw)
 }
 
 /** `tuning` with one knob at `v`; the range checks of loading do not apply. */
 export function withKnob(tuning: Tuning, key: KnobKey, v: number): Tuning {
-  const t = structuredClone(tuning);
-  KNOBS[key].set(t, v);
-  return t;
+  const t = structuredClone(tuning)
+  KNOBS[key].set(t, v)
+  return t
 }
 
 /** One `key=value` override; an unknown key or a malformed value throws, so a typo fails loudly. */
-export function applyOverride(tuning: Tuning, key: string, value: string): Tuning {
-  if (!isKnobKey(key)) throw new Error(`unknown BZ_TUNE_BASE key: ${JSON.stringify(key)}`);
-  return withKnob(tuning, key, parseKnobValue(key, KNOBS[key].kind, value));
+export function applyOverride(
+  tuning: Tuning,
+  key: string,
+  value: string,
+): Tuning {
+  if (!isKnobKey(key))
+    throw new Error(`unknown BZ_TUNE_BASE key: ${JSON.stringify(key)}`)
+  return withKnob(tuning, key, parseKnobValue(key, KNOBS[key].kind, value))
 }
 
 /**
@@ -99,141 +121,181 @@ export function applyOverride(tuning: Tuning, key: string, value: string): Tunin
  * `key=value` pairs, whitespace around either ignored, empty pairs skipped.
  * One definition, so a candidate reads the same in every tool.
  */
-export function composedBase(committed: Tuning, spec: string | undefined): Tuning {
-  return (spec ?? '')
-    .split(',')
-    .map((kv) => kv.trim())
-    .filter((kv) => kv !== '')
+export function composedBase(
+  committed: Tuning,
+  spec: string | undefined,
+): Tuning {
+  return (spec ?? "")
+    .split(",")
+    .map(kv => kv.trim())
+    .filter(kv => kv !== "")
     .reduce((t, kv) => {
-      const at = kv.indexOf('=');
-      if (at === -1) throw new Error(`BZ_TUNE_BASE entries are key=value, got ${JSON.stringify(kv)}`);
-      return applyOverride(t, kv.slice(0, at).trim(), kv.slice(at + 1).trim());
-    }, committed);
+      const at = kv.indexOf("=")
+      if (at === -1)
+        throw new Error(
+          `BZ_TUNE_BASE entries are key=value, got ${JSON.stringify(kv)}`,
+        )
+      return applyOverride(t, kv.slice(0, at).trim(), kv.slice(at + 1).trim())
+    }, committed)
 }
 
 // --- the bench -----------------------------------------------------------------
 
 /** One variant's scores; `combined` is the optimization target. */
 export interface Scores {
-  train: number;
-  holdout: number;
-  mechanical: number;
-  combined: number;
+  train: number
+  holdout: number
+  mechanical: number
+  combined: number
 }
 
 /** Assets plus both query caches, embedded once for every variant. */
 export interface Bench {
-  assets: EvalAssets;
-  fixture: SentenceFixture;
-  curatedVecs: Map<string, Float32Array>;
-  mechEntries: SentenceEntry[];
-  mechVecs: Map<string, Float32Array>;
+  assets: EvalAssets
+  fixture: SentenceFixture
+  curatedVecs: Map<string, Float32Array>
+  mechEntries: SentenceEntry[]
+  mechVecs: Map<string, Float32Array>
 }
 
 /** Embed the curated and the mechanical queries; `progress` gets the one note before the (slow) mechanical embed. */
-export async function loadBench(assets: EvalAssets, progress: (line: string) => void = () => {}): Promise<Bench> {
-  const fixture = await loadSentenceFixture();
-  const curatedVecs = await embedUnique(assets.embedder, fixture.entries.map((e) => e.query), assets.rules);
-  const mechEntries = buildMechanical(assets.corpus);
-  progress(`embedding ${fixture.entries.length} curated + ${mechEntries.length} mechanical queries once…`);
-  const mechVecs = await embedUnique(assets.embedder, mechEntries.map((e) => e.query), assets.rules);
-  return { assets, fixture, curatedVecs, mechEntries, mechVecs };
+export async function loadBench(
+  assets: EvalAssets,
+  progress: (line: string) => void = () => {},
+): Promise<Bench> {
+  const fixture = await loadSentenceFixture()
+  const curatedVecs = await embedUnique(
+    assets.embedder,
+    fixture.entries.map(e => e.query),
+    assets.rules,
+  )
+  const mechEntries = buildMechanical(assets.corpus)
+  progress(
+    `embedding ${fixture.entries.length} curated + ${mechEntries.length} mechanical queries once…`,
+  )
+  const mechVecs = await embedUnique(
+    assets.embedder,
+    mechEntries.map(e => e.query),
+    assets.rules,
+  )
+  return { assets, fixture, curatedVecs, mechEntries, mechVecs }
 }
 
 export function scoreBench(bench: Bench, tuning: Tuning): Scores {
-  const assets = withTuning(bench.assets, tuning);
-  const c = evalSentenceCached(bench.fixture, bench.curatedVecs, assets);
-  const m = evalMechanicalCached(bench.mechEntries, bench.mechVecs, assets);
+  const assets = withTuning(bench.assets, tuning)
+  const c = evalSentenceCached(bench.fixture, bench.curatedVecs, assets)
+  const m = evalMechanicalCached(bench.mechEntries, bench.mechVecs, assets)
   return {
     train: c.train.total,
     holdout: c.holdout.total,
     mechanical: m.all.total,
-    combined: combinedTotal(c.train.total, m.all.total)
-  };
+    combined: combinedTotal(c.train.total, m.all.total),
+  }
 }
 
 // --- the sweep -----------------------------------------------------------------
 
 export interface SweepRow {
-  label: string;
-  scores: Scores;
+  label: string
+  scores: Scores
 }
 
 export interface KnobSweep {
-  knob: KnobKey;
-  rows: SweepRow[];
+  knob: KnobKey
+  rows: SweepRow[]
 }
 
 export interface Sweep {
-  base: Scores;
-  knobs: KnobSweep[];
+  base: Scores
+  knobs: KnobSweep[]
 }
 
 /** One knob: the base with each point in turn. */
 export function sweepKnob(bench: Bench, base: Tuning, key: KnobKey): KnobSweep {
-  const { kind, points } = KNOBS[key];
+  const { kind, points } = KNOBS[key]
   return {
     knob: key,
-    rows: points.map((v) => ({ label: knobLabel(kind, v), scores: scoreBench(bench, withKnob(base, key, v)) }))
-  };
+    rows: points.map(v => ({
+      label: knobLabel(kind, v),
+      scores: scoreBench(bench, withKnob(base, key, v)),
+    })),
+  }
 }
 
 /** Every knob around `base`. The reporter runs the same loop block by block, printing as it goes. */
 export const runSweep = (bench: Bench, base: Tuning): Sweep => ({
   base: scoreBench(bench, base),
-  knobs: KNOB_KEYS.map((key) => sweepKnob(bench, base, key))
-});
+  knobs: KNOB_KEYS.map(key => sweepKnob(bench, base, key)),
+})
 
 /** A row whose combined is within this of the base's is the base row. */
-const BASE_EPS = 1e-6;
+const BASE_EPS = 1e-6
 
 /**
  * Per row: ` ◄ best` on the highest combined (the last one on a tie), else
  * ` (base)` where the combined equals the base's, else nothing.
  */
-export function sweepMarks(combined: readonly number[], baseCombined: number): string[] {
-  const best = combined.reduce((bi, c, i) => (c >= (combined[bi] ?? Number.NEGATIVE_INFINITY) ? i : bi), -1);
-  return combined.map((c, i) => (i === best ? ' ◄ best' : Math.abs(c - baseCombined) < BASE_EPS ? ' (base)' : ''));
+export function sweepMarks(
+  combined: readonly number[],
+  baseCombined: number,
+): string[] {
+  const best = combined.reduce(
+    (bi, c, i) => (c >= (combined[bi] ?? Number.NEGATIVE_INFINITY) ? i : bi),
+    -1,
+  )
+  return combined.map((c, i) =>
+    i === best
+      ? " ◄ best"
+      : Math.abs(c - baseCombined) < BASE_EPS
+        ? " (base)"
+        : "",
+  )
 }
 
-const fixed4 = (x: number): string => x.toFixed(4);
+const fixed4 = (x: number): string => x.toFixed(4)
 
 export const renderSweepHeader = (base: Scores, spec: string): string =>
-  `\n=== tuning sweep (one knob at a time) ===\nbase: combined=${fixed4(base.combined)}  train=${fixed4(base.train)}  holdout=${fixed4(base.holdout)}  mechanical=${fixed4(base.mechanical)}  (BZ_TUNE_BASE=${JSON.stringify(spec)})\n`;
+  `\n=== tuning sweep (one knob at a time) ===\nbase: combined=${fixed4(base.combined)}  train=${fixed4(base.train)}  holdout=${fixed4(base.holdout)}  mechanical=${fixed4(base.mechanical)}  (BZ_TUNE_BASE=${JSON.stringify(spec)})\n`
 
-export function renderKnobBlock({ knob, rows }: KnobSweep, baseCombined: number): string {
+export function renderKnobBlock(
+  { knob, rows }: KnobSweep,
+  baseCombined: number,
+): string {
   const marks = sweepMarks(
-    rows.map((r) => r.scores.combined),
-    baseCombined
-  );
+    rows.map(r => r.scores.combined),
+    baseCombined,
+  )
   const lines = rows.map(({ label, scores: s }, i) => {
-    const delta = s.combined - baseCombined;
-    return `  ${label.padEnd(10)} comb=${fixed4(s.combined)} Δ=${signed(delta, 4)}  train=${fixed4(s.train)} hold=${fixed4(s.holdout)} mech=${fixed4(s.mechanical)}${marks[i] ?? ''}`;
-  });
-  return `\n── ${knob} ───────────────────  (base combined=${fixed4(baseCombined)})\n${lines.join('\n')}\n`;
+    const delta = s.combined - baseCombined
+    return `  ${label.padEnd(10)} comb=${fixed4(s.combined)} Δ=${signed(delta, 4)}  train=${fixed4(s.train)} hold=${fixed4(s.holdout)} mech=${fixed4(s.mechanical)}${marks[i] ?? ""}`
+  })
+  return `\n── ${knob} ───────────────────  (base combined=${fixed4(baseCombined)})\n${lines.join("\n")}\n`
 }
 
-export const SWEEP_FOOTER = '\n=== end sweep ===\n';
+export const SWEEP_FOOTER = "\n=== end sweep ===\n"
 
 /** The whole report, as the reporter prints it block by block. */
 export function renderSweep(sweep: Sweep, spec: string): string {
   return (
     renderSweepHeader(sweep.base, spec) +
-    sweep.knobs.map((k) => renderKnobBlock(k, sweep.base.combined)).join('') +
+    sweep.knobs.map(k => renderKnobBlock(k, sweep.base.combined)).join("") +
     SWEEP_FOOTER
-  );
+  )
 }
 
 // --- the diff ------------------------------------------------------------------
 
 /** Both sets under `tuning`, over the bench's caches. */
-export const benchItems = (bench: Bench, tuning: Tuning): { curated: ItemRes[]; mechanical: ItemRes[] } => {
-  const assets = withTuning(bench.assets, tuning);
+export const benchItems = (
+  bench: Bench,
+  tuning: Tuning,
+): { curated: ItemRes[]; mechanical: ItemRes[] } => {
+  const assets = withTuning(bench.assets, tuning)
   return {
     curated: perItem(bench.fixture.entries, bench.curatedVecs, assets),
-    mechanical: perItem(bench.mechEntries, bench.mechVecs, assets)
-  };
-};
+    mechanical: perItem(bench.mechEntries, bench.mechVecs, assets),
+  }
+}
 
 /**
  * Item-level diff of `cand` against `base`: which items change rank and how
@@ -241,12 +303,17 @@ export const benchItems = (bench: Bench, tuning: Tuning): { curated: ItemRes[]; 
  * items behind it can be named. Curated movers are the train split only;
  * the mechanical set is all train.
  */
-export function renderTuneDiff(bench: Bench, base: Tuning, cand: Tuning, spec: string): string {
-  const b = benchItems(bench, base);
-  const c = benchItems(bench, cand);
+export function renderTuneDiff(
+  bench: Bench,
+  base: Tuning,
+  cand: Tuning,
+  spec: string,
+): string {
+  const b = benchItems(bench, base)
+  const c = benchItems(bench, cand)
   return (
     `\n=== tune diff: base vs candidate ===\ncandidate BZ_TUNE_BASE=${JSON.stringify(spec)}\n` +
-    renderDiffReport('curated train', b.curated, c.curated, true) +
-    renderDiffReport('mechanical', b.mechanical, c.mechanical, false)
-  );
+    renderDiffReport("curated train", b.curated, c.curated, true) +
+    renderDiffReport("mechanical", b.mechanical, c.mechanical, false)
+  )
 }

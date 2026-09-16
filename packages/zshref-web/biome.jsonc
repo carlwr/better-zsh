@@ -2,25 +2,20 @@
   "$schema": "https://biomejs.dev/schemas/2.5.12/schema.json",
   "root": false,
   "extends": "//",
-  // Lints the .ts logic only. .svelte components are checked by svelte-check
-  // (template-aware); Biome parses <script> in isolation and would
-  // false-flag template-referenced symbols as unused. Formatter is off —
-  // this package keeps its semicolon style.
   "files": {
     "includes": [
       "**",
-      "!**/*.svelte",
-      "!**/*.d.ts",
-      "!**/*.css",
-      "!**/*.html",
-      "!svelte.config.js",
-      // Committed generated JSON (the `UPDATE_*` tests regenerate it):
-      // drift-checked, not linted; one file exceeds Biome's size cap.
+      // Committed generated JSON (the `UPDATE_*` tests regenerate it in
+      // their own layout): drift-checked, not formatted; one file exceeds
+      // Biome's size cap.
       "!nlp/data",
       "!nlp/rules/schema"
     ]
   },
-  "formatter": {
-    "enabled": false
+  // .svelte: formatted (the <script> blocks), not linted — svelte-check owns
+  // them (template-aware); Biome parses <script> in isolation and would
+  // false-flag template-referenced symbols as unused.
+  "linter": {
+    "includes": ["**", "!**/*.svelte"]
   }
 }

@@ -3,32 +3,38 @@
 // ranked scores exactly. No embedder and no staged artifacts, so the
 // contract stays inside ordinary CI.
 
-import { beforeAll, describe, expect, it } from 'vitest';
-import { loadRulesYaml } from '../nlp/rules-load';
-import { rank } from '../src/lib/ranker/rank';
-import type { Rules } from '../src/lib/ranker/rules';
-import { loadParityFixture } from './_helpers';
+import { beforeAll, describe, expect, it } from "vitest"
+import { loadRulesYaml } from "../nlp/rules-load"
+import { rank } from "../src/lib/ranker/rank"
+import type { Rules } from "../src/lib/ranker/rules"
+import { loadParityFixture } from "./_helpers"
 
-describe('ranker parity', () => {
-  let rules: Rules;
+describe("ranker parity", () => {
+  let rules: Rules
 
   beforeAll(async () => {
-    rules = await loadRulesYaml();
-  });
+    rules = await loadRulesYaml()
+  })
 
-  it('reproduces fixture scores exactly', async () => {
-    const fixture = await loadParityFixture();
+  it("reproduces fixture scores exactly", async () => {
+    const fixture = await loadParityFixture()
     // A regeneration that emitted nothing would otherwise loop zero times.
-    expect(fixture.entries.length).toBeGreaterThan(0);
-    expect(fixture.index.records.length).toBeGreaterThan(0);
+    expect(fixture.entries.length).toBeGreaterThan(0)
+    expect(fixture.index.records.length).toBeGreaterThan(0)
     for (const entry of fixture.entries) {
-      const ranked = rank(entry.query, entry.queryVec, null, fixture.index, rules);
-      const got = ranked.slice(0, fixture.limit).map((m) => ({
+      const ranked = rank(
+        entry.query,
+        entry.queryVec,
+        null,
+        fixture.index,
+        rules,
+      )
+      const got = ranked.slice(0, fixture.limit).map(m => ({
         category: m.rec.category,
         id: m.rec.id,
-        score: m.score
-      }));
-      expect(got, `query: ${entry.query}`).toEqual(entry.expected);
+        score: m.score,
+      }))
+      expect(got, `query: ${entry.query}`).toEqual(entry.expected)
     }
-  });
-});
+  })
+})

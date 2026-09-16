@@ -12,27 +12,40 @@
 // the per-category count of entries whose record did not rank #1, and the
 // id-shape slices.
 
-import type { DocCorpus } from '@carlwr/zsh-core';
-import { type DocCategory, docCategories, docDisplay, idOf } from '@carlwr/zsh-core/taxonomy';
+import type { DocCorpus } from "@carlwr/zsh-core"
+import {
+  type DocCategory,
+  docCategories,
+  docDisplay,
+  idOf,
+} from "@carlwr/zsh-core/taxonomy"
 
-import { buildLookupContract } from '../contract';
-import { embedUnique } from '../embedder-node';
-import type { EvalAssets } from './assets';
-import { type EvalResult, evalResult } from './metric';
-import { type HardCheckTemplate, hardCheckTemplates } from './qa-score';
-import { countPerCategory, type GradedItem, gradeEntries, type RankAssets, voteOf } from './sentence';
-import type { SentenceEntry } from './sentence-fixture';
+import { buildLookupContract } from "../contract"
+import { embedUnique } from "../embedder-node"
+import type { EvalAssets } from "./assets"
+import { type EvalResult, evalResult } from "./metric"
+import { type HardCheckTemplate, hardCheckTemplates } from "./qa-score"
+import {
+  countPerCategory,
+  type GradedItem,
+  gradeEntries,
+  type RankAssets,
+  voteOf,
+} from "./sentence"
+import type { SentenceEntry } from "./sentence-fixture"
 
 /** Curated/mechanical blend weight: `total = LAMBDA·curated_train + (1 − LAMBDA)·mechanical`. */
-export const LAMBDA = 0.5;
+export const LAMBDA = 0.5
 
 /** The blend; one definition for every caller. */
-export const combinedTotal = (curatedTrain: number, mechanicalTotal: number): number =>
-  LAMBDA * curatedTrain + (1 - LAMBDA) * mechanicalTotal;
+export const combinedTotal = (
+  curatedTrain: number,
+  mechanicalTotal: number,
+): number => LAMBDA * curatedTrain + (1 - LAMBDA) * mechanicalTotal
 
 /** Every item at unit depth and weight, train split: a mechanical entry
  * demands a true top-1 surface and contributes equally. */
-export const TARGET_DEPTH = 1;
+export const TARGET_DEPTH = 1
 
 // The QA hard-check questions plus a `$`-prefixed `special_param` form and a
 // `zle_widget` form the harness lacks. The `$NAME` form is what users
@@ -41,20 +54,26 @@ export const TARGET_DEPTH = 1;
 // never hard-promoted — genuine ranker signal for the `$NAME`-in-a-sentence
 // path.
 const nlQuestionExtras: Partial<Record<DocCategory, HardCheckTemplate>> = {
-  special_param: (d) => `what is the $${d} parameter`,
-  zle_widget: (d) => `what does the ${d} widget do`
-};
+  special_param: d => `what is the $${d} parameter`,
+  zle_widget: d => `what does the ${d} widget do`,
+}
 
 /** The NL questions over a record's display form; none for a category outside the templated ones. */
 export function nlQuestions(category: DocCategory, display: string): string[] {
-  return [hardCheckTemplates[category], nlQuestionExtras[category]].flatMap((t) => (t ? [t(display)] : []));
+  return [hardCheckTemplates[category], nlQuestionExtras[category]].flatMap(
+    t => (t ? [t(display)] : []),
+  )
 }
 
-const mechanicalEntry = (query: string, category: string, id: string): SentenceEntry => ({
+const mechanicalEntry = (
+  query: string,
+  category: string,
+  id: string,
+): SentenceEntry => ({
   query,
   want: [{ category, id, targetDepth: TARGET_DEPTH, weight: 1 }],
-  split: 'train'
-});
+  split: "train",
+})
 
 /**
  * The full mechanical set: the contract's decorated phrasings in contract
@@ -63,26 +82,31 @@ const mechanicalEntry = (query: string, category: string, id: string): SentenceE
  */
 export function buildMechanical(corpus: DocCorpus): SentenceEntry[] {
   const decorated = buildLookupContract(corpus)
-    .entries.filter((e) => e.phrasingKind !== 'bare')
-    .map((e) => mechanicalEntry(e.query, e.record.category, e.record.id));
-  const questions = docCategories.flatMap((cat) =>
-    [...corpus[cat].values()].flatMap((rec) => {
-      const id = idOf(cat, rec) as string;
-      if (id === '') return [];
-      return nlQuestions(cat, docDisplay(cat, rec)).map((q) => mechanicalEntry(q, cat, id));
-    })
-  );
-  return [...decorated, ...questions];
+    .entries.filter(e => e.phrasingKind !== "bare")
+    .map(e => mechanicalEntry(e.query, e.record.category, e.record.id))
+  const questions = docCategories.flatMap(cat =>
+    [...corpus[cat].values()].flatMap(rec => {
+      const id = idOf(cat, rec) as string
+      if (id === "") return []
+      return nlQuestions(cat, docDisplay(cat, rec)).map(q =>
+        mechanicalEntry(q, cat, id),
+      )
+    }),
+  )
+  return [...decorated, ...questions]
 }
 
 export interface Slice {
-  label: string;
-  pred: (id: string) => boolean;
+  label: string
+  pred: (id: string) => boolean
 }
 
 /** Unicode alphanumeric: the `Alphabetic` property or a number category. */
-const isAlphanumeric = (c: string): boolean => /[\p{Alphabetic}\p{N}]/u.test(c);
-const idLength = (n: number): Slice => ({ label: `id length ${n}`, pred: (id) => [...id].length === n });
+const isAlphanumeric = (c: string): boolean => /[\p{Alphabetic}\p{N}]/u.test(c)
+const idLength = (n: number): Slice => ({
+  label: `id length ${n}`,
+  pred: id => [...id].length === n,
+})
 
 /**
  * Cross-cutting "hard slice" buckets over the expected record's id, cutting
@@ -93,72 +117,81 @@ const idLength = (n: number): Slice => ({ label: `id length ${n}`, pred: (id) =>
  */
 export const SLICES: readonly Slice[] = [
   ...[1, 2, 3, 4].map(idLength),
-  { label: 'punctuation-only', pred: (id) => id !== '' && [...id].every((c) => !isAlphanumeric(c)) }
-];
+  {
+    label: "punctuation-only",
+    pred: id => id !== "" && [...id].every(c => !isAlphanumeric(c)),
+  },
+]
 
 /** One slice's stats. `meanGain` is a flat per-item mean (a slice is a
  * property, not a category); `fails` counts items not ranked #1. */
 export interface SliceStat {
-  label: string;
-  n: number;
-  fails: number;
-  meanGain: number;
+  label: string
+  n: number
+  fails: number
+  meanGain: number
 }
 
 export interface MechanicalEval extends EvalResult {
   /** Per category: entries whose record did not rank #1. Reported, never gated. */
-  violations: Map<string, number>;
-  slices: SliceStat[];
+  violations: Map<string, number>
+  slices: SliceStat[]
 }
 
-const notTop1 = (g: GradedItem): boolean => g.rank !== 1;
+const notTop1 = (g: GradedItem): boolean => g.rank !== 1
 
 function sliceStats(graded: readonly GradedItem[]): SliceStat[] {
   return SLICES.map(({ label, pred }) => {
-    const members = graded.filter((g) => pred(g.item.id));
-    let sum = 0;
-    for (const g of members) sum += g.gain;
+    const members = graded.filter(g => pred(g.item.id))
+    let sum = 0
+    for (const g of members) sum += g.gain
     return {
       label,
       n: members.length,
       fails: members.filter(notTop1).length,
-      meanGain: members.length > 0 ? sum / members.length : 0
-    };
-  });
+      meanGain: members.length > 0 ? sum / members.length : 0,
+    }
+  })
 }
 
 /** Rank and grade the pre-built entries against an embedded query cache, plus the diagnostics. */
 export function evalMechanicalCached(
   entries: readonly SentenceEntry[],
   vecs: ReadonlyMap<string, Float32Array>,
-  assets: RankAssets
+  assets: RankAssets,
 ): MechanicalEval {
-  const graded = gradeEntries(entries, vecs, assets);
+  const graded = gradeEntries(entries, vecs, assets)
   return {
     ...evalResult(graded.map(voteOf), entries.length, countPerCategory(graded)),
     violations: countPerCategory(graded.filter(notTop1)),
-    slices: sliceStats(graded)
-  };
+    slices: sliceStats(graded),
+  }
 }
 
 /** Embed every distinct query once, then `evalMechanicalCached`. */
-export async function evalMechanical(entries: readonly SentenceEntry[], assets: EvalAssets): Promise<MechanicalEval> {
-  const queries = entries.map((e) => e.query);
-  const vecs = await embedUnique(assets.embedder, queries, assets.rules);
-  return evalMechanicalCached(entries, vecs, assets);
+export async function evalMechanical(
+  entries: readonly SentenceEntry[],
+  assets: EvalAssets,
+): Promise<MechanicalEval> {
+  const queries = entries.map(e => e.query)
+  const vecs = await embedUnique(assets.embedder, queries, assets.rules)
+  return evalMechanicalCached(entries, vecs, assets)
 }
 
 /** The component report: the total and, per category, the score with its
  * item count and #1-violation count. */
 export function renderMechanical(r: MechanicalEval): string {
-  const head = `[mechanical] total=${r.all.total.toFixed(3)}  (${r.nEntries} entries)\n`;
+  const head = `[mechanical] total=${r.all.total.toFixed(3)}  (${r.nEntries} entries)\n`
   const rows = [...r.all.perCategory].map(
     ([cat, s]) =>
-      `  ${cat.padEnd(20)} ${s.toFixed(3)}  (n=${r.perCategoryN.get(cat) ?? 0}, #1-violations=${r.violations.get(cat) ?? 0})\n`
-  );
-  return head + rows.join('');
+      `  ${cat.padEnd(20)} ${s.toFixed(3)}  (n=${r.perCategoryN.get(cat) ?? 0}, #1-violations=${r.violations.get(cat) ?? 0})\n`,
+  )
+  return head + rows.join("")
 }
 
 /** The blend line, after `renderMechanical` in the report. */
-export const renderCombined = (curatedTrain: number, mechanicalTotal: number): string =>
-  `[combined] curated_train=${curatedTrain.toFixed(3)}  mechanical=${mechanicalTotal.toFixed(3)}  λ=${LAMBDA}  total=${combinedTotal(curatedTrain, mechanicalTotal).toFixed(3)}\n`;
+export const renderCombined = (
+  curatedTrain: number,
+  mechanicalTotal: number,
+): string =>
+  `[combined] curated_train=${curatedTrain.toFixed(3)}  mechanical=${mechanicalTotal.toFixed(3)}  λ=${LAMBDA}  total=${combinedTotal(curatedTrain, mechanicalTotal).toFixed(3)}\n`

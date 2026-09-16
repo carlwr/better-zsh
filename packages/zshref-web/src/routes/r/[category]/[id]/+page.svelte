@@ -1,29 +1,29 @@
 <script lang="ts">
-  import { page } from '$app/state';
-  import { getArtifacts, type Artifacts } from '$lib/artifacts';
-  import { errMsg } from '$lib/errors';
-  import Md from '$lib/components/Md.svelte';
-  import { renderInline } from '$lib/markdown';
-  import { findRecord, recordView } from '$lib/view';
+  import { page } from "$app/state"
+  import { type Artifacts, getArtifacts } from "$lib/artifacts"
+  import Md from "$lib/components/Md.svelte"
+  import { errMsg } from "$lib/errors"
+  import { renderInline } from "$lib/markdown"
+  import { findRecord, recordView } from "$lib/view"
 
-  let artifacts = $state<Artifacts | null>(null);
-  let loadError = $state('');
+  let artifacts = $state<Artifacts | null>(null)
+  let loadError = $state("")
 
   // Load once (param-independent, memoized); the param-dependent lookup is the
   // synchronous derivation below, so navigation needs no out-of-order guard.
   $effect(() => {
     void (async () => {
       try {
-        artifacts = await getArtifacts();
+        artifacts = await getArtifacts()
       } catch (e) {
-        loadError = errMsg(e);
+        loadError = errMsg(e)
       }
-    })();
-  });
+    })()
+  })
 
   // Route matches only with both segments, so always strings at runtime;
   // Record<string,string> loses that under noUncheckedIndexedAccess.
-  let params = $derived(page.params as { category: string; id: string });
+  let params = $derived(page.params as { category: string; id: string })
 
   let view = $derived(
     recordView({
@@ -34,9 +34,9 @@
         : undefined,
       categories: artifacts?.categories ?? [],
       category: params.category,
-      id: params.id
-    })
-  );
+      id: params.id,
+    }),
+  )
 </script>
 
 <section>
