@@ -44,6 +44,18 @@ make cli-release-act   # act: every job on the aarch64 Linux row, both publishes
 
 `make cli-release-act` maps `ubuntu-24.04-arm` onto act's Ubuntu image; on Apple Silicon that is the one row act can build natively. Only a real tag exercises:
 
-- the macOS and Windows rows (Rosetta on the runner, `7z`, the first Windows build of the crate)
+- the macOS and Windows rows (Rosetta on the runner, `7z`)
 - OIDC: npm provenance, crates.io token exchange
 - the release itself: attestation, `gh release`
+
+## After a release
+
+```sh
+npm view @carlwr/zshref dist-tags; npm view @carlwr/zshref-mcp dist-tags   # `latest` moved? (PACKAGING.md)
+npx -y @carlwr/zshref-mcp@<version> --version                              # the npm path, end to end
+cargo binstall -y --install-path /tmp/zshref zshref@<version>              # the archive path (brew install cargo-binstall)
+gh release download zshref-v<version> -p SHA256SUMS -p 'zshref-aarch64-apple-darwin.tar.gz' -D /tmp/rel
+gh attestation verify /tmp/rel/zshref-aarch64-apple-darwin.tar.gz --repo carlwr/better-zsh
+```
+
+Unpinned `cargo binstall zshref` and `cargo install zshref` fail while every version is a prerelease (`*` matches none); the README pins.

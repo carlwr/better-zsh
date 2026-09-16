@@ -64,8 +64,8 @@ Prebuilt binaries for macOS (arm64, x64), Linux (x64, arm64) and Windows (x64):
 npm i -g @carlwr/zshref          # zshref + zshref-mcp
 npx -y @carlwr/zshref-mcp        # the MCP server, no install (see "MCP server" below)
 
-# GitHub Release archives, via cargo-binstall
-cargo binstall zshref
+# the GitHub Release archives, via cargo-binstall (no compile; pinned while no stable release exists)
+cargo binstall zshref@0.1.0-alpha.3
 ```
 
 The npm packages carry every platform's binaries; the `zshref` / `zshref-mcp` commands they install are small launchers that spawn the bundled binary for the current platform, and nothing else — the binaries themselves spawn no subprocess. Install one of the two packages globally, not both: both own `zshref-mcp`. Archives and checksums: the [releases page](https://github.com/carlwr/zshref/releases).
