@@ -195,7 +195,6 @@ In order. A step ends with the repo's validation gates green where touched and t
 
 Decided not to decide during the reorg. An item leaves this list once it is decided and executed, or moved to another home; this dir is deleted when the list is empty. Roughly chronological:
 
-- an MCP discoverability shim in the extension: register `zshref-mcp` through VS Code's MCP server definition provider API
 - the `zshref-rs` split into its own repo (`zshref-rs/EXTRACTION.md`); with it, whether a thin `zshref-mcp` repo is wanted
   - once decided: deprecate the published TS alpha of `@carlwr/zshref-mcp` — on JSR outright, on npm the alpha versions the Rust-backed package supersedes (`npm-dist.md`); with them, revoke the JSR trusted-publisher grant
 - a `zshref-web` split into its own repo — no technical driver; the payoff: the SPA's toolchain and dependency churn (SvelteKit, Vite, transformers.js) leave the workspace lockfile and root `qa`

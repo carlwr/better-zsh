@@ -28,7 +28,7 @@ A stable Marketplace release needs `icon` plus gallery presentation assets in th
 
 ## Agent access
 
-No Language Model tools; the MCP server is the agent-facing surface over the same reference. Registering it from the extension (VS Code's MCP server definition provider API) may be considered later.
+No Language Model tools; the MCP server is the agent-facing surface over the same reference. Registering it from the extension (VS Code's MCP server definition provider API): only once `zshref-mcp` has a repo of its own — the server's code stays in the `zshref` crate regardless.
 
 ## Testing scope
 
