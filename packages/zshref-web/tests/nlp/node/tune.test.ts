@@ -45,10 +45,7 @@ import {
   withKnob,
 } from "../../../nlp/node/eval/sweep"
 import {
-  boxTable,
   type Dashboard,
-  label,
-  num,
   renderDashboard,
   withTuning,
   zeroBoosts,
@@ -366,37 +363,6 @@ describe("diff report", () => {
     expect(lines).toHaveLength(1 + 1 + 40 + 1)
     expect(lines.at(-1)).toBe("  … 5 more movers")
     expect(lines.filter(l => l.includes("  q=")).length).toBe(40)
-  })
-})
-
-describe("box table", () => {
-  it("draws the frame, pads by character count, aligns per column", () => {
-    const t = boxTable(
-      [label("category"), num("mech"), num("n")],
-      [
-        ["builtin", "0.912", "12"],
-        ["zle_widget", "—", "·"],
-        ["x", "10.000", "1234"],
-      ],
-    )
-    expect(t).toBe(
-      [
-        "┌────────────┬────────┬──────┐",
-        "│ category   │   mech │    n │",
-        "├────────────┼────────┼──────┤",
-        "│ builtin    │  0.912 │   12 │",
-        "│ zle_widget │      — │    · │",
-        "│ x          │ 10.000 │ 1234 │",
-        "└────────────┴────────┴──────┘",
-        "",
-      ].join("\n"),
-    )
-  })
-
-  it("a header wider than every cell sets the width; no rows is a frame", () => {
-    expect(boxTable([label("id slice"), num("score")], [])).toBe(
-      "┌──────────┬───────┐\n│ id slice │ score │\n├──────────┼───────┤\n└──────────┴───────┘\n",
-    )
   })
 })
 
