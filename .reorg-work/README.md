@@ -195,10 +195,7 @@ In order. A step ends with the repo's validation gates green where touched and t
 
 Decided not to decide during the reorg. An item leaves this list once it is decided and executed, or moved to another home; this dir is deleted when the list is empty. Roughly chronological:
 
-- the NLP follow-ups recorded by the move: `packages/zshref-web/nlp/NLP.md` §Follow-ups
-- deploy the SPA: the hosting intent under End state (`packages/zshref-web/AGENTS.md` §Hosting intent for the prerequisites)
 - an MCP discoverability shim in the extension: register `zshref-mcp` through VS Code's MCP server definition provider API
-- renaming: the top repo, the workspace packages, the Rust crate and its binaries
 - the `zshref-rs` split into its own repo (`zshref-rs/EXTRACTION.md`); with it, whether a thin `zshref-mcp` repo is wanted
   - once decided: deprecate the published TS alpha of `@carlwr/zshref-mcp` — on JSR outright, on npm the alpha versions the Rust-backed package supersedes (`npm-dist.md`); with them, revoke the JSR trusted-publisher grant
 - a `zshref-web` split into its own repo — no technical driver; the payoff: the SPA's toolchain and dependency churn (SvelteKit, Vite, transformers.js) leave the workspace lockfile and root `qa`
