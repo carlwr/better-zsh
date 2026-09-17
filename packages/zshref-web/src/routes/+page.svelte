@@ -1,15 +1,24 @@
 <script lang="ts">
+  import CategoryFilter from "$lib/components/CategoryFilter.svelte"
   import ResultCard from "$lib/components/ResultCard.svelte"
   import { errMsg } from "$lib/errors"
-  import { recordKey, summaryLine, viewState } from "$lib/view"
+  import {
+    allTicked,
+    coldMessage,
+    DEFAULT_LIMIT,
+    effectiveLimit,
+    summaryLine,
+    viewState,
+  } from "$lib/view"
   import {
     type Artifacts,
     categoryCounts,
+    categoryLabel,
     getArtifacts,
-    categoryLabel as lookupLabel,
     type ModelProgress,
     onModelProgress,
     type RankedMatch,
+    recordKey,
     search,
   } from "$nlp"
 
@@ -18,9 +27,7 @@
   let searchErr = $state("")
   let query = $state("")
   let selectedCats = $state<string[]>([]) // ticked categories; initialised to all on load
-  let catOpen = $state(false) // category popover open?
-  let catDetails: HTMLDetailsElement | undefined = $state()
-  let limit = $state(20)
+  let limit = $state<number | null>(DEFAULT_LIMIT) // null once cleared
   let matches = $state<RankedMatch[]>([])
   let total = $state(0)
   let searching = $state(false)
@@ -28,17 +35,12 @@
   let embedderReady = $state(false) // gates the first-run download hint
   let modelProgress = $state<ModelProgress | null>(null) // live one-time download
 
-  onModelProgress(p => (modelProgress = p))
-
-  function mb(bytes: number): number {
-    return Math.round(bytes / 1_000_000)
-  }
-
-  function onDocPointerDown(e: MouseEvent) {
-    if (catOpen && catDetails && !catDetails.contains(e.target as Node)) {
-      catOpen = false
-    }
-  }
+  // The embedder's one listener slot: taken for this page's life, released
+  // on leave so a stale page never receives progress.
+  $effect(() => {
+    onModelProgress(p => (modelProgress = p))
+    return () => onModelProgress(null)
+  })
 
   // what to show; precedence lives in viewState
   let view = $derived(
@@ -53,35 +55,11 @@
     }),
   )
 
-  function categoryLabel(id: string): string {
-    return artifacts ? lookupLabel(artifacts.categories, id) : id
-  }
-
+  let categories = $derived(artifacts?.categories ?? [])
   let catCounts = $derived(
     artifacts ? categoryCounts(artifacts.index) : new Map<string, number>(),
   )
-
-  let allCatIds = $derived(artifacts ? artifacts.categories.map(c => c.id) : [])
-  let allSelected = $derived(
-    allCatIds.length > 0 && selectedCats.length === allCatIds.length,
-  )
-  let catSummary = $derived(
-    allSelected
-      ? "all"
-      : selectedCats.length === 0
-        ? "none"
-        : `${selectedCats.length} selected`,
-  )
-
-  // First-run model fetch: show real bytes while downloading, a neutral note
-  // once bytes are in and we're embedding/ranking.
-  let coldMsg = $derived.by(() => {
-    const p = modelProgress
-    if (p && p.totalBytes > 0 && p.loadedBytes < p.totalBytes) {
-      return `loading the embedding model… ${mb(p.loadedBytes)} / ${mb(p.totalBytes)} MB`
-    }
-    return "preparing the embedding model…"
-  })
+  let allSelected = $derived(allTicked(selectedCats.length, categories.length))
 
   $effect(() => {
     void (async () => {
@@ -110,7 +88,7 @@
         index: artifacts.index,
         rules: artifacts.rules,
         lookup: artifacts.lookup,
-        limit,
+        limit: effectiveLimit(limit),
         // all ticked → null (no filter); otherwise the ticked set ([] = none)
         categories: allSelected ? null : selectedCats,
       })
@@ -147,8 +125,6 @@
   }
 </script>
 
-<svelte:window onpointerdown={onDocPointerDown} />
-
 <section>
   <form onsubmit={handleSubmit}>
     <input
@@ -171,43 +147,7 @@
       {/each}
     </div>
     <div class="controls">
-      <details class="catfilter" bind:open={catOpen} bind:this={catDetails}>
-        <summary><span class="cat-tag">categories</span> {catSummary}</summary>
-        <div class="cat-panel">
-          <div class="cat-panel-head">
-            <span class="muted">filter by category</span>
-            <span class="cat-actions">
-              <button
-                type="button"
-                class="linkish"
-                disabled={allSelected}
-                onclick={() => (selectedCats = allCatIds)}
-              >
-                all
-              </button>
-              <button
-                type="button"
-                class="linkish"
-                disabled={selectedCats.length === 0}
-                onclick={() => (selectedCats = [])}
-              >
-                none
-              </button>
-            </span>
-          </div>
-          <div class="cat-grid">
-            {#if artifacts}
-              {#each artifacts.categories as c (c.id)}
-                <label class="cat-opt" class:off={!selectedCats.includes(c.id)}>
-                  <input type="checkbox" value={c.id} bind:group={selectedCats} />
-                  <span class="cat-name">{c.label}</span>
-                  <span class="cat-count">{catCounts.get(c.id) ?? 0}</span>
-                </label>
-              {/each}
-            {/if}
-          </div>
-        </div>
-      </details>
+      <CategoryFilter {categories} counts={catCounts} bind:selected={selectedCats} />
       <label class="limit">
         limit
         <input type="number" min="1" max="50" bind:value={limit} />
@@ -224,7 +164,7 @@
   {:else if view.kind === 'loading-artifacts'}
     <p class="muted">loading artifacts…</p>
   {:else if view.kind === 'searching-cold'}
-    <p class="muted">{coldMsg}</p>
+    <p class="muted">{coldMessage(modelProgress)}</p>
   {:else if view.kind === 'searching'}
     <p class="muted">searching…</p>
   {:else if view.kind === 'search-error'}
@@ -240,7 +180,7 @@
     <p class="meta">{summaryLine(matches.length, total)}</p>
     <ul class="hits">
       {#each matches as m (recordKey(m.rec))}
-        <ResultCard match={m} label={categoryLabel(m.rec.category)} />
+        <ResultCard match={m} label={categoryLabel(categories, m.rec.category)} />
       {/each}
     </ul>
   {/if}
@@ -295,85 +235,6 @@
     width: 4rem;
     padding: 0.3rem 0.4rem;
   }
-
-  /* category filter — collapsed by default; multi-select with per-cat counts.
-     Panel floats so opening it never reflows the limit/search controls. */
-  .catfilter {
-    position: relative;
-    background: var(--bg-elev);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    font-size: 0.9rem;
-  }
-  .catfilter summary {
-    padding: 0.4rem 0.6rem;
-    cursor: pointer;
-    user-select: none;
-    list-style-position: inside;
-    color: var(--fg-mute);
-  }
-  .catfilter summary:hover { color: var(--fg); }
-  .cat-tag { color: var(--fg); }
-  .cat-panel {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    margin-top: 0.3rem;
-    z-index: 10;
-    width: min(22rem, 90vw);
-    max-height: 60vh;
-    overflow: auto;
-    background: var(--bg-elev);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    box-shadow: 0 8px 24px rgb(0 0 0 / 0.3);
-    padding: 0.6rem 0.7rem;
-  }
-  .cat-panel-head {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    margin-bottom: 0.4rem;
-    font-size: 0.8rem;
-  }
-  .cat-actions {
-    display: flex;
-    gap: 0.85rem;
-  }
-  .linkish {
-    background: none;
-    border: none;
-    color: var(--accent);
-    cursor: pointer;
-    font: inherit;
-    font-size: 0.8rem;
-    padding: 0;
-  }
-  .linkish:disabled { opacity: 0.4; cursor: not-allowed; }
-  .cat-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 0.05rem;
-  }
-  .cat-opt {
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-    padding: 0.15rem 0;
-    cursor: pointer;
-  }
-  /* name takes the slack; the padding guarantees a gap to the count even for
-     the longest label */
-  .cat-name { flex: 1; color: var(--fg); }
-  .cat-count {
-    padding-left: 1.5rem;
-    color: var(--fg-mute);
-    font-family: var(--font-mono);
-    font-size: 0.8rem;
-  }
-  /* un-ticked rows recede: dimmed label, fainter count */
-  .cat-opt.off .cat-name { color: var(--fg-mute); }
-  .cat-opt.off .cat-count { color: color-mix(in srgb, var(--fg-mute) 45%, transparent); }
   .meta { color: var(--fg-mute); font-size: 0.85rem; }
   .muted { color: var(--fg-mute); }
   /* first-run note: a polished sentence, not a status line — smaller than the

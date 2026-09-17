@@ -36,7 +36,12 @@
   })
 </script>
 
-<div class="clamp" class:clamped={overflowing && !expanded} bind:this={el}>
+<div
+  class="clamp"
+  class:clamped={overflowing && !expanded}
+  style:--clamp="{CLAMP_REM}rem"
+  bind:this={el}
+>
   <Md {source} />
 </div>
 {#if overflowing}
@@ -51,7 +56,7 @@
     overflow: hidden;
   }
   .clamp.clamped {
-    max-height: 15rem;
+    max-height: var(--clamp);
   }
   /* Fade the clamped edge into the card surface (--bg-elev) — only when the
    * body is actually clamped, so a short card's last line isn't dimmed. */

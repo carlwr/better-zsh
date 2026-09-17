@@ -2,11 +2,15 @@ import fc from "fast-check"
 import { describe, expect, it } from "vitest"
 
 import {
+  allTicked,
+  categorySummary,
+  coldMessage,
+  DEFAULT_LIMIT,
+  effectiveLimit,
   findRecord,
   type RecordView,
   type RecordViewInputs,
   recordHref,
-  recordKey,
   recordView,
   summaryLine,
   type ViewInputs,
@@ -86,6 +90,47 @@ describe("summaryLine", () => {
   })
 })
 
+describe("effectiveLimit", () => {
+  it.each([
+    [null, DEFAULT_LIMIT],
+    [0, DEFAULT_LIMIT],
+    [-3, DEFAULT_LIMIT],
+    [1, 1],
+    [50, 50],
+  ])("%j → %i", (input, want) => {
+    expect(effectiveLimit(input)).toBe(want)
+  })
+})
+
+describe("coldMessage", () => {
+  it.each([
+    [null, "preparing the embedding model…"],
+    [{ loadedBytes: 0, totalBytes: 0 }, "preparing the embedding model…"],
+    [
+      { loadedBytes: 12_400_000, totalBytes: 133_000_000 },
+      "loading the embedding model… 12 / 133 MB",
+    ],
+    [
+      { loadedBytes: 133_000_000, totalBytes: 133_000_000 },
+      "preparing the embedding model…",
+    ],
+  ])("%j → %s", (progress, want) => {
+    expect(coldMessage(progress)).toBe(want)
+  })
+})
+
+describe("category filter summary", () => {
+  it.each([
+    [0, 0, false, "none"],
+    [0, 3, false, "none"],
+    [2, 3, false, "2 selected"],
+    [3, 3, true, "all"],
+  ])("selected=%i of %i: allTicked=%s, %j", (selected, all, ticked, want) => {
+    expect(allTicked(selected, all)).toBe(ticked)
+    expect(categorySummary(selected, all)).toBe(want)
+  })
+})
+
 describe("record links", () => {
   const rec = { category: "builtin", id: "typeset" }
 
@@ -113,13 +158,6 @@ describe("record links", () => {
         expect([r, category, rest]).toEqual(["r", "builtin", []])
         expect(decodeURIComponent(encoded ?? "")).toBe(id)
       }),
-    )
-  })
-
-  it("key is category+id", () => {
-    expect(recordKey(rec)).toBe("builtin/typeset")
-    expect(recordKey({ category: "param", id: "typeset" })).not.toBe(
-      recordKey(rec),
     )
   })
 })

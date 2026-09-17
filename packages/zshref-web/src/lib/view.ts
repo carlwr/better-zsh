@@ -4,12 +4,11 @@
 import {
   type Category,
   categoryLabel,
+  type ModelProgress,
   type RecordId,
   type RecordText,
   sameRecord,
 } from "$nlp"
-
-export { recordKey } from "$nlp"
 
 // Check order is the contract: earlier wins, so an error or cold embedder is
 // never masked by a later results/empty branch.
@@ -51,6 +50,33 @@ export function summaryLine(shown: number, total: number): string {
   if (shown < total) return `top ${shown} of ${total} records`
   return `${total} ${total === 1 ? "record" : "records"}`
 }
+
+export const DEFAULT_LIMIT = 20
+
+/** The limit input as searched with: cleared (null) or below 1, the default. */
+export const effectiveLimit = (input: number | null): number =>
+  input !== null && input >= 1 ? input : DEFAULT_LIMIT
+
+const mb = (bytes: number): number => Math.round(bytes / 1_000_000)
+
+/** The cold-search note: real MB while the model downloads, neutral once the bytes are in. */
+export function coldMessage(p: ModelProgress | null): string {
+  if (p && p.totalBytes > 0 && p.loadedBytes < p.totalBytes)
+    return `loading the embedding model… ${mb(p.loadedBytes)} / ${mb(p.totalBytes)} MB`
+  return "preparing the embedding model…"
+}
+
+/** Every category ticked; false before the categories are known. */
+export const allTicked = (selected: number, all: number): boolean =>
+  all > 0 && selected === all
+
+/** The category filter's collapsed summary. */
+export const categorySummary = (selected: number, all: number): string =>
+  allTicked(selected, all)
+    ? "all"
+    : selected === 0
+      ? "none"
+      : `${selected} selected`
 
 // The permalink. Ids are zsh syntax — `?`, `#`, `%`, `/` and spaces among
 // them — so each segment is percent-encoded; the route decodes its params.

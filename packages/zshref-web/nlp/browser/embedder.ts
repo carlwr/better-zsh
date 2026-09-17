@@ -12,9 +12,9 @@ export type FeatureExtractionPipeline = (
   opts?: { pooling?: "mean" | "cls" | "none"; normalize?: boolean },
 ) => Promise<{ data: Float32Array; dims: number[] }>
 
-/** Aggregate byte progress of the one-time model download, summed across the
- * files transformers.js fetches from the Hub. `total` grows as new files start;
- * a cached model emits little or nothing (no download). */
+/** Byte progress of the model load, summed over every file transformers.js
+ * fetches; the total is known from the first event (file sizes are looked up
+ * upfront). A cached model reaches it at once. */
 export type ModelProgress = { loadedBytes: number; totalBytes: number }
 
 let progressListener: ((p: ModelProgress) => void) | null = null
@@ -28,23 +28,12 @@ const defaultPipeline = memoizedRetry(
   async (): Promise<FeatureExtractionPipeline> => {
     const { pipeline, env } = await import("@huggingface/transformers")
     env.allowRemoteModels = true
-    const files = new Map<string, { loaded: number; total: number }>()
     return (await pipeline("feature-extraction", MODEL_ID, {
       dtype: "fp32",
+      // `progress_total` is the pipeline's own aggregate over its files.
       progress_callback: (e: ProgressInfo) => {
-        // Only per-file byte updates carry file/loaded/total; ignore the rest.
-        if (!progressListener || !("file" in e) || !("total" in e)) return
-        if (typeof e.total !== "number") return
-        const loaded =
-          "loaded" in e && typeof e.loaded === "number" ? e.loaded : 0
-        files.set(e.file, { loaded, total: e.total })
-        let loadedSum = 0
-        let totalSum = 0
-        for (const f of files.values()) {
-          loadedSum += f.loaded
-          totalSum += f.total
-        }
-        progressListener({ loadedBytes: loadedSum, totalBytes: totalSum })
+        if (e.status === "progress_total")
+          progressListener?.({ loadedBytes: e.loaded, totalBytes: e.total })
       },
     })) as unknown as FeatureExtractionPipeline
   },
