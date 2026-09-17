@@ -44,6 +44,7 @@ The day `zshref` (this crate) leaves the `better-zsh` monorepo for its own repo,
 
 ## Open until then
 
+- whether a thin `zshref-mcp` repo is wanted beside `zshref`
 - sync trigger: a manual PR bumping the pinned zsh-core tag, or a scheduled job on the Rust repo that polls for a new tag and opens the PR
 - one pinned data version, not a range; the crate releases when the pin bumps, not on zsh-core's cadence
 - size: ~1 MB embedded is fine; past ~5 MB, compress at build time or split a data-only crate

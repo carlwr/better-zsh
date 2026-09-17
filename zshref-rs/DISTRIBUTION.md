@@ -32,6 +32,7 @@ Targets: the workflow's build matrix. The same list sits in `tests/msrv.rs` and 
 - npm Trusted Publishing needs an existing package: a package's first version is published by hand (`npm publish --access public --tag next`, OTP) from `npm/assemble.mjs` output — over the archives of a dry-run workflow run (`gh run download`), so the first publish carries every platform
 - then, per package, a trusted publisher naming this repo and `release-zshref.yml`; configs created after 2026-09 default to stage-only — opt into direct publish
 - `@carlwr/zshref-mcp` exists from the earlier TS alpha: no manual publish, the old publisher grant is re-pointed; a version number the TS alpha used is burned — the crate version must be past it
+  - _pending:_ `npm deprecate` the TS alpha versions the Rust-backed package supersedes; on JSR, deprecate the package outright and revoke its trusted-publisher grant
 - the workflow skips a version already on the registry, so the tag that follows a manual publish completes the pair
 - prerelease dist-tags: `PACKAGING.md` (`latest` moves by hand)
 
