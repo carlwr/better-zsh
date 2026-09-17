@@ -7,6 +7,7 @@ VS Code extension package: editor providers and host-zsh execution.
 `src/`:
 
 - `manifest.ts` — the manifest's contribution points; `vscode`-free, staged into the published `package.json`
+- `manifest/` — per-contribution-point data (`associations.ts`: which files open as zsh)
 - `contributions.ts` — everything registered at activation
 - `editor/` — language-feature providers, wiring zsh-core analysis + doc records to VS Code APIs
   - reusable parsing/rendering belongs in pure helpers; provider-local dispatch may stay here

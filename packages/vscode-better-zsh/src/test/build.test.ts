@@ -3,6 +3,7 @@ import { buildChatInstructions } from "../build/chat-instructions"
 import { langConfig } from "../build/lang-config"
 import { buildSnippetJson, readSnippets } from "../build/snippets"
 import { manifest, settingKey, zshPathSetting } from "../manifest"
+import { associations } from "../manifest/associations"
 
 describe("snippets", () => {
   const snippets = readSnippets()
@@ -60,5 +61,49 @@ describe("manifest", () => {
         : new RegExp(wp?.pattern ?? "", wp?.flags)
     expect(re.test("foo-bar")).toBe(true)
     expect(re.test("1.2")).toBe(true)
+  })
+
+  describe("firstLine", () => {
+    // Compiled as VS Code does: no flags.
+    const re = new RegExp(associations.firstLine)
+
+    // VS Code silently drops a firstLine regex that can match nothing.
+    test("never matches an empty line", () => {
+      expect(re.test("")).toBe(false)
+    })
+
+    test.each([
+      "#!/bin/zsh",
+      "#! /bin/zsh -f",
+      "#!/usr/bin/env zsh",
+      "#!/usr/bin/env -S zsh -f",
+      "#!/usr/bin/zsh5",
+      "#compdef git gitk",
+      "#compdef -k complete-word",
+      "#autoload",
+      "emulate -L zsh",
+      "  emulate -LR zsh -o extendedglob",
+      "## vim:ft=zsh",
+      "# vim: set ft=zsh et sw=4 sts=4:",
+      "# -*- mode: zsh; sh-indentation: 2 -*-",
+      "# -*- mode: sh; sh-shell: zsh -*-",
+    ])("declares zsh: %s", line => {
+      expect(re.test(line)).toBe(true)
+    })
+
+    test.each([
+      "#!/usr/bin/env bash",
+      "#!/bin/sh",
+      "#!/bin/zshrc",
+      "# bash/zsh completion support for core Git.",
+      "# vim: ft=sh",
+      "# -*- mode: sh -*- zsh",
+      "# zsh",
+      "#compdefault",
+      "emulate sh",
+      "```zsh",
+    ])("does not: %s", line => {
+      expect(re.test(line)).toBe(false)
+    })
   })
 })

@@ -14,7 +14,13 @@ Improved zsh shellscript editing for VS Code. Layers structured zsh knowledge �
 - **Optional diagnostics** via `zsh -n` (syntax check), on open, save, and while typing.
 - **Snippets** for common zsh patterns.
 
-File associations: `.zsh`, `.zshrc`, `.zshenv`, `.zprofile`, `.zlogin`, `.zlogout`, `.zsh-theme`, plus the bare `zshrc` / `zshenv` / `zlogin` / `zprofile` / `zlogout` filenames.
+Opens as Zsh:
+
+- `.zsh`, `.zsh-theme`; the startup files `.zshrc`, `.zshenv`, `.zprofile`, `.zlogin`, `.zlogout` — also in their `/etc` and chezmoi `dot_` forms
+- files under an installed zsh's `share/zsh/…/functions` and `site-functions` dirs
+- a file no other language claims by name whose first line declares zsh: a `zsh` shebang, `#compdef` / `#autoload`, `emulate -L zsh`, or a vim/emacs modeline
+
+Your own function dirs: `files.associations`, e.g. `"**/.zsh/functions/*": "zsh"`.
 
 ## Install
 

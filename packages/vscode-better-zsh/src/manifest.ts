@@ -3,6 +3,7 @@
 // registrations: `contributions.ts`. Must stay loadable without `vscode`.
 
 import { BETTER_ZSH_CONFIG, BETTER_ZSH_DISPLAY_NAME, ZSH_LANG_ID } from "./ids"
+import { associations } from "./manifest/associations"
 
 // ── Generated assets under `out/` ──
 
@@ -75,16 +76,7 @@ export const manifest = {
       {
         id: ZSH_LANG_ID,
         aliases: ["Zsh", "zsh"],
-        extensions: [
-          ".zsh",
-          ".zshrc",
-          ".zprofile",
-          ".zlogin",
-          ".zlogout",
-          ".zshenv",
-          ".zsh-theme",
-        ],
-        filenames: ["zshrc", "zshenv", "zlogin", "zprofile", "zlogout"],
+        ...associations,
         configuration: outPath(outAsset.langConfig),
       },
     ],
