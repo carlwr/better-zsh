@@ -29,6 +29,14 @@ const readSetting = (setting: Setting): unknown =>
 export const readZshPathConfig = () =>
   parseZshPath(readSetting(settings.zshPath))
 
+/** Host-zsh configuration: the path setting, unless the workspace is untrusted. */
+export type ZshConfig = ZshPathConfig | { kind: "untrusted" }
+
+// Workspace Trust gates every spawn, not only the workspace-scoped settings:
+// in Restricted Mode the files are the untrusted input.
+export const readZshConfig = (): ZshConfig =>
+  vscode.workspace.isTrusted ? readZshPathConfig() : { kind: "untrusted" }
+
 export const readDiagnosticsEnabled = () =>
   readSetting(settings.diagnosticsEnabled) !== false
 

@@ -17,6 +17,25 @@ describe("funcDecls", () => {
     expect(funcDecl(doc, "alpha")?.range.start.line).toBe(0)
     expect(funcDecl(doc, "gamma")).toBeUndefined()
   })
+
+  test("multi-name declarations: one entry per name, at its own column", () => {
+    const doc = lineDoc(
+      ["# shared doc", "funcA funcB() print $0", "function d e {"].join("\n"),
+    )
+    expect(
+      funcDecls(doc).map(f => [
+        f.name,
+        f.selectionRange.start.line,
+        f.selectionRange.start.character,
+        f.doc,
+      ]),
+    ).toEqual([
+      ["funcA", 1, 0, "shared doc"],
+      ["funcB", 1, 6, "shared doc"],
+      ["d", 2, 9, undefined],
+      ["e", 2, 11, undefined],
+    ])
+  })
 })
 
 describe("function docs", () => {

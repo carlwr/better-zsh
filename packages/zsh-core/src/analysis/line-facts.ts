@@ -71,8 +71,10 @@ export const COMMAND_PRECMD: Observed<"precmd_modifier"> = mkObserved(
   "command",
 )
 
-const FUNC_DECL = /^(\s*)([\w][\w-]*)\s*\(\)/
-const FUNC_KW = /^(\s*)function\s+([\w][\w-]*)/
+// `a b() …` and `function a b …` each declare every listed name.
+const FUNC_NAMES = String.raw`((?:[\w][\w-]*\s+)*[\w][\w-]*)`
+const FUNC_DECL = new RegExp(String.raw`^(\s*)${FUNC_NAMES}\s*\(\)`)
+const FUNC_KW = new RegExp(String.raw`^(\s*)function\s+${FUNC_NAMES}`)
 
 export function cmdHeadFactsOnLine(
   line: string,
@@ -190,15 +192,21 @@ export function firstCmdHeadOnLine(line: string): CmdHeadFact | undefined {
   return cmdHeadFactsOnLine(activeText(line)).find(isCmdHeadFact)
 }
 
-/** Detect a function declaration at the start of a line (both `f() {}` and `function f` forms). */
-export function funcDeclAtLine(
-  line: string,
-): { name: string; start: number } | undefined {
-  const decl = line.match(FUNC_DECL)
-  if (decl?.[2]) return { name: decl[2], start: (decl[1] ?? "").length }
-  const kw = line.match(FUNC_KW)
-  if (!kw?.[2]) return
-  return { name: kw[2], start: line.indexOf(kw[2], (kw[1] ?? "").length) }
+export interface FuncDeclHit {
+  readonly name: string
+  /** Column of `name` in the line. */
+  readonly start: number
+}
+
+/** The function names a line declares at its start (`f() {}`, `function f`, and their multi-name forms); empty when none. */
+export function funcDeclsAtLine(line: string): readonly FuncDeclHit[] {
+  const m = line.match(FUNC_DECL) ?? line.match(FUNC_KW)
+  if (!m?.[2]) return []
+  const base = line.indexOf(m[2], (m[1] ?? "").length)
+  return [...m[2].matchAll(/[\w][\w-]*/g)].map(n => ({
+    name: n[0],
+    start: base + n.index,
+  }))
 }
 
 function cmdHeadFact(

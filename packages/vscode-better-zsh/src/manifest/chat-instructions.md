@@ -1,4 +1,4 @@
-# Zsh — Key Differences from Bash
+# Zsh: Key Differences from Bash
 
 ## Word Splitting and Globbing
 
@@ -12,7 +12,7 @@
 
 ## Conditional Expressions
 
-- Prefer `[[ ... ]]` over `[ ... ]` — it supports pattern matching and regex.
+- Prefer `[[ ... ]]` over `[ ... ]` - it supports pattern matching and regex.
 - `=` and `==` are equivalent inside `[[ ]]` (both do pattern matching).
 - Use `=~` for regex matching: `[[ $str =~ ^[0-9]+$ ]]`
 - `-eq`, `-lt`, etc. for numeric comparisons.
@@ -22,7 +22,7 @@
 
 - `setopt` options are case-insensitive and ignore underscores:
   `EXTENDED_GLOB`, `extendedglob`, `extended_glob` are all the same.
-- Default options differ from bash — don't assume bash defaults.
+- Default options differ from bash - don't assume bash defaults.
 - `echo` behaves differently in zsh (processes escape sequences by default).
   Prefer `print -r --` for reliable output.
 - `==` inside `[[ ]]` does pattern matching, not string equality.
@@ -31,36 +31,36 @@
 
 ## Idiomatic Patterns
 
-- `emulate -LR zsh` — set strict zsh mode, reset all options (local scope).
-- `emulate -L zsh` at the top of functions — isolate option changes.
-- `${var:-default}` — default value if unset/empty.
-- `${(f)content}` — split on newlines.
-- `print -r --` — reliable echo replacement (raw, no option processing).
-- `local` in functions — always scope variables.
-- `autoload -Uz funcname` — autoload with zsh mode, no aliases.
-- `() { ... }` — anonymous function for scope isolation.
+- `emulate -LR zsh` - set strict zsh mode, reset all options (local scope).
+- `emulate -L zsh` at the top of functions - isolate option changes.
+- `${var:-default}` - default value if unset/empty.
+- `${(f)content}` - split on newlines.
+- `print -r --` - reliable echo replacement (raw, no option processing).
+- `local` in functions - always scope variables.
+- `autoload -Uz funcname` - autoload with zsh mode, no aliases.
+- `() { ... }` - anonymous function for scope isolation.
 
 ## Parameter Expansion Flags
 
 Zsh parameter expansion flags are placed inside `${(flags)...}`:
 
-- `(f)` — split on newlines
-- `(s:,:)` — split on delimiter (here: comma)
-- `(j:,:)` — join array with delimiter
-- `(k)` — keys of associative array
-- `(v)` — values of associative array
-- `(t)` — type of parameter
-- `(Q)` — remove one level of quoting
-- `(Z+Cn+)` — shell-word split (parse into tokens)
-- `(U)` / `(L)` — uppercase / lowercase
-- `(M)` / `(R)` — keep matching / non-matching elements
+- `(f)` - split on newlines
+- `(s:,:)` - split on delimiter (here: comma)
+- `(j:,:)` - join array with delimiter
+- `(k)` - keys of associative array
+- `(v)` - values of associative array
+- `(t)` - type of parameter
+- `(Q)` - remove one level of quoting
+- `(Z+Cn+)` - shell-word split (parse into tokens)
+- `(U)` / `(L)` - uppercase / lowercase
+- `(M)` / `(R)` - keep matching / non-matching elements
 
 ## Useful Modules
 
-- `zsh/parameter` — inspect shell state: `$commands`, `$functions`, `$parameters`
-- `zsh/mathfunc` — math functions: `sin`, `cos`, `sqrt`, etc.
-- `zsh/zutil` — `zparseopts` for option parsing
-- `zsh/datetime` — `strftime`, `$EPOCHSECONDS`
+- `zsh/parameter` - inspect shell state: `$commands`, `$functions`, `$parameters`
+- `zsh/mathfunc` - math functions: `sin`, `cos`, `sqrt`, etc.
+- `zsh/zutil` - `zparseopts` for option parsing
+- `zsh/datetime` - `strftime`, `$EPOCHSECONDS`
 
 ## Function Best Practices
 

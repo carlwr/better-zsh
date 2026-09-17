@@ -44,6 +44,7 @@ export const CompletionItemKind = {
   Variable: 2,
   Property: 3,
   Operator: 4,
+  Function: 5,
 } as const
 
 export class CompletionItem {
@@ -185,6 +186,8 @@ function event(name: string) {
 
 export const stub = {
   config: new Map<string, unknown>(),
+  /** Values passed to the `setContext` command. */
+  contextKeys: new Map<string, unknown>(),
   registrations: [] as string[],
   fire(name: string, e: unknown) {
     for (const l of listeners.get(name) ?? []) l(e)
@@ -195,8 +198,11 @@ export const stub = {
   reset() {
     listeners.clear()
     stub.config.clear()
+    stub.contextKeys.clear()
     stub.registrations.length = 0
     workspace.textDocuments.length = 0
+    workspace.isTrusted = true
+    window.visibleTextEditors.length = 0
   },
 }
 
@@ -209,6 +215,7 @@ const recording =
 
 export const workspace = {
   textDocuments: [] as unknown[],
+  isTrusted: true,
   getConfiguration: (section?: string) => ({
     get: <T>(key: string, dflt?: T): T | undefined =>
       (stub.config.get(section ? `${section}.${key}` : key) as T | undefined) ??
@@ -219,6 +226,7 @@ export const workspace = {
   onDidChangeTextDocument: event("change"),
   onDidCloseTextDocument: event("close"),
   onDidChangeConfiguration: event("config"),
+  onDidGrantWorkspaceTrust: event("trust"),
 }
 
 export class DiagnosticCollection {
@@ -254,9 +262,17 @@ export const languages = {
   registerDocumentLinkProvider: recording("documentLink"),
 }
 
-export const commands = { registerCommand: recording("command") }
+export const commands = {
+  registerCommand: recording("command"),
+  executeCommand: (command: string, ...args: unknown[]) => {
+    if (command === "setContext") stub.contextKeys.set(String(args[0]), args[1])
+    return Promise.resolve()
+  },
+}
 
 export const window = {
+  visibleTextEditors: [] as { document: { languageId: string } }[],
+  onDidChangeVisibleTextEditors: event("visibleEditors"),
   createOutputChannel: () => ({
     info() {},
     warn() {},

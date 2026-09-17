@@ -3,15 +3,10 @@ import type { DocCorpus } from "@carlwr/zsh-core"
 import { renderDocWithTitle } from "@carlwr/zsh-core/render"
 import { mkPieceId } from "@carlwr/zsh-core/taxonomy"
 import { mkDocumented, optSections } from "@carlwr/zsh-core/types"
-import { describe, expect, test, vi } from "vitest"
+import { describe, expect, test } from "vitest"
 import * as vscode from "vscode"
 import { CompletionProvider } from "../../editor/completions"
 import { by, emptyCorpus, pos, wordDoc } from "../test-util"
-
-const tokenize = vi.hoisted(() =>
-  vi.fn(async (): Promise<readonly string[]> => []),
-)
-vi.mock("../../zsh", () => ({ zshTokenize: tokenize }))
 
 const corpus: DocCorpus = {
   ...emptyCorpus(),
@@ -68,8 +63,11 @@ const corpus: DocCorpus = {
 
 const provider = new CompletionProvider(corpus)
 
-async function complete(text: string, char: number) {
-  const r = await provider.provideCompletionItems(wordDoc(text), pos(0, char))
+async function complete(text: string, line: number, char: number) {
+  const r = await provider.provideCompletionItems(
+    wordDoc(text),
+    pos(line, char),
+  )
   const list = Array.isArray(r)
     ? new vscode.CompletionList(r, false)
     : (r as vscode.CompletionList)
@@ -77,14 +75,30 @@ async function complete(text: string, char: number) {
 }
 
 describe("CompletionProvider", () => {
-  test("general position: file tokens (bar the current word), then corpus words", async () => {
-    tokenize.mockResolvedValueOnce(["my-func", "ec", "echo"])
-    const { labels } = await complete("ec", 1)
-    expect(labels).toEqual(["my-func", "echo", "if", "noglob", "SECONDS"])
+  test("general position: the file's functions and parameters (bar the current word and corpus names), then corpus words", async () => {
+    const text = [
+      "# says hi",
+      "my-func() { print $greeting $SECONDS; }",
+      "echo() { :; }",
+      "ec",
+    ].join("\n")
+    const { items, labels } = await complete(text, 3, 1)
+    expect(labels).toEqual([
+      "my-func",
+      "greeting",
+      "echo",
+      "if",
+      "noglob",
+      "SECONDS",
+    ])
+    expect(items.slice(0, 2).map(i => [i.kind, i.documentation])).toEqual([
+      [vscode.CompletionItemKind.Function, "says hi"],
+      [vscode.CompletionItemKind.Variable, undefined],
+    ])
   })
 
   test("setopt position: option forms, incomplete list, filtered on the typed text", async () => {
-    const { isIncomplete, items } = await complete("setopt no_au", 12)
+    const { isIncomplete, items } = await complete("setopt no_au", 0, 12)
     expect(isIncomplete).toBe(true)
     const doc = renderDocWithTitle(
       corpus,
@@ -98,7 +112,7 @@ describe("CompletionProvider", () => {
   // The VS Code `Operator` codicon renders as a stacked `%/x` glyph that reads
   // oddly; conditional operators use `Keyword`.
   test("cond position: operators as Keyword items", async () => {
-    const { isIncomplete, items } = await complete("[[ a  ]]", 5)
+    const { isIncomplete, items } = await complete("[[ a  ]]", 0, 5)
     expect(isIncomplete).toBe(false)
     expect(items.map(i => [i.label, i.kind])).toEqual([
       ["==", vscode.CompletionItemKind.Keyword],

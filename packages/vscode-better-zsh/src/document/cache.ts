@@ -32,29 +32,3 @@ export function docCache<T>(compute: (doc: vscode.TextDocument) => T) {
     return data
   }
 }
-
-export function asyncDocCache<T>(
-  compute: (doc: vscode.TextDocument) => Promise<T>,
-) {
-  const cache = new Map<string, Entry<T>>()
-  const seqs = new Map<string, number>()
-  stores.add({
-    evict: key => {
-      cache.delete(key)
-      seqs.set(key, (seqs.get(key) ?? 0) + 1)
-    },
-  })
-  return async (doc: vscode.TextDocument): Promise<T> => {
-    const key = keyOf(doc)
-    const entry = cache.get(key)
-    if (entry && entry.version === doc.version) return entry.data
-    const seq = (seqs.get(key) ?? 0) + 1
-    seqs.set(key, seq)
-    // The document is live: stamp the version the computation saw.
-    const version = doc.version
-    const data = await compute(doc)
-    if (seqs.get(key) !== seq) return data
-    cache.set(key, { version, data })
-    return data
-  }
-}

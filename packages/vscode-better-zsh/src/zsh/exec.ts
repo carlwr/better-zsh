@@ -9,7 +9,6 @@ import type { ZshBinary } from "./binary"
 export interface ZshRunReq {
   readonly args: readonly string[]
   readonly env?: NodeJS.ProcessEnv
-  readonly stdin?: string
   /** Written to a temporary file whose path is appended to `args`. */
   readonly scriptFile?: string
 }
@@ -98,10 +97,10 @@ export async function execZsh(
 
 function spawnZsh(
   zshBinary: ZshBinary,
-  { args, env, stdin }: ZshRunReq,
+  { args, env }: ZshRunReq,
 ): Promise<ZshRunResult> {
   return new Promise(resolve => {
-    const proc = execFile(
+    execFile(
       zshBinary,
       args,
       {
@@ -111,7 +110,6 @@ function spawnZsh(
       },
       (err, stdout, stderr) => resolve(toRunResult(err, stdout, stderr)),
     )
-    if (stdin !== undefined) proc.stdin?.end(stdin)
   })
 }
 

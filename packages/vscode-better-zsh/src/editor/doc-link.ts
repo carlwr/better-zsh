@@ -13,7 +13,12 @@ export interface SourcePath {
   readonly start: number
 }
 
-/** `source`/`.` path operands of a line: literal ones only — `$`-leading paths are skipped, not expanded; quotes are stripped. */
+// A `//` or `\\` prefix names a network share on Windows, and probing one
+// opens a connection (an SMB request carries credentials) — from a path the
+// file dictates. Not a loss on POSIX: `//x` is `/x`, and `\\x` is an escape.
+const NETWORK_PATH = /^(\/\/|\\\\)/
+
+/** `source`/`.` path operands of a line: literal, local ones only — `$`-leading and network paths are skipped, not expanded; quotes are stripped. */
 export function extractSourcePaths(line: string): SourcePath[] {
   const out: SourcePath[] = []
   for (const m of activeText(line).matchAll(SOURCE_RE)) {
@@ -21,7 +26,7 @@ export function extractSourcePaths(line: string): SourcePath[] {
     const end = m.index + m[0].length
     const quoted = operand.match(/^(["'])(.*)\1$/)
     const path = quoted?.[2] ?? operand
-    if (!path || path.startsWith("$")) continue
+    if (!path || path.startsWith("$") || NETWORK_PATH.test(path)) continue
     out.push({ path, start: end - operand.length + (quoted ? 1 : 0) })
   }
   return out

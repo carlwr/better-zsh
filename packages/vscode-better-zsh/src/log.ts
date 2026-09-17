@@ -6,7 +6,7 @@ const RECENT_MAX = 200
 let ch: vscode.LogOutputChannel | undefined
 const recent: string[] = []
 
-function emit(level: "info" | "warn") {
+function emit(level: "debug" | "info" | "warn") {
   return (msg: string) => {
     recent.push(`${level}: ${msg}`)
     if (recent.length > RECENT_MAX) recent.shift()
@@ -19,6 +19,7 @@ export function initLog() {
   return ch
 }
 
+export const debug = emit("debug")
 export const log = emit("info")
 export const warn = emit("warn")
 

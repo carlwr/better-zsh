@@ -1,4 +1,8 @@
-import { BETTER_ZSH_DISPLAY_NAME, ZSH_LANG_ID } from "./ids"
+import {
+  BETTER_ZSH_CTX_ZSH_VISIBLE,
+  BETTER_ZSH_DISPLAY_NAME,
+  ZSH_LANG_ID,
+} from "./ids"
 import { associations } from "./manifest/associations"
 import { semanticTokenScopes } from "./manifest/semantic-tokens"
 import { configuration } from "./manifest/settings"
@@ -17,6 +21,14 @@ const out = (asset: OutAsset) => `./out/${outAsset[asset]}`
 export const manifest = {
   displayName: BETTER_ZSH_DISPLAY_NAME,
   activationEvents: [`onLanguage:${ZSH_LANG_ID}`],
+  capabilities: {
+    // The host zsh is the one trust-sensitive feature; everything static stays on.
+    untrustedWorkspaces: {
+      supported: "limited",
+      description:
+        "In Restricted Mode the host zsh is not spawned, so there are no `zsh -n` diagnostics. Everything else works as usual.",
+    },
+  },
   contributes: {
     languages: [
       {
@@ -44,11 +56,11 @@ export const manifest = {
         "editor.insertSpaces": false,
       },
     },
+    // `when` is evaluated against the workbench-root context, which has no
+    // editor-scoped keys (`resourceLangId`, `editorLangId`): the extension
+    // sets its own key.
     chatInstructions: [
-      {
-        path: out("chatInstructions"),
-        when: `resourceLangId == ${ZSH_LANG_ID}`,
-      },
+      { path: out("chatInstructions"), when: BETTER_ZSH_CTX_ZSH_VISIBLE },
     ],
   },
 }

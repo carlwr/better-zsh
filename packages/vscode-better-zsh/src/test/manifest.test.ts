@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs"
 import { resolve } from "node:path"
 import { describe, expect, test } from "vitest"
+import { BETTER_ZSH_CTX_ZSH_VISIBLE } from "../ids"
 import { manifest } from "../manifest"
 import { associations } from "../manifest/associations"
 import { langConfig } from "../manifest/lang-config"
@@ -8,6 +9,18 @@ import { settings } from "../manifest/settings"
 import { snippets } from "../manifest/snippets"
 
 describe("manifest", () => {
+  // The host zsh is the only trust-sensitive feature; the manifest must not
+  // silently drift to fully disabled or fully enabled.
+  test("Workspace Trust: limited support, declared", () => {
+    expect(manifest.capabilities.untrustedWorkspaces.supported).toBe("limited")
+  })
+
+  test("chat instructions are gated on the extension's own context key", () => {
+    expect(manifest.contributes.chatInstructions.map(c => c.when)).toEqual([
+      BETTER_ZSH_CTX_ZSH_VISIBLE,
+    ])
+  })
+
   test("settings: JSON-schema type derived from the default; the zsh binary stays machine-scoped", () => {
     const props = manifest.contributes.configuration.properties
     expect(settings.zshPath.key).toBe("betterZsh.zshPath")

@@ -1,7 +1,7 @@
 import { memoized } from "@carlwr/typescript-extra"
-import { log, warn } from "./log"
+import { debug, log, warn } from "./log"
 import { settings, ZSH_PATH_OFF } from "./manifest/settings"
-import type { ZshPathConfig } from "./settings"
+import type { ZshConfig } from "./settings"
 import { probeZsh, type ZshBinaryRef, type ZshProbe } from "./zsh/binary"
 import {
   buildZshEnv,
@@ -9,16 +9,13 @@ import {
   type ZshRunReq,
   type ZshRunResult,
 } from "./zsh/exec"
-import {
-  parseZshError,
-  splitLines,
-  syntaxCheckReq,
-  tokenizeReq,
-  versionReq,
-  type ZshError,
-} from "./zsh/protocol"
+import { parseZshError, syntaxCheckReq, type ZshError } from "./zsh/protocol"
 
-type ZshMode = { kind: "disabled" } | { kind: "invalid-config" } | ZshProbe
+type ZshMode =
+  | { kind: "disabled" }
+  | { kind: "invalid-config" }
+  | { kind: "untrusted" }
+  | ZshProbe
 
 export type ZshCheckResult =
   | { kind: "ok" }
@@ -49,21 +46,17 @@ function logProbe(ref: ZshBinaryRef, probe: ZshProbe) {
     warn(`zsh unavailable (${probe.errCode}: ${probe.binary})`)
 }
 
-function logVersion(r: ZshRunResult) {
-  if (r.errCode) return
-  if (r.code !== 0) return warn(`failed to read zsh version (exit ${r.code})`)
-  const v = r.stdout.trim() || r.stderr.trim()
-  if (v) log(`zsh version: ${v}`)
-}
-
 // ── Mode: resolved once per configuration ──
 
-async function resolveMode(config: ZshPathConfig): Promise<ZshMode> {
+async function resolveMode(config: ZshConfig): Promise<ZshMode> {
   const { key } = settings.zshPath
   switch (config.kind) {
     case "disabled":
       log(`zsh: disabled via ${key}=${ZSH_PATH_OFF}`)
       return { kind: "disabled" }
+    case "untrusted":
+      log("zsh: workspace not trusted; host zsh off until trust is granted")
+      return { kind: "untrusted" }
     case "invalid":
       log(`zsh: invalid configured path ${config.raw} (${config.reason})`)
       warn(`zsh unavailable (invalid ${key}: ${config.reason}: ${config.raw})`)
@@ -71,7 +64,6 @@ async function resolveMode(config: ZshPathConfig): Promise<ZshMode> {
     default: {
       const mode = await probeZsh(config, buildZshEnv(process.env))
       logProbe(config, mode)
-      if (mode.kind === "available") void runZsh(versionReq).then(logVersion)
       return mode
     }
   }
@@ -82,15 +74,15 @@ let getMode: () => Promise<ZshMode> = memoized<ZshMode>(async () => ({
   kind: "disabled",
 }))
 
-export function configureZsh(config: ZshPathConfig) {
+export function configureZsh(config: ZshConfig) {
   getMode = memoized(() => resolveMode(config))
 }
 
 // ── The single gate for executing the system zsh ──
 //
 // SECURITY: every editor feature reaches the binary through here, and only the
-// `available` mode spawns — disabled/invalid/unavailable modes short-circuit
-// before `execZsh`.
+// `available` mode spawns — disabled/invalid/untrusted/unavailable modes
+// short-circuit before `execZsh`.
 
 const unavailable = (errCode: string): ZshRunResult => ({
   stdout: "",
@@ -104,6 +96,7 @@ async function runZsh(req: ZshRunReq): Promise<ZshRunResult> {
   const mode = await thunk()
   if (mode.kind === "disabled") return unavailable("DISABLED")
   if (mode.kind === "invalid-config") return unavailable("EINVAL")
+  if (mode.kind === "untrusted") return unavailable("UNTRUSTED")
   if (mode.kind === "unavailable") return unavailable(mode.errCode)
 
   const result = await execZsh(mode.binary, req)
@@ -121,18 +114,18 @@ async function runZsh(req: ZshRunReq): Promise<ZshRunResult> {
   return result
 }
 
-// ── Public API ──
+// ── Public API: the one thing the host zsh is asked to do ──
 
 export async function zshCheck(text: string): Promise<ZshCheckResult> {
   const r = await runZsh(syntaxCheckReq(text))
   if (r.errCode) return { kind: "unavailable" }
-  if (r.code === 0) return { kind: "ok" }
+  if (r.code === 0) {
+    debug("zsh -n: ok")
+    return { kind: "ok" }
+  }
   const err = parseZshError(r.stderr)
   if (!err) warn(`zsh -n: exit ${r.code} without a message`)
-  return { kind: "error", ...(err ?? { line: 1, msg: "syntax error" }) }
-}
-
-export async function zshTokenize(text: string): Promise<readonly string[]> {
-  const r = await runZsh(tokenizeReq(text))
-  return r.code === 0 ? splitLines(r.stdout) : []
+  const error = err ?? { line: 1, msg: "syntax error" }
+  debug(`zsh -n: error at line ${error.line}`)
+  return { kind: "error", ...error }
 }

@@ -8,7 +8,7 @@ import {
   type TextSpan,
 } from "./doc.ts"
 import type { Fact } from "./fact-types.ts"
-import { cmdHeadFactsOnLine, funcDeclAtLine } from "./line-facts.ts"
+import { cmdHeadFactsOnLine, funcDeclsAtLine } from "./line-facts.ts"
 import { quotedRegionFacts } from "./quoted-region.ts"
 
 export type { DocLike, DocLine, TextSpan } from "./doc.ts"
@@ -41,7 +41,11 @@ export {
   isRedirFact,
   isReservedWordFact,
 } from "./fact-types.ts"
-export { cmdHeadFactsOnLine, funcDeclAtLine } from "./line-facts.ts"
+export {
+  cmdHeadFactsOnLine,
+  type FuncDeclHit,
+  funcDeclsAtLine,
+} from "./line-facts.ts"
 export { quotedRegionFacts } from "./quoted-region.ts"
 
 function shiftFact<T extends { span: TextSpan }>(base: number, fact: T): T {
@@ -66,8 +70,7 @@ export function analyzeDoc(doc: DocLike): readonly Fact[] {
   for (let i = 0; i < lines.length; i++) {
     const text = lines[i] ?? ""
     const base = starts[i] ?? 0
-    const decl = funcDeclAtLine(text)
-    if (decl) {
+    for (const decl of funcDeclsAtLine(text)) {
       facts.push({
         kind: "func-decl",
         span: absSpan(base, { start: 0, end: text.length }),

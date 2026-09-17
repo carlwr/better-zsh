@@ -9,3 +9,7 @@ export const ZSH_DIAGNOSTIC_SOURCE = id<"DiagnosticSource">("zsh")
 export const BETTER_ZSH_TEST_GET_LOGS = id<"CommandId">(
   "betterZsh.__test.getLogs",
 )
+/** Context key: a zsh document is visible in some editor. */
+export const BETTER_ZSH_CTX_ZSH_VISIBLE = id<"ContextKey">(
+  "betterZsh.zshVisible",
+)

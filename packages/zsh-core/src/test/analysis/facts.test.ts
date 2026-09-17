@@ -196,6 +196,28 @@ describe("document facts", () => {
     expect(fact && factText(doc, fact.nameSpan)).toBe("alpha")
   })
 
+  // zsh: `a b() cmd` and `function a b { … }` declare every listed name —
+  // `echo x() :` redefines `echo`.
+  test("one func-decl fact per declared name", () => {
+    const doc = mockDoc([
+      "funcA funcB() print $0",
+      "  function d e {",
+      "f-g h ()",
+      "echo x-y() :",
+    ])
+    const facts = analyzeDoc(doc).filter(isFuncDeclFact)
+    expect(facts.map(f => [f.name, factText(doc, f.nameSpan)])).toEqual([
+      ["funcA", "funcA"],
+      ["funcB", "funcB"],
+      ["d", "d"],
+      ["e", "e"],
+      ["f-g", "f-g"],
+      ["h", "h"],
+      ["echo", "echo"],
+      ["x-y", "x-y"],
+    ])
+  })
+
   test("setopt context after builtin modifier", () => {
     const doc = mockDoc(["builtin setopt extended_glob"])
     const facts = factsAt(analyzeDoc(doc), offsetAt(lineStarts(doc), 0, 18))

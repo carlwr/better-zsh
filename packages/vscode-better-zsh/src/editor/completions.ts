@@ -12,16 +12,11 @@ import {
 } from "@carlwr/zsh-core/taxonomy"
 import type { CondOpDoc, Documented } from "@carlwr/zsh-core/types"
 import * as vscode from "vscode"
-import { asyncDocCache } from "../document/cache"
 import { contextAt } from "../document/facts"
-import { filterTokens, WORD, WORD_EXACT } from "../document/words"
-import { zshTokenize } from "../zsh"
+import { funcDecls } from "../document/funcs"
+import { paramNames } from "../document/params"
+import { WORD, WORD_EXACT } from "../document/words"
 import { matchOptions } from "./option-match"
-
-/** Word-like tokens of the document, as the host zsh splits it. */
-const fileWords = asyncDocCache(async doc =>
-  filterTokens(await zshTokenize(doc.getText())),
-)
 
 const { CompletionItemKind: Kind } = vscode
 
@@ -72,16 +67,22 @@ export class CompletionProvider implements vscode.CompletionItemProvider {
     }
   }
 
-  private async generalCompletions(
-    doc: vscode.TextDocument,
-    pos: vscode.Position,
-  ) {
-    const words = await fileWords(doc)
+  // The file's own symbols first: its functions (docstring as documentation)
+  // and its parameters; corpus words win a name clash.
+  private generalCompletions(doc: vscode.TextDocument, pos: vscode.Position) {
     const cur = wordTextAt(doc, pos)
-    const items = words
-      .filter(w => w !== cur && !this.generalLabels.has(w))
-      .map(w => new vscode.CompletionItem(w, Kind.Text))
-    return [...items, ...this.general.filter(b => b.label !== cur)]
+    const own = (name: string) => name !== cur && !this.generalLabels.has(name)
+    const funcs = funcDecls(doc)
+      .filter(d => own(d.name))
+      .map(d => {
+        const item = new vscode.CompletionItem(d.name, Kind.Function)
+        item.documentation = d.doc
+        return item
+      })
+    const params = paramNames(doc)
+      .filter(own)
+      .map(name => new vscode.CompletionItem(name, Kind.Variable))
+    return [...funcs, ...params, ...this.general.filter(b => b.label !== cur)]
   }
 
   private optionCompletions(doc: vscode.TextDocument, pos: vscode.Position) {

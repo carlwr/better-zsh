@@ -28,10 +28,6 @@ export function activeLineAt(
   return pos.character < cut ? { text, cut } : undefined
 }
 
-/** Word-like tokens, deduplicated, in first-occurrence order. */
-export const filterTokens = (tokens: Iterable<string>): string[] =>
-  [...new Set(tokens)].filter(t => WORD_EXACT.test(t))
-
 /** The word at `pos`, unless in a comment; strings stay active — zsh meta-programming passes function names through quotes. */
 export function activeWordRangeAt(
   doc: vscode.TextDocument,

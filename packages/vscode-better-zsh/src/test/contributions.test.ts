@@ -2,14 +2,13 @@ import { loadCorpus } from "@carlwr/zsh-core"
 import { beforeEach, describe, expect, test, vi } from "vitest"
 import type * as vscode from "vscode"
 import { contribute } from "../contributions"
-import { ZSH_LANG_ID } from "../ids"
+import { BETTER_ZSH_CTX_ZSH_VISIBLE, ZSH_LANG_ID } from "../ids"
 import { settings } from "../manifest/settings"
-import { stub } from "./vscode-stub"
+import { stub, window } from "./vscode-stub"
 
 const zsh = vi.hoisted(() => ({
   configureZsh: vi.fn(),
   zshCheck: vi.fn(async () => ({ kind: "unavailable" as const })),
-  zshTokenize: vi.fn(async () => []),
 }))
 vi.mock("../zsh", () => zsh)
 
@@ -47,8 +46,9 @@ describe("contribute", () => {
   })
 
   // The zsh gate is configured from settings before each diagnostics pass
-  // that reads it: at activation, and again when the setting changes.
-  test("zsh is configured before open documents are checked; a zsh-path change repeats both", () => {
+  // that reads it: at activation, and again when the setting changes or the
+  // workspace becomes trusted.
+  test("zsh is configured before open documents are checked; a zsh-path change or a trust grant repeats both", () => {
     const configuredBeforeChecked = () =>
       expect(zsh.configureZsh.mock.invocationCallOrder.at(-1)).toBeLessThan(
         zsh.zshCheck.mock.invocationCallOrder.at(-1) ?? 0,
@@ -74,5 +74,30 @@ describe("contribute", () => {
 
     stub.fire("config", { affectsConfiguration: () => false })
     expect(zsh.configureZsh).toHaveBeenCalledTimes(2)
+
+    stub.fire("trust", undefined)
+    expect(zsh.configureZsh).toHaveBeenCalledTimes(3)
+    expect(zsh.zshCheck).toHaveBeenCalledTimes(3)
+    configuredBeforeChecked()
+  })
+
+  test("the chat-instructions context key tracks visible zsh editors", () => {
+    const key = () => stub.contextKeys.get(BETTER_ZSH_CTX_ZSH_VISIBLE)
+    // The document events carry a document the other listeners ignore.
+    const other = {
+      uri: { scheme: "file", toString: () => "file:///notes.txt" },
+      languageId: "plaintext",
+    }
+    contribute(ctx(), loadCorpus())
+    expect(key()).toBe(false)
+    window.visibleTextEditors.push({ document: { languageId: "shellscript" } })
+    stub.fire("visibleEditors", undefined)
+    expect(key()).toBe(false)
+    window.visibleTextEditors.push({ document: { languageId: ZSH_LANG_ID } })
+    stub.fire("open", other) // a language-mode change reopens the document
+    expect(key()).toBe(true)
+    window.visibleTextEditors.length = 0
+    stub.fire("close", other)
+    expect(key()).toBe(false)
   })
 })

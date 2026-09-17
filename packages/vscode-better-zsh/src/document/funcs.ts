@@ -1,4 +1,4 @@
-import { funcDeclAtLine } from "@carlwr/zsh-core/analysis"
+import { funcDeclsAtLine } from "@carlwr/zsh-core/analysis"
 import * as vscode from "vscode"
 import { docCache } from "./cache"
 import { activeWordRangeAt } from "./words"
@@ -39,18 +39,22 @@ function buildData(doc: vscode.TextDocument): FuncData {
   const decls: FuncDecl[] = []
   for (let line = 0; line < doc.lineCount; line++) {
     const text = doc.lineAt(line).text
-    const hit = funcDeclAtLine(text)
-    if (!hit) continue
-    const end = hit.start + hit.name.length
-    decls.push({
-      name: hit.name,
-      range: new vscode.Range(line, 0, line, text.length),
-      selectionRange: new vscode.Range(line, hit.start, line, end),
-      doc:
-        collectComments(doc, line - 1, -1) ||
-        collectComments(doc, line + 1, 1) ||
-        undefined,
-    })
+    const hits = funcDeclsAtLine(text)
+    if (!hits.length) continue
+    // Names declared together share the docstring.
+    const docstring =
+      collectComments(doc, line - 1, -1) ||
+      collectComments(doc, line + 1, 1) ||
+      undefined
+    for (const hit of hits) {
+      const end = hit.start + hit.name.length
+      decls.push({
+        name: hit.name,
+        range: new vscode.Range(line, 0, line, text.length),
+        selectionRange: new vscode.Range(line, hit.start, line, end),
+        doc: docstring,
+      })
+    }
   }
   const byName = new Map<string, FuncDecl>()
   for (const decl of decls) {

@@ -17,20 +17,36 @@ import {
   SEMANTIC_LEGEND,
   SemanticTokensProvider,
 } from "./editor/semantic-tokens"
-import { BETTER_ZSH_TEST_GET_LOGS, ZSH_LANG_ID } from "./ids"
+import {
+  BETTER_ZSH_CTX_ZSH_VISIBLE,
+  BETTER_ZSH_TEST_GET_LOGS,
+  ZSH_LANG_ID,
+} from "./ids"
 import { recentLogs } from "./log"
 import { settings } from "./manifest/settings"
-import { onDidChangeSetting, readZshPathConfig } from "./settings"
+import { onDidChangeSetting, readZshConfig } from "./settings"
 import { configureZsh } from "./zsh"
 
-const { commands, languages, workspace } = vscode
+const { commands, languages, window, workspace } = vscode
 
 export function contribute(ctx: vscode.ExtensionContext, corpus: DocCorpus) {
   const zsh = ZSH_LANG_ID
 
   // ── Host zsh: configured before the first diagnostics pass reads it ──
-  configureZsh(readZshPathConfig())
+  configureZsh(readZshConfig())
   const diagnostics = setupDiagnostics()
+  const reconfigureZsh = () => {
+    configureZsh(readZshConfig())
+    diagnostics.relintAll()
+  }
+
+  const syncZshVisible = () =>
+    commands.executeCommand(
+      "setContext",
+      BETTER_ZSH_CTX_ZSH_VISIBLE,
+      window.visibleTextEditors.some(e => e.document.languageId === zsh),
+    )
+  syncZshVisible()
 
   ctx.subscriptions.push(
     // ── Reference knowledge (bundled corpus) ──
@@ -59,15 +75,19 @@ export function contribute(ctx: vscode.ExtensionContext, corpus: DocCorpus) {
     // ── `source` / `.` paths as links ──
     languages.registerDocumentLinkProvider(zsh, new DocLinkProvider()),
 
-    // ── Host zsh: `zsh -n` diagnostics; binary re-resolved on setting change ──
+    // ── Host zsh: `zsh -n` diagnostics; re-resolved on setting change and on trust grant ──
     diagnostics,
-    onDidChangeSetting(settings.zshPath, () => {
-      configureZsh(readZshPathConfig())
-      diagnostics.relintAll()
-    }),
+    onDidChangeSetting(settings.zshPath, reconfigureZsh),
+    workspace.onDidGrantWorkspaceTrust(reconfigureZsh),
 
     // ── Per-document caches ──
     workspace.onDidCloseTextDocument(evictDocCaches),
+
+    // ── Chat instructions: enabled while a zsh editor is visible ──
+    // A language-mode change reopens the document, hence the document events.
+    window.onDidChangeVisibleTextEditors(syncZshVisible),
+    workspace.onDidOpenTextDocument(syncZshVisible),
+    workspace.onDidCloseTextDocument(syncZshVisible),
 
     // ── Test hook (VS Code test runs only) ──
     ...(process.env.VSCODE_TEST_OPTIONS

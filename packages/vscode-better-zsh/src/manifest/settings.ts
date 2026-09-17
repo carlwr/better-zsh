@@ -18,12 +18,13 @@ const setting = <const M extends SettingMeta>(suffix: string, meta: M) => ({
 export const settings = {
   diagnosticsEnabled: setting("diagnostics.enabled", {
     default: true,
-    description: "Enable syntax checking via zsh -n",
+    markdownDescription:
+      "Syntax-check with `zsh -n` — the only thing the host zsh is used for.",
   }),
   zshPath: setting("zshPath", {
     scope: "machine",
     default: "",
-    markdownDescription: `Path to the zsh binary. Leave empty to use \`zsh\` from PATH. Set to \`${ZSH_PATH_OFF}\` to never invoke any zsh binary.`,
+    markdownDescription: `Path to the zsh binary. Leave empty to use \`zsh\` from PATH. Set to \`${ZSH_PATH_OFF}\` to never invoke any zsh binary. Relative paths are rejected.`,
   }),
 }
 

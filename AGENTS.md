@@ -141,11 +141,7 @@ Docs describe the current shape. The one planned change — extracting `zshref-r
 
 ### `SECURITY.md`
 
-Agents may not edit `SECURITY.md`; tell the user and suggest updates. Likely triggers:
-
-- changes to extension zsh execution
-- `source`/`.` link resolution
-- extension settings
+Agents may not edit `SECURITY.md`; tell the user and suggest updates.
 
 ### Keeping the orientation skill fresh
 

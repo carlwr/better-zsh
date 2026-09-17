@@ -2,11 +2,12 @@ import { describe, expect, test } from "vitest"
 import { settings } from "../manifest/settings"
 import {
   parseZshPath,
+  readZshConfig,
   readZshPathConfig,
   type ZshPathConfig,
 } from "../settings"
 import { mkZshBinary } from "../zsh/binary"
-import { stub } from "./vscode-stub"
+import { stub, workspace } from "./vscode-stub"
 
 describe("parseZshPath", () => {
   test.each<[string, ZshPathConfig]>([
@@ -30,6 +31,17 @@ describe("parseZshPath", () => {
   ])("setting %j", (value, want) => {
     stub.config.set(settings.zshPath.key, value)
     expect(readZshPathConfig()).toEqual(want)
+    stub.config.clear()
+  })
+})
+
+describe("readZshConfig", () => {
+  test("an untrusted workspace overrides the path setting", () => {
+    stub.config.set(settings.zshPath.key, "/usr/local/bin/zsh")
+    workspace.isTrusted = false
+    expect(readZshConfig()).toEqual({ kind: "untrusted" })
+    workspace.isTrusted = true
+    expect(readZshConfig()).toEqual(parseZshPath("/usr/local/bin/zsh"))
     stub.config.clear()
   })
 })
