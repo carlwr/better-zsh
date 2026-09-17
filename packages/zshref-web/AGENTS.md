@@ -106,6 +106,10 @@ The f32 emulation in `rank.ts` is what lets the goldens assert byte-equality; re
   - `svelte.config.js` sets no `kit.paths.base`; the final URL decides
   - `THIRD_PARTY_NOTICES.md` — the bundle ships transformers.js, shiki and fonts; a real obligation, and this package has none of the user-facing docs its siblings carry
 
+## Deferred
+
+- a split into its own repo: no technical driver; the payoff: the SPA's toolchain and dependency churn (SvelteKit, Vite, transformers.js) leave the workspace lockfile and root `qa`
+
 ## See also
 
 - `nlp/NLP.md` — holdout rules, eval architecture, modes, follow-ups

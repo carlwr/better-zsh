@@ -195,4 +195,3 @@ In order. A step ends with the repo's validation gates green where touched and t
 
 Decided not to decide during the reorg. An item leaves this list once it is decided and executed, or moved to another home; this dir is deleted when the list is empty. Roughly chronological:
 
-- a `zshref-web` split into its own repo — no technical driver; the payoff: the SPA's toolchain and dependency churn (SvelteKit, Vite, transformers.js) leave the workspace lockfile and root `qa`
