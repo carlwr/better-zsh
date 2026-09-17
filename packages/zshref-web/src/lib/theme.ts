@@ -1,41 +1,33 @@
-// Light/dark theme toggle. Pre-paint application happens in app.html so the
-// page never renders the wrong theme; this module only handles user toggles.
+// Light/dark theme toggle. app.html applies the persisted or system theme
+// before first paint; this module adopts what is painted — so the store can
+// never disagree with the page — and persists the user's toggles, and only
+// those: an untoggled visit keeps following the system preference.
 
-import { writable } from "svelte/store"
+import { get, writable } from "svelte/store"
 import { browser } from "$app/environment"
 
 export type Theme = "light" | "dark"
 
-const STORAGE_KEY = "zshref-theme"
+/** Also read by app.html's pre-paint script, by hand; a test pins the two. */
+export const STORAGE_KEY = "zshref-theme"
 
-function initial(): Theme {
-  if (!browser) return "dark"
-  // app.html's pre-paint script already resolved + applied the theme before the
-  // bundle loaded; adopt that applied value so the store can't disagree with
-  // what's painted (a split flashes the wrong toggle icon/label). Recompute
-  // only if the attribute is somehow absent.
-  const applied = document.documentElement.getAttribute("data-theme")
-  if (applied === "light" || applied === "dark") return applied
-  const stored = localStorage.getItem(STORAGE_KEY)
-  if (stored === "light" || stored === "dark") return stored
-  return window.matchMedia("(prefers-color-scheme: light)").matches
+const painted = (): Theme =>
+  browser && document.documentElement.getAttribute("data-theme") === "light"
     ? "light"
     : "dark"
-}
 
-export const theme = writable<Theme>(initial())
+export const theme = writable<Theme>(painted())
 
 if (browser) {
-  theme.subscribe(t => {
-    document.documentElement.setAttribute("data-theme", t)
-    try {
-      localStorage.setItem(STORAGE_KEY, t)
-    } catch {
-      // private mode etc.; toggle still works for this session.
-    }
-  })
+  theme.subscribe(t => document.documentElement.setAttribute("data-theme", t))
 }
 
 export function toggleTheme(): void {
-  theme.update(t => (t === "dark" ? "light" : "dark"))
+  const next: Theme = get(theme) === "dark" ? "light" : "dark"
+  theme.set(next)
+  try {
+    localStorage.setItem(STORAGE_KEY, next)
+  } catch {
+    // private mode etc.; the toggle still holds for this session.
+  }
 }
