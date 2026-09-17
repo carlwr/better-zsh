@@ -63,6 +63,8 @@ Rendered reference text is shared by extension hovers, tools, and the CLI. Treat
 
 `@carlwr/typescript-extra` and `@carlwr/fastcheck-utils` stay workspace-root dev dependencies even when temporarily unused; individual packages add or drop them per actual use.
 
+`zzz_LAST_dummy` stays: a permanent alphabetically-last entry, so adding a dep never touches the prior line's comma (JSON forbids trailing commas).
+
 ### TS↔Rust mirror discipline
 
 For TS↔Rust mirrors (`// MIRRORED-IN:` / `// MIRROR-OF:`), a rename touches both sides; behaviour is pinned by the resolver fixture (`DESIGN.md`).

@@ -118,9 +118,6 @@ importers:
       '@carlwr/typescript-extra':
         specifier: 0.12.1
         version: 0.12.1
-      '@fast-check/vitest':
-        specifier: ^0.5.0
-        version: 0.5.0(vitest@5.0.1(@types/node@22.20.3)(vite@7.3.6(@types/node@22.20.3)(tsx@4.23.13)(yaml@2.9.1)))
       '@microsoft/api-extractor':
         specifier: ^7.59.1
         version: 7.59.1(@types/node@22.20.3)
@@ -704,11 +701,6 @@ packages:
     engines: {node: '>=18'}
     cpu: [x64]
     os: [win32]
-
-  '@fast-check/vitest@0.5.0':
-    resolution: {integrity: sha512-Kgbj2smuq1P4OhGKuPATs5i2fAxNmGbJ/zSmTrzWhQSLUrHREbKWgv9WGbNUOXcx77q6joLVMmTygyXuwP2Bog==}
-    peerDependencies:
-      vitest: ^4.1.0 || ^5.0.0
 
   '@fontsource-variable/inter@5.3.0':
     resolution: {integrity: sha512-OupL48va4JNofb97w6NYeF9S7W/kHNKM0Er8Dem5nqi4jeOLrVJDoE8tZEpnMJmtkvNbB1EIPPwHcdkF6b1oUA==}
@@ -3311,11 +3303,6 @@ snapshots:
 
   '@esbuild/win32-x64@0.28.2':
     optional: true
-
-  '@fast-check/vitest@0.5.0(vitest@5.0.1(@types/node@22.20.3)(vite@7.3.6(@types/node@22.20.3)(tsx@4.23.13)(yaml@2.9.1)))':
-    dependencies:
-      fast-check: 4.10.1
-      vitest: 5.0.1(@types/node@22.20.3)(vite@7.3.6(@types/node@22.20.3)(tsx@4.23.13)(yaml@2.9.1))
 
   '@fontsource-variable/inter@5.3.0': {}
 

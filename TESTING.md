@@ -68,3 +68,10 @@ If you touch tests, look for conciseness wins unless that would hide intent.
 ## Testing tools
 
 Established tools: the workspace-root `devDependencies`. When property-based-test primitives are unavailable in a given version, fall back to constructive primitives (`fc.mapToConstant(...)` + `fc.array(...)`, etc.).
+
+Property tests call `fast-check` directly (`fc.assert(fc.property(...))`). Considered `@fast-check/vitest`; rejected:
+
+- gain is cosmetic — `test.prop` sugar, `.only`/`.skip` chaining, per-predicate `beforeEach`; the tests are pure and need none of it
+- one more 0.x wrapper in the vitest-major-bump path
+- vitest-only; plain `fast-check` is runner-agnostic and matches its own docs
+- a test body mixing examples and a property still needs `fc.assert` — two idioms
