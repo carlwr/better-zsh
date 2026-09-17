@@ -52,8 +52,10 @@ export function summaryLine(shown: number, total: number): string {
   return `${total} ${total === 1 ? "record" : "records"}`
 }
 
+// The permalink. Ids are zsh syntax — `?`, `#`, `%`, `/` and spaces among
+// them — so each segment is percent-encoded; the route decodes its params.
 export function recordHref(rec: RecordId): string {
-  return `/r/${rec.category}/${rec.id}`
+  return `/r/${encodeURIComponent(rec.category)}/${encodeURIComponent(rec.id)}`
 }
 
 // Match category AND id: an id recurs across categories. Generic so tests pass

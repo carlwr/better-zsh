@@ -1,3 +1,4 @@
+import fc from "fast-check"
 import { describe, expect, it } from "vitest"
 
 import {
@@ -90,6 +91,29 @@ describe("record links", () => {
 
   it("href is the permalink", () => {
     expect(recordHref(rec)).toBe("/r/builtin/typeset")
+  })
+
+  // Ids are zsh syntax: unencoded, `?` would start a query string, `#` a
+  // fragment, `%pa` a malformed escape, `/` another segment.
+  it.each([
+    ["?", "/r/special_param/%3F"],
+    ["#", "/r/special_param/%23"],
+    ["${name%pattern}", "/r/special_param/%24%7Bname%25pattern%7D"],
+    ["/", "/r/special_param/%2F"],
+    [">> word", "/r/special_param/%3E%3E%20word"],
+  ])("href encodes the id %j", (id, href) => {
+    expect(recordHref({ category: "special_param", id })).toBe(href)
+  })
+
+  it("href is two decodable segments for any id", () => {
+    fc.assert(
+      fc.property(fc.string({ minLength: 1 }), id => {
+        const href = recordHref({ ...rec, id })
+        const [, r, category, encoded, ...rest] = href.split("/")
+        expect([r, category, rest]).toEqual(["r", "builtin", []])
+        expect(decodeURIComponent(encoded ?? "")).toBe(id)
+      }),
+    )
   })
 
   it("key is category+id", () => {
