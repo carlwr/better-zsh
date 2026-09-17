@@ -10,11 +10,11 @@ import { rm_rf } from "@carlwr/typescript-extra/node"
 import { loadCorpus } from "@carlwr/zsh-core"
 import fc from "fast-check"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
-import { loadVectorIndex } from "../../../nlp/core/index-loader"
 import type { Rules } from "../../../nlp/core/rules"
 import {
   DIMS,
   type IndexedRecord,
+  loadVectorIndex,
   MODEL_ID,
   perView,
   type VectorIndex,

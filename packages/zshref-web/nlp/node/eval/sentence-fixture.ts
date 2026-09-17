@@ -6,10 +6,10 @@
 // nothing prints an entry of the holdout split; `trainOnly` is the view for
 // anything that does.
 
-import { readFile } from "node:fs/promises"
 import { parse as parseYaml } from "yaml"
 import { z } from "zod"
 
+import { readYaml } from "../io"
 import { PATHS } from "../paths"
 import type { Split } from "./metric"
 
@@ -146,11 +146,9 @@ export const SentenceFixtureSchema = SentenceFixtureShape.transform(
 export const parseSentenceFixture = (yaml: string): SentenceFixture =>
   SentenceFixtureSchema.parse(parseYaml(yaml))
 
-export async function loadSentenceFixture(
+export const loadSentenceFixture = async (
   path: string = PATHS.sentenceFixture,
-): Promise<SentenceFixture> {
-  return parseSentenceFixture(await readFile(path, "utf8"))
-}
+): Promise<SentenceFixture> => SentenceFixtureSchema.parse(await readYaml(path))
 
 /** The tune-on split: the only entries anything may print. */
 export const trainOnly = (fixture: SentenceFixture): SentenceFixture => ({

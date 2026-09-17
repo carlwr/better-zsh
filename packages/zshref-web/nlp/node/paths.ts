@@ -4,6 +4,7 @@
 import { dirname, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 
+import { ARTIFACT, ARTIFACTS_DIR } from "../core/artifact-files"
 import { byRuleFile } from "../core/rules"
 
 const pkgDir = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..")
@@ -17,7 +18,7 @@ const rulesDir = resolve(nlpDir, "rules")
 const dataDir = resolve(nlpDir, "data")
 // Build output (gitignored): what the SPA fetches under `/artifacts`;
 // `scripts/build-index.ts` writes it. The model: `scripts/fetch-model`.
-const artifactsDir = resolve(pkgDir, "static/artifacts")
+const artifactsDir = resolve(pkgDir, "static", ARTIFACTS_DIR)
 // Gitignored, self-maintaining: the model, and the query vectors the
 // reporters keep across runs (`query-cache.ts`; delete to reset).
 const auxDir = resolve(pkgDir, ".aux")
@@ -37,7 +38,7 @@ export const PATHS = {
   modelDir: resolve(auxDir, "model"),
   queryCache: resolve(auxDir, "query-cache.json"),
   artifactsDir,
-  indexJson: resolve(artifactsDir, "index.json"),
+  indexJson: resolve(artifactsDir, ARTIFACT.index),
 } as const
 
 // The gitignored inputs — the only PATHS members whose absence is normal, so

@@ -86,6 +86,10 @@ export const VectorIndexSchema = z.object({
 })
 export type VectorIndex = z.infer<typeof VectorIndexSchema>
 
+/** Parse + validate an `index.json` blob; the vectors come back as `Float32Array`s. */
+export const loadVectorIndex = (raw: unknown): VectorIndex =>
+  VectorIndexSchema.parse(raw)
+
 const CategoryEntry = z.object({ id: z.string(), label: z.string() })
 export const CategoriesSchema = z.object({
   version: z.literal(1),

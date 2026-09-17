@@ -3,23 +3,21 @@
 // zod-validated.
 
 import { memoizedRetry } from "@carlwr/typescript-extra"
-import { loadVectorIndex } from "../core/index-loader"
+import { ARTIFACT, ARTIFACTS_DIR, ruleArtifact } from "../core/artifact-files"
 import {
   type LookupIndex,
   LookupMapSchema,
   lookupIndex,
 } from "../core/lookup-map"
+import { byRuleFile, loadRules, RULE_FILES, type Rules } from "../core/rules"
 import {
-  byRuleFile,
-  loadRules,
-  RULE_FILES,
-  type Rules,
-  ruleJsonFile,
-} from "../core/rules"
-import type { Category, VectorIndex } from "../core/types"
-import { CategoriesSchema } from "../core/types"
+  CategoriesSchema,
+  type Category,
+  loadVectorIndex,
+  type VectorIndex,
+} from "../core/types"
 
-const BASE = "/artifacts"
+const BASE = `/${ARTIFACTS_DIR}`
 
 export interface Artifacts {
   index: VectorIndex
@@ -33,12 +31,10 @@ export async function loadArtifacts(
 ): Promise<Artifacts> {
   const [indexJson, categoriesJson, lookupMapJson, ...ruleJsons] =
     await Promise.all([
-      getJson(fetcher, `${BASE}/index.json`),
-      getJson(fetcher, `${BASE}/categories.json`),
-      getJson(fetcher, `${BASE}/lookup-map.json`),
-      ...RULE_FILES.map(f =>
-        getJson(fetcher, `${BASE}/rules/${ruleJsonFile(f)}`),
-      ),
+      getJson(fetcher, `${BASE}/${ARTIFACT.index}`),
+      getJson(fetcher, `${BASE}/${ARTIFACT.categories}`),
+      getJson(fetcher, `${BASE}/${ARTIFACT.lookupMap}`),
+      ...RULE_FILES.map(f => getJson(fetcher, `${BASE}/${ruleArtifact(f)}`)),
     ])
   const index = loadVectorIndex(indexJson)
   const rules = loadRules(byRuleFile((_, at) => ruleJsons[at]))

@@ -4,10 +4,10 @@
 // validates against the corpus is kept.
 
 import { existsSync } from "node:fs"
-import { writeFile } from "node:fs/promises"
 import { join } from "node:path"
 import { loadCorpus } from "@carlwr/zsh-core"
 
+import { ARTIFACT } from "../nlp/core/artifact-files"
 import { categoriesJson } from "../nlp/node/categories"
 import { createNodeEmbedder } from "../nlp/node/embedder-node"
 import {
@@ -17,13 +17,10 @@ import {
   validateIndex,
   writeIndex,
 } from "../nlp/node/index-build"
+import { prettyJson, writeFileDeep } from "../nlp/node/io"
 import { buildLookupMap } from "../nlp/node/lookup-map-build"
 import { PATHS } from "../nlp/node/paths"
-import {
-  emitRulesJson,
-  loadRulesYaml,
-  prettyJson,
-} from "../nlp/node/rules-load"
+import { emitRulesJson, loadRulesYaml } from "../nlp/node/rules-load"
 import { scriptFlags } from "./_args"
 
 const usage = `\
@@ -95,10 +92,13 @@ if (existing.ok && !args.has("--force")) {
   )
 }
 
-await emitRulesJson(join(out, "rules"), rules)
-await writeFile(join(out, "categories.json"), prettyJson(categoriesJson()))
-await writeFile(
-  join(out, "lookup-map.json"),
+await emitRulesJson(out, rules)
+await writeFileDeep(
+  join(out, ARTIFACT.categories),
+  prettyJson(categoriesJson()),
+)
+await writeFileDeep(
+  join(out, ARTIFACT.lookupMap),
   prettyJson(buildLookupMap(corpus)),
 )
 say(`artifacts written to ${out}`)

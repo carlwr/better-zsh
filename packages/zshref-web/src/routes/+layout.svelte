@@ -2,6 +2,7 @@
   import "../app.css"
   import type { Snippet } from "svelte"
   import ThemeToggle from "$lib/components/ThemeToggle.svelte"
+  import { MODEL_ID } from "$nlp"
 
   let { children }: { children: Snippet } = $props()
 </script>
@@ -18,7 +19,7 @@
     {@render children()}
   </main>
   <footer>
-    <span>powered by local <code>BAAI/bge-small-en-v1.5</code> embeddings</span>
+    <span>powered by local <code>{MODEL_ID}</code> embeddings</span>
   </footer>
 </div>
 

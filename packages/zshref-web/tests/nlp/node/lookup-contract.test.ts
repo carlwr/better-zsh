@@ -12,7 +12,6 @@
 //   drift: `tests/nlp/core/parity.test.ts`; embedder integration:
 //   `tests/nlp/browser/sanity.test.ts`.
 
-import { readFile } from "node:fs/promises"
 import { describe, expect, it } from "vitest"
 import { z } from "zod"
 import { LookupMapSchema, lookupIndex } from "../../../nlp/core/lookup-map"
@@ -23,6 +22,7 @@ import {
   phrasingKinds,
   predicates,
 } from "../../../nlp/node/contract"
+import { readJson } from "../../../nlp/node/io"
 import { surfaceFormKinds } from "../../../nlp/node/lookup-map-build"
 import { PATHS } from "../../_helpers"
 
@@ -39,10 +39,6 @@ const LookupContractSchema = z.object({
     }),
   ),
 })
-
-async function readJson(path: string): Promise<unknown> {
-  return JSON.parse(await readFile(path, "utf8"))
-}
 
 describe("lookup contract (bare layer)", () => {
   it("every bare entry resolves via the lookup map", async () => {

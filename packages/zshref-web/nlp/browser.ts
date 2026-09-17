@@ -13,4 +13,9 @@ export type {
   RecordId,
   RecordText,
 } from "./core/types"
-export { categoryLabel, recordKey, sameRecord } from "./core/types"
+export {
+  categoryLabel,
+  MODEL_ID,
+  recordKey,
+  sameRecord,
+} from "./core/types"

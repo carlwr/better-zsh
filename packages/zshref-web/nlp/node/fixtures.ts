@@ -16,17 +16,16 @@
 //   resolution: its scores carry the embedder runtime's platform noise, so
 //   they are asserted within a tolerance, never exactly.
 
-import { readFile } from "node:fs/promises"
 import type { DocCorpus } from "@carlwr/zsh-core"
 import type { DocCategory } from "@carlwr/zsh-core/taxonomy"
 import { z } from "zod"
 
-import { loadVectorIndex } from "../core/index-loader"
 import { rank } from "../core/rank"
 import type { Rules } from "../core/rules"
 import {
   DIMS,
   F32VecSchema,
+  loadVectorIndex,
   perView,
   type RankedMatch,
   RecordIdSchema,
@@ -36,6 +35,7 @@ import {
 import { syntheticVec } from "../core/vec"
 import { type Embedder, embedQuery } from "./embedder-node"
 import { INDEX_VERSION } from "./index-build"
+import { readJson } from "./io"
 import { PATHS } from "./paths"
 import { corpusTexts, type IndexGroups } from "./retrieval-text"
 
@@ -81,17 +81,13 @@ export const SanityFixtureSchema = z.object({
 export type SanityFixture = z.infer<typeof SanityFixtureSchema>
 export type SanityEntry = SanityFixture["entries"][number]
 
-export async function loadParityFixture(
+export const loadParityFixture = async (
   path: string = PATHS.parityFixture,
-): Promise<ParityFixture> {
-  return ParityFixtureSchema.parse(JSON.parse(await readFile(path, "utf8")))
-}
+): Promise<ParityFixture> => ParityFixtureSchema.parse(await readJson(path))
 
-export async function loadSanityFixture(
+export const loadSanityFixture = async (
   path: string = PATHS.sanityFixture,
-): Promise<SanityFixture> {
-  return SanityFixtureSchema.parse(JSON.parse(await readFile(path, "utf8")))
-}
+): Promise<SanityFixture> => SanityFixtureSchema.parse(await readJson(path))
 
 // --- parity ----------------------------------------------------------------
 

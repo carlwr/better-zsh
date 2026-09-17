@@ -224,9 +224,6 @@ export const byRuleFile = <T>(
   f: (file: RuleFile, at: number) => T,
 ): Record<RuleFile, T> => recordOver(RULE_FILES, f)
 
-/** The emitted JSON's file name, the same under `static/artifacts/rules/` and in the SPA's fetch. */
-export const ruleJsonFile = (f: RuleFile): `${RuleFile}.json` => `${f}.json`
-
 export type Rules = { [K in RuleFile]: z.output<(typeof RULE_SCHEMAS)[K]> }
 
 /** The raw inputs by file, each validated by its schema; the cast carries the per-key output types `recordOver` cannot. */

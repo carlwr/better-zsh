@@ -2,10 +2,9 @@
 // Schema generated from the shape for the YAML editor. The corpus is a
 // held-out set (NLP.md): code loads it, nothing prints an entry.
 
-import { readFile } from "node:fs/promises"
-import { parse as parseYaml } from "yaml"
 import { z } from "zod"
 
+import { readYaml } from "../io"
 import { PATHS } from "../paths"
 import type { JsonSchema } from "../rules-schema"
 
@@ -79,11 +78,9 @@ export const QaCorpusSchema = z
 export type QaCorpus = z.infer<typeof QaCorpusSchema>
 
 /** The corpus, validated; defaults (`limit`, `weight`) filled in. */
-export async function loadQaCorpus(
+export const loadQaCorpus = async (
   path: string = PATHS.qaCorpus,
-): Promise<QaCorpus> {
-  return QaCorpusSchema.parse(parseYaml(await readFile(path, "utf8")))
-}
+): Promise<QaCorpus> => QaCorpusSchema.parse(await readYaml(path))
 
 /** The editor schema for the YAML: the input side, defaulted fields optional. */
 export function qaCorpusJsonSchema(): JsonSchema {

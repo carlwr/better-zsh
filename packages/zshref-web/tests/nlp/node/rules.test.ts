@@ -9,6 +9,7 @@ import { rm_rf } from "@carlwr/typescript-extra/node"
 import { describe, expect, it } from "vitest"
 import { parse as parseYaml } from "yaml"
 import type { z } from "zod"
+import { ruleArtifact } from "../../../nlp/core/artifact-files"
 import {
   exactWordBoost,
   MAX_SCORE_TERM,
@@ -59,7 +60,7 @@ describe("committed rules", () => {
     try {
       await emitRulesJson(dir, rules)
       for (const f of RULE_FILES) {
-        const text = await readFile(join(dir, `${f}.json`), "utf8")
+        const text = await readFile(join(dir, ruleArtifact(f)), "utf8")
         expect(text.endsWith("}\n")).toBe(true)
         expect(RULE_SCHEMAS[f].parse(JSON.parse(text))).toEqual(rules[f])
       }

@@ -2,16 +2,14 @@
 // views per record), validate against the corpus it claims to be built from,
 // read and write `index.json`.
 
-import { mkdir, readFile, writeFile } from "node:fs/promises"
-import { dirname } from "node:path"
 import { isDeepStrictEqual } from "node:util"
 import type { DocCorpus } from "@carlwr/zsh-core"
 
-import { loadVectorIndex } from "../core/index-loader"
 import type { Rules } from "../core/rules"
 import {
   DIMS,
   type IndexedRecord,
+  loadVectorIndex,
   MODEL_ID,
   perView,
   type VectorIndex,
@@ -20,6 +18,7 @@ import {
 import { normalizeF32 } from "../core/vec"
 import { corpusHash } from "./corpus-hash"
 import type { Embedder } from "./embedder-node"
+import { readJson, writeFileDeep } from "./io"
 import { f32VecJson, jsonWithRawField } from "./json-f32"
 import { corpusTexts } from "./retrieval-text"
 
@@ -150,15 +149,9 @@ export function indexJson(index: VectorIndex): string {
   )
 }
 
-export async function writeIndex(
-  path: string,
-  index: VectorIndex,
-): Promise<void> {
-  await mkdir(dirname(path), { recursive: true })
-  await writeFile(path, indexJson(index))
-}
+export const writeIndex = (path: string, index: VectorIndex): Promise<void> =>
+  writeFileDeep(path, indexJson(index))
 
 /** Parse + schema-validate; `validateIndex` is the caller's. */
-export async function readIndex(path: string): Promise<VectorIndex> {
-  return loadVectorIndex(JSON.parse(await readFile(path, "utf8")))
-}
+export const readIndex = async (path: string): Promise<VectorIndex> =>
+  loadVectorIndex(await readJson(path))

@@ -2,18 +2,17 @@
 // by the tests.
 
 import { existsSync } from "node:fs"
-import { readFile, writeFile } from "node:fs/promises"
+import { writeFile } from "node:fs/promises"
 import type { DocCorpus } from "@carlwr/zsh-core"
 import { docCategories } from "@carlwr/zsh-core/taxonomy"
 import { expect } from "vitest"
-import { parse as parseYaml } from "yaml"
 import type { Rules } from "../nlp/core/rules"
 import type { RecordId, VectorIndex } from "../nlp/core/types"
 import type { RankAssets } from "../nlp/node/eval/sentence"
 import { buildParityIndex } from "../nlp/node/fixtures"
 import { readIndex } from "../nlp/node/index-build"
+import { prettyJson, readJson, readYaml } from "../nlp/node/io"
 import { PATHS } from "../nlp/node/paths"
-import { prettyJson } from "../nlp/node/rules-load"
 import { emptyLookup } from "./_fixtures"
 
 export { loadParityFixture, loadSanityFixture } from "../nlp/node/fixtures"
@@ -87,9 +86,7 @@ export async function assertCommittedJson(
   if (!existsSync(path)) {
     throw new Error(`${path} is missing — generate it with ${envVar}=1`)
   }
-  expect(JSON.parse(await readFile(path, "utf8"))).toEqual(
-    expected(JSON.parse(text)),
-  )
+  expect(await readJson(path)).toEqual(expected(JSON.parse(text)))
 }
 
 /**
@@ -108,10 +105,8 @@ export function withinDecimals(value: unknown, digits: number): unknown {
   return value
 }
 
-export async function readData(path: string): Promise<unknown> {
-  const text = await readFile(path, "utf8")
-  return path.endsWith(".yaml") ? parseYaml(text) : JSON.parse(text)
-}
+export const readData = (path: string): Promise<unknown> =>
+  path.endsWith(".yaml") ? readYaml(path) : readJson(path)
 
 /** The staged index, schema-validated (not corpus-validated: that is `validateIndex`'s test). */
 export const loadIndexFromDisk = (): Promise<VectorIndex> =>
