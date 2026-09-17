@@ -50,9 +50,11 @@ export function asyncDocCache<T>(
     if (entry && entry.version === doc.version) return entry.data
     const seq = (seqs.get(key) ?? 0) + 1
     seqs.set(key, seq)
+    // The document is live: stamp the version the computation saw.
+    const version = doc.version
     const data = await compute(doc)
     if (seqs.get(key) !== seq) return data
-    cache.set(key, { version: doc.version, data })
+    cache.set(key, { version, data })
     return data
   }
 }

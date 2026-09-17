@@ -1,26 +1,18 @@
 type Brand<T, B extends string> = T & { readonly __brand: B }
 
-export type { Brand }
+const brand = <B extends string>(raw: string) => raw as Brand<string, B>
 
-type ZshLangId = Brand<string, "ZshLangId">
-type ExtId = Brand<string, "ExtId">
-type ConfigSection = Brand<string, "ConfigSection">
-type DiagnosticSource = Brand<string, "DiagnosticSource">
-type CommandId = Brand<string, "CommandId">
 export type ZshBinary = Brand<string, "ZshBinary">
+export const mkZshBinary = (raw: string) => brand<"ZshBinary">(raw)
 
-const mkZshLangId = (raw: string) => raw as ZshLangId
-const mkExtId = (raw: string) => raw as ExtId
-const mkConfigSection = (raw: string) => raw as ConfigSection
-const mkDiagnosticSource = (raw: string) => raw as DiagnosticSource
-const mkCommandId = (raw: string) => raw as CommandId
-export const mkZshBinary = (raw: string) => raw as ZshBinary
-
-export const ZSH_LANG_ID = mkZshLangId("zsh")
-export const BETTER_ZSH_EXT_ID = mkExtId("carlwr.better-zsh")
-export const BETTER_ZSH_CONFIG = mkConfigSection("betterZsh")
-export const ZSH_DIAGNOSTIC_SOURCE = mkDiagnosticSource("zsh")
-export const BETTER_ZSH_TEST_GET_LOGS = mkCommandId("betterZsh.__test.getLogs")
-export const BETTER_ZSH_TEST_GET_SEMANTIC_TOKENS = mkCommandId(
+export const BETTER_ZSH_DISPLAY_NAME = "Better Zsh"
+export const ZSH_LANG_ID = brand<"LangId">("zsh")
+export const BETTER_ZSH_EXT_ID = brand<"ExtId">("carlwr.better-zsh")
+export const BETTER_ZSH_CONFIG = brand<"ConfigSection">("betterZsh")
+export const ZSH_DIAGNOSTIC_SOURCE = brand<"DiagnosticSource">("zsh")
+export const BETTER_ZSH_TEST_GET_LOGS = brand<"CommandId">(
+  "betterZsh.__test.getLogs",
+)
+export const BETTER_ZSH_TEST_GET_SEMANTIC_TOKENS = brand<"CommandId">(
   "betterZsh.__test.getSemanticTokens",
 )

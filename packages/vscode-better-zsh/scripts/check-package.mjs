@@ -1,6 +1,7 @@
 import { execFileSync } from "node:child_process"
+import { readFileSync } from "node:fs"
 import { createRequire } from "node:module"
-import { dirname, resolve } from "node:path"
+import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 
 const pnpm = process.platform === "win32" ? "pnpm.cmd" : "pnpm"
@@ -24,17 +25,26 @@ const files = execFileSync(pnpm, ["exec", "vsce", "ls", "--no-dependencies"], {
   .map(line => line.trim())
   .filter(Boolean)
 
+// Everything the staged manifest points at must ship.
+const manifest = JSON.parse(
+  readFileSync(join(stageRoot, "package.json"), "utf8"),
+)
+const { languages, grammars, snippets, chatInstructions } = manifest.contributes
+const referenced = [
+  manifest.main,
+  `${manifest.main}.map`,
+  ...languages.map(l => l.configuration),
+  ...grammars.map(g => g.path),
+  ...snippets.map(s => s.path),
+  ...chatInstructions.map(c => c.path),
+].map(p => p.replace(/^\.\//, ""))
+
 const required = [
   "LICENSE",
   "THIRD_PARTY_NOTICES.md",
   "package.json",
-  "syntaxes/shell-unix-bash.tmLanguage.json",
   "syntaxes/THIRD_PARTY_NOTICES.md",
-  "out/extension.js",
-  "out/extension.js.map",
-  "out/language-configuration.json",
-  "out/snippets.json",
-  "out/zsh-chat-instructions.md",
+  ...referenced,
   ...vendoredZshDocFiles.map(file => `out/${runtimeZshDataDir}/${file}`),
 ]
 

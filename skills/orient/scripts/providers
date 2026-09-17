@@ -1,14 +1,16 @@
 #!/usr/bin/env bash
 # Show how extension providers are registered and which source files define them.
-# Requires: ripgrep (rg)
+# Requires: ripgrep (rg), tsx (workspace dev dependency)
 set -euo pipefail
 cd "$(git -C "$(dirname "$0")" rev-parse --show-toplevel)"
 
-echo "=== Provider registrations (extension.ts) ==="
-node - <<'NODE'
+ext=packages/vscode-better-zsh
+
+echo "=== Provider registrations ($ext/src/contributions.ts) ==="
+node - <<NODE
 const { readFileSync } = require("node:fs")
-const src = readFileSync("packages/vscode-better-zsh/src/extension.ts", "utf8")
-const re = /vscode\.languages\.(register\w+Provider)\(/g
+const src = readFileSync("$ext/src/contributions.ts", "utf8")
+const re = /languages\.(register\w+Provider)\(/g
 
 for (const match of src.matchAll(re)) {
   let depth = 1
@@ -19,23 +21,19 @@ for (const match of src.matchAll(re)) {
   }
   const call = src.slice(match.index + match[0].length, i)
   const provider = call.match(/\b(?:new\s+)?(\w+Provider)\b/)?.[1]
-  if (provider) console.log(`  ${match[1]} -> ${provider}`)
+  if (provider) console.log(\`  \${match[1]} -> \${provider}\`)
 }
 NODE
 
 echo ""
 echo "=== Provider classes ==="
-rg 'class \w+Provider' --type ts packages/vscode-better-zsh/src/ 2>/dev/null || echo "  (none found)"
+rg 'class \w+Provider' --type ts "$ext/src/" 2>/dev/null || echo "  (none found)"
 
 echo ""
-echo "=== semanticTokenScopes in extension manifest ==="
-node - <<'NODE'
-const { existsSync, readFileSync } = require("node:fs")
-const staged =
-  "packages/vscode-better-zsh/.tmp/staged-extension/package.json"
-const checkedIn = "packages/vscode-better-zsh/package.json"
-const pkg = JSON.parse(
-  readFileSync(existsSync(staged) ? staged : checkedIn, "utf8"),
-)
-console.log(JSON.stringify(pkg.contributes?.semanticTokenScopes ?? [], null, 2))
-NODE
+echo "=== Manifest contribution points ($ext/src/manifest.ts) ==="
+(cd "$ext" && pnpm exec tsx --eval '
+  import { manifest } from "./src/manifest"
+  const { semanticTokenScopes, ...rest } = manifest.contributes
+  console.log("  " + Object.keys(rest).join(", "))
+  console.log("  semanticTokenScopes: " + JSON.stringify(semanticTokenScopes))
+')

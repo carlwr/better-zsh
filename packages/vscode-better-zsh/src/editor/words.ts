@@ -1,20 +1,15 @@
+import { commentStart } from "@carlwr/zsh-core/analysis"
+
 /** Word-like token pattern used by editor range lookups and validation. */
 export const WORD = /[\w][\w-]*/
-export const WORD_EXACT = /^[\w][\w-]*$/
+export const WORD_EXACT = new RegExp(`^${WORD.source}$`)
 
-export function escRe(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
-}
+/** Where a line's code ends: its comment start, else its length. */
+export const activeEnd = (line: string) => commentStart(line) ?? line.length
 
-/** Deduplicate and filter a token list down to word-like tokens. */
-export function filterTokens(tokens: readonly string[]): string[] {
-  const seen = new Set<string>()
-  const out: string[] = []
-  for (const t of tokens) {
-    if (WORD_EXACT.test(t) && !seen.has(t)) {
-      seen.add(t)
-      out.push(t)
-    }
-  }
-  return out
-}
+/** The code part of a line: comments are inactive syntax. */
+export const activeText = (line: string) => line.slice(0, activeEnd(line))
+
+/** Word-like tokens, deduplicated, in first-occurrence order. */
+export const filterTokens = (tokens: Iterable<string>): string[] =>
+  [...new Set(tokens)].filter(t => WORD_EXACT.test(t))

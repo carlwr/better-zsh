@@ -1,57 +1,45 @@
 import { existsSync } from "node:fs"
 import { dirname, isAbsolute, join } from "node:path"
-import { commentStart } from "@carlwr/zsh-core/analysis"
 import * as vscode from "vscode"
+import { activeText } from "./words"
 
 // `source <path>` / `. <path>` wherever a word starts — not only at command
-// position.
-const SOURCE_RE = /(?:^|\s)(?:source|\.)\s+(\S+)/g
+// position; the operand is a quoted string or a word up to shell punctuation.
+const SOURCE_RE = /(?:^|\s)(?:source|\.)\s+("[^"]*"|'[^']*'|[^\s;|&()<>"']+)/g
+
+export interface SourcePath {
+  readonly path: string
+  /** Column of `path` on its line. */
+  readonly start: number
+}
+
+/** `source`/`.` path operands of a line: literal ones only — `$`-leading paths are skipped, not expanded; quotes are stripped. */
+export function extractSourcePaths(line: string): SourcePath[] {
+  const out: SourcePath[] = []
+  for (const m of activeText(line).matchAll(SOURCE_RE)) {
+    const operand = m[1] ?? ""
+    const end = m.index + m[0].length
+    const quoted = operand.match(/^(["'])(.*)\1$/)
+    const path = quoted?.[2] ?? operand
+    if (!path || path.startsWith("$")) continue
+    out.push({ path, start: end - operand.length + (quoted ? 1 : 0) })
+  }
+  return out
+}
 
 export class DocLinkProvider implements vscode.DocumentLinkProvider {
   provideDocumentLinks(doc: vscode.TextDocument): vscode.DocumentLink[] {
     const links: vscode.DocumentLink[] = []
+    if (doc.uri.scheme !== "file") return links
     const docDir = dirname(doc.uri.fsPath)
-
-    for (let i = 0; i < doc.lineCount; i++) {
-      const text = doc.lineAt(i).text
-      const cut = commentStart(text) ?? text.length
-      const active = text.slice(0, cut)
-
-      for (const match of active.matchAll(SOURCE_RE)) {
-        const pathStr = match[1]
-        if (!pathStr) continue
-
-        // Any `$`-leading path is skipped, not expanded.
-        if (/^\$/.test(pathStr)) continue
-
-        const resolved = isAbsolute(pathStr) ? pathStr : join(docDir, pathStr)
-
+    for (let line = 0; line < doc.lineCount; line++) {
+      for (const { path, start } of extractSourcePaths(doc.lineAt(line).text)) {
+        const resolved = isAbsolute(path) ? path : join(docDir, path)
         if (!existsSync(resolved)) continue
-
-        const start = text.indexOf(pathStr, match.index)
-        if (start === -1) continue
-
-        const range = new vscode.Range(i, start, i, start + pathStr.length)
-        const uri = vscode.Uri.file(resolved)
-        links.push(new vscode.DocumentLink(range, uri))
+        const range = new vscode.Range(line, start, line, start + path.length)
+        links.push(new vscode.DocumentLink(range, vscode.Uri.file(resolved)))
       }
     }
     return links
   }
-}
-
-/** `source`/`.` path tokens of a line; exported for tests. */
-export function extractSourcePaths(
-  line: string,
-): { path: string; start: number }[] {
-  const cut = commentStart(line) ?? line.length
-  const active = line.slice(0, cut)
-  const out: { path: string; start: number }[] = []
-  for (const match of active.matchAll(SOURCE_RE)) {
-    const p = match[1]
-    if (!p || /^\$/.test(p)) continue
-    const start = line.indexOf(p, match.index)
-    if (start !== -1) out.push({ path: p, start })
-  }
-  return out
 }

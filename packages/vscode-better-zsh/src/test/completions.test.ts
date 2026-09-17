@@ -1,133 +1,107 @@
-import * as assert from "node:assert"
-import { vi } from "vitest"
-
-vi.mock("vscode", () => ({
-  CompletionItem: class {
-    label: string
-    kind: number
-    detail?: string
-    documentation?: unknown
-    filterText?: string
-    constructor(label: string, kind: number) {
-      this.label = label
-      this.kind = kind
-    }
-  },
-  CompletionList: class {
-    items: unknown[]
-    isIncomplete: boolean
-    constructor(items: unknown[], isIncomplete: boolean) {
-      this.items = items
-      this.isIncomplete = isIncomplete
-    }
-  },
-  MarkdownString: class {
-    value: string
-    constructor(value = "") {
-      this.value = value
-    }
-  },
-  CompletionItemKind: {
-    Keyword: 1,
-    Variable: 2,
-    Property: 3,
-    Operator: 4,
-    Text: 5,
-  },
-}))
-
-vi.mock("../zsh", () => ({
-  zshTokenize: vi.fn(async () => []),
-}))
-
+import { nonEmpty } from "@carlwr/typescript-extra"
 import type { DocCorpus } from "@carlwr/zsh-core"
+import { renderDocWithTitle } from "@carlwr/zsh-core/render"
+import { mkPieceId } from "@carlwr/zsh-core/taxonomy"
 import { mkDocumented, optSections } from "@carlwr/zsh-core/types"
+import { describe, expect, test, vi } from "vitest"
 import * as vscode from "vscode"
 import { CompletionProvider } from "../editor/completions"
-import { emptyCorpus, wordDoc } from "./test-util"
+import { by, emptyCorpus, pos, wordDoc } from "./test-util"
 
-suite("CompletionProvider", () => {
-  test("offers static commands and params", async () => {
-    const builtin = {
+const tokenize = vi.hoisted(() =>
+  vi.fn(async (): Promise<readonly string[]> => []),
+)
+vi.mock("../zsh", () => ({ zshTokenize: tokenize }))
+
+const corpus: DocCorpus = {
+  ...emptyCorpus(),
+  builtin: by("name", [
+    {
       name: mkDocumented("builtin", "echo"),
-      synopsis: ["echo"] as [string],
+      synopsis: nonEmpty("echo"),
       desc: "",
-    }
-    const reservedWord = {
+    },
+  ]),
+  reserved_word: by("name", [
+    {
       name: mkDocumented("reserved_word", "if"),
       sig: "if list then list fi",
       desc: "",
       section: "Complex Commands",
       pos: "command" as const,
-    }
-    const precmd = {
+    },
+  ]),
+  precmd_modifier: by("name", [
+    {
       name: "noglob" as const,
-      synopsis: ["noglob command arg ..."] as [string],
+      synopsis: nonEmpty("noglob command arg ..."),
       desc: "",
-    }
-    const param = {
+    },
+  ]),
+  special_param: by("name", [
+    {
       name: mkDocumented("special_param", "SECONDS"),
       sig: "SECONDS",
       desc: "",
       scope: "shell-set" as const,
-    }
-    const option = {
-      name: mkDocumented("option", "AUTO_CD"),
+    },
+  ]),
+  option: by("name", [
+    {
+      name: mkDocumented("option", "autocd"),
       display: "AUTO_CD",
       flags: [],
       defaultIn: ["zsh" as const],
       category: optSections[0],
-      desc: "",
-    }
-    const corpus: DocCorpus = {
-      ...emptyCorpus(),
-      builtin: new Map([[builtin.name, builtin]]),
-      reserved_word: new Map([[reservedWord.name, reservedWord]]),
-      precmd_modifier: new Map([[precmd.name, precmd]]),
-      special_param: new Map([[param.name, param]]),
-      option: new Map([[option.name, option]]),
-    }
-    const provider = new CompletionProvider(corpus)
-
-    const items = (await provider.provideCompletionItems(wordDoc("ec"), {
-      line: 0,
-      character: 0,
-    } as import("vscode").Position)) as import("vscode").CompletionItem[]
-
-    const labels = items.map(item => item.label)
-    assert.ok(labels.includes("echo"))
-    assert.ok(labels.includes("if"))
-    assert.ok(labels.includes("noglob"))
-    assert.ok(labels.includes("SECONDS"))
-  })
-
-  // The VS Code `Operator` codicon renders as a stacked `%/x` glyph that
-  // reads oddly. Conditional operators should use the cleaner `Keyword`
-  // icon (they are test/cond keywords).
-  test("conditional operators use Keyword icon, not Operator", async () => {
-    const cop = {
+      desc: "cd by directory name",
+    },
+  ]),
+  conditional_op: by("op", [
+    {
       op: mkDocumented("conditional_op", "=="),
       arity: "binary" as const,
       operands: ["s1", "s2"] as const,
       desc: "string equality",
-    }
-    const corpus: DocCorpus = {
-      ...emptyCorpus(),
-      conditional_op: new Map([[cop.op, cop]]),
-    }
-    const provider = new CompletionProvider(corpus)
-    const result = await provider.provideCompletionItems(wordDoc("[[ a  ]]"), {
-      line: 0,
-      character: 5,
-    } as import("vscode").Position)
-    const items = (
-      Array.isArray(result)
-        ? result
-        : (result as import("vscode").CompletionList).items
-    ) as import("vscode").CompletionItem[]
-    const eq = items.find(i => i.label === "==")
-    assert.ok(eq, "expected == cond completion")
-    assert.strictEqual(eq.kind, vscode.CompletionItemKind.Keyword)
-    assert.notStrictEqual(eq.kind, vscode.CompletionItemKind.Operator)
+    },
+  ]),
+}
+
+const provider = new CompletionProvider(corpus)
+
+async function complete(text: string, char: number) {
+  const r = await provider.provideCompletionItems(wordDoc(text), pos(0, char))
+  const list = Array.isArray(r)
+    ? new vscode.CompletionList(r, false)
+    : (r as vscode.CompletionList)
+  return { ...list, labels: list.items.map(i => i.label) }
+}
+
+describe("CompletionProvider", () => {
+  test("general position: file tokens (bar the current word), then corpus words", async () => {
+    tokenize.mockResolvedValueOnce(["my-func", "ec", "echo"])
+    const { labels } = await complete("ec", 1)
+    expect(labels).toEqual(["my-func", "echo", "if", "noglob", "SECONDS"])
+  })
+
+  test("setopt position: option forms, incomplete list, filtered on the typed text", async () => {
+    const { isIncomplete, items } = await complete("setopt no_au", 12)
+    expect(isIncomplete).toBe(true)
+    const doc = renderDocWithTitle(
+      corpus,
+      mkPieceId("option", mkDocumented("option", "autocd")),
+    )
+    expect(items.map(i => [i.label, i.filterText, i.documentation])).toEqual([
+      ["no_autocd", "no_au", new vscode.MarkdownString(doc)],
+    ])
+  })
+
+  // The VS Code `Operator` codicon renders as a stacked `%/x` glyph that reads
+  // oddly; conditional operators use `Keyword`.
+  test("cond position: operators as Keyword items", async () => {
+    const { isIncomplete, items } = await complete("[[ a  ]]", 5)
+    expect(isIncomplete).toBe(false)
+    expect(items.map(i => [i.label, i.kind])).toEqual([
+      ["==", vscode.CompletionItemKind.Keyword],
+    ])
   })
 })

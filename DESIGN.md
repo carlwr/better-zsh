@@ -435,6 +435,5 @@ Full custom zsh TextMate grammar is out of scope; tree-sitter is the long-term d
 
 - Vendor the stock sh/bash TM grammar; add **semantic tokens** only where static analysis is reliable.
 - Stay consistent with TM where TM is right; prefer specifically qualified TextMate scope names for theme overrides.
-- `{` / `}` reserved-word facts are **skipped** in the token provider (TM already covers `f() { … }`; block-`{` vs word-`{` is hairy).
-- `((` / `))` **are** tokenized as `keyword` — reuses existing provider paths.
-- New token types need a matching semantic-token scope contribution in the extension manifest source.
+- Delimiter-like reserved-word facts (`{`, `[[`, …) are **skipped** in the token provider: TM already covers them, and block-`{` vs word-`{` is hairy.
+- Token types, modifiers and their TM scope mapping are declared together in the extension's manifest source.

@@ -3,47 +3,24 @@ import type { Documented } from "@carlwr/zsh-core/types"
 export interface OptionMatch {
   /** What to insert / display. */
   readonly label: string
-  /** Canonical form (lowercase, no underscores, no no-prefix for negated). */
   readonly canonical: Documented<"option">
 }
 
-/**
- * Match zsh option names against user input, ignoring underscores and case.
- * Returns both base and `no_`-prefixed forms.
- */
+// [canonical prefix, label prefix]: the plain form, then the negated form.
+const forms = [
+  ["", ""],
+  ["no", "no_"],
+] as const
+
+/** Options whose plain or `no_`-negated name starts with `typed`, ignoring case and underscores. */
 export function matchOptions(
   options: readonly Documented<"option">[],
   typed: string,
 ): readonly OptionMatch[] {
   const norm = typed.toLowerCase().replaceAll("_", "")
-  const out: OptionMatch[] = []
-  pushMatches(
-    out,
-    options,
-    norm,
-    opt => opt,
-    opt => opt,
+  return forms.flatMap(([canonicalPrefix, labelPrefix]) =>
+    options
+      .filter(opt => `${canonicalPrefix}${opt}`.startsWith(norm))
+      .map(opt => ({ label: `${labelPrefix}${opt}`, canonical: opt })),
   )
-  pushMatches(
-    out,
-    options,
-    norm,
-    opt => `no${opt}`,
-    opt => `no_${opt}`,
-  )
-  return out
-}
-
-function pushMatches(
-  out: OptionMatch[],
-  options: readonly Documented<"option">[],
-  typed: string,
-  canonicalOf: (option: string) => string,
-  labelOf: (option: string) => string,
-): void {
-  for (const option of options) {
-    const canonical = canonicalOf(option)
-    if (canonical.startsWith(typed))
-      out.push({ label: labelOf(option), canonical: option })
-  }
 }

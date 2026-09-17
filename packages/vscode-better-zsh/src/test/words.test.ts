@@ -1,38 +1,38 @@
-import * as assert from "node:assert"
-import { filterTokens } from "../editor/words"
+import fc from "fast-check"
+import { describe, expect, test } from "vitest"
+import { filterTokens, WORD_EXACT } from "../editor/words"
 
-suite("filterTokens", () => {
-  test("keeps identifier-like tokens and deduplicates", () => {
-    const input = ["echo", "$x", ";", "{", "}", "my-func", "my-func"]
-    assert.deepStrictEqual(filterTokens(input), ["echo", "my-func"])
+describe("filterTokens", () => {
+  test("example", () => {
+    expect(
+      filterTokens([
+        "echo",
+        "$x",
+        ";",
+        "{",
+        "my-func",
+        "-flag",
+        "my-func",
+        "a_b",
+      ]),
+    ).toEqual(["echo", "my-func", "a_b"])
   })
 
-  test("empty input returns empty", () => {
-    assert.deepStrictEqual(filterTokens([]), [])
-  })
-
-  test("filters out operators and special tokens", () => {
-    const input = ["()", "&&", "||", "|", ">>", "<<", ";;"]
-    assert.deepStrictEqual(filterTokens(input), [])
-  })
-
-  test("keeps dashed and underscored identifiers", () => {
-    const input = ["my-func", "my_var", "a-b-c", "_priv"]
-    assert.deepStrictEqual(filterTokens(input), [
-      "my-func",
-      "my_var",
-      "a-b-c",
-      "_priv",
-    ])
-  })
-
-  test("filters out tokens starting with special characters", () => {
-    const input = ["$var", '"hello"', "'world'", "-flag"]
-    assert.deepStrictEqual(filterTokens(input), [])
-  })
-
-  test("preserves order of first occurrence", () => {
-    const input = ["b", "a", "c", "a", "b"]
-    assert.deepStrictEqual(filterTokens(input), ["b", "a", "c"])
+  test("keeps exactly the word-like tokens, once each, in first-occurrence order", () => {
+    const token = fc.oneof(
+      fc.stringMatching(/^[\w-]{1,4}$/),
+      fc.constantFrom("$x", ";", "&&", "()", '"q"'),
+    )
+    fc.assert(
+      fc.property(fc.array(token), tokens => {
+        const out = filterTokens(tokens)
+        expect(new Set(out).size).toBe(out.length)
+        expect(out).toEqual(
+          tokens.filter(
+            (t, i) => WORD_EXACT.test(t) && tokens.indexOf(t) === i,
+          ),
+        )
+      }),
+    )
   })
 })

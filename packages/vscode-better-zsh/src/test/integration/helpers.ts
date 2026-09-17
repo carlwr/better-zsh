@@ -3,19 +3,21 @@ import { execFileSync } from "node:child_process"
 import * as fs from "node:fs/promises"
 import * as os from "node:os"
 import * as path from "node:path"
+import { cached } from "@carlwr/typescript-extra"
+import { rm_rf } from "@carlwr/typescript-extra/node"
 import * as vscode from "vscode"
 import { ZSH_DIAGNOSTIC_SOURCE, ZSH_LANG_ID } from "../../ids"
 
 const fixtureDir = path.resolve(__dirname, "../../../test-fixtures")
 
-export function hasZsh(): boolean {
+export const hasZsh = cached(() => {
   try {
     execFileSync("zsh", ["--version"])
     return true
   } catch {
     return false
   }
-}
+})
 
 export async function openFixture(name: string, delay = 500) {
   const uri = vscode.Uri.file(path.join(fixtureDir, name))
@@ -112,6 +114,6 @@ export async function withBadZdotdir<T>(f: () => Promise<T>): Promise<T> {
   } finally {
     if (prev === undefined) delete process.env.ZDOTDIR
     else process.env.ZDOTDIR = prev
-    await fs.rm(dir, { recursive: true, force: true })
+    await rm_rf(dir)
   }
 }

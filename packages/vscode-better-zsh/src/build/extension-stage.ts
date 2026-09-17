@@ -1,6 +1,7 @@
 import { cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
-import { buildSettingsConfiguration } from "../settings-metadata"
+import { BETTER_ZSH_DISPLAY_NAME } from "../ids"
+import { manifest } from "../manifest"
 import { pkgDir, stagedExtensionDir } from "./paths"
 
 const copiedEntries = [
@@ -23,15 +24,18 @@ export function stageExtension(): void {
 
   const workspacePkg = JSON.parse(
     readFileSync(join(pkgDir, "package.json"), "utf8"),
-  ) as { contributes?: Record<string, unknown> } & Record<string, unknown>
+  ) as Record<string, unknown>
   // Drop pnpm-workspace plumbing irrelevant to the published extension manifest.
-  const { scripts: _s, devDependencies: _d, ...keep } = workspacePkg
+  const {
+    scripts: _s,
+    dependencies: _d,
+    devDependencies: _dd,
+    ...keep
+  } = workspacePkg
   const stagedManifest = {
     ...keep,
-    contributes: {
-      ...(workspacePkg.contributes ?? {}),
-      configuration: buildSettingsConfiguration(),
-    },
+    displayName: BETTER_ZSH_DISPLAY_NAME,
+    ...manifest,
   }
   writeFileSync(
     join(stagedExtensionDir, "package.json"),

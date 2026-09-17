@@ -2,9 +2,10 @@ import { constants, existsSync } from "node:fs"
 import { access } from "node:fs/promises"
 import * as path from "node:path"
 import { memoized } from "@carlwr/typescript-extra"
-import type { ZshBinary } from "./ids"
+import { mkZshBinary, type ZshBinary } from "./ids"
 import { log, warn } from "./log"
-import type { ZshPathConfig } from "./settings"
+import { ZSH_PATH_OFF } from "./manifest"
+import { ZSH_PATH_KEY, type ZshPathConfig } from "./settings"
 import {
   buildZshEnv,
   execZsh,
@@ -17,33 +18,26 @@ import {
   syntaxCheckReq,
   tokenizeReq,
   versionReq,
+  type ZshError,
 } from "./zsh-protocol"
 
 // ── Domain types ──
 
-export type ZshMode =
+type UnavailableCode = "ENOENT" | "EACCES"
+
+type ZshMode =
   | { kind: "disabled" }
-  | { kind: "invalid-config"; raw: string; reason: "relative" }
+  | { kind: "invalid-config" }
   | { kind: "available"; binary: ZshBinary }
-  | { kind: "unavailable"; binary: ZshBinary; errCode: "ENOENT" | "EACCES" }
+  | { kind: "unavailable"; binary: ZshBinary; errCode: UnavailableCode }
+
+type ProbedMode = Extract<ZshMode, { kind: "available" | "unavailable" }>
+type ZshPathUsable = Extract<ZshPathConfig, { kind: "default" | "explicit" }>
 
 export type ZshCheckResult =
-  | { ok: true }
-  | { ok: false; line: number; msg: string }
-  | { ok: "unavailable" }
-
-// ── Pure logic ──
-
-type ProbeResult =
-  | { found: false }
-  | { found: true; executable: boolean; path: ZshBinary }
-
-export function deriveMode(binary: ZshBinary, probe: ProbeResult): ZshMode {
-  if (!probe.found) return { kind: "unavailable", binary, errCode: "ENOENT" }
-  if (!probe.executable)
-    return { kind: "unavailable", binary: probe.path, errCode: "EACCES" }
-  return { kind: "available", binary: probe.path }
-}
+  | { kind: "ok" }
+  | { kind: "unavailable" }
+  | ({ kind: "error" } & ZshError)
 
 // ── Filesystem probe (impure, isolated) ──
 
@@ -51,9 +45,7 @@ function resolveOnPath(
   binary: ZshBinary,
   env: NodeJS.ProcessEnv,
 ): ZshBinary | undefined {
-  const pathVal = env.PATH
-  if (!pathVal) return undefined
-  const dirs = pathVal.split(path.delimiter).filter(Boolean)
+  const dirs = (env.PATH ?? "").split(path.delimiter).filter(Boolean)
   const exts =
     process.platform === "win32"
       ? (env.PATHEXT ?? ".EXE;.CMD;.BAT;.COM").split(";").filter(Boolean)
@@ -61,125 +53,99 @@ function resolveOnPath(
   for (const dir of dirs) {
     for (const ext of exts) {
       const full = path.join(dir, `${binary}${ext}`)
-      if (existsSync(full)) return full as ZshBinary
+      if (existsSync(full)) return mkZshBinary(full)
     }
   }
   return undefined
 }
 
-async function canExec(file: string) {
-  try {
-    await access(file, constants.X_OK)
-    return true
-  } catch {
-    return false
-  }
-}
+const canExec = (file: string) =>
+  access(file, constants.X_OK).then(
+    () => true,
+    () => false,
+  )
 
 async function probeZsh(
-  config: ZshPathConfig & { kind: "default" | "explicit" },
+  config: ZshPathUsable,
   env: NodeJS.ProcessEnv,
-): Promise<ProbeResult> {
-  if (config.kind === "explicit") {
-    if (!existsSync(config.binary as string)) return { found: false }
-    const exec = await canExec(config.binary as string)
-    return { found: true, executable: exec, path: config.binary }
-  }
-  const resolved = resolveOnPath(config.binary, env)
-  if (!resolved) return { found: false }
-  const exec = await canExec(resolved as string)
-  return { found: true, executable: exec, path: resolved }
+): Promise<ProbedMode> {
+  const file =
+    config.kind === "explicit"
+      ? existsSync(config.binary)
+        ? config.binary
+        : undefined
+      : resolveOnPath(config.binary, env)
+  if (!file)
+    return { kind: "unavailable", binary: config.binary, errCode: "ENOENT" }
+  if (!(await canExec(file)))
+    return { kind: "unavailable", binary: file, errCode: "EACCES" }
+  return { kind: "available", binary: file }
 }
 
-// ── Logging (side effects, contained in memoized thunks) ──
+// ── Logging ──
 
-function logResolution(
-  config: ZshPathConfig & { kind: "default" | "explicit" },
-  mode: ZshMode,
-) {
-  if (config.kind === "explicit") {
-    const suffix =
-      mode.kind === "unavailable"
-        ? mode.errCode === "EACCES"
-          ? " (not executable)"
-          : " (not found)"
-        : ""
-    log(`zsh: configured path ${config.binary}${suffix}`)
-  } else {
-    // PATH lookup
-    const target =
-      mode.kind === "available"
-        ? `${mode.binary}`
-        : mode.kind === "unavailable" && mode.errCode === "EACCES"
-          ? `${mode.binary} (not executable)`
-          : "unresolved"
-    log(`zsh: PATH lookup for ${config.binary} -> ${target}`)
-  }
-  if (mode.kind === "unavailable") {
-    const detail =
+function logResolution(config: ZshPathUsable, mode: ProbedMode) {
+  const { binary } = config
+  if (mode.kind === "available") {
+    log(
       config.kind === "explicit"
-        ? `${mode.errCode === "EACCES" ? "not executable" : "not usable"} configured path: ${config.binary}`
-        : `${mode.errCode ?? "spawn failed"}`
-    warn(`zsh unavailable (${detail})`)
+        ? `zsh: configured path ${binary}`
+        : `zsh: PATH lookup for ${binary} -> ${mode.binary}`,
+    )
+    return
   }
-}
-
-function logInvalidConfig(config: ZshPathConfig & { kind: "invalid" }) {
-  log(`zsh: invalid configured path ${config.raw} (relative path)`)
-  warn(
-    `zsh unavailable (invalid betterZsh.zshPath: relative paths are not allowed: ${config.raw})`,
-  )
+  const notExec = mode.errCode === "EACCES"
+  if (config.kind === "explicit") {
+    log(
+      `zsh: configured path ${binary}${notExec ? " (not executable)" : " (not found)"}`,
+    )
+    warn(
+      `zsh unavailable (${notExec ? "not executable" : "not usable"} configured path: ${binary})`,
+    )
+  } else {
+    log(
+      `zsh: PATH lookup for ${binary} -> ${notExec ? `${mode.binary} (not executable)` : "unresolved"}`,
+    )
+    warn(`zsh unavailable (${mode.errCode})`)
+  }
 }
 
 function logVersion(r: ZshRunResult) {
-  if (r.code === 0) {
-    const v = r.stdout.trim() || r.stderr.trim()
-    if (v) log(`zsh version: ${v}`)
-    return
-  }
-  warn(`failed to read zsh version (exit ${r.code})`)
+  if (r.errCode) return
+  if (r.code !== 0) return warn(`failed to read zsh version (exit ${r.code})`)
+  const v = r.stdout.trim() || r.stderr.trim()
+  if (v) log(`zsh version: ${v}`)
 }
 
-// ── Module state: single memoized thunk ──
+// ── Mode: resolved once per configuration ──
 
-let getMode: () => Promise<ZshMode>
+async function resolveMode(config: ZshPathConfig): Promise<ZshMode> {
+  switch (config.kind) {
+    case "disabled":
+      log(`zsh: disabled via ${ZSH_PATH_KEY}=${ZSH_PATH_OFF}`)
+      return { kind: "disabled" }
+    case "invalid":
+      log(`zsh: invalid configured path ${config.raw} (${config.reason})`)
+      warn(
+        `zsh unavailable (invalid ${ZSH_PATH_KEY}: ${config.reason}: ${config.raw})`,
+      )
+      return { kind: "invalid-config" }
+    default: {
+      const mode = await probeZsh(config, buildZshEnv(process.env))
+      logResolution(config, mode)
+      if (mode.kind === "available") void runZsh(versionReq).then(logVersion)
+      return mode
+    }
+  }
+}
 
 // Disabled until `configureZsh` runs.
-getMode = memoized(async () => ({ kind: "disabled" }) as ZshMode)
-
-export { buildZshEnv } from "./zsh-exec"
+let getMode: () => Promise<ZshMode> = memoized<ZshMode>(async () => ({
+  kind: "disabled",
+}))
 
 export function configureZsh(config: ZshPathConfig) {
-  getMode = memoized(async () => {
-    if (config.kind === "disabled") {
-      log("zsh: disabled via betterZsh.zshPath=off")
-      return { kind: "disabled" } as ZshMode
-    }
-    if (config.kind === "invalid") {
-      logInvalidConfig(config)
-      return {
-        kind: "invalid-config",
-        raw: config.raw,
-        reason: config.reason,
-      } as ZshMode
-    }
-    const probe = await probeZsh(config, buildZshEnv(process.env))
-    const mode = deriveMode(config.binary, probe)
-    logResolution(config, mode)
-    if (mode.kind === "available") {
-      // Fire-and-forget version log.
-      void runZsh(versionReq).then(r => {
-        if (!r.errCode) logVersion(r)
-      })
-    }
-    return mode
-  })
-}
-
-// ── Result helpers ──
-
-function unavailableResult(errCode = "ENOENT"): ZshRunResult {
-  return { stdout: "", stderr: "", code: 1, errCode }
+  getMode = memoized(() => resolveMode(config))
 }
 
 // ── The single gate for executing the system zsh ──
@@ -187,43 +153,45 @@ function unavailableResult(errCode = "ENOENT"): ZshRunResult {
 // SECURITY: every editor feature reaches the binary through here, and only the
 // `available` mode spawns — disabled/invalid/unavailable modes short-circuit
 // before `execZsh`.
-async function runZsh(req: ZshRunReq): Promise<ZshRunResult> {
-  const mode = await getMode()
-  if (mode.kind === "disabled") return unavailableResult("DISABLED")
-  if (mode.kind === "invalid-config") return unavailableResult("EINVAL")
-  if (mode.kind === "unavailable") return unavailableResult(mode.errCode)
 
-  const result = await execZsh(mode.binary as string, req)
-  if (result.errCode === "ENOENT" || result.errCode === "EACCES") {
-    // Binary disappeared after probe — invalidate
-    const errCode = result.errCode as "ENOENT" | "EACCES"
-    getMode = memoized(async () => ({
-      kind: "unavailable" as const,
+const unavailable = (errCode: string): ZshRunResult => ({
+  stdout: "",
+  stderr: "",
+  code: 1,
+  errCode,
+})
+
+async function runZsh(req: ZshRunReq): Promise<ZshRunResult> {
+  const thunk = getMode
+  const mode = await thunk()
+  if (mode.kind === "disabled") return unavailable("DISABLED")
+  if (mode.kind === "invalid-config") return unavailable("EINVAL")
+  if (mode.kind === "unavailable") return unavailable(mode.errCode)
+
+  const result = await execZsh(mode.binary, req)
+  const { errCode } = result
+  if (!errCode) return result
+  if ((errCode === "ENOENT" || errCode === "EACCES") && getMode === thunk) {
+    // Binary disappeared after the probe: pin the mode until reconfigured.
+    getMode = memoized<ZshMode>(async () => ({
+      kind: "unavailable",
       binary: mode.binary,
       errCode,
     }))
     warn(`zsh became unavailable (${errCode}: ${mode.binary})`)
-  }
+  } else warn(`zsh run failed (${errCode}: ${mode.binary})`)
   return result
 }
 
 // ── Public API ──
 
-export async function zshAvailable(): Promise<boolean> {
-  const r = await runZsh(versionReq)
-  if (r.code === 0) return true
-  if (!r.errCode) warn(`zsh unavailable (zsh --version exited ${r.code})`)
-  return false
-}
-
 export async function zshCheck(text: string): Promise<ZshCheckResult> {
   const r = await runZsh(syntaxCheckReq(text))
-  if (r.errCode) return { ok: "unavailable" }
-  if (r.code === 0) return { ok: true }
-  const parsed = parseZshError(r.stderr)
-  if (parsed) return { ok: false, ...parsed }
-  warn("zsh -n: unexpected stderr format")
-  return { ok: false, line: 1, msg: "syntax error" }
+  if (r.errCode) return { kind: "unavailable" }
+  if (r.code === 0) return { kind: "ok" }
+  const err = parseZshError(r.stderr)
+  if (!err) warn(`zsh -n: exit ${r.code} without a message`)
+  return { kind: "error", ...(err ?? { line: 1, msg: "syntax error" }) }
 }
 
 export async function zshTokenize(text: string): Promise<readonly string[]> {

@@ -1,3 +1,3 @@
 echo hello
-if then
+echo }
 echo world

@@ -8,9 +8,7 @@ import {
   withBadZdotdir,
 } from "./helpers"
 
-suite("ZshCompletions", function () {
-  this.timeout(15000)
-
+suite("ZshCompletions", () => {
   test("includes static builtin completions", async () => {
     const doc = await openFixture("test.zsh")
     const labels = await completionLabels(doc, new vscode.Position(0, 0))
@@ -27,8 +25,8 @@ suite("ZshCompletions", function () {
     )
   })
 
-  test("tokenization ignores user ZDOTDIR", async () => {
-    if (!hasZsh()) return
+  test("tokenization ignores user ZDOTDIR", async function () {
+    if (!hasZsh()) this.skip()
     await withBadZdotdir(async () => {
       const doc = await openFixture("test.zsh")
       const labels = await completionLabels(doc, new vscode.Position(0, 0))

@@ -4,6 +4,7 @@ import { join, resolve } from "node:path"
 import { runtimeZshDataDir, vendoredZshDocFiles } from "@carlwr/zsh-core/assets"
 import * as vscode from "vscode"
 import { BETTER_ZSH_EXT_ID } from "../../ids"
+import { outAsset } from "../../manifest"
 
 const EXT_ID = BETTER_ZSH_EXT_ID
 const fixtureFile = join(
@@ -60,9 +61,7 @@ suite("bundled extension", function () {
 
     for (const rel of [
       ...vendoredZshDocFiles.map(file => join("out", runtimeZshDataDir, file)),
-      "out/language-configuration.json",
-      "out/snippets.json",
-      "out/zsh-chat-instructions.md",
+      ...Object.values(outAsset).map(file => join("out", file)),
     ]) {
       assertExists(join(extPath, rel))
     }

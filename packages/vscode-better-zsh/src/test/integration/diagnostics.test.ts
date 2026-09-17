@@ -1,4 +1,5 @@
 import * as assert from "node:assert"
+import { isNonEmpty } from "@carlwr/typescript-extra"
 import * as vscode from "vscode"
 import { ZSH_DIAGNOSTIC_SOURCE } from "../../ids"
 import {
@@ -19,9 +20,7 @@ async function editAndSave(doc: vscode.TextDocument) {
   await doc.save()
 }
 
-suite("ZshDiagnostics", function () {
-  this.timeout(15000)
-
+suite("ZshDiagnostics", () => {
   suiteSetup(function () {
     if (!hasZsh()) this.skip()
   })
@@ -30,9 +29,11 @@ suite("ZshDiagnostics", function () {
     const doc = await openFixture("syntax-error.zsh")
     await editAndSave(doc)
     const diags = await waitForDiagnostics(doc.uri, "some")
-    assert.ok(diags.length > 0, "expected at least one diagnostic")
-    assert.strictEqual(diags[0]?.source, ZSH_DIAGNOSTIC_SOURCE)
-    assert.strictEqual(diags[0]?.severity, vscode.DiagnosticSeverity.Error)
+    assert.ok(isNonEmpty(diags), "expected at least one diagnostic")
+    assert.strictEqual(diags[0].source, ZSH_DIAGNOSTIC_SOURCE)
+    assert.strictEqual(diags[0].severity, vscode.DiagnosticSeverity.Error)
+    // `syntax-error.zsh`: the parse error is on line 2 (0-based 1).
+    assert.strictEqual(diags[0].range.start.line, 1)
   })
 
   test("no diagnostics for valid file", async () => {

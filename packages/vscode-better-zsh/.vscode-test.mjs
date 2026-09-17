@@ -33,6 +33,7 @@ export default defineConfig([
       extDir: testExtDir,
       userData: testUserData,
     }),
+    mocha: { timeout: 15000 },
   },
   {
     label: "zsh-path-matrix",

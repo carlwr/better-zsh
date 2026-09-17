@@ -1,10 +1,16 @@
-import { execFile } from "node:child_process"
+import { type ExecFileException, execFile } from "node:child_process"
+import { mkdtemp, writeFile } from "node:fs/promises"
+import { tmpdir } from "node:os"
+import { join } from "node:path"
+import { rm_rf } from "@carlwr/typescript-extra/node"
 
 /** Request shape for a single zsh process invocation. */
 export interface ZshRunReq {
   readonly args: readonly string[]
   readonly env?: NodeJS.ProcessEnv
   readonly stdin?: string
+  /** Written to a temporary file whose path is appended to `args`. */
+  readonly scriptFile?: string
 }
 
 /** Normalized zsh process result. */
@@ -12,9 +18,12 @@ export interface ZshRunResult {
   readonly stdout: string
   readonly stderr: string
   readonly code: number
-  /** Symbolic spawn/OS error code (e.g. `"ENOENT"`, `"EACCES"`) when the process could not run. */
+  /** Symbolic spawn/OS error code (e.g. `"ENOENT"`, `"EACCES"`, `"ETIMEDOUT"`) when the process could not run to completion. */
   readonly errCode?: string
 }
+
+const TIMEOUT_MS = 5000
+const MAX_BUFFER = 1024 * 1024
 
 const ZSH_ENV_KEEP = [
   "HOME",
@@ -44,6 +53,7 @@ const ZSH_ENV_KEEP_WIN32 = [
 
 const ZSH_ENV_DROP = ["BASH_ENV", "ENV", "FPATH", "ZDOTDIR"] as const
 
+/** Allowlisted `src` entries plus `extra`, minus startup-hook variables — even when `extra` names them. */
 export function buildZshEnv(
   src: NodeJS.ProcessEnv,
   extra?: NodeJS.ProcessEnv,
@@ -57,10 +67,8 @@ export function buildZshEnv(
     const v = src[k]
     if (v !== undefined) out[k] = v
   }
-  if (extra) {
-    for (const [k, v] of Object.entries(extra)) {
-      if (v !== undefined) out[k] = v
-    }
+  for (const [k, v] of Object.entries(extra ?? {})) {
+    if (v !== undefined) out[k] = v
   }
   for (const k of ZSH_ENV_DROP) delete out[k]
   return out
@@ -72,7 +80,22 @@ export function buildZshEnv(
  * SECURITY: no gating here — the only caller is the gate `runZsh` (zsh.ts),
  * which decides whether zsh may run at all.
  */
-export function execZsh(
+export async function execZsh(
+  zshBinary: string,
+  req: ZshRunReq,
+): Promise<ZshRunResult> {
+  if (req.scriptFile === undefined) return spawnZsh(zshBinary, req)
+  const dir = await mkdtemp(join(tmpdir(), "better-zsh-"))
+  try {
+    const file = join(dir, "script.zsh")
+    await writeFile(file, req.scriptFile)
+    return await spawnZsh(zshBinary, { ...req, args: [...req.args, file] })
+  } finally {
+    await rm_rf(dir)
+  }
+}
+
+function spawnZsh(
   zshBinary: string,
   { args, env, stdin }: ZshRunReq,
 ): Promise<ZshRunResult> {
@@ -81,20 +104,32 @@ export function execZsh(
       zshBinary,
       args,
       {
-        timeout: 5000,
-        maxBuffer: 1024 * 1024,
+        timeout: TIMEOUT_MS,
+        maxBuffer: MAX_BUFFER,
         env: buildZshEnv(process.env, env),
       },
-      (err, stdout, stderr) => {
-        const e = err as (NodeJS.ErrnoException & { status?: number }) | null
-        resolve({
-          stdout,
-          stderr,
-          code: e ? (e.status ?? 1) : 0,
-          errCode: typeof e?.code === "string" ? e.code : undefined,
-        })
-      },
+      (err, stdout, stderr) => resolve(toRunResult(err, stdout, stderr)),
     )
     if (stdin !== undefined) proc.stdin?.end(stdin)
   })
+}
+
+/** `err.code` is the exit code (number) or the spawn errno (string); a signal death leaves it null — `killed` marks the timeout kill. */
+export function toRunResult(
+  err: ExecFileException | null,
+  stdout: string,
+  stderr: string,
+): ZshRunResult {
+  const code = err?.code
+  return {
+    stdout,
+    stderr,
+    code: err ? (typeof code === "number" ? code : 1) : 0,
+    errCode:
+      typeof code === "string"
+        ? code
+        : err?.killed
+          ? "ETIMEDOUT"
+          : (err?.signal ?? undefined),
+  }
 }

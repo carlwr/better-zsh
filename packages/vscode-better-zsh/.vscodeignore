@@ -5,4 +5,3 @@
 !package.json
 !out/**
 !syntaxes/*
-!out/zsh-core-data/**

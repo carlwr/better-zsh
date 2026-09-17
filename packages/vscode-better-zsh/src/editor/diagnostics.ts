@@ -1,49 +1,41 @@
 import * as vscode from "vscode"
 import { ZSH_DIAGNOSTIC_SOURCE, ZSH_LANG_ID } from "../ids"
-import {
-  DIAGNOSTICS_ENABLED_KEY,
-  readDiagnosticsEnabled,
-  ZSH_PATH_KEY,
-} from "../settings"
+import { DIAGNOSTICS_ENABLED_KEY, readDiagnosticsEnabled } from "../settings"
 import { zshCheck } from "../zsh"
+import type { ZshError } from "../zsh-protocol"
 
 const DEBOUNCE_MS = 500
 
-export function setupDiagnostics(ctx: vscode.ExtensionContext) {
+// Not virtual documents (`git:` diff sides, …): they would only add Problems entries.
+const lintable = (doc: vscode.TextDocument) =>
+  doc.languageId === ZSH_LANG_ID &&
+  ["file", "untitled"].includes(doc.uri.scheme)
+
+export interface Diagnostics extends vscode.Disposable {
+  /** Re-check every open zsh document, e.g. after the host zsh changed. */
+  relintAll(): void
+}
+
+/** `zsh -n` syntax diagnostics: on open, save, change (debounced) and settings changes. */
+export function setupDiagnostics(): Diagnostics {
   const dc = vscode.languages.createDiagnosticCollection(ZSH_DIAGNOSTIC_SOURCE)
-  ctx.subscriptions.push(dc)
-
-  async function lint(doc: vscode.TextDocument) {
-    if (doc.languageId !== ZSH_LANG_ID) return
-    if (!readDiagnosticsEnabled()) {
-      dc.set(doc.uri, [])
-      return
-    }
-    const r = await zshCheck(doc.getText())
-    if (r.ok === "unavailable") {
-      dc.set(doc.uri, [])
-      return
-    }
-    if (r.ok) {
-      dc.set(doc.uri, [])
-      return
-    }
-    const line = Math.min(Math.max(0, r.line - 1), doc.lineCount - 1)
-    const diag = new vscode.Diagnostic(
-      doc.lineAt(line).range,
-      r.msg,
-      vscode.DiagnosticSeverity.Error,
-    )
-    diag.source = ZSH_DIAGNOSTIC_SOURCE
-    dc.set(doc.uri, [diag])
-  }
-
   const timers = new Map<string, ReturnType<typeof setTimeout>>()
 
+  async function lint(doc: vscode.TextDocument) {
+    if (!lintable(doc)) return
+    if (!readDiagnosticsEnabled()) return dc.set(doc.uri, [])
+    const version = doc.version
+    const r = await zshCheck(doc.getText())
+    // A closed or since-edited document: the result is stale; an edit has
+    // already queued its own check.
+    if (doc.isClosed || doc.version !== version) return
+    dc.set(doc.uri, r.kind === "error" ? [toDiagnostic(doc, r)] : [])
+  }
+
   function lintDebounced(doc: vscode.TextDocument) {
+    if (!lintable(doc)) return
     const key = doc.uri.toString()
-    const prev = timers.get(key)
-    if (prev) clearTimeout(prev)
+    clearTimeout(timers.get(key))
     timers.set(
       key,
       setTimeout(() => {
@@ -53,29 +45,41 @@ export function setupDiagnostics(ctx: vscode.ExtensionContext) {
     )
   }
 
-  ctx.subscriptions.push(
+  function forget(doc: vscode.TextDocument) {
+    const key = doc.uri.toString()
+    clearTimeout(timers.get(key))
+    timers.delete(key)
+    dc.delete(doc.uri)
+  }
+
+  function relintAll() {
+    for (const doc of vscode.workspace.textDocuments) lint(doc)
+  }
+
+  relintAll()
+  const disposable = vscode.Disposable.from(
+    dc,
     vscode.workspace.onDidOpenTextDocument(lint),
     vscode.workspace.onDidSaveTextDocument(lint),
-    vscode.workspace.onDidCloseTextDocument(doc => {
-      const key = doc.uri.toString()
-      const t = timers.get(key)
-      if (t) {
-        clearTimeout(t)
-        timers.delete(key)
-      }
-      dc.delete(doc.uri)
-    }),
     vscode.workspace.onDidChangeTextDocument(e => lintDebounced(e.document)),
+    vscode.workspace.onDidCloseTextDocument(forget),
     vscode.workspace.onDidChangeConfiguration(e => {
-      if (
-        e.affectsConfiguration(DIAGNOSTICS_ENABLED_KEY) ||
-        e.affectsConfiguration(ZSH_PATH_KEY)
-      ) {
-        if (!readDiagnosticsEnabled()) dc.clear()
-        else for (const doc of vscode.workspace.textDocuments) lint(doc)
-      }
+      if (e.affectsConfiguration(DIAGNOSTICS_ENABLED_KEY)) relintAll()
     }),
   )
+  return { dispose: () => disposable.dispose(), relintAll }
+}
 
-  for (const doc of vscode.workspace.textDocuments) lint(doc)
+function toDiagnostic(
+  doc: vscode.TextDocument,
+  err: ZshError,
+): vscode.Diagnostic {
+  const line = Math.min(Math.max(0, err.line - 1), doc.lineCount - 1)
+  const diag = new vscode.Diagnostic(
+    doc.lineAt(line).range,
+    err.msg,
+    vscode.DiagnosticSeverity.Error,
+  )
+  diag.source = ZSH_DIAGNOSTIC_SOURCE
+  return diag
 }

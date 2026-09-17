@@ -1,13 +1,11 @@
 import { z } from "zod"
 
-export const snippetCategorySchema = z.enum([
+const snippetCategorySchema = z.enum([
   "complex-cmd",
   "declaration",
   "idiom",
   "pattern",
 ])
-
-export type SnippetCategory = z.infer<typeof snippetCategorySchema>
 
 export const zshSnippetSchema = z.object({
   prefix: z.string().min(1),

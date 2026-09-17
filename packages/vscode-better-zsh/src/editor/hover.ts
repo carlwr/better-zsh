@@ -1,8 +1,10 @@
+import { isSingle } from "@carlwr/typescript-extra"
 import type { DocCorpus } from "@carlwr/zsh-core"
 import {
   cmdHeadFactsOnLine,
+  isProcessSubstFact,
+  isRedirFact,
   type LineFact,
-  type ProcessSubstFact,
   type RedirFact,
 } from "@carlwr/zsh-core/analysis"
 import { renderDocWithTitle } from "@carlwr/zsh-core/render"
@@ -13,7 +15,6 @@ import {
   mkPieceId,
 } from "@carlwr/zsh-core/taxonomy"
 import {
-  type Documented,
   mkOptFlag,
   type OptFlag,
   type OptFlagAlias,
@@ -21,7 +22,8 @@ import {
 } from "@carlwr/zsh-core/types"
 import * as vscode from "vscode"
 import { contextAt } from "./facts"
-import { activeWordRangeAt, commentStart, funcDocs } from "./funcs"
+import { activeWordRangeAt, funcDecl } from "./funcs"
+import { activeEnd } from "./words"
 
 // NOTE: Hovering `setopt NO_AUTO_CD` currently shows the same markdown as
 // `setopt AUTO_CD` — the option resolver's `input-negated` feedback is
@@ -47,6 +49,9 @@ interface OptFlagHit {
 export class HoverProvider implements vscode.HoverProvider {
   private corpus: DocCorpus
   private flagMap: ReadonlyMap<OptFlag, readonly OptFlagHit[]>
+  // Generic token splitting treats shell delimiters as separators, so
+  // conditional operators made entirely of those chars need a cond-only path.
+  private symbolicCondOps: readonly string[]
 
   constructor(corpus: DocCorpus) {
     this.corpus = corpus
@@ -54,32 +59,31 @@ export class HoverProvider implements vscode.HoverProvider {
     // Secondary index for -J/+J style flag lookup. Extension-specific UX
     // (the user typed a flag letter and we look up the corresponding option)
     // — not a corpus-identity concern, so stays here rather than in zsh-core.
-    const options = [...corpus.option.values()]
     this.flagMap = indexMany(
-      options.flatMap(opt =>
-        opt.flags.map(
-          alias =>
-            [alias.char, { opt, alias }] as const satisfies readonly [
-              OptFlag,
-              OptFlagHit,
-            ],
-        ),
+      [...corpus.option.values()].flatMap(opt =>
+        opt.flags.map(alias => [alias.char, { opt, alias }] as const),
       ),
     )
+    this.symbolicCondOps = [...corpus.conditional_op.keys()]
+      .filter(op => [...op].some(isTokenDelimiter))
+      .sort((a, b) => b.length - a.length)
   }
 
   provideHover(doc: vscode.TextDocument, pos: vscode.Position) {
+    const ctx = contextAt(doc, pos)
     return (
-      this.setoptHover(doc, pos) ??
-      this.condHover(doc, pos) ??
+      (ctx === "setopt"
+        ? this.setoptHover(doc, pos)
+        : ctx === "cond"
+          ? this.condHover(doc, pos)
+          : undefined) ??
       this.funcHover(doc, pos) ??
-      this.paramHover(doc, pos) ??
-      this.factBasedHover(doc, pos)
+      this.factBasedHover(doc, pos) ??
+      this.paramHover(doc, pos)
     )
   }
 
   private setoptHover(doc: vscode.TextDocument, pos: vscode.Position) {
-    if (contextAt(doc, pos) !== "setopt") return
     const range = activeTokenRangeAt(doc, pos)
     if (!range) return
     const pieceId = this.optionAt(doc.getText(range))
@@ -87,9 +91,9 @@ export class HoverProvider implements vscode.HoverProvider {
   }
 
   private condHover(doc: vscode.TextDocument, pos: vscode.Position) {
-    if (contextAt(doc, pos) !== "cond") return
-    const condOpKeys = this.corpus.conditional_op.keys()
-    const range = activeCondTokenRangeAt(doc, pos, condOpKeys)
+    const range =
+      activeTokenRangeAt(doc, pos) ??
+      symbolicOpRangeAt(doc, pos, this.symbolicCondOps)
     if (!range) return
     return this.hoverFor("conditional_op", doc.getText(range), range)
   }
@@ -98,12 +102,12 @@ export class HoverProvider implements vscode.HoverProvider {
     const range = activeWordRangeAt(doc, pos)
     if (!range) return
     const name = doc.getText(range)
-    const d = funcDocs(doc).get(name)
+    const d = funcDecl(doc, name)?.doc
     if (!d) return
     // Two trailing spaces keep multi-line docstrings as hard line breaks in markdown.
     const md = new vscode.MarkdownString()
     md.appendCodeblock(`function ${name}() { ... }`, "zsh")
-    md.appendMarkdown(`\n\n${d.replace(/\n/g, "  \n")}`)
+    md.appendMarkdown(`\n\n${d.replaceAll("\n", "  \n")}`)
     return new vscode.Hover(md, range)
   }
 
@@ -116,7 +120,7 @@ export class HoverProvider implements vscode.HoverProvider {
   // Punctuation-named special params (`$$`, `$@`, `$?`, …) miss `activeWordRangeAt`'s `\w`-only token. Match a `$X` or `${X` anchor instead.
   private punctParamHover(doc: vscode.TextDocument, pos: vscode.Position) {
     const line = doc.lineAt(pos.line).text
-    const cut = commentStart(line) ?? line.length
+    const cut = activeEnd(line)
     if (pos.character >= cut) return
     const tryAt = (idx: number) => {
       if (idx < 0 || idx >= cut) return
@@ -147,22 +151,32 @@ export class HoverProvider implements vscode.HoverProvider {
     const onHead = head && this.hoverFor("builtin", head.text, tokenRange)
     if (onHead) return onHead
 
-    const redir = af.find((fact): fact is RedirFact => fact.kind === "redir")
-    if (redir) {
+    for (const redir of af.filter(isRedirFact)) {
       const redirRange = activeRedirRangeAt(doc, pos, redir)
-      const redirToken = redirRange ? doc.getText(redirRange) : undefined
-      const onRedir =
-        redirToken && this.hoverFor("redirection", redirToken, redirRange)
+      if (!redirRange) continue
+      const onRedir = this.hoverFor(
+        "redirection",
+        doc.getText(redirRange),
+        redirRange,
+      )
       if (onRedir) return onRedir
     }
 
-    const ps = af.find(
-      (fact): fact is ProcessSubstFact => fact.kind === "process-subst",
-    )
-    const onPs =
-      ps &&
-      this.hoverFor("process_subst", `${ps.text.slice(0, 2)}...)`, tokenRange)
-    if (onPs) return onPs
+    // Process substitution hovers on its two-character opener.
+    const ps = af
+      .filter(isProcessSubstFact)
+      .find(f => spanHas(f.span, pos.character, 2))
+    if (ps) {
+      const opener = ps.text.slice(0, 2)
+      const range = new vscode.Range(
+        pos.line,
+        ps.span.start,
+        pos.line,
+        ps.span.start + 2,
+      )
+      const onPs = this.hoverFor("process_subst", `${opener}...)`, range)
+      if (onPs) return onPs
+    }
 
     const rw = factAt(af, line, token, "reserved-word")
     if (rw) {
@@ -201,12 +215,11 @@ export class HoverProvider implements vscode.HoverProvider {
     // Short-flag form: `-J` / `+J`.
     const short = token.match(/^([+-])([A-Za-z0-9])$/)
     if (!short?.[1] || !short[2]) return
-    const hits = this.flagMap
-      .get(mkOptFlag(short[2]))
-      ?.filter(hit => hit.alias.on === short[1])
-    const opt = unique(hits)?.opt
-    if (!opt) return
-    return mkPieceId("option", opt.name)
+    const hits =
+      this.flagMap
+        .get(mkOptFlag(short[2]))
+        ?.filter(hit => hit.alias.on === short[1]) ?? []
+    if (isSingle(hits)) return mkPieceId("option", hits[0].opt.name)
   }
 }
 
@@ -222,16 +235,12 @@ function indexMany<K, V>(
   return out
 }
 
-function unique<T>(hits: readonly T[] | undefined): T | undefined {
-  return hits?.length === 1 ? hits[0] : undefined
-}
-
 function activeTokenRangeAt(
   doc: vscode.TextDocument,
   pos: vscode.Position,
 ): vscode.Range | undefined {
   const text = doc.lineAt(pos.line).text
-  const cut = commentStart(text) ?? text.length
+  const cut = activeEnd(text)
   if (pos.character >= cut) return
   if (isTokenDelimiter(text[pos.character] ?? "")) return
   let start = pos.character
@@ -247,25 +256,16 @@ function isTokenDelimiter(ch: string): boolean {
   return /[\s;|&(){}<>]/.test(ch)
 }
 
-function activeCondTokenRangeAt(
+/** The longest of `ops` (pre-sorted by length) around `pos`, delimited by whitespace or brackets. */
+function symbolicOpRangeAt(
   doc: vscode.TextDocument,
   pos: vscode.Position,
-  condOpKeys: Iterable<Documented<"conditional_op">>,
+  ops: readonly string[],
 ): vscode.Range | undefined {
-  const range = activeTokenRangeAt(doc, pos)
-  if (range) return range
-
   const text = doc.lineAt(pos.line).text
-  const cut = commentStart(text) ?? text.length
+  const cut = activeEnd(text)
   if (pos.character >= cut) return
-
-  // Generic hover token splitting treats shell delimiters as separators, so
-  // conditional operators made entirely from those chars need a cond-only path.
-  const symbolic = [...condOpKeys]
-    .filter(op => [...op].some(isTokenDelimiter))
-    .sort((a, b) => b.length - a.length)
-
-  for (const op of symbolic) {
+  for (const op of ops) {
     const range = operatorRangeAt(text, pos.character, cut, op)
     if (range)
       return new vscode.Range(pos.line, range.start, pos.line, range.end)
@@ -292,6 +292,9 @@ function opBoundary(ch: string | undefined): boolean {
   return ch === undefined || /[\s[\]]/.test(ch)
 }
 
+const spanHas = (span: { start: number }, at: number, len: number) =>
+  span.start <= at && at < span.start + len
+
 /** Find a fact of the given kind whose span text equals `token`. */
 function factAt<K extends LineFact["kind"]>(
   facts: readonly LineFact[],
@@ -312,7 +315,7 @@ function activeRedirRangeAt(
   redir: RedirFact,
 ): vscode.Range | undefined {
   const text = doc.lineAt(pos.line).text
-  const cut = commentStart(text) ?? text.length
+  const cut = activeEnd(text)
   if (pos.character < redir.span.start) return
 
   let end = redir.span.end

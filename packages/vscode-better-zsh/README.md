@@ -6,11 +6,12 @@ Improved zsh shellscript editing for VS Code. Layers structured zsh knowledge �
 
 ## Features
 
-- **Hovers** for documented zsh syntax such as builtins, shell options, redirections, parameter expansion, prompt escapes, and ZLE widgets. Content comes from a structured reference, not a regex-scraped manpage.
-- **Completions** over the same structured reference, category-aware (only shell options are offered after `setopt` / `unsetopt`; only builtins/precommand modifiers/functions at command position; …).
-- **Semantic tokens** that refine the vendored TM grammar where zsh needs it (`((` / `))` as keywords, known builtins as `support.function.builtin.shell`, etc.).
-- **Go-to-definition, references, rename, document/workspace symbols** for user-defined functions in the workspace.
-- **Optional diagnostics** via `zsh -n` (syntax check). Disabled per-document if the file reports as a non-zsh shell.
+- **Hovers** for documented zsh syntax: builtins, precommand modifiers, shell options (also the `set -e` / `-o` forms), conditional operators, redirections, process substitution, special parameters, and complex commands / reserved words — plus the `#` docstring of a function defined in the file. Content comes from a structured reference, not a regex-scraped manpage.
+- **Completions** over the same structured reference, context-aware: shell options after `setopt` / `unsetopt`, conditional operators inside `[[ … ]]`, otherwise builtins, reserved words, precommand modifiers, special parameters, and the identifiers already in the file.
+- **Semantic tokens** that refine the vendored TM grammar where zsh needs it (reserved words such as `typeset` as keywords, known builtins as `support.function.builtin.shell`).
+- **Go-to-definition, references, rename, highlights and outline** for functions defined in the file; **workspace symbols** across open zsh files.
+- **Links** on `source` / `.` paths.
+- **Optional diagnostics** via `zsh -n` (syntax check), on open, save, and while typing.
 - **Snippets** for common zsh patterns.
 
 File associations: `.zsh`, `.zshrc`, `.zshenv`, `.zprofile`, `.zlogin`, `.zlogout`, `.zsh-theme`, plus the bare `zshrc` / `zshenv` / `zlogin` / `zprofile` / `zlogout` filenames.
@@ -26,7 +27,7 @@ Pre-release alphas are not yet listed on either registry.
 
 ## Settings
 
-- **`betterZsh.diagnostics.enabled`** — run `zsh -n` on save for syntax checking. Default `true`.
+- **`betterZsh.diagnostics.enabled`** — syntax-check with `zsh -n`. Default `true`.
 - **`betterZsh.zshPath`** — path to the `zsh` binary. Empty = use `zsh` from PATH; `"off"` = never invoke zsh (diagnostics disabled at runtime). Machine-scoped; non-empty relative paths are rejected rather than resolved against the workspace.
 
 ## Design posture

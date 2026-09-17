@@ -19,20 +19,22 @@ export function readSnippets(): ZshSnippet[] {
       .join(", ")
     throw new Error(`Invalid JSONC in ${snippetsPath}: ${msg}`)
   }
-
   return zshSnippetsSchema.parse(json)
 }
 
-/** Convert snippets to VS Code snippet JSON format */
+/** VS Code's snippet file format, keyed by snippet name. */
+export type VsCodeSnippets = Record<
+  string,
+  { prefix: string; body: string[]; description: string }
+>
+
 export function buildSnippetJson(
   snippets: readonly ZshSnippet[],
-): Record<string, { prefix: string; body: string[]; description: string }> {
-  const out: Record<
-    string,
-    { prefix: string; body: string[]; description: string }
-  > = {}
-  for (const s of snippets) {
-    out[s.name] = { prefix: s.prefix, body: s.body, description: s.desc }
-  }
-  return out
+): VsCodeSnippets {
+  return Object.fromEntries(
+    snippets.map(s => [
+      s.name,
+      { prefix: s.prefix, body: s.body, description: s.desc },
+    ]),
+  )
 }

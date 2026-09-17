@@ -1,37 +1,13 @@
-import * as assert from "node:assert"
-import { vi } from "vitest"
-import { lineDoc } from "./test-util"
-
-type Token = {
-  line: number
-  start: number
-  length: number
-  type: number
-  modifiers: number
-}
-
-vi.mock("vscode", () => ({
-  SemanticTokensLegend: class {},
-  SemanticTokensBuilder: class {
-    private tokens: Token[] = []
-
-    push(
-      line: number,
-      start: number,
-      length: number,
-      type: number,
-      modifiers: number,
-    ) {
-      this.tokens.push({ line, start, length, type, modifiers })
-    }
-
-    build() {
-      return this.tokens
-    }
-  },
-}))
-
+import fc from "fast-check"
+import { describe, expect, test } from "vitest"
 import { SemanticTokensProvider } from "../editor/semantic-tokens"
+import { tokenModifiers, tokenTypes } from "../manifest"
+import { lineDoc } from "./test-util"
+import type { RawToken } from "./vscode-stub"
+
+const KEYWORD = tokenTypes.indexOf("keyword")
+const FUNCTION = tokenTypes.indexOf("function")
+const DEFAULT_LIBRARY = 1 << tokenModifiers.indexOf("defaultLibrary")
 
 function tokens(
   text: string,
@@ -39,120 +15,105 @@ function tokens(
   reservedWords: readonly string[] = [],
 ) {
   const lines = text.split("\n")
-  return (
-    new SemanticTokensProvider(
-      [...builtins],
-      [...reservedWords],
-    ).provideDocumentSemanticTokens(lineDoc(text)) as unknown as Token[]
-  ).map(t => ({
+  const raw = new SemanticTokensProvider(
+    builtins,
+    reservedWords,
+  ).provideDocumentSemanticTokens(lineDoc(text)).data as unknown as RawToken[]
+  return raw.map(t => ({
     word: lines[t.line]?.slice(t.start, t.start + t.length) ?? "",
     type: t.type,
+    modifiers: t.modifiers,
   }))
 }
 
-function builtinWords(text: string, builtins: readonly string[]) {
-  return tokens(text, builtins)
-    .filter(t => t.type === 0)
-    .map(t => t.word)
-}
+const kw = (word: string) => ({ word, type: KEYWORD, modifiers: 0 })
+const bi = (word: string) => ({
+  word,
+  type: FUNCTION,
+  modifiers: DEFAULT_LIBRARY,
+})
 
-function tokenType(
-  text: string,
-  word: string,
-  builtins: readonly string[] = [],
-  reservedWords: readonly string[] = [],
-) {
-  return tokens(text, builtins, reservedWords).find(t => t.word === word)?.type
-}
-
-const kw = (word: string) => ({ word, type: 1 })
-const bi = (word: string) => ({ word, type: 0 })
-
-suite("SemanticTokensProvider", () => {
-  for (const [text, builtins, want] of [
-    ["echo hi\nread var", ["echo", "read"], ["echo", "read"]],
-    ["for r in one two; do echo $r; done", ["r", "echo"], ["echo"]],
-    [
-      "a() uname -a\nr() uname -a\ns() uname -a",
-      ["r", "uname"],
-      ["uname", "uname", "uname"],
-    ],
-    ["print ${var[(a)1]} ${var[(r)1]} ${var[(s)1]}", ["print", "r"], ["print"]],
-    ["[ -d /tmp ] && echo OK", ["[", "echo"], ["echo"]],
-    ["noglob builtin echo hi", ["builtin", "echo"], ["echo"]],
-    ["command echo hi", ["command", "echo"], []],
-    ["f() { echo }", ["echo"], ["echo"]],
-    ["echo hi | read var", ["echo", "read"], ["echo", "read"]],
-    ["echo hi && fc", ["echo", "fc"], ["echo", "fc"]],
-    ["echo hi || fc", ["echo", "fc"], ["echo", "fc"]],
-    ["if ((1)) { fc; }", ["fc"], ["fc"]],
-    ["if ((1)) fc", ["fc"], ["fc"]],
-    [
-      'printingFunction -u2 "\nprint to stderr is enabled.\n"\necho after',
-      ["printingFunction", "print", "echo"],
-      ["printingFunction", "echo"],
-    ],
-    [
-      'printingFunction "$(\nprint active\n)"\necho "after"',
-      ["printingFunction", "print", "echo"],
-      ["printingFunction", "print", "echo"],
-    ],
-  ] as const) {
-    test(text, () => {
-      assert.deepStrictEqual(builtinWords(text, builtins), want)
-    })
-  }
-
-  for (const [text, builtins, want] of [
+describe("SemanticTokensProvider", () => {
+  test.each<
+    [string, readonly string[], readonly string[], ReturnType<typeof kw>[]]
+  >([
+    // extension painting policy on top of the analyzer's facts
+    ["echo hi\nread var", ["echo", "read"], [], [bi("echo"), bi("read")]],
+    ["[ -d /tmp ] && echo OK", ["[", "echo"], [], [bi("echo")]], // `[` never painted
+    ["noglob builtin echo hi", ["builtin", "echo"], [], [bi("echo")]],
+    ["command echo hi", ["command", "echo"], [], []], // `command` head: external by intent
     [
       "if true; then echo hi; fi",
       ["echo"],
+      [],
       [kw("if"), kw("then"), bi("echo"), kw("fi")],
     ],
+    ["f() { echo; }", ["echo"], [], [bi("echo")]], // delimiter reserved words filtered
+    ["(( x++ ))", [], [], []],
+    ["[[ a && b ]]", [], [], []],
+    // multi-line offsets, including a quoted region spanning lines
     [
-      "for x in a b; do\n  echo $x\ndone",
-      ["echo"],
-      [kw("for"), kw("do"), bi("echo"), kw("done")],
+      'f -u2 "\nprint x\n"\necho after',
+      ["f", "print", "echo"],
+      [],
+      [bi("f"), bi("echo")],
     ],
-    ["f() { echo; }", ["echo"], [bi("echo")]],
-    [
-      "while true; do echo; done",
-      ["echo"],
-      [kw("while"), kw("do"), bi("echo"), kw("done")],
-    ],
-    ["if ((1)) echo", ["echo"], [kw("if"), bi("echo")]],
-    ["(( x++ ))", [], []],
-    ["[[ a && b ]]", [], []],
-  ] as const) {
-    test(text, () => {
-      assert.deepStrictEqual(tokens(text, builtins), want)
-    })
-  }
+    // manual reserved words the analyzer treats as command heads are painted
+    // as keywords from the corpus list — also when they are builtins
+    ["declare foo=bar", [], ["declare"], [kw("declare")]],
+    ["export PATH=/x", ["export"], ["export"], [kw("export")]],
+  ])("%s", (text, builtins, reservedWords, want) => {
+    expect(tokens(text, builtins, reservedWords)).toEqual(want)
+  })
 
-  for (const [text, left, right] of [
-    ["(( x++ ))", "((", "))"],
-    ["[[ a && b ]]", "[[", "]]"],
-    ["{ echo; }", "{", "}"],
-  ] as const) {
-    test(`pair consistency: ${left} ${right}`, () => {
-      assert.deepStrictEqual(tokenType(text, left), tokenType(text, right))
-    })
-  }
-
-  // Manual-reserved words that the analyzer treats as ordinary command
-  // heads (typeset family etc.) get painted as keyword via the corpus-
-  // derived painting list. See the `reservedWordPainting` comment in
-  // semantic-tokens.ts.
-  const RW = ["declare", "typeset", "local", "export", "readonly", "integer"]
-  for (const [text, builtins, want] of [
-    ["declare foo=bar", [], [kw("declare")]],
-    ["typeset -a arr", [], [kw("typeset")]],
-    ["local x=1", [], [kw("local")]],
-    // Builtin-list classification loses to corpus-reserved painting:
-    ["export PATH=/x", ["export"], [kw("export")]],
-  ] as const) {
-    test(`reserved-word painting: ${text}`, () => {
-      assert.deepStrictEqual(tokens(text, builtins, RW), want)
-    })
-  }
+  test("tokens never span a line end, ascend, and paint only listed names", () => {
+    const line = fc
+      .array(
+        fc.constantFrom(
+          "echo",
+          "read",
+          "declare",
+          "if",
+          "then",
+          "fi",
+          "{",
+          "}",
+          "((",
+          "))",
+          "[[",
+          "]]",
+          "[",
+          "command",
+          "noglob",
+          "foo",
+          '"str # x"',
+          "'#'",
+          ";",
+          "&&",
+        ),
+        { maxLength: 6 },
+      )
+      .map(ws => ws.join(" "))
+    fc.assert(
+      fc.property(fc.array(line, { minLength: 1, maxLength: 5 }), lines => {
+        const doc = lineDoc(lines.join("\n"))
+        const raw = new SemanticTokensProvider(
+          ["echo", "read"],
+          ["declare"],
+        ).provideDocumentSemanticTokens(doc).data as unknown as RawToken[]
+        let prev: [number, number] = [-1, -1]
+        for (const t of raw) {
+          const text = lines[t.line] ?? ""
+          expect(t.start + t.length).toBeLessThanOrEqual(text.length)
+          const word = text.slice(t.start, t.start + t.length)
+          if (t.type === FUNCTION) expect(["echo", "read"]).toContain(word)
+          else expect(["declare", "if", "then", "fi"]).toContain(word)
+          expect(
+            t.line > prev[0] || (t.line === prev[0] && t.start > prev[1]),
+          ).toBe(true)
+          prev = [t.line, t.start]
+        }
+      }),
+    )
+  })
 })

@@ -2,26 +2,33 @@
 import type { ZshRunReq } from "./zsh-exec"
 
 /** Base args for all zsh invocations: `-f` (NO_RCS) to skip user rc files. */
-export const ZSH_BASE_ARGS = ["-f"] as const
+const ZSH_BASE_ARGS = ["-f"] as const
 
-// (Z+Cn+): split SRC into shell tokens (Z), treating newlines as tokens (C) and
-// keeping null tokens from adjacent delimiters (n) — yields one token per line.
-const TOKENIZE_SCRIPT = 'print -l -- "${(Z+Cn+)SRC}"'
+// Read all of stdin, then (Z+Cn+): split into shell tokens (Z), treating
+// newlines as tokens (C) and keeping null tokens from adjacent delimiters (n)
+// — one token per output line. Stdin, not an env var: Linux caps a single
+// env string at 128 KiB.
+const TOKENIZE_SCRIPT = `\
+emulate -LR zsh
+IFS= read -rd '' SRC
+print -l -- "\${(Z+Cn+)SRC}"\
+`
 
 /** Ask zsh to print its version banner. */
 export const versionReq: ZshRunReq = { args: ["--version"] }
 
-/** Syntax-check `text` without executing it (`zsh -n`, source on stdin). */
+/**
+ * Syntax-check `text` without executing it (`zsh -n`). A file, not stdin:
+ * zsh reports line numbers for named scripts only, and `/dev/stdin` cannot
+ * stand in — Node's child stdio is a socket, which Linux will not reopen.
+ */
 export function syntaxCheckReq(text: string): ZshRunReq {
-  return { args: [...ZSH_BASE_ARGS, "-n"], stdin: text }
+  return { args: [...ZSH_BASE_ARGS, "-n"], scriptFile: text }
 }
 
 /** Tokenize `text` via a live zsh under `emulate -LR zsh`. */
 export function tokenizeReq(text: string): ZshRunReq {
-  return {
-    args: [...ZSH_BASE_ARGS, "-c", `emulate -LR zsh\n${TOKENIZE_SCRIPT}`],
-    env: { SRC: text },
-  }
+  return { args: [...ZSH_BASE_ARGS, "-c", TOKENIZE_SCRIPT], stdin: text }
 }
 
 /** Split newline-delimited `print -l` output, dropping empty lines. */
@@ -34,10 +41,10 @@ export interface ZshError {
   readonly msg: string
 }
 
-/** Parse common zsh syntax-check stderr into a line/message pair. */
+/** Parse zsh's `<script>:<line>: <msg>` stderr; anything else lands on line 1. */
 export function parseZshError(stderr: string): ZshError | undefined {
   if (!stderr.trim()) return undefined
-  const m = stderr.match(/^(?:\/dev\/stdin|zsh):(\d+):\s*(.+)$/m)
+  const m = stderr.match(/^.*?:(\d+):\s*(.+)$/m)
   if (m) return { line: Number(m[1]), msg: m[2] ?? "" }
   return { line: 1, msg: stderr.trim() }
 }

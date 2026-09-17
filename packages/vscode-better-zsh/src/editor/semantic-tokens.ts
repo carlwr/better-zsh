@@ -1,10 +1,14 @@
-import { positionAt } from "@carlwr/zsh-core/analysis"
+import { positionAt, type TextSpan } from "@carlwr/zsh-core/analysis"
 import { mkObserved } from "@carlwr/zsh-core/types"
 import * as vscode from "vscode"
+import {
+  type TokenModifier,
+  type TokenType,
+  tokenModifiers,
+  tokenTypes,
+} from "../manifest"
 import { docAnalysis } from "./facts"
 
-const TOKEN_TYPES = ["function", "keyword"] as const
-const TOKEN_MODIFIERS = ["defaultLibrary"] as const
 const FILTERED_RESERVED_WORDS: ReadonlySet<string> = new Set([
   "{",
   "}",
@@ -14,15 +18,17 @@ const FILTERED_RESERVED_WORDS: ReadonlySet<string> = new Set([
   "))",
 ])
 
+const COMMAND_PRECMD = mkObserved("precmd_modifier", "command")
+
 export const SEMANTIC_LEGEND = new vscode.SemanticTokensLegend(
-  [...TOKEN_TYPES],
-  [...TOKEN_MODIFIERS],
+  [...tokenTypes],
+  [...tokenModifiers],
 )
 
 export class SemanticTokensProvider
   implements vscode.DocumentSemanticTokensProvider
 {
-  private builtins: Set<string>
+  private builtins: ReadonlySet<string>
   // Painting policy for command-position tokens that are zsh-manual reserved
   // words but which the analyzer treats as ordinary command heads (e.g.
   // `declare`, `local`, `repeat`). The analyzer's keyword set is deliberately
@@ -30,9 +36,12 @@ export class SemanticTokensProvider
   // painting source so the editor renders the manual's full reserved list as
   // keywords. See DESIGN.md §"Reserved word: an enumeration-primary doc
   // category".
-  private reservedWordPainting: Set<string>
+  private reservedWordPainting: ReadonlySet<string>
 
-  constructor(builtinNames: string[], reservedWordNames: readonly string[]) {
+  constructor(
+    builtinNames: Iterable<string>,
+    reservedWordNames: Iterable<string>,
+  ) {
     this.builtins = new Set(builtinNames)
     this.reservedWordPainting = new Set(reservedWordNames)
   }
@@ -40,37 +49,31 @@ export class SemanticTokensProvider
   provideDocumentSemanticTokens(doc: vscode.TextDocument) {
     const b = new vscode.SemanticTokensBuilder(SEMANTIC_LEGEND)
     const { facts, starts } = docAnalysis(doc)
+    const push = (
+      span: TextSpan,
+      type: TokenType,
+      ...mods: TokenModifier[]
+    ) => {
+      const { line, char } = positionAt(starts, span.start)
+      const bits = mods.reduce(
+        (acc, m) => acc | (1 << tokenModifiers.indexOf(m)),
+        0,
+      )
+      b.push(line, char, span.end - span.start, tokenTypes.indexOf(type), bits)
+    }
 
     for (const fact of facts) {
       if (fact.kind === "reserved-word") {
-        if (FILTERED_RESERVED_WORDS.has(fact.text)) continue
-        pushSpan(b, starts, fact.span.start, fact.span.end, 1, 0)
+        if (!FILTERED_RESERVED_WORDS.has(fact.text)) push(fact.span, "keyword")
         continue
       }
       if (fact.kind !== "cmd-head") continue
       if (fact.text === "[") continue
-      if (fact.precmds.includes(mkObserved("precmd_modifier", "command")))
-        continue
-      if (this.reservedWordPainting.has(fact.text)) {
-        pushSpan(b, starts, fact.span.start, fact.span.end, 1, 0)
-        continue
-      }
-      if (this.builtins.has(fact.text)) {
-        pushSpan(b, starts, fact.span.start, fact.span.end, 0, 1 << 0)
-      }
+      if (fact.precmds.includes(COMMAND_PRECMD)) continue
+      if (this.reservedWordPainting.has(fact.text)) push(fact.span, "keyword")
+      else if (this.builtins.has(fact.text))
+        push(fact.span, "function", "defaultLibrary")
     }
     return b.build()
   }
-}
-
-function pushSpan(
-  b: vscode.SemanticTokensBuilder,
-  starts: readonly number[],
-  start: number,
-  end: number,
-  type: number,
-  modifiers: number,
-) {
-  const { line, char } = positionAt(starts, start)
-  b.push(line, char, end - start, type, modifiers)
 }

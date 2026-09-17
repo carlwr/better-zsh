@@ -10,7 +10,9 @@ import { outDir } from "./src/build/paths"
     sourcemap: true,
     clean: true,
     external: ["vscode"],
-    noExternal: ["@carlwr/zsh-core"],
+    // Everything but the VS Code API is bundled; `dependencies` are
+    // otherwise externalized by default.
+    noExternal: [/^@carlwr\//],
     esbuildOptions(options) {
       options.conditions = ["require", "node"]
       options.mainFields = ["main"]
@@ -20,5 +22,5 @@ import { outDir } from "./src/build/paths"
       }
     },
   })
-  await generateAssets()
+  generateAssets()
 })()

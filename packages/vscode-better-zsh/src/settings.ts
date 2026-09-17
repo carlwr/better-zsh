@@ -3,58 +3,44 @@ import * as vscode from "vscode"
 import { BETTER_ZSH_CONFIG, mkZshBinary, type ZshBinary } from "./ids"
 import {
   diagnosticsEnabledSetting,
-  settingFullKey,
+  settingKey,
+  ZSH_PATH_OFF,
   zshPathSetting,
-} from "./settings-metadata"
+} from "./manifest"
 
-// ── Config keys ──
+/** For `affectsConfiguration` checks. */
+export const ZSH_PATH_KEY = settingKey(zshPathSetting)
+export const DIAGNOSTICS_ENABLED_KEY = settingKey(diagnosticsEnabledSetting)
 
-const ZSH_PATH_KEY = settingFullKey(zshPathSetting)
-const DIAGNOSTICS_ENABLED_KEY = settingFullKey(diagnosticsEnabledSetting)
-
-/** For `affectsConfiguration` checks in wiring code. */
-export { DIAGNOSTICS_ENABLED_KEY, ZSH_PATH_KEY }
-
-// ── Setting constants (private to the parse boundary) ──
-
-const ZSH_PATH_OFF = "off"
 const ZSH_BINARY_DEFAULT = "zsh"
-
-// ── Domain types ──
 
 export type ZshPathConfig =
   | { kind: "disabled" }
   | { kind: "default"; binary: ZshBinary }
   | { kind: "explicit"; binary: ZshBinary }
-  | { kind: "invalid"; raw: string; reason: "relative" }
+  | { kind: "invalid"; raw: string; reason: "relative path" | "not a string" }
 
-// ── Smart constructor (exported for unit testing) ──
-
-export function parseZshPath(raw: string): ZshPathConfig {
+/** The settings boundary: relative paths are rejected, never resolved; settings JSON may hold any type. */
+export function parseZshPath(raw: unknown): ZshPathConfig {
+  if (typeof raw !== "string")
+    return { kind: "invalid", raw: String(raw), reason: "not a string" }
   if (raw === ZSH_PATH_OFF) return { kind: "disabled" }
   if (raw === "")
     return { kind: "default", binary: mkZshBinary(ZSH_BINARY_DEFAULT) }
-  if (!path.isAbsolute(raw)) return { kind: "invalid", raw, reason: "relative" }
+  if (!path.isAbsolute(raw))
+    return { kind: "invalid", raw, reason: "relative path" }
   return { kind: "explicit", binary: mkZshBinary(raw) }
 }
 
-// ── VS Code readers ──
-
-function getConfig<T>(key: string, defaultVal: T): T {
-  return vscode.workspace
-    .getConfiguration(BETTER_ZSH_CONFIG)
-    .get(key, defaultVal)
-}
-
-export function readZshPathConfig(): ZshPathConfig {
-  return parseZshPath(
-    getConfig<string>(zshPathSetting.suffix, zshPathSetting.default),
+/** The raw setting value; `null`/unset read as the default. */
+function readSetting(setting: { suffix: string; default: unknown }): unknown {
+  return (
+    vscode.workspace.getConfiguration(BETTER_ZSH_CONFIG).get(setting.suffix) ??
+    setting.default
   )
 }
 
-export function readDiagnosticsEnabled(): boolean {
-  return getConfig(
-    diagnosticsEnabledSetting.suffix,
-    diagnosticsEnabledSetting.default,
-  )
-}
+export const readZshPathConfig = () => parseZshPath(readSetting(zshPathSetting))
+
+export const readDiagnosticsEnabled = () =>
+  readSetting(diagnosticsEnabledSetting) !== false
