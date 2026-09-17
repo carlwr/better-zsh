@@ -1,5 +1,39 @@
+import fc from "fast-check"
 import { describe, expect, test } from "vitest"
-import { continuedText } from "../../analysis/doc"
+import {
+  continuedText,
+  lineStarts,
+  offsetAt,
+  positionAt,
+} from "../../analysis/doc"
+import { mockDoc } from "./test-util"
+
+describe("offset model", () => {
+  test("every separator is one character", () => {
+    expect(lineStarts(mockDoc(["ab", "", "c"]))).toEqual([0, 3, 4])
+  })
+
+  test("positionAt inverts offsetAt for every character of every line", () => {
+    const lines = fc.array(fc.stringMatching(/^[a-z ]{0,5}$/), {
+      minLength: 1,
+      maxLength: 6,
+    })
+    fc.assert(
+      fc.property(lines, ls => {
+        const starts = lineStarts(mockDoc(ls))
+        ls.forEach((text, line) => {
+          // the separator position belongs to the next line
+          const last = line === ls.length - 1 ? text.length : text.length - 1
+          for (let char = 0; char <= last; char++)
+            expect(positionAt(starts, offsetAt(starts, line, char))).toEqual({
+              line,
+              char,
+            })
+        })
+      }),
+    )
+  })
+})
 
 describe("continuedText", () => {
   test.each([

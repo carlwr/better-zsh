@@ -14,6 +14,8 @@ import {
   isRedirFact,
   isReservedWordFact,
   type LineFact,
+  lineStarts,
+  offsetAt,
 } from "../../analysis/facts"
 import { mockDoc } from "./test-util"
 
@@ -196,7 +198,7 @@ describe("document facts", () => {
 
   test("setopt context after builtin modifier", () => {
     const doc = mockDoc(["builtin setopt extended_glob"])
-    const facts = factsAt(doc, 0, 18)
+    const facts = factsAt(analyzeDoc(doc), offsetAt(lineStarts(doc), 0, 18))
     expect(facts.filter(isCtxFact).map(fact => fact.ctx)).toContain("setopt")
   })
 

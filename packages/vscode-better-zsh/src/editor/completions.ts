@@ -1,11 +1,11 @@
 import type { DocCorpus } from "@carlwr/zsh-core"
-import { syntacticContext } from "@carlwr/zsh-core/analysis"
 import { recordTitle, renderDocWithTitle } from "@carlwr/zsh-core/render"
 import { type DocPieceId, mkPieceId } from "@carlwr/zsh-core/taxonomy"
 import type { CondOpDoc, Documented, ZshOption } from "@carlwr/zsh-core/types"
 import * as vscode from "vscode"
 import { asyncDocCache } from "../cache"
 import { zshTokenize } from "../zsh"
+import { contextAt } from "./facts"
 import { matchOptions } from "./option-match"
 import { filterTokens, WORD, WORD_EXACT } from "./words"
 
@@ -47,12 +47,12 @@ export class CompletionProvider implements vscode.CompletionItemProvider {
   }
 
   async provideCompletionItems(doc: vscode.TextDocument, pos: vscode.Position) {
-    const ctx = syntacticContext(doc, pos.line, pos.character)
+    const ctx = contextAt(doc, pos)
 
-    if (ctx.kind === "setopt") {
+    if (ctx === "setopt") {
       return this.optionCompletions(doc, pos)
     }
-    if (ctx.kind === "cond") {
+    if (ctx === "cond") {
       return this.condCompletions()
     }
     return this.generalCompletions(doc, pos)

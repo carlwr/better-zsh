@@ -1,4 +1,4 @@
-import type { DocLike } from "./doc.ts"
+import type { Fact } from "./fact-types.ts"
 import { factsAt, isCtxFact } from "./facts.ts"
 
 /** Best-effort syntactic bucket for the cursor position. */
@@ -10,14 +10,14 @@ export type SyntacticContext =
 
 export type ContextKind = SyntacticContext["kind"]
 
+/** The bucket at `offset` (as `offsetAt` computes it) in a document's facts. */
 export function syntacticContext(
-  doc: DocLike,
-  line: number,
-  char: number,
+  facts: readonly Fact[],
+  offset: number,
 ): SyntacticContext {
-  const facts = factsAt(doc, line, char).filter(isCtxFact)
-  if (facts.some(fact => fact.ctx === "setopt")) return { kind: "setopt" }
-  if (facts.some(fact => fact.ctx === "cond")) return { kind: "cond" }
-  if (facts.some(fact => fact.ctx === "arith")) return { kind: "arith" }
+  const ctxs = factsAt(facts, offset).filter(isCtxFact)
+  if (ctxs.some(fact => fact.ctx === "setopt")) return { kind: "setopt" }
+  if (ctxs.some(fact => fact.ctx === "cond")) return { kind: "cond" }
+  if (ctxs.some(fact => fact.ctx === "arith")) return { kind: "arith" }
   return { kind: "general" }
 }

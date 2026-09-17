@@ -14,6 +14,7 @@ describe("commentStart", () => {
 
     // No-comment cases (mid-word #)
     ["literal mid-word", "echo abc#def", undefined],
+    ["escaped", "echo \\# nope", undefined],
     ["$# is not a comment", "echo $#", undefined],
     ["${#} is not a comment", "argc=${#}", undefined],
     ["${#var} not a comment", 'echo "${#x}"', undefined],

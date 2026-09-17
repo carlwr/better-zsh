@@ -12,7 +12,7 @@ import { cmdHeadFactsOnLine, funcDeclAtLine } from "./line-facts.ts"
 import { quotedRegionFacts } from "./quoted-region.ts"
 
 export type { DocLike, DocLine, TextSpan } from "./doc.ts"
-export { factText } from "./doc.ts"
+export { factText, lineStarts, offsetAt, positionAt } from "./doc.ts"
 export type {
   BaseFact,
   CmdFact,
@@ -59,7 +59,7 @@ const QUOTED_FILTERED_KINDS: ReadonlySet<Fact["kind"]> = new Set([
 /** Analyze a whole document and return coarse zsh syntax facts. */
 export function analyzeDoc(doc: DocLike): readonly Fact[] {
   const lines = readLines(doc)
-  const starts = lineStarts(lines)
+  const starts = lineStarts(doc)
   const facts: Fact[] = []
   const quotedRegions = quotedRegionFacts(lines)
 
@@ -98,16 +98,14 @@ export function analyzeDoc(doc: DocLike): readonly Fact[] {
   )
 }
 
+/** The facts covering `offset` (as `offsetAt` computes it). */
 export function factsAt(
-  doc: DocLike,
-  line: number,
-  char: number,
+  facts: readonly Fact[],
+  offset: number,
 ): readonly Fact[] {
-  const starts = lineStarts(readLines(doc))
-  const off = (starts[line] ?? 0) + char
-  return analyzeDoc(doc).filter(fact =>
+  return facts.filter(fact =>
     // ctx spans include their closing delimiter, so offset matching is inclusive
-    hasOffset(fact.span, off, fact.kind === "ctx"),
+    hasOffset(fact.span, offset, fact.kind === "ctx"),
   )
 }
 

@@ -1,6 +1,15 @@
 import { describe, expect, test } from "vitest"
 import { syntacticContext } from "../../analysis/context"
+import { analyzeDoc, lineStarts, offsetAt } from "../../analysis/facts"
 import { mockDoc } from "./test-util"
+
+const contextAt = (lines: readonly string[], line: number, char: number) => {
+  const doc = mockDoc(lines)
+  return syntacticContext(
+    analyzeDoc(doc),
+    offsetAt(lineStarts(doc), line, char),
+  )
+}
 
 describe("syntacticContext", () => {
   test.each([
@@ -20,6 +29,6 @@ describe("syntacticContext", () => {
     ["quoted ((", ["echo '((' && do_stuff"], 0, 18, "general"],
     ["setopt cont.", ["setopt \\", "  autocd"], 1, 5, "setopt"],
   ])('%s → kind "%s"', (_desc, lines, lineOffs, charOffs, kind) => {
-    expect(syntacticContext(mockDoc(lines), lineOffs, charOffs).kind).toBe(kind)
+    expect(contextAt(lines, lineOffs, charOffs).kind).toBe(kind)
   })
 })

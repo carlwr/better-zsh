@@ -28,15 +28,42 @@ export function readLines(doc: DocLike): readonly string[] {
   return out
 }
 
-// Each line separator counts as 1 char (\r\n not supported — intentional).
-export function lineStarts(lines: readonly string[]): readonly number[] {
+/**
+ * Offset of each line's first character — the document's offset model: every
+ * line separator counts one character (`\r\n` unsupported, by design).
+ */
+export function lineStarts(doc: DocLike): readonly number[] {
   const out: number[] = []
   let off = 0
-  for (const line of lines) {
+  for (let i = 0; i < doc.lineCount; i++) {
     out.push(off)
-    off += line.length + 1
+    off += doc.lineAt(i).text.length + 1
   }
   return out
+}
+
+/** Offset of (`line`, `char`) under `starts` (see {@link lineStarts}). */
+export function offsetAt(
+  starts: readonly number[],
+  line: number,
+  char: number,
+): number {
+  return (starts[line] ?? 0) + char
+}
+
+/** Line and column at `offset` under `starts` (see {@link lineStarts}). */
+export function positionAt(
+  starts: readonly number[],
+  offset: number,
+): { line: number; char: number } {
+  let lo = 0
+  let hi = starts.length - 1
+  while (lo < hi) {
+    const mid = (lo + hi + 1) >> 1
+    if ((starts[mid] ?? Infinity) <= offset) lo = mid
+    else hi = mid - 1
+  }
+  return { line: lo, char: offset - (starts[lo] ?? 0) }
 }
 
 export function absSpan(base: number, span: TextSpan): TextSpan {

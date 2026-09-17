@@ -4,7 +4,6 @@ import {
   type LineFact,
   type ProcessSubstFact,
   type RedirFact,
-  syntacticContext,
 } from "@carlwr/zsh-core/analysis"
 import { renderDocWithTitle } from "@carlwr/zsh-core/render"
 import { resolve } from "@carlwr/zsh-core/resolver"
@@ -21,6 +20,7 @@ import {
   type ZshOption,
 } from "@carlwr/zsh-core/types"
 import * as vscode from "vscode"
+import { contextAt } from "./facts"
 import { activeWordRangeAt, commentStart, funcDocs } from "./funcs"
 
 // NOTE: Hovering `setopt NO_AUTO_CD` currently shows the same markdown as
@@ -79,8 +79,7 @@ export class HoverProvider implements vscode.HoverProvider {
   }
 
   private setoptHover(doc: vscode.TextDocument, pos: vscode.Position) {
-    const ctx = syntacticContext(doc, pos.line, pos.character)
-    if (ctx.kind !== "setopt") return
+    if (contextAt(doc, pos) !== "setopt") return
     const range = activeTokenRangeAt(doc, pos)
     if (!range) return
     const pieceId = this.optionAt(doc.getText(range))
@@ -88,8 +87,7 @@ export class HoverProvider implements vscode.HoverProvider {
   }
 
   private condHover(doc: vscode.TextDocument, pos: vscode.Position) {
-    const ctx = syntacticContext(doc, pos.line, pos.character)
-    if (ctx.kind !== "cond") return
+    if (contextAt(doc, pos) !== "cond") return
     const condOpKeys = this.corpus.conditional_op.keys()
     const range = activeCondTokenRangeAt(doc, pos, condOpKeys)
     if (!range) return

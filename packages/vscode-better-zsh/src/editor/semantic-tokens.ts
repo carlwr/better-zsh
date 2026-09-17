@@ -1,6 +1,7 @@
-import { analyzeDoc } from "@carlwr/zsh-core/analysis"
+import { positionAt } from "@carlwr/zsh-core/analysis"
 import { mkObserved } from "@carlwr/zsh-core/types"
 import * as vscode from "vscode"
+import { docAnalysis } from "./facts"
 
 const TOKEN_TYPES = ["function", "keyword"] as const
 const TOKEN_MODIFIERS = ["defaultLibrary"] as const
@@ -38,9 +39,9 @@ export class SemanticTokensProvider
 
   provideDocumentSemanticTokens(doc: vscode.TextDocument) {
     const b = new vscode.SemanticTokensBuilder(SEMANTIC_LEGEND)
-    const starts = lineStarts(doc)
+    const { facts, starts } = docAnalysis(doc)
 
-    for (const fact of analyzeDoc(doc)) {
+    for (const fact of facts) {
       if (fact.kind === "reserved-word") {
         if (FILTERED_RESERVED_WORDS.has(fact.text)) continue
         pushSpan(b, starts, fact.span.start, fact.span.end, 1, 0)
@@ -62,16 +63,6 @@ export class SemanticTokensProvider
   }
 }
 
-function lineStarts(doc: vscode.TextDocument): readonly number[] {
-  const out: number[] = []
-  let off = 0
-  for (let i = 0; i < doc.lineCount; i++) {
-    out.push(off)
-    off += doc.lineAt(i).text.length + 1
-  }
-  return out
-}
-
 function pushSpan(
   b: vscode.SemanticTokensBuilder,
   starts: readonly number[],
@@ -80,17 +71,6 @@ function pushSpan(
   type: number,
   modifiers: number,
 ) {
-  const line = lineAt(starts, start)
-  const lineStart = starts[line] ?? 0
-  b.push(line, start - lineStart, end - start, type, modifiers)
-}
-
-function lineAt(starts: readonly number[], pos: number): number {
-  let line = 0
-  for (let i = 1; i < starts.length; i++) {
-    const start = starts[i]
-    if (start === undefined || start > pos) break
-    line = i
-  }
-  return line
+  const { line, char } = positionAt(starts, start)
+  b.push(line, char, end - start, type, modifiers)
 }
