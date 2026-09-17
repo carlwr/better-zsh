@@ -1,13 +1,13 @@
 import { positionAt, type TextSpan } from "@carlwr/zsh-core/analysis"
 import { mkObserved } from "@carlwr/zsh-core/types"
 import * as vscode from "vscode"
+import { docAnalysis } from "../document/facts"
 import {
   type TokenModifier,
   type TokenType,
   tokenModifiers,
   tokenTypes,
-} from "../manifest"
-import { docAnalysis } from "./facts"
+} from "../manifest/semantic-tokens"
 
 const FILTERED_RESERVED_WORDS: ReadonlySet<string> = new Set([
   "{",

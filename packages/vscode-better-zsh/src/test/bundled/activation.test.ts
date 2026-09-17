@@ -1,27 +1,22 @@
 import * as assert from "node:assert"
-import { existsSync } from "node:fs"
-import { join, resolve } from "node:path"
+import { existsSync, readFileSync } from "node:fs"
+import { join } from "node:path"
 import { runtimeZshDataDir, vendoredZshDocFiles } from "@carlwr/zsh-core/assets"
 import * as vscode from "vscode"
-import { BETTER_ZSH_EXT_ID } from "../../ids"
 import { outAsset } from "../../manifest"
+import { highlightTexts, openFixture, pkgDir } from "../integration/helpers"
 
-const EXT_ID = BETTER_ZSH_EXT_ID
-const fixtureFile = join(
-  resolve(__dirname, "../../../test-fixtures"),
-  "test.zsh",
-)
+// `<publisher>.<name>`, as VS Code identifies an installed extension.
+const { publisher, name } = JSON.parse(
+  readFileSync(join(pkgDir, "package.json"), "utf8"),
+) as { publisher: string; name: string }
+const EXT_ID = `${publisher}.${name}`
 
 function assertExists(path: string) {
   assert.ok(existsSync(path), `expected file ${path} to exist`)
 }
 function assertDoesntExist(path: string) {
   assert.ok(!existsSync(path), `expected file ${path} to not exist`)
-}
-
-async function getDoc() {
-  const uri = vscode.Uri.file(fixtureFile)
-  return await vscode.workspace.openTextDocument(uri)
 }
 
 suite("bundled extension", function () {
@@ -32,10 +27,7 @@ suite("bundled extension", function () {
   suiteSetup(async () => {
     ext = vscode.extensions.getExtension(EXT_ID)
     assert.ok(ext, `extension ${EXT_ID} not found — vsix not installed?`)
-
-    const doc = await getDoc()
-    await vscode.window.showTextDocument(doc)
-    await new Promise(r => setTimeout(r, 2000))
+    await openFixture("test.zsh", 2000)
   })
 
   test("extension activates", () => {
@@ -43,15 +35,8 @@ suite("bundled extension", function () {
   })
 
   test("highlight provider works from bundle", async () => {
-    const doc = await getDoc()
-
-    const hl = await vscode.commands.executeCommand<vscode.DocumentHighlight[]>(
-      "vscode.executeDocumentHighlights",
-      doc.uri,
-      new vscode.Position(1, 2),
-    )
-    assert.ok(hl, "expected highlights result")
-    const texts = hl.map(h => doc.getText(h.range)).sort()
+    const doc = await openFixture("test.zsh")
+    const texts = await highlightTexts(doc, new vscode.Position(1, 2))
     assert.deepStrictEqual(texts, ["msg-warn", "msg-warn"])
   })
 

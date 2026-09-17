@@ -5,7 +5,6 @@ import {
   isProcessSubstFact,
   isRedirFact,
   type LineFact,
-  type RedirFact,
 } from "@carlwr/zsh-core/analysis"
 import { renderDocWithTitle } from "@carlwr/zsh-core/render"
 import { resolve } from "@carlwr/zsh-core/resolver"
@@ -21,15 +20,18 @@ import {
   type ZshOption,
 } from "@carlwr/zsh-core/types"
 import * as vscode from "vscode"
-import { contextAt } from "./facts"
-import { activeWordRangeAt, funcDecl } from "./funcs"
-import { activeEnd } from "./words"
+import { contextAt } from "../document/facts"
+import { funcAt } from "../document/funcs"
+import {
+  activeRedirRangeAt,
+  activeTokenRangeAt,
+  isTokenDelimiter,
+  symbolicOpRangeAt,
+} from "../document/tokens"
+import { activeLineAt, activeWordRangeAt } from "../document/words"
 
-// NOTE: Hovering `setopt NO_AUTO_CD` currently shows the same markdown as
-// `setopt AUTO_CD` — the option resolver's `input-negated` feedback is
-// discarded here. A potential improvement would be to distinguish the two
-// at the UX level (e.g. "AUTO_CD is being turned OFF") using
-// `resolverFeedback(corpus, "option", token)?.kind === "input-negated"`.
+// `setopt NO_AUTO_CD` hovers as `AUTO_CD`: the option resolver's
+// `input-negated` feedback (`resolverFeedback`) is not surfaced.
 
 const PUNCT_PARAM = /[$?@*!#-]/
 
@@ -99,16 +101,14 @@ export class HoverProvider implements vscode.HoverProvider {
   }
 
   private funcHover(doc: vscode.TextDocument, pos: vscode.Position) {
-    const range = activeWordRangeAt(doc, pos)
-    if (!range) return
-    const name = doc.getText(range)
-    const d = funcDecl(doc, name)?.doc
-    if (!d) return
+    const hit = funcAt(doc, pos)
+    const d = hit?.decl.doc
+    if (!hit || !d) return
     // Two trailing spaces keep multi-line docstrings as hard line breaks in markdown.
     const md = new vscode.MarkdownString()
-    md.appendCodeblock(`function ${name}() { ... }`, "zsh")
+    md.appendCodeblock(`function ${hit.decl.name}() { ... }`, "zsh")
     md.appendMarkdown(`\n\n${d.replaceAll("\n", "  \n")}`)
-    return new vscode.Hover(md, range)
+    return new vscode.Hover(md, hit.range)
   }
 
   private paramHover(doc: vscode.TextDocument, pos: vscode.Position) {
@@ -119,9 +119,9 @@ export class HoverProvider implements vscode.HoverProvider {
 
   // Punctuation-named special params (`$$`, `$@`, `$?`, …) miss `activeWordRangeAt`'s `\w`-only token. Match a `$X` or `${X` anchor instead.
   private punctParamHover(doc: vscode.TextDocument, pos: vscode.Position) {
-    const line = doc.lineAt(pos.line).text
-    const cut = activeEnd(line)
-    if (pos.character >= cut) return
+    const active = activeLineAt(doc, pos)
+    if (!active) return
+    const { text: line, cut } = active
     const tryAt = (idx: number) => {
       if (idx < 0 || idx >= cut) return
       const ch = line[idx]
@@ -208,7 +208,7 @@ export class HoverProvider implements vscode.HoverProvider {
   }
 
   private optionAt(token: string): DocPieceId | undefined {
-    // Direct form; the negation feedback is discarded — see the top-of-file note.
+    // Direct form; negation feedback discarded (top-of-file note).
     const direct = resolve(this.corpus, "option", token)
     if (direct) return direct
 
@@ -235,63 +235,6 @@ function indexMany<K, V>(
   return out
 }
 
-function activeTokenRangeAt(
-  doc: vscode.TextDocument,
-  pos: vscode.Position,
-): vscode.Range | undefined {
-  const text = doc.lineAt(pos.line).text
-  const cut = activeEnd(text)
-  if (pos.character >= cut) return
-  if (isTokenDelimiter(text[pos.character] ?? "")) return
-  let start = pos.character
-  while (start > 0 && !isTokenDelimiter(text[start - 1] ?? "")) start--
-  let end = pos.character
-  while (end < cut && !isTokenDelimiter(text[end] ?? "")) end++
-  return start === end
-    ? undefined
-    : new vscode.Range(pos.line, start, pos.line, end)
-}
-
-function isTokenDelimiter(ch: string): boolean {
-  return /[\s;|&(){}<>]/.test(ch)
-}
-
-/** The longest of `ops` (pre-sorted by length) around `pos`, delimited by whitespace or brackets. */
-function symbolicOpRangeAt(
-  doc: vscode.TextDocument,
-  pos: vscode.Position,
-  ops: readonly string[],
-): vscode.Range | undefined {
-  const text = doc.lineAt(pos.line).text
-  const cut = activeEnd(text)
-  if (pos.character >= cut) return
-  for (const op of ops) {
-    const range = operatorRangeAt(text, pos.character, cut, op)
-    if (range)
-      return new vscode.Range(pos.line, range.start, pos.line, range.end)
-  }
-}
-
-function operatorRangeAt(
-  text: string,
-  pos: number,
-  cut: number,
-  op: string,
-): { start: number; end: number } | undefined {
-  const startMin = Math.max(0, pos - op.length + 1)
-  const startMax = Math.min(pos, cut - op.length)
-  for (let start = startMin; start <= startMax; start++) {
-    const end = start + op.length
-    if (text.slice(start, end) !== op) continue
-    if (opBoundary(text[start - 1]) && opBoundary(text[end]))
-      return { start, end }
-  }
-}
-
-function opBoundary(ch: string | undefined): boolean {
-  return ch === undefined || /[\s[\]]/.test(ch)
-}
-
 const spanHas = (span: { start: number }, at: number, len: number) =>
   span.start <= at && at < span.start + len
 
@@ -307,20 +250,4 @@ function factAt<K extends LineFact["kind"]>(
     (f): f is Extract<LineFact, { kind: K }> =>
       f.kind === kind && line.slice(f.span.start, f.span.end) === token,
   )
-}
-
-function activeRedirRangeAt(
-  doc: vscode.TextDocument,
-  pos: vscode.Position,
-  redir: RedirFact,
-): vscode.Range | undefined {
-  const text = doc.lineAt(pos.line).text
-  const cut = activeEnd(text)
-  if (pos.character < redir.span.start) return
-
-  let end = redir.span.end
-  while (end < cut && !isTokenDelimiter(text[end] ?? "")) end++
-  if (pos.character >= end) return
-
-  return new vscode.Range(pos.line, redir.span.start, pos.line, end)
 }

@@ -1,9 +1,6 @@
 import * as assert from "node:assert"
 import * as vscode from "vscode"
-import {
-  BETTER_ZSH_TEST_GET_LOGS,
-  BETTER_ZSH_TEST_GET_SEMANTIC_TOKENS,
-} from "../../ids"
+import { BETTER_ZSH_TEST_GET_LOGS } from "../../ids"
 import {
   completionLabels,
   hoverText,
@@ -17,11 +14,10 @@ const expectRuntime = process.env.BETTER_ZSH_MATRIX_EXPECT_RUNTIME === "true"
 const logSubstr = process.env.BETTER_ZSH_MATRIX_LOG_SUBSTR ?? ""
 
 async function semanticTokenWords(doc: vscode.TextDocument) {
-  const data =
-    (await vscode.commands.executeCommand<number[]>(
-      BETTER_ZSH_TEST_GET_SEMANTIC_TOKENS,
-      doc.uri,
-    )) ?? []
+  const tokens = await vscode.commands.executeCommand<
+    vscode.SemanticTokens | undefined
+  >("vscode.provideDocumentSemanticTokens", doc.uri)
+  const data = tokens?.data ?? []
   let line = 0
   let start = 0
   const out: { word: string; type: number }[] = []

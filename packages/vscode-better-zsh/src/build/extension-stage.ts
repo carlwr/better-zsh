@@ -1,6 +1,5 @@
 import { cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
-import { BETTER_ZSH_DISPLAY_NAME } from "../ids"
 import { manifest } from "../manifest"
 import { pkgDir, stagedExtensionDir } from "./paths"
 
@@ -32,13 +31,8 @@ export function stageExtension(): void {
     devDependencies: _dd,
     ...keep
   } = workspacePkg
-  const stagedManifest = {
-    ...keep,
-    displayName: BETTER_ZSH_DISPLAY_NAME,
-    ...manifest,
-  }
   writeFileSync(
     join(stagedExtensionDir, "package.json"),
-    `${JSON.stringify(stagedManifest, null, 2)}\n`,
+    `${JSON.stringify({ ...keep, ...manifest }, null, 2)}\n`,
   )
 }

@@ -1,17 +1,14 @@
-import { constants, existsSync } from "node:fs"
-import { access } from "node:fs/promises"
-import * as path from "node:path"
 import { memoized } from "@carlwr/typescript-extra"
-import { mkZshBinary, type ZshBinary } from "./ids"
 import { log, warn } from "./log"
-import { ZSH_PATH_OFF } from "./manifest"
-import { ZSH_PATH_KEY, type ZshPathConfig } from "./settings"
+import { settings, ZSH_PATH_OFF } from "./manifest/settings"
+import type { ZshPathConfig } from "./settings"
+import { probeZsh, type ZshBinaryRef, type ZshProbe } from "./zsh/binary"
 import {
   buildZshEnv,
   execZsh,
   type ZshRunReq,
   type ZshRunResult,
-} from "./zsh-exec"
+} from "./zsh/exec"
 import {
   parseZshError,
   splitLines,
@@ -19,95 +16,37 @@ import {
   tokenizeReq,
   versionReq,
   type ZshError,
-} from "./zsh-protocol"
+} from "./zsh/protocol"
 
-// ── Domain types ──
-
-type UnavailableCode = "ENOENT" | "EACCES"
-
-type ZshMode =
-  | { kind: "disabled" }
-  | { kind: "invalid-config" }
-  | { kind: "available"; binary: ZshBinary }
-  | { kind: "unavailable"; binary: ZshBinary; errCode: UnavailableCode }
-
-type ProbedMode = Extract<ZshMode, { kind: "available" | "unavailable" }>
-type ZshPathUsable = Extract<ZshPathConfig, { kind: "default" | "explicit" }>
+type ZshMode = { kind: "disabled" } | { kind: "invalid-config" } | ZshProbe
 
 export type ZshCheckResult =
   | { kind: "ok" }
   | { kind: "unavailable" }
   | ({ kind: "error" } & ZshError)
 
-// ── Filesystem probe (impure, isolated) ──
-
-function resolveOnPath(
-  binary: ZshBinary,
-  env: NodeJS.ProcessEnv,
-): ZshBinary | undefined {
-  const dirs = (env.PATH ?? "").split(path.delimiter).filter(Boolean)
-  const exts =
-    process.platform === "win32"
-      ? (env.PATHEXT ?? ".EXE;.CMD;.BAT;.COM").split(";").filter(Boolean)
-      : [""]
-  for (const dir of dirs) {
-    for (const ext of exts) {
-      const full = path.join(dir, `${binary}${ext}`)
-      if (existsSync(full)) return mkZshBinary(full)
-    }
-  }
-  return undefined
-}
-
-const canExec = (file: string) =>
-  access(file, constants.X_OK).then(
-    () => true,
-    () => false,
-  )
-
-async function probeZsh(
-  config: ZshPathUsable,
-  env: NodeJS.ProcessEnv,
-): Promise<ProbedMode> {
-  const file =
-    config.kind === "explicit"
-      ? existsSync(config.binary)
-        ? config.binary
-        : undefined
-      : resolveOnPath(config.binary, env)
-  if (!file)
-    return { kind: "unavailable", binary: config.binary, errCode: "ENOENT" }
-  if (!(await canExec(file)))
-    return { kind: "unavailable", binary: file, errCode: "EACCES" }
-  return { kind: "available", binary: file }
-}
-
 // ── Logging ──
 
-function logResolution(config: ZshPathUsable, mode: ProbedMode) {
-  const { binary } = config
-  if (mode.kind === "available") {
-    log(
-      config.kind === "explicit"
-        ? `zsh: configured path ${binary}`
-        : `zsh: PATH lookup for ${binary} -> ${mode.binary}`,
-    )
-    return
-  }
-  const notExec = mode.errCode === "EACCES"
-  if (config.kind === "explicit") {
-    log(
-      `zsh: configured path ${binary}${notExec ? " (not executable)" : " (not found)"}`,
-    )
-    warn(
-      `zsh unavailable (${notExec ? "not executable" : "not usable"} configured path: ${binary})`,
-    )
-  } else {
-    log(
-      `zsh: PATH lookup for ${binary} -> ${notExec ? `${mode.binary} (not executable)` : "unresolved"}`,
-    )
-    warn(`zsh unavailable (${mode.errCode})`)
-  }
+const probeStatus = (probe: ZshProbe) =>
+  probe.kind === "available"
+    ? ""
+    : probe.errCode === "EACCES"
+      ? " (not executable)"
+      : " (not found)"
+
+function logProbe(ref: ZshBinaryRef, probe: ZshProbe) {
+  const status = probeStatus(probe)
+  const onPath =
+    probe.kind === "unavailable" && probe.errCode === "ENOENT"
+      ? "unresolved"
+      : `${probe.binary}${status}`
+  log(
+    ref.kind === "explicit"
+      ? `zsh: configured path ${ref.binary}${status}`
+      : `zsh: PATH lookup for ${ref.binary} -> ${onPath}`,
+  )
+  if (probe.kind === "unavailable")
+    warn(`zsh unavailable (${probe.errCode}: ${probe.binary})`)
 }
 
 function logVersion(r: ZshRunResult) {
@@ -120,19 +59,18 @@ function logVersion(r: ZshRunResult) {
 // ── Mode: resolved once per configuration ──
 
 async function resolveMode(config: ZshPathConfig): Promise<ZshMode> {
+  const { key } = settings.zshPath
   switch (config.kind) {
     case "disabled":
-      log(`zsh: disabled via ${ZSH_PATH_KEY}=${ZSH_PATH_OFF}`)
+      log(`zsh: disabled via ${key}=${ZSH_PATH_OFF}`)
       return { kind: "disabled" }
     case "invalid":
       log(`zsh: invalid configured path ${config.raw} (${config.reason})`)
-      warn(
-        `zsh unavailable (invalid ${ZSH_PATH_KEY}: ${config.reason}: ${config.raw})`,
-      )
+      warn(`zsh unavailable (invalid ${key}: ${config.reason}: ${config.raw})`)
       return { kind: "invalid-config" }
     default: {
       const mode = await probeZsh(config, buildZshEnv(process.env))
-      logResolution(config, mode)
+      logProbe(config, mode)
       if (mode.kind === "available") void runZsh(versionReq).then(logVersion)
       return mode
     }

@@ -209,16 +209,16 @@ const recording =
 
 export const workspace = {
   textDocuments: [] as unknown[],
-  getConfiguration: (section: string) => ({
-    get: <T>(key: string, dflt: T): T =>
-      (stub.config.get(`${section}.${key}`) as T | undefined) ?? dflt,
+  getConfiguration: (section?: string) => ({
+    get: <T>(key: string, dflt?: T): T | undefined =>
+      (stub.config.get(section ? `${section}.${key}` : key) as T | undefined) ??
+      dflt,
   }),
   onDidOpenTextDocument: event("open"),
   onDidSaveTextDocument: event("save"),
   onDidChangeTextDocument: event("change"),
   onDidCloseTextDocument: event("close"),
   onDidChangeConfiguration: event("config"),
-  openTextDocument: async (uri: unknown) => uri,
 }
 
 export class DiagnosticCollection {

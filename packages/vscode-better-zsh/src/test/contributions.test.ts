@@ -2,6 +2,8 @@ import { loadCorpus } from "@carlwr/zsh-core"
 import { beforeEach, describe, expect, test, vi } from "vitest"
 import type * as vscode from "vscode"
 import { contribute } from "../contributions"
+import { ZSH_LANG_ID } from "../ids"
+import { settings } from "../manifest/settings"
 import { stub } from "./vscode-stub"
 
 const zsh = vi.hoisted(() => ({
@@ -17,10 +19,11 @@ const ctx = () =>
 beforeEach(() => {
   stub.reset()
   zsh.configureZsh.mockClear()
+  zsh.zshCheck.mockClear()
 })
 
 describe("contribute", () => {
-  test("registers every language feature once; test hooks only under the VS Code test runner", () => {
+  test("registers every language feature once; the test hook only under the VS Code test runner", () => {
     vi.stubEnv("VSCODE_TEST_OPTIONS", "")
     contribute(ctx(), loadCorpus())
     expect(stub.registrations.sort()).toEqual([
@@ -39,29 +42,37 @@ describe("contribute", () => {
     stub.reset()
     vi.stubEnv("VSCODE_TEST_OPTIONS", "{}")
     contribute(ctx(), loadCorpus())
-    expect(stub.registrations.filter(r => r === "command")).toHaveLength(2)
+    expect(stub.registrations.filter(r => r === "command")).toHaveLength(1)
     vi.unstubAllEnvs()
   })
 
-  test("a zsh-path setting change re-resolves the binary, then re-checks open documents", () => {
-    contribute(ctx(), loadCorpus())
+  // The zsh gate is configured from settings before each diagnostics pass
+  // that reads it: at activation, and again when the setting changes.
+  test("zsh is configured before open documents are checked; a zsh-path change repeats both", () => {
+    const configuredBeforeChecked = () =>
+      expect(zsh.configureZsh.mock.invocationCallOrder.at(-1)).toBeLessThan(
+        zsh.zshCheck.mock.invocationCallOrder.at(-1) ?? 0,
+      )
     stub.openDocs({
       uri: { scheme: "file", toString: () => "file:///a.zsh" },
-      languageId: "zsh",
+      languageId: ZSH_LANG_ID,
       version: 1,
       isClosed: false,
       getText: () => "echo",
     })
-    zsh.zshCheck.mockClear()
-    stub.fire("config", {
-      affectsConfiguration: (k: string) => k === "betterZsh.zshPath",
-    })
+    contribute(ctx(), loadCorpus())
     expect(zsh.configureZsh).toHaveBeenCalledTimes(1)
     expect(zsh.zshCheck).toHaveBeenCalledTimes(1)
-    expect(zsh.configureZsh.mock.invocationCallOrder[0]).toBeLessThan(
-      zsh.zshCheck.mock.invocationCallOrder[0] ?? 0,
-    )
+    configuredBeforeChecked()
+
+    stub.fire("config", {
+      affectsConfiguration: (k: string) => k === settings.zshPath.key,
+    })
+    expect(zsh.configureZsh).toHaveBeenCalledTimes(2)
+    expect(zsh.zshCheck).toHaveBeenCalledTimes(2)
+    configuredBeforeChecked()
+
     stub.fire("config", { affectsConfiguration: () => false })
-    expect(zsh.configureZsh).toHaveBeenCalledTimes(1)
+    expect(zsh.configureZsh).toHaveBeenCalledTimes(2)
   })
 })

@@ -1,16 +1,6 @@
 import * as assert from "node:assert"
 import * as vscode from "vscode"
-import { openFixture } from "./helpers"
-
-async function highlights(doc: vscode.TextDocument, pos: vscode.Position) {
-  return (
-    (await vscode.commands.executeCommand<vscode.DocumentHighlight[]>(
-      "vscode.executeDocumentHighlights",
-      doc.uri,
-      pos,
-    )) ?? []
-  )
-}
+import { highlightTexts, openFixture, rangeTexts } from "./helpers"
 
 async function rename(
   doc: vscode.TextDocument,
@@ -34,13 +24,6 @@ async function symbols(doc: vscode.TextDocument) {
   )
 }
 
-function texts(
-  doc: vscode.TextDocument,
-  ranges: readonly { range: vscode.Range }[],
-) {
-  return ranges.map(({ range }) => doc.getText(range)).sort()
-}
-
 suite("ZshNavigation", () => {
   let doc: vscode.TextDocument
 
@@ -49,24 +32,23 @@ suite("ZshNavigation", () => {
   })
 
   test("highlights skip comments", async () => {
-    const got = await highlights(doc, new vscode.Position(1, 1))
-    assert.deepStrictEqual(texts(doc, got), ["my-func", "my-func", "my-func"])
+    const texts = await highlightTexts(doc, new vscode.Position(1, 1))
+    assert.deepStrictEqual(texts, ["my-func", "my-func", "my-func"])
   })
 
   test("rename is function-only", async () => {
     const edit = await rename(doc, new vscode.Position(1, 1), "our-func")
     assert.ok(edit, "expected rename edit")
-    const items = edit
-      .entries()
-      .flatMap(([uri, edits]) => edits.map(edit => [uri, edit] as const))
+    const edits = edit.entries().flatMap(([, edits]) => edits)
     assert.deepStrictEqual(
-      items.map(([, edit]) => edit.newText),
+      edits.map(e => e.newText),
       ["our-func", "our-func", "our-func"],
     )
-    assert.deepStrictEqual(
-      items.map(([, edit]) => doc.getText(edit.range)).sort(),
-      ["my-func", "my-func", "my-func"],
-    )
+    assert.deepStrictEqual(rangeTexts(doc, edits), [
+      "my-func",
+      "my-func",
+      "my-func",
+    ])
   })
 
   test("outline lists functions", async () => {

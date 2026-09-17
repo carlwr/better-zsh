@@ -5,7 +5,9 @@ export const outDir = join(pkgDir, "out")
 // Package-local: the staged root must not depend on enclosing-repo layout or
 // ignore rules.
 export const stagedExtensionDir = join(pkgDir, ".tmp", "staged-extension")
-const zshAssetsDir = join(pkgDir, "src", "assets", "zsh")
-
-export const snippetsPath = join(zshAssetsDir, "snippets.jsonc")
-export const bashDiffsPath = join(zshAssetsDir, "bash-differences.md")
+export const chatInstructionsMd = join(
+  pkgDir,
+  "src",
+  "manifest",
+  "chat-instructions.md",
+)

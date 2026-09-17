@@ -8,7 +8,9 @@ import { rm_rf } from "@carlwr/typescript-extra/node"
 import * as vscode from "vscode"
 import { ZSH_DIAGNOSTIC_SOURCE, ZSH_LANG_ID } from "../../ids"
 
-const fixtureDir = path.resolve(__dirname, "../../../test-fixtures")
+/** The package dir: compiled suites sit at `<pkg>/.vscode-test/test/<suite>/`. */
+export const pkgDir = path.resolve(__dirname, "../../..")
+const fixtureDir = path.join(pkgDir, "test-fixtures")
 
 export const hasZsh = cached(() => {
   try {
@@ -19,27 +21,29 @@ export const hasZsh = cached(() => {
   }
 })
 
-export async function openFixture(name: string, delay = 500) {
-  const uri = vscode.Uri.file(path.join(fixtureDir, name))
-  return openDoc(uri, delay)
-}
-
-export async function openText(text: string, delay = 500) {
-  const doc = await vscode.workspace.openTextDocument({
-    language: ZSH_LANG_ID,
-    content: text,
-  })
+/** Show `doc`, then give providers `delay` ms to settle. */
+async function shown(doc: vscode.TextDocument, delay: number) {
   await vscode.window.showTextDocument(doc)
   await new Promise(r => setTimeout(r, delay))
   return doc
 }
 
-async function openDoc(uri: vscode.Uri, delay: number) {
-  const doc = await vscode.workspace.openTextDocument(uri)
-  await vscode.window.showTextDocument(doc)
-  await new Promise(r => setTimeout(r, delay))
-  return doc
-}
+export const openFixture = async (name: string, delay = 500) =>
+  shown(
+    await vscode.workspace.openTextDocument(
+      vscode.Uri.file(path.join(fixtureDir, name)),
+    ),
+    delay,
+  )
+
+export const openText = async (text: string, delay = 500) =>
+  shown(
+    await vscode.workspace.openTextDocument({
+      language: ZSH_LANG_ID,
+      content: text,
+    }),
+    delay,
+  )
 
 export async function completionLabels(
   doc: vscode.TextDocument,
@@ -72,6 +76,26 @@ export async function hoverText(
     .map(c => (typeof c === "string" ? c : (c as { value: string }).value))
     .join("\n\n")
 }
+
+/** The texts under the document highlights at `pos`, sorted. */
+export async function highlightTexts(
+  doc: vscode.TextDocument,
+  pos: vscode.Position,
+) {
+  const hl = await vscode.commands.executeCommand<vscode.DocumentHighlight[]>(
+    "vscode.executeDocumentHighlights",
+    doc.uri,
+    pos,
+  )
+  assert.ok(hl, "expected highlights")
+  return rangeTexts(doc, hl)
+}
+
+/** The text under each range, sorted. */
+export const rangeTexts = (
+  doc: vscode.TextDocument,
+  ranges: readonly { range: vscode.Range }[],
+) => ranges.map(({ range }) => doc.getText(range)).sort()
 
 export function zshDiagnostics(uri: vscode.Uri) {
   return vscode.languages

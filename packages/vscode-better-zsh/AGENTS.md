@@ -6,12 +6,23 @@ VS Code extension package: editor providers and host-zsh execution.
 
 `src/`:
 
-- `manifest.ts` — the manifest's contribution points; `vscode`-free, staged into the published `package.json`
-- `manifest/` — per-contribution-point data (`associations.ts`: which files open as zsh)
+- `manifest.ts` + `manifest/` — the manifest's contribution points, staged into the published `package.json`; per-point data and generated-asset sources under `manifest/`
 - `contributions.ts` — everything registered at activation
-- `editor/` — language-feature providers, wiring zsh-core analysis + doc records to VS Code APIs
-  - reusable parsing/rendering belongs in pure helpers; provider-local dispatch may stay here
+- `editor/` — one module per language feature: providers wiring zsh-core analysis + doc records to VS Code APIs
+  - provider-local dispatch stays here; reusable parsing goes to `document/`
+- `document/` — per-document models the providers share
+- `settings.ts` — the settings boundary: raw configuration values parsed into domain types
+- `zsh.ts` + `zsh/` — host zsh execution; `zsh.ts` is the single gate
+- `build/` — asset generation and extension staging
+- `test/` — unit tests mirror `src/`; Electron-hosted suites in their own subdirs (`vitest.config.ts` excludes them)
 - everything else at the root
+
+### The two inventories
+
+`manifest.ts` and `contributions.ts` are the inventories of what the extension adds — static and runtime. Keep them readable as such: declarative, one entry per contribution, no logic — data and dispatch live in `manifest/` and `editor/`.
+
+- `manifest.ts` and `manifest/` load outside VS Code (the build imports them): no `vscode` imports
+- contribution sources are typed TS modules; nothing is parsed and validated at build time
 
 ## Packaging
 
@@ -43,9 +54,9 @@ The zsh-path matrix harness (`scripts/testINTERACTIVE-zsh-path-matrix`) is CI/Do
 
 ## Gotchas
 
-**Delimiter-like reserved-word facts are filtered out** in the semantic token provider (`{`, `[[`, …); the analysis layer may still emit them for other editor features. Token types and modifiers are declared in `src/manifest.ts`, beside their TM scope mapping.
+**Delimiter-like reserved-word facts are filtered out** in the semantic token provider (`{`, `[[`, …); the analysis layer may still emit them for other editor features. Token types and modifiers are declared under `src/manifest/`, beside their TM scope mapping.
 
-**Zsh process env isolation:** spawned zsh processes receive only an explicit allowlist of env vars. Check the zsh exec module in `src/` if a subprocess is missing an expected variable (search for `ZSH_ENV_KEEP` or `ZSH_ENV_DROP`).
+**Zsh process env isolation:** spawned zsh processes receive only an explicit allowlist of env vars. Check the exec module under `src/zsh/` if a subprocess is missing an expected variable (search for `ZSH_ENV_KEEP` or `ZSH_ENV_DROP`).
 
 **Zsh binary setting is hardened at the settings boundary** (`parseZshPath`, `src/settings.ts`): relative paths are rejected as invalid config, never resolved against workspace or cwd.
 

@@ -1,41 +1,35 @@
-// Everything the extension registers at activation, in one place. The other
-// half — the manifest's contribution points (language, grammar, snippets,
-// settings, …) — is `manifest.ts`.
-
 import type { DocCorpus } from "@carlwr/zsh-core"
 import * as vscode from "vscode"
-import { evictDocCaches } from "./cache"
+import { evictDocCaches } from "./document/cache"
 import { CompletionProvider } from "./editor/completions"
-import { DefinitionProvider } from "./editor/definition"
 import { setupDiagnostics } from "./editor/diagnostics"
 import { DocLinkProvider } from "./editor/doc-link"
-import { HighlightProvider } from "./editor/highlight"
 import { HoverProvider } from "./editor/hover"
-import { ReferenceProvider } from "./editor/references"
-import { RenameProvider } from "./editor/rename"
+import {
+  DefinitionProvider,
+  HighlightProvider,
+  ReferenceProvider,
+  RenameProvider,
+  SymbolProvider,
+  WorkspaceSymbolProvider,
+} from "./editor/navigation"
 import {
   SEMANTIC_LEGEND,
   SemanticTokensProvider,
 } from "./editor/semantic-tokens"
-import { SymbolProvider } from "./editor/symbols"
-import { WorkspaceSymbolProvider } from "./editor/workspace-symbols"
-import {
-  BETTER_ZSH_TEST_GET_LOGS,
-  BETTER_ZSH_TEST_GET_SEMANTIC_TOKENS,
-  ZSH_LANG_ID,
-} from "./ids"
+import { BETTER_ZSH_TEST_GET_LOGS, ZSH_LANG_ID } from "./ids"
 import { recentLogs } from "./log"
-import { readZshPathConfig, ZSH_PATH_KEY } from "./settings"
+import { settings } from "./manifest/settings"
+import { onDidChangeSetting, readZshPathConfig } from "./settings"
 import { configureZsh } from "./zsh"
 
 const { commands, languages, workspace } = vscode
 
 export function contribute(ctx: vscode.ExtensionContext, corpus: DocCorpus) {
   const zsh = ZSH_LANG_ID
-  const semanticTokens = new SemanticTokensProvider(
-    corpus.builtin.keys(),
-    corpus.reserved_word.keys(),
-  )
+
+  // ── Host zsh: configured before the first diagnostics pass reads it ──
+  configureZsh(readZshPathConfig())
   const diagnostics = setupDiagnostics()
 
   ctx.subscriptions.push(
@@ -47,7 +41,10 @@ export function contribute(ctx: vscode.ExtensionContext, corpus: DocCorpus) {
     ),
     languages.registerDocumentSemanticTokensProvider(
       zsh,
-      semanticTokens,
+      new SemanticTokensProvider(
+        corpus.builtin.keys(),
+        corpus.reserved_word.keys(),
+      ),
       SEMANTIC_LEGEND,
     ),
 
@@ -64,8 +61,7 @@ export function contribute(ctx: vscode.ExtensionContext, corpus: DocCorpus) {
 
     // ── Host zsh: `zsh -n` diagnostics; binary re-resolved on setting change ──
     diagnostics,
-    workspace.onDidChangeConfiguration(e => {
-      if (!e.affectsConfiguration(ZSH_PATH_KEY)) return
+    onDidChangeSetting(settings.zshPath, () => {
       configureZsh(readZshPathConfig())
       diagnostics.relintAll()
     }),
@@ -73,18 +69,9 @@ export function contribute(ctx: vscode.ExtensionContext, corpus: DocCorpus) {
     // ── Per-document caches ──
     workspace.onDidCloseTextDocument(evictDocCaches),
 
-    // ── Test hooks (VS Code test runs only) ──
+    // ── Test hook (VS Code test runs only) ──
     ...(process.env.VSCODE_TEST_OPTIONS
-      ? [
-          commands.registerCommand(BETTER_ZSH_TEST_GET_LOGS, recentLogs),
-          commands.registerCommand(
-            BETTER_ZSH_TEST_GET_SEMANTIC_TOKENS,
-            async (uri: vscode.Uri) => {
-              const doc = await workspace.openTextDocument(uri)
-              return [...semanticTokens.provideDocumentSemanticTokens(doc).data]
-            },
-          ),
-        ]
+      ? [commands.registerCommand(BETTER_ZSH_TEST_GET_LOGS, recentLogs)]
       : []),
   )
 }

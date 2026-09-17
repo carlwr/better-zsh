@@ -1,7 +1,7 @@
 import type { DocCorpus } from "@carlwr/zsh-core"
 import { docCategories } from "@carlwr/zsh-core/taxonomy"
 import type * as vscode from "vscode"
-import { WORD } from "../editor/words"
+import { WORD } from "../document/words"
 
 let id = 0
 

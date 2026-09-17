@@ -1,18 +1,11 @@
-type Brand<T, B extends string> = T & { readonly __brand: B }
+import type { Brand } from "@carlwr/zsh-core/types"
 
-const brand = <B extends string>(raw: string) => raw as Brand<string, B>
-
-export type ZshBinary = Brand<string, "ZshBinary">
-export const mkZshBinary = (raw: string) => brand<"ZshBinary">(raw)
+const id = <B extends string>(raw: string) => raw as Brand<string, B>
 
 export const BETTER_ZSH_DISPLAY_NAME = "Better Zsh"
-export const ZSH_LANG_ID = brand<"LangId">("zsh")
-export const BETTER_ZSH_EXT_ID = brand<"ExtId">("carlwr.better-zsh")
-export const BETTER_ZSH_CONFIG = brand<"ConfigSection">("betterZsh")
-export const ZSH_DIAGNOSTIC_SOURCE = brand<"DiagnosticSource">("zsh")
-export const BETTER_ZSH_TEST_GET_LOGS = brand<"CommandId">(
+export const ZSH_LANG_ID = id<"LangId">("zsh")
+export const BETTER_ZSH_CONFIG = id<"ConfigSection">("betterZsh")
+export const ZSH_DIAGNOSTIC_SOURCE = id<"DiagnosticSource">("zsh")
+export const BETTER_ZSH_TEST_GET_LOGS = id<"CommandId">(
   "betterZsh.__test.getLogs",
-)
-export const BETTER_ZSH_TEST_GET_SEMANTIC_TOKENS = brand<"CommandId">(
-  "betterZsh.__test.getSemanticTokens",
 )

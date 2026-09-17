@@ -1,86 +1,60 @@
 import { describe, expect, test, vi } from "vitest"
-import { mkZshBinary } from "../ids"
-import {
-  parseZshPath,
-  readZshPathConfig,
-  type ZshPathConfig,
-} from "../settings"
+import { recentLogs } from "../log"
+import { parseZshPath, type ZshPathConfig } from "../settings"
 import { configureZsh, zshCheck, zshTokenize } from "../zsh"
-import type { ZshRunResult } from "../zsh-exec"
-import { stub } from "./vscode-stub"
+import { mkZshBinary, type ZshBinary } from "../zsh/binary"
+import type { ZshRunResult } from "../zsh/exec"
 
 const exec = vi.hoisted(() => ({
   spy: undefined as
     | ((binary: string) => Promise<ZshRunResult> | undefined)
     | undefined,
 }))
-vi.mock("../zsh-exec", async importOriginal => {
-  const real = await importOriginal<typeof import("../zsh-exec")>()
+vi.mock("../zsh/exec", async importOriginal => {
+  const real = await importOriginal<typeof import("../zsh/exec")>()
   return {
     ...real,
-    execZsh: (binary: string, req: Parameters<typeof real.execZsh>[1]) =>
+    execZsh: (binary: ZshBinary, req: Parameters<typeof real.execZsh>[1]) =>
       exec.spy?.(binary) ?? real.execZsh(binary, req),
   }
 })
 
 const def = () => parseZshPath("")
 
-async function expectGated(cfg: ZshPathConfig) {
+/** Runtime features stay silent, and the resolution is logged (the container matrix greps for `logged`). */
+async function expectGated(cfg: ZshPathConfig, logged: string) {
   configureZsh(cfg)
   try {
     expect(await zshTokenize("echo hi")).toEqual([])
     expect(await zshCheck("if")).toEqual({ kind: "unavailable" })
+    expect(recentLogs()).toContain(`info: zsh: ${logged}`)
   } finally {
     configureZsh(def())
   }
 }
 
-describe("parseZshPath", () => {
-  test.each<[string, ZshPathConfig]>([
-    ["off", { kind: "disabled" }],
-    ["", { kind: "default", binary: mkZshBinary("zsh") }],
-    [
-      "/usr/local/bin/zsh",
-      { kind: "explicit", binary: mkZshBinary("/usr/local/bin/zsh") },
-    ],
-    ["./zsh", { kind: "invalid", raw: "./zsh", reason: "relative path" }],
-    ["bin/zsh", { kind: "invalid", raw: "bin/zsh", reason: "relative path" }],
-  ])("%j", (raw, want) => {
-    expect(parseZshPath(raw)).toEqual(want)
-  })
-
-  // Settings JSON may hold any type; `null` reads as unset.
-  test.each<[unknown, ZshPathConfig]>([
-    [false, { kind: "invalid", raw: "false", reason: "not a string" }],
-    [123, { kind: "invalid", raw: "123", reason: "not a string" }],
-    [null, { kind: "default", binary: mkZshBinary("zsh") }],
-  ])("setting %j", (value, want) => {
-    stub.config.set("betterZsh.zshPath", value)
-    expect(readZshPathConfig()).toEqual(want)
-    stub.config.clear()
-  })
-})
-
 describe("zsh mode gating", () => {
-  test.each<[string, ZshPathConfig]>([
-    ["disabled", { kind: "disabled" }],
+  test.each<[string, ZshPathConfig, string]>([
+    ["disabled", { kind: "disabled" }, "disabled via betterZsh.zshPath=off"],
     [
       "explicit nonexistent",
       { kind: "explicit", binary: mkZshBinary("/nonexistent/zsh-binary") },
+      "configured path /nonexistent/zsh-binary (not found)",
     ],
     [
       "invalid relative",
       { kind: "invalid", raw: "./zsh", reason: "relative path" },
+      "invalid configured path ./zsh (relative path)",
     ],
-  ])("%s", async (_, cfg) => {
-    await expectGated(cfg)
+  ])("%s", async (_, cfg, logged) => {
+    await expectGated(cfg, logged)
   })
 
   test("empty PATH gates runtime features", async () => {
     const origPath = process.env.PATH
     process.env.PATH = ""
     try {
-      await expectGated(def())
+      await expectGated(def(), "PATH lookup for zsh -> unresolved")
     } finally {
       process.env.PATH = origPath
     }

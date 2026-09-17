@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs"
 import { dirname, isAbsolute, join } from "node:path"
 import * as vscode from "vscode"
-import { activeText } from "./words"
+import { activeText } from "../document/words"
 
 // `source <path>` / `. <path>` wherever a word starts — not only at command
 // position; the operand is a quoted string or a word up to shell punctuation.

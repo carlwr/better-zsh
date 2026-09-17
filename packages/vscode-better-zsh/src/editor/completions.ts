@@ -12,34 +12,31 @@ import {
 } from "@carlwr/zsh-core/taxonomy"
 import type { CondOpDoc, Documented } from "@carlwr/zsh-core/types"
 import * as vscode from "vscode"
-import { asyncDocCache } from "../cache"
+import { asyncDocCache } from "../document/cache"
+import { contextAt } from "../document/facts"
+import { filterTokens, WORD, WORD_EXACT } from "../document/words"
 import { zshTokenize } from "../zsh"
-import { contextAt } from "./facts"
 import { matchOptions } from "./option-match"
-import { filterTokens, WORD, WORD_EXACT } from "./words"
 
-const getIds = asyncDocCache(async doc =>
+/** Word-like tokens of the document, as the host zsh splits it. */
+const fileWords = asyncDocCache(async doc =>
   filterTokens(await zshTokenize(doc.getText())),
 )
 
 const { CompletionItemKind: Kind } = vscode
 
-/** Categories offered at general positions: word-named records only. */
-type WordCategory =
-  | "builtin"
-  | "reserved_word"
-  | "precmd_modifier"
-  | "special_param"
-
-const wordCategories: readonly (readonly [
-  WordCategory,
-  vscode.CompletionItemKind,
-])[] = [
+/** Categories offered at general positions — word-named records only — with their item kind. */
+const wordCategories = [
   ["builtin", Kind.Keyword],
   ["reserved_word", Kind.Keyword],
   ["precmd_modifier", Kind.Keyword],
   ["special_param", Kind.Variable],
-]
+] as const satisfies readonly (readonly [
+  DocCategory,
+  vscode.CompletionItemKind,
+])[]
+
+type WordCategory = (typeof wordCategories)[number][0]
 
 export class CompletionProvider implements vscode.CompletionItemProvider {
   private general: vscode.CompletionItem[]
@@ -79,11 +76,11 @@ export class CompletionProvider implements vscode.CompletionItemProvider {
     doc: vscode.TextDocument,
     pos: vscode.Position,
   ) {
-    const ids = await getIds(doc)
+    const words = await fileWords(doc)
     const cur = wordTextAt(doc, pos)
-    const items = ids
-      .filter(id => id !== cur && !this.generalLabels.has(id))
-      .map(id => new vscode.CompletionItem(id, Kind.Text))
+    const items = words
+      .filter(w => w !== cur && !this.generalLabels.has(w))
+      .map(w => new vscode.CompletionItem(w, Kind.Text))
     return [...items, ...this.general.filter(b => b.label !== cur)]
   }
 

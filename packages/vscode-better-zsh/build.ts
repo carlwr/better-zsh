@@ -1,4 +1,5 @@
 import { build } from "tsup"
+import { stageExtension } from "./src/build/extension-stage"
 import { generateAssets } from "./src/build/generate-assets"
 import { outDir } from "./src/build/paths"
 
@@ -23,4 +24,5 @@ import { outDir } from "./src/build/paths"
     },
   })
   generateAssets()
+  stageExtension()
 })()

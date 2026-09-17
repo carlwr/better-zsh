@@ -9,7 +9,7 @@ import { describe, expect, test } from "vitest"
  * Every non-glob `package.json` `exports` subpath is advertised as
  * execution-free, network-free, and env-agnostic: it parses bundled Yodl
  * sources and renders markdown. zsh-core never executes a shell — hosts that
- * run a zsh binary own that code (see the extension's `zsh-exec.ts`).
+ * run a zsh binary own that code (see the extension's `zsh/` modules).
  */
 
 const here = dirname(fileURLToPath(import.meta.url))

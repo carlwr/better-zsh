@@ -58,7 +58,6 @@
     "@vscode/test-electron": "^3.1.0",
     "@vscode/vsce": "^4.0.0",
     "fast-check": "^4.10.1",
-    "jsonc-parser": "^3.3.1",
     "tsup": "^8.5.1",
     "tsx": "^4.23.13",
     "typedoc": "^0.28.20",

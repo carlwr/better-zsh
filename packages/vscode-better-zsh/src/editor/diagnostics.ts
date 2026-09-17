@@ -1,8 +1,9 @@
 import * as vscode from "vscode"
 import { ZSH_DIAGNOSTIC_SOURCE, ZSH_LANG_ID } from "../ids"
-import { DIAGNOSTICS_ENABLED_KEY, readDiagnosticsEnabled } from "../settings"
+import { settings } from "../manifest/settings"
+import { onDidChangeSetting, readDiagnosticsEnabled } from "../settings"
 import { zshCheck } from "../zsh"
-import type { ZshError } from "../zsh-protocol"
+import type { ZshError } from "../zsh/protocol"
 
 const DEBOUNCE_MS = 500
 
@@ -63,9 +64,7 @@ export function setupDiagnostics(): Diagnostics {
     vscode.workspace.onDidSaveTextDocument(lint),
     vscode.workspace.onDidChangeTextDocument(e => lintDebounced(e.document)),
     vscode.workspace.onDidCloseTextDocument(forget),
-    vscode.workspace.onDidChangeConfiguration(e => {
-      if (e.affectsConfiguration(DIAGNOSTICS_ENABLED_KEY)) relintAll()
-    }),
+    onDidChangeSetting(settings.diagnosticsEnabled, relintAll),
   )
   return { dispose: () => disposable.dispose(), relintAll }
 }
