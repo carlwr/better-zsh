@@ -10,19 +10,19 @@ import type { QueryExpansion } from "../../../nlp/core/rules"
 const rule = (when: string[], add: string): QueryExpansion => ({ when, add })
 
 describe("expandQueryForEmbedding", () => {
-  it("appends_canonical_on_trigger", () => {
+  it("appends the canonical term on a trigger", () => {
     const rules = [rule(["setting", "settings"], "option")]
     expect(expandQueryForEmbedding("toggle a setting", rules)).toBe(
       "toggle a setting option",
     )
   })
 
-  it("no_trigger_leaves_query_untouched", () => {
+  it("no trigger leaves the query untouched", () => {
     const rules = [rule(["setting"], "option")]
     expect(expandQueryForEmbedding("list aliases", rules)).toBe("list aliases")
   })
 
-  it("canonical_already_present_is_not_appended", () => {
+  it("a canonical term already present is not appended", () => {
     const rules = [rule(["setting"], "option")]
     // "options" is a different word; "option" as a whole word is present here,
     // so the exact canonical word blocks the append.
@@ -31,7 +31,7 @@ describe("expandQueryForEmbedding", () => {
     )
   })
 
-  it("whole_word_only_no_substring_trigger", () => {
+  it("a trigger matches whole words only", () => {
     const rules = [rule(["env"], "environment")]
     // "prevent" contains "env" as a substring but not as a word.
     expect(expandQueryForEmbedding("prevent errors", rules)).toBe(
@@ -39,7 +39,7 @@ describe("expandQueryForEmbedding", () => {
     )
   })
 
-  it("append_count_is_capped", () => {
+  it("the append count is capped", () => {
     const rules = [rule(["a"], "one"), rule(["b"], "two"), rule(["c"], "three")]
     expect(expandQueryForEmbedding("a b c", rules)).toBe("a b c one two")
   })

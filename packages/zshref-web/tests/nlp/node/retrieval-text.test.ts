@@ -21,7 +21,7 @@ import {
 const noGroups: string[][] = []
 
 describe("recordText", () => {
-  it("generic_record_text_uses_structured_fields_and_body", () => {
+  it("uses the structured fields and the body", () => {
     const rec: JsonRecord = {
       op: "-nt",
       operands: ["file1", "file2"],

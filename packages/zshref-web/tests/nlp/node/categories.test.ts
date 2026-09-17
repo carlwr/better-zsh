@@ -8,7 +8,7 @@ import { categoriesJson } from "../../../nlp/node/categories"
 import { assertCommittedJson, PATHS } from "../../_helpers"
 
 describe("categories.json", () => {
-  it("categories_json_matches_committed_file", async () => {
+  it("matches the committed file", async () => {
     await assertCommittedJson(
       PATHS.categoriesJson,
       categoriesJson(),

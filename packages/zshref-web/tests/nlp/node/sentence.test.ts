@@ -61,7 +61,7 @@ const versioned = (body: string): string =>
   `version: ${SENTENCE_FIXTURE_VERSION}\n${body}`
 
 describe("committed sentence fixture", () => {
-  it("sentence_fixture_loads_and_validates", async () => {
+  it("loads and validates", async () => {
     const f = await loadSentenceFixture()
     expect(f.entries.length).toBeGreaterThan(0)
     for (const e of f.entries) expect(e.query.trim()).not.toBe("")
@@ -69,7 +69,7 @@ describe("committed sentence fixture", () => {
 
   /** Every expected item names a corpus record. Pure on the corpus. A
    * missing holdout item is reported by position only. */
-  it("sentence_fixture_expected_records_exist", async () => {
+  it("every expected record exists", async () => {
     const f = await loadSentenceFixture()
     const missing = f.entries.flatMap((e, i) =>
       e.want.flatMap((item, j) => {
@@ -100,7 +100,7 @@ describe("sentence eval report", () => {
     STAGED.model,
   ])
 
-  it("sentence_fixture_eval_report", async ctx => {
+  it("the report", async ctx => {
     if (skipReason) ctx.skip(skipReason)
     const assets = await loadEvalAssets()
     const r = await evalSentence(await loadSentenceFixture(), assets)
@@ -112,7 +112,7 @@ describe("sentence eval report", () => {
 })
 
 describe("score", () => {
-  it("score_is_per_category_normalized", () => {
+  it("is per-category normalized", () => {
     // A: 10 votes, all hit; B: 1 vote, a miss. Total (1 + 0) / 2, whatever
     // the per-category vote counts.
     const votes = Array.from({ length: 10 }, () => vote("A", 1, 1, "train"))
@@ -123,13 +123,13 @@ describe("score", () => {
     expect(s.perCategory.get("B")).toBeCloseTo(0, 6)
   })
 
-  it("score_respects_vote_weights", () => {
+  it("respects vote weights", () => {
     // One category: a hit at weight 3, a miss at weight 1 → 3/4.
     const s = score([vote("X", 3, 1, "train"), vote("X", 1, 0, "train")])
     expect(s.total).toBeCloseTo(0.75, 6)
   })
 
-  it("score_split_partitions_by_split", () => {
+  it("scoreSplit partitions by split", () => {
     const votes = [vote("X", 1, 0, "train"), vote("X", 1, 1, "holdout")]
     expect(scoreSplit(votes, "train").total).toBeCloseTo(0, 6)
     expect(scoreSplit(votes, "holdout").total).toBeCloseTo(1, 6)
@@ -147,7 +147,7 @@ describe("score", () => {
 })
 
 describe("gain", () => {
-  it("discount_g_is_normalized_and_monotone", () => {
+  it("is normalized and monotone", () => {
     // gain(1) == 1 whatever the target depth.
     for (const d of [1, 3, 5]) expect(gain(1, d, BETA)).toBeCloseTo(1, 6)
     // Decreasing in the rank, staying positive (polynomial tail).
@@ -287,7 +287,7 @@ describe("fixture shape", () => {
 })
 
 describe("eval over the parity index", () => {
-  it("multi_item_entry_yields_one_vote_per_item", async () => {
+  it("a multi-item entry yields one vote per item", async () => {
     const assets = parityRankAssets(corpus, await loadRulesYaml())
     const { index } = assets
     // Three items in one category at a depth far past the index's few

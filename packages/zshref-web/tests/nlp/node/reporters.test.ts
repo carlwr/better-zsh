@@ -134,7 +134,7 @@ describe("reporters over the staged assets, capped", () => {
     bench = await loadBench(assets, () => {}, CAP)
   }, 180_000)
 
-  it("tune_dashboard_full_tier", async ctx => {
+  it("the dashboard, full tier", async ctx => {
     if (skipReason) ctx.skip(skipReason)
     const tuning = composedBase(assets.rules.tuning, SPEC)
     const dash = await buildDashboard(assets, tuning, {
@@ -214,7 +214,7 @@ describe("reporters over the staged assets, capped", () => {
     expect(lines.at(-1)).toBe("")
   }, 300_000)
 
-  it("tune_sweep_as_the_reporter_composes_it", async ctx => {
+  it("the sweep, as the reporter composes it", async ctx => {
     if (skipReason) ctx.skip(skipReason)
     const base = assets.rules.tuning
     const baseScores = scoreBench(bench, base)
@@ -257,7 +257,7 @@ describe("reporters over the staged assets, capped", () => {
     expect(text.endsWith(SWEEP_FOOTER)).toBe(true)
   }, 120_000)
 
-  it("tune_diff_of_a_candidate", async ctx => {
+  it("the diff of a candidate", async ctx => {
     if (skipReason) ctx.skip(skipReason)
     const base = assets.rules.tuning
     const text = renderTuneDiff(bench, base, composedBase(base, SPEC), SPEC)
@@ -294,7 +294,7 @@ describe("reporters over the staged assets, capped", () => {
     }
   }, 120_000)
 
-  it("qa_score_report_with_summary_json", async ctx => {
+  it("the QA report, with its summary JSON", async ctx => {
     if (skipReason) ctx.skip(skipReason)
     const hard = await scoreHardChecks(
       hardChecks(assets.corpus).slice(0, CAP),

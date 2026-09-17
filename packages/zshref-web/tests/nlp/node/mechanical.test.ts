@@ -71,7 +71,7 @@ describe("nl questions", () => {
 // Pure on the corpus, but two contract builds each: seconds on a loaded CI worker.
 describe("build", () => {
   /** Non-trivial, every entry well-formed, in build order: the contract's decorated phrasings, then the questions. */
-  it("mechanical_build_is_well_formed", () => {
+  it("is well-formed, in build order", () => {
     const entries = buildMechanical(corpus)
     const decorated = buildLookupContract(corpus).entries.filter(
       e => e.phrasingKind !== "bare",
@@ -211,7 +211,7 @@ describe("mechanical eval over the staged assets", () => {
   ])
   const assets = memoized(loadEvalAssets)
 
-  it("mechanical_smoke", async ctx => {
+  it("a capped smoke has the eval shape", async ctx => {
     if (skipReason) ctx.skip(skipReason)
     const a = await assets()
     const entries = buildMechanical(a.corpus).slice(0, MECHANICAL_SMOKE_LIMIT)
@@ -224,7 +224,7 @@ describe("mechanical eval over the staged assets", () => {
     )
   }, 180_000)
 
-  it("mechanical_sentences_report", async ctx => {
+  it("the full report", async ctx => {
     if (process.env.BZ_NLP_SLOW !== "1")
       ctx.skip("slow (embeds thousands of queries) — opt in with BZ_NLP_SLOW=1")
     if (skipReason) ctx.skip(skipReason)

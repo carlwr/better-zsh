@@ -282,7 +282,7 @@ const skipReason = artifactGate("built index", [STAGED.index])
 const staged = memoized(() => readIndex(PATHS.indexJson))
 
 describe("built index", () => {
-  it("validate_rejects_tampered_index", async ctx => {
+  it("validates the staged index and rejects it tampered", async ctx => {
     if (skipReason) ctx.skip(skipReason)
     const index = await staged()
     expect(validateIndex(index, corpus, rules)).toEqual({ ok: true })

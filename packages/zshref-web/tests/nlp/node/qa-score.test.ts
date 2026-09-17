@@ -119,7 +119,7 @@ describe("scoreEntry", () => {
     expect(scoreEntry(entry({ ...q, ...over }), matches)).toMatchObject(want)
   })
 
-  it("defaults_come_from_the_shape", () => {
+  it("defaults come from the shape", () => {
     expect(entry({ ...q, expected: [exp("a", 1)] })).toMatchObject({
       limit: 20,
       weight: 1,
@@ -191,7 +191,7 @@ describe("aggregateScores", () => {
     warnings = 0,
   ): EntryScore => ({ score, expectedWeight, matched: 0, warnings })
 
-  it("empty_corpus_averages_zero", () => {
+  it("an empty corpus averages zero", () => {
     expect(aggregateScores([])).toEqual({
       avgScore: 0,
       totalWeightedScore: 0,
@@ -240,7 +240,7 @@ describe("aggregateScores", () => {
 })
 
 describe("hard-check templates", () => {
-  it("render_the_display_form_into_a_question", () => {
+  it("render the display form into a question", () => {
     for (const cat of hardCheckCategories()) {
       const template = hardCheckTemplates[cat]
       if (!template) throw new Error(`no template for ${cat}`)
@@ -248,13 +248,13 @@ describe("hard-check templates", () => {
     }
   })
 
-  it("name_doc_categories_only", () => {
+  it("name doc categories only", () => {
     const cats = hardCheckCategories()
     expect(cats.length).toBeGreaterThan(0)
     expect(cats.every(c => docCategories.includes(c))).toBe(true)
   })
 
-  it("enumerate_every_record_of_a_templated_category", () => {
+  it("enumerate every record of a templated category", () => {
     const corpus = loadCorpus()
     const checks = hardChecks(corpus)
     const cats = hardCheckCategories()
@@ -287,7 +287,7 @@ describe("renderQa", () => {
     { score: 1.5, expectedWeight: 2, matched: 1, warnings: 1 },
   ])
 
-  it("prints_the_hard_section_then_the_summary_lines", () => {
+  it("prints the hard section, then the summary lines", () => {
     expect(renderQa(hard, scored)).toBe(
       [
         "=== Hard checks (per-category self-retrieval) ===",
@@ -308,7 +308,7 @@ describe("renderQa", () => {
     )
   })
 
-  it("summary_json_rounds_to_one_decimal", () => {
+  it("the summary JSON rounds to one decimal", () => {
     const s = aggregateScores([
       { score: 1, expectedWeight: 3, matched: 1, warnings: 0 },
     ])
@@ -320,12 +320,12 @@ describe("renderQa", () => {
 })
 
 describe("qa corpus", () => {
-  it("nlp_corpus_matches_schema", async () => {
+  it("the committed corpus loads", async () => {
     const corpus = await loadQaCorpus()
     expect(corpus.entries.length).toBeGreaterThan(0)
   })
 
-  it("rejects_an_unknown_entry_key_and_an_empty_expected_set", () => {
+  it("rejects an unknown entry key and an empty expected set", () => {
     const ok = { entries: [{ query: "x", expected: [exp("a", 1)] }] }
     expect(QaCorpusSchema.safeParse(ok).success).toBe(true)
     expect(
@@ -342,7 +342,7 @@ describe("qa corpus", () => {
     ).toBe(false)
   })
 
-  it("emits_a_draft_2020_12_schema_with_the_authored_fields", () => {
+  it("emits a draft 2020-12 schema with the authored fields", () => {
     const s = qaCorpusJsonSchema()
     expect(s.$schema).toBe("https://json-schema.org/draft/2020-12/schema")
     expect(s.title).toBe("NLP QA Corpus")
@@ -363,7 +363,7 @@ describe("qa corpus", () => {
   })
 
   // The same variable rewrites the rules schemas (`rules.test.ts` beside this).
-  it("qa_schema_matches_committed_file", async () => {
+  it("the schema matches the committed file", async () => {
     await assertCommittedJson(
       PATHS.qaSchema,
       qaCorpusJsonSchema(),
@@ -382,7 +382,7 @@ describe("qa scoring over the staged assets", () => {
     assets = await loadEvalAssets()
   }, 180_000)
 
-  it("hard_checks_on_a_capped_slice_have_the_result_shape", async ctx => {
+  it("hard checks on a capped slice have the result shape", async ctx => {
     if (skipReason) ctx.skip(skipReason)
     const [cat] = hardCheckCategories()
     if (!cat) throw new Error("no templated category")
@@ -397,7 +397,7 @@ describe("qa scoring over the staged assets", () => {
     expect(r.hardScore).toBe((r.passed / 5) * 100)
   }, 60_000)
 
-  it("a_synthetic_entry_runs_through_the_pipeline", async ctx => {
+  it("a synthetic entry runs through the pipeline", async ctx => {
     if (skipReason) ctx.skip(skipReason)
     // A canonical option form: the lookup map promotes it to #1; the
     // negative names no record, so it is absent for sure.

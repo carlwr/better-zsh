@@ -68,7 +68,7 @@ const rec = (over: Partial<RecordText>): RecordText =>
   })
 
 describe("ranker unit tests", () => {
-  it("exact_id_match_gives_lexical_boost", () => {
+  it("an exact id match gives the lexical boost", () => {
     const r = rec({ id: "autocd", display: "AUTO_CD" })
     expect(computeBoosts(r, "autocd", rules).lexical).toBeGreaterThan(0)
     expect(
@@ -76,20 +76,20 @@ describe("ranker unit tests", () => {
     ).toBeGreaterThan(0)
   })
 
-  it("symbol_tokens_strip_sigil_and_keep_operators", () => {
+  it("symbol tokens strip the sigil and keep operators", () => {
     expect(symbolTokens("the $? param")).toEqual(["?"])
     expect(symbolTokens("redirection >>")).toEqual([">>"])
     expect(symbolTokens("$0")).toEqual(["0"]) // sigiled even if alnum after strip
     expect(symbolTokens("list all background jobs")).toEqual([])
   })
 
-  it("symbol_head_is_the_operator_prefix", () => {
+  it("the symbol head is the operator prefix", () => {
     expect(symbolHead(">> word")).toBe(">>")
     expect(symbolHead("?")).toBe("?")
     expect(symbolHead("auto_cd")).toBeNull() // leading alnum -> no symbol head
   })
 
-  it("symbol_query_matches_param_and_operator_records", () => {
+  it("a symbol query matches parameter and operator records", () => {
     const param = rec({
       category: "special_param",
       category_label: "special parameter",
@@ -113,7 +113,7 @@ describe("ranker unit tests", () => {
     expect(computeBoosts(param, "list background jobs", rules).lexical).toBe(0)
   })
 
-  it("semantic_weights_derive_expanded", () => {
+  it("derives the expanded weight", () => {
     // expanded = 1 − body − structured; the triple sums to 1 by construction.
     const [b, s, e] = semanticWeights(1000, sw(0.7, 0.2, 0))
     near(b, 0.7)
@@ -122,7 +122,7 @@ describe("ranker unit tests", () => {
     near(b + s + e, 1)
   })
 
-  it("short_body_shift_is_continuous_with_exact_endpoints", () => {
+  it("the short-body shift is continuous with exact endpoints", () => {
     const w = sw(0.7, 0.2, 0.1)
     // L ≥ length_scale: base mix, no shift.
     near(semanticWeights(10, w)[0], 0.7)
@@ -137,12 +137,12 @@ describe("ranker unit tests", () => {
     expect(0.6 < a && a < b && b < 0.7).toBe(true)
   })
 
-  it("boosts_are_reliability_ordered", () => {
+  it("the committed boosts are reliability-ordered", () => {
     const b = rules.tuning.boosts
     expect(b.category).toBeLessThanOrEqual(exactWordBoost(b))
   })
 
-  it("overlap_boost_saturates_monotonically", () => {
+  it("the overlap boost saturates monotonically", () => {
     const b = rules.tuning.boosts
     expect(overlapBoost(0, b)).toBe(0)
     const one = overlapBoost(1, b)
@@ -152,7 +152,7 @@ describe("ranker unit tests", () => {
     expect(many).toBeLessThan(b.word_overlap.scale)
   })
 
-  it("prose_overlap_beats_broad_name_containment", () => {
+  it("prose overlap beats broad name containment", () => {
     const aliases = rec({
       id: "aliases",
       display: "ALIASES",

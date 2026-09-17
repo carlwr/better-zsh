@@ -13,7 +13,7 @@ import { assertCommittedJson, PATHS } from "../../_helpers"
 const corpus = loadCorpus()
 
 describe("lookup contract", () => {
-  it("lookup_contract_matches_committed", async () => {
+  it("matches the committed file", async () => {
     await assertCommittedJson(
       PATHS.lookupContract,
       buildLookupContract(corpus),
@@ -21,7 +21,7 @@ describe("lookup contract", () => {
     )
   })
 
-  it("lookup_contract_holds", () => {
+  it("every bare entry resolves via the lookup map", () => {
     const idx = lookupIndex(buildLookupMap(corpus))
     const e = evalBare(buildLookupContract(corpus), idx)
     console.log(

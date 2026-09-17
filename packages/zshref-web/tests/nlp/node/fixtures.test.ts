@@ -27,7 +27,7 @@ import {
 const corpus = loadCorpus()
 
 describe("parity fixture", () => {
-  it("parity_fixture_matches_committed", async () => {
+  it("matches the committed file", async () => {
     const fixture = buildParityFixture(corpus, await loadRulesYaml())
     await assertCommittedJson(
       PATHS.parityFixture,
@@ -48,7 +48,7 @@ describe("sanity fixture", () => {
   ])
 
   // Identities and structure exact, scores within `SANITY_DECIMALS`.
-  it("sanity_fixture_reproduces_committed_within_eps", async ctx => {
+  it("reproduces the committed file within the tolerance", async ctx => {
     if (skipReason) ctx.skip(skipReason)
     const [index, rules, embedder] = await Promise.all([
       loadIndexFromDisk(),
@@ -70,7 +70,7 @@ describe("sanity fixture", () => {
   // Over the committed file, so it always runs: identity as curated, top
   // above the floor, margin over the runner-up. Failure → re-curate the
   // query list; do not relax the invariants.
-  it("sanity_invariants_hold", async () => {
+  it("the committed fixture holds the invariants", async () => {
     const fixture = await loadSanityFixture()
     console.log(renderSanity(fixture).trimEnd())
     expect(sanityFailures(fixture)).toEqual([])

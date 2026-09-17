@@ -10,7 +10,7 @@ import { assertCommittedJson, PATHS } from "../../_helpers"
 const corpus = loadCorpus()
 
 describe("lookup map", () => {
-  it("lookup_map_matches_committed", async () => {
+  it("matches the committed file", async () => {
     await assertCommittedJson(
       PATHS.lookupMap,
       buildLookupMap(corpus),

@@ -38,7 +38,7 @@ function rejection(schema: z.ZodType, yaml: string): z.core.$ZodIssue {
 }
 
 describe("committed rules", () => {
-  it("embedded_yaml_parses", async () => {
+  it("the committed YAML parses, normalized", async () => {
     const rules = await loadRulesYaml()
     // The product form: every synonym term normalized (port note: a phrase
     // term like `process ID` never matches the lowercased haystack raw).
@@ -54,7 +54,7 @@ describe("committed rules", () => {
     expect(exactWord).toBeLessThanOrEqual(MAX_SCORE_TERM)
   })
 
-  it("emit_rules_json_round_trips", async () => {
+  it("the emitted JSON round-trips", async () => {
     const rules = await loadRulesYaml()
     const dir = await mkdtemp(join(tmpdir(), "zshref-rules-"))
     try {
@@ -79,7 +79,7 @@ describe("committed rules", () => {
     }
   })
 
-  it("schemas_match_committed_files", async () => {
+  it("the schemas match the committed files", async () => {
     for (const [file, schema] of Object.entries(rulesJsonSchemas())) {
       await assertCommittedJson(
         join(PATHS.rulesSchemaDir, file),
@@ -135,7 +135,7 @@ describe("synonyms.yaml", () => {
     })
   })
 
-  it("both_lists_may_be_omitted", () => {
+  it("both lists may be omitted", () => {
     expect(SynonymsSchema.parse(parseYaml("{}\n"))).toEqual({
       index_groups: [],
       query_expansions: [],

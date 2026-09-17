@@ -79,7 +79,7 @@ const item = (over: Partial<ItemRes>): ItemRes => ({
 })
 
 describe("ablation helpers", () => {
-  it("zero_boosts_zeros_every_boost_term", () => {
+  it("zeroBoosts zeros every boost term", () => {
     const t = zeroBoosts(committed)
     expect(t.boosts.category).toBe(0)
     expect(exactWordBoost(t.boosts)).toBe(0)
