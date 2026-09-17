@@ -11,5 +11,9 @@ export default defineConfig({
     include: ["tests/**/*.test.ts"],
     setupFiles: ["tests/_setup-fast-check.ts"],
     environment: "node",
+    // A file over the staged model spins an ORT thread pool of every core;
+    // the worker count multiplies that, so few workers keep a cold run
+    // (no query cache yet) responsive.
+    maxWorkers: 2,
   },
 })
