@@ -342,22 +342,11 @@ function jobSpecKey(t: string): string | undefined {
   return undefined
 }
 
-export const hookNames: readonly string[] = [
-  "chpwd",
-  "periodic",
-  "precmd",
-  "preexec",
-  "zshaddhistory",
-  "zshexit",
-]
-
-const HOOK_FN_SET: ReadonlySet<string> = new Set(hookNames)
-
 /**
  * Special-function resolver. Literal first for hook names and literal TRAP*
  * names. Two compositional fallbacks for the patterns zsh exposes:
  *
- * - `<hook>_functions` for a name in `hookNames` → matching hook record
+ * - a hook record's `hookArray` (`precmd_functions`) → that hook record
  *   (companion array is the same concept).
  * - `^TRAP[A-Z0-9]+$` → `TRAPNAL` template record.
  *
@@ -370,15 +359,16 @@ function resolveSpecialFunction(
 ): Documented<"special_function"> | undefined {
   const literal = mkDocumented("special_function", raw)
   if (c.special_function.has(literal)) return literal
-  return resolveByKey(c, "special_function", raw, matchSpecialFunctionKey)
+  return resolveByKey(c, "special_function", raw, t =>
+    matchSpecialFunctionKey(c, t),
+  )
 }
 
-const HOOK_FN_RE = /^(\w+)_functions$/
 const TRAP_TEMPLATE_RE = /^TRAP[A-Z0-9]+$/
 
-function matchSpecialFunctionKey(t: string): string | undefined {
-  const hook = t.match(HOOK_FN_RE)?.[1]
-  if (hook && HOOK_FN_SET.has(hook)) return hook
+function matchSpecialFunctionKey(c: DocCorpus, t: string): string | undefined {
+  const hook = [...c.special_function.values()].find(d => d.hookArray === t)
+  if (hook) return hook.name
   if (TRAP_TEMPLATE_RE.test(t)) return "TRAPNAL"
   return undefined
 }
@@ -535,6 +525,9 @@ const feedbackOverrides: { readonly [K in DocCategory]?: FeedbackResolver } = {
   special_param: specialParamFeedback,
 }
 
+/** One closed JSON Schema object: the shape of one `ResolverFeedback` kind. */
+export type ResolverFeedbackKindSchema = Readonly<Record<string, unknown>>
+
 /**
  * JSON Schema fragment per `ResolverFeedback` kind; per-kind extra fields
  * (`subscript`) live here.
@@ -542,15 +535,15 @@ const feedbackOverrides: { readonly [K in DocCategory]?: FeedbackResolver } = {
 const kindSchema = (
   kind: ResolverFeedback["kind"],
   extra: Readonly<Record<string, unknown>> = {},
-): Readonly<Record<string, unknown>> => ({
+): ResolverFeedbackKindSchema => ({
   type: "object",
   additionalProperties: false,
   required: ["kind", ...Object.keys(extra)],
   properties: { kind: { const: kind }, ...extra },
 })
 
-type ResolverFeedbackKindSchemas = {
-  readonly [K in ResolverFeedback["kind"]]: Readonly<Record<string, unknown>>
+export type ResolverFeedbackKindSchemas = {
+  readonly [K in ResolverFeedback["kind"]]: ResolverFeedbackKindSchema
 }
 
 export const resolverFeedbackKindSchemas: ResolverFeedbackKindSchemas = {

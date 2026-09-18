@@ -1,5 +1,8 @@
-import type { JsonCountKey, JsonDataFile } from "./json-artifacts.ts"
-import type { ResolverFeedback } from "./resolver.ts"
+import type { JsonDataFile } from "./json-artifacts.ts"
+import type {
+  ResolverFeedback,
+  ResolverFeedbackKindSchema,
+} from "./resolver.ts"
 import type { DocCategory, DocRecordMap } from "./taxonomy.ts"
 
 // Generated fields attached to every JSON record; the in-memory corpus omits
@@ -40,10 +43,13 @@ export type JsonDocArrayMap = {
   [K in DocCategory]: readonly JsonRecordMap[K][]
 }
 
-export type JsonCounts = { readonly [K in JsonCountKey]: number }
-
+/**
+ * `index.json`: what a consumer needs to read the record files and mirror
+ * the taxonomy. `version` moves with the shape of this object or of the
+ * record file set, never with record content (that is `dataHash`).
+ */
 export interface JsonIndex {
-  readonly version: 1
+  readonly version: 2
   readonly packageVersion: string
   readonly zshUpstream: {
     readonly tag: string
@@ -52,18 +58,18 @@ export interface JsonIndex {
   }
   /** SHA-256 over the emitted record files, `index.json` excluded — corpus-content identity, independent of `packageVersion`. */
   readonly dataHash: string
+  /** Every record file, sorted by name. */
   readonly files: readonly JsonDataFile[]
-  readonly counts: JsonCounts
   /** Canonical list of `DocCategory` values, in primary ordering. */
-  readonly docCategories: readonly string[]
+  readonly docCategories: readonly DocCategory[]
   /** Resolver-walk order for raw-token lookup. */
-  readonly classifyOrder: readonly string[]
+  readonly classifyOrder: readonly DocCategory[]
   /** Per-category JSON filename — pairs each `docCategories` entry with the file holding its records. */
-  readonly categoryFiles: { readonly [K in DocCategory]: JsonDataFile }
+  readonly categoryFiles: { readonly [K in DocCategory]: `${K}.json` }
   /** Human-readable per-category labels — SoT for display in out-of-process consumers. */
   readonly docCategoryLabels: { readonly [K in DocCategory]: string }
-  /** Hook base names used by the special-function resolver. */
-  readonly hookNames: readonly string[]
+  /** One closed JSON Schema per `ResolverFeedback` kind, in `resolverFeedbackKinds` order — what a resolver mirror's output schemas embed. */
+  readonly resolverFeedbackKindSchemas: readonly ResolverFeedbackKindSchema[]
 }
 
 /** What the resolvers answer for one raw input; `null` where they answer nothing. */

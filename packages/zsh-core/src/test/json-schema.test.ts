@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url"
 import Ajv2020, { type AnySchema } from "ajv/dist/2020"
 import { describe, expect, test } from "vitest"
 import {
-  jsonArtifact,
+  jsonDataFile,
   recordsSchemaFile,
   resolverFixture,
   schemaFile,
@@ -27,7 +27,7 @@ ajv.addSchema(bundle as AnySchema)
 const validator = (cat: DocCategory) =>
   ajv.compile({ $ref: `${String(bundle.$id)}#/$defs/${cat}` })
 const records = (cat: DocCategory): Rec[] =>
-  readJson(artifact("json", jsonArtifact[cat].file)) as unknown as Rec[]
+  readJson(artifact("json", jsonDataFile(cat))) as unknown as Rec[]
 
 describe("records bundle", () => {
   test.each(docCategories)("%s: the emitted records validate", cat => {

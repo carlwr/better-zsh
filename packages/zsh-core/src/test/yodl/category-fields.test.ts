@@ -122,6 +122,14 @@ describe("parseSpecialFunctions", () => {
     expect(d?.kind).toBe(kind)
     expect(d?.hookArray).toBeUndefined()
   })
+
+  // The resolver keys `<hook>_functions` input on `hookArray`.
+  test("kind hook ⇔ hookArray present, and it is `${name}_functions`", () => {
+    for (const d of map.values()) {
+      expect(d.hookArray !== undefined, d.name).toBe(d.kind === "hook")
+      if (d.kind === "hook") expect(d.hookArray).toBe(`${d.name}_functions`)
+    }
+  })
 })
 
 describe("parsePromptEscapes — typed subsection (enrichment)", () => {

@@ -229,7 +229,7 @@ describe("resolveSpecialFunction", () => {
   test.each([
     "",
     "   ",
-    // `_functions` only resolves for the closed hook set
+    // `_functions` only resolves as a hook record's `hookArray`
     "foo_functions",
     "bar_functions",
     // TRAP must be followed by an uppercase/digit tail

@@ -300,7 +300,7 @@ Parser and renderer are layered: the parser may capture structure the renderer c
 ## Output schemas (crate-owned)
 
 - Each tool's `outputSchema` is generated in the `zshref` crate beside its implementation (`src/tools/schema.rs`).
-- `subKind` enums and the record total come from the loaded corpus; feedback kinds from the resolver.
+- `subKind` enums and the record total come from the loaded corpus; feedback kind schemas from `index.json`.
 - Cross-cutting "co-released schema precision" rationale: PRINCIPLES.md.
 - Drift enforced at test time: every tool response the crate's test suite sees is validated against its schema (`zshref-rs/tests/common/`).
 

@@ -6,12 +6,15 @@ import { loadCorpus } from "../docs/corpus"
 import {
   corpusDataHash,
   hashRecordFiles,
+  jsonDataFile,
   jsonDataFiles,
   jsonFiles,
   recordsSchemaFile,
   resolverFixture,
   schemaFile,
 } from "../docs/json-artifacts"
+import type { JsonIndex } from "../docs/json-types"
+import { resolverFeedbackKinds } from "../docs/resolver"
 import { docCategories } from "../docs/taxonomy"
 
 const pkgDir = join(dirname(fileURLToPath(import.meta.url)), "..", "..")
@@ -37,6 +40,19 @@ describe("generated JSON is a release asset, not a registry payload", () => {
     for (const file of jsonFiles) {
       expect(existsSync(join(jsonDir, file))).toBe(true)
     }
+  })
+
+  test("index.json: v2 shape, one record file per category", () => {
+    const index = readJson("artifacts/json/index.json") as unknown as JsonIndex
+    expect(index.version).toBe(2)
+    expect(index.files).toEqual(jsonDataFiles)
+    expect(index.docCategories).toEqual(docCategories)
+    for (const cat of docCategories) {
+      expect(index.categoryFiles[cat]).toBe(jsonDataFile(cat))
+    }
+    expect(index.resolverFeedbackKindSchemas).toHaveLength(
+      resolverFeedbackKinds.length,
+    )
   })
 
   test("one draft 2020-12 records bundle with a $defs entry per category", () => {

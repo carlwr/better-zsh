@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { describe, expect, test } from "vitest"
-import { jsonDataFiles } from "../docs/json-artifacts"
+import { jsonDataFile, jsonDataFiles } from "../docs/json-artifacts"
 
 /**
  * Smoke test: every emitted corpus JSON record carries an `_mdBody` string.
@@ -47,8 +47,8 @@ describe.runIf(existsSync(jsonDir))(
     )
 
     test.each([
-      ["options.json", "autocd", 100, ["AUTO_CD"], ["setopt"]],
-      ["builtins.json", "echo", 50, ["echo"], ["echo"]],
+      [jsonDataFile("option"), "autocd", 100, ["AUTO_CD"], ["setopt"]],
+      [jsonDataFile("builtin"), "echo", 50, ["echo"], ["echo"]],
     ] as const)(
       "%s:%s splits title from body",
       (file, name, minLen, titleParts, bodyParts) => {

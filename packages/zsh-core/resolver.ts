@@ -6,6 +6,8 @@
 export {
   lookupRaw,
   type ResolverFeedback,
+  type ResolverFeedbackKindSchema,
+  type ResolverFeedbackKindSchemas,
   resolve,
   resolverFeedback,
   resolverFeedbackKindSchemas,

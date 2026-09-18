@@ -597,7 +597,7 @@ export interface ArithOpDoc extends SyntaxDocBase {
 /**
  * Special-function kind.
  *
- * - `hook`: companion-array callback (e.g. `precmd`, `chpwd`); names in `hookNames`.
+ * - `hook`: companion-array callback (e.g. `precmd`, `chpwd`); carries `hookArray`.
  * - `trap-literal`: specifically named trap (e.g. `TRAPEXIT`, `TRAPZERR`).
  * - `trap-template`: `TRAPNAL` template where NAL is any signal name (`man 7 signal`).
  */
@@ -607,7 +607,7 @@ export type SpecialFunctionKind = "hook" | "trap-literal" | "trap-template"
 export interface SpecialFunctionDoc extends SyntaxDocBase {
   readonly name: Documented<"special_function">
   readonly kind: SpecialFunctionKind
-  /** Hook's companion `${name}_functions` array name. Absent on TRAP*. */
+  /** Hook's companion `${name}_functions` array name — the resolver's key for `<hook>_functions` input. Absent on TRAP*. */
   readonly hookArray?: string
 }
 

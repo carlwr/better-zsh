@@ -3,10 +3,12 @@
 //
 // MIRROR-OF: packages/zsh-core/src/docs/resolver.ts
 // MIRROR-OF: packages/zsh-core/src/docs/normalize-option.ts
+// MIRROR-OF: packages/zsh-core/src/docs/types.ts (record fields read by
+// name: `sig` / `groupOp` of `RedirDoc`, `hookArray` of `SpecialFunctionDoc`)
 
-use crate::corpus::{Category, Corpus, DocCategory, Record};
+use crate::corpus::{Category, Corpus, DocCategory, INDEX, Record};
 use serde::Serialize;
-use serde_json::{Map, Value, json};
+use serde_json::Value;
 
 /// Lowercased remainder — possibly empty — after stripping a case-insensitive
 /// `no_` or `no` prefix from `raw`. `None` if `raw` begins with neither.
@@ -42,31 +44,10 @@ pub enum ResolverFeedback {
 
 impl ResolverFeedback {
     /// One closed JSON Schema per kind, variant order — the `oneOf` behind
-    /// the tool output schemas' `Feedback`. Adding a kind: a variant, a row here.
+    /// the tool output schemas' `Feedback`. Read from `index.json`, where
+    /// zsh-core emits them in its kind order; a variant per kind, same order.
     pub fn kind_schemas() -> Vec<Value> {
-        let kind_schema = |kind: &str, extra: &[(&str, Value)]| {
-            let required: Vec<&str> = std::iter::once("kind")
-                .chain(extra.iter().map(|(k, _)| *k))
-                .collect();
-            let mut properties = Map::new();
-            properties.insert("kind".into(), json!({ "const": kind }));
-            for (k, v) in extra {
-                properties.insert((*k).into(), v.clone());
-            }
-            json!({
-                "type": "object",
-                "additionalProperties": false,
-                "required": required,
-                "properties": properties,
-            })
-        };
-        vec![
-            kind_schema("input-negated", &[]),
-            kind_schema(
-                "subscripted",
-                &[("subscript", json!({ "type": "string", "minLength": 1 }))],
-            ),
-        ]
+        INDEX.resolver_feedback_kind_schemas.clone()
     }
 }
 
@@ -247,10 +228,8 @@ fn resolve_special_function<'c>(
     if t.is_empty() {
         return None;
     }
-    if let Some(stripped) = t.strip_suffix("_functions")
-        && crate::corpus::HOOK_NAMES.contains(&stripped)
-        && let Some(h) = find_by_id(corpus, cat, stripped, None)
-    {
+    // `<hook>_functions`: the hook record whose companion array that is.
+    if let Some(h) = find_by(corpus, cat, |r| r.str("hookArray") == t, None) {
         return Some(h);
     }
     if t.starts_with("TRAP")
@@ -493,6 +472,7 @@ mod tests {
     use super::*;
     use crate::corpus::{DOC_CATEGORIES, load_corpus, resolver_fixture_path};
     use serde::Deserialize;
+    use serde_json::json;
 
     #[derive(Deserialize)]
     struct Fixture {
@@ -564,6 +544,9 @@ mod tests {
         );
     }
 
+    // Cross-language pin: the schemas are zsh-core's (`index.json`), each
+    // closed on its `kind` const, so a variant validating against the schema
+    // at its own position ties the enum's serde tags, arity and order to TS.
     #[test]
     fn every_feedback_kind_validates_against_its_schema() {
         let samples = [

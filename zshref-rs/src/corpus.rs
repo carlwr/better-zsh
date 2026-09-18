@@ -40,97 +40,36 @@ pub fn resolver_fixture_path() -> std::path::PathBuf {
 const INDEX_JSON: &[u8] = include_bytes!(corpus_path!("index.json"));
 
 // `include_bytes!` takes literal paths: hand-maintained; `load_corpus` checks it vs index.json.
-const FILE_BYTES: &[(&str, &[u8])] = &[
-    (
-        "arith-ops.json",
-        include_bytes!(corpus_path!("arith-ops.json")),
-    ),
-    (
-        "builtins.json",
-        include_bytes!(corpus_path!("builtins.json")),
-    ),
-    (
-        "complex-commands.json",
-        include_bytes!(corpus_path!("complex-commands.json")),
-    ),
-    (
-        "conditional-ops.json",
-        include_bytes!(corpus_path!("conditional-ops.json")),
-    ),
-    (
-        "glob-flags.json",
-        include_bytes!(corpus_path!("glob-flags.json")),
-    ),
-    (
-        "glob-operators.json",
-        include_bytes!(corpus_path!("glob-operators.json")),
-    ),
-    (
-        "glob-qualifiers.json",
-        include_bytes!(corpus_path!("glob-qualifiers.json")),
-    ),
-    (
-        "history-expns.json",
-        include_bytes!(corpus_path!("history-expns.json")),
-    ),
-    (
-        "job-specs.json",
-        include_bytes!(corpus_path!("job-specs.json")),
-    ),
-    ("keymaps.json", include_bytes!(corpus_path!("keymaps.json"))),
-    (
-        "mathfuncs.json",
-        include_bytes!(corpus_path!("mathfuncs.json")),
-    ),
-    ("options.json", include_bytes!(corpus_path!("options.json"))),
-    (
-        "param-expns.json",
-        include_bytes!(corpus_path!("param-expns.json")),
-    ),
-    (
-        "param-expn-flags.json",
-        include_bytes!(corpus_path!("param-expn-flags.json")),
-    ),
-    (
-        "precmd-modifiers.json",
-        include_bytes!(corpus_path!("precmd-modifiers.json")),
-    ),
-    (
-        "process-substs.json",
-        include_bytes!(corpus_path!("process-substs.json")),
-    ),
-    (
-        "prompt-escapes.json",
-        include_bytes!(corpus_path!("prompt-escapes.json")),
-    ),
-    (
-        "redirections.json",
-        include_bytes!(corpus_path!("redirections.json")),
-    ),
-    (
-        "reserved-words.json",
-        include_bytes!(corpus_path!("reserved-words.json")),
-    ),
-    (
-        "special-params.json",
-        include_bytes!(corpus_path!("special-params.json")),
-    ),
-    (
-        "special-functions.json",
-        include_bytes!(corpus_path!("special-functions.json")),
-    ),
-    (
-        "subscript-flags.json",
-        include_bytes!(corpus_path!("subscript-flags.json")),
-    ),
-    (
-        "zle-widgets.json",
-        include_bytes!(corpus_path!("zle-widgets.json")),
-    ),
-    (
-        "comp-utils.json",
-        include_bytes!(corpus_path!("comp-utils.json")),
-    ),
+macro_rules! file_bytes {
+    ($($f:literal),* $(,)?) => {
+        &[$(($f, include_bytes!(corpus_path!($f)))),*]
+    };
+}
+const FILE_BYTES: &[(&str, &[u8])] = file_bytes![
+    "arith_op.json",
+    "builtin.json",
+    "comp_utility.json",
+    "complex_command.json",
+    "conditional_op.json",
+    "glob_flag.json",
+    "glob_op.json",
+    "glob_qualifier.json",
+    "history_expn.json",
+    "job_spec.json",
+    "keymap.json",
+    "mathfunc.json",
+    "option.json",
+    "param_expn.json",
+    "param_expn_flag.json",
+    "precmd_modifier.json",
+    "process_subst.json",
+    "prompt_escape.json",
+    "redirection.json",
+    "reserved_word.json",
+    "special_function.json",
+    "special_param.json",
+    "subscript_flag.json",
+    "zle_widget.json",
 ];
 
 fn file_bytes(name: &str) -> Option<&'static [u8]> {
@@ -139,9 +78,27 @@ fn file_bytes(name: &str) -> Option<&'static [u8]> {
         .find_map(|(n, b)| (*n == name).then_some(*b))
 }
 
+/// The `index.json` shape this crate reads: `JsonIndex.version` in zsh-core.
+const INDEX_VERSION: u32 = 2;
+
 /// Parsed `index.json`. Lazy-decoded once; taxonomy statics project from it.
-static INDEX: LazyLock<Index> =
-    LazyLock::new(|| serde_json::from_slice(INDEX_JSON).expect("embedded index.json must parse"));
+pub static INDEX: LazyLock<Index> = LazyLock::new(|| decode_index(INDEX_JSON));
+
+/// `version` is checked before the rest is decoded, so a stale vendored
+/// `data/` fails on the version, not on whichever field moved.
+fn decode_index(bytes: &[u8]) -> Index {
+    #[derive(Deserialize)]
+    struct Versioned {
+        version: u32,
+    }
+    let Versioned { version } =
+        serde_json::from_slice(bytes).expect("embedded index.json must parse");
+    assert_eq!(
+        version, INDEX_VERSION,
+        "embedded index.json is version {version}; this crate reads version {INDEX_VERSION} — re-vendor `data/` (DATA-SYNC.md)"
+    );
+    serde_json::from_slice(bytes).expect("embedded index.json must parse")
+}
 
 fn leak(s: &str) -> &'static str {
     Box::leak(s.to_owned().into_boxed_str())
@@ -224,10 +181,6 @@ pub static CLASSIFY_ORDER: LazyLock<Vec<DocCategory>> = LazyLock::new(|| {
         .collect()
 });
 
-/// Hook base names for the special_function resolver (`index.json.hookNames`).
-pub static HOOK_NAMES: LazyLock<Vec<&'static str>> =
-    LazyLock::new(|| INDEX.hook_names.iter().map(|s| leak(s)).collect());
-
 /// Decoded `index.json`. Taxonomy lists (`doc_categories`, `classify_order`,
 /// `category_files`) come directly from the TS source of truth — no Rust-side mirror.
 #[derive(Debug, Deserialize)]
@@ -250,10 +203,10 @@ pub struct Index {
     /// `packages/zsh-core/src/docs/taxonomy.ts`.
     #[serde(rename = "docCategoryLabels")]
     pub doc_category_labels: BTreeMap<String, String>,
-    /// Hook base names for the special_function resolver (`*_functions` suffix
-    /// pattern). Sourced from `packages/zsh-core/src/docs/resolver.ts`.
-    #[serde(rename = "hookNames")]
-    pub hook_names: Vec<String>,
+    /// One closed JSON Schema per `ResolverFeedback` kind, in zsh-core's
+    /// `resolverFeedbackKinds` order — the tool output schemas embed them.
+    #[serde(rename = "resolverFeedbackKindSchemas")]
+    pub resolver_feedback_kind_schemas: Vec<Value>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -383,6 +336,7 @@ mod tests {
     //! Sanity guards on the consumed JSON: the taxonomy lists project from
     //! `index.json`, so the per-record field shape is the drift surface.
     use super::*;
+    use serde_json::json;
 
     #[test]
     fn corpus_id_and_display_are_ascii() {
@@ -431,6 +385,14 @@ mod tests {
                 cat.name
             );
         }
+    }
+
+    #[test]
+    #[should_panic(expected = "this crate reads version")]
+    fn index_of_another_version_fails_loudly() {
+        let mut index: Value = serde_json::from_slice(INDEX_JSON).unwrap();
+        index["version"] = json!(INDEX_VERSION + 1);
+        decode_index(&serde_json::to_vec(&index).unwrap());
     }
 
     #[test]

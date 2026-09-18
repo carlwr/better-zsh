@@ -7,12 +7,16 @@ import { loadCorpus } from "./src/docs/corpus.ts"
 import {
   fmtJson,
   hashRecordFiles,
-  jsonArtifact,
+  jsonDataFile,
   jsonDataFiles,
   jsonRecordTexts,
   resolverFixture,
 } from "./src/docs/json-artifacts.ts"
-import { hookNames } from "./src/docs/resolver.ts"
+import type { JsonIndex } from "./src/docs/json-types.ts"
+import {
+  resolverFeedbackKindSchemas,
+  resolverFeedbackKinds,
+} from "./src/docs/resolver.ts"
 import {
   classifyOrder,
   docCategories,
@@ -56,36 +60,31 @@ function writeJsonArtifacts() {
 
   const corpus = loadCorpus()
 
-  const counts: Record<string, number> = {}
-  for (const cat of docCategories) {
-    counts[jsonArtifact[cat].count] = corpus[cat].size
-  }
-
-  const categoryFiles: Record<string, string> = {}
-  for (const cat of docCategories) {
-    categoryFiles[cat] = jsonArtifact[cat].file
-  }
-
   const recordTexts = jsonRecordTexts(corpus)
   for (const [file, text] of recordTexts) {
     writeFileSync(join(jsonDir, file), text, "utf8")
   }
 
+  const categoryFiles = Object.fromEntries(
+    docCategories.map(cat => [cat, jsonDataFile(cat)]),
+  ) as JsonIndex["categoryFiles"]
+
   const dataHash = hashRecordFiles(recordTexts)
-  const index = {
-    version: 1,
+  const index: JsonIndex = {
+    version: 2,
     packageVersion: PKG_VERSION,
     zshUpstream: ZSH_UPSTREAM,
     dataHash,
     files: [...jsonDataFiles],
-    counts,
     // Canonical taxonomy lists, consumed by out-of-process consumers (the
     // Rust crate) as the source of truth — no Rust-side mirror.
     docCategories: [...docCategories],
     classifyOrder: [...classifyOrder],
     categoryFiles,
     docCategoryLabels: { ...docCategoryLabels },
-    hookNames: [...hookNames],
+    resolverFeedbackKindSchemas: resolverFeedbackKinds.map(
+      kind => resolverFeedbackKindSchemas[kind],
+    ),
   }
 
   writeJson(join(jsonDir, "index.json"), index)

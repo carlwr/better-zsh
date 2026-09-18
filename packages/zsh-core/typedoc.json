@@ -29,7 +29,6 @@
   "treatWarningsAsErrors": true,
   "intentionallyNotExported": [
     "src/analysis/fact-types.ts:quoteStyles",
-    "src/analysis/fact-types.ts:FactGuard",
-    "src/docs/resolver.ts:ResolverFeedbackKindSchemas"
+    "src/analysis/fact-types.ts:FactGuard"
   ]
 }

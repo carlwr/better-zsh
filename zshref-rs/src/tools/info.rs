@@ -1,6 +1,5 @@
 //! `zshref info` — corpus-level introspection as JSON; CLI-only, not in the
-//! tool set. Counts are recomputed from the loaded corpus rather than copied
-//! from `index.counts` (a second drift surface, with camelCase keys).
+//! tool set. Counts come from the loaded corpus; `index.json` carries none.
 
 use crate::corpus::{Corpus, DocCategory};
 use serde_json::{Map, Value, json};
