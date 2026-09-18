@@ -2,6 +2,10 @@ import type { NonEmpty } from "@carlwr/typescript-extra"
 
 import type { DocCategory, ModuleName } from "./taxonomy.ts"
 
+// JSDoc on the exported types here is dual-audience: the `.d.ts` rollup and
+// the `description`s of the released `records.schema.json` (build-schema.ts).
+// Write for JSON consumers too — they see `$defs` names, not this file.
+
 /** Phantom-branded type. */
 export type Brand<T, B extends string> = T & { readonly __brand: B }
 
