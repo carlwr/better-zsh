@@ -11,7 +11,7 @@ The day `zshref` (this crate) leaves the `better-zsh` monorepo for its own repo,
 
 - `Cargo.toml`: `repository` / `homepage` → the extracted repo URL; re-verify the rest of the crates.io metadata
   - the npm packages and the `binstall` `pkg-url` follow: `npm/assemble.mjs` reads the manifest
-- `build.rs` + `src/corpus.rs`: drop the `monorepo` arm — vendored becomes the only data source
+- `build.rs`: drop the `monorepo` arm — vendored becomes the only data source
 - `data/`: stays gitignored (generated, never committed); `make vendor` populates it
 
 ## Build and CI

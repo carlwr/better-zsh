@@ -1,27 +1,50 @@
 //! Data-source auto-detect for the embedded corpus.
 //!
 //! `src/corpus.rs` embeds JSONs via `include_bytes!`, which takes a literal
-//! path, so the source is picked at compile time via `cfg(data_source = "...")`
-//! — set here from `ZSHREF_DATA_SOURCE` or what exists on disk.
+//! path, so the source is picked at compile time here — from
+//! `ZSHREF_DATA_SOURCE` or what exists on disk — and handed over as:
+//!
+//! - `ZSHREF_INDEX_JSON`, `ZSHREF_RESOLVER_FIXTURE` — absolute paths, via `env!`
+//! - `$OUT_DIR/file_bytes.rs` — the `(file, include_bytes!(…))` table for
+//!   every `index.json.files` entry, so the record-file inventory has no
+//!   hand-kept mirror
 //!
 //! Design: DATA-SYNC.md.
 
 use std::{
-    env,
+    env, fs,
     path::{Path, PathBuf},
 };
+
+/// Where one data source keeps the corpus JSONs and the resolver fixture.
+struct Source {
+    name: &'static str,
+    json_dir: PathBuf,
+    fixture: PathBuf,
+}
+
+impl Source {
+    fn index(&self) -> PathBuf {
+        self.json_dir.join("index.json")
+    }
+}
 
 fn main() {
     let manifest: PathBuf = env::var_os("CARGO_MANIFEST_DIR")
         .expect("CARGO_MANIFEST_DIR unset")
         .into();
 
-    let vendored = manifest.join("data").join("index.json");
-    let monorepo = manifest.join("../packages/zsh-core/artifacts/json/index.json");
-
-    // Declare the custom cfg up-front so rustc doesn't warn on older
-    // editions and check-cfg-aware compilers accept the two values.
-    println!("cargo:rustc-check-cfg=cfg(data_source, values(\"vendored\", \"monorepo\"))");
+    let vendored = Source {
+        name: "vendored",
+        json_dir: manifest.join("data"),
+        fixture: manifest.join("data/resolver-fixture.json"),
+    };
+    let monorepo = Source {
+        name: "monorepo",
+        json_dir: manifest.join("../packages/zsh-core/artifacts/json"),
+        fixture: manifest
+            .join("../packages/zsh-core/artifacts/resolver-fixture/resolver-fixture.json"),
+    };
 
     // Re-detect on the override changing or a present
     // candidate vanishing (`make vendor-clean`). A missing path
@@ -29,34 +52,69 @@ fn main() {
     // an appearing candidate is only seen through the override. The
     // embedded files themselves are tracked by rustc's dep-info.
     println!("cargo:rerun-if-env-changed=ZSHREF_DATA_SOURCE");
-    for path in [&vendored, &monorepo].into_iter().filter(|p| p.exists()) {
+    for path in [vendored.index(), monorepo.index()]
+        .iter()
+        .filter(|p| p.exists())
+    {
         println!("cargo:rerun-if-changed={}", path.display());
     }
     let source = data_source(&manifest, &vendored, &monorepo);
-    println!("cargo:rustc-cfg=data_source=\"{source}\"");
+    println!(
+        "cargo:rustc-env=ZSHREF_INDEX_JSON={}",
+        source.index().display()
+    );
+    println!(
+        "cargo:rustc-env=ZSHREF_RESOLVER_FIXTURE={}",
+        source.fixture.display()
+    );
+
+    let out_dir: PathBuf = env::var_os("OUT_DIR").expect("OUT_DIR unset").into();
+    fs::write(out_dir.join("file_bytes.rs"), file_bytes_table(source))
+        .expect("write file_bytes.rs");
 }
 
-fn data_source(manifest: &Path, vendored: &Path, monorepo: &Path) -> &'static str {
+fn data_source<'s>(manifest: &Path, vendored: &'s Source, monorepo: &'s Source) -> &'s Source {
     match env::var("ZSHREF_DATA_SOURCE") {
-        Ok(s) if s == "vendored" => {
-            if vendored.exists() {
-                "vendored"
+        Ok(s) if s == vendored.name => {
+            if vendored.index().exists() {
+                vendored
             } else {
                 panic_with_help(manifest)
             }
         }
-        Ok(s) if s == "monorepo" => {
-            if monorepo.exists() {
-                "monorepo"
+        Ok(s) if s == monorepo.name => {
+            if monorepo.index().exists() {
+                monorepo
             } else {
                 panic_with_help(manifest)
             }
         }
         Ok(s) => panic!("ZSHREF_DATA_SOURCE must be vendored or monorepo, got {s:?}"),
-        Err(_) if vendored.exists() => "vendored",
-        Err(_) if monorepo.exists() => "monorepo",
+        Err(_) if vendored.index().exists() => vendored,
+        Err(_) if monorepo.index().exists() => monorepo,
         Err(_) => panic_with_help(manifest),
     }
+}
+
+/// `&[("<file>", include_bytes!("<abs path>")), …]` over `index.json.files`.
+/// Paths go through `{:?}` so they land as valid string literals on every host.
+fn file_bytes_table(source: &Source) -> String {
+    #[derive(serde::Deserialize)]
+    struct Index {
+        files: Vec<String>,
+    }
+    let index = source.index();
+    let bytes = fs::read(&index).unwrap_or_else(|e| panic!("read {}: {e}", index.display()));
+    let Index { files } =
+        serde_json::from_slice(&bytes).unwrap_or_else(|e| panic!("parse {}: {e}", index.display()));
+    let entries = files.iter().map(|f| {
+        let path = source.json_dir.join(f);
+        let path = path
+            .to_str()
+            .unwrap_or_else(|| panic!("non-UTF-8 path {}", path.display()));
+        format!("    ({f:?}, include_bytes!({path:?})),\n")
+    });
+    format!("&[\n{}]\n", entries.collect::<String>())
 }
 
 fn panic_with_help(manifest: &Path) -> ! {
