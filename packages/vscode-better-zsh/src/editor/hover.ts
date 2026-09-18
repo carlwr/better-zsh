@@ -1,4 +1,3 @@
-import { isSingle } from "@carlwr/typescript-extra"
 import type { DocCorpus } from "@carlwr/zsh-core"
 import {
   cmdHeadFactsOnLine,
@@ -8,17 +7,7 @@ import {
 } from "@carlwr/zsh-core/analysis"
 import { renderDocWithTitle } from "@carlwr/zsh-core/render"
 import { resolve } from "@carlwr/zsh-core/resolver"
-import {
-  type DocCategory,
-  type DocPieceId,
-  mkPieceId,
-} from "@carlwr/zsh-core/taxonomy"
-import {
-  mkOptFlag,
-  type OptFlag,
-  type OptFlagAlias,
-  type ZshOption,
-} from "@carlwr/zsh-core/types"
+import type { DocCategory, DocPieceId } from "@carlwr/zsh-core/taxonomy"
 import * as vscode from "vscode"
 import { contextAt } from "../document/facts"
 import { funcAt } from "../document/funcs"
@@ -30,15 +19,10 @@ import {
 } from "../document/tokens"
 import { activeLineAt, activeWordRangeAt } from "../document/words"
 
-// `setopt NO_AUTO_CD` hovers as `AUTO_CD`: the option resolver's
+// `setopt NO_AUTO_CD` and `set +J` hover as `AUTO_CD`: the option resolver's
 // `input-negated` feedback (`resolverFeedback`) is not surfaced.
 
 const PUNCT_PARAM = /[$?@*!#-]/
-
-interface OptFlagHit {
-  readonly opt: ZshOption
-  readonly alias: OptFlagAlias
-}
 
 /**
  * NOTE: Refactoring fact-based hovers to a table-driven style has been tried, and rejected.
@@ -50,22 +34,12 @@ interface OptFlagHit {
 
 export class HoverProvider implements vscode.HoverProvider {
   private corpus: DocCorpus
-  private flagMap: ReadonlyMap<OptFlag, readonly OptFlagHit[]>
   // Generic token splitting treats shell delimiters as separators, so
   // conditional operators made entirely of those chars need a cond-only path.
   private symbolicCondOps: readonly string[]
 
   constructor(corpus: DocCorpus) {
     this.corpus = corpus
-
-    // Secondary index for -J/+J style flag lookup. Extension-specific UX
-    // (the user typed a flag letter and we look up the corresponding option)
-    // — not a corpus-identity concern, so stays here rather than in zsh-core.
-    this.flagMap = indexMany(
-      [...corpus.option.values()].flatMap(opt =>
-        opt.flags.map(alias => [alias.char, { opt, alias }] as const),
-      ),
-    )
     this.symbolicCondOps = [...corpus.conditional_op.keys()]
       .filter(op => [...op].some(isTokenDelimiter))
       .sort((a, b) => b.length - a.length)
@@ -85,11 +59,11 @@ export class HoverProvider implements vscode.HoverProvider {
     )
   }
 
+  // Short flags (`-J` / `+J`) are corpus identity, resolved in zsh-core.
   private setoptHover(doc: vscode.TextDocument, pos: vscode.Position) {
     const range = activeTokenRangeAt(doc, pos)
     if (!range) return
-    const pieceId = this.optionAt(doc.getText(range))
-    if (pieceId) return this.renderHover(pieceId, range)
+    return this.hoverFor("option", doc.getText(range), range)
   }
 
   private condHover(doc: vscode.TextDocument, pos: vscode.Position) {
@@ -206,33 +180,6 @@ export class HoverProvider implements vscode.HoverProvider {
     )
     return new vscode.Hover(md, range)
   }
-
-  private optionAt(token: string): DocPieceId | undefined {
-    // Direct form; negation feedback discarded (top-of-file note).
-    const direct = resolve(this.corpus, "option", token)
-    if (direct) return direct
-
-    // Short-flag form: `-J` / `+J`.
-    const short = token.match(/^([+-])([A-Za-z0-9])$/)
-    if (!short?.[1] || !short[2]) return
-    const hits =
-      this.flagMap
-        .get(mkOptFlag(short[2]))
-        ?.filter(hit => hit.alias.on === short[1]) ?? []
-    if (isSingle(hits)) return mkPieceId("option", hits[0].opt.name)
-  }
-}
-
-function indexMany<K, V>(
-  entries: readonly (readonly [K, V])[],
-): ReadonlyMap<K, readonly V[]> {
-  const out = new Map<K, V[]>()
-  for (const [key, value] of entries) {
-    const vs = out.get(key)
-    if (vs) vs.push(value)
-    else out.set(key, [value])
-  }
-  return out
 }
 
 const spanHas = (span: { start: number }, at: number, len: number) =>

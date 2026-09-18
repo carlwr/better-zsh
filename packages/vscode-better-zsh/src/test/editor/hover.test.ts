@@ -5,6 +5,7 @@ import type {
   BuiltinDoc,
   ComplexCommandDoc,
   Documented,
+  OptFlagAlias,
   ReservedWordDoc,
   ShellParamDoc,
   ZshOption,
@@ -25,13 +26,17 @@ const b = (name: string, desc: string): BuiltinDoc => ({
   desc,
 })
 
-const o = (name: string, section: ZshOption["section"]): ZshOption => ({
+const o = (
+  name: string,
+  desc: string,
+  emulations: OptFlagAlias["emulations"],
+): ZshOption => ({
   name: mkDocumented("option", name),
   display: name,
-  flags: [{ char: mkOptFlag("f"), on: "+", emulations: ["csh", "zsh"] }],
+  flags: [{ char: mkOptFlag("f"), on: "+", emulations }],
   defaultIn: ["zsh"],
-  section,
-  desc: "",
+  section: "Shell State",
+  desc,
 })
 
 const p = (name: string, desc: string): ShellParamDoc => ({
@@ -60,10 +65,10 @@ const rw = (name: string, desc: string): ReservedWordDoc => ({
 // Synthetic corpus: exercises dispatch/precedence rules with `/d:.../` markers.
 const corpus: DocCorpus = {
   ...emptyCorpus(),
-  // Both options carry `+f`, so `+f` is ambiguous.
+  // Both options carry `+f`; only RCS's is in the plain-zsh letter table.
   option: by("name", [
-    o("GLOB", "Expansion and Globbing"),
-    o("RCS", "Initialisation"),
+    o("GLOB", "d:g", ["ksh", "sh"]),
+    o("RCS", "d:r", ["csh", "zsh"]),
   ]),
   builtin: by("name", [b("echo", "d:e"), b("fc", "d:f")]),
   complex_command: by("name", [cc("for", "d:cc-for")]),
@@ -109,7 +114,7 @@ describe("HoverProvider dispatch", () => {
     ["echo $? # $?", 10, null], // in a comment
     ["echo  hi", 4, null],
     ["echo # echo", 9, null],
-    ["setopt +f", 8, null], // ambiguous short flag
+    ["setopt +f", 8, /d:r/], // short flag: the plain-zsh table's owner
     // `for` is both reserved word and complex command; richer record wins.
     ["for x in 1 2 3; do echo $x; done", 0, /d:cc-for/],
     ["for x in 1 2 3; do echo $x; done", 16, /d:rw-do/],
@@ -195,7 +200,10 @@ describe("HoverProvider on the real corpus", () => {
   test.each<[string, number, DocCategory, string]>([
     ["echo thing >&2", 1, "builtin", "echo"], // head wins over a trailing redir
     ["setopt no_autocd", 8, "option", "autocd"],
-    ["set -e", 5, "option", "errexit"], // short flag, unique
+    ["set -e", 5, "option", "errexit"], // short flag
+    ["set +e", 5, "option", "errexit"], // its off form
+    ["set +f", 5, "option", "rcs"], // GLOB only under sh/ksh emulation
+    ["set -X", 5, "option", "listtypes"], // MARK_DIRS only under sh/ksh
     ["set +o pipefail", 7, "option", "pipefail"],
   ])("%s @%d -> %s %s", (line, char, cat, id) => {
     expect(realAt(line, 0, char)?.value).toBe(
@@ -203,8 +211,11 @@ describe("HoverProvider on the real corpus", () => {
     )
   })
 
-  test("unknown short flag: no hover", () => {
-    expect(realAt("setopt -?", 0, 8)).toBeUndefined()
+  test.each([
+    ["setopt -?", 8], // not a flag letter
+    ["set -b", 5], // sh/ksh-only letter (NOTIFY)
+  ])("%s @%d: no hover", (line, char) => {
+    expect(realAt(line, 0, char)).toBeUndefined()
   })
 
   // `functions` and `history` are both builtins and special parameters.
