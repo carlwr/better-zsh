@@ -3,6 +3,7 @@ import type {
   DefaultMarker,
   Documented,
   Emulation,
+  OptFlag,
   OptFlagAlias,
   OptFlagSign,
   ZshOption,
@@ -19,6 +20,7 @@ import {
   extractSectionBody,
   mkClosedUnionParser,
   withBody,
+  type YodlEntry,
 } from "../core/doc.ts"
 import { asNodes, type YodlSrc } from "../core/nodes.ts"
 import {
@@ -28,7 +30,6 @@ import {
   trimmedTtTexts,
 } from "../core/text.ts"
 
-const HEADER_FLAG_RE = /^[+-][A-Za-z0-9]$/
 const DEFAULT_EMULATIONS: Record<DefaultMarker, readonly Emulation[]> = {
   C: ["csh"],
   D: emulations,
@@ -37,9 +38,33 @@ const DEFAULT_EMULATIONS: Record<DefaultMarker, readonly Emulation[]> = {
   Z: ["zsh"],
 }
 // Marker char class derived from the table — can't drift from `DefaultMarker`.
-const DEFAULT_RE = new RegExp(
-  `<([${Object.keys(DEFAULT_EMULATIONS).join("")}])>`,
-  "g",
+const MARKER_CHARS = Object.keys(DEFAULT_EMULATIONS).join("")
+const DEFAULT_RE = new RegExp(`<([${MARKER_CHARS}])>`, "g")
+
+/**
+ * zsh's two single-letter option tables — each an sitem list under "Single
+ * Letter Options" in options.yo — and the emulation modes each serves.
+ * Option headers repeat the letters: a plain one from the default table, a
+ * `ksh:`-prefixed one from the sh/ksh table.
+ */
+const FLAG_TABLES = {
+  default: { section: "Default set", emulations: ["csh", "zsh"] },
+  ksh: { section: "sh/ksh emulation set", emulations: ["ksh", "sh"] },
+} as const satisfies Record<
+  string,
+  { section: string; emulations: readonly Emulation[] }
+>
+type FlagTable = (typeof FLAG_TABLES)[keyof typeof FLAG_TABLES]
+
+const FLAG_TOKEN = "[+-][A-Za-z0-9]"
+const FLAG_TOKEN_RE = new RegExp(`^${FLAG_TOKEN}$`)
+// Option header as plain text: `NAME[ (FLAG[, ksh: FLAG])][ <M>…]`, e.g.
+// `NOTIFY (-5, ksh: -b) <Z>`. Any other shape is an upstream change to be
+// taught here, never silently dropped.
+const HEADER_RE = new RegExp(
+  `^(?<name>[A-Z_]+)` +
+    `(?: \\((?<flag>${FLAG_TOKEN})(?:, ksh: (?<kshFlag>${FLAG_TOKEN}))?\\))?` +
+    `(?: <[${MARKER_CHARS}]>)*$`,
 )
 
 const parseOptionSection = mkClosedUnionParser(
@@ -66,24 +91,21 @@ export function fixupOptionsYo(yo: string): string {
 
 export function parseOptions(yo: YodlSrc): readonly ZshOption[] {
   const nodes = asNodes(typeof yo === "string" ? fixupOptionsYo(yo) : yo)
-  const flagMap = parseDefaultFlagAliases(nodes)
-  return withBody(extractItems(nodes)).flatMap(item => {
-    const parsed = parseOptHeader(item.header)
-    if (!parsed) return []
+  const tableFlags = parseFlagTables(nodes)
+  return withBody(extractItems(nodes)).map(item => {
+    const head = parseOptHeader(item.header)
     const section = parseOptionSection(item.section)
     const aliasOf =
       section === "Option Aliases" ? parseAliasTarget(item.body) : undefined
-    return [
-      {
-        name: parsed.name,
-        display: parsed.display,
-        flags: mergeFlags(flagMap.get(parsed.name), parsed.flags),
-        defaultIn: emulationsFor(defaultMarkers(item.header)),
-        section,
-        desc: normalizeBody(item.body),
-        ...(aliasOf && { aliasOf }),
-      } satisfies ZshOption,
-    ]
+    return {
+      name: head.name,
+      display: head.display,
+      flags: mergeFlags([...head.flags, ...(tableFlags.get(head.name) ?? [])]),
+      defaultIn: head.defaultIn,
+      section,
+      desc: normalizeBody(item.body),
+      ...(aliasOf && { aliasOf }),
+    } satisfies ZshOption
   })
 }
 
@@ -101,87 +123,116 @@ function parseAliasTarget(body: YodlSrc): ZshOption["aliasOf"] {
   }
 }
 
-function parseOptHeader(header: YodlSrc):
-  | {
-      name: Documented<"option">
-      display: string
-      flags: OptFlagAlias[]
-    }
-  | undefined {
-  const [display, ...parts] = trimmedTtTexts(header)
-  if (!display || !/^[A-Z_]+$/.test(display)) return undefined
+function parseOptHeader(header: YodlSrc): {
+  name: Documented<"option">
+  display: string
+  flags: OptFlagAlias[]
+  defaultIn: readonly Emulation[]
+} {
+  const text = stripYodl(header, "code")
+  const m = HEADER_RE.exec(text)?.groups
+  if (!m?.name) throw new Error(`Unexpected zsh option header: ${text}`)
   return {
-    name: mkDocumented("option", display),
-    display,
-    flags: parts.flatMap(toFlagAlias),
+    name: mkDocumented("option", m.name),
+    display: m.name,
+    flags: [
+      ...headerFlag(m.flag, FLAG_TABLES.default),
+      ...headerFlag(m.kshFlag, FLAG_TABLES.ksh),
+    ],
+    defaultIn: emulationsFor(defaultMarkers(text)),
   }
 }
 
-function parseDefaultFlagAliases(
+function headerFlag(
+  token: string | undefined,
+  table: FlagTable,
+): OptFlagAlias[] {
+  const flag = token === undefined ? undefined : parseFlagToken(token)
+  return flag ? [mkAlias(flag.char, flag.on, table.emulations)] : []
+}
+
+/** Rows of both tables, keyed by the option they name. */
+function parseFlagTables(
   yo: YodlSrc,
-): Map<string, readonly OptFlagAlias[]> {
-  const out = new Map<string, readonly OptFlagAlias[]>()
-  for (const item of extractFirstSitemList(
-    extractSectionBody(yo, "Default set"),
-  )) {
-    const flag = trimmedTtTexts(item.header)[0]
-    const target = stripYodl(item.body ?? "", "code").trim()
-    if (!flag || !target) continue
-    const alias = aliasFrom(flag, target)
-    if (!alias) continue
-    const key = mkDocumented("option", alias.display)
-    out.set(key, mergeFlags(out.get(key), [alias.flag]))
+): Map<Documented<"option">, readonly OptFlagAlias[]> {
+  const out = new Map<Documented<"option">, readonly OptFlagAlias[]>()
+  for (const table of Object.values(FLAG_TABLES)) {
+    const rows = extractFirstSitemList(extractSectionBody(yo, table.section))
+    for (const row of rows) {
+      const { name, alias } = parseTableRow(row, table)
+      out.set(name, [...(out.get(name) ?? []), alias])
+    }
   }
   return out
 }
 
-/** Parse a `+X`/`-X` flag token into an alias; the sole `OptFlagSign` narrowing point. */
-function parseFlagToken(s: string): OptFlagAlias | undefined {
-  if (!HEADER_FLAG_RE.test(s)) return undefined
-  const char = s[1]
-  return char ? { on: s[0] as OptFlagSign, char: mkOptFlag(char) } : undefined
-}
-
-function aliasFrom(
-  flag: string,
-  target: string,
-): { display: string; flag: OptFlagAlias } | undefined {
-  const parsed = parseFlagToken(flag)
-  if (!parsed) return undefined
+// A row is `sitem(tt(-X))(NAME)` or `sitem(tt(-X))(em(NO_)NAME)`; the latter
+// says `-X` turns NAME off, i.e. `+X` is the on-form.
+function parseTableRow(
+  row: YodlEntry,
+  table: FlagTable,
+): { name: Documented<"option">; alias: OptFlagAlias } {
+  const token = trimmedTtTexts(row.header)[0]
+  const flag = token === undefined ? undefined : parseFlagToken(token)
+  const target = stripYodl(row.body ?? "", "code").trim()
+  if (!flag || !target) {
+    throw new Error(
+      `Unexpected "${table.section}" row: ${stripYodl(row.header)}`,
+    )
+  }
   const negated = target.startsWith("NO_")
   return {
-    display: target.replace(/^NO_/, ""),
-    flag: {
-      char: parsed.char,
-      on: negated ? flipOptFlagSign(parsed.on) : parsed.on,
-    },
+    name: mkDocumented("option", target.replace(/^NO_/, "")),
+    alias: mkAlias(
+      flag.char,
+      negated ? flipOptFlagSign(flag.on) : flag.on,
+      table.emulations,
+    ),
   }
 }
 
-function toFlagAlias(raw: string): OptFlagAlias[] {
-  const flag = parseFlagToken(raw)
-  return flag ? [flag] : []
+/** Parse a `+X`/`-X` flag token; the sole `OptFlagSign` narrowing point. */
+function parseFlagToken(
+  token: string,
+): { char: OptFlag; on: OptFlagSign } | undefined {
+  if (!FLAG_TOKEN_RE.test(token)) return undefined
+  return { char: mkOptFlag(token.slice(1)), on: token[0] as OptFlagSign }
 }
 
-function mergeFlags(
-  ...groups: readonly (readonly OptFlagAlias[] | undefined)[]
-): OptFlagAlias[] {
+/**
+ * The sole `OptFlagAlias` constructor: one key order for every source (the
+ * JSON export shows it), `emulations` deduped in `emulations` tuple order.
+ */
+function mkAlias(
+  char: OptFlag,
+  on: OptFlagSign,
+  validIn: readonly Emulation[],
+): OptFlagAlias {
+  return { char, on, emulations: emulations.filter(e => validIn.includes(e)) }
+}
+
+const isZshAlias = (alias: OptFlagAlias) => alias.emulations.includes("zsh")
+
+/**
+ * Same `(on, char)` from several sources (header, tables) is one alias valid
+ * in the union of their emulations. Plain-zsh aliases come first.
+ */
+function mergeFlags(aliases: readonly OptFlagAlias[]): OptFlagAlias[] {
   const out: OptFlagAlias[] = []
-  const seen = new Set<string>()
-  for (const group of groups) {
-    for (const flag of group ?? []) {
-      const key = `${flag.on}${flag.char as string}`
-      if (seen.has(key)) continue
-      seen.add(key)
-      out.push(flag)
+  for (const a of aliases) {
+    const i = out.findIndex(b => b.on === a.on && b.char === a.char)
+    const prev = out[i]
+    if (prev) {
+      out[i] = mkAlias(a.char, a.on, [...prev.emulations, ...a.emulations])
+    } else {
+      out.push(a)
     }
   }
-  return out
+  return [...out.filter(isZshAlias), ...out.filter(a => !isZshAlias(a))]
 }
 
-function defaultMarkers(header: YodlSrc): DefaultMarker[] {
-  const text = typeof header === "string" ? header : stripYodl(header, "code")
-  return [...text.matchAll(DEFAULT_RE)].flatMap(m =>
+function defaultMarkers(header: string): DefaultMarker[] {
+  return [...header.matchAll(DEFAULT_RE)].flatMap(m =>
     m[1] ? [m[1] as DefaultMarker] : [],
   )
 }

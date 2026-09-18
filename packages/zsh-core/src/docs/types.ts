@@ -106,10 +106,20 @@ export type ReservedWordPos = "command" | "any"
 export type HistoryKind = "event-designator" | "word-designator" | "modifier"
 export type ProcessSubstOp = "<(...)" | ">(...)" | "=(...)"
 
-/** Short-option alias for a long zsh option. */
+/**
+ * Short-option alias for a long zsh option. zsh has two single-letter option
+ * tables: the default one (plain zsh, csh emulation) and the sh/ksh one;
+ * the same letter can name different options in each (`set -X` is
+ * `LIST_TYPES` in plain zsh, `MARK_DIRS` under `emulate ksh`).
+ */
 export interface OptFlagAlias {
   readonly char: OptFlag
   readonly on: OptFlagSign
+  /**
+   * Emulation modes whose single-letter option table maps this flag to this
+   * option; plain zsh is `zsh`. Non-empty; in `emulations` tuple order.
+   */
+  readonly emulations: readonly Emulation[]
 }
 
 export const optSections = [

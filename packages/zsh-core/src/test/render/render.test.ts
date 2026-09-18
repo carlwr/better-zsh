@@ -74,7 +74,7 @@ import { withTmpDirAsync } from "../tmp-dir"
 const cd: ZshOption = {
   name: mkDocumented("option", "AUTO_CD"),
   display: "AUTO_CD",
-  flags: [{ char: mkOptFlag("J"), on: "-" }],
+  flags: [{ char: mkOptFlag("J"), on: "-", emulations: ["csh", "zsh"] }],
   defaultIn: ["csh", "ksh", "sh", "zsh"],
   section: "Changing Directories",
   desc: "d:o",
@@ -430,6 +430,28 @@ describe("render markdown", () => {
       "**Default in zsh: `on`**",
       "_Option category:_ Changing Directories",
     ])
+  })
+
+  // A letter from the sh/ksh table only is not plain-zsh syntax: rendered
+  // after the plain-zsh flags (whatever the record order) and annotated.
+  test("option head — sh/ksh-only flags last, annotated", () => {
+    const opt: ZshOption = {
+      ...cd,
+      flags: [
+        { char: mkOptFlag("b"), on: "-", emulations: ["ksh", "sh"] },
+        { char: mkOptFlag("5"), on: "-", emulations: ["csh", "zsh"] },
+      ],
+    }
+    expect(headFor("option", opt)?.lines.join("\n")).toBe(
+      [
+        "setopt auto_cd     # on",
+        "unsetopt auto_cd   # off",
+        "set -5             # on",
+        "set +5             # off",
+        "set -b             # on (sh/ksh emulation only)",
+        "set +b             # off (sh/ksh emulation only)",
+      ].join("\n"),
+    )
   })
 
   // Backticked option references (e.g. from `tt(AUTO_CD)` upstream) are

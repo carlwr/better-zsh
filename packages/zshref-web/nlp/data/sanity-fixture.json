@@ -23,12 +23,12 @@
       "topMatch": {
         "category": "option",
         "id": "autopushd",
-        "score": 0.9071894116766797
+        "score": 0.9074740683662919
       },
       "runnerUp": {
         "category": "option",
         "id": "autolist",
-        "score": 0.7861978748607894
+        "score": 0.7866025033579265
       }
     },
     {
@@ -49,7 +49,7 @@
       "topMatch": {
         "category": "option",
         "id": "rcexpandparam",
-        "score": 0.889553352415067
+        "score": 0.8927065794539137
       },
       "runnerUp": {
         "category": "option",

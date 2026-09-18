@@ -28,7 +28,7 @@ const b = (name: string, desc: string): BuiltinDoc => ({
 const o = (name: string, section: ZshOption["section"]): ZshOption => ({
   name: mkDocumented("option", name),
   display: name,
-  flags: [{ char: mkOptFlag("f"), on: "+" }],
+  flags: [{ char: mkOptFlag("f"), on: "+", emulations: ["csh", "zsh"] }],
   defaultIn: ["zsh"],
   section,
   desc: "",

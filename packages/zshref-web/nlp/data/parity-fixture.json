@@ -16,7 +16,7 @@
           "display": "AUTO_CD",
           "title": "`AUTO_CD`",
           "md_body": "```zsh\nsetopt auto_cd     # on\nunsetopt auto_cd   # off\nset -J             # on\nset +J             # off\n```\n\n**Default in zsh: `off`**\n\nIf a command is issued that can't be executed as a normal command, and the command is the name of a directory, perform the `cd` command to that directory. This option is only applicable if the option **`SHIN_STDIN`** is set, i.e. if commands are being read from standard input. The option is designed for interactive use; it is recommended that `cd` be used explicitly in scripts to avoid ambiguity.\n\n_Option category:_ Changing Directories",
-          "structured": "category: option\ncategory id: option\nid: autocd\ndisplay: AUTO_CD\nname: autocd\ndisplay: AUTO_CD\nflags: char J on -\nsection: Changing Directories",
+          "structured": "category: option\ncategory id: option\nid: autocd\ndisplay: AUTO_CD\nname: autocd\ndisplay: AUTO_CD\nflags: char J on - emulations csh zsh\nsection: Changing Directories",
           "body": "If a command is issued that can't be executed as a normal command, and the command is the name of a directory, perform the `cd` command to that directory. This option is only applicable if the option `SHIN_STDIN` is set, i.e. if commands are being read from standard input. The option is designed for interactive use; it is recommended that `cd` be used explicitly in scripts to avoid ambiguity.",
           "expanded": "option\nautocd\nAUTO CD"
         },
@@ -2362,7 +2362,7 @@
           "display": "GLOB_DOTS",
           "title": "`GLOB_DOTS`",
           "md_body": "```zsh\nsetopt glob_dots     # on\nunsetopt glob_dots   # off\nset -4               # on\nset +4               # off\n```\n\n**Default in zsh: `off`**\n\nDo not require a leading `.` in a filename to be matched explicitly.\n\n_Option category:_ Expansion and Globbing",
-          "structured": "category: option\ncategory id: option\nid: globdots\ndisplay: GLOB_DOTS\nname: globdots\ndisplay: GLOB_DOTS\nflags: char 4 on -\nsection: Expansion and Globbing",
+          "structured": "category: option\ncategory id: option\nid: globdots\ndisplay: GLOB_DOTS\nname: globdots\ndisplay: GLOB_DOTS\nflags: char 4 on - emulations csh zsh\nsection: Expansion and Globbing",
           "body": "Do not require a leading `.` in a filename to be matched explicitly.",
           "expanded": "option\nglobdots\nGLOB DOTS"
         },

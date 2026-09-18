@@ -418,12 +418,18 @@ function optHead(opt: ZshOption): DocHead {
   // Pad to the widest `cmd arg` cell — `unsetopt <name>` is always widest —
   // plus a 2-space gap before the trailing `# on`/`# off`.
   const width = `unsetopt ${long}`.length + 2
+  // Plain-zsh flags first. A letter absent from the plain-zsh table comes
+  // from the sh/ksh one; annotated, since in plain zsh it is another option
+  // or a bad option.
+  const zshFlags = opt.flags.filter(f => f.emulations.includes("zsh"))
+  const kshFlags = opt.flags.filter(f => !f.emulations.includes("zsh"))
   return {
     lang: "zsh",
     lines: [
       label("setopt", long, "on", width),
       label("unsetopt", long, "off", width),
-      ...opt.flags.map(f => renderFlag(f, width)),
+      ...zshFlags.map(f => renderFlag(f, width)),
+      ...kshFlags.map(f => renderFlag(f, width, " (sh/ksh emulation only)")),
     ],
   }
 }
@@ -825,10 +831,10 @@ export function defaultStateIn(opt: ZshOption, emulation: Emulation): OptState {
   return opt.defaultIn.includes(emulation) ? "on" : "off"
 }
 
-function renderFlag(flag: OptFlagAlias, width: number): string {
+function renderFlag(flag: OptFlagAlias, width: number, note = ""): string {
   return [
-    label("set", `${flag.on}${flag.char}`, "on", width),
-    label("set", `${flipOptFlagSign(flag.on)}${flag.char}`, "off", width),
+    label("set", `${flag.on}${flag.char}`, "on", width, note),
+    label("set", `${flipOptFlagSign(flag.on)}${flag.char}`, "off", width, note),
   ].join("\n")
 }
 
@@ -837,7 +843,8 @@ const label = (
   arg: string,
   state: OptState,
   width: number,
-): string => `${`${cmd} ${arg}`.padEnd(width)} # ${state}`
+  note = "",
+): string => `${`${cmd} ${arg}`.padEnd(width)} # ${state}${note}`
 
 // --- public dispatch -------------------------------------------------------
 
