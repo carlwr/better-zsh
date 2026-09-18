@@ -12,7 +12,13 @@ import { cmdHeadFactsOnLine, funcDeclsAtLine } from "./line-facts.ts"
 import { quotedRegionFacts } from "./quoted-region.ts"
 
 export type { TextDoc, TextLine, TextSpan } from "./doc.ts"
-export { factText, lineStarts, offsetAt, positionAt } from "./doc.ts"
+export {
+  factText,
+  lineStarts,
+  offsetAt,
+  positionAt,
+  textDoc,
+} from "./doc.ts"
 export type {
   BaseFact,
   CmdFact,

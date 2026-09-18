@@ -1,12 +1,4 @@
-import type { TextDoc } from "../../analysis/facts"
+import { type TextDoc, textDoc } from "../../analysis/facts"
 
-export function mockDoc(lines: readonly string[]): TextDoc {
-  return {
-    lineAt: (i: number) => ({ text: lines[i] ?? "" }),
-    lineCount: lines.length,
-  }
-}
-
-export function doc(text: string): TextDoc {
-  return mockDoc(text.split("\n"))
-}
+export const mockDoc = (lines: readonly string[]): TextDoc =>
+  textDoc(lines.join("\n"))

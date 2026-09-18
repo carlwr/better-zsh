@@ -6,8 +6,9 @@ import {
   isQuotedRegionFact,
   type QuotedRegionFact,
   quotedRegionFacts,
+  textDoc,
 } from "../../analysis/facts"
-import { doc, mockDoc } from "./test-util"
+import { mockDoc } from "./test-util"
 
 function texts(lines: readonly string[]): string[] {
   const text = lines.join("\n")
@@ -90,7 +91,7 @@ describe("quotedRegionFacts", () => {
   })
 
   test("fact text uses document offsets", () => {
-    const source = doc('print "a"\nprint "b"')
+    const source = textDoc('print "a"\nprint "b"')
     expect(
       analyzeDoc(source)
         .filter(isQuotedRegionFact)

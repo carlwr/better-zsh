@@ -5,8 +5,31 @@ import {
   lineStarts,
   offsetAt,
   positionAt,
+  readLines,
+  textDoc,
 } from "../../analysis/doc"
 import { mockDoc } from "./test-util"
+
+describe("textDoc", () => {
+  test("lines round-trip through the text", () => {
+    const lines = fc.array(fc.stringMatching(/^[a-z \r]{0,5}$/), {
+      minLength: 1,
+    })
+    fc.assert(
+      fc.property(lines, ls => {
+        expect(readLines(textDoc(ls.join("\n")))).toEqual(ls)
+      }),
+    )
+  })
+
+  test("empty text is one empty line", () => {
+    expect(readLines(textDoc(""))).toEqual([""])
+  })
+
+  test("lineAt throws out of range", () => {
+    expect(() => textDoc("a").lineAt(1)).toThrow(RangeError)
+  })
+})
 
 describe("offset model", () => {
   test("every separator is one character", () => {

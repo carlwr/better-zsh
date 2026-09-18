@@ -17,6 +17,22 @@ export interface TextSpan {
   readonly end: number
 }
 
+/**
+ * {@link TextDoc} over plain text, one line per `\n` — the offset model of
+ * {@link lineStarts}. `lineAt` throws out of range, as VS Code's does.
+ */
+export function textDoc(text: string): TextDoc {
+  const lines = text.split("\n")
+  return {
+    lineCount: lines.length,
+    lineAt: i => {
+      const line = lines[i]
+      if (line === undefined) throw new RangeError(`line ${i} out of range`)
+      return { text: line }
+    },
+  }
+}
+
 export function activeText(line: string): string {
   const cut = commentStart(line) ?? line.length
   return line.slice(0, cut)
