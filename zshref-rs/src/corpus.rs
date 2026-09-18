@@ -311,6 +311,41 @@ impl Record {
         let s = self.str("_subKind");
         (!s.is_empty()).then_some(s)
     }
+
+    /// An option record's short-flag aliases (`flags[]`); empty elsewhere.
+    pub fn flags(&self) -> impl Iterator<Item = OptFlagAlias<'_>> {
+        self.0
+            .get("flags")
+            .and_then(Value::as_array)
+            .into_iter()
+            .flatten()
+            .filter_map(|f| {
+                Some(OptFlagAlias {
+                    char: f.get("char")?.as_str()?,
+                    on: f.get("on")?.as_str()?,
+                    emulations: f.get("emulations")?.as_array()?,
+                })
+            })
+    }
+}
+
+// MIRROR-OF: packages/zsh-core/src/docs/types.ts (`OptFlagAlias`)
+/// One `flags[]` entry of an option record: the letter, the sign that turns
+/// the option on, and the emulation modes whose single-letter table maps the
+/// letter to this option (plain zsh is `zsh`).
+#[derive(Clone, Copy, Debug)]
+pub struct OptFlagAlias<'r> {
+    pub char: &'r str,
+    pub on: &'r str,
+    emulations: &'r [Value],
+}
+
+impl OptFlagAlias<'_> {
+    pub fn valid_in(&self, emulation: &str) -> bool {
+        self.emulations
+            .iter()
+            .any(|e| e.as_str() == Some(emulation))
+    }
 }
 
 pub fn load_corpus() -> Result<Corpus> {

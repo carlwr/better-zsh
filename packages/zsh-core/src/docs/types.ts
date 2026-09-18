@@ -106,6 +106,7 @@ export type ReservedWordPos = "command" | "any"
 export type HistoryKind = "event-designator" | "word-designator" | "modifier"
 export type ProcessSubstOp = "<(...)" | ">(...)" | "=(...)"
 
+// MIRRORED-IN: zshref-rs/src/corpus.rs
 /**
  * Short-option alias for a long zsh option. zsh has two single-letter option
  * tables: the default one (plain zsh, csh emulation) and the sh/ksh one;

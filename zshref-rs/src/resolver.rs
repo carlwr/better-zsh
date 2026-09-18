@@ -27,9 +27,10 @@ pub fn normalize_option(raw: &str) -> String {
         .collect()
 }
 
-/// Lossy-resolution feedback from a per-category resolver: an option name
-/// reached via `NO_`-stripping, or a special-parameter name reached by
-/// dropping a trailing `[subscript]` (`compstate[context]` → `compstate`).
+/// Lossy-resolution feedback from a per-category resolver: an option input
+/// denoting the option's off state (`NO_` prefix or flipped-sign
+/// single-letter flag), or a special-parameter name reached by dropping a
+/// trailing `[subscript]` (`compstate[context]` → `compstate`).
 /// Serializes as the kind-tagged object the tools emit; the `kind` values
 /// are the TS union's literals, pinned by the fixture.
 #[derive(Clone, Debug, PartialEq, Serialize)]
@@ -279,10 +280,39 @@ fn resolve_option_via_resolver<'c>(
     raw: &str,
 ) -> Option<ResolvedHit<'c>> {
     let norm = normalize_option(raw);
-    find_by_id(corpus, cat, &norm, None).or_else(|| {
-        let stripped = strip_no_prefix(raw)?;
-        let norm2 = normalize_option(&stripped);
-        find_by_id(corpus, cat, &norm2, Some(ResolverFeedback::InputNegated))
+    find_by_id(corpus, cat, &norm, None)
+        .or_else(|| {
+            let stripped = strip_no_prefix(raw)?;
+            let norm2 = normalize_option(&stripped);
+            find_by_id(corpus, cat, &norm2, Some(ResolverFeedback::InputNegated))
+        })
+        .or_else(|| resolve_option_flag(corpus, cat, raw))
+}
+
+/// `-J` / `+J` against the plain-zsh single-letter table: the first record
+/// in corpus order with a `zsh`-table alias of that letter. Case is
+/// significant (`-J` ≠ `-j`); sh/ksh-only letters never resolve. Negated
+/// when the sign is not the alias' on-form.
+fn resolve_option_flag<'c>(
+    corpus: &'c Corpus,
+    cat: DocCategory,
+    raw: &str,
+) -> Option<ResolvedHit<'c>> {
+    let t = raw.trim();
+    let &[b'+' | b'-', letter] = t.as_bytes() else {
+        return None;
+    };
+    if !letter.is_ascii_alphanumeric() {
+        return None;
+    }
+    let (sign, letter) = t.split_at(1);
+    let cat = corpus.category(cat);
+    cat.records.iter().find_map(|rec| {
+        let alias = rec
+            .flags()
+            .find(|f| f.char == letter && f.valid_in("zsh"))?;
+        let feedback = (alias.on != sign).then_some(ResolverFeedback::InputNegated);
+        Some(make_hit(cat, rec, feedback))
     })
 }
 

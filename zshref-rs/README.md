@@ -19,7 +19,7 @@ What the MCP server adds: one line in a client config (Claude Code, Claude Deskt
 What both share — and, for most users, the reason to pick either over `man zshall | grep`:
 
 - **Structured, not textual.** Parsed from upstream Yodl source into typed per-category records, not regex-scraped from `man`. Every record carries its own shape; every category carries its own resolver.
-- **Non-trivial resolvers.** Corpus-aware `NO_*` negation (including the `NOTIFY` / `NO_NOTIFY` edge case), redirection decomposition into `groupOp` + tail, parameter-expansion sig matching. The real value-add.
+- **Non-trivial resolvers.** Corpus-aware `NO_*` negation (including the `NOTIFY` / `NO_NOTIFY` edge case), single-letter option flags (`-J` / `+J`), redirection decomposition into `groupOp` + tail, parameter-expansion sig matching. The real value-add.
 - **Token-efficient.** `search` and `list` return identity-only rows (no `mdBody`); only `docs` returns the rendered markdown body. The closed category enum surfaces as shell-completion values and clap `PossibleValues`, not prose — callers don't burn tokens recalling category names.
 - **No trust surface.** No shell execution, no subprocess, no network, no filesystem writes, no logs, no caches, no config files, no telemetry, no environment-variable reads beyond the CLI's `NO_COLOR` / `CLICOLOR_FORCE` color gates. The MCP server's only side effect is writing JSON-RPC frames to stdout (fatal errors to stderr). Structurally enforced by a scope-fence test, not policy.
 
@@ -224,7 +224,7 @@ claude mcp add zshref -- npx -y @carlwr/zshref-mcp
 
 Three tools, one intent axis each; the same three the CLI exposes as subcommands. All return the envelope `{ matches, matchesReturned, matchesTotal }`; `matchesReturned < matchesTotal` means `limit` truncated the result. Only `zsh_docs` carries the rendered markdown body — pair `zsh_search` / `zsh_list` results with `zsh_docs` for the full doc. Every tool advertises an `outputSchema`; responses carry `structuredContent` alongside the JSON text block.
 
-- **`zsh_docs`** — look up the docs for a zsh key (`key`, optional `category`). Resolution is corpus-aware: case-insensitive option matching, underscore stripping, `NO_*` negation, redirection decomposition, history event designators. With `category` omitted, every category is tried; a few tokens (`for`, `[[`, `function`, `nocorrect`) match in more than one. Matches reached through a lossy normalization carry `feedback`.
+- **`zsh_docs`** — look up the docs for a zsh key (`key`, optional `category`). Resolution is corpus-aware: case-insensitive option matching, underscore stripping, `NO_*` negation, single-letter option flags, redirection decomposition, history event designators. With `category` omitted, every category is tried; a few tokens (`for`, `[[`, `function`, `nocorrect`, `-e`) match in more than one. Matches reached through a lossy normalization carry `feedback`.
 
   ```json
   { "key": "NO_AUTO_CD" }

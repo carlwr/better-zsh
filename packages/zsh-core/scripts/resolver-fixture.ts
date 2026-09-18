@@ -12,6 +12,7 @@ import {
   docDisplay,
   idOf,
 } from "../src/docs/taxonomy.ts"
+import { flipOptFlagSign } from "../src/docs/types.ts"
 
 type Inputs = readonly string[]
 
@@ -31,6 +32,14 @@ const pinnedInputs: { readonly [K in DocCategory]?: Inputs } = {
     "NO_NOTIFY",
     "bogus",
     "no_bogus",
+    // flag shapes that are not single zsh-table letters
+    "-j",
+    "-o",
+    "+o",
+    "--",
+    "-ex",
+    "set -J",
+    "-A",
   ],
   builtin: ["echo"],
   special_param: [
@@ -195,6 +204,19 @@ const crossCategoryInputs: Inputs = [
   "TRAPINT",
   "_functions",
   "precmd_functions",
+  // option flag shapes; `-e` is also a conditional operator
+  "-e",
+  "-J",
+  "+J",
+  // documented tie-breaks of the `classifyOrder` walk (DESIGN.md)
+  "nocorrect",
+  "noglob",
+  "typeset",
+  "declare",
+  "TRAPHUP",
+  "%n",
+  "h",
+  "&",
 ]
 
 type ExtraInputs<K extends DocCategory> = (doc: DocRecordMap[K]) => Inputs
@@ -224,12 +246,23 @@ const globInputs =
   (marker: string): ExtraInputs<"glob_flag" | "glob_qualifier"> =>
   d => [`(${marker}${d.flag})`, `(${d.flag})`]
 
+// Negated forms and both polarities of every short flag (on-form, flipped).
+const optionInputs: ExtraInputs<"option"> = d => [
+  `NO_${d.display}`,
+  `no${d.name}`,
+  d.name.toUpperCase(),
+  ...d.flags.flatMap(f => [
+    `${f.on}${f.char}`,
+    `${flipOptFlagSign(f.on)}${f.char}`,
+  ]),
+]
+
 /**
  * Per-record surface forms beyond id and display: the shapes a category's
- * resolver accepts (sigils, wrapping parens, negation, operands).
+ * resolver accepts (sigils, wrapping parens, negation, flags, operands).
  */
 const extraInputs: { readonly [K in DocCategory]?: ExtraInputs<K> } = {
-  option: d => [`NO_${d.display}`, `no${d.name}`, d.name.toUpperCase()],
+  option: optionInputs,
   special_param: d => [
     `$${d.name}`,
     `\${${d.name}}`,

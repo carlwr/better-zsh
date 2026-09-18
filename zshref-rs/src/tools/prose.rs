@@ -39,6 +39,8 @@ const RESOLUTION: &str = indoc! {"
       ----------        --------  --------
       ALIASES           option    aliases
       NO_ALIASES        option    aliases  (input-negated)
+      -J                option    autocd
+      +J                option    autocd   (input-negated)
       %number           job_spec  %number
       %1                job_spec  %number
 "};

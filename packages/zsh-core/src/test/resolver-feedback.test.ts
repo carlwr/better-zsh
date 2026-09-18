@@ -11,11 +11,48 @@
 import { describe, expect, test } from "vitest"
 import { resolve, resolverFeedback } from "../docs/resolver"
 import { docCategories, mkPieceId } from "../docs/taxonomy"
-import { membershipCorpus, mkDocumented_ } from "./id-fns"
+import { mkOptFlag, type OptFlagAlias, type ZshOption } from "../docs/types"
+import { emptyCorpus, membershipCorpus, mkDocumented_ } from "./id-fns"
 
 const opt = mkDocumented_("option")
 const sp = mkDocumented_("special_param")
 const optCorpus = membershipCorpus("option", ["AUTO_CD", "NOTIFY"])
+
+// Record-shaped option corpus: the flag path reads `flags`, which the
+// membership corpus leaves undefined.
+const alias = (
+  char: string,
+  on: OptFlagAlias["on"],
+  emulations: OptFlagAlias["emulations"],
+): OptFlagAlias => ({ char: mkOptFlag(char), on, emulations })
+const ZSH = ["csh", "zsh"] as const
+const KSH = ["ksh", "sh"] as const
+const option = (
+  name: string,
+  flags: readonly OptFlagAlias[],
+): readonly [ZshOption["name"], ZshOption] => [
+  opt(name),
+  {
+    name: opt(name),
+    display: name,
+    flags,
+    defaultIn: [],
+    section: "Shell State",
+    desc: "",
+  },
+]
+const flagCorpus = emptyCorpus({
+  option: new Map([
+    option("AUTO_CD", [alias("J", "-", ZSH)]),
+    option("RCS", [alias("f", "+", ZSH)]),
+    // sh/ksh-only letter: `-b` is a bad option in plain zsh
+    option("NOTIFY", [alias("5", "-", ZSH), alias("b", "-", KSH)]),
+    // same zsh letter twice (impossible in the real corpus): first wins
+    option("FIRST", [alias("Q", "-", ZSH)]),
+    option("SECOND", [alias("Q", "+", ZSH)]),
+    option("X", []),
+  ]),
+})
 const spCorpus = membershipCorpus("special_param", ["compstate", "pipestatus"])
 // Punctuation + named params for the `$`/`${…}` sigil-strip path.
 const sigilCorpus = membershipCorpus("special_param", [
@@ -67,6 +104,62 @@ describe("resolverFeedback(corpus, 'option', raw) — input-negated", () => {
     "no_bogus",
   ])("%s → undefined", raw => {
     expect(resolverFeedback(optCorpus, "option", raw)).toBeUndefined()
+  })
+})
+
+describe("resolve / resolverFeedback(corpus, 'option', raw) — short flags", () => {
+  test.each([
+    // on-form: identity, no feedback
+    ["-J", "autocd", false],
+    ["+f", "rcs", false],
+    ["  -J  ", "autocd", false],
+    // flipped sign: the option's off state
+    ["+J", "autocd", true],
+    ["-f", "rcs", true],
+    // zsh-table letter of an option that also has a ksh-only one
+    ["-5", "notify", false],
+    // duplicate zsh letter: first in corpus order, with its own polarity
+    ["-Q", "first", false],
+    ["+Q", "first", true],
+  ] as const)("%s → %s (negated: %s)", (raw, id, negated) => {
+    expect(resolve(flagCorpus, "option", raw)).toEqual(
+      mkPieceId("option", opt(id)),
+    )
+    expect(resolverFeedback(flagCorpus, "option", raw)).toEqual(
+      negated ? { kind: "input-negated" } : undefined,
+    )
+  })
+
+  test.each([
+    // sh/ksh-only letter
+    "-b",
+    "+b",
+    // case is significant: only `J` is a flag
+    "-j",
+    // not a single-letter flag
+    "-",
+    "--",
+    "-JJ",
+    "-ex",
+    "set -J",
+    "J",
+  ])("%s → undefined", raw => {
+    expect(resolve(flagCorpus, "option", raw)).toBeUndefined()
+    expect(resolverFeedback(flagCorpus, "option", raw)).toBeUndefined()
+  })
+
+  // Literal and `no_`-stripped forms are tried before the flag path (no input
+  // has both shapes, so this pins that they still work in a flag corpus).
+  test("literal and no_-stripped forms still resolve", () => {
+    expect(resolve(flagCorpus, "option", "X")).toEqual(
+      mkPieceId("option", opt("X")),
+    )
+    expect(resolve(flagCorpus, "option", "NO_X")).toEqual(
+      mkPieceId("option", opt("X")),
+    )
+    expect(resolverFeedback(flagCorpus, "option", "NO_X")).toEqual({
+      kind: "input-negated",
+    })
   })
 })
 

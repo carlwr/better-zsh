@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest"
 import { mkDocumented } from "../docs/brands"
 import { loadCorpus } from "../docs/corpus"
-import { lookupRaw, resolve } from "../docs/resolver"
+import { lookupRaw, resolve, resolverFeedback } from "../docs/resolver"
 import { type DocCategory, docCategories, mkPieceId } from "../docs/taxonomy"
 
 const corpus = loadCorpus()
@@ -16,6 +16,39 @@ function cases<K extends DocCategory>(cat: K) {
     miss: (raw: string) => expect(resolve(corpus, cat, raw)).toBeUndefined(),
   }
 }
+
+describe("resolveOption (single-letter flags)", () => {
+  const option = cases("option")
+  // Plain-zsh letter table only: `-X` is LIST_TYPES (MARK_DIRS under sh/ksh),
+  // `+f` is RCS (GLOB under sh/ksh), `-T` is CDABLE_VARS (TRAPS_ASYNC).
+  test.each([
+    ["-X", "listtypes"],
+    ["+f", "rcs"],
+    ["-T", "cdablevars"],
+    ["-e", "errexit"],
+    ["+e", "errexit"],
+    ["-J", "autocd"],
+  ])("%s -> %s", option.hit)
+
+  test.each([
+    // sh/ksh-only letter (NOTIFY): a bad option in plain zsh
+    "-b",
+    // case-sensitive: `-J` is AUTO_CD, `-j` nothing
+    "-j",
+    // combined letters and command words are analysis, not identity
+    "-ex",
+    "set -J",
+  ])("%s -> undefined", option.miss)
+
+  test.each([
+    ["-e", undefined],
+    ["+e", { kind: "input-negated" }],
+    ["+f", undefined],
+    ["-f", { kind: "input-negated" }],
+  ])("%s feedback %j", (raw, feedback) => {
+    expect(resolverFeedback(corpus, "option", raw)).toEqual(feedback)
+  })
+})
 
 describe("resolveHistory (event designators)", () => {
   const hist = cases("history_expn")

@@ -116,7 +116,7 @@ type _AssertClassifyOrderNoExtras = Assert<
 
 /**
  * `DocCategory` list in resolver-walk order. Consumers stop on first match
- * or collect all.
+ * or collect all; the per-category step is `lookupRaw`, not `resolve`.
  */
 export const classifyOrder: readonly DocCategory[] = classifyOrderTuple
 

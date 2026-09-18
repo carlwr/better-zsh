@@ -11,9 +11,10 @@
  * Resolvers have two durable jobs:
  *
  * - Close the gap between live zsh syntax and corpus identity. Option lookup
- *   is the canonical case: zsh ignores underscores and treats a leading
- *   `NO_`/`NO` as negation, so `auto_cd`, `NO_AUTO_CD`, and `au_to_cd` all
- *   identify the same documented option record.
+ *   is the canonical case: zsh ignores underscores, treats a leading
+ *   `NO_`/`NO` as negation and names options by single-letter flags, so
+ *   `auto_cd`, `NO_AUTO_CD`, `au_to_cd` and `-J` all identify the same
+ *   documented option record.
  * - Bridge documentation chunk shape. Some upstream zsh sections document a
  *   family as operator + form, not one record per surface operator. Redirection
  *   records, for example, are keyed by signatures like `>& number`, `>& -`,
@@ -383,29 +384,55 @@ function matchSpecialFunctionKey(t: string): string | undefined {
 }
 
 const NO_PREFIX_RE = /^no_?/i
+const OPT_FLAG_RE = /^([+-])([A-Za-z0-9])$/
+
+type OptionHit = {
+  readonly id: Documented<"option">
+  readonly negated: boolean
+}
 
 /**
  * Option resolver. Literal first (so `NOTIFY` → `notify`, not stripped
- * `tify`); falls back to `no_`-stripped form. Negated pathway surfaces via
- * `resolverFeedback` as `{ kind: "input-negated" }`.
+ * `tify`); then the `no_`-stripped form; then a single-letter flag (`-J`,
+ * `+J`). Negated pathways — `no_` prefix, or a flag whose sign is the
+ * option's off state — surface via `resolverFeedback` as
+ * `{ kind: "input-negated" }`.
  *
  * Public path: `resolve` + `resolverFeedback`.
  */
-function resolveOption(
-  corpus: DocCorpus,
-  raw: string,
-):
-  | { readonly id: Documented<"option">; readonly negated: boolean }
-  | undefined {
+function resolveOption(corpus: DocCorpus, raw: string): OptionHit | undefined {
   const literal = mkDocumented("option", raw)
   if (corpus.option.has(literal)) return { id: literal, negated: false }
   const trimmed = raw.trim()
   const m = trimmed.match(NO_PREFIX_RE)
-  if (!m) return undefined
-  const stripped = mkDocumented("option", trimmed.slice(m[0].length))
-  return corpus.option.has(stripped)
-    ? { id: stripped, negated: true }
-    : undefined
+  if (m) {
+    const stripped = mkDocumented("option", trimmed.slice(m[0].length))
+    if (corpus.option.has(stripped)) return { id: stripped, negated: true }
+  }
+  return resolveOptionFlag(corpus, trimmed)
+}
+
+/**
+ * `-J` / `+J` against the plain-zsh single-letter table: the first option in
+ * corpus order with a `zsh`-table alias of that letter. Case is significant
+ * (`-J` ≠ `-j`), so the raw letter is matched, not the normalized id.
+ * sh/ksh-only letters (`-b`) never resolve — they are errors in plain zsh.
+ */
+function resolveOptionFlag(
+  corpus: DocCorpus,
+  trimmed: string,
+): OptionHit | undefined {
+  const m = trimmed.match(OPT_FLAG_RE)
+  const sign = m?.[1]
+  const char = m?.[2]
+  if (!sign || !char) return undefined
+  for (const opt of corpus.option.values()) {
+    const alias = opt.flags.find(
+      f => f.char === char && f.emulations.includes("zsh"),
+    )
+    if (alias) return { id: opt.name, negated: alias.on !== sign }
+  }
+  return undefined
 }
 
 // Default: `simpleResolver(cat)` — trim + normalize + corpus lookup. Only
@@ -438,8 +465,9 @@ const resolvers: { [K in DocCategory]: Resolver<K> } = Object.fromEntries(
  * Resolve a raw user-code token against the corpus.
  *
  * Dispatches through a per-category resolver table; each category may apply
- * corpus-aware parsing (`option` handles `no_`-stripping; redirections
- * decompose group-op + tail; most others normalize + `Map.has`).
+ * corpus-aware parsing (`option` handles `no_`-stripping and `-J`/`+J`
+ * flags; redirections decompose group-op + tail; most others normalize +
+ * `Map.has`).
  *
  * Identity only — lossy bits surface via `resolverFeedback`. The sole public
  * brand-boundary crossing for untrusted raw strings; the other legitimate
@@ -476,8 +504,8 @@ export function lookupRaw<K extends DocCategory>(
  * Lossy-resolution feedback. Closed kind-tagged union; consumers route
  * programmatically (wording is not API surface).
  *
- * - `input-negated`: input reached via option resolver's `NO_`-stripping
- *   branch (canonical-form inputs do not carry this).
+ * - `input-negated`: input denotes the option's off state — `NO_` prefix or
+ *   flipped-sign single-letter flag (canonical-form inputs do not carry this).
  * - `subscripted`: input had a trailing `[...]` stripped to reach the parent
  *   record (`compstate[context]` → `compstate`). `subscript` holds the inner.
  */
