@@ -272,6 +272,7 @@ The manual's header groups (`(^B ESC-[D) (unbound) (unbound)`) are per-keymap de
 Per doc category, `subKindOf` returns `undefined` for every record or a non-empty string for every record — never mixed.
 
 - Enforced corpus-wide: `packages/zsh-core/src/test/doc-sub-kind.test.ts`.
+- Release-schema consumption (`_subKind` required with a closed enum, or absent, per category): `packages/zsh-core/scripts/build-schema.ts`.
 - Tool-layer schema consumption (per-category `oneOf` branching, no schema-level optionality): `zshref-rs/src/tools/schema.rs`.
 
 **Future work:** generalize to "per-category structural fields are always-or-never" so schemas encode presence structurally, not as blanket optionals. Fold tests and this section into one named invariant when a second concrete instance appears.
@@ -284,11 +285,15 @@ Vendored `.yo` is consumed three ways:
 
 - **`loadCorpus()`** — runtime parse into `DocCorpus`; cacheable.
 - **Pre-parsed JSON** — same records; markdown bodies pre-rendered at build time. Distribution: `PACKAGING.md`.
+  - _schema:_ one bundle, generated from the TS types plus the corpus (`packages/zsh-core/scripts/build-schema.ts`)
+    - consumers key on `#/$defs/<DocCategory>`, never on TS type names
+    - draft 2020-12, as the crate's tool schemas
+    - precision posture: PRINCIPLES.md §"Schema precision when schemas are co-released"
 - **Raw Yodl** under `dist/data/zsh-docs/` — advanced consumers.
 
 Per-category renderers are internal; public entry is `renderDoc`. The JSON is a sibling consumer path (e.g. Rust `include_bytes!`); it stays in zsh-core for build convenience — package split deferred.
 
-Parser and renderer are layered: the parser may capture structure the renderer chooses to flatten or compose. Rendered markdown is the byte-equal contract surface; record-shape changes (new typed fields) stay below it until they cross into the wire schema. Cross-cutting "records are self-contained" framing: PRINCIPLES.md.
+Parser and renderer are layered: the parser may capture structure the renderer chooses to flatten or compose. Rendered markdown is the byte-equal contract surface; record-shape changes (new typed fields) stay below it until they cross into the wire schema. Records carry prose twice — typed fields for routing, `mdBody` for reading — roughly a third to a half of the payload; accepted. Cross-cutting "records are self-contained" framing: PRINCIPLES.md.
 
 ---
 

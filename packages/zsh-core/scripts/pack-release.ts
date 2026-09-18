@@ -12,10 +12,11 @@ import {
 import { tmpdir } from "node:os"
 import { basename, dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
-import Ajv, { type AnySchema } from "ajv"
+import Ajv2020, { type AnySchema } from "ajv/dist/2020"
 import {
   hashRecordFiles,
   jsonDataFiles,
+  recordsSchemaFile,
   resolverFixture,
   schemaFile,
 } from "../src/docs/json-artifacts.ts"
@@ -56,11 +57,36 @@ const jsonNames = (dir: string) =>
     .filter(name => name.endsWith(".json"))
     .sort()
 
+const newAjv = () => new Ajv2020({ allErrors: true, strict: true })
+
 function validateWithSchema(json: string, schema: string, fail: Fail) {
-  const ajv = new Ajv({ allErrors: true, strict: true })
+  const ajv = newAjv()
   const validate = ajv.compile(readJson(schema) as AnySchema)
   if (!validate(readJson(json))) {
     fail(`${basename(json)}: ${ajv.errorsText(validate.errors)}`)
+  }
+}
+
+/**
+ * Each record file against its category's `$defs` entry in the bundle; the
+ * category-to-file pairing is the one a consumer reads from `index.json`.
+ */
+function validateRecordFiles(
+  jsonDir: string,
+  bundle: string,
+  categoryFiles: Record<string, string>,
+  fail: Fail,
+) {
+  const ajv = newAjv()
+  const schema = readJson(bundle)
+  ajv.addSchema(schema as AnySchema)
+  for (const [cat, file] of Object.entries(categoryFiles)) {
+    const validate = ajv.compile({
+      $ref: `${String(schema.$id)}#/$defs/${cat}`,
+    })
+    if (!validate(readJson(join(jsonDir, file)))) {
+      fail(`${file}: ${ajv.errorsText(validate.errors)}`)
+    }
   }
 }
 
@@ -97,13 +123,21 @@ const jsonAsset: Asset = {
       fail("index.dataHash does not match the packed record bytes")
     }
 
-    for (const name of ["index.json", ...dataFiles]) {
-      validateWithSchema(
-        join(root, "json", name),
-        join(root, "schema", schemaFile(name)),
-        fail,
-      )
+    validateWithSchema(
+      join(root, "json", "index.json"),
+      join(root, "schema", schemaFile("index.json")),
+      fail,
+    )
+    const categoryFiles = index.categoryFiles as Record<string, string>
+    if (Object.values(categoryFiles).sort().join() !== dataFiles.join()) {
+      fail("index.categoryFiles does not cover the packed record files")
     }
+    validateRecordFiles(
+      join(root, "json"),
+      join(root, "schema", recordsSchemaFile),
+      categoryFiles,
+      fail,
+    )
     return String(index.dataHash)
   },
 }

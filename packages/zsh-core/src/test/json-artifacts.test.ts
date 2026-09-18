@@ -8,9 +8,11 @@ import {
   hashRecordFiles,
   jsonDataFiles,
   jsonFiles,
+  recordsSchemaFile,
   resolverFixture,
   schemaFile,
 } from "../docs/json-artifacts"
+import { docCategories } from "../docs/taxonomy"
 
 const pkgDir = join(dirname(fileURLToPath(import.meta.url)), "..", "..")
 const jsonDir = join(pkgDir, "artifacts", "json")
@@ -31,13 +33,20 @@ describe("generated JSON is a release asset, not a registry payload", () => {
     }
   })
 
-  test("every jsonFiles entry is emitted with its schema", () => {
+  test("every jsonFiles entry is emitted", () => {
     for (const file of jsonFiles) {
       expect(existsSync(join(jsonDir, file))).toBe(true)
-      expect(
-        existsSync(join(pkgDir, "artifacts", "schema", schemaFile(file))),
-      ).toBe(true)
     }
+  })
+
+  test("one draft 2020-12 records bundle with a $defs entry per category", () => {
+    const bundle = readJson(join("artifacts", "schema", recordsSchemaFile))
+    expect(bundle.$schema).toBe("https://json-schema.org/draft/2020-12/schema")
+    const defs = bundle.$defs as Record<string, unknown>
+    for (const cat of docCategories) expect(defs[cat], cat).toBeDefined()
+    expect(
+      existsSync(join(pkgDir, "artifacts", "schema", schemaFile("index.json"))),
+    ).toBe(true)
   })
 
   test("the resolver fixture is emitted with its schema", () => {

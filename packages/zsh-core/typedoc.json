@@ -30,7 +30,6 @@
   "intentionallyNotExported": [
     "src/analysis/fact-types.ts:quoteStyles",
     "src/analysis/fact-types.ts:FactGuard",
-    "src/docs/json-types.ts:JsonDoc",
     "src/docs/resolver.ts:ResolverFeedbackKindSchemas"
   ]
 }

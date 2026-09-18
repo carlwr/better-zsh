@@ -3,7 +3,7 @@ import type { DocCorpus } from "./corpus.ts"
 import { assertAsciiIdentity, augmentWithMarkdown } from "./json-projection.ts"
 import { type DocCategory, docCategories } from "./taxonomy.ts"
 
-// Per-category file, count key and schema root all derive from one `base`.
+// Per-category file and count key derive from one `base`.
 const baseOverrides = {
   glob_op: "glob-operators",
   comp_utility: "comp-utils",
@@ -26,7 +26,6 @@ type Base<K extends DocCategory> = K extends keyof BaseOverrides
 type Artifact<K extends DocCategory> = {
   readonly file: `${Base<K>}.json`
   readonly count: Camelize<Base<K>>
-  readonly schema: `${Capitalize<Camelize<Base<K>>>}Json`
 }
 
 const camelize = (s: string): string =>
@@ -39,12 +38,7 @@ function baseFor<K extends DocCategory>(cat: K): Base<K> {
 
 function artifactFor<K extends DocCategory>(cat: K): Artifact<K> {
   const b = baseFor(cat)
-  const c = camelize(b)
-  return {
-    file: `${b}.json`,
-    count: c,
-    schema: `${c.charAt(0).toUpperCase()}${c.slice(1)}Json`,
-  } as Artifact<K>
+  return { file: `${b}.json`, count: camelize(b) } as Artifact<K>
 }
 
 export const jsonArtifact: { [K in DocCategory]: Artifact<K> } =
@@ -56,7 +50,6 @@ type JsonArtifact = (typeof jsonArtifact)[DocCategory]
 
 export type JsonDataFile = JsonArtifact["file"]
 export type JsonCountKey = JsonArtifact["count"]
-export type JsonSchemaRoot = JsonArtifact["schema"]
 
 export const jsonDataFiles = [...docCategories]
   .map(cat => jsonArtifact[cat].file)
@@ -64,6 +57,13 @@ export const jsonDataFiles = [...docCategories]
 
 export const jsonFiles = ["index.json", ...jsonDataFiles] as const
 
+/**
+ * One schema bundle for every record file: `#/$defs/<DocCategory>` describes
+ * that category's file (an array of its records).
+ */
+export const recordsSchemaFile = "records.schema.json"
+
+/** Schema file beside a non-record JSON file (`index.json`, the fixture). */
 export function schemaFile(file: string): string {
   return file.replace(/\.json$/, ".schema.json")
 }
