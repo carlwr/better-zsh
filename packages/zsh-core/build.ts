@@ -5,15 +5,13 @@ import { build } from "tsup"
 import { buildResolverFixture } from "./scripts/resolver-fixture.ts"
 import { loadCorpus } from "./src/docs/corpus.ts"
 import {
+  fmtJson,
   hashRecordFiles,
   jsonArtifact,
   jsonDataFiles,
+  jsonRecordTexts,
   resolverFixture,
 } from "./src/docs/json-artifacts.ts"
-import {
-  assertAsciiIdentity,
-  augmentWithMarkdown,
-} from "./src/docs/json-projection.ts"
 import { hookNames } from "./src/docs/resolver.ts"
 import {
   classifyOrder,
@@ -46,12 +44,6 @@ const publicEntries: string[] = Object.keys(
   .map(sub => (sub === "." ? "index" : sub.slice(2)))
   .sort()
 
-function fmtJson(data: unknown): string {
-  // Keep machine artifacts deterministic and human-readable without a second
-  // formatting pass; these files are generated, not edited.
-  return `${JSON.stringify(data, null, 2)}\n`
-}
-
 function writeJson(path: string, data: unknown) {
   writeFileSync(path, fmtJson(data), "utf8")
 }
@@ -74,13 +66,8 @@ function writeJsonArtifacts() {
     categoryFiles[cat] = jsonArtifact[cat].file
   }
 
-  const recordTexts = new Map<string, string>()
-  for (const cat of docCategories) {
-    const augmented = augmentWithMarkdown(corpus, cat)
-    assertAsciiIdentity(cat, augmented)
-    const { file } = jsonArtifact[cat]
-    const text = fmtJson(augmented)
-    recordTexts.set(file, text)
+  const recordTexts = jsonRecordTexts(corpus)
+  for (const [file, text] of recordTexts) {
     writeFileSync(join(jsonDir, file), text, "utf8")
   }
 

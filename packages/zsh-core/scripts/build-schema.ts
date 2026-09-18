@@ -3,6 +3,7 @@ import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 import { createGenerator } from "ts-json-schema-generator"
 import {
+  fmtJson,
   jsonArtifact,
   resolverFixture,
   schemaFile,
@@ -13,10 +14,6 @@ const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const outDir = join(rootDir, "artifacts", "schema")
 const fixtureDir = join(rootDir, "artifacts", resolverFixture.dir)
 const typePath = join(rootDir, "src", "docs", "json-types.ts")
-
-function fmtJson(data: unknown): string {
-  return `${JSON.stringify(data, null, 2)}\n`
-}
 
 rmSync(outDir, { recursive: true, force: true })
 mkdirSync(outDir, { recursive: true })

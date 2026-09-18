@@ -8,6 +8,7 @@ import { join } from "node:path"
 import { escapeRegExp, memoized } from "@carlwr/typescript-extra"
 import { rm_rf } from "@carlwr/typescript-extra/node"
 import { loadCorpus } from "@carlwr/zsh-core"
+import { corpusDataHash } from "@carlwr/zsh-core/json"
 import fc from "fast-check"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 import type { Rules } from "../../../nlp/core/rules"
@@ -21,7 +22,6 @@ import {
   VIEWS,
 } from "../../../nlp/core/types"
 import { syntheticVec } from "../../../nlp/core/vec"
-import { corpusHash } from "../../../nlp/node/corpus-hash"
 import {
   buildIndex,
   INDEX_VERSION,
@@ -164,7 +164,7 @@ describe("validateIndex", () => {
     model: MODEL_ID,
     dims: DIMS,
     normalized: true,
-    corpus_hash: corpusHash(corpus),
+    corpus_hash: corpusDataHash(corpus),
     records: corpusTexts(corpus, rules.synonyms.index_groups).map(text => ({
       text,
       vectors: perView(() => new Float32Array(DIMS)),
@@ -257,6 +257,8 @@ describe("buildIndex", () => {
       onProgress: (done, total) => progress.push([done, total]),
     })
     expect(validateIndex(index, corpus, rules)).toEqual({ ok: true })
+    // The stamp is zsh-core's content hash: what `validateIndex` compares.
+    expect(index.corpus_hash).toBe(corpusDataHash(corpus))
     // By value: view texts repeat across records, so the map holds one array per text.
     const misaligned: string[] = []
     let worst = 0

@@ -2,7 +2,9 @@ import { existsSync, readFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { describe, expect, test } from "vitest"
+import { loadCorpus } from "../docs/corpus"
 import {
+  corpusDataHash,
   hashRecordFiles,
   jsonDataFiles,
   jsonFiles,
@@ -61,6 +63,40 @@ describe("generated JSON is a release asset, not a registry payload", () => {
     )
     expect(readJson("artifacts/json/index.json").dataHash).toBe(
       hashRecordFiles(texts),
+    )
+  })
+})
+
+// `corpusDataHash` recomputes the JSON build's `dataHash` from source, so the
+// artifact comparison also flags artifacts stale against the source: wanted
+// under `pnpm qa` (stale upstream output is rebuilt first); a mid-iteration
+// `vitest` run before a rebuild fails here.
+describe("corpusDataHash", () => {
+  test("equals the emitted index.dataHash", () => {
+    expect(corpusDataHash(loadCorpus())).toBe(
+      readJson("artifacts/json/index.json").dataHash,
+    )
+  })
+
+  test("is deterministic; object identity is irrelevant", () => {
+    const corpus = loadCorpus()
+    const hash = corpusDataHash(corpus)
+    expect(hash).toMatch(/^[0-9a-f]{64}$/)
+    expect(corpusDataHash(corpus)).toBe(hash)
+    // `loadCorpus` is cached; a structured clone is a distinct object graph.
+    expect(corpusDataHash(structuredClone(corpus))).toBe(hash)
+  })
+
+  test("moves with record content", () => {
+    const corpus = loadCorpus()
+    const option = new Map(
+      [...corpus.option].map(([id, rec]) => [
+        id,
+        { ...rec, desc: `${rec.desc} x` },
+      ]),
+    )
+    expect(corpusDataHash({ ...corpus, option })).not.toBe(
+      corpusDataHash(corpus),
     )
   })
 })

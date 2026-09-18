@@ -1,4 +1,6 @@
 import { createHash } from "node:crypto"
+import type { DocCorpus } from "./corpus.ts"
+import { assertAsciiIdentity, augmentWithMarkdown } from "./json-projection.ts"
 import { type DocCategory, docCategories } from "./taxonomy.ts"
 
 // Per-category file, count key and schema root all derive from one `base`.
@@ -84,4 +86,38 @@ export function hashRecordFiles(texts: ReadonlyMap<string, string>): string {
     h.update(`${file}\0${texts.get(file)}\0`)
   }
   return h.digest("hex")
+}
+
+/**
+ * Machine artifacts stay deterministic and human-readable without a second
+ * formatting pass; these files are generated, not edited.
+ */
+export function fmtJson(data: unknown): string {
+  return `${JSON.stringify(data, null, 2)}\n`
+}
+
+/**
+ * The record files of `corpus`' JSON build, text by data file — what the
+ * build writes and `dataHash` covers. Refuses a corpus whose projected
+ * identity fields are not ASCII (`assertAsciiIdentity`).
+ */
+export function jsonRecordTexts(
+  corpus: DocCorpus,
+): ReadonlyMap<JsonDataFile, string> {
+  return new Map<JsonDataFile, string>(
+    docCategories.map(cat => {
+      const augmented = augmentWithMarkdown(corpus, cat)
+      assertAsciiIdentity(cat, augmented)
+      return [jsonArtifact[cat].file, fmtJson(augmented)] as const
+    }),
+  )
+}
+
+/**
+ * Content identity of `corpus`: equals `JsonIndex.dataHash` of its JSON
+ * build. Hashes the record file names plus their formatted record texts —
+ * renders every record (tens of milliseconds).
+ */
+export function corpusDataHash(corpus: DocCorpus): string {
+  return hashRecordFiles(jsonRecordTexts(corpus))
 }
