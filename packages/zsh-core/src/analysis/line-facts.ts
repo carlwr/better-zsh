@@ -1,4 +1,4 @@
-import { type PrecmdName, precmdNames } from "../docs/types.ts"
+import { isPrecmdName, type PrecmdName } from "../docs/types.ts"
 import { commentStart } from "./comment.ts"
 import { activeText, type TextSpan } from "./doc.ts"
 import {
@@ -61,9 +61,6 @@ const KEYWORD_HEADS: ReadonlySet<string> = new Set([
   "]]",
   "time",
 ])
-
-const PRECMDS: ReadonlySet<string> = new Set<string>(precmdNames)
-const isPrecmdName = (s: string): s is PrecmdName => PRECMDS.has(s)
 
 /** `command` precommand modifier; for detecting `command`-wrapped heads. */
 export const COMMAND_PRECMD: PrecmdName = "command"
