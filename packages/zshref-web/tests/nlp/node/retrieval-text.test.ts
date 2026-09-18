@@ -26,7 +26,7 @@ describe("recordText", () => {
       op: "-nt",
       operands: ["file1", "file2"],
       desc: "true if file1 exists and is newer than file2.",
-      mdBody: "`-nt` *file1* `-nt` *file2*",
+      _mdBody: "`-nt` *file1* `-nt` *file2*",
       _id: "-nt",
       _display: "-nt",
       _subKind: "binary",
@@ -45,7 +45,7 @@ describe("recordText", () => {
       display: "AUTO_CD",
       flags: { char: "J", on: "-" },
       desc: "not in structured",
-      mdBody: "body",
+      _mdBody: "body",
       _id: "autocd",
       _display: "AUTO_CD",
       _title: "`AUTO_CD`",
@@ -64,7 +64,7 @@ describe("recordText", () => {
       _id: "x",
       _display: "x",
       _subKind: "unary",
-      mdBody: "",
+      _mdBody: "",
     }
     expect(Object.keys(recordText("glob_op", rec, noGroups))).toEqual([
       "category",
@@ -86,15 +86,15 @@ describe("recordText", () => {
     )
   })
 
-  it("body is desc verbatim (whitespace-normalized, markdown kept); else title + mdBody stripped", () => {
+  it("body is desc verbatim (whitespace-normalized, markdown kept); else title + _mdBody stripped", () => {
     const withDesc: JsonRecord = {
       desc: "  keeps `code`  and\n*stars*  ",
-      mdBody: "ignored",
+      _mdBody: "ignored",
     }
     expect(recordText("builtin", withDesc, noGroups).body).toBe(
       "keeps `code` and *stars*",
     )
-    const noDesc: JsonRecord = { _title: "`foo_bar`", mdBody: "a *b*\n\n`c`" }
+    const noDesc: JsonRecord = { _title: "`foo_bar`", _mdBody: "a *b*\n\n`c`" }
     expect(recordText("builtin", noDesc, noGroups).body).toBe("foobar a b c")
   })
 })

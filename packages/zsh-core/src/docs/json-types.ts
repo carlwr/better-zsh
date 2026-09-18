@@ -3,11 +3,14 @@ import type { ResolverFeedback } from "./resolver.ts"
 import type { DocCategory, DocRecordMap } from "./taxonomy.ts"
 
 // Generated fields attached to every JSON record; the in-memory corpus omits
-// them. Deliberately no JSDoc here: the schema generator would make it the
-// description of every record. `_id` / `_display` patterns mirror the
-// corpus-ASCII test's `ID_RE` / `SURFACE_RE` — keep aligned.
+// them. All are `_`-prefixed, the rendered markdown body included — a
+// namespace apart from the records' own field names. Deliberately no JSDoc
+// here: the schema generator would make it the description of every record.
+// `_id` / `_display` patterns mirror the corpus-ASCII test's `ID_RE` /
+// `SURFACE_RE` — keep aligned.
 export type WithMarkdown<T> = T & {
-  readonly mdBody: string
+  /** The rendered record as markdown; `_title` is split out of it. */
+  readonly _mdBody: string
   /**
    * Shell-safe identity slug: printable ASCII, no whitespace, non-empty.
    * @pattern ^[\x21-\x7E]+$
@@ -20,7 +23,7 @@ export type WithMarkdown<T> = T & {
   readonly _display: string
   /**
    * Rendered record title — short inline markdown (e.g. the backticked
-   * record name); split out of `mdBody` so each consumer decides whether to
+   * record name); split out of `_mdBody` so each consumer decides whether to
    * show it.
    */
   readonly _title: string

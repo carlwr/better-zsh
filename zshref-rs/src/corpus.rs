@@ -283,7 +283,8 @@ pub struct Category {
 pub struct Record(Map<String, Value>);
 
 // MIRROR-OF: packages/zsh-core/src/docs/json-projection.ts
-// (`_id` / `_display` / `_subKind` / `_title` are the projection's field names)
+// (`_id` / `_display` / `_title` / `_subKind` / `_mdBody`: the projection's
+// generated field names, all `_`-prefixed)
 impl Record {
     /// `""` when absent or not a string.
     pub fn str(&self, key: &str) -> &str {
@@ -302,8 +303,9 @@ impl Record {
         self.str("_title")
     }
 
+    /// The rendered markdown body; tool output re-keys it as `mdBody`.
     pub fn md_body(&self) -> &str {
-        self.str("mdBody")
+        self.str("_mdBody")
     }
 
     /// `None` for categories whose records carry no `_subKind`.
@@ -409,8 +411,9 @@ mod tests {
     }
 
     #[test]
-    fn record_id_key_populated_for_every_category() {
-        // Were zsh-core to stop emitting `_id`, `Record::id` would read "" everywhere.
+    fn record_id_and_md_body_keys_populated_for_every_category() {
+        // Were zsh-core to rename `_id` or `_mdBody`, the accessors would read
+        // "" everywhere.
         let corpus = load_corpus().expect("load_corpus");
         for cat in &corpus.categories {
             let first = cat
@@ -420,6 +423,11 @@ mod tests {
             assert!(
                 !first.id().is_empty(),
                 "baked `_id` field is absent or empty for category {}",
+                cat.name
+            );
+            assert!(
+                !first.md_body().is_empty(),
+                "baked `_mdBody` field is absent or empty for category {}",
                 cat.name
             );
         }

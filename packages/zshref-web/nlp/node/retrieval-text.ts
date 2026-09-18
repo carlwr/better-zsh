@@ -56,7 +56,7 @@ export function recordText(
 ): RecordText {
   const title = strField(rec, "_title")
   const subKind = strField(rec, "_subKind")
-  const mdBody = strField(rec, "mdBody")
+  const mdBody = strField(rec, "_mdBody")
   const ident: Identity = {
     category: cat,
     label: docCategoryLabels[cat],
@@ -64,7 +64,7 @@ export function recordText(
     display: strField(rec, "_display"),
     ...(subKind !== "" ? { subKind } : {}),
   }
-  // `mdBody` is title-less; the body view embeds the whole rendered record.
+  // `_mdBody` is title-less; the body view embeds the whole rendered record.
   const body = bodyText(rec, `${title}\n\n${mdBody}`)
   return {
     category: cat,
@@ -80,7 +80,10 @@ export function recordText(
   }
 }
 
-/** Header lines, then every projected field in emission order. */
+/**
+ * Header lines, then every record field in emission order; the generated
+ * (`_`-prefixed) fields and `desc` skipped.
+ */
 export function structuredText(ident: Identity, rec: JsonRecord): string {
   const lines = [
     `category: ${ident.label}`,
@@ -90,7 +93,7 @@ export function structuredText(ident: Identity, rec: JsonRecord): string {
     ...(ident.subKind !== undefined ? [`subKind: ${ident.subKind}`] : []),
   ]
   for (const [key, value] of Object.entries(rec)) {
-    if (key.startsWith("_") || key === "mdBody" || key === "desc") continue
+    if (key.startsWith("_") || key === "desc") continue
     const s = compactValue(value)
     if (s !== undefined) lines.push(`${keyWords(key)}: ${s}`)
   }

@@ -14,10 +14,10 @@ import {
 } from "./taxonomy.ts"
 
 /**
- * Augment each record with `mdBody` plus projected identity fields — the
- * record as JSON consumers see it. Underscore-prefixed
- * `_id`/`_display`/`_title`/`_subKind` avoid collisions with existing record
- * fields (`display` on ZshOption, `subKind` on ParamExpnDoc).
+ * Augment each record with its rendered markdown body plus projected identity
+ * fields — the record as JSON consumers see it. Generated fields are
+ * `_`-prefixed (`_mdBody` included): a namespace apart from the records' own
+ * field names (`display` on ZshOption, `subKind` on ParamExpnDoc).
  */
 export function augmentWithMarkdown<K extends DocCategory>(
   corpus: DocCorpus,
@@ -27,7 +27,7 @@ export function augmentWithMarkdown<K extends DocCategory>(
     const subKind = subKindOf(cat, rec)
     return {
       ...rec,
-      mdBody: renderRecord(corpus, cat, rec),
+      _mdBody: renderRecord(corpus, cat, rec),
       _id: idOf(cat, rec) as string,
       _display: docDisplay(cat, rec),
       _title: recordTitle(cat, rec),

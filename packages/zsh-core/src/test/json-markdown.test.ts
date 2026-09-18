@@ -5,7 +5,7 @@ import { describe, expect, test } from "vitest"
 import { jsonDataFiles } from "../docs/json-artifacts"
 
 /**
- * Smoke test: every emitted corpus JSON record carries an `mdBody` string.
+ * Smoke test: every emitted corpus JSON record carries an `_mdBody` string.
  * Rendered-markdown embedding is the seam between TS (renderer) and the
  * out-of-process Rust crate; this test guards against accidental drift in the
  * JSON-emit path.
@@ -24,7 +24,7 @@ describe.runIf(existsSync(jsonDir))(
   "emitted JSON records carry rendered markdown body",
   () => {
     interface MdRec {
-      readonly mdBody: string
+      readonly _mdBody: string
       readonly _title: string
     }
     interface NamedMdRec extends MdRec {
@@ -32,14 +32,14 @@ describe.runIf(existsSync(jsonDir))(
     }
 
     test.each(jsonDataFiles)(
-      "%s records have a non-empty mdBody string",
+      "%s records have a non-empty _mdBody string",
       file => {
         const recs = loadRecs<MdRec>(file)
         expect(recs.length).toBeGreaterThan(0)
         for (const r of recs) {
-          expect(typeof r.mdBody).toBe("string")
-          expect(r.mdBody.length).toBeGreaterThan(0)
-          // The title travels as its own field, split out of `mdBody`.
+          expect(typeof r._mdBody).toBe("string")
+          expect(r._mdBody.length).toBeGreaterThan(0)
+          // The title travels as its own field, split out of `_mdBody`.
           expect(typeof r._title).toBe("string")
           expect(r._title.length).toBeGreaterThan(0)
         }
@@ -54,10 +54,10 @@ describe.runIf(existsSync(jsonDir))(
       (file, name, minLen, titleParts, bodyParts) => {
         const rec = loadRecs<NamedMdRec>(file).find(r => r.name === name)
         expect(rec).toBeDefined()
-        const md = rec?.mdBody ?? ""
+        const md = rec?._mdBody ?? ""
         const title = rec?._title ?? ""
         expect(md.length).toBeGreaterThan(minLen)
-        // Title text (e.g. the option name) now lives in `_title`, not mdBody.
+        // Title text (e.g. the option name) now lives in `_title`, not `_mdBody`.
         for (const p of titleParts) expect(title).toContain(p)
         for (const p of bodyParts) expect(md).toContain(p)
       },
