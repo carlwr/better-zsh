@@ -187,7 +187,6 @@ export function parseModuleParamsFromList(
     for (const name of [...names, ...pending]) {
       out.push({
         name: mkDocumented("special_param", name),
-        sig: name,
         desc: split.desc,
         scope,
         module: moduleName,

@@ -16,7 +16,7 @@
           "display": "AUTO_CD",
           "title": "`AUTO_CD`",
           "md_body": "```zsh\nsetopt auto_cd     # on\nunsetopt auto_cd   # off\nset -J             # on\nset +J             # off\n```\n\n**Default in zsh: `off`**\n\nIf a command is issued that can't be executed as a normal command, and the command is the name of a directory, perform the `cd` command to that directory. This option is only applicable if the option **`SHIN_STDIN`** is set, i.e. if commands are being read from standard input. The option is designed for interactive use; it is recommended that `cd` be used explicitly in scripts to avoid ambiguity.\n\n_Option category:_ Changing Directories",
-          "structured": "category: option\ncategory id: option\nid: autocd\ndisplay: AUTO_CD\nname: autocd\ndisplay: AUTO_CD\nflags: char J on -\ncategory: Changing Directories",
+          "structured": "category: option\ncategory id: option\nid: autocd\ndisplay: AUTO_CD\nname: autocd\ndisplay: AUTO_CD\nflags: char J on -\nsection: Changing Directories",
           "body": "If a command is issued that can't be executed as a normal command, and the command is the name of a directory, perform the `cd` command to that directory. This option is only applicable if the option `SHIN_STDIN` is set, i.e. if commands are being read from standard input. The option is designed for interactive use; it is recommended that `cd` be used explicitly in scripts to avoid ambiguity.",
           "expanded": "option\nautocd\nAUTO CD"
         },
@@ -1189,7 +1189,7 @@
           "display": "EXTENDED_GLOB",
           "title": "`EXTENDED_GLOB`",
           "md_body": "```zsh\nsetopt extended_glob     # on\nunsetopt extended_glob   # off\n```\n\n**Default in zsh: `off`**\n\nTreat the `#`, `~` and `^` characters as part of patterns for filename generation, etc. (An initial unquoted `~` always produces named directory expansion.)\n\n_Option category:_ Expansion and Globbing",
-          "structured": "category: option\ncategory id: option\nid: extendedglob\ndisplay: EXTENDED_GLOB\nname: extendedglob\ndisplay: EXTENDED_GLOB\ncategory: Expansion and Globbing",
+          "structured": "category: option\ncategory id: option\nid: extendedglob\ndisplay: EXTENDED_GLOB\nname: extendedglob\ndisplay: EXTENDED_GLOB\nsection: Expansion and Globbing",
           "body": "Treat the `#`, `~` and `^` characters as part of patterns for filename generation, etc. (An initial unquoted `~` always produces named directory expansion.)",
           "expanded": "option\nextendedglob\nEXTENDED GLOB"
         },
@@ -2362,7 +2362,7 @@
           "display": "GLOB_DOTS",
           "title": "`GLOB_DOTS`",
           "md_body": "```zsh\nsetopt glob_dots     # on\nunsetopt glob_dots   # off\nset -4               # on\nset +4               # off\n```\n\n**Default in zsh: `off`**\n\nDo not require a leading `.` in a filename to be matched explicitly.\n\n_Option category:_ Expansion and Globbing",
-          "structured": "category: option\ncategory id: option\nid: globdots\ndisplay: GLOB_DOTS\nname: globdots\ndisplay: GLOB_DOTS\nflags: char 4 on -\ncategory: Expansion and Globbing",
+          "structured": "category: option\ncategory id: option\nid: globdots\ndisplay: GLOB_DOTS\nname: globdots\ndisplay: GLOB_DOTS\nflags: char 4 on -\nsection: Expansion and Globbing",
           "body": "Do not require a leading `.` in a filename to be matched explicitly.",
           "expanded": "option\nglobdots\nGLOB DOTS"
         },

@@ -36,7 +36,6 @@ const corpus: DocCorpus = {
   special_param: by("name", [
     {
       name: mkDocumented("special_param", "SECONDS"),
-      sig: "SECONDS",
       desc: "",
       scope: "shell-set" as const,
     },
@@ -47,7 +46,7 @@ const corpus: DocCorpus = {
       display: "AUTO_CD",
       flags: [],
       defaultIn: ["zsh" as const],
-      category: optSections[0],
+      section: optSections[0],
       desc: "cd by directory name",
     },
   ]),

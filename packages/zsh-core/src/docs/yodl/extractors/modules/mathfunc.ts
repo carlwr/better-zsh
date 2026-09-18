@@ -39,10 +39,14 @@ function rawYodlText(nodes: YNodeSeq): string {
   return out
 }
 
-function rec(name: string, sig: NonEmpty<string>, desc: string): MathfuncDoc {
+function rec(
+  name: string,
+  synopsis: NonEmpty<string>,
+  desc: string,
+): MathfuncDoc {
   return {
     name: mkDocumented("mathfunc", name),
-    sig,
+    synopsis,
     desc,
     module: MODULE,
   }
@@ -50,9 +54,9 @@ function rec(name: string, sig: NonEmpty<string>, desc: string): MathfuncDoc {
 
 /**
  * Push one record per function name in the matched arity-class paragraph.
- * `sigOf(name)` builds the call-form sig (e.g. `${name}(x)`); `descOf(name)`
- * builds the per-record desc (most arity classes share a description with the
- * name interpolated for `man 3 <name>`).
+ * `sigOf(name)` builds the call-form synopsis line (e.g. `${name}(x)`);
+ * `descOf(name)` builds the per-record desc (most arity classes share a
+ * description with the name interpolated for `man 3 <name>`).
  */
 function pushArityClass(
   out: MathfuncDoc[],

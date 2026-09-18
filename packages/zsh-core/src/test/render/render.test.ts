@@ -64,14 +64,15 @@ import { refDocs } from "../../render/refs"
 import { withTmpDirAsync } from "../tmp-dir"
 
 // --- fixtures ---------------------------------------------------------------
-// `section` and `args` are required by the types but unused by renderers.
+// `section` and `args` are required by the types but, footers aside, unused
+// by renderers.
 
 const cd: ZshOption = {
   name: mkDocumented("option", "AUTO_CD"),
   display: "AUTO_CD",
   flags: [{ char: mkOptFlag("J"), on: "-" }],
   defaultIn: ["csh", "ksh", "sh", "zsh"],
-  category: "Changing Directories",
+  section: "Changing Directories",
   desc: "d:o",
 }
 
@@ -140,7 +141,6 @@ const cc: ComplexCommandDoc = {
 }
 const sec: ShellParamDoc = {
   name: mkDocumented("special_param", "SECONDS"),
-  sig: "SECONDS",
   desc: "d:p",
   scope: "shell-set",
 }
@@ -218,7 +218,6 @@ const sfn: SpecialFunctionDoc = {
 }
 const cuu: CompUtilityDoc = {
   name: mkDocumented("comp_utility", "_all_labels"),
-  sig: "_all_labels [ -x ] [ -12VJ ] tag name descr [ command arg ... ]",
   synopsis: ["_all_labels [ -x ] [ -12VJ ] tag name descr [ command arg ... ]"],
   desc: "d:cuu",
   section: "Utility Functions",
@@ -476,7 +475,6 @@ describe("render markdown", () => {
     const argv: ShellParamDoc = {
       ...sec,
       name: mkDocumented("special_param", "argv"),
-      sig: "argv",
     }
     const ids = refDocs(
       mkTestCorpus({
@@ -649,7 +647,6 @@ describe("render markdown", () => {
     const doc: ShellParamDoc = {
       ...sec,
       name: mkDocumented("special_param", "PSEUDO"),
-      sig: "PSEUDO",
       desc: "intro",
       keys: [
         {

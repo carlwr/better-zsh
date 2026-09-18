@@ -69,7 +69,6 @@ function emitParams(
     for (const head of [...heads, ...pending]) {
       out.push({
         name: mkDocumented("special_param", head.name),
-        sig: head.name,
         desc: split.desc,
         scope,
         ...(head.tied && { tied: mkDocumented("special_param", head.tied) }),

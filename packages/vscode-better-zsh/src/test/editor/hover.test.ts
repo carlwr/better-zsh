@@ -25,18 +25,17 @@ const b = (name: string, desc: string): BuiltinDoc => ({
   desc,
 })
 
-const o = (name: string, category: ZshOption["category"]): ZshOption => ({
+const o = (name: string, section: ZshOption["section"]): ZshOption => ({
   name: mkDocumented("option", name),
   display: name,
   flags: [{ char: mkOptFlag("f"), on: "+" }],
   defaultIn: ["zsh"],
-  category,
+  section,
   desc: "",
 })
 
 const p = (name: string, desc: string): ShellParamDoc => ({
   name: mkDocumented("special_param", name),
-  sig: name,
   desc,
   scope: "shell-set",
 })

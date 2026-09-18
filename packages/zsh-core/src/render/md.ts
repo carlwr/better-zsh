@@ -518,7 +518,7 @@ const headBuilders: {
   keymap: () => undefined,
   job_spec: () => undefined,
   arith_op: doc => ({ lang: "zsh", lines: canonicalArithForm(doc) }),
-  mathfunc: doc => ({ lang: "docopt", lines: doc.sig }),
+  mathfunc: doc => ({ lang: "docopt", lines: doc.synopsis }),
   special_function: specialFunctionHead,
   comp_utility: doc => builtinSynopsisHead(doc.synopsis, doc.name),
 }
@@ -546,7 +546,7 @@ export function mdOpt(opt: ZshOption, corpus: DocCorpus): string {
       opt.aliasOf,
       a => `_Alias of:_ ${bt(aliasTargetDisplay(a, corpus))}`,
     ),
-    `_Option category:_ ${opt.category}`,
+    `_Option category:_ ${opt.section}`,
   )
 }
 

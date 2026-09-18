@@ -168,10 +168,10 @@ describe("parseCompUtils", () => {
   const docs = parseCompUtils(readVendoredYo("compsys.yo"))
   const map = by(docs, d => d.name)
 
-  test("every record: leading underscore, non-empty sig+desc, Utility section", () => {
+  test("every record: leading underscore, non-empty synopsis+desc, Utility section", () => {
     for (const d of docs) {
       expect(d.name).toMatch(/^_/)
-      expect(d.sig).toBeTruthy()
+      expect(d.synopsis[0]).toBeTruthy()
       expect(d.desc).toBeTruthy()
       expect(d.section).toBe("Utility Functions")
     }
@@ -213,8 +213,8 @@ describe("parseCompUtils", () => {
     expect(args?.flagGroups?.length).toBeGreaterThan(0)
   })
 
-  test("_describe has xitem-derived multi-line sig", () => {
-    expect(map.get(cu("_describe"))?.sig).toContain("[ --")
+  test("_describe: SPACES() continuation folds into synopsis[0]", () => {
+    expect(map.get(cu("_describe"))?.synopsis[0]).toContain("[ --")
   })
 
   test("no function names appear more than once", () => {

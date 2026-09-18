@@ -49,7 +49,7 @@ function parseSystemMathfuncs(region: YNodeSeq): readonly MathfuncDoc[] {
     return [
       {
         name: mkDocumented("mathfunc", "systell"),
-        sig: ["systell(fd)"],
+        synopsis: ["systell(fd)"],
         desc: item.body ? normalizeBody(item.body) : "",
         module: "zsh/system",
       },

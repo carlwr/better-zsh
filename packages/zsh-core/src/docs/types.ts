@@ -136,7 +136,8 @@ export interface ZshOption {
   readonly display: string
   readonly flags: readonly OptFlagAlias[]
   readonly defaultIn: readonly Emulation[]
-  readonly category: OptSection
+  /** Manual section this option was parsed from. */
+  readonly section: OptSection
   readonly desc: string
   /** Present on `Option Aliases` entries: the option this alias resolves to, and whether it inverts. */
   readonly aliasOf?: {
@@ -281,7 +282,6 @@ export interface ShellParamDoc {
    * Body prose. With `keys`, the intro before the key list; the renderer
    * composes intro → key headings → `outro`. Without `keys`, the full body.
    */
-  readonly sig: string
   readonly desc: string
   readonly scope: ShellParamScope
   readonly tied?: Documented<"special_param">
@@ -566,14 +566,17 @@ export interface SpecialFunctionDoc extends SyntaxDocBase {
  * Completion utility — `compsys.yo` §"Utility Functions"
  * (`_absolute_command_paths`, `_all_labels`, `_arguments`, ...).
  *
- * `desc` / `flagGroups` / `outro` mirror `BuiltinDoc`. `sig` is the canonical
- * first synopsis line; `synopsis` carries every synopsis line with upstream
- * `SPACES()` continuations folded onto the preceding line — rendered as a
- * multi-line code block.
+ * `desc` / `flagGroups` / `outro` mirror `BuiltinDoc`. `synopsis` carries
+ * every synopsis line with upstream `SPACES()` continuations folded onto the
+ * preceding line — rendered as a multi-line code block; `synopsis[0]` is the
+ * canonical line.
  */
-export interface CompUtilityDoc extends SyntaxDocBase {
+export interface CompUtilityDoc {
   readonly name: Documented<"comp_utility">
   readonly synopsis: NonEmpty<string>
+  readonly desc: string
+  /** Manual section this element was parsed from. */
+  readonly section: string
   /** Per-group flags; same posture as `BuiltinDoc.flagGroups`. */
   readonly flagGroups?: readonly FlagGroup[]
   /** Prose after the last flag group. */
@@ -583,12 +586,12 @@ export interface CompUtilityDoc extends SyntaxDocBase {
 /**
  * Math function from `zsh/mathfunc` — callable in arithmetic expressions
  * (`$(( cos(0) ))`). `module` is always set: mathfuncs only exist inside
- * modules. `sig` mirrors `BuiltinDoc.synopsis` — multi-line rendered.
+ * modules. `synopsis` mirrors `BuiltinDoc.synopsis` — multi-line rendered.
  */
 export interface MathfuncDoc {
   readonly name: Documented<"mathfunc">
   /** Call signature(s) — multiple forms render as separate lines. */
-  readonly sig: NonEmpty<string>
+  readonly synopsis: NonEmpty<string>
   readonly desc: string
   readonly module: ModuleName
 }

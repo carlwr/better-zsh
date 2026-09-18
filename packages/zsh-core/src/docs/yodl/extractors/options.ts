@@ -42,9 +42,9 @@ const DEFAULT_RE = new RegExp(
   "g",
 )
 
-const parseOptionCategory = mkClosedUnionParser(
+const parseOptionSection = mkClosedUnionParser(
   optSections,
-  "zsh option category",
+  "zsh option section",
 )
 
 /**
@@ -70,16 +70,16 @@ export function parseOptions(yo: YodlSrc): readonly ZshOption[] {
   return withBody(extractItems(nodes)).flatMap(item => {
     const parsed = parseOptHeader(item.header)
     if (!parsed) return []
-    const category = parseOptionCategory(item.section)
+    const section = parseOptionSection(item.section)
     const aliasOf =
-      category === "Option Aliases" ? parseAliasTarget(item.body) : undefined
+      section === "Option Aliases" ? parseAliasTarget(item.body) : undefined
     return [
       {
         name: parsed.name,
         display: parsed.display,
         flags: mergeFlags(flagMap.get(parsed.name), parsed.flags),
         defaultIn: emulationsFor(defaultMarkers(item.header)),
-        category,
+        section,
         desc: normalizeBody(item.body),
         ...(aliasOf && { aliasOf }),
       } satisfies ZshOption,

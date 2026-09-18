@@ -25,7 +25,7 @@ command to that directory.
     expect(o.name).toBe(opt("AUTO_CD"))
     expect(o.display).toBe("AUTO_CD")
     expect(o.flags).toEqual([{ char: mkOptFlag("J"), on: "-" }])
-    expect(o.category).toBe("Changing Directories")
+    expect(o.section).toBe("Changing Directories")
     expect(o.desc).toContain("command is the name of a directory")
   })
 
@@ -84,14 +84,14 @@ endsitem()`
         minCount: 100,
         keyOf: o => o.name,
         descOf: o => o.desc,
-        sectionOf: o => o.category,
+        sectionOf: o => o.section,
         known: [opt("AUTO_CD"), opt("EXTENDED_GLOB"), opt("GLOB_DOTS")],
       }))
 
-    // Closed-union check: every observed category is in `optSections` AND
+    // Closed-union check: every observed section is in `optSections` AND
     // every `optSections` value appears (no orphan literals).
-    test("category set equals optSections", () => {
-      expect([...new Set(opts.map(o => o.category))].sort()).toEqual(
+    test("section set equals optSections", () => {
+      expect([...new Set(opts.map(o => o.section))].sort()).toEqual(
         [...optSections].sort(),
       )
     })
@@ -144,7 +144,7 @@ endsitem()`
       ["DOT_GLOB", "GLOB_DOTS", false],
     ] as const)("alias %s → %s (negated=%s)", (name, target, negated) => {
       const rec = byName.get(opt(name))
-      expect(rec?.category).toBe("Option Aliases")
+      expect(rec?.section).toBe("Option Aliases")
       expect(rec?.aliasOf).toEqual({ target: opt(target), negated })
     })
 

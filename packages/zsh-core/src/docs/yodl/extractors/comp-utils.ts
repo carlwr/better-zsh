@@ -36,31 +36,26 @@ export function parseCompUtils(yo: YodlSrc): readonly CompUtilityDoc[] {
 
   return collectFindexAssociations(body).flatMap(a => {
     const split = splitFlagBody(a.body)
-    const sig = a.synopsis[0]
+    const [first, ...rest] = a.synopsis
     // When findex provides the name, emit one record per findex name
     // (handles `_options_set` / `_options_unset` that share a body).
     const fromFindex = a.findexNames.find(n => n.startsWith("_"))
-    const sigName = sig.match(/^(_[a-zA-Z0-9_]+)/)?.[1]
-    const primary = fromFindex ?? sigName ?? a.findexNames[0]
+    const synopsisName = first.match(/^(_[a-zA-Z0-9_]+)/)?.[1]
+    const primary = fromFindex ?? synopsisName ?? a.findexNames[0]
     if (!primary) return []
 
     const names = fromFindex ? a.findexNames : [primary]
     return names.flatMap(n => {
       if (!n || seen.has(n)) return []
       seen.add(n)
-      // When multiple findex names share one upstream item, the upstream sig
-      // joins them with "and" (e.g. `_options_set and _options_unset`);
+      // When multiple findex names share one upstream item, the upstream
+      // synopsis joins them with "and" (e.g. `_options_set and _options_unset`);
       // rewrite to just this record's name so each head is self-consistent.
-      const perRecordSig = rewriteSharedSig(sig, n, names)
-      const perRecordSynopsis = nonEmpty(
-        rewriteSharedSig(a.synopsis[0], n, names),
-        ...a.synopsis.slice(1),
-      )
+      const synopsis = nonEmpty(rewriteSharedSig(first, n, names), ...rest)
       return [
         {
           name: mkDocumented("comp_utility", n),
-          sig: perRecordSig,
-          synopsis: perRecordSynopsis,
+          synopsis,
           desc: split.desc,
           section: SECTION,
           ...(split.flagGroups && { flagGroups: split.flagGroups }),
@@ -71,8 +66,8 @@ export function parseCompUtils(yo: YodlSrc): readonly CompUtilityDoc[] {
   })
 }
 
-// xitem entries between findex and the body-bearing item are sig aliases
-// (combined text becomes the record's sig).
+// xitem entries between findex and the body-bearing item are synopsis
+// aliases (each becomes one line of the record's synopsis).
 function collectFindexAssociations(body: YNodeSeq): FindexAssoc[] {
   const out: FindexAssoc[] = []
   let findex: string[] = []
@@ -123,7 +118,7 @@ function collectFindexAssociations(body: YNodeSeq): FindexAssoc[] {
 }
 
 /**
- * For a sig string that names multiple sibling functions joined by "and"
+ * For a synopsis line that names multiple sibling functions joined by "and"
  * (e.g. `_options_set and _options_unset`), reduce it to the part naming
  * the current function. When `sig` doesn't reference the other siblings,
  * pass it through unchanged.
