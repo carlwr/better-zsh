@@ -5,7 +5,7 @@
  */
 
 export type { NonEmpty } from "@carlwr/typescript-extra"
-export { mkDocumented, mkObserved } from "./src/docs/brands.ts"
+export { mkDocumented } from "./src/docs/brands.ts"
 export { normalizeOptName } from "./src/docs/normalize-option.ts"
 export {
   isModuleName,

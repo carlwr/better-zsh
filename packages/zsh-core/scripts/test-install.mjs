@@ -60,7 +60,7 @@ import { commentStart } from "@carlwr/zsh-core/analysis"
 import { ZSH_UPSTREAM } from "@carlwr/zsh-core/meta"
 import { renderDoc } from "@carlwr/zsh-core/render"
 import { resolve } from "@carlwr/zsh-core/resolver"
-import { mkObserved } from "@carlwr/zsh-core/types"
+import { mkDocumented } from "@carlwr/zsh-core/types"
 
 const corpus = loadCorpus()
 const piece = resolve(corpus, "option", "AUTO_CD")
@@ -77,8 +77,8 @@ if (!/AUTO[_ ]?CD/i.test(md)) {
 if (commentStart('echo "#" # tail') !== 9) {
   throw new Error("commentStart returned unexpected index")
 }
-if (mkObserved("option", "AUTO_CD") !== "autocd") {
-  throw new Error("mkObserved did not normalize AUTO_CD")
+if (mkDocumented("option", "AUTO_CD") !== "autocd") {
+  throw new Error("mkDocumented did not normalize AUTO_CD")
 }
 if (!/^zsh-/.test(ZSH_UPSTREAM.tag)) {
   throw new Error("ZSH_UPSTREAM tag missing expected prefix")

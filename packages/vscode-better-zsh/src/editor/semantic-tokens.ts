@@ -1,5 +1,4 @@
 import { positionAt, type TextSpan } from "@carlwr/zsh-core/analysis"
-import { mkObserved } from "@carlwr/zsh-core/types"
 import * as vscode from "vscode"
 import { docAnalysis } from "../document/facts"
 import {
@@ -17,8 +16,6 @@ const FILTERED_RESERVED_WORDS: ReadonlySet<string> = new Set([
   "((",
   "))",
 ])
-
-const COMMAND_PRECMD = mkObserved("precmd_modifier", "command")
 
 export const SEMANTIC_LEGEND = new vscode.SemanticTokensLegend(
   [...tokenTypes],
@@ -69,7 +66,7 @@ export class SemanticTokensProvider
       }
       if (fact.kind !== "cmd-head") continue
       if (fact.text === "[") continue
-      if (fact.precmds.includes(COMMAND_PRECMD)) continue
+      if (fact.precmds.includes("command")) continue
       if (this.reservedWordPainting.has(fact.text)) push(fact.span, "keyword")
       else if (this.builtins.has(fact.text))
         push(fact.span, "function", "defaultLibrary")

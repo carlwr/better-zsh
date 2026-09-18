@@ -1,17 +1,10 @@
 import fc from "fast-check"
 import { describe, expect, test } from "vitest"
-import { mkObserved } from "../docs/brands"
-import { docCategories } from "../docs/taxonomy"
 import { mkOptFlag } from "../docs/types"
 import { mkDocumented_ } from "./id-fns"
 
 const opt = mkDocumented_("option")
 const cond = mkDocumented_("conditional_op")
-
-// `mkDocumented` / `mkObserved` are a provenance-only split; both share the
-// same per-category `norm` table (see `brands.ts`). The brand-symmetry test
-// covers any future drift between them across every category, so per-brand
-// behavioural tests below only target `mkDocumented`.
 
 describe("mkDocumented option (normalizes case + strips underscores)", () => {
   test.each([
@@ -65,16 +58,4 @@ describe("mkOptFlag", () => {
   test("trims whitespace", () => {
     expect(mkOptFlag(" J ")).toBe(mkOptFlag("J"))
   })
-})
-
-// Catches a future per-brand normalization override on any category.
-// `fc.constantFrom(...docCategories)` covers `option` and every other
-// category, including the precmd_modifier / process_subst literal-union
-// branches of `Documented<K>` / `Observed<K>`.
-test("brand symmetry: mkObserved coincides with mkDocumented", () => {
-  fc.assert(
-    fc.property(fc.constantFrom(...docCategories), fc.string(), (cat, s) => {
-      expect(mkObserved(cat, s) as string).toBe(mkDocumented_(cat)(s) as string)
-    }),
-  )
 })

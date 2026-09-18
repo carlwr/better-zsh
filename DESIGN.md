@@ -57,7 +57,7 @@ Coarse, potentially overlapping annotations about user zsh code. A `Fact` discri
 
 The term "fact" is load-bearing: facts are what the analyzer *asserts*, not a complete description. Analysis is best-effort and partial; no claim of exhaustiveness.
 
-Where a payload benefits from branding, it carries `Observed<K>` — **never** `Documented<K>`. Facts annotate syntax, not corpus membership.
+Payloads are raw text (`text: string`) or closed literal unions (`PrecmdName`) — **never** `Documented<K>`. Facts annotate syntax, not corpus membership.
 
 Knows nothing about doc records or markdown rendering.
 
@@ -90,25 +90,22 @@ Dispatch stays in consumer code — partial and context-dependent. Example: a `c
 
 ---
 
-## Brand semantics: `Observed<K>` and `Documented<K>`
+## Brand semantics: raw strings and `Documented<K>`
 
-Three phases:
+Two phases:
 
 - **raw** — user-code text; untyped `string`
-- **`Observed<K>`** — normalized, category-shaped, not corpus-checked
-- **`Documented<K>`** — corpus-confirmed
+- **`Documented<K>`** — corpus-confirmed identity
 
-Brand contracts and acquisition paths (trusted `mkDocumented` vs checked `resolve`): JSDoc on `Observed<K>`, `Documented<K>` (`zsh-core/types`) plus the file-header block in `zsh-core/docs/brands.ts`. Below is **why** the split exists.
+`resolve` is the bridge: raw in, checked identity out. Brand contract and acquisition paths (trusted `mkDocumented` vs checked `resolve`): JSDoc on `Documented<K>` and `mkDocumented` (`zsh-core/types`).
 
-### Two brands, not one
+### No intermediate brand
 
-- provenance
-- trusted/untrusted boundary
-- types that forbid conflating structurally different concepts
+A "normalized, not corpus-checked" brand for user-code tokens was removed: no API accepted it, and its one instantiation collapsed to a closed literal union. Facts carry raw text (domain B); corpus-free normalization is `normalizeOptName`.
 
-### Why normalization is shared but corpus-aware parse is not
+### Why the smart constructor is not corpus-aware
 
-Both brands share per-category normalization (the `norm` table in `brands.ts`); category-specific concerns requiring the corpus live in the per-category resolver, not in `mkObserved` / `mkDocumented`.
+`mkDocumented` only normalizes (the `norm` table in `brands.ts`); anything needing the corpus lives in the per-category resolver.
 
 Key insight: `no_` handling is **corpus-dependent**.
 
@@ -189,7 +186,7 @@ Ids are **shell-safe slugs** — printable ASCII, no whitespace, non-empty. The 
 - Identity is `slug`, derived from `sig` by replacing whitespace with `_` (`>_word`, `<<[-]_word`). `sig` keeps the upstream form (`> word`).
 - `groupOp` is the shared lookup bucket: the longest `groupOp` prefixing the token wins (zsh lexes the longest operator — `>&` never falls back to `>`), then the resolver disambiguates by tail — corpus-aware, not plain map lookup.
 - Both forms round-trip through `docs`: direct on `slug`, close-variant resolver on `sig`.
-- `OptFlag` and `RedirOp` are secondary-index brands outside the `Observed`/`Documented` split.
+- `OptFlag` and `RedirOp` are secondary-index brands, not `Documented<K>` identities.
 
 ### History expansion: grammar components, not independent tokens
 
@@ -248,7 +245,7 @@ Per-type details and the three-way distinction — JSDoc in `zsh-core/types`:
 Wiring:
 
 - `pos: ReservedWordPos` distinguishes command-position vs broader `}` semantics
-- analysis uses `ReservedWordFact` with `text: string`, not `Observed<"reserved_word">`
+- analysis uses `ReservedWordFact` with raw `text: string`; no corpus-identity brand
 - extension hover tries `complex_command` first, then `reserved_word` — mirrors `classifyOrder`
 
 **Layered consumption** — three slices of "the reserved-word list" stay **deliberately** separate:

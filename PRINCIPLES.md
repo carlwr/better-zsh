@@ -74,9 +74,9 @@ Different jobs:
 
 Don't introduce parallel scaffolding.
 
-Brand types `Observed<K>` and `Documented<K>` are the load-bearing connection (see JSDoc in `zsh-core/types`):
+`Documented<K>` plus `resolve` are the load-bearing connection (JSDoc in `zsh-core/types` and `zsh-core/resolver`):
 
-- _facts_ may carry `Observed<K>`
+- _facts_ carry raw text or closed literal unions (`PrecmdName`), never `Documented<K>`
 - `Documented<K>` carries doc identity
 - _the resolver layer_ bridges raw user text to documented identity
 

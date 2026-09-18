@@ -6,7 +6,7 @@ import type { DocCategory, ModuleName } from "./taxonomy.ts"
 export type Brand<T, B extends string> = T & { readonly __brand: B }
 
 // --- Auxiliary lookup brands ------------------------------------------------
-// Secondary-index brands outside the observed/documented split.
+// Secondary-index brands; not corpus identities (`Documented<K>`).
 
 /** Single-letter option flag char. Secondary-index brand, not a doc-piece identity. */
 export type OptFlag = Brand<string, "OptFlag">
@@ -22,17 +22,7 @@ export const mkRedirOp = (raw: string): RedirOp => raw.trim() as RedirOp
 export const redirSlugFromSig = (sig: string): string =>
   sig.replace(/\s+/g, "_")
 
-// --- Parametric observed/documented brands ---------------------------------
-//
-// Two phantom brands indexed on DocCategory. Distinction is provenance only —
-// neither carries corpus-membership proof; that's the resolver layer's job.
-//
-// Normalization is shared (one `norm[K]` table); the brand split prevents
-// conflating user-code tokens with corpus identities.
-//
-// Corpus-aware parsing (`NO_AUTO_CD` ≡ `AUTO_CD`, `1>&2` decomposition) lives
-// in the per-category resolver layer, not in the smart constructors here.
-// See DESIGN.md §"Three phases: raw / observed / documented".
+// --- Corpus identity brand --------------------------------------------------
 
 /**
  * Phantom-branded identifier of a documented zsh element for category K.
@@ -53,20 +43,6 @@ export type Documented<K extends DocCategory> = K extends "precmd_modifier"
   : K extends "process_subst"
     ? ProcessSubstOp
     : string & { readonly __documented: K }
-
-/**
- * Phantom-branded normalized K-shaped token observed in user code (or other
- * untrusted source). NOT a membership proof — only claims category-K
- * normalization. Cross to `Documented<K>` via `resolve(corpus, K, raw)`.
- *
- * `precmd_modifier` / `process_subst` collapse to literal unions, symmetric
- * with `Documented<K>`.
- */
-export type Observed<K extends DocCategory> = K extends "precmd_modifier"
-  ? PrecmdName
-  : K extends "process_subst"
-    ? ProcessSubstOp
-    : string & { readonly __observed: K }
 
 // --- Closed literal unions --------------------------------------------------
 

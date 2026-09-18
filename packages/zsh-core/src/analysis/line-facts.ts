@@ -1,5 +1,4 @@
-import { mkObserved } from "../docs/brands.ts"
-import { type Observed, precmdNames } from "../docs/types.ts"
+import { type PrecmdName, precmdNames } from "../docs/types.ts"
 import { commentStart } from "./comment.ts"
 import { activeText, type TextSpan } from "./doc.ts"
 import {
@@ -64,12 +63,10 @@ const KEYWORD_HEADS: ReadonlySet<string> = new Set([
 ])
 
 const PRECMDS: ReadonlySet<string> = new Set<string>(precmdNames)
+const isPrecmdName = (s: string): s is PrecmdName => PRECMDS.has(s)
 
-/** `command` precommand modifier as an observed brand; for detecting `command`-wrapped heads. */
-export const COMMAND_PRECMD: Observed<"precmd_modifier"> = mkObserved(
-  "precmd_modifier",
-  "command",
-)
+/** `command` precommand modifier; for detecting `command`-wrapped heads. */
+export const COMMAND_PRECMD: PrecmdName = "command"
 
 // `a b() …` and `function a b …` each declare every listed name.
 const FUNC_NAMES = String.raw`((?:[\w][\w-]*\s+)*[\w][\w-]*)`
@@ -86,7 +83,7 @@ export function cmdHeadFactsOnLine(
   // expectCmd: next word is in command position
   // precmds: precommand modifiers accumulated before the current head
   let expectCmd = true
-  let precmds: readonly Observed<"precmd_modifier">[] = []
+  let precmds: readonly PrecmdName[] = []
 
   while (i < len) {
     i = skipWhitespace(line, i, len)
@@ -167,10 +164,9 @@ export function cmdHeadFactsOnLine(
       continue
     }
 
-    if (PRECMDS.has(word)) {
-      const observed = mkObserved("precmd_modifier", word)
-      out.push(precmdFact(observed, wordSpan))
-      precmds = [...precmds, observed]
+    if (isPrecmdName(word)) {
+      out.push(precmdFact(word, wordSpan))
+      precmds = [...precmds, word]
       const parsed = skipPrecmdArgs(line, i, len, word)
       i = parsed.end
       if (parsed.stopsHead) {
@@ -212,7 +208,7 @@ export function funcDeclsAtLine(line: string): readonly FuncDeclHit[] {
 function cmdHeadFact(
   text: string,
   span: TextSpan,
-  precmds: readonly Observed<"precmd_modifier">[],
+  precmds: readonly PrecmdName[],
 ): CmdHeadFact {
   return {
     kind: "cmd-head",
@@ -223,10 +219,7 @@ function cmdHeadFact(
   }
 }
 
-function precmdFact(
-  name: Observed<"precmd_modifier">,
-  span: TextSpan,
-): PrecmdFact {
+function precmdFact(name: PrecmdName, span: TextSpan): PrecmdFact {
   return {
     kind: "precmd",
     span,
@@ -247,7 +240,7 @@ function skipPrecmdArgs(
   line: string,
   pos: number,
   len: number,
-  name: string,
+  name: PrecmdName,
 ): { end: number; stopsHead: boolean } {
   let i = pos
 
