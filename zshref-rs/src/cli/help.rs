@@ -80,9 +80,9 @@ pub fn root_after_help_tail(tool_set: &ToolSet, corpus: &Corpus) -> String {
 }
 
 /// `!` resolves in several categories; `--category=conditional_op` narrows
-/// it to two records (`!`, `!=`), and `!`'s `mdBody` is short enough to
-/// show unelided — so the example shows both the search → docs sequence
-/// and why `category` matters.
+/// it to two records (`!`, `!=`) — so the example shows both the search →
+/// docs sequence and why `category` matters. `mdBody` is elided exactly as
+/// in the tool help examples.
 fn workflow_example(tool_set: &ToolSet, corpus: &Corpus) -> String {
     let search_tool = tool_set.get(ToolName::Search);
     let docs_tool = tool_set.get(ToolName::Docs);
@@ -96,8 +96,7 @@ fn workflow_example(tool_set: &ToolSet, corpus: &Corpus) -> String {
     let mut docs_out = docs_tool
         .call(&docs_in, corpus)
         .expect("workflow docs must run");
-    // Must stay a no-op (step 2 promises the full body); the help-example
-    // test asserts it.
+    // Same elision as the tool help examples (why: `MDBODY_ENCODED_MAX`).
     elide_for_help_example(&mut docs_out);
 
     let search_rendered = output::render(&search_out, true);
@@ -110,7 +109,8 @@ fn workflow_example(tool_set: &ToolSet, corpus: &Corpus) -> String {
             $ zshref search --query='!' --category=conditional_op --pretty
         {search_block}
 
-            $ # 2. fetch the full markdown for one of the matches:
+            $ # 2. fetch the markdown for one of the matches
+            $ #    (mdBody holds the full markdown; elided in this help display):
             $ zshref docs --key='!' --category=conditional_op --pretty
         {docs_block}\
         ",
