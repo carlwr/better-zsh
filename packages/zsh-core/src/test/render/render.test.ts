@@ -12,7 +12,13 @@ import { docCategoryPreamble } from "../../docs/category-preamble"
 import type { DocCorpus } from "../../docs/corpus"
 import * as zd from "../../docs/corpus"
 import type { DocCategory, DocRecordMap } from "../../docs/taxonomy"
-import { docCategories, idOf, mkPieceId } from "../../docs/taxonomy"
+import {
+  docCategories,
+  docCategoryLabels,
+  idOf,
+  mkPieceId,
+  subKindOf,
+} from "../../docs/taxonomy"
 import type {
   ArithOpDoc,
   BuiltinDoc,
@@ -21,6 +27,7 @@ import type {
   CondOpDoc,
   JobSpecDoc,
   KeymapDoc,
+  MathfuncDoc,
   ParamExpnDoc,
   PrecmdDoc,
   ProcessSubstDoc,
@@ -64,12 +71,13 @@ import {
   mdZleWidget,
   recordTitle,
   renderDocWithTitle,
+  renderRecord,
 } from "../../render/md"
 import { withTmpDirAsync } from "../tmp-dir"
 
 // --- fixtures ---------------------------------------------------------------
-// `section` and `args` are required by the types but, footers aside, unused
-// by renderers.
+// `section` is required by the types but, the option `_Section:_` line and
+// subKinds aside, unused by renderers.
 
 const cd: ZshOption = {
   name: mkDocumented("option", "AUTO_CD"),
@@ -78,6 +86,15 @@ const cd: ZshOption = {
   defaultIn: ["csh", "ksh", "sh", "zsh"],
   section: "Changing Directories",
   desc: "d:o",
+}
+// An option whose name is also a category-label word (`ZLE widget`).
+const zleOpt: ZshOption = {
+  name: mkDocumented("option", "ZLE"),
+  display: "ZLE",
+  flags: [],
+  defaultIn: ["zsh"],
+  section: "Zle",
+  desc: "d:zle",
 }
 
 const cond = <A extends CondOpDoc["arity"]>(
@@ -226,6 +243,12 @@ const cuu: CompUtilityDoc = {
   desc: "d:cuu",
   section: "Utility Functions",
 }
+const mf: MathfuncDoc = {
+  name: mkDocumented("mathfunc", "sin"),
+  synopsis: ["sin(x)"],
+  desc: "d:mf",
+  module: "zsh/mathfunc",
+}
 
 // --- corpus builder ---------------------------------------------------------
 
@@ -253,7 +276,7 @@ const baseArrays: DocArrays = {
   keymap: [km],
   job_spec: [js],
   arith_op: [ao],
-  mathfunc: [],
+  mathfunc: [mf],
   special_function: [sfn],
   comp_utility: [cuu],
 }
@@ -284,42 +307,24 @@ const cdCorpus = mkTestCorpus({ option: [cd] })
 // deliberately exclude the title line. See the `recordTitle` and
 // `renderDocWithTitle` tests further down for title-related coverage.
 
+// Per-category bodies: no category footer here (`renderRecord` appends it —
+// see the footer tests).
 const renderedMarkdownCases = [
-  ["special_param", mdShellParam(sec), ["d:p", "Special Parameter"]],
+  ["special_param", mdShellParam(sec), ["d:p"]],
   ["builtin", mdBuiltin(bi), ["```docopt", "echo [ -n ] [ arg ... ]", "d:bi"]],
-  ["precmd_modifier", mdPrecmd(pc), ["_Role:_ precommand modifier"]],
-  ["redirection", mdRedir(rd), ["```docopt", ">> word", "d:r", "Redirection"]],
   [
-    "process_subst",
-    mdProcessSubst(sub),
-    ["d:ps", "_Category:_ Process Substitution"],
+    "precmd_modifier",
+    mdPrecmd(pc),
+    ["```docopt", "noglob command arg ...", "d:pc"],
   ],
+  ["redirection", mdRedir(rd), ["```docopt", ">> word", "d:r"]],
+  ["process_subst", mdProcessSubst(sub), ["d:ps"]],
   [
     "param_expn",
     mdParamExpn(px),
-    [
-      "```zsh",
-      "${name-word}",
-      "${name:-word}    # <- this form",
-      "d:px",
-      "_Category:_ Parameter Expansion",
-    ],
+    ["```zsh", "${name-word}", "${name:-word}    # <- this form", "d:px"],
   ],
-  [
-    "reserved_word",
-    mdReservedWord(word),
-    ["d:rw", "_Role:_ reserved word (command position)"],
-  ],
-  [
-    "reserved_word no-desc",
-    mdReservedWord({
-      name: mkDocumented("reserved_word", "for"),
-      sig: "for",
-      section: "Reserved Words",
-      pos: "command",
-    }),
-    ["_Role:_ reserved word (command position)"],
-  ],
+  ["reserved_word", mdReservedWord(word), ["d:rw"]],
   [
     "complex_command",
     mdComplexCommand(cc, noOpts),
@@ -330,90 +335,41 @@ const renderedMarkdownCases = [
       "_Alternate forms:_",
       "if list { list }",
       "_Body keywords:_ `then` `fi`",
-      "_Role:_ complex command",
     ],
   ],
-  [
-    "prompt_escape",
-    mdPromptEscape(pe),
-    [
-      "```zsh",
-      "print -P '%n'",
-      "d:pe",
-      "_Category:_ Prompt Escape — Login information",
-    ],
-  ],
+  ["prompt_escape", mdPromptEscape(pe), ["```zsh", "print -P '%n'", "d:pe"]],
   [
     "zle_widget",
     mdZleWidget(zw),
-    [
-      "_Default bindings:_ emacs `^W` `ESC-^H` `ESC-^?`",
-      "d:zw",
-      "_Role:_ ZLE standard widget",
-      "_Subsection:_ Modifying Text",
-    ],
+    ["_Default bindings:_ emacs `^W` `ESC-^H` `ESC-^?`", "d:zw"],
   ],
-  [
-    "keymap",
-    mdKeymap(km),
-    ["d:km", "_Role:_ ZLE keymap", "_Linked from:_ `main`"],
-  ],
-  ["job_spec", mdJobSpec(js), ["d:js", "_Role:_ job spec (current)"]],
-  [
-    "arith_op",
-    mdArithOp(ao),
-    ["d:ao", "_Role:_ arithmetic operator (overloaded)"],
-  ],
+  ["keymap", mdKeymap(km), ["d:km", "_Linked from:_ `main`"]],
+  ["job_spec", mdJobSpec(js), ["d:js"]],
+  ["arith_op", mdArithOp(ao), ["d:ao"]],
   [
     "special_function",
     mdSpecialFunction(sfn),
-    [
-      "d:sfn",
-      "```zsh",
-      "chpwd_functions=( funcname1 funcname2 ... )",
-      "_Role:_ hook function",
-    ],
+    ["d:sfn", "```zsh", "chpwd_functions=( funcname1 funcname2 ... )"],
   ],
   [
     "subscript_flag",
     mdSubscriptFlag(sf, noOpts),
-    [
-      "```zsh",
-      "${name[(w)exp]}",
-      "d:sf",
-      "_Role:_ parameter-subscript flag (args: string)",
-    ],
+    ["```zsh", "${name[(w)exp]}", "d:sf", "_Args:_ string"],
   ],
   [
     "param_expn_flag",
     mdParamFlag(pf, noOpts),
-    ["```zsh", "${(U)spec}", "d:pf", "_Role:_ parameter-expansion flag"],
+    ["```zsh", "${(U)spec}", "d:pf"],
   ],
-  [
-    "history_expn",
-    mdHistory(hi, noOpts),
-    ["d:hi", "_Role:_ history event designator"],
-  ],
-  [
-    "glob_op",
-    mdGlobOp(go, noOpts),
-    ["d:go", "_Role:_ glob operator (standard)"],
-  ],
+  ["history_expn", mdHistory(hi, noOpts), ["d:hi"]],
+  ["glob_op", mdGlobOp(go, noOpts), ["d:go"]],
   [
     "glob_flag",
     mdGlobFlag(gf, noOpts),
-    ["```zsh", "(#i)pat", "d:gf", "_Role:_ glob flag (args: expr)"],
+    ["```zsh", "(#i)pat", "d:gf", "_Args:_ expr"],
   ],
-  [
-    "glob_qualifier",
-    mdGlobQualifier(gq, noOpts),
-    ["```zsh", "*(@)", "d:gq", "_Role:_ glob qualifier"],
-  ],
-  [
-    "comp_utility",
-    mdCompUtility(cuu),
-    ["d:cuu", "_Category:_ Completion Utility"],
-  ],
+  ["glob_qualifier", mdGlobQualifier(gq, noOpts), ["```zsh", "*(@)", "d:gq"]],
+  ["comp_utility", mdCompUtility(cuu), ["d:cuu"]],
 ] as const
 
 // --- tests ------------------------------------------------------------------
@@ -427,7 +383,7 @@ describe("render markdown", () => {
       "set -J",
       "set +J",
       "**Default in zsh: `on`**",
-      "_Option category:_ Changing Directories",
+      "_Section:_ Changing Directories",
     ])
   })
 
@@ -481,13 +437,114 @@ describe("render markdown", () => {
     expect(mdCondOp(op, noOpts)).toBe(want)
   })
 
+  test.each([
+    [
+      cu,
+      "```zsh\n[[ -a file ]]\n```\n\nd:u\n\n_Category:_ conditional operator (unary)",
+    ],
+    [
+      cb,
+      "```zsh\n[[ left -nt right ]]\n```\n\nd:b\n\n_Category:_ conditional operator (binary)",
+    ],
+  ] as const)("cond op record — body + footer ($arity)", (op, want) => {
+    expect(renderRecord(noOpts, "conditional_op", op)).toBe(want)
+  })
+
   test.each(renderedMarkdownCases)("%s markdown", (_, md, parts) => {
     containsAll(md, parts)
   })
 
-  test("reserved-word — any position", () => {
-    expect(mdReservedWord({ ...word, pos: "any" })).toContain(
-      "reserved word (any position)",
+  // --- category footer -----------------------------------------------------
+
+  const lastParagraph = (md: string) => md.split("\n\n").at(-1) ?? ""
+
+  // Every record ends with the taxonomy's label (+ subKind when the category
+  // has one); the per-category strings this replaced are gone.
+  test.each(docCategories)("%s record ends with the category footer", cat => {
+    const doc = baseArrays[cat][0]
+    if (doc === undefined) throw new Error(`no fixture for ${cat}`)
+    const sub = subKindOf(cat, doc)
+    const label = docCategoryLabels[cat]
+    const want = sub === undefined ? label : `${label} (${sub})`
+    const md = renderRecord(noOpts, cat, doc)
+    expect(lastParagraph(md)).toBe(`_Category:_ ${want}`)
+    expect(md).not.toMatch(/^_(Role|Subsection|Option category):_/m)
+  })
+
+  test("footer subKind — reserved word position", () => {
+    expect(renderRecord(noOpts, "reserved_word", { ...word, pos: "any" })).toBe(
+      "d:rw\n\n_Category:_ reserved word (any)",
+    )
+  })
+
+  test("footer alone — desc-less reserved word", () => {
+    const bare: ReservedWordDoc = {
+      name: mkDocumented("reserved_word", "for"),
+      sig: "for",
+      section: "Reserved Words",
+      pos: "command",
+    }
+    expect(renderRecord(noOpts, "reserved_word", bare)).toBe(
+      "_Category:_ reserved word (command)",
+    )
+  })
+
+  // The footer is composed after option-ref bolding: `ZLE` is an option, and
+  // a body-side footer would come out as `_Category:_ **`ZLE`** widget`.
+  test.each([
+    ["zle_widget", zw, "ZLE widget (standard:Modifying Text)"],
+    ["keymap", km, "ZLE keymap (regular)"],
+  ] as const)("footer never bolded — %s", (cat, doc, want) => {
+    const withZle = mkTestCorpus({ option: [cd, zleOpt] })
+    expect(fmtOptRefsInMd(`_Category:_ ${want}`, withZle)).toContain("**")
+    const footer = lastParagraph(renderRecord(withZle, cat, doc))
+    expect(footer).toBe(`_Category:_ ${want}`)
+    expect(footer).not.toContain("**")
+  })
+
+  // Typed extras stay in the body, before the footer, and still pass through
+  // bolding (the alias target is an option reference).
+  test("typed extras precede the footer", () => {
+    const alias: ZshOption = {
+      ...cd,
+      name: mkDocumented("option", "CDABLE_VARS"),
+      display: "CDABLE_VARS",
+      aliasOf: { target: cd.name, negated: false },
+    }
+    const opt = renderRecord(cdCorpus, "option", alias)
+    expect(opt).toContain("_Alias of:_ **`AUTO_CD`**")
+    expect(opt).toMatch(
+      /_Section:_ Changing Directories\n\n_Category:_ option$/,
+    )
+
+    const tied = renderRecord(noOpts, "special_param", {
+      ...sec,
+      tied: mkDocumented("special_param", "path"),
+    })
+    expect(tied).toMatch(
+      /_Tied with:_ `path`\n\n_Category:_ special parameter \(shell-set\)$/,
+    )
+
+    const deprecated = renderRecord(noOpts, "builtin", {
+      ...bi,
+      deprecated: true,
+      module: "zsh/files",
+    })
+    expect(deprecated).toMatch(
+      /_Deprecated:_ not recommended for new code\n\n_Module:_ `zsh\/files`\n\n_Category:_ builtin$/,
+    )
+
+    const special = renderRecord(noOpts, "keymap", {
+      ...km,
+      isSpecial: true,
+      linkedFrom: [],
+    })
+    expect(special).toMatch(
+      /_Special:_ cannot be altered\n\n_Category:_ ZLE keymap \(special\)$/,
+    )
+
+    expect(renderRecord(noOpts, "glob_flag", gf)).toMatch(
+      /_Args:_ expr\n\n_Category:_ glob flag$/,
     )
   })
 
@@ -659,9 +716,7 @@ describe("render markdown", () => {
   )
 
   test("zle widget bindings paragraph — absent when empty", () => {
-    const md = mdZleWidget({ ...zw, defaultBindings: [] })
-    expect(md.startsWith("d:zw\n\n")).toBe(true)
-    expect(md).not.toContain("Default bindings")
+    expect(mdZleWidget({ ...zw, defaultBindings: [] })).toBe("d:zw")
   })
 
   test("renderDocWithTitle — missing record returns empty string", () => {

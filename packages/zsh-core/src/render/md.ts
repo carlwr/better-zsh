@@ -8,6 +8,7 @@ import {
 import type { DocCorpus } from "../docs/corpus.ts"
 import { resolve } from "../docs/resolver.ts"
 import type { DocCategory, DocPieceId, DocRecordMap } from "../docs/taxonomy.ts"
+import { docCategoryLabels, subKindOf } from "../docs/taxonomy.ts"
 import type {
   AlternateForm,
   ArithOpDoc,
@@ -541,6 +542,7 @@ export function headFor<K extends DocCategory>(
 }
 
 // --- per-category renderers ------------------------------------------------
+// Bodies only: `renderRecord` appends the generic category footer.
 
 export function mdOpt(opt: ZshOption, corpus: DocCorpus): string {
   return docBlock(
@@ -551,7 +553,7 @@ export function mdOpt(opt: ZshOption, corpus: DocCorpus): string {
       opt.aliasOf,
       a => `_Alias of:_ ${bt(aliasTargetDisplay(a, corpus))}`,
     ),
-    `_Option category:_ ${opt.section}`,
+    `_Section:_ ${opt.section}`,
   )
 }
 
@@ -589,85 +591,54 @@ export function mdShellParam(doc: ShellParamDoc): string {
     renderMemberList(doc.desc, keys, doc.outro),
     ...maybe(doc.tied, t => `_Tied with:_ ${bt(t)}`),
     ...modulePart(doc.module),
-    `_Category:_ Special Parameter — ${doc.scope}`,
   )
 }
 
 export function mdParamFlag(doc: ParamFlagDoc, corpus: DocCorpus): string {
-  return sigBlock(
-    doc,
-    corpus,
-    `parameter-expansion flag${argsSuffix(doc.args)}`,
-    headFor("param_expn_flag", doc),
-  )
+  return sigBlock(doc, corpus, headFor("param_expn_flag", doc))
 }
 
 export function mdSubscriptFlag(
   doc: SubscriptFlagDoc,
   corpus: DocCorpus,
 ): string {
-  return sigBlock(
-    doc,
-    corpus,
-    `parameter-subscript flag${argsSuffix(doc.args)}`,
-    headFor("subscript_flag", doc),
-  )
+  return sigBlock(doc, corpus, headFor("subscript_flag", doc))
 }
 
 export function mdHistory(doc: HistoryDoc, corpus: DocCorpus): string {
-  return sigBlock(
-    doc,
-    corpus,
-    `history ${doc.kind.replace("-", " ")}`,
-    headFor("history_expn", doc),
-  )
+  return sigBlock(doc, corpus, headFor("history_expn", doc))
 }
 
 export function mdGlobOp(doc: GlobOpDoc, corpus: DocCorpus): string {
-  return sigBlock(
-    doc,
-    corpus,
-    `glob operator (${doc.kind})`,
-    headFor("glob_op", doc),
-  )
+  return sigBlock(doc, corpus, headFor("glob_op", doc))
 }
 
 export function mdGlobFlag(doc: GlobFlagDoc, corpus: DocCorpus): string {
-  return sigBlock(
-    doc,
-    corpus,
-    `glob flag${argsSuffix(doc.args)}`,
-    headFor("glob_flag", doc),
-  )
+  return sigBlock(doc, corpus, headFor("glob_flag", doc))
 }
 
 export function mdGlobQualifier(
   doc: GlobQualifierDoc,
   corpus: DocCorpus,
 ): string {
-  return sigBlock(
-    doc,
-    corpus,
-    `glob qualifier${argsSuffix(doc.args)}`,
-    headFor("glob_qualifier", doc),
-  )
+  return sigBlock(doc, corpus, headFor("glob_qualifier", doc))
 }
 
+/** Head + desc, plus an `_Args:_` line for flag records with operand slots. */
 function sigBlock(
-  doc: { readonly sig: string; readonly desc: string },
+  doc: { readonly desc: string; readonly args?: readonly string[] },
   corpus: DocCorpus,
-  role: string,
   head: DocHead | undefined,
 ): string {
   return docBlock(
     ...headBlock(head),
     fmtOptRefsInMd(doc.desc, corpus),
-    `_Role:_ ${role}`,
+    ...argsPart(doc.args),
   )
 }
 
-const argsSuffix = (args: readonly string[]): string =>
-  args.length > 0 ? ` (args: ${args.join(", ")})` : ""
+const argsPart = (args: readonly string[] | undefined): readonly string[] =>
+  args?.length ? [`_Args:_ ${args.join(", ")}`] : []
 
 export function mdBuiltin(doc: BuiltinDoc): string {
   return docBlock(
@@ -683,36 +654,24 @@ export function mdBuiltin(doc: BuiltinDoc): string {
 }
 
 export function mdPrecmd(doc: PrecmdDoc): string {
-  return docBlock(
-    ...headBlock(headFor("precmd_modifier", doc)),
-    doc.desc,
-    "_Role:_ precommand modifier",
-  )
+  return docBlock(...headBlock(headFor("precmd_modifier", doc)), doc.desc)
 }
 
 export function mdRedir(doc: RedirDoc): string {
-  return docBlock(
-    ...headBlock(headFor("redirection", doc)),
-    doc.desc,
-    "_Category:_ Redirection",
-  )
+  return docBlock(...headBlock(headFor("redirection", doc)), doc.desc)
 }
 
 export function mdProcessSubst(doc: ProcessSubstDoc): string {
-  return docBlock(doc.desc, "_Category:_ Process Substitution")
+  return doc.desc
 }
 
 export function mdParamExpn(doc: ParamExpnDoc): string {
-  return docBlock(
-    ...headBlock(headFor("param_expn", doc)),
-    doc.desc,
-    "_Category:_ Parameter Expansion",
-  )
+  return docBlock(...headBlock(headFor("param_expn", doc)), doc.desc)
 }
 
+/** Empty for the desc-less reserved words; the footer alone remains. */
 export function mdReservedWord(doc: ReservedWordDoc): string {
-  const pos = doc.pos === "command" ? "command position" : "any position"
-  return docBlock(...prose(doc.desc), `_Role:_ reserved word (${pos})`)
+  return doc.desc ?? ""
 }
 
 export function mdComplexCommand(
@@ -732,7 +691,6 @@ export function mdComplexCommand(
       doc.bodyKeywords.length > 0,
       `_Body keywords:_ ${doc.bodyKeywords.map(bt).join(" ")}`,
     ),
-    "_Role:_ complex command",
   )
 }
 
@@ -746,17 +704,12 @@ function formatAlternateForm(a: AlternateForm): string {
 }
 
 export function mdPromptEscape(doc: PromptEscapeDoc): string {
-  return docBlock(
-    ...headBlock(headFor("prompt_escape", doc)),
-    doc.desc,
-    `_Category:_ Prompt Escape — ${doc.section}`,
-  )
+  return docBlock(...headBlock(headFor("prompt_escape", doc)), doc.desc)
 }
 
 export function mdKeymap(doc: KeymapDoc): string {
   return docBlock(
     doc.desc,
-    "_Role:_ ZLE keymap",
     ...when(doc.isSpecial, "_Special:_ cannot be altered"),
     ...when(
       doc.linkedFrom.length > 0,
@@ -766,29 +719,15 @@ export function mdKeymap(doc: KeymapDoc): string {
 }
 
 export function mdJobSpec(doc: JobSpecDoc): string {
-  return docBlock(doc.desc, `_Role:_ job spec (${doc.kind})`)
+  return doc.desc
 }
 
 export function mdArithOp(doc: ArithOpDoc): string {
-  return docBlock(
-    ...headBlock(headFor("arith_op", doc)),
-    doc.desc,
-    `_Role:_ arithmetic operator (${doc.arity})`,
-  )
+  return docBlock(...headBlock(headFor("arith_op", doc)), doc.desc)
 }
 
-const specialFunctionRoleLabel = {
-  hook: "hook function",
-  "trap-literal": "trap function",
-  "trap-template": "trap function (template)",
-} as const
-
 export function mdSpecialFunction(doc: SpecialFunctionDoc): string {
-  return docBlock(
-    ...headBlock(headFor("special_function", doc)),
-    doc.desc,
-    `_Role:_ ${specialFunctionRoleLabel[doc.kind]}`,
-  )
+  return docBlock(...headBlock(headFor("special_function", doc)), doc.desc)
 }
 
 export function mdZleWidget(doc: ZleWidgetDoc): string {
@@ -802,8 +741,6 @@ export function mdZleWidget(doc: ZleWidgetDoc): string {
     ...defaultBindingsPart(doc.defaultBindings),
     renderMemberList(doc.desc, subItems, doc.outro),
     ...modulePart(doc.module),
-    `_Role:_ ZLE ${doc.kind} widget`,
-    `_Subsection:_ ${doc.section}`,
   )
 }
 
@@ -829,7 +766,6 @@ export function mdCompUtility(doc: CompUtilityDoc): string {
   return docBlock(
     ...headBlock(headFor("comp_utility", doc)),
     renderFlagGroupBody(doc.desc, doc.flagGroups, doc.outro),
-    "_Category:_ Completion Utility",
   )
 }
 
@@ -895,9 +831,24 @@ const mdRenderer: {
 }
 
 /**
- * Per-category body plus option-ref bolding; no title (see
- * {@link recordTitle} or {@link renderDocWithTitle}). Idempotent on
- * already-bolded markdown.
+ * Last paragraph of every record: `_Category:_ <label>`, plus ` (<subKind>)`
+ * for categories that have one. Label and subKind come from the taxonomy,
+ * never from per-category strings.
+ */
+function categoryFooter<K extends DocCategory>(
+  cat: K,
+  doc: DocRecordMap[K],
+): string {
+  const sub = subKindOf(cat, doc)
+  const label = docCategoryLabels[cat]
+  return `_Category:_ ${sub === undefined ? label : `${label} (${sub})`}`
+}
+
+/**
+ * Per-category body with option-ref bolding, then the generic category
+ * footer; no title (see {@link recordTitle} or {@link renderDocWithTitle}).
+ * The footer is composed after bolding: a label word that is also an option
+ * name (`ZLE`) must stay plain.
  */
 export function renderRecord<K extends DocCategory>(
   corpus: DocCorpus,
@@ -908,7 +859,10 @@ export function renderRecord<K extends DocCategory>(
     d: DocRecordMap[K],
     corpus: DocCorpus,
   ) => string
-  return fmtOptRefsInMd(render(doc, corpus), corpus)
+  return docBlock(
+    ...prose(fmtOptRefsInMd(render(doc, corpus), corpus)),
+    categoryFooter(cat, doc),
+  )
 }
 
 /**
