@@ -1,8 +1,52 @@
+// Reference dump: every corpus record rendered to markdown, split into one
+// file per category plus `all.md`, for review and before/after diffing.
+// Internal — outside the published surface; used by the `dump:refs` CLI and
+// the render tests.
+
 import { mkdir, writeFile } from "node:fs/promises"
 import { join } from "node:path"
-import { docCategoryPreamble } from "../docs/category-preamble.ts"
-import { type DocCategory, docCategories } from "../docs/taxonomy.ts"
-import type { RefDoc } from "./refs.ts"
+import { docCategoryPreamble } from "../src/docs/category-preamble.ts"
+import type { DocCorpus } from "../src/docs/corpus.ts"
+import {
+  type DocCategory,
+  type DocRecordMap,
+  docCategories,
+  docDisplay,
+  docId,
+} from "../src/docs/taxonomy.ts"
+import type { Documented } from "../src/docs/types.ts"
+import { renderRecord } from "../src/render/md.ts"
+
+interface RefDocK<K extends DocCategory> {
+  readonly kind: K
+  readonly id: Documented<K>
+  /** Display heading used in dump output; may differ from the typed `id`. */
+  readonly heading: string
+  readonly md: string
+}
+
+/** Rendered reference markdown for one logical zsh item. */
+export type RefDoc = { [K in DocCategory]: RefDocK<K> }[DocCategory]
+
+function mkRefDocs<K extends DocCategory>(
+  kind: K,
+  docs: readonly DocRecordMap[K][],
+  corpus: DocCorpus,
+): RefDocK<K>[] {
+  return docs.map(doc => ({
+    kind,
+    id: docId[kind](doc),
+    heading: docDisplay(kind, doc),
+    md: renderRecord(corpus, kind, doc),
+  }))
+}
+
+/** All records rendered, in corpus order — the dump never re-sorts. */
+export function refDocs(corpus: DocCorpus): readonly RefDoc[] {
+  return docCategories.flatMap(
+    kind => mkRefDocs(kind, [...corpus[kind].values()], corpus) as RefDoc[],
+  )
+}
 
 export const dumpFile = {
   all: "all.md",

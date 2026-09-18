@@ -130,7 +130,7 @@ The rendering path is `raw string → DocPieceId → markdown` (`resolve` + `ren
 - Two ways to do the same thing force consumers to choose and encourage drift.
 - Each step has a crisp meaning: "is this in the corpus?" vs "render this known element."
 
-Corpus-driven aggregation helpers (`refDocs`) are fine — they operate on already-known records, not hidden brand crossings.
+Corpus-driven aggregation helpers (`augmentWithMarkdown`, the JSON projection) are fine — they operate on already-known records, not hidden brand crossings.
 
 Not an absolute ban. A post-refactor convenience wrapper is fine as a conscious addition.
 

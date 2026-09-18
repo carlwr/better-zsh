@@ -1,8 +1,7 @@
 import { resolve } from "node:path"
 import { loadCorpus } from "../src/docs/corpus.ts"
 import { docCategories, docCategoryLabels } from "../src/docs/taxonomy.ts"
-import { writeRefDump } from "../src/render/dump.ts"
-import { refDocs } from "../src/render/refs.ts"
+import { refDocs, writeRefDump } from "./ref-dump.ts"
 
 async function main() {
   const root = process.cwd()

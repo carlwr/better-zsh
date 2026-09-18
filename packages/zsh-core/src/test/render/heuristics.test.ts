@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest"
+import { refDocs } from "../../../scripts/ref-dump.ts"
 import { loadCorpus } from "../../docs/corpus.ts"
 import { type DocPieceId, mkPieceId } from "../../docs/taxonomy.ts"
-import { refDocs } from "../../render/refs.ts"
 import { heuristics } from "./heuristics.ts"
 import { knownOffenders } from "./known-offenders.ts"
 

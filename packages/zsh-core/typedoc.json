@@ -34,7 +34,6 @@
     "src/docs/corpus.ts:SubKindEnums",
     "src/docs/json-types.ts:JsonDoc",
     "src/docs/resolver.ts:ResolverFeedbackKindSchemas",
-    "src/docs/taxonomy.ts:SubKindFnMap",
-    "src/render/refs.ts:RefDocK"
+    "src/docs/taxonomy.ts:SubKindFnMap"
   ]
 }

@@ -1,6 +1,12 @@
 import { readFileSync } from "node:fs"
 import { join } from "node:path"
 import { describe, expect, test } from "vitest"
+import {
+  dumpFile,
+  dumpText,
+  refDocs,
+  writeRefDump,
+} from "../../../scripts/ref-dump"
 import { mkDocumented } from "../../docs/brands"
 import { docCategoryPreamble } from "../../docs/category-preamble"
 import type { DocCorpus } from "../../docs/corpus"
@@ -27,7 +33,6 @@ import type {
   ZshOption,
 } from "../../docs/types"
 import { mkOptFlag, mkRedirOp, mkShellParamKeyName } from "../../docs/types"
-import { dumpFile, dumpText, writeRefDump } from "../../render/dump"
 import {
   defaultStateIn,
   fmtOptRefsInMd,
@@ -60,7 +65,6 @@ import {
   recordTitle,
   renderDocWithTitle,
 } from "../../render/md"
-import { refDocs } from "../../render/refs"
 import { withTmpDirAsync } from "../tmp-dir"
 
 // --- fixtures ---------------------------------------------------------------
@@ -471,25 +475,6 @@ describe("render markdown", () => {
     expect(defaultStateIn({ ...cd, defaultIn: ["ksh"] }, "zsh")).toBe("off")
   })
 
-  test("refDocs — collects and sorts special params", () => {
-    const argv: ShellParamDoc = {
-      ...sec,
-      name: mkDocumented("special_param", "argv"),
-    }
-    const ids = refDocs(
-      mkTestCorpus({
-        special_param: [sec, argv],
-        redirection: [],
-        process_subst: [],
-        reserved_word: [],
-      }),
-    ).map(d => `${d.kind}:${d.id}`)
-    expect(ids.filter(id => id.startsWith("special_param:"))).toEqual([
-      "special_param:argv",
-      "special_param:SECONDS",
-    ])
-  })
-
   test("typed ref-doc ids distinct from display headings", () => {
     const docs = corpus()
     const opt = docs.find(d => d.kind === "option")
@@ -738,6 +723,12 @@ describe("render dump", () => {
       const src = [...vendored[kind].values()]
       expect(docs.filter(d => d.kind === kind)).toHaveLength(src.length)
       expect(headings(files.get(file))).toBe(src.length)
+    })
+
+    test.each(docCategories)("%s ref docs preserve corpus order", kind => {
+      expect(docs.filter(d => d.kind === kind).map(d => d.id)).toEqual([
+        ...vendored[kind].keys(),
+      ])
     })
 
     // Vendored-option lookup that throws on miss; mdOpt rendered inline.

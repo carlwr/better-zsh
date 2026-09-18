@@ -78,6 +78,10 @@ const fileFixups: Readonly<
 
 // Multi-file / multi-extractor categories use named helpers below to keep the
 // table scannable; dispatch remains parametric over `DocCategory`.
+//
+// Record order = this table's order: each source's manual order, sources as
+// listed. JSON artifacts, `zshref list`, the web index and the dump all
+// observe it; nothing re-sorts.
 const categoryLoader: CategoryLoader = {
   option: gn => parseOptions(gn("options.yo")),
   conditional_op: loadCondOps,
