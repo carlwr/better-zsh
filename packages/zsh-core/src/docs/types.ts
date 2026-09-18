@@ -57,6 +57,12 @@ export const precmdNames = [
 
 export type PrecmdName = (typeof precmdNames)[number]
 
+const precmdNameSet: ReadonlySet<string> = new Set(precmdNames)
+
+/** Type guard over `precmdNames`. */
+export const isPrecmdName = (raw: string): raw is PrecmdName =>
+  precmdNameSet.has(raw)
+
 /** zshoptions default-on marker: D=default, K=ksh, S=sh, C=csh, Z=zsh. */
 export type DefaultMarker = "D" | "K" | "S" | "C" | "Z"
 
@@ -94,9 +100,9 @@ export interface OptFlagAlias {
   readonly on: OptFlagSign
   /**
    * Emulation modes whose single-letter option table maps this flag to this
-   * option; plain zsh is `zsh`. Non-empty; in `emulations` tuple order.
+   * option; plain zsh is `zsh`. In `emulations` tuple order.
    */
-  readonly emulations: readonly Emulation[]
+  readonly emulations: NonEmpty<Emulation>
 }
 
 export const optSections = [

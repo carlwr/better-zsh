@@ -1,3 +1,5 @@
+import { isNonEmpty } from "@carlwr/typescript-extra"
+
 import { mkDocumented } from "../../brands.ts"
 import type {
   DefaultMarker,
@@ -208,7 +210,10 @@ function mkAlias(
   on: OptFlagSign,
   validIn: readonly Emulation[],
 ): OptFlagAlias {
-  return { char, on, emulations: emulations.filter(e => validIn.includes(e)) }
+  const kept = emulations.filter(e => validIn.includes(e))
+  if (!isNonEmpty(kept))
+    throw new Error(`option flag ${on}${char}: no emulation`)
+  return { char, on, emulations: kept }
 }
 
 const isZshAlias = (alias: OptFlagAlias) => alias.emulations.includes("zsh")

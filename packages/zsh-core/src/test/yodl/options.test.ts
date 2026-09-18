@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest"
-import type { Emulation, OptFlagAlias, OptFlagSign } from "../../docs/types"
+import type { OptFlagAlias, OptFlagSign } from "../../docs/types"
 import { emulations, mkOptFlag, optSections } from "../../docs/types"
 import { parseOptions } from "../../docs/yodl/extractors/options"
 import { mkDocumented_ } from "../id-fns"
@@ -15,13 +15,13 @@ const OPTS_YO = readVendoredYo("options.yo")
 const opt = mkDocumented_("option")
 
 // The two single-letter tables: plain zsh + csh emulation, sh + ksh emulation.
-const ZSH: readonly Emulation[] = ["csh", "zsh"]
-const KSH: readonly Emulation[] = ["ksh", "sh"]
-const BOTH: readonly Emulation[] = ["csh", "ksh", "sh", "zsh"]
+const ZSH: OptFlagAlias["emulations"] = ["csh", "zsh"]
+const KSH: OptFlagAlias["emulations"] = ["ksh", "sh"]
+const BOTH: OptFlagAlias["emulations"] = ["csh", "ksh", "sh", "zsh"]
 const alias = (
   char: string,
   on: OptFlagSign,
-  emulations: readonly Emulation[],
+  emulations: OptFlagAlias["emulations"],
 ): OptFlagAlias => ({ char: mkOptFlag(char), on, emulations })
 
 /** `yo` without the `subsect(title)` … up to the next `subsect(` (a whole sitem list). */

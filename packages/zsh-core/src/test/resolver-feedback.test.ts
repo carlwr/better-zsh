@@ -25,8 +25,8 @@ const alias = (
   on: OptFlagAlias["on"],
   emulations: OptFlagAlias["emulations"],
 ): OptFlagAlias => ({ char: mkOptFlag(char), on, emulations })
-const ZSH = ["csh", "zsh"] as const
-const KSH = ["ksh", "sh"] as const
+const ZSH: OptFlagAlias["emulations"] = ["csh", "zsh"]
+const KSH: OptFlagAlias["emulations"] = ["ksh", "sh"]
 const option = (
   name: string,
   flags: readonly OptFlagAlias[],
