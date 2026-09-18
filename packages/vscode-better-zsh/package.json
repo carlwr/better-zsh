@@ -42,7 +42,7 @@
     "ovsx:publish": "pnpm build && export BZ_SKIP_UPSTREAM=1 && pnpm check && pnpm test && scripts/package-vsix /tmp/better-zsh-publish.vsix && npx -y ovsx publish /tmp/better-zsh-publish.vsix -p $OPEN_VSX_TOKEN"
   },
   "dependencies": {
-    "@carlwr/typescript-extra": "0.12.1",
+    "@carlwr/typescript-extra": "0.12.2",
     "@carlwr/zsh-core": "workspace:*"
   },
   "devDependencies": {
