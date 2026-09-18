@@ -43,11 +43,14 @@ fn root_workflow_examples_match_cli_output() {
     );
     for (command, shown_output) in examples {
         let actual = run_example_command(command.clone());
-        // Step 2's `mdBody` is elided like the tool examples' — same
-        // normalization as above.
+        // Step 2 promises the full markdown.
+        assert!(
+            !shown_output.contains("elided"),
+            "`zshref --help` workflow example elides `mdBody`; pick a record \
+             with a shorter body (command: {command})"
+        );
         assert_eq!(
-            normalize_mdbody(&shown_output),
-            normalize_mdbody(&actual),
+            shown_output, actual,
             "`zshref --help` workflow example drifted from real CLI output \
              (command: {command})"
         );
