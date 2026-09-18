@@ -20,6 +20,9 @@ const dataDir = join(pkgDir, "artifacts", "json")
 const pkg = JSON.parse(readFileSync(join(pkgDir, "package.json"), "utf8"))
 const index = JSON.parse(readFileSync(join(dataDir, "index.json"), "utf8"))
 const dataFiles = ["index.json", ...(index.files ?? [])]
+const entryPoints = Object.keys(pkg.exports).filter(
+  sub => !sub.includes("*") && sub !== "./package.json",
+)
 
 const llms = [
   `# ${pkg.name}`,
@@ -32,10 +35,8 @@ const llms = [
   "- API Extractor models: ./api/",
   "- Structured zsh data: ./data/",
   "",
-  "Key entry points:",
-  "- .",
-  "- ./render",
-  "- ./assets",
+  "Entry points:",
+  ...entryPoints.map(sub => `- ${sub}`),
   "",
   "Structured data files:",
   ...dataFiles.map(file => `- ./data/${file}`),

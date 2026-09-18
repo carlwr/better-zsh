@@ -38,7 +38,7 @@ import { mkDocumented } from "./brands.ts"
 import type { DocCorpus } from "./corpus.ts"
 import {
   type DocCategory,
-  type DocPieceId,
+  type DocPieceIdOf,
   docCategories,
   mkPieceId,
 } from "./taxonomy.ts"
@@ -478,7 +478,7 @@ export function resolve<K extends DocCategory>(
   corpus: DocCorpus,
   cat: K,
   raw: string,
-): DocPieceId | undefined {
+): DocPieceIdOf<K> | undefined {
   const id = resolvers[cat](corpus, raw)
   return id === undefined ? undefined : mkPieceId(cat, id)
 }
@@ -492,7 +492,7 @@ export function lookupRaw<K extends DocCategory>(
   corpus: DocCorpus,
   cat: K,
   raw: string,
-): DocPieceId | undefined {
+): DocPieceIdOf<K> | undefined {
   const id = raw.trim() as Documented<K>
   if (id && hasId(corpus, cat, id)) return mkPieceId(cat, id)
   return resolve(corpus, cat, raw)

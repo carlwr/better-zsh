@@ -4,8 +4,6 @@ import { normalizeOptName } from "./normalize-option.ts"
 import type { DocCategory } from "./taxonomy.ts"
 import type { Documented, Observed } from "./types.ts"
 
-export { normalizeOptName }
-
 // Per-category normalization. Default is `trim`; categories below the default
 // are listed as overrides. `option` normalizes case and strips underscores,
 // but does NOT strip `no_` prefixes — negation is a corpus-aware parse

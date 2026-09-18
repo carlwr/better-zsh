@@ -170,7 +170,7 @@ Follow when the domain calls for it; deviate when it doesn't.
 
 ### The structural identity invariant
 
-Every record carries a branded identity field; field names vary, the invariant is uniform — `docId[cat](record) is Documented<K>`. `docId` (in `zsh-core/taxonomy`) is the single source of truth; there is deliberately no shared `DocRecordBase<K>` interface.
+Every record carries a branded identity field; field names vary, the invariant is uniform — `idOf(cat, record) is Documented<K>`. `idOf` (in `zsh-core/taxonomy`) is the single source of truth; there is deliberately no shared `DocRecordBase<K>` interface.
 
 ### Structural info beats markdown
 

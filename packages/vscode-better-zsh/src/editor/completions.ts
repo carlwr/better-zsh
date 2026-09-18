@@ -3,11 +3,11 @@ import {
   headFor,
   recordTitle,
   renderDocWithTitle,
+  renderRecordWithTitle,
 } from "@carlwr/zsh-core/render"
 import {
   type DocCategory,
   type DocRecordMap,
-  idOf,
   mkPieceId,
 } from "@carlwr/zsh-core/taxonomy"
 import type { CondOpDoc, Documented } from "@carlwr/zsh-core/types"
@@ -134,6 +134,8 @@ function mkCompletionItem<K extends WordCategory>(
   // The one-line slot: a synopsis where the record has one; the full doc
   // travels as `documentation`.
   item.detail = headFor(cat, doc)?.lines[0]
-  item.documentation = docMarkdown(corpus, cat, idOf(cat, doc))
+  item.documentation = new vscode.MarkdownString(
+    renderRecordWithTitle(corpus, cat, doc),
+  )
   return item
 }

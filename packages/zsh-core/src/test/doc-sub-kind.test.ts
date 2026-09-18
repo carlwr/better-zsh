@@ -1,12 +1,16 @@
 import { describe, expect, test } from "vitest"
+import { mkDocumented } from "../docs/brands"
 import { loadCorpus } from "../docs/corpus"
 import {
   type DocCategory,
   type DocRecordMap,
   docCategories,
   docSubKind,
+  subKindEnums,
   subKindOf,
 } from "../docs/taxonomy"
+import type { BuiltinDoc, ShellParamDoc } from "../docs/types"
+import { emptyCorpus } from "./id-fns"
 
 const corpus = loadCorpus()
 
@@ -61,5 +65,58 @@ describe("docSubKind", () => {
       if (defined > 0 && undef > 0) mixed.push({ cat, defined, undef })
     }
     expect(mixed).toEqual([])
+  })
+})
+
+describe("subKindEnums", () => {
+  test("vendored corpus: sorted, de-duplicated per category; undefined where none", () => {
+    const enums = subKindEnums(corpus)
+    expect(Object.keys(enums)).toEqual([...docCategories])
+    for (const cat of docCategories) {
+      const seen = new Set<string>()
+      for (const rec of corpus[cat].values()) {
+        const k = subKindOf(cat, rec)
+        if (k !== undefined) seen.add(k)
+      }
+      expect(enums[cat], cat).toEqual(
+        seen.size === 0 ? undefined : [...seen].sort(),
+      )
+    }
+    expect(enums.history_expn).toEqual([
+      "event-designator",
+      "modifier",
+      "word-designator",
+    ])
+    expect(enums.builtin).toBeUndefined()
+  })
+
+  test("small corpus", () => {
+    const sp = (
+      name: string,
+      scope: ShellParamDoc["scope"],
+    ): ShellParamDoc => ({
+      name: mkDocumented("special_param", name),
+      desc: "",
+      scope,
+    })
+    const echo: BuiltinDoc = {
+      name: mkDocumented("builtin", "echo"),
+      synopsis: ["echo"],
+      desc: "",
+    }
+    const small = emptyCorpus({
+      special_param: new Map(
+        [
+          sp("SECONDS", "shell-set"),
+          sp("HOME", "shell-used"),
+          sp("PWD", "shell-set"),
+        ].map(d => [d.name, d]),
+      ),
+      builtin: new Map([[echo.name, echo]]),
+    })
+    const enums = subKindEnums(small)
+    expect(enums.special_param).toEqual(["shell-set", "shell-used"])
+    expect(enums.builtin).toBeUndefined()
+    expect(enums.option).toBeUndefined()
   })
 })

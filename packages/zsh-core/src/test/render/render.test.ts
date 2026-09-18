@@ -719,10 +719,10 @@ describe("render markdown", () => {
     expect(mdZleWidget({ ...zw, defaultBindings: [] })).toBe("d:zw")
   })
 
-  test("renderDocWithTitle — missing record returns empty string", () => {
+  test("renderDocWithTitle — missing record throws, naming category and id", () => {
     const docs = mkTestCorpus({ builtin: [] })
     const pid = mkPieceId("builtin", mkDocumented("builtin", "missing"))
-    expect(renderDocWithTitle(docs, pid)).toBe("")
+    expect(() => renderDocWithTitle(docs, pid)).toThrow(/builtin.*"missing"/)
   })
 
   test("alternate-form requires annotation rendered as trailing comment", () => {

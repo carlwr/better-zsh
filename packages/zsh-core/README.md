@@ -8,7 +8,7 @@ Library-first: the VS Code extension, the web SPA, and the Rust crate (CLI + MCP
 
 ## What you get
 
-- **Tiny root** — `loadCorpus`, `DocCorpus`, aggregate corpus metadata.
+- **Tiny root** — `loadCorpus`, `DocCorpus`, `DocMap`.
 - **Focused subpaths** — `./types`, `./analysis`, `./resolver`, `./taxonomy`, `./render`, `./assets`, `./meta`, `./json`.
 - **Orthogonal primitives** — brands/types, raw-to-doc resolution, markdown rendering, and static analysis stay separate.
 - **Release assets** — the records as JSON plus JSON Schema, and a resolver conformance fixture for resolver mirrors; attached to the GitHub release tag for consumers that want the corpus without the runtime.

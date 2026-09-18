@@ -306,7 +306,7 @@ impl Record {
         self.str("mdBody")
     }
 
-    /// `None` for categories without a `docSubKind`.
+    /// `None` for categories whose records carry no `_subKind`.
     pub fn sub_kind(&self) -> Option<&str> {
         let s = self.str("_subKind");
         (!s.is_empty()).then_some(s)

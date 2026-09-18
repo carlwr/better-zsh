@@ -1,4 +1,5 @@
 import type { Assert, Eq } from "@carlwr/typescript-extra"
+import type { DocCorpus } from "./corpus.ts"
 import type {
   ArithOpDoc,
   BuiltinDoc,
@@ -56,6 +57,21 @@ export const docCategories = [
 ] as const
 
 export type DocCategory = (typeof docCategories)[number]
+
+const docCategorySet: ReadonlySet<string> = new Set(docCategories)
+
+/**
+ * Validate a raw string against `docCategories`. Returns the value narrowed
+ * to `DocCategory` when known, `undefined` otherwise. Use at trust boundaries
+ * (request parameters, deserialised input) instead of an `as DocCategory`
+ * cast. Case-sensitive.
+ */
+export const parseDocCategory = (raw: string): DocCategory | undefined =>
+  docCategorySet.has(raw) ? (raw as DocCategory) : undefined
+
+/** Type-guard form of `parseDocCategory`. */
+export const isDocCategory = (raw: string): raw is DocCategory =>
+  docCategorySet.has(raw)
 
 // Order rationale (resolver-shadowing facts) lives in DESIGN.md §"Tie-break in docs".
 // `param_expn` placement: its sigs are all literal templates (e.g. `${name:-word}`)
@@ -177,7 +193,8 @@ export interface DocRecordMap {
 
 /**
  * Discriminated-union identity for a documented corpus element. `category`
- * narrows `id` to the matching Documented brand.
+ * narrows `id` to the matching Documented brand. The per-category member is
+ * `DocPieceIdOf<K>`.
  *
  * Sanctioned acquisitions: `resolve(corpus, cat, raw)`, `mkPieceId(cat,
  * record-id)` from a corpus record, or internal corpus iteration.
@@ -187,6 +204,21 @@ export type DocPieceId = {
 }[DocCategory]
 
 /**
+ * The `DocPieceId` member for category `K` — what `resolve`, `lookupRaw` and
+ * `mkPieceId` return.
+ *
+ * Intersection form on purpose: under a generic `K`, the `Extract` half keeps
+ * the value assignable to `DocPieceId` (its constraint is the union), while
+ * the second half keeps `.id` typed as `Documented<K>` rather than widening
+ * to the union of all brands. Either half alone loses one of the two. For a
+ * concrete `K` it is structurally the plain member.
+ */
+export type DocPieceIdOf<K extends DocCategory> = Extract<
+  DocPieceId,
+  { readonly category: K }
+> & { readonly id: Documented<K> }
+
+/**
  * Construct a `DocPieceId`. Centralizes the correlated-union cast TS cannot
  * propagate through a generic. Valid only when the id is genuinely a corpus
  * key (typically read off a corpus record).
@@ -194,7 +226,20 @@ export type DocPieceId = {
 export const mkPieceId = <K extends DocCategory>(
   category: K,
   id: Documented<K>,
-): DocPieceId => ({ category, id }) as DocPieceId
+): DocPieceIdOf<K> => ({ category, id }) as DocPieceIdOf<K>
+
+/**
+ * The record behind a `DocPieceId`; `undefined` when the corpus has no such
+ * key. Single cast site for the pid-to-record correlation; the result is the
+ * `K`-shaped record when the pid is a `DocPieceIdOf<K>`.
+ */
+export const recordOf = <P extends DocPieceId>(
+  corpus: DocCorpus,
+  id: P,
+): DocRecordMap[P["category"]] | undefined =>
+  (corpus[id.category] as ReadonlyMap<string, DocRecordMap[P["category"]]>).get(
+    id.id as string,
+  )
 
 export const docId: {
   [K in DocCategory]: (doc: DocRecordMap[K]) => Documented<K>
@@ -278,12 +323,7 @@ const subKindOverrides: Partial<SubKindFnMap> = {
   special_function: d => d.kind,
 }
 
-/**
- * Optional typed sub-facet of a doc record; `undefined` when a category has
- * no meaningful subKind. Surfaces record-level fields (`HistoryKind`,
- * `ParamExpnSubKind`, `CondArity`, ...) so consumers (MCP search results) can
- * give more structure than a bare id list.
- */
+// Per-category subKind accessors; `subKindOf` is the parametric entry.
 export const docSubKind: SubKindFnMap = Object.fromEntries(
   docCategories.map(cat => [cat, subKindOverrides[cat] ?? noSub]),
 ) as SubKindFnMap
@@ -298,14 +338,38 @@ export const idOf = <K extends DocCategory>(
 ): Documented<K> => (docId[cat] as (d: DocRecordMap[K]) => Documented<K>)(doc)
 
 /**
- * Parametric `docSubKind[cat](doc)`. Single dispatch-cast site — prefer this
- * over indexing `docSubKind` directly when `cat` is a generic `K`.
+ * Optional typed sub-facet of a doc record; `undefined` when a category has
+ * no meaningful subKind. Surfaces record-level fields (`HistoryKind`,
+ * `ParamExpnSubKind`, `CondArity`, ...) so consumers (MCP search results) can
+ * give more structure than a bare id list. Single dispatch-cast site.
  */
 export const subKindOf = <K extends DocCategory>(
   cat: K,
   doc: DocRecordMap[K],
 ): string | undefined =>
   (docSubKind[cat] as (d: DocRecordMap[K]) => string | undefined)(doc)
+
+/** Per-category `subKind` enumeration; see `subKindEnums`. */
+export type SubKindEnums = Readonly<{
+  [K in DocCategory]: readonly string[] | undefined
+}>
+
+/**
+ * Per-category sorted, de-duplicated `subKind` values of a corpus;
+ * `undefined` where `subKindOf` is `undefined` for every record. Total over
+ * `DocCategory`. The source for JSON Schema `enum` keywords and the like.
+ */
+export function subKindEnums(corpus: DocCorpus): SubKindEnums {
+  const entries = docCategories.map(cat => {
+    const seen = new Set<string>()
+    for (const rec of corpus[cat].values()) {
+      const k = subKindOf(cat, rec)
+      if (k) seen.add(k)
+    }
+    return [cat, seen.size === 0 ? undefined : [...seen].sort()] as const
+  })
+  return Object.freeze(Object.fromEntries(entries)) as SubKindEnums
+}
 
 /**
  * Canonical zsh loadable-module string set. Values of any `module?:` field

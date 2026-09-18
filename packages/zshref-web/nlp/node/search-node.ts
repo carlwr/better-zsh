@@ -1,6 +1,6 @@
 // The core search pipeline over the Node embedder, for the evals.
 
-import { type DocCategory, docCategories } from "@carlwr/zsh-core/taxonomy"
+import { type DocCategory, isDocCategory } from "@carlwr/zsh-core/taxonomy"
 
 import type { LookupIndex } from "../core/lookup-map"
 import type { Rules } from "../core/rules"
@@ -23,10 +23,6 @@ export interface SearchDeps {
 }
 
 const DEFAULT_LIMIT = 10
-
-function isDocCategory(s: string): s is DocCategory {
-  return (docCategories as readonly string[]).includes(s)
-}
 
 /** Narrow a request's `category`; an unknown one is a caller error, not an empty result. */
 function docCategory(s: string): DocCategory {

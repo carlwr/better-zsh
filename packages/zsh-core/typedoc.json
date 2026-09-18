@@ -30,10 +30,7 @@
   "intentionallyNotExported": [
     "src/analysis/fact-types.ts:quoteStyles",
     "src/analysis/fact-types.ts:FactGuard",
-    "src/docs/corpus.ts:DocMap",
-    "src/docs/corpus.ts:SubKindEnums",
     "src/docs/json-types.ts:JsonDoc",
-    "src/docs/resolver.ts:ResolverFeedbackKindSchemas",
-    "src/docs/taxonomy.ts:SubKindFnMap"
+    "src/docs/resolver.ts:ResolverFeedbackKindSchemas"
   ]
 }

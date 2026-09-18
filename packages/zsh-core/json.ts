@@ -4,10 +4,7 @@
  * markdown body and identity fields, as JSON consumers see it.
  */
 
-export {
-  assertAsciiIdentity,
-  augmentWithMarkdown,
-} from "./src/docs/json-projection.ts"
+export { augmentWithMarkdown } from "./src/docs/json-projection.ts"
 export type {
   JsonDocArrayMap,
   JsonRecordMap,

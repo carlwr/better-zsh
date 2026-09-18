@@ -8,7 +8,6 @@ import {
   type DocRecordMap,
   docCategories,
   idOf,
-  subKindOf,
 } from "./taxonomy.ts"
 import type {
   BuiltinDoc,
@@ -60,8 +59,6 @@ import {
 import { parseSpecialFunctions } from "./yodl/extractors/special-functions.ts"
 import { parseSubscriptFlags } from "./yodl/extractors/subscript-flags.ts"
 import { parseZleWidgets } from "./yodl/extractors/zle-widgets.ts"
-
-const dataDir = resolveZshDataDir()
 
 type GetNodes = (file: CorpusYodlFile) => YNodeSeq
 type CategoryLoader = {
@@ -176,8 +173,12 @@ function buildCategoryMap<K extends DocCategory>(
   return new Map(docs.map(d => [idOf(cat, d), d]))
 }
 
-/** Load the full parsed doc corpus. Eager, cached, immutable. */
+/**
+ * Load the full parsed doc corpus. Eager, cached, immutable. The first call
+ * locates the vendored data; importing this module touches no file system.
+ */
 export const loadCorpus: () => DocCorpus = cached(() => {
+  const dataDir = resolveZshDataDir()
   // Parse each .yo file at most once: several categories share a file, and
   // parseNodes is the dominant cost. `cachedUnary` keeps the lookup lazy and
   // per-file.
@@ -193,29 +194,4 @@ export const loadCorpus: () => DocCorpus = cached(() => {
       ]),
     ),
   ) as DocCorpus
-})
-
-/**
- * Per-category sorted, de-duplicated `subKind` values in the corpus;
- * `undefined` when `docSubKind[c]` is `undefined` for every record.
- *
- * The source for JSON Schema `enum` keywords and the like (AGENTS.md §"Never
- * enumerate or count `DocCategory`"). Lazy — importing must not parse the
- * corpus — cached, total over `DocCategory`.
- */
-type SubKindEnums = Readonly<{
-  [K in DocCategory]: readonly string[] | undefined
-}>
-
-export const subKindEnums: () => SubKindEnums = cached(() => {
-  const corpus = loadCorpus()
-  const entries = docCategories.map(cat => {
-    const seen = new Set<string>()
-    for (const rec of corpus[cat].values()) {
-      const k = subKindOf(cat, rec)
-      if (k) seen.add(k)
-    }
-    return [cat, seen.size === 0 ? undefined : [...seen].sort()] as const
-  })
-  return Object.freeze(Object.fromEntries(entries)) as SubKindEnums
 })

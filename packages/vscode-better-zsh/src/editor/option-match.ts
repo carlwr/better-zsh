@@ -1,4 +1,4 @@
-import type { Documented } from "@carlwr/zsh-core/types"
+import { type Documented, normalizeOptName } from "@carlwr/zsh-core/types"
 
 export interface OptionMatch {
   /** What to insert / display. */
@@ -17,7 +17,7 @@ export function matchOptions(
   options: readonly Documented<"option">[],
   typed: string,
 ): readonly OptionMatch[] {
-  const norm = typed.toLowerCase().replaceAll("_", "")
+  const norm = normalizeOptName(typed)
   return forms.flatMap(([canonicalPrefix, labelPrefix]) =>
     options
       .filter(opt => `${canonicalPrefix}${opt}`.startsWith(norm))

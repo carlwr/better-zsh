@@ -28,6 +28,11 @@ describe("syntacticContext", () => {
     ["quoted [[", ["echo '[[' && do_stuff"], 0, 18, "general"],
     ["quoted ((", ["echo '((' && do_stuff"], 0, 18, "general"],
     ["setopt cont.", ["setopt \\", "  autocd"], 1, 5, "setopt"],
+    ["set +o line", ["set +o extendedglob"], 0, 10, "setopt"],
+    ["set flags line", ["set -e -o pipefail"], 0, 12, "setopt"],
+    ["setopt after command", ["command setopt extendedglob"], 0, 20, "general"],
+    ["setopt as argument", ["echo setopt"], 0, 8, "general"],
+    ["set without -o", ["set extendedglob"], 0, 10, "general"],
   ])('%s → kind "%s"', (_desc, lines, lineOffs, charOffs, kind) => {
     expect(contextAt(lines, lineOffs, charOffs).kind).toBe(kind)
   })

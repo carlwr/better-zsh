@@ -8,7 +8,7 @@ import {
 import type { DocCorpus } from "../docs/corpus.ts"
 import { resolve } from "../docs/resolver.ts"
 import type { DocCategory, DocPieceId, DocRecordMap } from "../docs/taxonomy.ts"
-import { docCategoryLabels, subKindOf } from "../docs/taxonomy.ts"
+import { docCategoryLabels, recordOf, subKindOf } from "../docs/taxonomy.ts"
 import type {
   AlternateForm,
   ArithOpDoc,
@@ -866,12 +866,11 @@ export function renderRecord<K extends DocCategory>(
 }
 
 /**
- * pid-keyed {@link renderRecord}; `""` on miss. `id` must come from
- * `resolve()` or corpus iteration.
+ * pid-keyed {@link renderRecord}. `id` must come from `resolve()` or corpus
+ * iteration; throws when the corpus has no such record.
  */
 export function renderDoc(corpus: DocCorpus, id: DocPieceId): string {
-  const doc = lookupDoc(corpus, id)
-  return doc ? renderRecord(corpus, id.category, doc) : ""
+  return renderRecord(corpus, id.category, mustRecordOf(corpus, id))
 }
 
 /**
@@ -886,17 +885,21 @@ export function renderRecordWithTitle<K extends DocCategory>(
   return docBlock(recordTitle(cat, doc), renderRecord(corpus, cat, doc))
 }
 
-/** pid-keyed {@link renderRecordWithTitle}; `""` on miss. */
+/** pid-keyed {@link renderRecordWithTitle}; throws on a miss like {@link renderDoc}. */
 export function renderDocWithTitle(corpus: DocCorpus, id: DocPieceId): string {
-  const doc = lookupDoc(corpus, id)
-  return doc ? renderRecordWithTitle(corpus, id.category, doc) : ""
+  return renderRecordWithTitle(corpus, id.category, mustRecordOf(corpus, id))
 }
 
-function lookupDoc(
+// Considered returning `""`; picked throw because a miss means a false
+// `Documented<K>` claim (trusted-constructor misuse) — the soft path is
+// `recordOf` + `renderRecord`.
+function mustRecordOf(
   corpus: DocCorpus,
   id: DocPieceId,
-): DocRecordMap[typeof id.category] | undefined {
-  return corpus[id.category].get(id.id as never) as
-    | DocRecordMap[typeof id.category]
-    | undefined
+): DocRecordMap[typeof id.category] {
+  const doc = recordOf(corpus, id)
+  if (doc === undefined) {
+    throw new Error(`no ${id.category} record with id ${JSON.stringify(id.id)}`)
+  }
+  return doc
 }

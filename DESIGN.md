@@ -269,7 +269,7 @@ The manual's header groups (`(^B ESC-[D) (unbound) (unbound)`) are per-keymap de
 
 ### `subKind` is always-or-never per category
 
-For every doc category, `docSubKind[c]` returns either `undefined` for every record or a non-empty string for every record — never mixed.
+Per doc category, `subKindOf` returns `undefined` for every record or a non-empty string for every record — never mixed.
 
 - Enforced corpus-wide: `packages/zsh-core/src/test/doc-sub-kind.test.ts`.
 - Tool-layer schema consumption (per-category `oneOf` branching, no schema-level optionality): `zshref-rs/src/tools/schema.rs`.
