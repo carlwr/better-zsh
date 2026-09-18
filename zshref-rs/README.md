@@ -224,7 +224,7 @@ claude mcp add zshref -- npx -y @carlwr/zshref-mcp
 
 Three tools, one intent axis each; the same three the CLI exposes as subcommands. All return the envelope `{ matches, matchesReturned, matchesTotal }`; `matchesReturned < matchesTotal` means `limit` truncated the result. Only `zsh_docs` carries the rendered markdown body — pair `zsh_search` / `zsh_list` results with `zsh_docs` for the full doc. Every tool advertises an `outputSchema`; responses carry `structuredContent` alongside the JSON text block.
 
-- **`zsh_docs`** — look up the docs for a zsh key (`key`, optional `category`). Resolution is corpus-aware: case-insensitive option matching, underscore stripping, `NO_*` negation, single-letter option flags, redirection decomposition, history event designators. With `category` omitted, every category is tried; a few tokens (`for`, `[[`, `function`, `nocorrect`, `-e`) match in more than one. Matches reached through a lossy normalization carry `feedback`.
+- **`zsh_docs`** — look up the docs for a zsh key (`key`, optional `category`). Resolution is corpus-aware: case-insensitive option matching, underscore stripping, `NO_*` negation, single-letter option flags, redirection decomposition, history event designators. With `category` omitted, every category is tried; a few tokens (`for`, `[[`, `function`, `nocorrect`, `-e`) match in more than one. Rows carry `{ category, id, display, title, mdBody, subKind?, feedback? }` — `title` is the record heading, not repeated in `mdBody`; `feedback` marks a match reached through a lossy normalization.
 
   ```json
   { "key": "NO_AUTO_CD" }
@@ -237,7 +237,8 @@ Three tools, one intent axis each; the same three the CLI exposes as subcommands
         "category": "option",
         "id": "autocd",
         "display": "AUTO_CD",
-        "mdBody": "### AUTO_CD ...",
+        "title": "`AUTO_CD`",
+        "mdBody": "```zsh\nsetopt auto_cd     # on\nunsetopt auto_cd   # off\n...",
         "feedback": { "kind": "input-negated" }
       }
     ],
@@ -267,17 +268,17 @@ Three tools, one intent axis each; the same three the CLI exposes as subcommands
 - **`zsh_list`** — enumerate records (optional `category`, `limit`); identity-only rows like `zsh_search`. `{}` lists the first records of every category with `matchesTotal` = the whole corpus; `limit: 0` returns counts only.
 
   ```json
-  { "category": "precmd_modifier", "limit": 100 }
+  { "category": "precmd_modifier", "limit": 2 }
   ```
 
   ```json
   {
     "matches": [
-      { "category": "precmd_modifier", "id": "noglob", "display": "noglob" },
-      { "category": "precmd_modifier", "id": "nocorrect", "display": "nocorrect" }
+      { "category": "precmd_modifier", "id": "-", "display": "-" },
+      { "category": "precmd_modifier", "id": "builtin", "display": "builtin" }
     ],
     "matchesReturned": 2,
-    "matchesTotal": 2
+    "matchesTotal": 6
   }
   ```
 

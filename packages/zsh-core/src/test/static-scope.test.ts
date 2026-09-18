@@ -10,7 +10,8 @@ import { describe, expect, test } from "vitest"
  * Every non-glob `package.json` `exports` subpath is advertised as
  * execution-free, network-free, and env-agnostic: it parses bundled Yodl
  * sources and renders markdown. zsh-core never executes a shell — hosts that
- * run a zsh binary own that code (see the extension's `zsh/` modules).
+ * run a zsh binary own that code (see the extension's `zsh/` modules); tests
+ * are exempt, the fence covers the published surface only.
  *
  * Per subpath, only the entries that locate the vendored data may reach the
  * file system at all: importing any other subpath must work where no data

@@ -11,7 +11,7 @@ Library-first: the VS Code extension, the web SPA, and the Rust crate (CLI + MCP
 - **Tiny root** — `loadCorpus`, `DocCorpus`, `DocMap`.
 - **Focused subpaths** — `./types`, `./analysis`, `./resolver`, `./taxonomy`, `./render`, `./assets`, `./meta`, `./json`.
 - **Orthogonal primitives** — brands/types, raw-to-doc resolution, markdown rendering, and static analysis stay separate.
-- **Release assets** — per-category JSON record files plus one JSON Schema bundle (each file validates against its `#/$defs/<category>`), and a resolver conformance fixture for resolver mirrors; attached to the GitHub release tag for consumers that want the corpus without the runtime.
+- **Release assets** — per-category JSON record files plus a versioned index, one JSON Schema bundle (each record file validates against its `#/$defs/<category>`), and a resolver conformance fixture for resolver mirrors; attached to the GitHub release tag for consumers that want the corpus without the runtime.
 
 Public reading surface: `dist/types/*.d.ts` after `pnpm build`.
 
@@ -37,12 +37,12 @@ import { resolverFeedback, resolve } from "@carlwr/zsh-core/resolver"
 import { renderDoc } from "@carlwr/zsh-core/render"
 
 const corpus = loadCorpus()
-const pid = resolve(corpus, "option", "NO_AUTO_CD")
-if (pid) {
-  console.log(pid.id)                                    // → autocd
+const recordId = resolve(corpus, "option", "NO_AUTO_CD")
+if (recordId) {
+  console.log(recordId.id)                               // → autocd
   console.log(resolverFeedback(corpus, "option", "NO_AUTO_CD"))
                                                          // → { kind: "input-negated" }
-  console.log(renderDoc(corpus, pid))
+  console.log(renderDoc(corpus, recordId))
 }
 ```
 
