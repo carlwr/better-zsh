@@ -35,10 +35,12 @@ import type {
   ShellParamDoc,
   SpecialFunctionDoc,
   SubscriptFlagDoc,
+  ZleDefaultBinding,
   ZleWidgetDoc,
   ZshOption,
 } from "../docs/types.ts"
 import { flipOptFlagSign } from "../docs/types.ts"
+import { mdInlineCode } from "../docs/yodl/core/text.ts"
 import { splitInlineCode, walkProseLines } from "./prose-walk.ts"
 
 /**
@@ -517,10 +519,7 @@ const headBuilders: {
     lines: [`*(${doc.sig})`],
   }),
   prompt_escape: promptEscapeHead,
-  zle_widget: doc =>
-    doc.sig.trim() === doc.name
-      ? undefined
-      : { lang: "docopt", lines: [doc.sig] },
+  zle_widget: () => undefined,
   keymap: () => undefined,
   job_spec: () => undefined,
   arith_op: doc => ({ lang: "zsh", lines: canonicalArithForm(doc) }),
@@ -800,12 +799,30 @@ export function mdZleWidget(doc: ZleWidgetDoc): string {
     }),
   )
   return docBlock(
-    ...headBlock(headFor("zle_widget", doc)),
+    ...defaultBindingsPart(doc.defaultBindings),
     renderMemberList(doc.desc, subItems, doc.outro),
     ...modulePart(doc.module),
     `_Role:_ ZLE ${doc.kind} widget`,
     `_Subsection:_ ${doc.section}`,
   )
+}
+
+/**
+ * `_Default bindings:_` paragraph: keymaps `; `-separated, each followed by
+ * its keys as space-separated inline code in the manual's notation (e.g.
+ * `emacs ^B ESC-[D; viins ESC-[D`). An entry containing a space is prose
+ * (`self-insert`'s `printable characters`), left un-coded. Nothing when the
+ * manual lists no bindings.
+ */
+function defaultBindingsPart(
+  bindings: readonly ZleDefaultBinding[],
+): readonly string[] {
+  const keyMd = (key: string) => (key.includes(" ") ? key : mdInlineCode(key))
+  const bindingMd = (b: ZleDefaultBinding) =>
+    `${b.keymap} ${b.keys.map(keyMd).join(" ")}`
+  return bindings.length === 0
+    ? []
+    : [`_Default bindings:_ ${bindings.map(bindingMd).join("; ")}`]
 }
 
 export function mdCompUtility(doc: CompUtilityDoc): string {

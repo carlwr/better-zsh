@@ -505,7 +505,7 @@ function stripSentinels(s: string): string {
  * backtick — per CommonMark. Without this, `` `\\\`` `` would render as
  * three literal backticks rather than a code span containing a backtick.
  */
-function mdInlineCode(content: string): string {
+export function mdInlineCode(content: string): string {
   if (!content.includes("`")) return `\`${content}\``
   const padded =
     content.startsWith("`") || content.endsWith("`") ? ` ${content} ` : content

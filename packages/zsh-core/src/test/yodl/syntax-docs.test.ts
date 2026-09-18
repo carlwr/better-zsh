@@ -14,7 +14,7 @@ import { parseShellParams } from "../../docs/yodl/extractors/shell-params"
 import { parseSubscriptFlags } from "../../docs/yodl/extractors/subscript-flags"
 import { parseZleWidgets } from "../../docs/yodl/extractors/zle-widgets"
 import { mkDocumented_ } from "../id-fns"
-import { by, expectDocCorpus, readVendoredYo } from "./test-util"
+import { by, expectDocCorpus, only, readVendoredYo } from "./test-util"
 
 const sp = mkDocumented_("special_param")
 const rw = mkDocumented_("reserved_word")
@@ -105,23 +105,84 @@ enditem()`
     expect(docs.every(d => d.section === "Shell state")).toBe(true)
   })
 
-  test("zle widgets: standard kind picked from parent sect, name from first tt", () => {
-    const yo = [
+  const widgetYo = (subsect: string, ...items: readonly string[]) =>
+    [
       "sect(Standard Widgets)",
-      "subsect(Movement)",
+      `subsect(${subsect})`,
       "startitem()",
+      ...items,
+      "enditem()",
+      "sect(Character Highlighting)",
+    ].join("\n")
+
+  test("zle widgets: standard kind picked from parent sect, name from first tt", () => {
+    const yo = widgetYo(
+      "Movement",
       "tindex(backward-char)",
       "item(tt(backward-char) (tt(^B)) (unbound) (unbound))(",
       "Move backward one character.",
       ")",
-      "enditem()",
-      "sect(Character Highlighting)",
-    ].join("\n")
-    const docs = parseZleWidgets(yo)
-    expect(docs).toHaveLength(1)
-    expect(docs[0]?.name).toBe(zw("backward-char"))
-    expect(docs[0]?.kind).toBe("standard")
-    expect(docs[0]?.section).toBe("Movement")
+    )
+    const doc = only(parseZleWidgets(yo))
+    expect(doc.name).toBe(zw("backward-char"))
+    expect(doc.kind).toBe("standard")
+    expect(doc.section).toBe("Movement")
+    expect(doc.defaultBindings).toEqual([{ keymap: "emacs", keys: ["^B"] }])
+  })
+
+  // Header shapes: a triple is positional emacs/vicmd/viins with `(unbound)`
+  // collapsing to absence; a bare header has none; under `Text Objects` the
+  // single group binds `viopp` and `visual`; a `tt`-less group is one prose
+  // entry; adjacent `tt` macros concatenate into one key.
+  test.each([
+    [
+      "triple",
+      "Movement",
+      "tt(backward-char) (tt(^B ESC-[D)) (unbound) (tt(ESC-[D))",
+      [
+        { keymap: "emacs", keys: ["^B", "ESC-[D"] },
+        { keymap: "viins", keys: ["ESC-[D"] },
+      ],
+    ],
+    ["bare header", "Movement", "tt(emacs-backward-word)", []],
+    [
+      "all unbound",
+      "Movement",
+      "tt(down-line) (unbound) (unbound) (unbound)",
+      [],
+    ],
+    [
+      "Text Objects",
+      "Text Objects",
+      "tt(select-a-word) (tt(aw))",
+      [
+        { keymap: "viopp", keys: ["aw"] },
+        { keymap: "visual", keys: ["aw"] },
+      ],
+    ],
+    [
+      "prose group",
+      "Modifying Text",
+      "tt(self-insert) (printable characters) (unbound) (unbound)",
+      [{ keymap: "emacs", keys: ["printable characters"] }],
+    ],
+    [
+      "adjacent tt macros",
+      "Arguments",
+      "tt(neg-argument) (tt(ESC-)tt(-)) (unbound) (unbound)",
+      [{ keymap: "emacs", keys: ["ESC--"] }],
+    ],
+  ])("zle widget default bindings — %s", (_label, subsect, header, want) => {
+    const yo = widgetYo(subsect, `item(${header})(Body.)`)
+    expect(only(parseZleWidgets(yo)).defaultBindings).toEqual(want)
+  })
+
+  test.each([
+    ["two groups", "Movement", "tt(x) (tt(^B)) (unbound)"],
+    ["one group outside Text Objects", "Movement", "tt(x) (tt(^B))"],
+  ])("zle widget default bindings — %s throws", (_label, subsect, header) => {
+    const yo = widgetYo(subsect, `item(${header})(Body.)`)
+    expect(() => parseZleWidgets(yo)).toThrow(/ZLE widget header/)
   })
 
   test("process substitution exports the three canonical forms", () => {

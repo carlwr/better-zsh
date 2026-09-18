@@ -1,10 +1,15 @@
 import { allUnique } from "@carlwr/typescript-extra"
 import { describe, expect, test } from "vitest"
-import { promptSubsections, zleWidgetSubsections } from "../../docs/types"
+import {
+  promptSubsections,
+  zleBindingKeymaps,
+  zleWidgetSubsections,
+} from "../../docs/types"
 import { parseArithOps } from "../../docs/yodl/extractors/arith-ops"
 import { parseCompUtils } from "../../docs/yodl/extractors/comp-utils"
 import { parseJobSpecs } from "../../docs/yodl/extractors/job-specs"
 import { parseKeymaps } from "../../docs/yodl/extractors/keymaps"
+import { extractDeltochar } from "../../docs/yodl/extractors/modules/deltochar"
 import { parsePromptEscapes } from "../../docs/yodl/extractors/prompt-escapes"
 import {
   parseShellParams,
@@ -21,6 +26,7 @@ const ao = mkDocumented_("arith_op")
 const sfn = mkDocumented_("special_function")
 const sp = mkDocumented_("special_param")
 const cu = mkDocumented_("comp_utility")
+const zw = mkDocumented_("zle_widget")
 
 describe("parseKeymaps", () => {
   const map = by(parseKeymaps(readVendoredYo("zle.yo")), d => d.name)
@@ -161,6 +167,78 @@ describe("parseZleWidgets — typed subsection (enrichment)", () => {
     for (const d of parseZleWidgets(readVendoredYo("zle.yo"))) {
       expect(subs.has(d.section)).toBe(true)
     }
+  })
+})
+
+describe("zle widgets — default bindings (corpus invariants)", () => {
+  const zleYo = readVendoredYo("zle.yo")
+  const docs = [
+    ...parseZleWidgets(zleYo),
+    ...extractDeltochar(readVendoredYo("mod_deltochar.yo")),
+  ]
+  const map = by(docs, d => d.name)
+  const keymaps = by(parseKeymaps(zleYo), d => d.name)
+  const KEY_RE = /^[\x21-\x7E]+$/ // printable ASCII, no whitespace
+  const PROSE_RE = /^[\x20-\x7E]+$/ // printable ASCII, spaces allowed
+
+  test("every record: keymaps in the closed union, documented, unique", () => {
+    for (const d of docs) {
+      expect(Array.isArray(d.defaultBindings)).toBe(true)
+      expect(allUnique(d.defaultBindings.map(b => b.keymap))).toBe(true)
+      for (const b of d.defaultBindings) {
+        expect(zleBindingKeymaps).toContain(b.keymap)
+        expect(keymaps.has(km(b.keymap))).toBe(true)
+      }
+    }
+  })
+
+  test("keys: printable ASCII, whitespace-free except self-insert's prose", () => {
+    const prose: [string, string][] = []
+    for (const d of docs) {
+      for (const key of d.defaultBindings.flatMap(b => b.keys)) {
+        expect(key).toMatch(PROSE_RE)
+        if (!KEY_RE.test(key)) prose.push([d.name, key])
+      }
+    }
+    expect(prose).toEqual([
+      ["self-insert", "printable characters"],
+      ["self-insert", "printable characters and some control characters"],
+    ])
+  })
+
+  // Vendored-corpus invariant (zle.yo + mod_deltochar.yo): 139 records list
+  // at least one binding, the rest carry `[]`. Bump on re-vendor.
+  test("139 records list at least one binding", () => {
+    expect(docs.filter(d => d.defaultBindings.length > 0)).toHaveLength(139)
+  })
+
+  test.each([
+    ["backward-char", [{ keymap: "emacs", keys: ["^B", "ESC-[D"] }]],
+    [
+      "vi-backward-char",
+      [
+        { keymap: "vicmd", keys: ["^H", "h", "^?"] },
+        { keymap: "viins", keys: ["ESC-[D"] },
+      ],
+    ],
+    [
+      "digit-argument",
+      [
+        { keymap: "emacs", keys: ["ESC-0..ESC-9"] },
+        { keymap: "vicmd", keys: ["1-9"] },
+      ],
+    ],
+    [
+      "select-a-word",
+      [
+        { keymap: "viopp", keys: ["aw"] },
+        { keymap: "visual", keys: ["aw"] },
+      ],
+    ],
+    ["zle-line-init", []],
+    ["delete-to-char", []],
+  ])("%s → %j", (name, want) => {
+    expect(map.get(zw(name))?.defaultBindings).toEqual(want)
   })
 })
 

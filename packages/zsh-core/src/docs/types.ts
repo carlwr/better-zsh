@@ -492,6 +492,30 @@ export type ZleWidgetSubsection = (typeof zleWidgetSubsections)[number]
 
 export type ZleWidgetKind = "standard" | "special"
 
+/** Keymaps the manual attributes a widget's default bindings to. */
+export const zleBindingKeymaps = [
+  "emacs",
+  "vicmd",
+  "viins",
+  "viopp",
+  "visual",
+] as const
+
+export type ZleBindingKeymap = (typeof zleBindingKeymaps)[number]
+
+/**
+ * A widget's default bindings in one keymap, as the manual lists them.
+ *
+ * `keys` is in the manual's key notation (`^B`, `ESC-[D`, `space`, `TAB`,
+ * `^[`), not `bindkey` syntax; a range stays as written (`ESC-0..ESC-9`).
+ * `self-insert` carries prose entries (`printable characters`) — consumers
+ * must not assume every entry is a key sequence.
+ */
+export interface ZleDefaultBinding {
+  readonly keymap: ZleBindingKeymap
+  readonly keys: NonEmpty<string>
+}
+
 /**
  * One nested entry within a ZLE widget's body (e.g. inside
  * `history-incremental-search-backward`'s mini-buffer support list). `sig` is
@@ -502,12 +526,26 @@ export interface ZleWidgetSubItem {
   readonly desc: string
 }
 
-/** ZLE widget — standard and special widgets from `zle.yo`. */
-export interface ZleWidgetDoc extends SyntaxDocBase {
+/**
+ * ZLE widget — standard and special widgets from `zle.yo`.
+ *
+ * Does not extend `SyntaxDocBase`: the header carries no usage signature
+ * beyond the name — its parenthesised groups are default bindings, lifted
+ * into `defaultBindings`.
+ */
+export interface ZleWidgetDoc {
   readonly name: Documented<"zle_widget">
+  readonly desc: string
+  readonly section: ZleWidgetSubsection
   /** `"standard"` for bindable editing widgets; `"special"` for shell-called hooks. */
   readonly kind: ZleWidgetKind
-  readonly section: ZleWidgetSubsection
+  /**
+   * Default bindings per keymap: the header's `(emacs) (vicmd) (viins)`
+   * triple or, under `Text Objects`, its single `viopp`/`visual` group.
+   * Empty when the manual lists none; a keymap appears only with ≥1 key, so
+   * an explicit `(unbound)` is indistinguishable from an omitted triple.
+   */
+  readonly defaultBindings: readonly ZleDefaultBinding[]
   /**
    * Nested item list inside the widget body (e.g.
    * `history-incremental-search-backward`). When present, `desc` is the

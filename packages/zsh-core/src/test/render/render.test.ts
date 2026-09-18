@@ -185,10 +185,10 @@ const pe: PromptEscapeDoc = {
 }
 const zw: ZleWidgetDoc = {
   name: mkDocumented("zle_widget", "backward-kill-word"),
-  sig: "backward-kill-word (^W ESC-^H ESC-^?) (unbound) (unbound)",
   desc: "d:zw",
   section: "Modifying Text",
   kind: "standard",
+  defaultBindings: [{ keymap: "emacs", keys: ["^W", "ESC-^H", "ESC-^?"] }],
 }
 const km: KeymapDoc = {
   name: mkDocumented("keymap", "emacs"),
@@ -347,8 +347,7 @@ const renderedMarkdownCases = [
     "zle_widget",
     mdZleWidget(zw),
     [
-      "```docopt",
-      "backward-kill-word (^W ESC-^H ESC-^?) (unbound) (unbound)",
+      "_Default bindings:_ emacs `^W` `ESC-^H` `ESC-^?`",
       "d:zw",
       "_Role:_ ZLE standard widget",
       "_Subsection:_ Modifying Text",
@@ -614,6 +613,55 @@ describe("render markdown", () => {
     expect(headFor("keymap", km)).toBeUndefined()
     expect(headFor("job_spec", js)).toBeUndefined()
     expect(headFor("process_subst", sub)).toBeUndefined()
+    expect(headFor("zle_widget", zw)).toBeUndefined()
+  })
+
+  // The bindings paragraph opens the body; keymaps `; `-separated. A key
+  // containing a backtick gets a double-backtick span; a prose entry (has
+  // a space) stays un-coded; no paragraph at all when the manual lists none.
+  const bindingCases: readonly (readonly [
+    label: string,
+    bindings: ZleWidgetDoc["defaultBindings"],
+    want: string,
+  ])[] = [
+    [
+      "two keymaps",
+      [
+        { keymap: "vicmd", keys: ["^H", "h", "^?"] },
+        { keymap: "viins", keys: ["ESC-[D"] },
+      ],
+      "_Default bindings:_ vicmd `^H` `h` `^?`; viins `ESC-[D`",
+    ],
+    [
+      "backtick key",
+      [{ keymap: "vicmd", keys: ["`"] }],
+      "_Default bindings:_ vicmd `` ` ``",
+    ],
+    [
+      "prose entry",
+      [
+        { keymap: "emacs", keys: ["printable characters"] },
+        {
+          keymap: "viins",
+          keys: ["printable characters and some control characters"],
+        },
+      ],
+      "_Default bindings:_ emacs printable characters; viins printable characters and some control characters",
+    ],
+  ]
+
+  test.each(bindingCases)(
+    "zle widget bindings paragraph — %s",
+    (_label, defaultBindings, want) => {
+      const md = mdZleWidget({ ...zw, defaultBindings })
+      expect(md.startsWith(`${want}\n\nd:zw`)).toBe(true)
+    },
+  )
+
+  test("zle widget bindings paragraph — absent when empty", () => {
+    const md = mdZleWidget({ ...zw, defaultBindings: [] })
+    expect(md.startsWith("d:zw\n\n")).toBe(true)
+    expect(md).not.toContain("Default bindings")
   })
 
   test("renderDocWithTitle — missing record returns empty string", () => {

@@ -260,6 +260,13 @@ Wiring:
 - **Analysis** — pinned `KEYWORD_HEADS` subset for command-position facts; narrower than corpus by design. Rationale + lock-in test: `analysis/line-facts.ts` and `src/test/analysis/`.
 - **Extension** — semantic tokens: analyzer `reserved-word` facts **and** corpus-driven painting for manual reserved words in command position (`semantic-tokens.ts`).
 
+### ZLE widget: default bindings are typed, not a header signature
+
+The manual's header groups (`(^B ESC-[D) (unbound) (unbound)`) are per-keymap default bindings, not a usage signature — lifted into `defaultBindings`; the record carries no `sig`. Shape and edge cases (`Text Objects`, `self-insert` prose): `ZleWidgetDoc` / `ZleDefaultBinding` JSDoc in `zsh-core/types`.
+
+- **Keys stay in the manual's notation** (`^B`, `ESC-[D`) — lossless; `bindkey` syntax is a consumer or renderer concern.
+- **Rendered as one labeled paragraph** — a `bindkey`-form head was rejected: it needs notation translation plus shell quoting, and ranges (`digit-argument`) and prose (`self-insert`) have no `bindkey` form.
+
 ### `subKind` is always-or-never per category
 
 For every doc category, `docSubKind[c]` returns either `undefined` for every record or a non-empty string for every record — never mixed.

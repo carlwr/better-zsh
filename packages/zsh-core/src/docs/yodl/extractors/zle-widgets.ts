@@ -1,8 +1,12 @@
+import { isDefined, isNonEmpty } from "@carlwr/typescript-extra"
 import { mkDocumented } from "../../brands.ts"
 import {
+  type ZleBindingKeymap,
+  type ZleDefaultBinding,
   type ZleWidgetDoc,
   type ZleWidgetKind,
   type ZleWidgetSubItem,
+  type ZleWidgetSubsection,
   zleWidgetSubsections,
 } from "../../types.ts"
 import {
@@ -13,7 +17,12 @@ import {
   mkClosedUnionParser,
   splitBodyAtNestedList,
 } from "../core/doc.ts"
-import type { YNodeSeq, YodlSrc } from "../core/nodes.ts"
+import {
+  isMacro,
+  type YNode,
+  type YNodeSeq,
+  type YodlSrc,
+} from "../core/nodes.ts"
 import { firstTt, normalizeBody, normalizeHeader } from "../core/text.ts"
 
 const parseSubsection = mkClosedUnionParser(
@@ -41,6 +50,11 @@ export function parseZleWidgets(yo: YodlSrc): readonly ZleWidgetDoc[] {
   ]
 }
 
+interface WidgetHead {
+  readonly name: string
+  readonly header: YNodeSeq
+}
+
 function parseWidgetSection(
   section: YodlSrc,
   kind: ZleWidgetKind,
@@ -49,20 +63,19 @@ function parseWidgetSection(
   const out: ZleWidgetDoc[] = []
   for (const aliased of collectAliasedEntries(
     extractItems(section, 1),
-    header => {
-      const sig = normalizeHeader(header)
+    (header): WidgetHead | undefined => {
       const name = firstTt(header)
-      return name ? { sig, name } : undefined
+      return name ? { name, header } : undefined
     },
   )) {
     const body = splitWidgetBody(aliased.entry.body ?? [])
     const section = parseSubsection(aliased.entry.section || sectionDefault)
-    const mkDoc = (head: { sig: string; name: string }): ZleWidgetDoc => ({
+    const mkDoc = (head: WidgetHead): ZleWidgetDoc => ({
       name: mkDocumented("zle_widget", head.name),
-      sig: head.sig,
       desc: body.desc,
       section,
       kind,
+      defaultBindings: parseDefaultBindings(head.header, section),
       ...(body.subItems && { subItems: body.subItems }),
       ...(body.outro && { outro: body.outro }),
     })
@@ -71,6 +84,97 @@ function parseWidgetSection(
   }
   return out
 }
+
+// --- default bindings -------------------------------------------------------
+
+/**
+ * Default bindings from the parenthesised groups after `tt(name)`. Two
+ * documented shapes: three groups are the `emacs`, `vicmd` and `viins`
+ * bindings in that order (zle.yo §"Standard Widgets" intro); under
+ * `Text Objects`, one group applies to both `viopp` and `visual` (that
+ * subsection's intro). No groups → no bindings. Any other shape throws so
+ * an upstream re-vendor fails loud instead of parsing silently wrong.
+ */
+function parseDefaultBindings(
+  header: YNodeSeq,
+  section: ZleWidgetSubsection,
+): readonly ZleDefaultBinding[] {
+  // One group's binding; `undefined` for `(unbound)`. A group carrying
+  // `tt(...)` is a whitespace-separated key list — adjacent macros
+  // concatenate (`tt(ESC-)tt(-)` → `ESC--`). A group without `tt(...)` is
+  // prose (`self-insert`'s `printable characters`): one entry, kept whole.
+  const bindingOf = (
+    keymap: ZleBindingKeymap,
+    group: YNodeSeq,
+  ): ZleDefaultBinding | undefined => {
+    const text = normalizeHeader(group)
+    if (text === "unbound") return undefined
+    const keys = group.some(n => isMacro(n, "tt")) ? text.split(" ") : [text]
+    if (text === "" || !isNonEmpty(keys))
+      throw headerError(header, "Empty group")
+    return { keymap, keys }
+  }
+  const [first, second, third, ...rest] = parenGroups(header)
+  if (first === undefined) return []
+  if (second !== undefined && third !== undefined && rest.length === 0) {
+    return [
+      bindingOf("emacs", first),
+      bindingOf("vicmd", second),
+      bindingOf("viins", third),
+    ].filter(isDefined)
+  }
+  if (second === undefined && section === "Text Objects") {
+    return [bindingOf("viopp", first), bindingOf("visual", first)].filter(
+      isDefined,
+    )
+  }
+  throw headerError(header, `Unexpected group count in ${section}`)
+}
+
+const headerError = (header: YNodeSeq, why: string): Error =>
+  new Error(`${why} in ZLE widget header: ${normalizeHeader(header)}`)
+
+/**
+ * Top-level `(...)` groups after the first `tt(...)` (the name), as node
+ * sequences. Only text nodes open and close groups — a macro is kept whole
+ * inside its group, so `tt(...)` payloads never split. Throws on unbalanced
+ * parens or anything but whitespace outside a group.
+ */
+function parenGroups(header: YNodeSeq): readonly YNodeSeq[] {
+  const nodes = header.slice(header.findIndex(n => isMacro(n, "tt")) + 1)
+  const groups: YNodeSeq[] = []
+  let group: YNode[] = []
+  let depth = 0
+  for (const node of nodes) {
+    if (node.kind === "macro") {
+      if (depth === 0) throw headerError(header, "Macro outside a group")
+      group.push(node)
+      continue
+    }
+    let text = ""
+    const flush = () => {
+      if (text) group.push({ kind: "text", text })
+      text = ""
+    }
+    for (const ch of node.text) {
+      if (ch === "(" && depth++ === 0) continue
+      if (ch === ")" && --depth === 0) {
+        flush()
+        groups.push(group)
+        group = []
+        continue
+      }
+      if (depth < 0) throw headerError(header, "Unbalanced parens")
+      if (depth > 0) text += ch
+      else if (/\S/.test(ch)) throw headerError(header, "Text outside a group")
+    }
+    flush()
+  }
+  if (depth !== 0) throw headerError(header, "Unbalanced parens")
+  return groups
+}
+
+// --- body -------------------------------------------------------------------
 
 // Structural lift only when upstream has a depth-1 `startitem()` block;
 // otherwise the whole body stays flat in `desc`.
