@@ -103,6 +103,7 @@ function renderDumpText(
   return `<!-- preamble for category -->\n\n${preamble}\n\n---\n\n${body}`
 }
 
+/** Heading alone for a body-less record (the desc-less reserved words). */
 function section(doc: RefDoc): string {
-  return `## ${doc.heading}\n\n${doc.md}`
+  return doc.md === "" ? `## ${doc.heading}` : `## ${doc.heading}\n\n${doc.md}`
 }

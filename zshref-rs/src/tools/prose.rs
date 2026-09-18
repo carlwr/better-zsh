@@ -88,7 +88,7 @@ pub fn docs(index: &Index) -> Prose {
                     id                 canonical id
                     display            zsh-facing name
                     title              record heading (markdown; not repeated in mdBody)
-                    mdBody             rendered markdown
+                    mdBody             rendered markdown (empty for a record without prose)
 
                   — when applicable:
                     subKind            category facet (categories that have one)

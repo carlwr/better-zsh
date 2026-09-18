@@ -41,6 +41,7 @@ import type {
 } from "../../docs/types"
 import { mkOptFlag, mkRedirOp, mkShellParamKeyName } from "../../docs/types"
 import {
+  categoryFooter,
   defaultStateIn,
   fmtOptRefsInMd,
   headFor,
@@ -72,6 +73,7 @@ import {
   recordTitle,
   renderDocWithTitle,
   renderRecord,
+  renderRecordWithTitle,
 } from "../../render/md"
 import { withTmpDirAsync } from "../tmp-dir"
 
@@ -305,10 +307,8 @@ const cdCorpus = mkTestCorpus({ option: [cd] })
 
 // Title is composed downstream by `recordTitle` — body assertions below
 // deliberately exclude the title line. See the `recordTitle` and
-// `renderDocWithTitle` tests further down for title-related coverage.
-
-// Per-category bodies: no category footer here (`renderRecord` appends it —
-// see the footer tests).
+// `renderDocWithTitle` tests further down for title-related coverage. The
+// category line is likewise separate: `categoryFooter`, see its tests.
 const renderedMarkdownCases = [
   ["special_param", mdShellParam(sec), ["d:p"]],
   ["builtin", mdBuiltin(bi), ["```docopt", "echo [ -n ] [ arg ... ]", "d:bi"]],
@@ -430,23 +430,12 @@ describe("render markdown", () => {
     expect(fmtOptRefsInMd(input, cdCorpus)).toBe(want)
   })
 
+  // The record is its body: no title, no category line.
   test.each([
     [cu, "```zsh\n[[ -a file ]]\n```\n\nd:u"],
     [cb, "```zsh\n[[ left -nt right ]]\n```\n\nd:b"],
   ] as const)("cond op markdown — body only ($arity)", (op, want) => {
     expect(mdCondOp(op, noOpts)).toBe(want)
-  })
-
-  test.each([
-    [
-      cu,
-      "```zsh\n[[ -a file ]]\n```\n\nd:u\n\n_Category:_ conditional operator (unary)",
-    ],
-    [
-      cb,
-      "```zsh\n[[ left -nt right ]]\n```\n\nd:b\n\n_Category:_ conditional operator (binary)",
-    ],
-  ] as const)("cond op record — body + footer ($arity)", (op, want) => {
     expect(renderRecord(noOpts, "conditional_op", op)).toBe(want)
   })
 
@@ -454,57 +443,55 @@ describe("render markdown", () => {
     containsAll(md, parts)
   })
 
-  // --- category footer -----------------------------------------------------
+  // --- category line -------------------------------------------------------
 
-  const lastParagraph = (md: string) => md.split("\n\n").at(-1) ?? ""
-
-  // Every record ends with the taxonomy's label (+ subKind when the category
-  // has one); the per-category strings this replaced are gone.
-  test.each(docCategories)("%s record ends with the category footer", cat => {
+  // `categoryFooter` is the taxonomy's label (+ subKind when the category has
+  // one); bodies carry no category line of their own, nor any of the
+  // per-category strings it replaced.
+  test.each(docCategories)("%s category line; body without one", cat => {
     const doc = baseArrays[cat][0]
     if (doc === undefined) throw new Error(`no fixture for ${cat}`)
     const sub = subKindOf(cat, doc)
     const label = docCategoryLabels[cat]
     const want = sub === undefined ? label : `${label} (${sub})`
-    const md = renderRecord(noOpts, cat, doc)
-    expect(lastParagraph(md)).toBe(`_Category:_ ${want}`)
-    expect(md).not.toMatch(/^_(Role|Subsection|Option category):_/m)
-  })
-
-  test("footer subKind — reserved word position", () => {
-    expect(renderRecord(noOpts, "reserved_word", { ...word, pos: "any" })).toBe(
-      "d:rw\n\n_Category:_ reserved word (any)",
+    expect(categoryFooter(cat, doc)).toBe(`_Category:_ ${want}`)
+    expect(renderRecord(noOpts, cat, doc)).not.toMatch(
+      /^_(Category|Role|Subsection|Option category):_/m,
     )
   })
 
-  test("footer alone — desc-less reserved word", () => {
+  test("category line subKind — reserved word position", () => {
+    expect(categoryFooter("reserved_word", { ...word, pos: "any" })).toBe(
+      "_Category:_ reserved word (any)",
+    )
+  })
+
+  // `ZLE` is an option name: composed into a body ahead of option-ref
+  // bolding, the line would come out as `_Category:_ **`ZLE`** widget`.
+  test.each([
+    ["zle_widget", zw, "ZLE widget (standard:Modifying Text)"],
+    ["keymap", km, "ZLE keymap (regular)"],
+  ] as const)("category line is a bolding hazard — %s", (cat, doc, want) => {
+    const withZle = mkTestCorpus({ option: [cd, zleOpt] })
+    const line = categoryFooter(cat, doc)
+    expect(line).toBe(`_Category:_ ${want}`)
+    expect(fmtOptRefsInMd(line, withZle)).toContain("**")
+  })
+
+  test("desc-less reserved word — empty body; title alone when titled", () => {
     const bare: ReservedWordDoc = {
       name: mkDocumented("reserved_word", "for"),
       sig: "for",
       section: "Reserved Words",
       pos: "command",
     }
-    expect(renderRecord(noOpts, "reserved_word", bare)).toBe(
-      "_Category:_ reserved word (command)",
-    )
+    expect(renderRecord(noOpts, "reserved_word", bare)).toBe("")
+    expect(renderRecordWithTitle(noOpts, "reserved_word", bare)).toBe("`for`")
   })
 
-  // The footer is composed after option-ref bolding: `ZLE` is an option, and
-  // a body-side footer would come out as `_Category:_ **`ZLE`** widget`.
-  test.each([
-    ["zle_widget", zw, "ZLE widget (standard:Modifying Text)"],
-    ["keymap", km, "ZLE keymap (regular)"],
-  ] as const)("footer never bolded — %s", (cat, doc, want) => {
-    const withZle = mkTestCorpus({ option: [cd, zleOpt] })
-    expect(fmtOptRefsInMd(`_Category:_ ${want}`, withZle)).toContain("**")
-    const footer = lastParagraph(renderRecord(withZle, cat, doc))
-    expect(footer).toBe(`_Category:_ ${want}`)
-    expect(footer).not.toContain("**")
-  })
-
-  // Typed extras stay in the body, before the footer, and still pass through
-  // bolding (the alias target is an option reference).
-  test("typed extras precede the footer", () => {
+  // Typed extras end the body, and pass through bolding (the alias target is
+  // an option reference).
+  test("typed extras end the body", () => {
     const alias: ZshOption = {
       ...cd,
       name: mkDocumented("option", "CDABLE_VARS"),
@@ -513,17 +500,13 @@ describe("render markdown", () => {
     }
     const opt = renderRecord(cdCorpus, "option", alias)
     expect(opt).toContain("_Alias of:_ **`AUTO_CD`**")
-    expect(opt).toMatch(
-      /_Section:_ Changing Directories\n\n_Category:_ option$/,
-    )
+    expect(opt).toMatch(/_Section:_ Changing Directories$/)
 
     const tied = renderRecord(noOpts, "special_param", {
       ...sec,
       tied: mkDocumented("special_param", "path"),
     })
-    expect(tied).toMatch(
-      /_Tied with:_ `path`\n\n_Category:_ special parameter \(shell-set\)$/,
-    )
+    expect(tied).toMatch(/_Tied with:_ `path`$/)
 
     const deprecated = renderRecord(noOpts, "builtin", {
       ...bi,
@@ -531,7 +514,7 @@ describe("render markdown", () => {
       module: "zsh/files",
     })
     expect(deprecated).toMatch(
-      /_Deprecated:_ not recommended for new code\n\n_Module:_ `zsh\/files`\n\n_Category:_ builtin$/,
+      /_Deprecated:_ not recommended for new code\n\n_Module:_ `zsh\/files`$/,
     )
 
     const special = renderRecord(noOpts, "keymap", {
@@ -539,13 +522,9 @@ describe("render markdown", () => {
       isSpecial: true,
       linkedFrom: [],
     })
-    expect(special).toMatch(
-      /_Special:_ cannot be altered\n\n_Category:_ ZLE keymap \(special\)$/,
-    )
+    expect(special).toMatch(/_Special:_ cannot be altered$/)
 
-    expect(renderRecord(noOpts, "glob_flag", gf)).toMatch(
-      /_Args:_ expr\n\n_Category:_ glob flag$/,
-    )
+    expect(renderRecord(noOpts, "glob_flag", gf)).toMatch(/_Args:_ expr$/)
   })
 
   test("default state by emulation", () => {

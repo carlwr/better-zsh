@@ -150,7 +150,8 @@ fn match_schema(cat: DocCategory, sub_kind: bool, shape: &MatchShape) -> Value {
 /// Shared fragments. `IdString` (printable ASCII, no whitespace) and
 /// `DisplayString` (printable ASCII) restate the corpus-ASCII invariant
 /// the fixture and `corpus.rs` tests hold; `MdBodyString` and
-/// `TitleString` allow Unicode prose.
+/// `TitleString` allow Unicode prose. A body is empty for a record without
+/// prose (a reserved word whose head is documented as a complex command).
 fn defs(shape: &MatchShape, sub_kinds: &[(DocCategory, Vec<String>)]) -> Value {
     let mut defs = Map::new();
     defs.insert(
@@ -161,10 +162,7 @@ fn defs(shape: &MatchShape, sub_kinds: &[(DocCategory, Vec<String>)]) -> Value {
         "DisplayString".into(),
         json!({ "type": "string", "minLength": 1, "pattern": r"^[\x20-\x7E]+$" }),
     );
-    defs.insert(
-        "MdBodyString".into(),
-        json!({ "type": "string", "minLength": 1 }),
-    );
+    defs.insert("MdBodyString".into(), json!({ "type": "string" }));
     defs.insert(
         "TitleString".into(),
         json!({ "type": "string", "minLength": 1 }),

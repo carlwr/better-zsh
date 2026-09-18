@@ -1,6 +1,10 @@
 import { type DocCorpus, loadCorpus } from "@carlwr/zsh-core"
-import { renderDocWithTitle } from "@carlwr/zsh-core/render"
-import { type DocCategory, mkRecordId } from "@carlwr/zsh-core/taxonomy"
+import { categoryFooter, renderDocWithTitle } from "@carlwr/zsh-core/render"
+import {
+  type DocCategory,
+  mkRecordId,
+  recordOf,
+} from "@carlwr/zsh-core/taxonomy"
 import type {
   BuiltinDoc,
   ComplexCommandDoc,
@@ -99,8 +103,14 @@ const valueAt = (line: string, char: number) => at(line, 0, char)?.value
 
 const real = loadCorpus()
 const realAt = hoverWith(new HoverProvider(real))
-const rendered = <K extends DocCategory>(cat: K, id: Documented<K>) =>
-  renderDocWithTitle(real, mkRecordId(cat, id))
+// What a hover shows: zsh-core's titled body, then the category line the
+// editor appends (`record-markdown.ts`).
+const rendered = <K extends DocCategory>(cat: K, id: Documented<K>) => {
+  const recordId = mkRecordId(cat, id)
+  const doc = recordOf(real, recordId)
+  if (doc === undefined) throw new Error(`no ${cat} record ${String(id)}`)
+  return `${renderDocWithTitle(real, recordId)}\n\n${categoryFooter(cat, doc)}`
+}
 
 // --- synthetic-corpus dispatch ----------------------------------------------
 
@@ -126,6 +136,12 @@ describe("HoverProvider dispatch", () => {
 
   test("for: complex_command, not reserved_word", () => {
     expect(valueAt("for x; do :; done", 0)).not.toMatch(/d:rw-for/)
+  })
+
+  // The editor shows a record without its envelope, so the category line
+  // travels in the markdown — last.
+  test("category line ends the hover", () => {
+    expect(valueAt("f() { echo; }", 7)).toMatch(/\n\n_Category:_ builtin$/)
   })
 
   // Docstring body renders as prose (hard line breaks), not inside the code block.

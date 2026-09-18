@@ -4,6 +4,7 @@
  */
 
 export {
+  categoryFooter,
   type DocHead,
   headFor,
   recordTitle,

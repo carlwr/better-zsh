@@ -5,10 +5,11 @@ import { describe, expect, test } from "vitest"
 import { jsonDataFile, jsonDataFiles } from "../docs/json-artifacts"
 
 /**
- * Smoke test: every emitted corpus JSON record carries an `_mdBody` string.
- * Rendered-markdown embedding is the seam between TS (renderer) and the
- * out-of-process Rust crate; this test guards against accidental drift in the
- * JSON-emit path.
+ * Smoke test: every emitted corpus JSON record carries an `_mdBody` string —
+ * non-empty except for the records without prose (the desc-less reserved
+ * words, documented as complex commands). Rendered-markdown embedding is the
+ * seam between TS (renderer) and the out-of-process Rust crate; this test
+ * guards against accidental drift in the JSON-emit path.
  *
  * Every category has a renderer; this checks the generated JSON files using
  * the canonical artifact list so new categories join the guard automatically.
@@ -26,25 +27,25 @@ describe.runIf(existsSync(jsonDir))(
     interface MdRec {
       readonly _mdBody: string
       readonly _title: string
+      readonly desc?: string
     }
     interface NamedMdRec extends MdRec {
       readonly name: string
     }
 
-    test.each(jsonDataFiles)(
-      "%s records have a non-empty _mdBody string",
-      file => {
-        const recs = loadRecs<MdRec>(file)
-        expect(recs.length).toBeGreaterThan(0)
-        for (const r of recs) {
-          expect(typeof r._mdBody).toBe("string")
-          expect(r._mdBody.length).toBeGreaterThan(0)
-          // The title travels as its own field, split out of `_mdBody`.
-          expect(typeof r._title).toBe("string")
-          expect(r._title.length).toBeGreaterThan(0)
-        }
-      },
-    )
+    test.each(jsonDataFiles)("%s records have an _mdBody string", file => {
+      const recs = loadRecs<MdRec>(file)
+      expect(recs.length).toBeGreaterThan(0)
+      const proseless = (r: MdRec) =>
+        file === jsonDataFile("reserved_word") && r.desc === undefined
+      for (const r of recs) {
+        expect(typeof r._mdBody).toBe("string")
+        if (!proseless(r)) expect(r._mdBody.length).toBeGreaterThan(0)
+        // The title travels as its own field, split out of `_mdBody`.
+        expect(typeof r._title).toBe("string")
+        expect(r._title.length).toBeGreaterThan(0)
+      }
+    })
 
     test.each([
       [jsonDataFile("option"), "autocd", 100, ["AUTO_CD"], ["setopt"]],

@@ -546,7 +546,8 @@ export function headFor<K extends DocCategory>(
 }
 
 // --- per-category renderers ------------------------------------------------
-// Bodies only: `renderRecord` appends the generic category footer.
+// Bodies only: no title (`recordTitle`) and no category line
+// (`categoryFooter`) — both are envelope data, composed by consumers.
 
 export function mdOpt(opt: ZshOption, corpus: DocCorpus): string {
   return docBlock(
@@ -673,7 +674,10 @@ export function mdParamExpn(doc: ParamExpnDoc): string {
   return docBlock(...headBlock(headFor("param_expn", doc)), doc.desc)
 }
 
-/** Empty for the desc-less reserved words; the footer alone remains. */
+/**
+ * Empty for the desc-less reserved words: `for`, `[[`, ... — each is also a
+ * complex command, and that record carries the prose.
+ */
 export function mdReservedWord(doc: ReservedWordDoc): string {
   return doc.desc ?? ""
 }
@@ -835,11 +839,15 @@ const mdRenderer: {
 }
 
 /**
- * Last paragraph of every record: `_Category:_ <label>`, plus ` (<subKind>)`
- * for categories that have one. Label and subKind come from the taxonomy,
- * never from per-category strings.
+ * The record's category as a markdown paragraph: `_Category:_ <label>`, plus
+ * ` (<subKind>)` for categories that have one — label and subKind from the
+ * taxonomy. Not part of {@link renderRecord}: the category is envelope data
+ * (`DocRecordId`, the JSON identity fields), so bodies never encode it. A
+ * consumer that shows a body without its envelope — an editor hover —
+ * appends this line itself. Plain markdown; append it after any option-ref
+ * bolding (a label word can be an option name: `ZLE`).
  */
-function categoryFooter<K extends DocCategory>(
+export function categoryFooter<K extends DocCategory>(
   cat: K,
   doc: DocRecordMap[K],
 ): string {
@@ -849,10 +857,10 @@ function categoryFooter<K extends DocCategory>(
 }
 
 /**
- * Per-category body with option-ref bolding, then the generic category
- * footer; no title (see {@link recordTitle} or {@link renderDocWithTitle}).
- * The footer is composed after bolding: a label word that is also an option
- * name (`ZLE`) must stay plain.
+ * Per-category body with option-ref bolding; no title (see
+ * {@link recordTitle} or {@link renderDocWithTitle}) and no category line
+ * (see {@link categoryFooter}). Empty for a record without prose (the
+ * desc-less reserved words).
  */
 export function renderRecord<K extends DocCategory>(
   corpus: DocCorpus,
@@ -863,10 +871,7 @@ export function renderRecord<K extends DocCategory>(
     d: DocRecordMap[K],
     corpus: DocCorpus,
   ) => string
-  return docBlock(
-    ...prose(fmtOptRefsInMd(render(doc, corpus), corpus)),
-    categoryFooter(cat, doc),
-  )
+  return fmtOptRefsInMd(render(doc, corpus), corpus)
 }
 
 /**
@@ -878,15 +883,19 @@ export function renderDoc(corpus: DocCorpus, id: DocRecordId): string {
 }
 
 /**
- * Composed title + body. Dump output supplies its own `## heading` and
- * skips this; other consumers use this form.
+ * Composed title + body (title alone for a body-less record). Dump output
+ * supplies its own `## heading` and skips this; other consumers use this
+ * form.
  */
 export function renderRecordWithTitle<K extends DocCategory>(
   corpus: DocCorpus,
   cat: K,
   doc: DocRecordMap[K],
 ): string {
-  return docBlock(recordTitle(cat, doc), renderRecord(corpus, cat, doc))
+  return docBlock(
+    recordTitle(cat, doc),
+    ...prose(renderRecord(corpus, cat, doc)),
+  )
 }
 
 /**

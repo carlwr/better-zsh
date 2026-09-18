@@ -98,8 +98,12 @@ describe("corpus string-field invariants", () => {
         checkProse(cat, "_title", strField(rec, "_title"))
         const md = strField(rec, "_mdBody")
         if (md === undefined) continue
-        if (!md) violations.push(`${cat}: _mdBody empty`)
-        else checkProse(cat, "_mdBody", md)
+        // Empty only for the prose-less records (desc-less reserved words).
+        const proseless =
+          cat === "reserved_word" && strField(rec, "desc") === undefined
+        if (!md) {
+          if (!proseless) violations.push(`${cat}: _mdBody empty`)
+        } else checkProse(cat, "_mdBody", md)
       }
     expect(violations, violations.join("\n  ")).toEqual([])
   })

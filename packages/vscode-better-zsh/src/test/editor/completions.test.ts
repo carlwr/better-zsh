@@ -1,7 +1,7 @@
 import { nonEmpty } from "@carlwr/typescript-extra"
 import type { DocCorpus } from "@carlwr/zsh-core"
-import { renderDocWithTitle } from "@carlwr/zsh-core/render"
-import { mkRecordId } from "@carlwr/zsh-core/taxonomy"
+import { categoryFooter, renderDocWithTitle } from "@carlwr/zsh-core/render"
+import { mkRecordId, recordOf } from "@carlwr/zsh-core/taxonomy"
 import { mkDocumented, optSections } from "@carlwr/zsh-core/types"
 import { describe, expect, test } from "vitest"
 import * as vscode from "vscode"
@@ -99,12 +99,14 @@ describe("CompletionProvider", () => {
   test("setopt position: option forms, incomplete list, filtered on the typed text", async () => {
     const { isIncomplete, items } = await complete("setopt no_au", 0, 12)
     expect(isIncomplete).toBe(true)
-    const doc = renderDocWithTitle(
-      corpus,
-      mkRecordId("option", mkDocumented("option", "autocd")),
-    )
+    // Documentation: zsh-core's titled body, then the category line the
+    // editor appends (`record-markdown.ts`).
+    const autocd = mkRecordId("option", mkDocumented("option", "autocd"))
+    const doc = recordOf(corpus, autocd)
+    if (doc === undefined) throw new Error("fixture: autocd")
+    const md = `${renderDocWithTitle(corpus, autocd)}\n\n${categoryFooter("option", doc)}`
     expect(items.map(i => [i.label, i.filterText, i.documentation])).toEqual([
-      ["no_autocd", "no_au", new vscode.MarkdownString(doc)],
+      ["no_autocd", "no_au", new vscode.MarkdownString(md)],
     ])
   })
 

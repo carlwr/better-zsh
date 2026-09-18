@@ -65,6 +65,8 @@ Knows nothing about doc records or markdown rendering.
 
 Doc records → human-readable markdown. Depends on A; orthogonal to B.
 
+Bodies carry record content only; title (`recordTitle`) and category line (`categoryFooter`) are envelope data (`DocRecordId`, the JSON identity fields) that consumers compose — a hover, showing nothing else, appends both.
+
 ### Inter-domain wiring
 
 Consumers plumb A+B→C:

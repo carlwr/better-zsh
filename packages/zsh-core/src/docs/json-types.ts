@@ -12,7 +12,11 @@ import type { DocCategory, DocRecordMap } from "./taxonomy.ts"
 // `_id` / `_display` patterns mirror the corpus-ASCII test's `ID_RE` /
 // `SURFACE_RE` — keep aligned.
 export type WithMarkdown<T> = T & {
-  /** The rendered record as markdown; `_title` is split out of it. */
+  /**
+   * The rendered record as markdown; `_title` is split out of it, and the
+   * category is the envelope's (`_subKind` and the file's category), not the
+   * body's. Empty for a record without prose.
+   */
   readonly _mdBody: string
   /**
    * Shell-safe identity slug: printable ASCII, no whitespace, non-empty.

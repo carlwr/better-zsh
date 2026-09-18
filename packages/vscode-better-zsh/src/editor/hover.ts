@@ -5,7 +5,6 @@ import {
   isRedirFact,
   type LineFact,
 } from "@carlwr/zsh-core/analysis"
-import { renderDocWithTitle } from "@carlwr/zsh-core/render"
 import { resolve } from "@carlwr/zsh-core/resolver"
 import type { DocCategory, DocRecordId } from "@carlwr/zsh-core/taxonomy"
 import * as vscode from "vscode"
@@ -18,6 +17,7 @@ import {
   symbolicOpRangeAt,
 } from "../document/tokens"
 import { activeLineAt, activeWordRangeAt } from "../document/words"
+import { docMarkdown } from "./record-markdown"
 
 // `setopt NO_AUTO_CD` and `set +J` hover as `AUTO_CD`: the option resolver's
 // `input-negated` feedback (`resolverFeedback`) is not surfaced.
@@ -175,10 +175,8 @@ export class HoverProvider implements vscode.HoverProvider {
   }
 
   private renderHover(recordId: DocRecordId, range?: vscode.Range) {
-    const md = new vscode.MarkdownString(
-      renderDocWithTitle(this.corpus, recordId),
-    )
-    return new vscode.Hover(md, range)
+    const md = docMarkdown(this.corpus, recordId)
+    return md && new vscode.Hover(md, range)
   }
 }
 

@@ -1,15 +1,6 @@
 import type { DocCorpus } from "@carlwr/zsh-core"
-import {
-  headFor,
-  recordTitle,
-  renderDocWithTitle,
-  renderRecordWithTitle,
-} from "@carlwr/zsh-core/render"
-import {
-  type DocCategory,
-  type DocRecordMap,
-  mkRecordId,
-} from "@carlwr/zsh-core/taxonomy"
+import { headFor, recordTitle } from "@carlwr/zsh-core/render"
+import type { DocCategory, DocRecordMap } from "@carlwr/zsh-core/taxonomy"
 import type { CondOpDoc, Documented } from "@carlwr/zsh-core/types"
 import * as vscode from "vscode"
 import { contextAt } from "../document/facts"
@@ -17,6 +8,7 @@ import { funcDecls } from "../document/funcs"
 import { paramNames } from "../document/params"
 import { WORD, WORD_EXACT } from "../document/words"
 import { matchOptions } from "./option-match"
+import { recordMarkdown } from "./record-markdown"
 
 const { CompletionItemKind: Kind } = vscode
 
@@ -51,7 +43,10 @@ export class CompletionProvider implements vscode.CompletionItemProvider {
     )
     this.options = [...corpus.option.keys()]
     this.optionDocs = new Map(
-      this.options.map(id => [id, docMarkdown(corpus, "option", id)]),
+      [...corpus.option.values()].map(doc => [
+        doc.name,
+        recordMarkdown(corpus, "option", doc),
+      ]),
     )
     this.conditionalOps = [...corpus.conditional_op.values()]
   }
@@ -118,12 +113,6 @@ function wordTextAt(doc: vscode.TextDocument, pos: vscode.Position): string {
   return range ? doc.getText(range) : ""
 }
 
-const docMarkdown = <K extends DocCategory>(
-  corpus: DocCorpus,
-  cat: K,
-  id: Documented<K>,
-) => new vscode.MarkdownString(renderDocWithTitle(corpus, mkRecordId(cat, id)))
-
 function mkCompletionItem<K extends WordCategory>(
   corpus: DocCorpus,
   cat: K,
@@ -134,8 +123,6 @@ function mkCompletionItem<K extends WordCategory>(
   // The one-line slot: a synopsis where the record has one; the full doc
   // travels as `documentation`.
   item.detail = headFor(cat, doc)?.lines[0]
-  item.documentation = new vscode.MarkdownString(
-    renderRecordWithTitle(corpus, cat, doc),
-  )
+  item.documentation = recordMarkdown(corpus, cat, doc)
   return item
 }
