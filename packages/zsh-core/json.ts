@@ -6,7 +6,7 @@
  */
 
 export { corpusDataHash } from "./src/docs/json-artifacts.ts"
-export { augmentWithMarkdown } from "./src/docs/json-projection.ts"
+export { projectRecords } from "./src/docs/json-projection.ts"
 export type {
   JsonDocArrayMap,
   JsonRecordMap,

@@ -194,46 +194,46 @@ export interface DocRecordMap {
 /**
  * Discriminated-union identity for a documented corpus element. `category`
  * narrows `id` to the matching Documented brand. The per-category member is
- * `DocPieceIdOf<K>`.
+ * `DocRecordIdOf<K>`.
  *
- * Sanctioned acquisitions: `resolve(corpus, cat, raw)`, `mkPieceId(cat,
+ * Sanctioned acquisitions: `resolve(corpus, cat, raw)`, `mkRecordId(cat,
  * record-id)` from a corpus record, or internal corpus iteration.
  */
-export type DocPieceId = {
+export type DocRecordId = {
   [K in DocCategory]: { readonly category: K; readonly id: Documented<K> }
 }[DocCategory]
 
 /**
- * The `DocPieceId` member for category `K` — what `resolve`, `lookupRaw` and
- * `mkPieceId` return.
+ * The `DocRecordId` member for category `K` — what `resolve`, `lookupRaw` and
+ * `mkRecordId` return.
  *
  * Intersection form on purpose: under a generic `K`, the `Extract` half keeps
- * the value assignable to `DocPieceId` (its constraint is the union), while
+ * the value assignable to `DocRecordId` (its constraint is the union), while
  * the second half keeps `.id` typed as `Documented<K>` rather than widening
  * to the union of all brands. Either half alone loses one of the two. For a
  * concrete `K` it is structurally the plain member.
  */
-export type DocPieceIdOf<K extends DocCategory> = Extract<
-  DocPieceId,
+export type DocRecordIdOf<K extends DocCategory> = Extract<
+  DocRecordId,
   { readonly category: K }
 > & { readonly id: Documented<K> }
 
 /**
- * Construct a `DocPieceId`. Centralizes the correlated-union cast TS cannot
+ * Construct a `DocRecordId`. Centralizes the correlated-union cast TS cannot
  * propagate through a generic. Valid only when the id is genuinely a corpus
  * key (typically read off a corpus record).
  */
-export const mkPieceId = <K extends DocCategory>(
+export const mkRecordId = <K extends DocCategory>(
   category: K,
   id: Documented<K>,
-): DocPieceIdOf<K> => ({ category, id }) as DocPieceIdOf<K>
+): DocRecordIdOf<K> => ({ category, id }) as DocRecordIdOf<K>
 
 /**
- * The record behind a `DocPieceId`; `undefined` when the corpus has no such
- * key. Single cast site for the pid-to-record correlation; the result is the
- * `K`-shaped record when the pid is a `DocPieceIdOf<K>`.
+ * The record behind a `DocRecordId`; `undefined` when the corpus has no such
+ * key. Single cast site for the id-to-record correlation; the result is the
+ * `K`-shaped record when the id is a `DocRecordIdOf<K>`.
  */
-export const recordOf = <P extends DocPieceId>(
+export const recordOf = <P extends DocRecordId>(
   corpus: DocCorpus,
   id: P,
 ): DocRecordMap[P["category"]] | undefined =>

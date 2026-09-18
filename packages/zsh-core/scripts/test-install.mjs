@@ -63,11 +63,11 @@ import { resolve } from "@carlwr/zsh-core/resolver"
 import { mkDocumented } from "@carlwr/zsh-core/types"
 
 const corpus = loadCorpus()
-const piece = resolve(corpus, "option", "AUTO_CD")
-if (!piece || piece.category !== "option") {
-  throw new Error("resolve('option','AUTO_CD') failed: " + JSON.stringify(piece))
+const recordId = resolve(corpus, "option", "AUTO_CD")
+if (!recordId || recordId.category !== "option") {
+  throw new Error("resolve('option','AUTO_CD') failed: " + JSON.stringify(recordId))
 }
-const md = renderDoc(corpus, piece)
+const md = renderDoc(corpus, recordId)
 if (typeof md !== "string" || md.length === 0) {
   throw new Error("renderDoc returned non-string or empty")
 }

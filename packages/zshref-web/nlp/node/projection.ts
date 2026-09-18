@@ -5,7 +5,7 @@
 
 import { cachedUnary } from "@carlwr/typescript-extra"
 import type { DocCorpus } from "@carlwr/zsh-core"
-import { augmentWithMarkdown } from "@carlwr/zsh-core/json"
+import { projectRecords } from "@carlwr/zsh-core/json"
 import { type DocCategory, docCategories } from "@carlwr/zsh-core/taxonomy"
 
 export interface ProjectedCategory {
@@ -17,6 +17,6 @@ export const projectCorpus = cachedUnary(
   (corpus: DocCorpus): ProjectedCategory[] =>
     docCategories.map(category => ({
       category,
-      records: augmentWithMarkdown(corpus, category),
+      records: projectRecords(corpus, category),
     })),
 )

@@ -38,9 +38,9 @@ import { mkDocumented } from "./brands.ts"
 import type { DocCorpus } from "./corpus.ts"
 import {
   type DocCategory,
-  type DocPieceIdOf,
+  type DocRecordIdOf,
   docCategories,
-  mkPieceId,
+  mkRecordId,
 } from "./taxonomy.ts"
 import { type Documented, type RedirDoc, redirSlugFromSig } from "./types.ts"
 
@@ -461,16 +461,16 @@ const resolvers: { [K in DocCategory]: Resolver<K> } = Object.fromEntries(
  *
  * Identity only — lossy bits surface via `resolverFeedback`. The sole public
  * brand-boundary crossing for untrusted raw strings; the other legitimate
- * routes to a `DocPieceId` are `mkPieceId(cat, record.id)` from a
+ * routes to a `DocRecordId` are `mkRecordId(cat, record.id)` from a
  * corpus-iterated record, or internal iteration inside zsh-core.
  */
 export function resolve<K extends DocCategory>(
   corpus: DocCorpus,
   cat: K,
   raw: string,
-): DocPieceIdOf<K> | undefined {
+): DocRecordIdOf<K> | undefined {
   const id = resolvers[cat](corpus, raw)
-  return id === undefined ? undefined : mkPieceId(cat, id)
+  return id === undefined ? undefined : mkRecordId(cat, id)
 }
 
 /**
@@ -482,9 +482,9 @@ export function lookupRaw<K extends DocCategory>(
   corpus: DocCorpus,
   cat: K,
   raw: string,
-): DocPieceIdOf<K> | undefined {
+): DocRecordIdOf<K> | undefined {
   const id = raw.trim() as Documented<K>
-  if (id && hasId(corpus, cat, id)) return mkPieceId(cat, id)
+  if (id && hasId(corpus, cat, id)) return mkRecordId(cat, id)
   return resolve(corpus, cat, raw)
 }
 

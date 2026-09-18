@@ -16,7 +16,7 @@ import {
   docCategories,
   docCategoryLabels,
   idOf,
-  mkPieceId,
+  mkRecordId,
   subKindOf,
 } from "../../docs/taxonomy"
 import type {
@@ -644,7 +644,7 @@ describe("render markdown", () => {
 
   test("renderDocWithTitle — composes title + body", () => {
     const docs = mkTestCorpus()
-    const pid = mkPieceId("builtin", bi.name)
+    const pid = mkRecordId("builtin", bi.name)
     const out = renderDocWithTitle(docs, pid)
     // Title is on the first line, body follows after a blank line.
     expect(out).toMatch(/^`echo`\n\n/)
@@ -721,7 +721,7 @@ describe("render markdown", () => {
 
   test("renderDocWithTitle — missing record throws, naming category and id", () => {
     const docs = mkTestCorpus({ builtin: [] })
-    const pid = mkPieceId("builtin", mkDocumented("builtin", "missing"))
+    const pid = mkRecordId("builtin", mkDocumented("builtin", "missing"))
     expect(() => renderDocWithTitle(docs, pid)).toThrow(/builtin.*"missing"/)
   })
 

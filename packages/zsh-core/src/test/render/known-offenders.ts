@@ -15,16 +15,16 @@
 import { mkDocumented } from "../../docs/brands.ts"
 import {
   type DocCategory,
-  type DocPieceId,
-  mkPieceId,
+  type DocRecordId,
+  mkRecordId,
 } from "../../docs/taxonomy.ts"
 import type { HeuristicName } from "./heuristics.ts"
 
-const pid = <K extends DocCategory>(cat: K, raw: string): DocPieceId =>
-  mkPieceId(cat, mkDocumented(cat, raw))
+const pid = <K extends DocCategory>(cat: K, raw: string): DocRecordId =>
+  mkRecordId(cat, mkDocumented(cat, raw))
 
 export const knownOffenders: Readonly<
-  Record<HeuristicName, readonly DocPieceId[]>
+  Record<HeuristicName, readonly DocRecordId[]>
 > = {
   // --- zero-tolerance: bug-shaped detectors with empty lists ---------------
 

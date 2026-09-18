@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest"
 import { refDocs } from "../../../scripts/ref-dump.ts"
 import { loadCorpus } from "../../docs/corpus.ts"
-import { type DocPieceId, mkPieceId } from "../../docs/taxonomy.ts"
+import { type DocRecordId, mkRecordId } from "../../docs/taxonomy.ts"
 import { heuristics } from "./heuristics.ts"
 import { knownOffenders } from "./known-offenders.ts"
 
@@ -12,14 +12,14 @@ describe("render heuristics", () => {
     const actual = sortPids(
       docs
         .filter(d => h.detects(d.md).length > 0)
-        .map(d => mkPieceId(d.kind, d.id)),
+        .map(d => mkRecordId(d.kind, d.id)),
     )
     const expected = sortPids(knownOffenders[h.name] ?? [])
     expect(actual).toEqual(expected)
   })
 })
 
-const sortPids = (xs: readonly DocPieceId[]): readonly DocPieceId[] =>
+const sortPids = (xs: readonly DocRecordId[]): readonly DocRecordId[] =>
   [...xs].sort((a, b) =>
     a.category === b.category
       ? a.id.localeCompare(b.id)

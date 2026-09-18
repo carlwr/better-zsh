@@ -15,7 +15,7 @@
 import { describe, expect, test } from "vitest"
 import { mkDocumented } from "../docs/brands.ts"
 import { loadCorpus } from "../docs/corpus.ts"
-import { augmentWithMarkdown } from "../docs/json-projection.ts"
+import { projectRecords } from "../docs/json-projection.ts"
 import { docCategories } from "../docs/taxonomy.ts"
 
 const corpus = loadCorpus()
@@ -35,9 +35,9 @@ function isProse(s: string): boolean {
   return true
 }
 
-// Augment once: `augmentWithMarkdown` re-renders every body.
-const augmented = docCategories.map(
-  cat => [cat, augmentWithMarkdown(corpus, cat)] as const,
+// Project once: `projectRecords` re-renders every body.
+const projected = docCategories.map(
+  cat => [cat, projectRecords(corpus, cat)] as const,
 )
 
 const strField = (rec: object, key: string): string | undefined => {
@@ -48,7 +48,7 @@ const strField = (rec: object, key: string): string | undefined => {
 describe("corpus string-field invariants", () => {
   test("every _id is printable ASCII with no whitespace", () => {
     const violations: string[] = []
-    for (const [cat, recs] of augmented)
+    for (const [cat, recs] of projected)
       for (const rec of recs)
         if (!ID_RE.test(rec._id))
           violations.push(`${cat}: _id ${JSON.stringify(rec._id)}`)
@@ -57,7 +57,7 @@ describe("corpus string-field invariants", () => {
 
   test("every _display and sig is printable ASCII (space allowed)", () => {
     const violations: string[] = []
-    for (const [cat, recs] of augmented)
+    for (const [cat, recs] of projected)
       for (const rec of recs) {
         if (!SURFACE_RE.test(rec._display))
           violations.push(`${cat}: _display ${JSON.stringify(rec._display)}`)
@@ -91,7 +91,7 @@ describe("corpus string-field invariants", () => {
       if (val !== undefined && val && !isProse(val))
         violations.push(`${cat}: ${key} ${JSON.stringify(val.slice(0, 60))}`)
     }
-    for (const [cat, recs] of augmented)
+    for (const [cat, recs] of projected)
       for (const rec of recs) {
         checkProse(cat, "desc", strField(rec, "desc"))
         checkProse(cat, "section", strField(rec, "section"))

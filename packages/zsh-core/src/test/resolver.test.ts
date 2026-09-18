@@ -2,7 +2,7 @@ import { describe, expect, test } from "vitest"
 import { mkDocumented } from "../docs/brands"
 import { loadCorpus } from "../docs/corpus"
 import { lookupRaw, resolve, resolverFeedback } from "../docs/resolver"
-import { type DocCategory, docCategories, mkPieceId } from "../docs/taxonomy"
+import { type DocCategory, docCategories, mkRecordId } from "../docs/taxonomy"
 
 const corpus = loadCorpus()
 
@@ -11,7 +11,7 @@ function cases<K extends DocCategory>(cat: K) {
   return {
     hit: (raw: string, id: string) =>
       expect(resolve(corpus, cat, raw)).toEqual(
-        mkPieceId(cat, mkDocumented(cat, id)),
+        mkRecordId(cat, mkDocumented(cat, id)),
       ),
     miss: (raw: string) => expect(resolve(corpus, cat, raw)).toBeUndefined(),
   }

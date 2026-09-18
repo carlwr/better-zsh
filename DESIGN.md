@@ -121,13 +121,13 @@ Only a step with corpus access can decide. Baking this into a smart constructor 
 
 If an operation decomposes into A→B→C, export A→B and B→C, not also A→C, even when "almost all consumers need A→C." Consumers compose.
 
-The rendering path is `raw string → DocPieceId → markdown` (`resolve` + `renderDoc`). No combined convenience function. Reasons:
+The rendering path is `raw string → DocRecordId → markdown` (`resolve` + `renderDoc`). No combined convenience function. Reasons:
 
-- `DocPieceId` is a first-class concept (type-safe corpus identity); an A→C function hides it.
+- `DocRecordId` is a first-class concept (type-safe corpus identity); an A→C function hides it.
 - Two ways to do the same thing force consumers to choose and encourage drift.
 - Each step has a crisp meaning: "is this in the corpus?" vs "render this known element."
 
-Corpus-driven aggregation helpers (`augmentWithMarkdown`, the JSON projection) are fine — they operate on already-known records, not hidden brand crossings.
+Corpus-driven aggregation helpers (`projectRecords`, the JSON projection) are fine — they operate on already-known records, not hidden brand crossings.
 
 Not an absolute ban. A post-refactor convenience wrapper is fine as a conscious addition.
 
@@ -240,7 +240,7 @@ Per-type details and the three-way distinction — JSDoc in `zsh-core/types`:
   - `list`
   - syntactic checks
 - **Supplementary prose** — `desc` may appear except on `complex_command`-owned heads (which deliberately omit it). Epistemic-trap rationale + `SyntaxDocBase` non-extension: `ReservedWordDoc` JSDoc in `zsh-core/types`.
-- **Corpus identity** — every record is `Documented<"reserved_word">`, reachable via `DocPieceId` like other categories.
+- **Corpus identity** — every record is `Documented<"reserved_word">`, reachable via `DocRecordId` like other categories.
 
 Wiring:
 

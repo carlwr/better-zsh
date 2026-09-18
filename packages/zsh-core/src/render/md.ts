@@ -7,7 +7,11 @@ import {
 } from "@carlwr/typescript-extra"
 import type { DocCorpus } from "../docs/corpus.ts"
 import { resolve } from "../docs/resolver.ts"
-import type { DocCategory, DocPieceId, DocRecordMap } from "../docs/taxonomy.ts"
+import type {
+  DocCategory,
+  DocRecordId,
+  DocRecordMap,
+} from "../docs/taxonomy.ts"
 import { docCategoryLabels, recordOf, subKindOf } from "../docs/taxonomy.ts"
 import type {
   AlternateForm,
@@ -866,10 +870,10 @@ export function renderRecord<K extends DocCategory>(
 }
 
 /**
- * pid-keyed {@link renderRecord}. `id` must come from `resolve()` or corpus
- * iteration; throws when the corpus has no such record.
+ * `DocRecordId`-keyed {@link renderRecord}. `id` must come from `resolve()`
+ * or corpus iteration; throws when the corpus has no such record.
  */
-export function renderDoc(corpus: DocCorpus, id: DocPieceId): string {
+export function renderDoc(corpus: DocCorpus, id: DocRecordId): string {
   return renderRecord(corpus, id.category, mustRecordOf(corpus, id))
 }
 
@@ -885,8 +889,11 @@ export function renderRecordWithTitle<K extends DocCategory>(
   return docBlock(recordTitle(cat, doc), renderRecord(corpus, cat, doc))
 }
 
-/** pid-keyed {@link renderRecordWithTitle}; throws on a miss like {@link renderDoc}. */
-export function renderDocWithTitle(corpus: DocCorpus, id: DocPieceId): string {
+/**
+ * `DocRecordId`-keyed {@link renderRecordWithTitle}; throws on a miss like
+ * {@link renderDoc}.
+ */
+export function renderDocWithTitle(corpus: DocCorpus, id: DocRecordId): string {
   return renderRecordWithTitle(corpus, id.category, mustRecordOf(corpus, id))
 }
 
@@ -895,7 +902,7 @@ export function renderDocWithTitle(corpus: DocCorpus, id: DocPieceId): string {
 // `recordOf` + `renderRecord`.
 function mustRecordOf(
   corpus: DocCorpus,
-  id: DocPieceId,
+  id: DocRecordId,
 ): DocRecordMap[typeof id.category] {
   const doc = recordOf(corpus, id)
   if (doc === undefined) {

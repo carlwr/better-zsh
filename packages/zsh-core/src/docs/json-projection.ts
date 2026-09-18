@@ -14,12 +14,12 @@ import {
 } from "./taxonomy.ts"
 
 /**
- * Augment each record with its rendered markdown body plus projected identity
- * fields — the record as JSON consumers see it. Generated fields are
+ * Project the records of `cat` as JSON consumers see them: each augmented
+ * with its rendered markdown body plus identity fields. Generated fields are
  * `_`-prefixed (`_mdBody` included): a namespace apart from the records' own
  * field names (`display` on ZshOption, `subKind` on ParamExpnDoc).
  */
-export function augmentWithMarkdown<K extends DocCategory>(
+export function projectRecords<K extends DocCategory>(
   corpus: DocCorpus,
   cat: K,
 ): readonly WithMarkdown<DocRecordMap[K]>[] {

@@ -7,7 +7,7 @@ import {
 } from "@carlwr/zsh-core/analysis"
 import { renderDocWithTitle } from "@carlwr/zsh-core/render"
 import { resolve } from "@carlwr/zsh-core/resolver"
-import type { DocCategory, DocPieceId } from "@carlwr/zsh-core/taxonomy"
+import type { DocCategory, DocRecordId } from "@carlwr/zsh-core/taxonomy"
 import * as vscode from "vscode"
 import { contextAt } from "../document/facts"
 import { funcAt } from "../document/funcs"
@@ -170,13 +170,13 @@ export class HoverProvider implements vscode.HoverProvider {
     raw: string,
     range?: vscode.Range,
   ): vscode.Hover | undefined {
-    const pieceId = resolve(this.corpus, category, raw)
-    if (pieceId) return this.renderHover(pieceId, range)
+    const recordId = resolve(this.corpus, category, raw)
+    if (recordId) return this.renderHover(recordId, range)
   }
 
-  private renderHover(pieceId: DocPieceId, range?: vscode.Range) {
+  private renderHover(recordId: DocRecordId, range?: vscode.Range) {
     const md = new vscode.MarkdownString(
-      renderDocWithTitle(this.corpus, pieceId),
+      renderDocWithTitle(this.corpus, recordId),
     )
     return new vscode.Hover(md, range)
   }

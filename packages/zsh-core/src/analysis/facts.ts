@@ -1,17 +1,17 @@
 import { ctxFacts } from "./ctx-facts.ts"
 import {
   absSpan,
-  type DocLike,
   hasOffset,
   lineStarts,
   readLines,
+  type TextDoc,
   type TextSpan,
 } from "./doc.ts"
 import type { Fact } from "./fact-types.ts"
 import { cmdHeadFactsOnLine, funcDeclsAtLine } from "./line-facts.ts"
 import { quotedRegionFacts } from "./quoted-region.ts"
 
-export type { DocLike, DocLine, TextSpan } from "./doc.ts"
+export type { TextDoc, TextLine, TextSpan } from "./doc.ts"
 export { factText, lineStarts, offsetAt, positionAt } from "./doc.ts"
 export type {
   BaseFact,
@@ -61,7 +61,7 @@ const QUOTED_FILTERED_KINDS: ReadonlySet<Fact["kind"]> = new Set([
 ])
 
 /** Analyze a whole document and return coarse zsh syntax facts. */
-export function analyzeDoc(doc: DocLike): readonly Fact[] {
+export function analyzeDoc(doc: TextDoc): readonly Fact[] {
   const lines = readLines(doc)
   const starts = lineStarts(doc)
   const facts: Fact[] = []

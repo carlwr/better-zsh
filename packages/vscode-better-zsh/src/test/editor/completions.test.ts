@@ -1,7 +1,7 @@
 import { nonEmpty } from "@carlwr/typescript-extra"
 import type { DocCorpus } from "@carlwr/zsh-core"
 import { renderDocWithTitle } from "@carlwr/zsh-core/render"
-import { mkPieceId } from "@carlwr/zsh-core/taxonomy"
+import { mkRecordId } from "@carlwr/zsh-core/taxonomy"
 import { mkDocumented, optSections } from "@carlwr/zsh-core/types"
 import { describe, expect, test } from "vitest"
 import * as vscode from "vscode"
@@ -101,7 +101,7 @@ describe("CompletionProvider", () => {
     expect(isIncomplete).toBe(true)
     const doc = renderDocWithTitle(
       corpus,
-      mkPieceId("option", mkDocumented("option", "autocd")),
+      mkRecordId("option", mkDocumented("option", "autocd")),
     )
     expect(items.map(i => [i.label, i.filterText, i.documentation])).toEqual([
       ["no_autocd", "no_au", new vscode.MarkdownString(doc)],

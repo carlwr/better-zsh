@@ -10,7 +10,7 @@
 
 import { describe, expect, test } from "vitest"
 import { resolve, resolverFeedback } from "../docs/resolver"
-import { docCategories, mkPieceId } from "../docs/taxonomy"
+import { docCategories, mkRecordId } from "../docs/taxonomy"
 import { mkOptFlag, type OptFlagAlias, type ZshOption } from "../docs/types"
 import { emptyCorpus, membershipCorpus, mkDocumented_ } from "./id-fns"
 
@@ -75,7 +75,7 @@ describe("resolve(corpus, 'option', raw) — option identity", () => {
     ["NO_NOTIFY", "notify"],
   ])("%s -> %s", (raw, id) => {
     expect(resolve(optCorpus, "option", raw)).toEqual(
-      mkPieceId("option", opt(id)),
+      mkRecordId("option", opt(id)),
     )
   })
 
@@ -123,7 +123,7 @@ describe("resolve / resolverFeedback(corpus, 'option', raw) — short flags", ()
     ["+Q", "first", true],
   ] as const)("%s → %s (negated: %s)", (raw, id, negated) => {
     expect(resolve(flagCorpus, "option", raw)).toEqual(
-      mkPieceId("option", opt(id)),
+      mkRecordId("option", opt(id)),
     )
     expect(resolverFeedback(flagCorpus, "option", raw)).toEqual(
       negated ? { kind: "input-negated" } : undefined,
@@ -152,10 +152,10 @@ describe("resolve / resolverFeedback(corpus, 'option', raw) — short flags", ()
   // has both shapes, so this pins that they still work in a flag corpus).
   test("literal and no_-stripped forms still resolve", () => {
     expect(resolve(flagCorpus, "option", "X")).toEqual(
-      mkPieceId("option", opt("X")),
+      mkRecordId("option", opt("X")),
     )
     expect(resolve(flagCorpus, "option", "NO_X")).toEqual(
-      mkPieceId("option", opt("X")),
+      mkRecordId("option", opt("X")),
     )
     expect(resolverFeedback(flagCorpus, "option", "NO_X")).toEqual({
       kind: "input-negated",
@@ -175,7 +175,7 @@ describe("resolverFeedback(corpus, 'special_param', raw) — subscripted", () =>
     })
     const parent = raw.slice(0, raw.indexOf("["))
     expect(resolve(spCorpus, "special_param", raw)).toEqual(
-      mkPieceId("special_param", sp(parent)),
+      mkRecordId("special_param", sp(parent)),
     )
   })
 
@@ -206,14 +206,14 @@ describe("resolve(corpus, 'special_param', raw) — $/${…} sigil strip", () =>
     ["  $PATH  ", "PATH"],
   ])("%s -> %s", (raw, id) => {
     expect(resolve(sigilCorpus, "special_param", raw)).toEqual(
-      mkPieceId("special_param", sp(id)),
+      mkRecordId("special_param", sp(id)),
     )
   })
 
   test("sigiled subscript strips both sigil and `[...]`, with feedback", () => {
     expect(
       resolve(sigilCorpus, "special_param", "$compstate[context]"),
-    ).toEqual(mkPieceId("special_param", sp("compstate")))
+    ).toEqual(mkRecordId("special_param", sp("compstate")))
     expect(
       resolverFeedback(sigilCorpus, "special_param", "$compstate[context]"),
     ).toEqual({ kind: "subscripted", subscript: "context" })

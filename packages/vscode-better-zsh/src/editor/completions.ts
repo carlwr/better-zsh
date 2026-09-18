@@ -8,7 +8,7 @@ import {
 import {
   type DocCategory,
   type DocRecordMap,
-  mkPieceId,
+  mkRecordId,
 } from "@carlwr/zsh-core/taxonomy"
 import type { CondOpDoc, Documented } from "@carlwr/zsh-core/types"
 import * as vscode from "vscode"
@@ -122,7 +122,7 @@ const docMarkdown = <K extends DocCategory>(
   corpus: DocCorpus,
   cat: K,
   id: Documented<K>,
-) => new vscode.MarkdownString(renderDocWithTitle(corpus, mkPieceId(cat, id)))
+) => new vscode.MarkdownString(renderDocWithTitle(corpus, mkRecordId(cat, id)))
 
 function mkCompletionItem<K extends WordCategory>(
   corpus: DocCorpus,

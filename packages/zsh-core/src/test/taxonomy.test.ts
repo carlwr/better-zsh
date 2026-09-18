@@ -4,11 +4,11 @@ import { loadCorpus } from "../docs/corpus"
 import { resolve } from "../docs/resolver"
 import {
   type DocCategory,
-  type DocPieceId,
+  type DocRecordId,
   type DocRecordMap,
   docCategories,
   isDocCategory,
-  mkPieceId,
+  mkRecordId,
   parseDocCategory,
   recordOf,
 } from "../docs/taxonomy"
@@ -38,18 +38,21 @@ describe("recordOf", () => {
   })
 
   test("miss: undefined for a key the corpus lacks", () => {
-    const pid = mkPieceId("builtin", mkDocumented("builtin", "no-such-builtin"))
+    const pid = mkRecordId(
+      "builtin",
+      mkDocumented("builtin", "no-such-builtin"),
+    )
     expect(recordOf(corpus, pid)).toBeUndefined()
   })
 
-  // Compile-time contract of `DocPieceIdOf<K>`: a resolved pid keeps its
+  // Compile-time contract of `DocRecordIdOf<K>`: a resolved pid keeps its
   // category's record type, also through a generic `K`, while staying
-  // assignable to the `DocPieceId` union.
+  // assignable to the `DocRecordId` union.
   test("types: a K-shaped pid yields the K-shaped record", () => {
     const pid = resolve(corpus, "option", "AUTO_CD")
     if (pid === undefined) throw new Error("AUTO_CD did not resolve")
     expectTypeOf(recordOf(corpus, pid)).toEqualTypeOf<ZshOption | undefined>()
-    expectTypeOf(pid).toMatchTypeOf<DocPieceId>()
+    expectTypeOf(pid).toMatchTypeOf<DocRecordId>()
 
     const viaK = <K extends DocCategory>(
       cat: K,

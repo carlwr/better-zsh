@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto"
 import type { DocCorpus } from "./corpus.ts"
-import { assertAsciiIdentity, augmentWithMarkdown } from "./json-projection.ts"
+import { assertAsciiIdentity, projectRecords } from "./json-projection.ts"
 import { type DocCategory, docCategories } from "./taxonomy.ts"
 
 /** A category's record file — named after the category, one spelling for id, file and schema entry. */
@@ -65,9 +65,9 @@ export function jsonRecordTexts(
 ): ReadonlyMap<JsonDataFile, string> {
   return new Map<JsonDataFile, string>(
     docCategories.map(cat => {
-      const augmented = augmentWithMarkdown(corpus, cat)
-      assertAsciiIdentity(cat, augmented)
-      return [jsonDataFile(cat), fmtJson(augmented)] as const
+      const projected = projectRecords(corpus, cat)
+      assertAsciiIdentity(cat, projected)
+      return [jsonDataFile(cat), fmtJson(projected)] as const
     }),
   )
 }

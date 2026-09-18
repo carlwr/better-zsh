@@ -8,10 +8,10 @@ export type Brand<T, B extends string> = T & { readonly __brand: B }
 // --- Auxiliary lookup brands ------------------------------------------------
 // Secondary-index brands; not corpus identities (`Documented<K>`).
 
-/** Single-letter option flag char. Secondary-index brand, not a doc-piece identity. */
+/** Single-letter option flag char. Secondary-index brand, not a record identity. */
 export type OptFlag = Brand<string, "OptFlag">
 
-/** Redirection operator token. Secondary-index brand, not a doc-piece identity. */
+/** Redirection operator token. Secondary-index brand, not a record identity. */
 export type RedirOp = Brand<string, "RedirOp">
 
 export const mkOptFlag = (raw: string): OptFlag => raw.trim() as OptFlag

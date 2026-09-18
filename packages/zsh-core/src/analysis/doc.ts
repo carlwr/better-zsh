@@ -1,13 +1,13 @@
 import { commentStart } from "./comment.ts"
 
 /** Minimal line abstraction for analysis (compatible with VS Code TextDocument). */
-export interface DocLine {
+export interface TextLine {
   readonly text: string
 }
 
 /** Minimal document abstraction for analysis (compatible with VS Code TextDocument). */
-export interface DocLike {
-  lineAt(i: number): DocLine
+export interface TextDoc {
+  lineAt(i: number): TextLine
   readonly lineCount: number
 }
 
@@ -22,7 +22,7 @@ export function activeText(line: string): string {
   return line.slice(0, cut)
 }
 
-export function readLines(doc: DocLike): readonly string[] {
+export function readLines(doc: TextDoc): readonly string[] {
   const out: string[] = []
   for (let i = 0; i < doc.lineCount; i++) out.push(doc.lineAt(i).text)
   return out
@@ -32,7 +32,7 @@ export function readLines(doc: DocLike): readonly string[] {
  * Offset of each line's first character — the document's offset model: every
  * line separator counts one character (`\r\n` unsupported, by design).
  */
-export function lineStarts(doc: DocLike): readonly number[] {
+export function lineStarts(doc: TextDoc): readonly number[] {
   const out: number[] = []
   let off = 0
   for (let i = 0; i < doc.lineCount; i++) {
@@ -80,7 +80,7 @@ export function hasOffset(
     : span.start <= off && off < span.end
 }
 
-export function factText(doc: DocLike, span: TextSpan): string {
+export function factText(doc: TextDoc, span: TextSpan): string {
   return readLines(doc).join("\n").slice(span.start, span.end)
 }
 

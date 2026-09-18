@@ -1,6 +1,6 @@
 import { type DocCorpus, loadCorpus } from "@carlwr/zsh-core"
 import { renderDocWithTitle } from "@carlwr/zsh-core/render"
-import { type DocCategory, mkPieceId } from "@carlwr/zsh-core/taxonomy"
+import { type DocCategory, mkRecordId } from "@carlwr/zsh-core/taxonomy"
 import type {
   BuiltinDoc,
   ComplexCommandDoc,
@@ -100,7 +100,7 @@ const valueAt = (line: string, char: number) => at(line, 0, char)?.value
 const real = loadCorpus()
 const realAt = hoverWith(new HoverProvider(real))
 const rendered = <K extends DocCategory>(cat: K, id: Documented<K>) =>
-  renderDocWithTitle(real, mkPieceId(cat, id))
+  renderDocWithTitle(real, mkRecordId(cat, id))
 
 // --- synthetic-corpus dispatch ----------------------------------------------
 
