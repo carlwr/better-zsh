@@ -79,7 +79,7 @@ export interface JsonIndex {
 /** What the resolvers answer for one raw input; `null` where they answer nothing. */
 export interface ResolverFixtureCase {
   readonly input: string
-  /** `lookupRaw` result — direct corpus-key lookup, then the category's resolver. */
+  /** The `resolve` hit — direct corpus-key lookup, then the category's resolver. */
   readonly id: string | null
   readonly feedback: ResolverFeedback | null
 }

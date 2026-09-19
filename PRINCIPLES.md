@@ -44,15 +44,14 @@ In-context tokenization, if it belongs anywhere, belongs in `src/analysis/`. Res
 
 ### Resolver feedback (lossy normalization)
 
-Resolution can be lossy (`setopt NO_AUTO_CD` resolves to `autocd`). The brand machinery keeps `Documented<K>` pure; lossy bits surface via a separate parametric `resolverFeedback(corpus, cat, raw)` channel. JSDoc on `ResolverFeedback` / `resolverFeedback` in `zsh-core/resolver` covers:
+Resolution can be lossy (`setopt NO_AUTO_CD` resolves to `autocd`). The brand machinery keeps `Documented<K>` pure; lossy bits ride on the `resolve` hit as `feedback`. JSDoc on `ResolverFeedback` / `ResolvedHit` in `zsh-core/resolver` covers:
 
 - concrete kinds
-- dispatch table
 - "wording isn't API surface" framing
 
 Cross-cutting principles:
 
-- **`resolve` and `Documented<K>` carry only identity.** No optional side-channels, no hidden state.
+- **The brand carries only identity; the hit carries feedback.** `Documented<K>` has no side-channels or hidden state; `resolve` answers both in one value — nothing resolves twice.
 - **Per-category dispatch lives in zsh-core**, not in consumers. Consumers stay parametric over `DocCategory` — no `if (cat === "option")` branches.
 - **Structured, not prose.** Closed `kind`-tagged union so consumers route programmatically.
 
@@ -252,7 +251,7 @@ Decisions belong close to the consumer:
 
 The adapter narrows the tool layer; the tool layer narrows zsh-core. Counterforce: over-parameterization bloats the per-call input surface. Balance consciously; default is "push downstream."
 
-Counter-example: corpus-aware identity primitives (e.g. `lookupRaw`'s direct-or-resolver rule) live in zsh-core even where a tool is the only consumer. They are properties of *the corpus*, not the tool surface; the Rust mirror follows them under the fixture instead of re-deriving them per tool.
+Counter-example: corpus-aware identity primitives (e.g. `resolve`'s direct-or-resolver rule) live in zsh-core even where a tool is the only consumer. They are properties of *the corpus*, not the tool surface; the Rust mirror follows them under the fixture instead of re-deriving them per tool.
 
 ### Schema precision when schemas are co-released
 

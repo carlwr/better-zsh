@@ -132,7 +132,7 @@ type _AssertClassifyOrderNoExtras = Assert<
 
 /**
  * `DocCategory` list in resolver-walk order. Consumers stop on first match
- * or collect all; the per-category step is `lookupRaw`, not `resolve`.
+ * or collect all; the per-category step is `resolve`.
  */
 export const classifyOrder: readonly DocCategory[] = classifyOrderTuple
 
@@ -204,8 +204,8 @@ export type DocRecordId = {
 }[DocCategory]
 
 /**
- * The `DocRecordId` member for category `K` — what `resolve`, `lookupRaw` and
- * `mkRecordId` return.
+ * The `DocRecordId` member for category `K` — what `mkRecordId` returns and
+ * what `resolve`'s `ResolvedHit` extends.
  *
  * Intersection form on purpose: under a generic `K`, the `Extract` half keeps
  * the value assignable to `DocRecordId` (its constraint is the union), while

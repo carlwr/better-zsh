@@ -34,7 +34,7 @@ export const redirSlugFromSig = (sig: string): string =>
  * acquisition paths:
  *
  * 1. `resolve` — **checked** against the corpus; the path for untrusted input.
- *    Lossy bits (e.g. option `NO_`-stripping) surface via `resolverFeedback`.
+ *    Lossy bits (e.g. option `NO_`-stripping) surface as the hit's `feedback`.
  * 2. `mkDocumented(cat, raw)` — **trusted**, no corpus check. Reserved for
  *    corpus construction (Yodl extractors) and test-corpus builders. Misuse
  *    surfaces only as later `Map.get` returning `undefined`.

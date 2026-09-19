@@ -66,7 +66,7 @@ proptest! {
     /// docs round-trip: when `docs --key=KEY` resolves, the first hit's
     /// canonical `(category, id)` re-queries to the same id under
     /// `docs --category=C --key=ID` — pins direct-hit precedence (see
-    /// DESIGN.md §"`lookupRaw`: direct ∥ resolver"). Property-level companion
+    /// DESIGN.md §"`resolve`: direct ∥ resolver"). Property-level companion
     /// to the exhaustive `docs_roundtrip_over_corpus` in `cli_invariants.rs`.
     #[test]
     fn docs_self_roundtrip(key in known_raw()) {

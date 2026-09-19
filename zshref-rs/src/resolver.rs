@@ -63,8 +63,8 @@ pub struct ResolvedHit<'c> {
     pub feedback: Option<ResolverFeedback>,
 }
 
-/// Per-category resolver dispatch. See DESIGN.md §"docs: direct ∥ resolver"
-/// and `lookupRaw` in zsh-core.
+/// Per-category resolver dispatch. See DESIGN.md §"`resolve`: direct ∥
+/// resolver" and `resolve` in zsh-core.
 pub fn resolve_in<'c>(corpus: &'c Corpus, cat: DocCategory, raw: &str) -> Option<ResolvedHit<'c>> {
     if let Some(h) = direct_lookup(corpus, cat, raw) {
         return Some(h);

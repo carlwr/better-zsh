@@ -2,13 +2,12 @@
 
 /**
  * @module
- * Resolver layer + lossy-resolution feedback channel.
+ * Resolver layer: untrusted raw user-code text → corpus identity, plus
+ * feedback when the normalization was lossy.
  *
- * The resolver layer maps untrusted raw user-code text to `Documented<K>` via
- * per-category, corpus-aware parsing. `resolve(corpus, cat, raw)` is the sole
- * sanctioned brand-boundary crossing for raw strings.
- *
- * Resolvers have two durable jobs:
+ * `resolve(corpus, cat, raw)` is the sole sanctioned brand-boundary crossing
+ * for raw strings: direct corpus-key lookup first, then the category's
+ * resolver — per-category, corpus-aware parsing with two durable jobs:
  *
  * - Close the gap between live zsh syntax and corpus identity. Option lookup
  *   is the canonical case: zsh ignores underscores, treats a leading
@@ -23,14 +22,16 @@
  *
  * Template-like categories follow the same identity rule: the resolver maps a
  * live token to the documented template record (`!42` → `!n`,
- * `TRAPINT` → `TRAPNAL`) while direct corpus-key lookup remains responsible
- * for exact round-trips (`!n`, `TRAPNAL`, `%number`).
+ * `TRAPINT` → `TRAPNAL`) while the direct step keeps exact keys
+ * round-tripping (`!n`, `TRAPNAL`, `%number`).
  *
- * `resolve` returns identity only. Lossy normalization bits (e.g. `setopt
- * NO_AUTO_CD` resolving to `autocd` discards the `NO_` prefix that carries
- * semantic meaning) surface separately via `resolverFeedback`. See
- * DESIGN.md §"Resolver feedback channel" and PRINCIPLES.md §"Resolver feedback
- * (lossy normalization)".
+ * The hit carries feedback for lossy normalization (`setopt NO_AUTO_CD`
+ * resolving to `autocd` discards the `NO_` prefix that carries semantic
+ * meaning); the `Documented<K>` brand itself stays identity-only. One
+ * parametric entry rather than per-category APIs: dispatch lives in the
+ * resolver table, so consumers never branch on the category. See DESIGN.md
+ * §"Resolver feedback channel" and PRINCIPLES.md §"Resolver feedback (lossy
+ * normalization)".
  */
 
 import { escapeRegExp, isSingle } from "@carlwr/typescript-extra"
@@ -46,10 +47,16 @@ import { type Documented, type RedirDoc, redirSlugFromSig } from "./types.ts"
 
 // --- Resolvers --------------------------------------------------------------
 
+/** A resolver's verdict: corpus identity, plus feedback when normalization was lossy. */
+type Hit<K extends DocCategory> = {
+  readonly id: Documented<K>
+  readonly feedback?: ResolverFeedback
+}
+
 type Resolver<K extends DocCategory> = (
   c: DocCorpus,
   raw: string,
-) => Documented<K> | undefined
+) => Hit<K> | undefined
 
 /**
  * Membership check against `corpus[cat]`. Centralizes the brand-peel cast
@@ -67,7 +74,7 @@ function hasId<K extends DocCategory>(
 function simpleResolver<K extends DocCategory>(cat: K): Resolver<K> {
   return (c, raw) => {
     const id = mkDocumented(cat, raw)
-    return hasId(c, cat, id) ? id : undefined
+    return hasId(c, cat, id) ? { id } : undefined
   }
 }
 
@@ -80,13 +87,13 @@ function resolveByKey<K extends DocCategory>(
   cat: K,
   raw: string,
   matchKey: (t: string) => string | undefined,
-): Documented<K> | undefined {
+): Hit<K> | undefined {
   const t = raw.trim()
   if (!t) return undefined
   const key = matchKey(t)
   if (!key) return undefined
   const id = mkDocumented(cat, key)
-  return hasId(c, cat, id) ? id : undefined
+  return hasId(c, cat, id) ? { id } : undefined
 }
 
 /**
@@ -99,12 +106,12 @@ function resolveByKey<K extends DocCategory>(
 function resolveRedir(
   c: DocCorpus,
   raw: string,
-): Documented<"redirection"> | undefined {
+): Hit<"redirection"> | undefined {
   const literal = mkDocumented("redirection", raw)
-  if (c.redirection.has(literal)) return literal
+  if (c.redirection.has(literal)) return { id: literal }
   // Sig-form close-variant: doc sig (`> word`) → slug (`>_word`).
   const sigSlug = mkDocumented("redirection", redirSlugFromSig(raw.trim()))
-  if (c.redirection.has(sigSlug)) return sigSlug
+  if (c.redirection.has(sigSlug)) return { id: sigSlug }
   return resolveByKey(c, "redirection", raw, t => matchRedirKey(c, t))
 }
 
@@ -163,7 +170,7 @@ function redirTailPattern(groupOp: string, tail: string): string {
 function resolveHistory(
   c: DocCorpus,
   raw: string,
-): Documented<"history_expn"> | undefined {
+): Hit<"history_expn"> | undefined {
   return resolveByKey(c, "history_expn", raw, matchHistoryKey)
 }
 
@@ -227,14 +234,14 @@ function tryFlagKey<K extends FlagCategory>(
   c: DocCorpus,
   cat: K,
   key: string,
-): Documented<K> | undefined {
+): Hit<K> | undefined {
   const id = mkDocumented(cat, key)
-  if (hasId(c, cat, id)) return id
+  if (hasId(c, cat, id)) return { id }
   if (!COLON_ARG_FLAG_CATS.has(cat) || !key.includes(":")) return undefined
   const bare = key.split(":")[0]
   if (!bare) return undefined
   const bareId = mkDocumented(cat, bare)
-  return hasId(c, cat, bareId) ? bareId : undefined
+  return hasId(c, cat, bareId) ? { id: bareId } : undefined
 }
 
 function flagInnerKey(cat: FlagCategory, t: string): string | undefined {
@@ -246,11 +253,6 @@ function flagInnerKey(cat: FlagCategory, t: string): string | undefined {
 }
 
 const SUBSCRIPTED_PARAM_RE = /^([A-Za-z_][A-Za-z0-9_]*)\[(.+)\]$/
-
-type SpecialParamHit = {
-  readonly id: Documented<"special_param">
-  readonly subscript?: string
-}
 
 /**
  * Strip a `$` / `${…}` parameter sigil, returning the bare name. `undefined`
@@ -267,18 +269,18 @@ function stripParamSigil(t: string): string | undefined {
 
 /**
  * Close-variant `IDENT[inner]` → `IDENT` (`compstate[context]` → `compstate`,
- * `words[CURRENT]` → `words`). Lossy — the subscript surfaces via
- * `resolverFeedback`. Mirrors resolver.rs `resolve_param_subscript`.
+ * `words[CURRENT]` → `words`). Lossy — the subscript surfaces as
+ * `subscripted` feedback. Mirrors resolver.rs `resolve_param_subscript`.
  */
 function resolveParamSubscript(
   c: DocCorpus,
   raw: string,
-): SpecialParamHit | undefined {
+): Hit<"special_param"> | undefined {
   const m = raw.trim().match(SUBSCRIPTED_PARAM_RE)
   if (!m) return undefined
-  const base = mkDocumented("special_param", m[1] ?? "")
-  if (!c.special_param.has(base)) return undefined
-  return { id: base, subscript: m[2] ?? "" }
+  const id = mkDocumented("special_param", m[1] ?? "")
+  if (!c.special_param.has(id)) return undefined
+  return { id, feedback: { kind: "subscripted", subscript: m[2] ?? "" } }
 }
 
 /**
@@ -288,13 +290,11 @@ function resolveParamSubscript(
  * lookup, and which also accepts `$PATH`, `${HOME}`, etc. Otherwise literal
  * first, then the `[...]` subscript close-variant. Wider user-expression
  * parsing stays out of scope (PRINCIPLES.md §"Resolver scope balance").
- *
- * Public path: `resolve` + `resolverFeedback`.
  */
 function resolveSpecialParam(
   c: DocCorpus,
   raw: string,
-): SpecialParamHit | undefined {
+): Hit<"special_param"> | undefined {
   const name = stripParamSigil(raw.trim())
   if (name !== undefined) {
     const id = mkDocumented("special_param", name)
@@ -306,16 +306,6 @@ function resolveSpecialParam(
   return resolveParamSubscript(c, raw)
 }
 
-function specialParamFeedback(
-  c: DocCorpus,
-  raw: string,
-): ResolverFeedback | undefined {
-  const r = resolveSpecialParam(c, raw)
-  return r?.subscript !== undefined
-    ? { kind: "subscripted", subscript: r.subscript }
-    : undefined
-}
-
 /**
  * Job-spec resolver. Literal first for `%%`, `%+`, `%-`; template matches
  * for `%n`, `%?str`, `%str`.
@@ -323,7 +313,7 @@ function specialParamFeedback(
 function resolveJobSpec(
   c: DocCorpus,
   raw: string,
-): Documented<"job_spec"> | undefined {
+): Hit<"job_spec"> | undefined {
   return resolveByKey(c, "job_spec", raw, t =>
     t.startsWith("%") ? jobSpecKey(t) : undefined,
   )
@@ -356,9 +346,9 @@ function jobSpecKey(t: string): string | undefined {
 function resolveSpecialFunction(
   c: DocCorpus,
   raw: string,
-): Documented<"special_function"> | undefined {
+): Hit<"special_function"> | undefined {
   const literal = mkDocumented("special_function", raw)
-  if (c.special_function.has(literal)) return literal
+  if (c.special_function.has(literal)) return { id: literal }
   return resolveByKey(c, "special_function", raw, t =>
     matchSpecialFunctionKey(c, t),
   )
@@ -376,28 +366,25 @@ function matchSpecialFunctionKey(c: DocCorpus, t: string): string | undefined {
 const NO_PREFIX_RE = /^no_?/i
 const OPT_FLAG_RE = /^([+-])([A-Za-z0-9])$/
 
-type OptionHit = {
-  readonly id: Documented<"option">
-  readonly negated: boolean
-}
+const INPUT_NEGATED: ResolverFeedback = { kind: "input-negated" }
 
 /**
  * Option resolver. Literal first (so `NOTIFY` → `notify`, not stripped
  * `tify`); then the `no_`-stripped form; then a single-letter flag (`-J`,
  * `+J`). Negated pathways — `no_` prefix, or a flag whose sign is the
- * option's off state — surface via `resolverFeedback` as
- * `{ kind: "input-negated" }`.
- *
- * Public path: `resolve` + `resolverFeedback`.
+ * option's off state — carry `input-negated` feedback.
  */
-function resolveOption(corpus: DocCorpus, raw: string): OptionHit | undefined {
+function resolveOption(
+  corpus: DocCorpus,
+  raw: string,
+): Hit<"option"> | undefined {
   const literal = mkDocumented("option", raw)
-  if (corpus.option.has(literal)) return { id: literal, negated: false }
+  if (corpus.option.has(literal)) return { id: literal }
   const trimmed = raw.trim()
   const m = trimmed.match(NO_PREFIX_RE)
   if (m) {
-    const stripped = mkDocumented("option", trimmed.slice(m[0].length))
-    if (corpus.option.has(stripped)) return { id: stripped, negated: true }
+    const id = mkDocumented("option", trimmed.slice(m[0].length))
+    if (corpus.option.has(id)) return { id, feedback: INPUT_NEGATED }
   }
   return resolveOptionFlag(corpus, trimmed)
 }
@@ -411,7 +398,7 @@ function resolveOption(corpus: DocCorpus, raw: string): OptionHit | undefined {
 function resolveOptionFlag(
   corpus: DocCorpus,
   trimmed: string,
-): OptionHit | undefined {
+): Hit<"option"> | undefined {
   const m = trimmed.match(OPT_FLAG_RE)
   const sign = m?.[1]
   const char = m?.[2]
@@ -420,7 +407,9 @@ function resolveOptionFlag(
     const alias = opt.flags.find(
       f => f.char === char && f.emulations.includes("zsh"),
     )
-    if (alias) return { id: opt.name, negated: alias.on !== sign }
+    if (!alias) continue
+    const id = opt.name
+    return alias.on === sign ? { id } : { id, feedback: INPUT_NEGATED }
   }
   return undefined
 }
@@ -432,8 +421,8 @@ function resolveOptionFlag(
 // default will essentially never match a live token. Reached via search/docs;
 // the default path is harmless.
 const resolverOverrides: { readonly [K in DocCategory]?: Resolver<K> } = {
-  option: (c, raw) => resolveOption(c, raw)?.id,
-  special_param: (c, raw) => resolveSpecialParam(c, raw)?.id,
+  option: resolveOption,
+  special_param: resolveSpecialParam,
   redirection: resolveRedir,
   subscript_flag: parensAgnosticFlagResolver("subscript_flag"),
   param_expn_flag: parensAgnosticFlagResolver("param_expn_flag"),
@@ -452,47 +441,50 @@ const resolvers: { [K in DocCategory]: Resolver<K> } = Object.fromEntries(
 ) as { [K in DocCategory]: Resolver<K> }
 
 /**
- * Resolve a raw user-code token against the corpus.
+ * What `resolve` answers: the record id, plus `feedback` when reaching it
+ * normalized away something meaningful (absent on loss-free paths and for
+ * non-lossy categories). Assignable to `DocRecordId` wherever identity alone
+ * is wanted.
+ */
+export type ResolvedHit<K extends DocCategory> = DocRecordIdOf<K> & {
+  readonly feedback?: ResolverFeedback
+}
+
+/**
+ * Resolve a raw user-code token against the corpus: direct corpus-key lookup
+ * (trimmed `raw` as the key, never lossy), then the category's resolver —
+ * corpus-aware parsing such as `option`'s `no_`-stripping and `-J`/`+J`
+ * flags, or redirections decomposed into group-op + tail; most categories
+ * just normalize + `Map.has`.
  *
- * Dispatches through a per-category resolver table; each category may apply
- * corpus-aware parsing (`option` handles `no_`-stripping and `-J`/`+J`
- * flags; redirections decompose group-op + tail; most others normalize +
- * `Map.has`).
+ * Direct precedence is load-bearing for template-key categories, where the
+ * literal key and a live token resolved through templates must not collide:
+ * `job_spec` `%number` vs `%5 → %number`, `history_expn` `!n` vs `!42`,
+ * `special_function` `TRAPZERR` vs `TRAPINT → TRAPNAL`. Non-template
+ * categories miss the direct step and resolve (`AUTO_CD` → `autocd`).
  *
- * Identity only — lossy bits surface via `resolverFeedback`. The sole public
- * brand-boundary crossing for untrusted raw strings; the other legitimate
- * routes to a `DocRecordId` are `mkRecordId(cat, record.id)` from a
- * corpus-iterated record, or internal iteration inside zsh-core.
+ * The sole public brand-boundary crossing for untrusted raw strings; the
+ * other legitimate routes to a `DocRecordId` are `mkRecordId(cat, record.id)`
+ * from a corpus-iterated record, or internal iteration inside zsh-core.
  */
 export function resolve<K extends DocCategory>(
   corpus: DocCorpus,
   cat: K,
   raw: string,
-): DocRecordIdOf<K> | undefined {
-  const id = resolvers[cat](corpus, raw)
-  return id === undefined ? undefined : mkRecordId(cat, id)
-}
-
-/**
- * Direct corpus-key lookup with resolver fallback. Direct precedence is
- * load-bearing for template-key categories (`job_spec`, `history_expn`,
- * `param_expn`, `special_function`). See DESIGN.md §"`lookupRaw`".
- */
-export function lookupRaw<K extends DocCategory>(
-  corpus: DocCorpus,
-  cat: K,
-  raw: string,
-): DocRecordIdOf<K> | undefined {
-  const id = raw.trim() as Documented<K>
-  if (id && hasId(corpus, cat, id)) return mkRecordId(cat, id)
-  return resolve(corpus, cat, raw)
+): ResolvedHit<K> | undefined {
+  const key = raw.trim() as Documented<K>
+  if (key && hasId(corpus, cat, key)) return mkRecordId(cat, key)
+  const hit = resolvers[cat](corpus, raw)
+  if (!hit) return undefined
+  const id = mkRecordId(cat, hit.id)
+  return hit.feedback ? { ...id, feedback: hit.feedback } : id
 }
 
 // --- Resolver feedback ------------------------------------------------------
 
 /**
- * Lossy-resolution feedback. Closed kind-tagged union; consumers route
- * programmatically (wording is not API surface).
+ * Lossy-resolution feedback, carried on the `ResolvedHit`. Closed kind-tagged
+ * union; consumers route programmatically (wording is not API surface).
  *
  * - `input-negated`: input denotes the option's off state — `NO_` prefix or
  *   flipped-sign single-letter flag (canonical-form inputs do not carry this).
@@ -502,28 +494,6 @@ export function lookupRaw<K extends DocCategory>(
 export type ResolverFeedback =
   | { readonly kind: "input-negated" }
   | { readonly kind: "subscripted"; readonly subscript: string }
-
-type FeedbackResolver = (
-  corpus: DocCorpus,
-  raw: string,
-) => ResolverFeedback | undefined
-
-function optionFeedback(
-  corpus: DocCorpus,
-  raw: string,
-): ResolverFeedback | undefined {
-  const r = resolveOption(corpus, raw)
-  return r?.negated ? { kind: "input-negated" } : undefined
-}
-
-const noFeedback: FeedbackResolver = () => undefined
-
-// Non-lossy categories fall through to `noFeedback`. This table is the SoT
-// for which categories actually emit feedback.
-const feedbackOverrides: { readonly [K in DocCategory]?: FeedbackResolver } = {
-  option: optionFeedback,
-  special_param: specialParamFeedback,
-}
 
 /** One closed JSON Schema object: the shape of one `ResolverFeedback` kind. */
 export type ResolverFeedbackKindSchema = Readonly<Record<string, unknown>>
@@ -559,18 +529,3 @@ export const resolverFeedbackKindSchemas: ResolverFeedbackKindSchemas = {
  */
 export const resolverFeedbackKinds: readonly ResolverFeedback["kind"][] =
   Object.keys(resolverFeedbackKindSchemas) as ResolverFeedback["kind"][]
-
-/**
- * Lossy-normalization feedback for a raw user-code token. `undefined` when
- * the input did not resolve or resolution was loss-free (canonical form).
- *
- * Parametric over `DocCategory`: consumers stay free of per-category
- * branches.
- */
-export function resolverFeedback<K extends DocCategory>(
-  corpus: DocCorpus,
-  cat: K,
-  raw: string,
-): ResolverFeedback | undefined {
-  return (feedbackOverrides[cat] ?? noFeedback)(corpus, raw)
-}

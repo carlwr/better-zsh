@@ -9,13 +9,26 @@
  */
 
 import { describe, expect, test } from "vitest"
-import { resolve, resolverFeedback } from "../docs/resolver"
-import { docCategories, mkRecordId } from "../docs/taxonomy"
+import { mkDocumented } from "../docs/brands"
+import {
+  type ResolvedHit,
+  type ResolverFeedback,
+  resolve,
+} from "../docs/resolver"
+import { type DocCategory, mkRecordId } from "../docs/taxonomy"
 import { mkOptFlag, type OptFlagAlias, type ZshOption } from "../docs/types"
 import { emptyCorpus, membershipCorpus, mkDocumented_ } from "./id-fns"
 
 const opt = mkDocumented_("option")
-const sp = mkDocumented_("special_param")
+const NEGATED: ResolverFeedback = { kind: "input-negated" }
+
+/** Expected `resolve` answer (`toEqual` treats `feedback: undefined` as absent). */
+const hit = <K extends DocCategory>(
+  cat: K,
+  id: string,
+  feedback?: ResolverFeedback,
+): ResolvedHit<K> => ({ ...mkRecordId(cat, mkDocumented(cat, id)), feedback })
+
 const optCorpus = membershipCorpus("option", ["AUTO_CD", "NOTIFY"])
 
 // Record-shaped option corpus: the flag path reads `flags`, which the
@@ -62,20 +75,20 @@ const sigilCorpus = membershipCorpus("special_param", [
   "compstate",
 ])
 
-describe("resolve(corpus, 'option', raw) — option identity", () => {
-  test.each([
+describe("resolve(corpus, 'option', raw) — identity + input-negated", () => {
+  test.each<[string, string, ResolverFeedback?]>([
     ["AUTO_CD", "autocd"],
     ["auto_cd", "autocd"],
     ["  AUTO_CD  ", "autocd"],
-    ["NO_AUTO_CD", "autocd"],
-    ["noautocd", "autocd"],
+    ["NO_AUTO_CD", "autocd", NEGATED],
+    ["noautocd", "autocd", NEGATED],
     // literal "notify" is in corpus → wins over stripped "tify"
     ["notify", "notify"],
     // literal "nonotify" not in corpus → fallback: stripped "notify"
-    ["NO_NOTIFY", "notify"],
-  ])("%s -> %s", (raw, id) => {
+    ["NO_NOTIFY", "notify", NEGATED],
+  ])("%s -> %s %j", (raw, id, feedback) => {
     expect(resolve(optCorpus, "option", raw)).toEqual(
-      mkRecordId("option", opt(id)),
+      hit("option", id, feedback),
     )
   })
 
@@ -84,49 +97,23 @@ describe("resolve(corpus, 'option', raw) — option identity", () => {
   })
 })
 
-describe("resolverFeedback(corpus, 'option', raw) — input-negated", () => {
-  test.each(["NO_AUTO_CD", "noautocd", "NO_NOTIFY"])(
-    "%s → input-negated",
-    raw => {
-      expect(resolverFeedback(optCorpus, "option", raw)).toEqual({
-        kind: "input-negated",
-      })
-    },
-  )
-
-  test.each([
-    "AUTO_CD",
-    "auto_cd",
-    "  AUTO_CD  ",
-    "notify",
-    // unresolved inputs emit no feedback
-    "bogus",
-    "no_bogus",
-  ])("%s → undefined", raw => {
-    expect(resolverFeedback(optCorpus, "option", raw)).toBeUndefined()
-  })
-})
-
-describe("resolve / resolverFeedback(corpus, 'option', raw) — short flags", () => {
-  test.each([
+describe("resolve(corpus, 'option', raw) — short flags", () => {
+  test.each<[string, string, ResolverFeedback?]>([
     // on-form: identity, no feedback
-    ["-J", "autocd", false],
-    ["+f", "rcs", false],
-    ["  -J  ", "autocd", false],
+    ["-J", "autocd"],
+    ["+f", "rcs"],
+    ["  -J  ", "autocd"],
     // flipped sign: the option's off state
-    ["+J", "autocd", true],
-    ["-f", "rcs", true],
+    ["+J", "autocd", NEGATED],
+    ["-f", "rcs", NEGATED],
     // zsh-table letter of an option that also has a ksh-only one
-    ["-5", "notify", false],
+    ["-5", "notify"],
     // duplicate zsh letter: first in corpus order, with its own polarity
-    ["-Q", "first", false],
-    ["+Q", "first", true],
-  ] as const)("%s → %s (negated: %s)", (raw, id, negated) => {
+    ["-Q", "first"],
+    ["+Q", "first", NEGATED],
+  ])("%s → %s %j", (raw, id, feedback) => {
     expect(resolve(flagCorpus, "option", raw)).toEqual(
-      mkRecordId("option", opt(id)),
-    )
-    expect(resolverFeedback(flagCorpus, "option", raw)).toEqual(
-      negated ? { kind: "input-negated" } : undefined,
+      hit("option", id, feedback),
     )
   })
 
@@ -145,37 +132,27 @@ describe("resolve / resolverFeedback(corpus, 'option', raw) — short flags", ()
     "J",
   ])("%s → undefined", raw => {
     expect(resolve(flagCorpus, "option", raw)).toBeUndefined()
-    expect(resolverFeedback(flagCorpus, "option", raw)).toBeUndefined()
   })
 
   // Literal and `no_`-stripped forms are tried before the flag path (no input
   // has both shapes, so this pins that they still work in a flag corpus).
   test("literal and no_-stripped forms still resolve", () => {
-    expect(resolve(flagCorpus, "option", "X")).toEqual(
-      mkRecordId("option", opt("X")),
-    )
+    expect(resolve(flagCorpus, "option", "X")).toEqual(hit("option", "X"))
     expect(resolve(flagCorpus, "option", "NO_X")).toEqual(
-      mkRecordId("option", opt("X")),
+      hit("option", "X", NEGATED),
     )
-    expect(resolverFeedback(flagCorpus, "option", "NO_X")).toEqual({
-      kind: "input-negated",
-    })
   })
 })
 
-describe("resolverFeedback(corpus, 'special_param', raw) — subscripted", () => {
+describe("resolve(corpus, 'special_param', raw) — subscripted", () => {
   test.each([
     ["compstate[context]", "context"],
     ["pipestatus[1]", "1"],
     ["compstate[a.b]", "a.b"],
   ])("%s → subscript %j", (raw, subscript) => {
-    expect(resolverFeedback(spCorpus, "special_param", raw)).toEqual({
-      kind: "subscripted",
-      subscript,
-    })
     const parent = raw.slice(0, raw.indexOf("["))
     expect(resolve(spCorpus, "special_param", raw)).toEqual(
-      mkRecordId("special_param", sp(parent)),
+      hit("special_param", parent, { kind: "subscripted", subscript }),
     )
   })
 
@@ -189,8 +166,8 @@ describe("resolverFeedback(corpus, 'special_param', raw) — subscripted", () =>
     "unknown[x]",
     // not a subscripted shape
     "anything",
-  ])("%s → undefined", raw => {
-    expect(resolverFeedback(spCorpus, "special_param", raw)).toBeUndefined()
+  ])("%s → no feedback", raw => {
+    expect(resolve(spCorpus, "special_param", raw)?.feedback).toBeUndefined()
   })
 })
 
@@ -206,17 +183,19 @@ describe("resolve(corpus, 'special_param', raw) — $/${…} sigil strip", () =>
     ["  $PATH  ", "PATH"],
   ])("%s -> %s", (raw, id) => {
     expect(resolve(sigilCorpus, "special_param", raw)).toEqual(
-      mkRecordId("special_param", sp(id)),
+      hit("special_param", id),
     )
   })
 
   test("sigiled subscript strips both sigil and `[...]`, with feedback", () => {
     expect(
       resolve(sigilCorpus, "special_param", "$compstate[context]"),
-    ).toEqual(mkRecordId("special_param", sp("compstate")))
-    expect(
-      resolverFeedback(sigilCorpus, "special_param", "$compstate[context]"),
-    ).toEqual({ kind: "subscripted", subscript: "context" })
+    ).toEqual(
+      hit("special_param", "compstate", {
+        kind: "subscripted",
+        subscript: "context",
+      }),
+    )
   })
 
   test.each([
@@ -228,20 +207,5 @@ describe("resolve(corpus, 'special_param', raw) — $/${…} sigil strip", () =>
     "${bogus}",
   ])("%s → undefined", raw => {
     expect(resolve(sigilCorpus, "special_param", raw)).toBeUndefined()
-  })
-})
-
-// Structural invariant — feedback emits only when resolve succeeds (lossy
-// success). Catches a future feedback override firing for unresolved input,
-// without enumerating the feedback-emitting category set.
-describe("resolverFeedback — only on resolve success", () => {
-  const RAWS = ["", "anything", "NO_bogus", "x[y]"]
-  test.each(docCategories)("%s: undefined when resolve is undefined", cat => {
-    for (const corpus of [optCorpus, spCorpus]) {
-      for (const raw of RAWS) {
-        if (resolve(corpus, cat, raw) !== undefined) continue
-        expect(resolverFeedback(corpus, cat, raw)).toBeUndefined()
-      }
-    }
   })
 })

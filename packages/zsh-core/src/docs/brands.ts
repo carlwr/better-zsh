@@ -8,7 +8,8 @@ import type { Documented } from "./types.ts"
 // are listed as overrides. `option` normalizes case and strips underscores,
 // but does NOT strip `no_` prefixes — negation is a corpus-aware parse
 // concern (the "NOTIFY" vs "NO_NOTIFY" ambiguity can only be resolved against
-// the actual corpus) and lives in the option resolver / `resolverFeedback`.
+// the actual corpus) and lives in the option resolver, which reports it as
+// `input-negated` feedback.
 const normOverrides: {
   readonly [K in DocCategory]?: (s: string) => string
 } = {

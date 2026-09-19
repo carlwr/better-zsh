@@ -4,7 +4,7 @@ import type {
   ResolverFixtureCases,
   ResolverFixtureJson,
 } from "../src/docs/json-types.ts"
-import { lookupRaw, resolverFeedback } from "../src/docs/resolver.ts"
+import { resolve } from "../src/docs/resolver.ts"
 import {
   type DocCategory,
   type DocRecordMap,
@@ -306,11 +306,8 @@ function caseFor(
       `${cat}: input ${JSON.stringify(input)} is not printable ASCII`,
     )
   }
-  return {
-    input,
-    id: lookupRaw(corpus, cat, input)?.id ?? null,
-    feedback: resolverFeedback(corpus, cat, input) ?? null,
-  }
+  const hit = resolve(corpus, cat, input)
+  return { input, id: hit?.id ?? null, feedback: hit?.feedback ?? null }
 }
 
 function casesFor(corpus: DocCorpus, cat: DocCategory): ResolverFixtureCases {

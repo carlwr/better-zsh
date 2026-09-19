@@ -33,16 +33,15 @@ import { loadCorpus } from "jsr:@carlwr/zsh-core"
 
 ```ts
 import { loadCorpus } from "@carlwr/zsh-core"
-import { resolverFeedback, resolve } from "@carlwr/zsh-core/resolver"
+import { resolve } from "@carlwr/zsh-core/resolver"
 import { renderDoc } from "@carlwr/zsh-core/render"
 
 const corpus = loadCorpus()
-const recordId = resolve(corpus, "option", "NO_AUTO_CD")
-if (recordId) {
-  console.log(recordId.id)                               // → autocd
-  console.log(resolverFeedback(corpus, "option", "NO_AUTO_CD"))
-                                                         // → { kind: "input-negated" }
-  console.log(renderDoc(corpus, recordId))
+const hit = resolve(corpus, "option", "NO_AUTO_CD")
+if (hit) {
+  console.log(hit.id)                // → autocd
+  console.log(hit.feedback)          // → { kind: "input-negated" }
+  console.log(renderDoc(corpus, hit))
 }
 ```
 

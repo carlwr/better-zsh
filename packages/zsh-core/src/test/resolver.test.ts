@@ -1,32 +1,38 @@
 import { describe, expect, test } from "vitest"
 import { mkDocumented } from "../docs/brands"
 import { loadCorpus } from "../docs/corpus"
-import { lookupRaw, resolve, resolverFeedback } from "../docs/resolver"
+import { type ResolverFeedback, resolve } from "../docs/resolver"
 import { type DocCategory, docCategories, mkRecordId } from "../docs/taxonomy"
 
 const corpus = loadCorpus()
 
-// Per-cat helpers: `.hit(raw, id)` asserts resolve; `.miss(raw)` asserts unresolved.
+// Per-cat helpers: `.hit(raw, id, feedback?)` asserts the resolved hit;
+// `.miss(raw)` asserts unresolved.
 function cases<K extends DocCategory>(cat: K) {
   return {
-    hit: (raw: string, id: string) =>
-      expect(resolve(corpus, cat, raw)).toEqual(
-        mkRecordId(cat, mkDocumented(cat, id)),
-      ),
+    hit: (raw: string, id: string, feedback?: ResolverFeedback) =>
+      expect(resolve(corpus, cat, raw)).toEqual({
+        ...mkRecordId(cat, mkDocumented(cat, id)),
+        feedback,
+      }),
     miss: (raw: string) => expect(resolve(corpus, cat, raw)).toBeUndefined(),
   }
 }
 
+const NEGATED: ResolverFeedback = { kind: "input-negated" }
+
 describe("resolveOption (single-letter flags)", () => {
   const option = cases("option")
   // Plain-zsh letter table only: `-X` is LIST_TYPES (MARK_DIRS under sh/ksh),
-  // `+f` is RCS (GLOB under sh/ksh), `-T` is CDABLE_VARS (TRAPS_ASYNC).
+  // `+f` is RCS (GLOB under sh/ksh), `-T` is CDABLE_VARS (TRAPS_ASYNC). A
+  // flipped sign is the option's off state: `input-negated` feedback.
   test.each([
     ["-X", "listtypes"],
     ["+f", "rcs"],
+    ["-f", "rcs", NEGATED],
     ["-T", "cdablevars"],
     ["-e", "errexit"],
-    ["+e", "errexit"],
+    ["+e", "errexit", NEGATED],
     ["-J", "autocd"],
   ])("%s -> %s", option.hit)
 
@@ -39,15 +45,6 @@ describe("resolveOption (single-letter flags)", () => {
     "-ex",
     "set -J",
   ])("%s -> undefined", option.miss)
-
-  test.each([
-    ["-e", undefined],
-    ["+e", { kind: "input-negated" }],
-    ["+f", undefined],
-    ["-f", { kind: "input-negated" }],
-  ])("%s feedback %j", (raw, feedback) => {
-    expect(resolverFeedback(corpus, "option", raw)).toEqual(feedback)
-  })
 })
 
 describe("resolveHistory (event designators)", () => {
@@ -67,21 +64,22 @@ describe("resolveHistory (event designators)", () => {
     ["^old^new^", "!!"],
     // whitespace is trimmed
     ["  !42  ", "!n"],
+    // word-designators / modifiers are documented records: their literal key
+    // hits directly, but no live token resolves to them (misses below)
+    ["0", "0"],
+    ["a", "a"],
+    ["n", "n"],
+    ["h", "h"],
+    ["^", "^"],
+    ["!", "!"],
   ])("%s -> %s", hist.hit)
 
   test.each([
-    // word-designators / modifiers in isolation must NOT resolve
-    "0",
-    "a",
-    "n",
+    // a modifier in its live `:h` form is not a history token
     ":h",
-    "h",
     // caret shorthand needs two `^` and a body before the second
-    "^",
     "^^",
     "^foo",
-    // lone `!` with no body
-    "!",
     // `!!` with extra chars is not a bare designator
     "!!bogus",
     // `!$` is a word-designator, not `!str`
@@ -268,16 +266,16 @@ describe("prompt_escape paired sigs (corpus-wide property)", () => {
   })
 })
 
-describe("lookupRaw round-trip (corpus-wide)", () => {
-  // Every documented id round-trips through `lookupRaw` to itself. Catches
-  // resolvers whose template-key matching shadows the literal id (e.g. a
-  // history `!n` corpus key getting recognized as `!str` instead).
-  test.each(docCategories)("%s ids are stable under lookupRaw", cat => {
+describe("resolve round-trip (corpus-wide)", () => {
+  // Every documented id round-trips through `resolve` to itself — pins the
+  // direct-key step ahead of the resolvers, without which template-key
+  // matching would shadow a literal id (history `!n` recognized as `!str`).
+  test.each(docCategories)("%s ids are stable under resolve", cat => {
     const map = corpus[cat] as ReadonlyMap<string, unknown>
     if (map.size === 0) return
     const mismatched: { id: string; got: string | undefined }[] = []
     for (const id of map.keys()) {
-      const pid = lookupRaw(corpus, cat, id)
+      const pid = resolve(corpus, cat, id)
       if (pid?.id !== id)
         mismatched.push({ id, got: pid?.id as string | undefined })
     }
@@ -297,7 +295,7 @@ describe("lookupRaw round-trip (corpus-wide)", () => {
       for (const [id, rec] of map) {
         if (!rec.sig || rec.sig === id) continue
         n++
-        const pid = lookupRaw(corpus, cat, rec.sig)
+        const pid = resolve(corpus, cat, rec.sig)
         if (pid?.id !== id)
           mismatched.push({
             sig: rec.sig,

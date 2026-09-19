@@ -157,11 +157,11 @@ Per-category resolver table:
 Authoritative homes:
 
 - contract + identity/feedback split — PRINCIPLES.md
-- JSDoc on `ResolverFeedback` / `resolverFeedback`, `zsh-core/docs/resolver.ts`:
+- JSDoc on `ResolverFeedback` / `ResolvedHit`, `zsh-core/docs/resolver.ts`:
   - kinds
-  - dispatch table
+  - where feedback rides (the `resolve` hit)
   - runtime list `resolverFeedbackKinds`
-- "why parametric, not per-category APIs" — module-header block, same file
+- "why one parametric entry, not per-category APIs" — module-header block, same file
 
 ---
 
@@ -346,18 +346,9 @@ The mirror is accepted because it is bounded — it changes only with categories
 - resolvers as data: a table or pattern format expressive enough for the template categories is a custom DSL, and specifying, testing and tooling one costs more than a bounded dual implementation
 - zsh-core in Rust: Yodl parsing and the data model are substantial, the extension needs TS, the package's audience (IDE- and agent-adjacent tooling) is TS-centric, and the deliverable to Rust is already data
 
-## `lookupRaw`: direct ∥ resolver, direct preferred
+## `resolve`: direct ∥ resolver, direct preferred
 
-`lookupRaw` (mechanism in JSDoc, `zsh-core/resolver`) is the single sanctioned way to combine direct corpus-key lookup with resolver fallback. **Do not** run both paths for the same query; **do not** re-implement the rule in consumers.
-
-Direct precedence is load-bearing for template-key categories — the literal corpus key and the live token resolved through templates must not collide:
-
-- `job_spec` — literal `%number` vs resolver's `%5 → %number`
-- `history_expn` — `!n` vs `!42`
-- `param_expn`
-- `special_function` — direct hit `TRAPZERR` vs template `TRAPNAL`
-
-Non-template categories miss direct lookup then resolve (`AUTO_CD` → `autocd`).
+`resolve` (`zsh-core/resolver`) is the one entry: direct corpus-key lookup, then the category's resolver, one hit carrying identity and feedback. Its JSDoc holds the mechanism and why direct precedence is load-bearing for template-key categories (`!n` vs `!42 → !n`). **Do not** run the paths separately for the same query; **do not** re-implement the rule in consumers.
 
 ### Resolver input is wider than the id set
 
