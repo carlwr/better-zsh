@@ -37,7 +37,7 @@ module(zftp)(zsh/zftp)
 enditem()`
     const docs = parseBuiltins(yo)
     expect(docs.map(d => d.name)).toEqual([bi("bye"), bi("zftp")])
-    expect(docs[0]?.aliasOf).toBe(bi("exit"))
+    expect(docs[0]?.aliasOf).toEqual({ target: bi("exit") })
     expect(docs[1]?.module).toBe("zsh/zftp")
   })
 
@@ -97,6 +97,25 @@ enditem()`
 
     test("descriptions strip index macros and raw yodl", () => {
       for (const doc of docs) expectNoYodlLeaks(doc.desc)
+    })
+
+    test.each([
+      ["history", "fc", ["-l"]],
+      ["readonly", "typeset", ["-r"]],
+      ["local", "typeset", undefined],
+      ["source", ".", undefined],
+    ])("alias %s → %s %j", (name, target, args) => {
+      expect(byName.get(bi(name))?.aliasOf).toEqual({
+        target: bi(target),
+        ...(args && { args }),
+      })
+    })
+
+    test("every alias target is a builtin", () => {
+      for (const doc of docs) {
+        if (doc.aliasOf)
+          expect(names.has(doc.aliasOf.target), doc.name).toBe(true)
+      }
     })
   })
 })

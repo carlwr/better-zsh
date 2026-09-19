@@ -649,7 +649,10 @@ export function mdBuiltin(doc: BuiltinDoc): string {
   return docBlock(
     ...headBlock(headFor("builtin", doc)),
     renderFlagGroupBody(doc.desc, doc.flagGroups, doc.outro),
-    ...maybe(doc.aliasOf, a => `_Alias of:_ ${bt(a)}`),
+    ...maybe(
+      doc.aliasOf,
+      a => `_Alias of:_ ${bt([a.target, ...(a.args ?? [])].join(" "))}`,
+    ),
     ...when(
       doc.deprecated === true,
       "_Deprecated:_ not recommended for new code",

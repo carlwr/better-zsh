@@ -196,7 +196,15 @@ export interface BuiltinDoc {
    */
   readonly desc: string
   readonly module?: ModuleName
-  readonly aliasOf?: Documented<"builtin">
+  /**
+   * Present on `Same as X` / `alias()` entries: the builtin this one stands
+   * for, plus the fixed arguments of the equivalent call (`history` is
+   * `fc -l`).
+   */
+  readonly aliasOf?: {
+    readonly target: Documented<"builtin">
+    readonly args?: NonEmpty<string>
+  }
   /** Upstream zsh recommends against new use. */
   readonly deprecated?: boolean
   /** Per-group flags when upstream documents nested item lists inside the body. */

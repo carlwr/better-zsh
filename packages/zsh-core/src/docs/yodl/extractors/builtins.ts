@@ -1,4 +1,4 @@
-import { nonEmpty } from "@carlwr/typescript-extra"
+import { isNonEmpty, nonEmpty } from "@carlwr/typescript-extra"
 import { mkDocumented } from "../../brands.ts"
 import { type ModuleName, parseModuleName } from "../../taxonomy.ts"
 import type { BuiltinDoc } from "../../types.ts"
@@ -137,7 +137,7 @@ function macroDocs(nodes: YNodeSeq): BuiltinDoc[] {
         name: mkDocumented("builtin", name),
         synopsis: [name],
         desc: `Same as \`${target}\`.`,
-        aliasOf: mkDocumented("builtin", target),
+        aliasOf: aliasOf(target),
       })
       continue
     }
@@ -241,11 +241,20 @@ const BUILTIN_MODULE_TAGS: Readonly<Partial<Record<string, BuiltinTag>>> = {
   unlimit: { module: "zsh/rlimits" },
 }
 
-function extractAlias(body: YNodeSeq) {
-  // Match the name in `Same as X' / `Same as `tt(X)' ` upstream forms.
-  const m = stripYodl(body, "code").match(/\bSame as (?:`([^']*)'|([^.\s]+))/)
-  const name = m?.[1] ?? m?.[2]
-  return name ? mkDocumented("builtin", name) : undefined
+/** `target [args...]` — the equivalent call — as a `BuiltinDoc.aliasOf`. */
+function aliasOf(call: string): BuiltinDoc["aliasOf"] {
+  const [target = "", ...args] = call.split(/\s+/)
+  return {
+    target: mkDocumented("builtin", target),
+    ...(isNonEmpty(args) && { args }),
+  }
+}
+
+function extractAlias(body: YNodeSeq): BuiltinDoc["aliasOf"] {
+  // The call in `Same as X, ...' / `Same as X.' / `Same as `X', ...' forms.
+  const m = stripYodl(body, "code").match(/\bSame as (?:`([^']*)'|([^,.]+))/)
+  const call = m?.[1] ?? m?.[2]?.trim()
+  return call ? aliasOf(call) : undefined
 }
 
 function extractModule(body: YNodeSeq): ModuleName | undefined {
