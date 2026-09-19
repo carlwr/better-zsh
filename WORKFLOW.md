@@ -97,6 +97,8 @@ Record "why" when it helps future work. Prefer the narrowest discoverable home:
 
 Close-call local decisions where neither option was strongly preferred: pin as a short source comment ("considered X; picked Y because …"). Reserve for genuinely local calls — wide-context decisions rot as surrounding code moves.
 
+A foundational choice with a plausible alternative records its reason and names the alternative — the choice everyone understood at the time is the one re-litigated later.
+
 ## New feature ideation
 
 Judge ideas on:

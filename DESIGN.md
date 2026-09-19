@@ -282,9 +282,7 @@ Per doc category, `subKindOf` returns `undefined` for every record or a non-empt
 
 Vendored `.yo` is consumed three ways:
 
-- **`loadCorpus()`** — runtime parse into `DocCorpus`; lazy per category, cached (its JSDoc).
-  - the caching rule: zsh-core memoizes where the key is its own immutable data (files, categories); consumers cache where the key is theirs (document versions, provider lifetimes)
-  - rendering is pure and cheap — the whole corpus renders in milliseconds — and stays unmemoized
+- **`loadCorpus()`** — runtime parse into `DocCorpus`; lazy per category, cached (its JSDoc). Rendering measured cheap for the whole corpus, so it stays unmemoized — PRINCIPLES.md §"Cost and laziness".
 - **Pre-parsed JSON** — same records; markdown bodies pre-rendered at build time. Distribution: `PACKAGING.md`.
   - _schema:_ one bundle, generated from the TS types plus the corpus (`packages/zsh-core/scripts/build-schema.ts`)
     - consumers key on `#/$defs/<DocCategory>`, never on TS type names
@@ -296,12 +294,11 @@ Per-category renderers are internal; public entry is `renderDoc`. The JSON stays
 
 ### Why the library parses at runtime
 
-The TS API is the root; the JSON is a derived view of it, for consumers that cannot run the TypeScript — renderer and resolvers included (e.g. Rust `include_bytes!`). Library consumers parse the vendored Yodl at runtime; loading a pre-parsed corpus instead was considered and rejected:
+The TS API is the root; the JSON is a derived view of it, for consumers that cannot run the TypeScript — renderer and resolvers included (e.g. Rust `include_bytes!`). Library consumers parse the vendored Yodl at runtime; loading a pre-parsed corpus instead was considered and rejected — the instance of PRINCIPLES.md §"Cross-project structure" (derived data, committed files) and §"Cost and laziness":
 
-- the package depends on committed source only — what a source-form registry (JSR) publishes and what an unbuilt checkout (tests, scripts) runs
-  - a generated corpus would need a parse fallback: two data paths inside zsh-core
-- the projection is a seam: the JSON may lag, omit or reshape without touching the runtime API; the API's fidelity is never capped by the JSON's
-- parse cost per process is a laziness concern, not a distribution one
+- the vendored `.yo` is committed; a generated corpus is not — JSR publishes only the former, and tests and scripts run on an unbuilt checkout, so the runtime would need a parse fallback
+- the projection is a seam: the JSON may lag, omit or reshape without touching the runtime API
+- parse cost is met by per-category laziness, not by shipping a different form
 
 Parser and renderer are layered: the parser may capture structure the renderer chooses to flatten or compose. Rendered markdown is the byte-equal contract surface; record-shape changes (new typed fields) stay below it until they cross into the wire schema. Records carry prose twice — typed fields for routing, `_mdBody` for reading — roughly a third to a half of the payload; accepted. Cross-cutting "records are self-contained" framing: PRINCIPLES.md.
 

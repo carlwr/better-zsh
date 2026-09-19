@@ -217,6 +217,8 @@ The arrows and their invariants: `REPO-SHAPE.md`. The principles behind them:
 - **Language crossings carry data.** A TS→Rust edge carrying data costs a schema and a version pin; carrying behaviour it costs a mirror, a parity mechanism and typically a binary as the other side's oracle. Keep behaviour crossings to what cannot be data.
 - **A mirror is owned by its dependent**, tested against a fixture the source ships (the resolvers: `DESIGN.md` §"TS ↔ Rust mirrors"). A binary spawned as an oracle is the shape to avoid.
 - **Leaves have no consumers.** A package nothing depends on needs no freshness oracle and no fingerprint.
+- **Derived data stays downstream.** Data a producer emits for consumers that cannot run its code is a projection; the producer's own runtime never reads it back — that caps the API's fidelity at the projection's and adds a second data path.
+- **A runtime reads committed files only**, beside its own compiled code — what a source-form registry publishes and what an unbuilt checkout has.
 
 ## Maintenance posture
 
@@ -224,6 +226,13 @@ The arrows and their invariants: `REPO-SHAPE.md`. The principles behind them:
 - Post-release maintenance must be cheap. The expensive thing is re-understanding a non-natural organization; an easy-to-understand overall structure outranks preserving effort already spent.
 - `zsh-core` is the future-proof part; `zshref` is the main surface; the SPA is an NLP retrieval showcase — NLP inside the CLI is not wanted.
 - Build outputs are never committed; the tree is committable in any build state.
+
+## Cost and laziness
+
+- **Laziness before distribution.** Fix a cost inside the existing shape — lazy evaluation, memoization — before changing what ships or how it loads.
+- **Memoize on own keys; cache on the consumer's.** A library memoizes where the key is its own immutable data; caching keyed by consumer state (document versions, provider lifetimes) is the consumer's.
+- **Laziness is not an API.** Invisible by construction — types and access sites unchanged; no warm-up, clear or statistics entry points.
+- **Measure first.** A pure function that is cheap in total stays plain; memoizing it buys a promise, not time.
 
 ---
 
