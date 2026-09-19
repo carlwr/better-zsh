@@ -39,7 +39,7 @@ Pre-release alphas are not yet listed on either registry.
 
 ## Design posture
 
-- **Static, not environment-aware.** Hovers, completions, and reference content come from a bundled parsed zsh reference, not from probing the host's installed zsh. Same answer on every machine.
+- **Static, not environment-aware.** Hovers, completions, and reference content come from a bundled zsh reference, not from probing the host's installed zsh. Same answer on every machine.
 - **Targeted zsh execution only.** The host zsh runs for one thing: `zsh -n` diagnostics. Never for reference content, completions, or navigation.
 - **Not a tree-sitter replacement.** A full custom zsh grammar is out of scope; semantic tokens layer on the existing sh/bash TM grammar where zsh-specific accuracy is worth the cost.
 

@@ -11,7 +11,7 @@ Library-first: the VS Code extension, the web SPA, and the Rust crate (CLI + MCP
 - **Tiny root** — `loadCorpus`, `DocCorpus`, `DocMap`.
 - **Focused subpaths** — `./types`, `./analysis`, `./resolver`, `./taxonomy`, `./render`, `./assets`, `./meta`, `./json`.
 - **Orthogonal primitives** — brands/types, raw-to-doc resolution, markdown rendering, and static analysis stay separate.
-- **Release assets** — per-category JSON record files plus a versioned index, one JSON Schema bundle (each record file validates against its `#/$defs/<category>`), and a resolver conformance fixture for resolver mirrors; attached to the GitHub release tag for consumers that want the corpus without the runtime.
+- **Release assets** — per-category JSON record files plus a versioned index, one JSON Schema bundle (each record file validates against its `#/$defs/<category>`), and a resolver conformance fixture for resolver mirrors; attached to the GitHub release tag for consumers outside TypeScript.
 
 Public reading surface: `dist/types/*.d.ts` after `pnpm build`.
 

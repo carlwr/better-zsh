@@ -1,7 +1,7 @@
 // The corpus as JSON consumers see it: zsh-core's projection of every record
 // (rendered markdown body and identity fields added), per category in
-// `docCategories` order. Cached per corpus — rendering is the costly part,
-// and the retrieval texts are derived more than once (build, then validate).
+// `docCategories` order. Cached per corpus: the retrieval texts are derived
+// from it more than once (build, then validate).
 
 import { cachedUnary } from "@carlwr/typescript-extra"
 import type { DocCorpus } from "@carlwr/zsh-core"

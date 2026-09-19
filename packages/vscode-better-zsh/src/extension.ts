@@ -10,7 +10,7 @@ export function activate(ctx: vscode.ExtensionContext) {
   log(
     `better-zsh ${extVersion} | zsh-core ${PKG_VERSION} | ${ZSH_UPSTREAM.tag} (${ZSH_UPSTREAM.commit.slice(0, 7)})`,
   )
-  // Reference knowledge is bundled and ready at once; the host zsh is only
-  // spawned for what needs a zsh: the syntax check.
+  // Reference knowledge is bundled, each doc category parsed on first use;
+  // the host zsh is only spawned for what needs a zsh: the syntax check.
   contribute(ctx, loadCorpus())
 }

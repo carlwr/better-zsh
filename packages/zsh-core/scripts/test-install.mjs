@@ -63,6 +63,9 @@ import { resolve } from "@carlwr/zsh-core/resolver"
 import { mkDocumented } from "@carlwr/zsh-core/types"
 
 const corpus = loadCorpus()
+// Categories parse on first access: touch each so every vendored file is
+// parsed from the installed layout.
+for (const cat of Object.keys(corpus)) corpus[cat]
 const recordId = resolve(corpus, "option", "AUTO_CD")
 if (!recordId || recordId.category !== "option") {
   throw new Error("resolve('option','AUTO_CD') failed: " + JSON.stringify(recordId))

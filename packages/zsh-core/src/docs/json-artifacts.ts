@@ -75,7 +75,7 @@ export function jsonRecordTexts(
 /**
  * Content identity of `corpus`: equals `JsonIndex.dataHash` of its JSON
  * build. Hashes the record file names plus their formatted record texts —
- * renders every record (tens of milliseconds).
+ * renders every record (cheap, not free).
  */
 export function corpusDataHash(corpus: DocCorpus): string {
   return hashRecordFiles(jsonRecordTexts(corpus))
