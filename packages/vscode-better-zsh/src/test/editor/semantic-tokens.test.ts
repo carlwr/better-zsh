@@ -1,13 +1,43 @@
+import type { DocCorpus } from "@carlwr/zsh-core"
+import {
+  type BuiltinDoc,
+  mkDocumented,
+  type ReservedWordDoc,
+} from "@carlwr/zsh-core/types"
 import fc from "fast-check"
 import { describe, expect, test } from "vitest"
 import { SemanticTokensProvider } from "../../editor/semantic-tokens"
 import { tokenModifiers, tokenTypes } from "../../manifest/semantic-tokens"
-import { lineDoc } from "../test-util"
+import { by, emptyCorpus, lineDoc } from "../test-util"
 import type { RawToken } from "../vscode-stub"
 
 const KEYWORD = tokenTypes.indexOf("keyword")
 const FUNCTION = tokenTypes.indexOf("function")
 const DEFAULT_LIBRARY = 1 << tokenModifiers.indexOf("defaultLibrary")
+
+/** The provider reads two name sets; a corpus holding just those. */
+function provider(
+  builtins: readonly string[],
+  reservedWords: readonly string[],
+) {
+  const b = (name: string): BuiltinDoc => ({
+    name: mkDocumented("builtin", name),
+    synopsis: [name],
+    desc: "",
+  })
+  const rw = (name: string): ReservedWordDoc => ({
+    name: mkDocumented("reserved_word", name),
+    pos: "command",
+    sig: name,
+    section: "",
+  })
+  const corpus: DocCorpus = {
+    ...emptyCorpus(),
+    builtin: by("name", builtins.map(b)),
+    reserved_word: by("name", reservedWords.map(rw)),
+  }
+  return new SemanticTokensProvider(corpus)
+}
 
 function tokens(
   text: string,
@@ -15,10 +45,9 @@ function tokens(
   reservedWords: readonly string[] = [],
 ) {
   const lines = text.split("\n")
-  const raw = new SemanticTokensProvider(
-    builtins,
-    reservedWords,
-  ).provideDocumentSemanticTokens(lineDoc(text)).data as unknown as RawToken[]
+  const raw = provider(builtins, reservedWords).provideDocumentSemanticTokens(
+    lineDoc(text),
+  ).data as unknown as RawToken[]
   return raw.map(t => ({
     word: lines[t.line]?.slice(t.start, t.start + t.length) ?? "",
     type: t.type,
@@ -97,7 +126,7 @@ describe("SemanticTokensProvider", () => {
     fc.assert(
       fc.property(fc.array(line, { minLength: 1, maxLength: 5 }), lines => {
         const doc = lineDoc(lines.join("\n"))
-        const raw = new SemanticTokensProvider(
+        const raw = provider(
           ["echo", "read"],
           ["declare"],
         ).provideDocumentSemanticTokens(doc).data as unknown as RawToken[]

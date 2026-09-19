@@ -1,7 +1,7 @@
+import { cached } from "@carlwr/typescript-extra"
 import type { DocCorpus } from "@carlwr/zsh-core"
 import { headFor, recordTitle } from "@carlwr/zsh-core/render"
 import type { DocCategory, DocRecordMap } from "@carlwr/zsh-core/taxonomy"
-import type { CondOpDoc, Documented } from "@carlwr/zsh-core/types"
 import * as vscode from "vscode"
 import { contextAt } from "../document/facts"
 import { funcDecls } from "../document/funcs"
@@ -26,30 +26,37 @@ const wordCategories = [
 type WordCategory = (typeof wordCategories)[number][0]
 
 export class CompletionProvider implements vscode.CompletionItemProvider {
-  private general: vscode.CompletionItem[]
-  private generalLabels: ReadonlySet<string>
-  private options: readonly Documented<"option">[]
-  private optionDocs: ReadonlyMap<Documented<"option">, vscode.MarkdownString>
-  private conditionalOps: readonly CondOpDoc[]
-
-  constructor(corpus: DocCorpus) {
-    this.general = wordCategories.flatMap(([cat, kind]) =>
-      [...corpus[cat].values()]
+  // Each table is built by the first request that reads it, never twice: a
+  // completion in one context pays for neither the categories nor the
+  // rendered docs of another.
+  private general = cached(() =>
+    wordCategories.flatMap(([cat, kind]) =>
+      [...this.corpus[cat].values()]
         .filter(doc => WORD_EXACT.test(doc.name))
-        .map(doc => mkCompletionItem(corpus, cat, doc, kind)),
-    )
-    this.generalLabels = new Set(
-      wordCategories.flatMap(([cat]) => [...corpus[cat].keys()]),
-    )
-    this.options = [...corpus.option.keys()]
-    this.optionDocs = new Map(
-      [...corpus.option.values()].map(doc => [
-        doc.name,
-        recordMarkdown(corpus, "option", doc),
-      ]),
-    )
-    this.conditionalOps = [...corpus.conditional_op.values()]
-  }
+        .map(doc => mkCompletionItem(this.corpus, cat, doc, kind)),
+    ),
+  )
+  private generalLabels = cached(
+    () =>
+      new Set<string>(
+        wordCategories.flatMap(([cat]) => [...this.corpus[cat].keys()]),
+      ),
+  )
+  private options = cached(() => [...this.corpus.option.keys()])
+  private optionDocs = cached(
+    () =>
+      new Map(
+        [...this.corpus.option.values()].map(doc => [
+          doc.name,
+          recordMarkdown(this.corpus, "option", doc),
+        ]),
+      ),
+  )
+  private conditionalOps = cached(() => [
+    ...this.corpus.conditional_op.values(),
+  ])
+
+  constructor(private corpus: DocCorpus) {}
 
   provideCompletionItems(doc: vscode.TextDocument, pos: vscode.Position) {
     switch (contextAt(doc, pos)) {
@@ -66,7 +73,8 @@ export class CompletionProvider implements vscode.CompletionItemProvider {
   // and its parameters; corpus words win a name clash.
   private generalCompletions(doc: vscode.TextDocument, pos: vscode.Position) {
     const cur = wordTextAt(doc, pos)
-    const own = (name: string) => name !== cur && !this.generalLabels.has(name)
+    const labels = this.generalLabels()
+    const own = (name: string) => name !== cur && !labels.has(name)
     const funcs = funcDecls(doc)
       .filter(d => own(d.name))
       .map(d => {
@@ -77,17 +85,18 @@ export class CompletionProvider implements vscode.CompletionItemProvider {
     const params = paramNames(doc)
       .filter(own)
       .map(name => new vscode.CompletionItem(name, Kind.Variable))
-    return [...funcs, ...params, ...this.general.filter(b => b.label !== cur)]
+    return [...funcs, ...params, ...this.general().filter(b => b.label !== cur)]
   }
 
   private optionCompletions(doc: vscode.TextDocument, pos: vscode.Position) {
     const typed = wordTextAt(doc, pos)
-    const items = matchOptions(this.options, typed).map(m => {
+    const optionDocs = this.optionDocs()
+    const items = matchOptions(this.options(), typed).map(m => {
       const item = new vscode.CompletionItem(m.label, Kind.Property)
       // Matched here modulo case and underscores; VS Code's own filter must
       // not reject the label against what was typed.
       item.filterText = typed || m.label
-      item.documentation = this.optionDocs.get(m.canonical)
+      item.documentation = optionDocs.get(m.canonical)
       return item
     })
     return new vscode.CompletionList(items, true)
@@ -96,7 +105,7 @@ export class CompletionProvider implements vscode.CompletionItemProvider {
   private condCompletions() {
     // `CompletionItemKind.Operator`'s codicon is a stacked `%/x` glyph; `Keyword`'s
     // icon reads cleaner and is semantically close (test/cond keywords).
-    const items = this.conditionalOps.map(cop => {
+    const items = this.conditionalOps().map(cop => {
       const item = new vscode.CompletionItem(cop.op, Kind.Keyword)
       item.detail = cop.desc
       item.documentation = new vscode.MarkdownString(

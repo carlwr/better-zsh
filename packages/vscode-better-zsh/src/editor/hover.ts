@@ -1,3 +1,4 @@
+import { cached } from "@carlwr/typescript-extra"
 import type { DocCorpus } from "@carlwr/zsh-core"
 import {
   cmdHeadFactsOnLine,
@@ -33,17 +34,16 @@ const PUNCT_PARAM = /[$?@*!#-]/
  */
 
 export class HoverProvider implements vscode.HoverProvider {
-  private corpus: DocCorpus
   // Generic token splitting treats shell delimiters as separators, so
   // conditional operators made entirely of those chars need a cond-only path.
-  private symbolicCondOps: readonly string[]
-
-  constructor(corpus: DocCorpus) {
-    this.corpus = corpus
-    this.symbolicCondOps = [...corpus.conditional_op.keys()]
+  // Built by the first cond hover, never twice.
+  private symbolicCondOps = cached(() =>
+    [...this.corpus.conditional_op.keys()]
       .filter(op => [...op].some(isTokenDelimiter))
-      .sort((a, b) => b.length - a.length)
-  }
+      .sort((a, b) => b.length - a.length),
+  )
+
+  constructor(private corpus: DocCorpus) {}
 
   provideHover(doc: vscode.TextDocument, pos: vscode.Position) {
     const ctx = contextAt(doc, pos)
@@ -69,7 +69,7 @@ export class HoverProvider implements vscode.HoverProvider {
   private condHover(doc: vscode.TextDocument, pos: vscode.Position) {
     const range =
       activeTokenRangeAt(doc, pos) ??
-      symbolicOpRangeAt(doc, pos, this.symbolicCondOps)
+      symbolicOpRangeAt(doc, pos, this.symbolicCondOps())
     if (!range) return
     return this.hoverFor("conditional_op", doc.getText(range), range)
   }

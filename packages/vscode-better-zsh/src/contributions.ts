@@ -57,10 +57,7 @@ export function contribute(ctx: vscode.ExtensionContext, corpus: DocCorpus) {
     ),
     languages.registerDocumentSemanticTokensProvider(
       zsh,
-      new SemanticTokensProvider(
-        corpus.builtin.keys(),
-        corpus.reserved_word.keys(),
-      ),
+      new SemanticTokensProvider(corpus),
       SEMANTIC_LEGEND,
     ),
 

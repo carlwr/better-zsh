@@ -1,3 +1,5 @@
+import { cached } from "@carlwr/typescript-extra"
+import type { DocCorpus } from "@carlwr/zsh-core"
 import { positionAt, type TextSpan } from "@carlwr/zsh-core/analysis"
 import * as vscode from "vscode"
 import { docAnalysis } from "../document/facts"
@@ -25,7 +27,8 @@ export const SEMANTIC_LEGEND = new vscode.SemanticTokensLegend(
 export class SemanticTokensProvider
   implements vscode.DocumentSemanticTokensProvider
 {
-  private builtins: ReadonlySet<string>
+  // Both name sets are built by the first request, never twice.
+  private builtins = cached(() => new Set<string>(this.corpus.builtin.keys()))
   // Painting policy for command-position tokens that are zsh-manual reserved
   // words but which the analyzer treats as ordinary command heads (e.g.
   // `declare`, `local`, `repeat`). The analyzer's keyword set is deliberately
@@ -33,19 +36,17 @@ export class SemanticTokensProvider
   // painting source so the editor renders the manual's full reserved list as
   // keywords. See DESIGN.md §"Reserved word: an enumeration-primary doc
   // category".
-  private reservedWordPainting: ReadonlySet<string>
+  private reservedWordPainting = cached(
+    () => new Set<string>(this.corpus.reserved_word.keys()),
+  )
 
-  constructor(
-    builtinNames: Iterable<string>,
-    reservedWordNames: Iterable<string>,
-  ) {
-    this.builtins = new Set(builtinNames)
-    this.reservedWordPainting = new Set(reservedWordNames)
-  }
+  constructor(private corpus: DocCorpus) {}
 
   provideDocumentSemanticTokens(doc: vscode.TextDocument) {
     const b = new vscode.SemanticTokensBuilder(SEMANTIC_LEGEND)
     const { facts, starts } = docAnalysis(doc)
+    const builtins = this.builtins()
+    const reservedWordPainting = this.reservedWordPainting()
     const push = (
       span: TextSpan,
       type: TokenType,
@@ -67,8 +68,8 @@ export class SemanticTokensProvider
       if (fact.kind !== "cmd-head") continue
       if (fact.text === "[") continue
       if (fact.precmds.includes("command")) continue
-      if (this.reservedWordPainting.has(fact.text)) push(fact.span, "keyword")
-      else if (this.builtins.has(fact.text))
+      if (reservedWordPainting.has(fact.text)) push(fact.span, "keyword")
+      else if (builtins.has(fact.text))
         push(fact.span, "function", "defaultLibrary")
     }
     return b.build()
