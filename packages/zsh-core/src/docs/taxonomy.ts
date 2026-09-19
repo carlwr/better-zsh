@@ -241,33 +241,42 @@ export const recordOf = <P extends DocRecordId>(
     id.id as string,
   )
 
-export const docId: {
-  [K in DocCategory]: (doc: DocRecordMap[K]) => Documented<K>
-} = {
-  option: d => d.name,
-  conditional_op: d => d.op,
-  builtin: d => d.name,
-  precmd_modifier: d => d.name,
-  special_param: d => d.name,
-  complex_command: d => d.name,
-  reserved_word: d => d.name,
-  redirection: d => d.slug,
-  process_subst: d => d.op,
-  param_expn: d => d.sig,
-  subscript_flag: d => d.flag,
-  param_expn_flag: d => d.flag,
-  history_expn: d => d.key,
-  glob_op: d => d.op,
-  glob_flag: d => d.flag,
-  glob_qualifier: d => d.flag,
-  prompt_escape: d => d.key,
-  zle_widget: d => d.name,
-  keymap: d => d.name,
-  job_spec: d => d.key,
-  arith_op: d => d.op,
-  mathfunc: d => d.name,
-  special_function: d => d.name,
-  comp_utility: d => d.name,
+/** A required field of `K`'s record typed as its identity, `Documented<K>`. */
+type IdField<K extends DocCategory> = {
+  [F in keyof DocRecordMap[K]]-?: DocRecordMap[K] extends Record<
+    F,
+    Documented<K>
+  >
+    ? F
+    : never
+}[keyof DocRecordMap[K]]
+
+/** The identity field per category: what `idOf` reads. */
+export const docIdField: { readonly [K in DocCategory]: IdField<K> } = {
+  option: "name",
+  conditional_op: "op",
+  builtin: "name",
+  precmd_modifier: "name",
+  special_param: "name",
+  complex_command: "name",
+  reserved_word: "name",
+  redirection: "slug",
+  process_subst: "op",
+  param_expn: "sig",
+  subscript_flag: "flag",
+  param_expn_flag: "flag",
+  history_expn: "key",
+  glob_op: "op",
+  glob_flag: "flag",
+  glob_qualifier: "flag",
+  prompt_escape: "key",
+  zle_widget: "name",
+  keymap: "name",
+  job_spec: "key",
+  arith_op: "op",
+  mathfunc: "name",
+  special_function: "name",
+  comp_utility: "name",
 }
 
 /**
@@ -328,14 +337,12 @@ export const docSubKind: SubKindFnMap = Object.fromEntries(
   docCategories.map(cat => [cat, subKindOverrides[cat] ?? noSub]),
 ) as SubKindFnMap
 
-/**
- * Parametric `docId[cat](doc)`. Single dispatch-cast site — prefer this over
- * indexing `docId` directly when `cat` is a generic `K`.
- */
+/** A record's identity, `doc[docIdField[cat]]`. Single dispatch-cast site. */
 export const idOf = <K extends DocCategory>(
   cat: K,
   doc: DocRecordMap[K],
-): Documented<K> => (docId[cat] as (d: DocRecordMap[K]) => Documented<K>)(doc)
+): Documented<K> =>
+  doc[docIdField[cat] as keyof DocRecordMap[K]] as Documented<K>
 
 /**
  * Optional typed sub-facet of a doc record; `undefined` when a category has

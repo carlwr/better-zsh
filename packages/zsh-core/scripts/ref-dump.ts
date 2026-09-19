@@ -12,7 +12,7 @@ import {
   type DocRecordMap,
   docCategories,
   docDisplay,
-  docId,
+  idOf,
 } from "../src/docs/taxonomy.ts"
 import type { Documented } from "../src/docs/types.ts"
 import { renderRecord } from "../src/render/md.ts"
@@ -35,7 +35,7 @@ function mkRefDocs<K extends DocCategory>(
 ): RefDocK<K>[] {
   return docs.map(doc => ({
     kind,
-    id: docId[kind](doc),
+    id: idOf(kind, doc),
     heading: docDisplay(kind, doc),
     md: renderRecord(corpus, kind, doc),
   }))

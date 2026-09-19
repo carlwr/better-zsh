@@ -70,7 +70,7 @@ describe("corpus string-field invariants", () => {
 
   // Catches an extractor minting a record from a non-canonical raw form
   // (e.g. lowercase "auto_cd" instead of "autocd"): every corpus id must
-  // already be its own brand-normalized form. `docId`-keyed corpus maps make
+  // already be its own brand-normalized form. `idOf`-keyed corpus maps make
   // `corpus[cat].keys()` the canonical id list.
   test("every corpus id is idempotent under mkDocumented", () => {
     const violations: string[] = []

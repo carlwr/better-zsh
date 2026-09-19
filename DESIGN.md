@@ -179,7 +179,7 @@ Any "one entry per `DocCategory`" table lives in zsh-core behind a structural co
 
 ### Identity per record, display separately
 
-Category-specific identity fields behind the parametric `docId` table: `PRINCIPLES.md` §"Category types". `docDisplay` is the public display function — divergence from id and consumer guidance: its JSDoc in `zsh-core/taxonomy`.
+Category-specific identity fields behind the `docIdField` table and parametric `idOf`: `PRINCIPLES.md` §"Category types". `docDisplay` is the public display function — divergence from id and consumer guidance: its JSDoc in `zsh-core/taxonomy`.
 
 Ids are **shell-safe slugs** — printable ASCII, no whitespace, non-empty. The surface `sig`/`_display` fields keep the human-readable form (with spaces, placeholders). Invariants enforced by `packages/zsh-core/src/test/corpus-ascii.test.ts`.
 

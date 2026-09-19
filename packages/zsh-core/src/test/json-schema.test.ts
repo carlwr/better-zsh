@@ -10,7 +10,7 @@ import {
   resolverFixture,
   schemaFile,
 } from "../docs/json-artifacts"
-import { type DocCategory, docCategories } from "../docs/taxonomy"
+import { type DocCategory, docCategories, docIdField } from "../docs/taxonomy"
 
 // The emitted artifacts against the emitted schemas, under pack-release's
 // ajv options: data/schema drift fails here, not only at packing time.
@@ -38,12 +38,15 @@ describe("records bundle", () => {
     expect(validate(records(cat)), ajv.errorsText(validate.errors)).toBe(true)
   })
 
-  test.each(docCategories)("%s: record and id defs stand alone", cat => {
+  test.each(docCategories)("%s: _id and the identity field are ids", cat => {
     const [rec] = records(cat)
-    expect(defValidator(recordsSchemaDefs.record(cat))(rec)).toBe(true)
+    const record = defValidator(recordsSchemaDefs.record(cat))
     const id = defValidator(recordsSchemaDefs.id(cat))
+    expect(record(rec)).toBe(true)
     expect(id(rec?._id)).toBe(true)
-    expect(id("has space")).toBe(false)
+    for (const key of ["_id", docIdField[cat]]) {
+      expect(record({ ...rec, [key]: "has space" }), key).toBe(false)
+    }
   })
 
   test("the whole category map validates against the root", () => {
@@ -79,7 +82,6 @@ describe("records bundle", () => {
       r => ({ ...r, module: "zsh/bogus" }),
     ],
     ["empty NonEmpty synopsis", "builtin", r => ({ ...r, synopsis: [] })],
-    ["_id with whitespace", "builtin", r => ({ ...r, _id: "has space" })],
     [
       "cross-reference with whitespace",
       "builtin",

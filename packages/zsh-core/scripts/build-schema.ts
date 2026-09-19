@@ -13,6 +13,7 @@ import {
 import {
   type DocCategory,
   docCategories,
+  docIdField,
   subKindEnums,
 } from "../src/docs/taxonomy.ts"
 import { PKG_REPO_URL } from "../src/meta/pkg-info.ts"
@@ -122,25 +123,30 @@ function pinSubKind(record: Obj, values: readonly string[] | undefined): void {
 }
 
 /**
- * One identity definition per category: `_id` and every `Documented<cat>`
- * field (the identity field, cross-references such as `aliasOf`) point at
- * it, so the schema says they hold the same kind of value. A closed-union
- * category's identity field keeps its enum — stricter, and named already.
+ * One identity definition per category: `_id`, the identity field and every
+ * cross-reference (a `Documented<cat>` field such as `aliasOf`) point at it,
+ * so the schema says they hold the same kind of value — `_id`'s slug schema,
+ * or the identity field's enum where the category is a closed union.
  */
 function hoistId(defs: Defs, cat: DocCategory, record: Obj): void {
   const idName = recordsSchemaDefs.id(cat)
+  const field = docIdField[cat]
   let slug: Obj | undefined
+  let identity: Obj | undefined
   for (const branch of branches(record)) {
-    const props = propsOf(branch, "_id")
-    slug ??= props._id as Obj
+    const props = propsOf(branch, field)
+    slug ??= propsOf(branch, "_id")._id as Obj
+    identity ??= props[field] as Obj
     props._id = { $ref: refTo(idName) }
+    props[field] = { $ref: refTo(idName) }
   }
-  if (!slug) throw new Error(`${cat}: record definition has no branch`)
-  addDef(defs, idName, {
-    ...slug,
-    description: `\`${cat}\` record identity — the record's \`_id\`, and what a field referring to one holds. ${String(slug.description)}`,
-  })
+  if (!slug || !identity) throw new Error(`${cat}: record has no branch`)
   const brand = `Documented<"${cat}">`
+  const { description: slugDesc, ...slugSchema } = slug
+  addDef(defs, idName, {
+    ...(brand in defs ? slugSchema : identity),
+    description: `\`${cat}\` record identity — the record's \`_id\`, and what a field referring to one holds. ${String(slugDesc)}`,
+  })
   if (brand in defs) redirectDef(defs, brand, idName)
 }
 
