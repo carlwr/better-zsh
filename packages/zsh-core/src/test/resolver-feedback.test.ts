@@ -10,6 +10,7 @@
 
 import { describe, expect, test } from "vitest"
 import { mkDocumented } from "../docs/brands"
+import type { DocCorpus } from "../docs/corpus"
 import {
   type ResolvedHit,
   type ResolverFeedback,
@@ -22,12 +23,22 @@ import { emptyCorpus, membershipCorpus, mkDocumented_ } from "./id-fns"
 const opt = mkDocumented_("option")
 const NEGATED: ResolverFeedback = { kind: "input-negated" }
 
-/** Expected `resolve` answer (`toEqual` treats `feedback: undefined` as absent). */
-const hit = <K extends DocCategory>(
+/**
+ * Expected `resolve` answer over `corpus` (`toEqual` treats `feedback:
+ * undefined` as absent). The record is the corpus's own, so a test never
+ * restates record content.
+ */
+const hitIn = <K extends DocCategory>(
+  corpus: DocCorpus,
   cat: K,
   id: string,
   feedback?: ResolverFeedback,
-): ResolvedHit<K> => ({ ...mkRecordId(cat, mkDocumented(cat, id)), feedback })
+): ResolvedHit<K> => {
+  const key = mkDocumented(cat, id)
+  const record = corpus[cat].get(key)
+  if (record === undefined) throw new Error(`test corpus lacks ${cat} ${id}`)
+  return { ...mkRecordId(cat, key), record, feedback }
+}
 
 const optCorpus = membershipCorpus("option", ["AUTO_CD", "NOTIFY"])
 
@@ -88,7 +99,7 @@ describe("resolve(corpus, 'option', raw) — identity + input-negated", () => {
     ["NO_NOTIFY", "notify", NEGATED],
   ])("%s -> %s %j", (raw, id, feedback) => {
     expect(resolve(optCorpus, "option", raw)).toEqual(
-      hit("option", id, feedback),
+      hitIn(optCorpus, "option", id, feedback),
     )
   })
 
@@ -113,7 +124,7 @@ describe("resolve(corpus, 'option', raw) — short flags", () => {
     ["+Q", "first", NEGATED],
   ])("%s → %s %j", (raw, id, feedback) => {
     expect(resolve(flagCorpus, "option", raw)).toEqual(
-      hit("option", id, feedback),
+      hitIn(flagCorpus, "option", id, feedback),
     )
   })
 
@@ -137,9 +148,11 @@ describe("resolve(corpus, 'option', raw) — short flags", () => {
   // Literal and `no_`-stripped forms are tried before the flag path (no input
   // has both shapes, so this pins that they still work in a flag corpus).
   test("literal and no_-stripped forms still resolve", () => {
-    expect(resolve(flagCorpus, "option", "X")).toEqual(hit("option", "X"))
+    expect(resolve(flagCorpus, "option", "X")).toEqual(
+      hitIn(flagCorpus, "option", "X"),
+    )
     expect(resolve(flagCorpus, "option", "NO_X")).toEqual(
-      hit("option", "X", NEGATED),
+      hitIn(flagCorpus, "option", "X", NEGATED),
     )
   })
 })
@@ -152,7 +165,10 @@ describe("resolve(corpus, 'special_param', raw) — subscripted", () => {
   ])("%s → subscript %j", (raw, subscript) => {
     const parent = raw.slice(0, raw.indexOf("["))
     expect(resolve(spCorpus, "special_param", raw)).toEqual(
-      hit("special_param", parent, { kind: "subscripted", subscript }),
+      hitIn(spCorpus, "special_param", parent, {
+        kind: "subscripted",
+        subscript,
+      }),
     )
   })
 
@@ -183,7 +199,7 @@ describe("resolve(corpus, 'special_param', raw) — $/${…} sigil strip", () =>
     ["  $PATH  ", "PATH"],
   ])("%s -> %s", (raw, id) => {
     expect(resolve(sigilCorpus, "special_param", raw)).toEqual(
-      hit("special_param", id),
+      hitIn(sigilCorpus, "special_param", id),
     )
   })
 
@@ -191,7 +207,7 @@ describe("resolve(corpus, 'special_param', raw) — $/${…} sigil strip", () =>
     expect(
       resolve(sigilCorpus, "special_param", "$compstate[context]"),
     ).toEqual(
-      hit("special_param", "compstate", {
+      hitIn(sigilCorpus, "special_param", "compstate", {
         kind: "subscripted",
         subscript: "context",
       }),

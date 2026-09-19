@@ -6,7 +6,7 @@ import {
   isRedirFact,
 } from "@carlwr/zsh-core/analysis"
 import { resolve } from "@carlwr/zsh-core/resolver"
-import type { DocCategory, DocRecordId } from "@carlwr/zsh-core/taxonomy"
+import type { DocCategory } from "@carlwr/zsh-core/taxonomy"
 import * as vscode from "vscode"
 import { contextAt, lineFacts } from "../document/facts"
 import { funcAt } from "../document/funcs"
@@ -17,7 +17,7 @@ import {
   symbolicOpRangeAt,
 } from "../document/tokens"
 import { activeLineAt, activeWordRangeAt } from "../document/words"
-import { docMarkdown } from "./record-markdown"
+import { recordMarkdown } from "./record-markdown"
 
 // `setopt NO_AUTO_CD` and `set +J` hover as `AUTO_CD`: the hit's
 // `input-negated` feedback is not surfaced.
@@ -169,13 +169,12 @@ export class HoverProvider implements vscode.HoverProvider {
     raw: string,
     range?: vscode.Range,
   ): vscode.Hover | undefined {
-    const recordId = resolve(this.corpus, category, raw)
-    if (recordId) return this.renderHover(recordId, range)
-  }
-
-  private renderHover(recordId: DocRecordId, range?: vscode.Range) {
-    const md = docMarkdown(this.corpus, recordId)
-    return md && new vscode.Hover(md, range)
+    const hit = resolve(this.corpus, category, raw)
+    if (!hit) return
+    return new vscode.Hover(
+      recordMarkdown(this.corpus, category, hit.record),
+      range,
+    )
   }
 }
 

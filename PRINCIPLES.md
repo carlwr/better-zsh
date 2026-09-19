@@ -51,7 +51,7 @@ Resolution can be lossy (`setopt NO_AUTO_CD` resolves to `autocd`). The brand ma
 
 Cross-cutting principles:
 
-- **The brand carries only identity; the hit carries feedback.** `Documented<K>` has no side-channels or hidden state; `resolve` answers both in one value — nothing resolves twice.
+- **The brand carries only identity; the hit carries the record and feedback.** `Documented<K>` has no side-channels or hidden state; `resolve` answers all three in one value — nothing resolves or looks up twice.
 - **Per-category dispatch lives in zsh-core**, not in consumers. Consumers stay parametric over `DocCategory` — no `if (cat === "option")` branches.
 - **Structured, not prose.** Closed `kind`-tagged union so consumers route programmatically.
 

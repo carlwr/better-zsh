@@ -16,7 +16,6 @@ import {
   docCategories,
   docCategoryLabels,
   idOf,
-  mkRecordId,
   subKindOf,
 } from "../../docs/taxonomy"
 import type {
@@ -71,7 +70,6 @@ import {
   mdSubscriptFlag,
   mdZleWidget,
   recordTitle,
-  renderDocWithTitle,
   renderRecord,
   renderRecordWithTitle,
 } from "../../render/md"
@@ -307,7 +305,7 @@ const cdCorpus = mkTestCorpus({ option: [cd] })
 
 // Title is composed downstream by `recordTitle` — body assertions below
 // deliberately exclude the title line. See the `recordTitle` and
-// `renderDocWithTitle` tests further down for title-related coverage. The
+// `renderRecordWithTitle` tests further down for title-related coverage. The
 // category line is likewise separate: `categoryFooter`, see its tests.
 const renderedMarkdownCases = [
   ["special_param", mdShellParam(sec), ["d:p"]],
@@ -621,10 +619,9 @@ describe("render markdown", () => {
     expect(recordTitle("param_expn", solo)).toBe("`${name}`    _(default)_")
   })
 
-  test("renderDocWithTitle — composes title + body", () => {
+  test("renderRecordWithTitle — composes title + body", () => {
     const docs = mkTestCorpus()
-    const pid = mkRecordId("builtin", bi.name)
-    const out = renderDocWithTitle(docs, pid)
+    const out = renderRecordWithTitle(docs, "builtin", bi)
     // Title is on the first line, body follows after a blank line.
     expect(out).toMatch(/^`echo`\n\n/)
     expect(out).toContain("d:bi")
@@ -696,12 +693,6 @@ describe("render markdown", () => {
 
   test("zle widget bindings paragraph — absent when empty", () => {
     expect(mdZleWidget({ ...zw, defaultBindings: [] })).toBe("d:zw")
-  })
-
-  test("renderDocWithTitle — missing record throws, naming category and id", () => {
-    const docs = mkTestCorpus({ builtin: [] })
-    const pid = mkRecordId("builtin", mkDocumented("builtin", "missing"))
-    expect(() => renderDocWithTitle(docs, pid)).toThrow(/builtin.*"missing"/)
   })
 
   test("alternate-form requires annotation rendered as trailing comment", () => {

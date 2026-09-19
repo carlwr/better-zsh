@@ -34,14 +34,14 @@ import { loadCorpus } from "jsr:@carlwr/zsh-core"
 ```ts
 import { loadCorpus } from "@carlwr/zsh-core"
 import { resolve } from "@carlwr/zsh-core/resolver"
-import { renderDoc } from "@carlwr/zsh-core/render"
+import { renderRecord } from "@carlwr/zsh-core/render"
 
 const corpus = loadCorpus()
 const hit = resolve(corpus, "option", "NO_AUTO_CD")
 if (hit) {
   console.log(hit.id)                // → autocd
   console.log(hit.feedback)          // → { kind: "input-negated" }
-  console.log(renderDoc(corpus, hit))
+  console.log(renderRecord(corpus, hit.category, hit.record))
 }
 ```
 
@@ -51,7 +51,7 @@ if (hit) {
 - **Lazy corpus.** `loadCorpus()` locates the data and returns; a category is parsed on first access, once. Touch few categories, parse few files.
 - **Parametric over per-category specialisation.** `DocCategory` is a closed union; adding a category is a local drop-in that the type system propagates.
 - **Focused imports.** Root is corpus-only; import analysis, types, resolver, taxonomy, and metadata from named subpaths.
-- **Orthogonal API.** `resolve` + `renderDoc` compose; no combined "raw string → markdown" convenience is exposed — that's a deliberate design choice, not an omission. See [`DESIGN.md`](https://github.com/carlwr/better-zsh/blob/main/DESIGN.md) §"API orthogonality".
+- **Orthogonal API.** `resolve` + `renderRecord` compose; a hit carries the record, so nothing is looked up twice, and no combined "raw string → markdown" convenience is exposed — that's a deliberate design choice, not an omission. See [`DESIGN.md`](https://github.com/carlwr/better-zsh/blob/main/DESIGN.md) §"API orthogonality".
 
 ## See also
 

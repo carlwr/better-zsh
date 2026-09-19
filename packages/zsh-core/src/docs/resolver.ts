@@ -25,13 +25,13 @@
  * `TRAPINT` → `TRAPNAL`) while the direct step keeps exact keys
  * round-tripping (`!n`, `TRAPNAL`, `%number`).
  *
- * The hit carries feedback for lossy normalization (`setopt NO_AUTO_CD`
- * resolving to `autocd` discards the `NO_` prefix that carries semantic
- * meaning); the `Documented<K>` brand itself stays identity-only. One
- * parametric entry rather than per-category APIs: dispatch lives in the
- * resolver table, so consumers never branch on the category. See DESIGN.md
- * §"Resolver feedback channel" and PRINCIPLES.md §"Resolver feedback (lossy
- * normalization)".
+ * The hit carries the resolved record and feedback for lossy normalization
+ * (`setopt NO_AUTO_CD` resolving to `autocd` discards the `NO_` prefix that
+ * carries semantic meaning); the `Documented<K>` brand itself stays
+ * identity-only. One parametric entry rather than per-category APIs:
+ * dispatch lives in the resolver table, so consumers never branch on the
+ * category. See DESIGN.md §"Resolver feedback channel" and PRINCIPLES.md
+ * §"Resolver feedback (lossy normalization)".
  */
 
 import { escapeRegExp, isSingle } from "@carlwr/typescript-extra"
@@ -40,16 +40,18 @@ import type { DocCorpus } from "./corpus.ts"
 import {
   type DocCategory,
   type DocRecordIdOf,
+  type DocRecordMap,
   docCategories,
+  idOf,
   mkRecordId,
 } from "./taxonomy.ts"
 import { type Documented, type RedirDoc, redirSlugFromSig } from "./types.ts"
 
 // --- Resolvers --------------------------------------------------------------
 
-/** A resolver's verdict: corpus identity, plus feedback when normalization was lossy. */
+/** A resolver's verdict: the corpus record, plus feedback when normalization was lossy. */
 type Hit<K extends DocCategory> = {
-  readonly id: Documented<K>
+  readonly record: DocRecordMap[K]
   readonly feedback?: ResolverFeedback
 }
 
@@ -59,23 +61,26 @@ type Resolver<K extends DocCategory> = (
 ) => Hit<K> | undefined
 
 /**
- * Membership check against `corpus[cat]`. Centralizes the brand-peel cast
- * needed when `cat` is generic.
+ * The hit for `id` when `corpus[cat]` has it — membership check and record
+ * fetch in one, so no resolver answers an id the corpus lacks. Centralizes
+ * the brand-peel cast needed when `cat` is generic.
  */
-function hasId<K extends DocCategory>(
+function hitAt<K extends DocCategory>(
   c: DocCorpus,
   cat: K,
   id: Documented<K>,
-): boolean {
-  return (c[cat] as ReadonlyMap<string, unknown>).has(id as string)
+  feedback?: ResolverFeedback,
+): Hit<K> | undefined {
+  const record = (c[cat] as ReadonlyMap<string, DocRecordMap[K]>).get(
+    id as string,
+  )
+  if (record === undefined) return undefined
+  return feedback ? { record, feedback } : { record }
 }
 
 /** Resolver for categories whose raw-to-key mapping is pure normalization. */
 function simpleResolver<K extends DocCategory>(cat: K): Resolver<K> {
-  return (c, raw) => {
-    const id = mkDocumented(cat, raw)
-    return hasId(c, cat, id) ? { id } : undefined
-  }
+  return (c, raw) => hitAt(c, cat, mkDocumented(cat, raw))
 }
 
 /**
@@ -92,8 +97,7 @@ function resolveByKey<K extends DocCategory>(
   if (!t) return undefined
   const key = matchKey(t)
   if (!key) return undefined
-  const id = mkDocumented(cat, key)
-  return hasId(c, cat, id) ? { id } : undefined
+  return hitAt(c, cat, mkDocumented(cat, key))
 }
 
 /**
@@ -107,12 +111,16 @@ function resolveRedir(
   c: DocCorpus,
   raw: string,
 ): Hit<"redirection"> | undefined {
-  const literal = mkDocumented("redirection", raw)
-  if (c.redirection.has(literal)) return { id: literal }
-  // Sig-form close-variant: doc sig (`> word`) → slug (`>_word`).
-  const sigSlug = mkDocumented("redirection", redirSlugFromSig(raw.trim()))
-  if (c.redirection.has(sigSlug)) return { id: sigSlug }
-  return resolveByKey(c, "redirection", raw, t => matchRedirKey(c, t))
+  return (
+    hitAt(c, "redirection", mkDocumented("redirection", raw)) ??
+    // Sig-form close-variant: doc sig (`> word`) → slug (`>_word`).
+    hitAt(
+      c,
+      "redirection",
+      mkDocumented("redirection", redirSlugFromSig(raw.trim())),
+    ) ??
+    resolveByKey(c, "redirection", raw, t => matchRedirKey(c, t))
+  )
 }
 
 /** Literal tail word from a doc sig ("number" / "word" / "-" / "p" / ""). */
@@ -235,13 +243,12 @@ function tryFlagKey<K extends FlagCategory>(
   cat: K,
   key: string,
 ): Hit<K> | undefined {
-  const id = mkDocumented(cat, key)
-  if (hasId(c, cat, id)) return { id }
+  const direct = hitAt(c, cat, mkDocumented(cat, key))
+  if (direct) return direct
   if (!COLON_ARG_FLAG_CATS.has(cat) || !key.includes(":")) return undefined
   const bare = key.split(":")[0]
   if (!bare) return undefined
-  const bareId = mkDocumented(cat, bare)
-  return hasId(c, cat, bareId) ? { id: bareId } : undefined
+  return hitAt(c, cat, mkDocumented(cat, bare))
 }
 
 function flagInnerKey(cat: FlagCategory, t: string): string | undefined {
@@ -278,9 +285,10 @@ function resolveParamSubscript(
 ): Hit<"special_param"> | undefined {
   const m = raw.trim().match(SUBSCRIPTED_PARAM_RE)
   if (!m) return undefined
-  const id = mkDocumented("special_param", m[1] ?? "")
-  if (!c.special_param.has(id)) return undefined
-  return { id, feedback: { kind: "subscripted", subscript: m[2] ?? "" } }
+  return hitAt(c, "special_param", mkDocumented("special_param", m[1] ?? ""), {
+    kind: "subscripted",
+    subscript: m[2] ?? "",
+  })
 }
 
 /**
@@ -297,13 +305,15 @@ function resolveSpecialParam(
 ): Hit<"special_param"> | undefined {
   const name = stripParamSigil(raw.trim())
   if (name !== undefined) {
-    const id = mkDocumented("special_param", name)
-    if (c.special_param.has(id)) return { id }
-    return resolveParamSubscript(c, name)
+    return (
+      hitAt(c, "special_param", mkDocumented("special_param", name)) ??
+      resolveParamSubscript(c, name)
+    )
   }
-  const literal = mkDocumented("special_param", raw)
-  if (c.special_param.has(literal)) return { id: literal }
-  return resolveParamSubscript(c, raw)
+  return (
+    hitAt(c, "special_param", mkDocumented("special_param", raw)) ??
+    resolveParamSubscript(c, raw)
+  )
 }
 
 /**
@@ -347,10 +357,9 @@ function resolveSpecialFunction(
   c: DocCorpus,
   raw: string,
 ): Hit<"special_function"> | undefined {
-  const literal = mkDocumented("special_function", raw)
-  if (c.special_function.has(literal)) return { id: literal }
-  return resolveByKey(c, "special_function", raw, t =>
-    matchSpecialFunctionKey(c, t),
+  return (
+    hitAt(c, "special_function", mkDocumented("special_function", raw)) ??
+    resolveByKey(c, "special_function", raw, t => matchSpecialFunctionKey(c, t))
   )
 }
 
@@ -378,13 +387,18 @@ function resolveOption(
   corpus: DocCorpus,
   raw: string,
 ): Hit<"option"> | undefined {
-  const literal = mkDocumented("option", raw)
-  if (corpus.option.has(literal)) return { id: literal }
+  const literal = hitAt(corpus, "option", mkDocumented("option", raw))
+  if (literal) return literal
   const trimmed = raw.trim()
   const m = trimmed.match(NO_PREFIX_RE)
   if (m) {
-    const id = mkDocumented("option", trimmed.slice(m[0].length))
-    if (corpus.option.has(id)) return { id, feedback: INPUT_NEGATED }
+    const stripped = hitAt(
+      corpus,
+      "option",
+      mkDocumented("option", trimmed.slice(m[0].length)),
+      INPUT_NEGATED,
+    )
+    if (stripped) return stripped
   }
   return resolveOptionFlag(corpus, trimmed)
 }
@@ -408,8 +422,9 @@ function resolveOptionFlag(
       f => f.char === char && f.emulations.includes("zsh"),
     )
     if (!alias) continue
-    const id = opt.name
-    return alias.on === sign ? { id } : { id, feedback: INPUT_NEGATED }
+    return alias.on === sign
+      ? { record: opt }
+      : { record: opt, feedback: INPUT_NEGATED }
   }
   return undefined
 }
@@ -441,12 +456,14 @@ const resolvers: { [K in DocCategory]: Resolver<K> } = Object.fromEntries(
 ) as { [K in DocCategory]: Resolver<K> }
 
 /**
- * What `resolve` answers: the record id, plus `feedback` when reaching it
- * normalized away something meaningful (absent on loss-free paths and for
- * non-lossy categories). Assignable to `DocRecordId` wherever identity alone
- * is wanted.
+ * What `resolve` answers: the record's identity and the record itself, plus
+ * `feedback` when reaching it normalized away something meaningful (absent
+ * on loss-free paths and for non-lossy categories). Assignable to
+ * `DocRecordId` wherever identity alone is wanted; `record` is what the
+ * renderers take, so a hit never has to be looked up again.
  */
 export type ResolvedHit<K extends DocCategory> = DocRecordIdOf<K> & {
+  readonly record: DocRecordMap[K]
   readonly feedback?: ResolverFeedback
 }
 
@@ -473,11 +490,14 @@ export function resolve<K extends DocCategory>(
   raw: string,
 ): ResolvedHit<K> | undefined {
   const key = raw.trim() as Documented<K>
-  if (key && hasId(corpus, cat, key)) return mkRecordId(cat, key)
-  const hit = resolvers[cat](corpus, raw)
+  const hit =
+    (key ? hitAt(corpus, cat, key) : undefined) ?? resolvers[cat](corpus, raw)
   if (!hit) return undefined
-  const id = mkRecordId(cat, hit.id)
-  return hit.feedback ? { ...id, feedback: hit.feedback } : id
+  // Corpus maps are keyed by `idOf`, so the record names its own key.
+  const id = mkRecordId(cat, idOf(cat, hit.record))
+  return hit.feedback
+    ? { ...id, record: hit.record, feedback: hit.feedback }
+    : { ...id, record: hit.record }
 }
 
 // --- Resolver feedback ------------------------------------------------------

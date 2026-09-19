@@ -1,6 +1,6 @@
 import { nonEmpty } from "@carlwr/typescript-extra"
 import type { DocCorpus } from "@carlwr/zsh-core"
-import { categoryFooter, renderDocWithTitle } from "@carlwr/zsh-core/render"
+import { categoryFooter, renderRecordWithTitle } from "@carlwr/zsh-core/render"
 import { mkRecordId, recordOf } from "@carlwr/zsh-core/taxonomy"
 import { mkDocumented, optSections } from "@carlwr/zsh-core/types"
 import { describe, expect, test } from "vitest"
@@ -104,7 +104,7 @@ describe("CompletionProvider", () => {
     const autocd = mkRecordId("option", mkDocumented("option", "autocd"))
     const doc = recordOf(corpus, autocd)
     if (doc === undefined) throw new Error("fixture: autocd")
-    const md = `${renderDocWithTitle(corpus, autocd)}\n\n${categoryFooter("option", doc)}`
+    const md = `${renderRecordWithTitle(corpus, "option", doc)}\n\n${categoryFooter("option", doc)}`
     expect(items.map(i => [i.label, i.filterText, i.documentation])).toEqual([
       ["no_autocd", "no_au", new vscode.MarkdownString(md)],
     ])

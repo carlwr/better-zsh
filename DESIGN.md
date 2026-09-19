@@ -88,7 +88,7 @@ Dispatch stays in consumer code — partial and context-dependent. Example: a `c
 - a user function
 - nothing
 
-**zsh-core does not wire A+B→C internally.** No "candidate in, markdown out" convenience API; consumers compose `resolve()` + `renderDoc()`.
+**zsh-core does not wire A+B→C internally.** No "candidate in, markdown out" convenience API; consumers compose `resolve()` + `renderRecord()`.
 
 ---
 
@@ -123,11 +123,17 @@ Only a step with corpus access can decide. Baking this into a smart constructor 
 
 If an operation decomposes into A→B→C, export A→B and B→C, not also A→C, even when "almost all consumers need A→C." Consumers compose.
 
-The rendering path is `raw string → DocRecordId → markdown` (`resolve` + `renderDoc`). No combined convenience function. Reasons:
+The rendering path is `raw string → hit → markdown` (`resolve` + `renderRecord`). No combined convenience function. Reasons:
 
-- `DocRecordId` is a first-class concept (type-safe corpus identity); an A→C function hides it.
+- The hit is a first-class concept (type-safe corpus identity plus the record); an A→C function hides it.
 - Two ways to do the same thing force consumers to choose and encourage drift.
 - Each step has a crisp meaning: "is this in the corpus?" vs "render this known element."
+
+The hit carries the record, so the second step takes a value, not a reference:
+
+- no lookup between the steps, so no "not found" branch
+- TS cannot prove map membership from a branded key, so an id-keyed renderer would have to throw on a miss — removed for that reason
+- `recordOf` (record or `undefined`) stays for ids that crossed a boundary where the record was dropped — serialized, stored, from another corpus build; there a miss is honest
 
 Corpus-driven aggregation helpers (`projectRecords`, the JSON projection) are fine — they operate on already-known records, not hidden brand crossings.
 
@@ -290,7 +296,7 @@ Vendored `.yo` is consumed three ways:
     - precision posture: PRINCIPLES.md §"Schema precision when schemas are co-released"
 - **Raw Yodl** under `dist/data/zsh-docs/` — advanced consumers.
 
-Per-category renderers are internal; public entry is `renderDoc`. The JSON stays in zsh-core for build convenience — package split deferred.
+Per-category renderers are internal; public entry is `renderRecord`. The JSON stays in zsh-core for build convenience — package split deferred.
 
 ### Why the library parses at runtime
 
@@ -348,7 +354,7 @@ The mirror is accepted because it is bounded — it changes only with categories
 
 ## `resolve`: direct ∥ resolver, direct preferred
 
-`resolve` (`zsh-core/resolver`) is the one entry: direct corpus-key lookup, then the category's resolver, one hit carrying identity and feedback. Its JSDoc holds the mechanism and why direct precedence is load-bearing for template-key categories (`!n` vs `!42 → !n`). **Do not** run the paths separately for the same query; **do not** re-implement the rule in consumers.
+`resolve` (`zsh-core/resolver`) is the one entry: direct corpus-key lookup, then the category's resolver, one hit carrying identity, record and feedback. Its JSDoc holds the mechanism and why direct precedence is load-bearing for template-key categories (`!n` vs `!42 → !n`). **Do not** run the paths separately for the same query; **do not** re-implement the rule in consumers.
 
 ### Resolver input is wider than the id set
 

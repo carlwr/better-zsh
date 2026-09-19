@@ -10,11 +10,14 @@ const corpus = loadCorpus()
 // `.miss(raw)` asserts unresolved.
 function cases<K extends DocCategory>(cat: K) {
   return {
-    hit: (raw: string, id: string, feedback?: ResolverFeedback) =>
+    hit: (raw: string, id: string, feedback?: ResolverFeedback) => {
+      const key = mkDocumented(cat, id)
       expect(resolve(corpus, cat, raw)).toEqual({
-        ...mkRecordId(cat, mkDocumented(cat, id)),
+        ...mkRecordId(cat, key),
+        record: corpus[cat].get(key),
         feedback,
-      }),
+      })
+    },
     miss: (raw: string) => expect(resolve(corpus, cat, raw)).toBeUndefined(),
   }
 }
@@ -267,17 +270,18 @@ describe("prompt_escape paired sigs (corpus-wide property)", () => {
 })
 
 describe("resolve round-trip (corpus-wide)", () => {
-  // Every documented id round-trips through `resolve` to itself — pins the
-  // direct-key step ahead of the resolvers, without which template-key
-  // matching would shadow a literal id (history `!n` recognized as `!str`).
+  // Every documented id round-trips through `resolve` to itself, and the hit
+  // carries the corpus's own record — pins the direct-key step ahead of the
+  // resolvers, without which template-key matching would shadow a literal id
+  // (history `!n` recognized as `!str`).
   test.each(docCategories)("%s ids are stable under resolve", cat => {
     const map = corpus[cat] as ReadonlyMap<string, unknown>
     if (map.size === 0) return
     const mismatched: { id: string; got: string | undefined }[] = []
-    for (const id of map.keys()) {
-      const pid = resolve(corpus, cat, id)
-      if (pid?.id !== id)
-        mismatched.push({ id, got: pid?.id as string | undefined })
+    for (const [id, rec] of map) {
+      const hit = resolve(corpus, cat, id)
+      if (hit?.id !== id || hit.record !== rec)
+        mismatched.push({ id, got: hit?.id as string | undefined })
     }
     expect(mismatched).toEqual([])
   })

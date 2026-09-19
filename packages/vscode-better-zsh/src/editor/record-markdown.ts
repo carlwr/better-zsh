@@ -1,11 +1,6 @@
 import type { DocCorpus } from "@carlwr/zsh-core"
 import { categoryFooter, renderRecordWithTitle } from "@carlwr/zsh-core/render"
-import {
-  type DocCategory,
-  type DocRecordId,
-  type DocRecordMap,
-  recordOf,
-} from "@carlwr/zsh-core/taxonomy"
+import type { DocCategory, DocRecordMap } from "@carlwr/zsh-core/taxonomy"
 import * as vscode from "vscode"
 
 /**
@@ -22,15 +17,4 @@ export function recordMarkdown<K extends DocCategory>(
   return new vscode.MarkdownString(
     `${renderRecordWithTitle(corpus, cat, doc)}\n\n${categoryFooter(cat, doc)}`,
   )
-}
-
-/** `DocRecordId`-keyed {@link recordMarkdown}; `undefined` when the corpus has no such record. */
-export function docMarkdown(
-  corpus: DocCorpus,
-  id: DocRecordId,
-): vscode.MarkdownString | undefined {
-  const doc = recordOf(corpus, id)
-  return doc === undefined
-    ? undefined
-    : recordMarkdown(corpus, id.category, doc)
 }

@@ -1,5 +1,5 @@
 import { type DocCorpus, loadCorpus } from "@carlwr/zsh-core"
-import { categoryFooter, renderDocWithTitle } from "@carlwr/zsh-core/render"
+import { categoryFooter, renderRecordWithTitle } from "@carlwr/zsh-core/render"
 import {
   type DocCategory,
   mkRecordId,
@@ -106,10 +106,9 @@ const realAt = hoverWith(new HoverProvider(real))
 // What a hover shows: zsh-core's titled body, then the category line the
 // editor appends (`record-markdown.ts`).
 const rendered = <K extends DocCategory>(cat: K, id: Documented<K>) => {
-  const recordId = mkRecordId(cat, id)
-  const doc = recordOf(real, recordId)
+  const doc = recordOf(real, mkRecordId(cat, id))
   if (doc === undefined) throw new Error(`no ${cat} record ${String(id)}`)
-  return `${renderDocWithTitle(real, recordId)}\n\n${categoryFooter(cat, doc)}`
+  return `${renderRecordWithTitle(real, cat, doc)}\n\n${categoryFooter(cat, doc)}`
 }
 
 // --- synthetic-corpus dispatch ----------------------------------------------

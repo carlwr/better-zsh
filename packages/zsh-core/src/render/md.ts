@@ -7,12 +7,8 @@ import {
 } from "@carlwr/typescript-extra"
 import type { DocCorpus } from "../docs/corpus.ts"
 import { resolve } from "../docs/resolver.ts"
-import type {
-  DocCategory,
-  DocRecordId,
-  DocRecordMap,
-} from "../docs/taxonomy.ts"
-import { docCategoryLabels, recordOf, subKindOf } from "../docs/taxonomy.ts"
+import type { DocCategory, DocRecordMap } from "../docs/taxonomy.ts"
+import { docCategoryLabels, subKindOf } from "../docs/taxonomy.ts"
 import type {
   AlternateForm,
   ArithOpDoc,
@@ -261,7 +257,7 @@ function isShellParameterRef(whole: string, offset: number): boolean {
  * line — `\`name\``, `\`sig\``, `\`op\``, or a composite like
  * `*lhs* \`op\` *rhs*` for cond-ops. Renderers omit the title from their
  * body; consumers compose via `recordTitle(cat, doc)` (or
- * {@link renderDocWithTitle}). Dump output supplies its own `## heading`.
+ * {@link renderRecordWithTitle}). Dump output supplies its own `## heading`.
  */
 const titleBuilders: {
   [K in DocCategory]: (doc: DocRecordMap[K]) => string
@@ -861,7 +857,7 @@ export function categoryFooter<K extends DocCategory>(
 
 /**
  * Per-category body with option-ref bolding; no title (see
- * {@link recordTitle} or {@link renderDocWithTitle}) and no category line
+ * {@link recordTitle} or {@link renderRecordWithTitle}) and no category line
  * (see {@link categoryFooter}). Empty for a record without prose (the
  * desc-less reserved words).
  */
@@ -878,14 +874,6 @@ export function renderRecord<K extends DocCategory>(
 }
 
 /**
- * `DocRecordId`-keyed {@link renderRecord}. `id` must come from `resolve()`
- * or corpus iteration; throws when the corpus has no such record.
- */
-export function renderDoc(corpus: DocCorpus, id: DocRecordId): string {
-  return renderRecord(corpus, id.category, mustRecordOf(corpus, id))
-}
-
-/**
  * Composed title + body (title alone for a body-less record). Dump output
  * supplies its own `## heading` and skips this; other consumers use this
  * form.
@@ -899,26 +887,4 @@ export function renderRecordWithTitle<K extends DocCategory>(
     recordTitle(cat, doc),
     ...prose(renderRecord(corpus, cat, doc)),
   )
-}
-
-/**
- * `DocRecordId`-keyed {@link renderRecordWithTitle}; throws on a miss like
- * {@link renderDoc}.
- */
-export function renderDocWithTitle(corpus: DocCorpus, id: DocRecordId): string {
-  return renderRecordWithTitle(corpus, id.category, mustRecordOf(corpus, id))
-}
-
-// Considered returning `""`; picked throw because a miss means a false
-// `Documented<K>` claim (trusted-constructor misuse) — the soft path is
-// `recordOf` + `renderRecord`.
-function mustRecordOf(
-  corpus: DocCorpus,
-  id: DocRecordId,
-): DocRecordMap[typeof id.category] {
-  const doc = recordOf(corpus, id)
-  if (doc === undefined) {
-    throw new Error(`no ${id.category} record with id ${JSON.stringify(id.id)}`)
-  }
-  return doc
 }
