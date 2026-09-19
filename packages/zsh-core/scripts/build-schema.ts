@@ -5,11 +5,16 @@ import { createGenerator, type Schema } from "ts-json-schema-generator"
 import { loadCorpus } from "../src/docs/corpus.ts"
 import {
   fmtJson,
+  recordsSchemaDefs,
   recordsSchemaFile,
   resolverFixture,
   schemaFile,
 } from "../src/docs/json-artifacts.ts"
-import { docCategories, subKindEnums } from "../src/docs/taxonomy.ts"
+import {
+  type DocCategory,
+  docCategories,
+  subKindEnums,
+} from "../src/docs/taxonomy.ts"
 import { PKG_REPO_URL } from "../src/meta/pkg-info.ts"
 
 const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), "..")
@@ -29,16 +34,23 @@ type Obj = Record<string, unknown>
 type Defs = Record<string, Obj>
 const isObj = (v: unknown): v is Obj => typeof v === "object" && v !== null
 
-function rewriteRefs(node: unknown): void {
+function eachObj(node: unknown, f: (o: Obj) => void): void {
   if (Array.isArray(node)) {
-    for (const v of node) rewriteRefs(v)
+    for (const v of node) eachObj(v, f)
   } else if (isObj(node)) {
-    if (typeof node.$ref === "string") {
-      node.$ref = node.$ref.replace(/^#\/definitions\//, "#/$defs/")
-    }
-    for (const v of Object.values(node)) rewriteRefs(v)
+    f(node)
+    for (const v of Object.values(node)) eachObj(v, f)
   }
 }
+
+function mapRefs(node: unknown, f: (ref: string) => string): void {
+  eachObj(node, o => {
+    if (typeof o.$ref === "string") o.$ref = f(o.$ref)
+  })
+}
+
+// The generator percent-encodes def names in `$ref`s.
+const refTo = (name: string) => `#/$defs/${encodeURIComponent(name)}`
 
 function toDraft2020(schema: Schema, file: string): Obj {
   const { $ref, definitions } = schema
@@ -51,7 +63,7 @@ function toDraft2020(schema: Schema, file: string): Obj {
     $ref,
     $defs: definitions,
   }
-  rewriteRefs(out)
+  mapRefs(out, ref => ref.replace(/^#\/definitions\//, "#/$defs/"))
   return out
 }
 
@@ -63,6 +75,34 @@ function defOf(defs: Defs, ref: string): { name: string; def: Obj } {
   return { name, def }
 }
 
+function addDef(defs: Defs, name: string, def: Obj): void {
+  if (name in defs) throw new Error(`$defs already has a "${name}" entry`)
+  defs[name] = def
+}
+
+/** Drop `name`; what referenced it references `to`. */
+function redirectDef(defs: Defs, name: string, to: string): void {
+  delete defs[name]
+  mapRefs(defs, ref => (ref === refTo(name) ? refTo(to) : ref))
+}
+
+function renameDef(defs: Defs, from: string, to: string): void {
+  addDef(defs, to, defOf(defs, refTo(from)).def)
+  redirectDef(defs, from, to)
+}
+
+/** A record definition's object schemas: one, or per `anyOf` branch. */
+const branches = (record: Obj): Obj[] =>
+  Array.isArray(record.anyOf) ? (record.anyOf as Obj[]) : [record]
+
+function propsOf(branch: Obj, key: string): Obj {
+  const props = branch.properties as Obj | undefined
+  if (!props || !(key in props)) {
+    throw new Error(`record definition without a ${key} property`)
+  }
+  return props
+}
+
 /**
  * Per-category `_subKind`: required with the corpus enum where the category
  * has sub-kinds, absent (so `additionalProperties: false` rejects it) where
@@ -70,27 +110,65 @@ function defOf(defs: Defs, ref: string): { name: string; def: Obj } {
  * ("always-or-never per category") is what makes this precise.
  */
 function pinSubKind(record: Obj, values: readonly string[] | undefined): void {
-  if (Array.isArray(record.anyOf)) {
-    for (const branch of record.anyOf) pinSubKind(branch as Obj, values)
-    return
-  }
-  const props = record.properties as Obj | undefined
-  if (!props || !("_subKind" in props)) {
-    throw new Error(`record definition without a _subKind property`)
-  }
-  if (values === undefined) {
-    delete props._subKind
-  } else {
-    props._subKind = { type: "string", enum: [...values] }
-    record.required = [...(record.required as string[]), "_subKind"]
+  for (const branch of branches(record)) {
+    const props = propsOf(branch, "_subKind")
+    if (values === undefined) {
+      delete props._subKind
+    } else {
+      props._subKind = { type: "string", enum: [...values] }
+      branch.required = [...(branch.required as string[]), "_subKind"]
+    }
   }
 }
 
-// Leaked JSDoc of the brand machinery: `Documented<…>` and `Brand<…>` render
-// as plain strings and would otherwise each carry the brand's documentation.
-function stripBrandDescriptions(defs: Defs): void {
-  for (const [name, def] of Object.entries(defs)) {
-    if (/^(Documented|Brand)</.test(name)) delete def.description
+/**
+ * One identity definition per category: `_id` and every `Documented<cat>`
+ * field (the identity field, cross-references such as `aliasOf`) point at
+ * it, so the schema says they hold the same kind of value. A closed-union
+ * category's identity field keeps its enum — stricter, and named already.
+ */
+function hoistId(defs: Defs, cat: DocCategory, record: Obj): void {
+  const idName = recordsSchemaDefs.id(cat)
+  let slug: Obj | undefined
+  for (const branch of branches(record)) {
+    const props = propsOf(branch, "_id")
+    slug ??= props._id as Obj
+    props._id = { $ref: refTo(idName) }
+  }
+  if (!slug) throw new Error(`${cat}: record definition has no branch`)
+  addDef(defs, idName, {
+    ...slug,
+    description: `\`${cat}\` record identity — the record's \`_id\`, and what a field referring to one holds. ${String(slug.description)}`,
+  })
+  const brand = `Documented<"${cat}">`
+  if (brand in defs) redirectDef(defs, brand, idName)
+}
+
+// A brand alias resolves to its base type in two hops (`OptFlag` → `Brand<…>`
+// → string); the base is inlined into the alias, which keeps its JSDoc.
+function inlineBrands(defs: Defs): void {
+  const isBrand = (name: string) => name.startsWith("Brand<")
+  for (const alias of Object.values(defs)) {
+    if (typeof alias.$ref !== "string") continue
+    const { name, def } = defOf(defs, alias.$ref)
+    if (!isBrand(name)) continue
+    const { description: _, ...base } = def
+    delete alias.$ref
+    Object.assign(alias, base)
+  }
+  for (const name of Object.keys(defs)) if (isBrand(name)) delete defs[name]
+}
+
+// Every `$ref` resolves, and no TS generic leaked as a def name — a new brand
+// or record wrapper would surface here, not in a consumer's type generator.
+function assertClean(bundle: Obj): void {
+  const defs = bundle.$defs as Defs
+  eachObj(bundle, o => {
+    if (typeof o.$ref === "string") defOf(defs, o.$ref)
+  })
+  const leaked = Object.keys(defs).filter(name => name.includes("<"))
+  if (leaked.length > 0) {
+    throw new Error(`TS generics in $defs: ${leaked.join(", ")}`)
   }
 }
 
@@ -103,7 +181,7 @@ function recordsBundle(gen: ReturnType<typeof createGenerator>): Obj {
   const root = defOf(defs, bundle.$ref as string).def
   const rootProps = root.properties as Record<string, Obj>
   const enums = subKindEnums(loadCorpus())
-  const seen = new Map<string, string>()
+  const recordDefs = new Set(docCategories.map(recordsSchemaDefs.record))
 
   for (const cat of docCategories) {
     const items = rootProps[cat]?.items as Obj | undefined
@@ -111,18 +189,20 @@ function recordsBundle(gen: ReturnType<typeof createGenerator>): Obj {
       throw new Error(`${cat}: root property is not an array of $ref items`)
     }
     const { name, def } = defOf(defs, items.$ref)
-    const other = seen.get(name)
-    if (other)
-      throw new Error(`${name} is the record type of ${other} and ${cat}`)
-    seen.set(name, cat)
+    // Renamed already: two categories share one record type.
+    if (recordDefs.has(name)) {
+      throw new Error(`${name} is also the record type of ${cat}`)
+    }
     pinSubKind(def, enums[cat])
 
-    // Hoist: consumers key on `#/$defs/<category>`, not on TS type names.
-    if (cat in defs) throw new Error(`$defs already has a "${cat}" entry`)
-    defs[cat] = rootProps[cat] as Obj
-    rootProps[cat] = { $ref: `#/$defs/${cat}` }
+    // Consumers key on category-named defs, not on TS type names.
+    renameDef(defs, name, recordsSchemaDefs.record(cat))
+    hoistId(defs, cat, def)
+    addDef(defs, recordsSchemaDefs.file(cat), rootProps[cat] as Obj)
+    rootProps[cat] = { $ref: refTo(recordsSchemaDefs.file(cat)) }
   }
-  stripBrandDescriptions(defs)
+  inlineBrands(defs)
+  assertClean(bundle)
   return bundle
 }
 

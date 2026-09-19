@@ -5,6 +5,7 @@ import Ajv2020, { type AnySchema } from "ajv/dist/2020"
 import { describe, expect, test } from "vitest"
 import {
   jsonDataFile,
+  recordsSchemaDefs,
   recordsSchemaFile,
   resolverFixture,
   schemaFile,
@@ -24,8 +25,10 @@ const ajv = new Ajv2020({ allErrors: true, strict: true })
 const bundle = readJson(artifact("schema", recordsSchemaFile))
 ajv.addSchema(bundle as AnySchema)
 
+const defValidator = (def: string) =>
+  ajv.compile({ $ref: `${String(bundle.$id)}#/$defs/${def}` })
 const validator = (cat: DocCategory) =>
-  ajv.compile({ $ref: `${String(bundle.$id)}#/$defs/${cat}` })
+  defValidator(recordsSchemaDefs.file(cat))
 const records = (cat: DocCategory): Rec[] =>
   readJson(artifact("json", jsonDataFile(cat))) as unknown as Rec[]
 
@@ -33,6 +36,14 @@ describe("records bundle", () => {
   test.each(docCategories)("%s: the emitted records validate", cat => {
     const validate = validator(cat)
     expect(validate(records(cat)), ajv.errorsText(validate.errors)).toBe(true)
+  })
+
+  test.each(docCategories)("%s: record and id defs stand alone", cat => {
+    const [rec] = records(cat)
+    expect(defValidator(recordsSchemaDefs.record(cat))(rec)).toBe(true)
+    const id = defValidator(recordsSchemaDefs.id(cat))
+    expect(id(rec?._id)).toBe(true)
+    expect(id("has space")).toBe(false)
   })
 
   test("the whole category map validates against the root", () => {
@@ -69,6 +80,11 @@ describe("records bundle", () => {
     ],
     ["empty NonEmpty synopsis", "builtin", r => ({ ...r, synopsis: [] })],
     ["_id with whitespace", "builtin", r => ({ ...r, _id: "has space" })],
+    [
+      "cross-reference with whitespace",
+      "builtin",
+      r => ({ ...r, aliasOf: "has space" }),
+    ],
     [
       "arity outside the union",
       "conditional_op",

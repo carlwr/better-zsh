@@ -9,6 +9,7 @@ import {
   jsonDataFile,
   jsonDataFiles,
   jsonFiles,
+  recordsSchemaDefs,
   recordsSchemaFile,
   resolverFixture,
   schemaFile,
@@ -55,11 +56,16 @@ describe("generated JSON is a release asset, not a registry payload", () => {
     )
   })
 
-  test("one draft 2020-12 records bundle with a $defs entry per category", () => {
+  test("one draft 2020-12 records bundle; $defs named by category, never by TS type", () => {
     const bundle = readJson(join("artifacts", "schema", recordsSchemaFile))
     expect(bundle.$schema).toBe("https://json-schema.org/draft/2020-12/schema")
     const defs = bundle.$defs as Record<string, unknown>
-    for (const cat of docCategories) expect(defs[cat], cat).toBeDefined()
+    for (const cat of docCategories) {
+      for (const def of Object.values(recordsSchemaDefs)) {
+        expect(defs[def(cat)], def(cat)).toBeDefined()
+      }
+    }
+    expect(Object.keys(defs).filter(name => name.includes("<"))).toEqual([])
     expect(
       existsSync(join(pkgDir, "artifacts", "schema", schemaFile("index.json"))),
     ).toBe(true)

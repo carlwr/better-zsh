@@ -38,8 +38,6 @@ export type WithMarkdown<T> = T & {
   readonly _subKind?: string
 }
 
-// No intermediate alias for the record type: the schema generator would name
-// every record definition after it (a gensym) instead of the record type.
 export type JsonRecordMap = {
   readonly [K in DocCategory]: WithMarkdown<DocRecordMap[K]>
 }

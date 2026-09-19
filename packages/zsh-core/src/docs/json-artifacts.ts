@@ -17,10 +17,22 @@ export const jsonDataFiles: readonly JsonDataFile[] = docCategories
 export const jsonFiles = ["index.json", ...jsonDataFiles] as const
 
 /**
- * One schema bundle for every record file: `#/$defs/<DocCategory>` describes
- * that category's file (an array of its records).
+ * One schema bundle for every record file; `$defs` are named by category
+ * (`recordsSchemaDefs`), never by TS type.
  */
 export const recordsSchemaFile = "records.schema.json"
+
+/**
+ * The records bundle's per-category `$defs` entries: `file` describes the
+ * category's record file (an array of its records), `record` one record, `id`
+ * a record's identity — what its `_id` holds, and what a field referring to a
+ * record of that category holds.
+ */
+export const recordsSchemaDefs = {
+  file: (cat: DocCategory) => cat,
+  record: (cat: DocCategory) => `${cat}.record`,
+  id: (cat: DocCategory) => `${cat}.id`,
+} as const
 
 /** Schema file beside a non-record JSON file (`index.json`, the fixture). */
 export function schemaFile(file: string): string {

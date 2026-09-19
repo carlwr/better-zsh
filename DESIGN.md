@@ -285,7 +285,7 @@ Vendored `.yo` is consumed three ways:
 - **`loadCorpus()`** — runtime parse into `DocCorpus`; lazy per category, cached (its JSDoc). Rendering measured cheap for the whole corpus, so it stays unmemoized — PRINCIPLES.md §"Cost and laziness".
 - **Pre-parsed JSON** — same records; markdown bodies pre-rendered at build time. Distribution: `PACKAGING.md`.
   - _schema:_ one bundle, generated from the TS types plus the corpus (`packages/zsh-core/scripts/build-schema.ts`)
-    - consumers key on `#/$defs/<DocCategory>`, never on TS type names
+    - `$defs` are named by category (`recordsSchemaDefs` in `json-artifacts.ts`), never by TS type
     - draft 2020-12, as the crate's tool schemas
     - precision posture: PRINCIPLES.md §"Schema precision when schemas are co-released"
 - **Raw Yodl** under `dist/data/zsh-docs/` — advanced consumers.
