@@ -377,9 +377,14 @@ Enforcement:
 - charset — `packages/zsh-core/src/test/corpus-ascii.test.ts`
 - round-trip — `packages/zsh-core/src/test/resolver.test.ts` (TS), `zshref-rs/tests/cli_invariants.rs` (Rust)
 
-## Tie-break in docs
+## The category walk
 
-With `category` omitted, `zsh_docs` walks `classifyOrder` so tight identity resolvers beat `option`'s `no_` stripping and `redirection`'s loose matching — e.g. `nocorrect` must not shadow-resolve as a negated option. Ordering and per-entry rationale: inline comments on `classifyOrderTuple` in `zsh-core/taxonomy.ts`.
+`resolveAll` (`zsh-core/resolver`) resolves a token in every category, `classifyOrder` first to last, keeping the hits the categories admit; tight identity resolvers thereby beat `option`'s `no_` stripping and `redirection`'s loose matching (`nocorrect` must not shadow-resolve as a negated option).
+
+- order, per-entry rationale: inline comments on `classifyOrderTuple`, `zsh-core/taxonomy.ts`
+- admission — a category declining a scoped hit that is no token on its own (history modifiers): `walkAdmits`, `zsh-core/resolver.ts`
+
+Owned by zsh-core, not the tools: order and admission are corpus properties (PRINCIPLES.md §"Push decisions downstream"); a walk re-derived per consumer had drifted — one applied the history rule, one did not. Callers: `zsh_docs` with `category` omitted, zshref-web's lookup canonicalizer. The fixture's `walk` section pins it for the Rust mirror.
 
 ## Fuzzy search rationale
 

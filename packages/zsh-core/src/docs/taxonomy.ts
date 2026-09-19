@@ -73,7 +73,7 @@ export const parseDocCategory = (raw: string): DocCategory | undefined =>
 export const isDocCategory = (raw: string): raw is DocCategory =>
   docCategorySet.has(raw)
 
-// Order rationale (resolver-shadowing facts) lives in DESIGN.md §"Tie-break in docs".
+// Order rationale (resolver-shadowing facts) lives in DESIGN.md §"The category walk".
 // `param_expn` placement: its sigs are all literal templates (e.g. `${name:-word}`)
 // that no real user-code token will match via `simpleResolver`; the category reaches
 // consumers via search/docs rather than raw-token resolution. Position is therefore
@@ -89,8 +89,8 @@ const classifyOrderTuple = [
   "builtin",
   "conditional_op",
   // special_function precedes option so `TRAPHUP` / `precmd_functions` resolve
-  // to the function record rather than misresolving; see DESIGN.md §"Tie-break
-  // in docs".
+  // to the function record rather than misresolving; see DESIGN.md §"The
+  // category walk".
   "special_function",
   "special_param",
   "process_subst",

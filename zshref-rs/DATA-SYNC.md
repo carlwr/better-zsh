@@ -69,7 +69,7 @@ Two kinds of drift to worry about:
 
 - **TS source → vendored `data/`.** Anyone who edits TS source but forgets to re-vendor would ship stale data. Guard: the vendored-mode test and standalone package make targets — CI runs both, the release workflow the package check — so stale data fails before publish.
 - **Schema drift (Rust structs vs. TS JSON shape).** Taxonomy order, category→file mapping and the embedded-file inventory (the `include_bytes!` table `build.rs` generates) all come from `index.json`, so none has a Rust-side mirror to drift; the corpus loader still fails on a category file without embedded bytes. Per-record field-shape drift is covered by record-level Rust tests and the schema validation of every tool response in the test suite.
-- **Resolver drift (the one behaviour mirror).** The fixture pins what the TS resolvers answer, per category, for pinned and generated inputs; `resolver.rs`'s test replays it. Its `dataHash` must equal the embedded `index.json`'s, so a fixture from another corpus build fails before any case runs.
+- **Resolver drift (the one behaviour mirror).** The fixture pins what the TS resolvers answer, per category, for pinned and generated inputs, and what the category walk answers; `resolver.rs`'s test replays both. Its `dataHash` must equal the embedded `index.json`'s, so a fixture from another corpus build fails before any case runs.
 
 ## Source-dep vs artifact-dep, reconciled
 

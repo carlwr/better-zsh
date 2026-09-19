@@ -38,6 +38,7 @@ import { escapeRegExp, isSingle } from "@carlwr/typescript-extra"
 import { mkDocumented } from "./brands.ts"
 import type { DocCorpus } from "./corpus.ts"
 import {
+  classifyOrder,
   type DocCategory,
   type DocRecordIdOf,
   type DocRecordMap,
@@ -498,6 +499,69 @@ export function resolve<K extends DocCategory>(
   return hit.feedback
     ? { ...id, record: hit.record, feedback: hit.feedback }
     : { ...id, record: hit.record }
+}
+
+// --- Category walk ----------------------------------------------------------
+
+/**
+ * Per-category admission to the category walk (`resolveAll`): a category
+ * declines a scoped hit whose record is not a token on its own. Absent
+ * admits every hit.
+ */
+const walkAdmits: {
+  readonly [K in DocCategory]?: (record: DocRecordMap[K]) => boolean
+} = {
+  // Word designators and modifiers only mean something after an event
+  // designator: a bare `h` or `0` is not a history token. The scoped lookup
+  // keeps finding them — `history_expn` stays total over its keys.
+  history_expn: rec => rec.kind === "event-designator",
+}
+
+/** A `ResolvedHit<K>` for some category `K`: `category` narrows `id` and `record` together. */
+export type AnyResolvedHit = { [K in DocCategory]: ResolvedHit<K> }[DocCategory]
+
+/**
+ * Resolve a raw token in every category, `classifyOrder` first to last, and
+ * keep the hits the categories admit to a walk — one per category at most,
+ * so `for` yields its complex-command record before its reserved-word one.
+ * Empty when nothing resolves. The first element is the tie-broken answer
+ * to "what is this token?"; a scoped `resolve` is the answer for a known
+ * category.
+ *
+ * The walk order and the admission rule are corpus properties, owned here
+ * and pinned by the resolver fixture — consumers neither re-walk nor
+ * re-filter (PRINCIPLES.md §"Push decisions downstream").
+ */
+export function resolveAll(
+  corpus: DocCorpus,
+  raw: string,
+): readonly AnyResolvedHit[] {
+  const hits: AnyResolvedHit[] = []
+  for (const cat of classifyOrder) {
+    const hit = resolveAdmitted(corpus, cat, raw)
+    if (hit) hits.push(hit)
+  }
+  return hits
+}
+
+/**
+ * Scoped `resolve` under the walk's admission rule. Single cast site: under
+ * a generic `K` the hit is `ResolvedHit<K>`, which TS does not correlate
+ * back to the `AnyResolvedHit` union.
+ */
+function resolveAdmitted<K extends DocCategory>(
+  corpus: DocCorpus,
+  cat: K,
+  raw: string,
+): AnyResolvedHit | undefined {
+  const hit = resolve(corpus, cat, raw)
+  if (!hit) return undefined
+  const admits = walkAdmits[cat] as
+    | ((record: DocRecordMap[K]) => boolean)
+    | undefined
+  return admits === undefined || admits(hit.record)
+    ? (hit as AnyResolvedHit)
+    : undefined
 }
 
 // --- Resolver feedback ------------------------------------------------------

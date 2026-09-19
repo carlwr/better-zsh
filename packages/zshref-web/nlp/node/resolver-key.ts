@@ -2,9 +2,8 @@
 // map and the lookup contract.
 
 import type { DocCorpus } from "@carlwr/zsh-core"
-import { resolve } from "@carlwr/zsh-core/resolver"
+import { resolve, resolveAll } from "@carlwr/zsh-core/resolver"
 import {
-  classifyOrder,
   type DocCategory,
   type DocRecordMap,
   idOf,
@@ -18,21 +17,17 @@ export const identityOf = <K extends DocCategory>(
 ): RecordId => ({ category: cat, id: idOf(cat, rec) as string })
 
 /**
- * First hit over `[category]` if given, else over `classifyOrder`; per
- * category, zsh-core's `resolve` — trimmed `_id` equality first (the corpus
- * maps are keyed by `idOf`, i.e. `_id`), then the resolver. No
- * `history_expn` filtering: that is a `zsh_docs` concern, not the ranker's.
+ * zsh-core's verdict on `query`: scoped to `category` if given, else the
+ * category walk's first hit — its order and admission are zsh-core's.
  */
 export function resolverKey(
   corpus: DocCorpus,
   query: string,
   category?: DocCategory,
 ): ResolverHit | null {
-  const cats: readonly DocCategory[] =
-    category === undefined ? classifyOrder : [category]
-  for (const cat of cats) {
-    const hit = resolve(corpus, cat, query)
-    if (hit) return { category: hit.category, id: hit.id as string }
-  }
-  return null
+  const hit =
+    category === undefined
+      ? resolveAll(corpus, query)[0]
+      : resolve(corpus, category, query)
+  return hit ? { category: hit.category, id: hit.id as string } : null
 }

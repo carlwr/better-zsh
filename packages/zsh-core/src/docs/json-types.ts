@@ -85,15 +85,34 @@ export interface ResolverFixtureCase {
 /** @minItems 1 */
 export type ResolverFixtureCases = readonly ResolverFixtureCase[]
 
+/** One hit of the category walk: a category's `resolve` answer, admitted to the walk. */
+export interface WalkFixtureHit {
+  readonly category: DocCategory
+  readonly id: string
+  readonly feedback: ResolverFeedback | null
+}
+
+/** What `resolveAll` answers for one raw input, in `classifyOrder`; empty where nothing resolves. */
+export interface WalkFixtureCase {
+  readonly input: string
+  readonly hits: readonly WalkFixtureHit[]
+}
+
+/** @minItems 1 */
+export type WalkFixtureCases = readonly WalkFixtureCase[]
+
 /**
  * Resolver conformance fixture: per category, pinned and generated inputs with
- * the answers computed over the corpus identified by `dataHash`. A mirror
- * resolver is conformant when it gives the same answers.
+ * the answers computed over the corpus identified by `dataHash`; then the
+ * category walk's answers (`walk`) — order and admission — for the pinned
+ * inputs and every record's id and display. A mirror resolver is conformant
+ * when it gives the same answers.
  */
 export interface ResolverFixtureJson {
-  readonly version: 1
+  readonly version: 2
   readonly packageVersion: string
   /** `JsonIndex.dataHash` of the corpus the answers were computed over. */
   readonly dataHash: string
   readonly cases: { readonly [K in DocCategory]: ResolverFixtureCases }
+  readonly walk: WalkFixtureCases
 }

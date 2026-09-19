@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest"
 import { mkDocumented } from "../docs/brands"
 import { loadCorpus } from "../docs/corpus"
-import { type ResolverFeedback, resolve } from "../docs/resolver"
+import { type ResolverFeedback, resolve, resolveAll } from "../docs/resolver"
 import { type DocCategory, docCategories, mkRecordId } from "../docs/taxonomy"
 
 const corpus = loadCorpus()
@@ -311,4 +311,48 @@ describe("resolve round-trip (corpus-wide)", () => {
       expect(mismatched).toEqual([])
     },
   )
+})
+
+describe("resolveAll (category walk)", () => {
+  const categoriesOf = (raw: string) =>
+    resolveAll(corpus, raw).map(hit => hit.category)
+
+  test("walks classifyOrder: the richer record first on overlap", () => {
+    expect(categoriesOf("for")).toEqual(["complex_command", "reserved_word"])
+  })
+
+  test.each<[string, DocCategory, DocCategory]>([
+    // documented tie-breaks: tight identity resolvers beat option's
+    // no_-stripping and job_spec's %string fallback
+    ["nocorrect", "precmd_modifier", "option"],
+    ["noglob", "precmd_modifier", "option"],
+    ["TRAPHUP", "special_function", "option"],
+    ["precmd_functions", "special_function", "option"],
+    ["%n", "prompt_escape", "job_spec"],
+  ])("%s -> %s before %s", (raw, winner, loser) => {
+    const cats = categoriesOf(raw)
+    const w = cats.indexOf(winner)
+    const l = cats.indexOf(loser)
+    expect(w).toBeGreaterThanOrEqual(0)
+    expect(l === -1 || l > w).toBe(true)
+  })
+
+  test("hits carry their records and feedback", () => {
+    const [hit] = resolveAll(corpus, "NO_AUTO_CD")
+    if (hit?.category !== "option") throw new Error("expected an option hit")
+    expect(hit.record).toBe(corpus.option.get(hit.id))
+    expect(hit.feedback).toEqual({ kind: "input-negated" })
+  })
+
+  test("history: only event designators are tokens in a walk", () => {
+    // Scoped lookup keeps the modifier/word-designator records reachable.
+    expect(resolve(corpus, "history_expn", "h")?.record.kind).toBe("modifier")
+    expect(categoriesOf("h")).not.toContain("history_expn")
+    expect(categoriesOf("!42")).toContain("history_expn")
+  })
+
+  test("nothing resolves: empty", () => {
+    expect(resolveAll(corpus, "not-a-real-token")).toEqual([])
+    expect(resolveAll(corpus, "")).toEqual([])
+  })
 })

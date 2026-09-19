@@ -117,9 +117,9 @@ zsh-core exposes every category uniformly. Examples of overlap:
 - `reserved_word` ↔ `complex_command` on flow-control words (e.g. `for`)
 - `reserved_word` ↔ `builtin` on the `typeset` family
 
-Consumer-layer ordering resolves these:
+Ordering resolves these, outside the taxonomy:
 
-- `classifyOrder` in zsh-core (consumed by the `zshref` tools)
+- `resolveAll` in zsh-core, walking `classifyOrder` (the `zshref` tools, zshref-web)
 - fallback chains in extension hover
 
 Resist restructuring the taxonomy to eliminate overlap; the resolver walk is where overlap cost belongs.

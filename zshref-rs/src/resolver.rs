@@ -1,12 +1,12 @@
-//! Per-category resolver dispatch and lossy-resolution feedback.
-//! See DESIGN.md §"Resolver feedback channel".
+//! Per-category resolver dispatch, the category walk, and lossy-resolution
+//! feedback. See DESIGN.md §"Resolver feedback channel".
 //
 // MIRROR-OF: packages/zsh-core/src/docs/resolver.ts
 // MIRROR-OF: packages/zsh-core/src/docs/normalize-option.ts
 // MIRROR-OF: packages/zsh-core/src/docs/types.ts (record fields read by
 // name: `sig` / `groupOp` of `RedirDoc`, `hookArray` of `SpecialFunctionDoc`)
 
-use crate::corpus::{Category, Corpus, DocCategory, INDEX, Record};
+use crate::corpus::{CLASSIFY_ORDER, Category, Corpus, DocCategory, INDEX, Record};
 use serde::Serialize;
 use serde_json::Value;
 
@@ -81,6 +81,25 @@ pub fn resolve_in<'c>(corpus: &'c Corpus, cat: DocCategory, raw: &str) -> Option
         "special_param" => resolve_special_param(corpus, cat, raw),
         _ => resolve_literal(corpus, cat, raw),
     }
+}
+
+/// Resolve `raw` in every category, `CLASSIFY_ORDER` first to last, keeping
+/// the hits the categories admit to a walk — one per category at most.
+/// Mirrors `resolveAll`: the order and the admission rule are corpus
+/// properties, pinned by the fixture's `walk` section.
+pub fn resolve_all<'c>(corpus: &'c Corpus, raw: &str) -> Vec<ResolvedHit<'c>> {
+    CLASSIFY_ORDER
+        .iter()
+        .filter_map(|&cat| resolve_in(corpus, cat, raw).filter(walk_admits))
+        .collect()
+}
+
+/// Per-category admission to the walk: `history_expn` counts only for event
+/// designators — a bare word designator or modifier (`0`, `h`) is not a
+/// history token, though the scoped lookup keeps finding it. Mirrors
+/// `walkAdmits`.
+fn walk_admits(h: &ResolvedHit) -> bool {
+    h.category.as_str() != "history_expn" || h.rec.sub_kind() == Some("event-designator")
 }
 
 fn make_hit<'c>(
@@ -482,12 +501,26 @@ mod tests {
         #[serde(rename = "dataHash")]
         data_hash: String,
         cases: serde_json::Map<String, Value>,
+        walk: Vec<WalkCase>,
     }
 
     #[derive(Deserialize)]
     struct Case {
         input: String,
         id: Option<String>,
+        feedback: Option<Value>,
+    }
+
+    #[derive(Deserialize)]
+    struct WalkCase {
+        input: String,
+        hits: Vec<WalkHit>,
+    }
+
+    #[derive(Deserialize, PartialEq, Debug)]
+    struct WalkHit {
+        category: String,
+        id: String,
         feedback: Option<Value>,
     }
 
@@ -504,7 +537,7 @@ mod tests {
         });
         let fixture: Fixture = serde_json::from_str(&text).expect("fixture parses");
 
-        assert_eq!(fixture.version, 1);
+        assert_eq!(fixture.version, 2);
         let same_build = "fixture and embedded index.json come from different zsh-core builds \
                           — rebuild through the make target, not plain `cargo test`";
         assert_eq!(
@@ -541,6 +574,31 @@ mod tests {
             mismatches.is_empty(),
             "resolver.rs disagrees with the fixture:\n  {}",
             mismatches.join("\n  ")
+        );
+
+        // The walk: order and admission, the tool layer's tie-break.
+        assert!(!fixture.walk.is_empty(), "walk: no cases");
+        let mut walk_mismatches: Vec<String> = Vec::new();
+        for case in fixture.walk {
+            let got: Vec<WalkHit> = resolve_all(&corpus, &case.input)
+                .iter()
+                .map(|h| WalkHit {
+                    category: h.category.to_string(),
+                    id: h.id.to_string(),
+                    feedback: h.feedback.as_ref().map(|fb| json!(fb)),
+                })
+                .collect();
+            if got != case.hits {
+                walk_mismatches.push(format!(
+                    "walk / {:?}: expected {:?}, got {got:?}",
+                    case.input, case.hits
+                ));
+            }
+        }
+        assert!(
+            walk_mismatches.is_empty(),
+            "resolver.rs walk disagrees with the fixture:\n  {}",
+            walk_mismatches.join("\n  ")
         );
     }
 

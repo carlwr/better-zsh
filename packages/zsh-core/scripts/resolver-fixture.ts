@@ -3,8 +3,10 @@ import type {
   ResolverFixtureCase,
   ResolverFixtureCases,
   ResolverFixtureJson,
+  WalkFixtureCase,
+  WalkFixtureCases,
 } from "../src/docs/json-types.ts"
-import { resolve } from "../src/docs/resolver.ts"
+import { resolve, resolveAll } from "../src/docs/resolver.ts"
 import {
   type DocCategory,
   type DocRecordMap,
@@ -277,16 +279,27 @@ const extraInputs: { readonly [K in DocCategory]?: ExtraInputs<K> } = {
   special_function: d => [`${d.name}_functions`],
 }
 
+/** Every record's id, and its display where that differs. */
+function identityInputs<K extends DocCategory>(
+  corpus: DocCorpus,
+  cat: K,
+): Inputs {
+  return [...corpus[cat].values()].flatMap(doc => {
+    const id: string = idOf(cat, doc)
+    const display = docDisplay(cat, doc)
+    return [id, ...(display === id ? [] : [display])]
+  })
+}
+
 function recordInputs<K extends DocCategory>(
   corpus: DocCorpus,
   cat: K,
 ): Inputs {
   const extra = extraInputs[cat] ?? (() => [])
-  return [...corpus[cat].values()].flatMap(doc => {
-    const id: string = idOf(cat, doc)
-    const display = docDisplay(cat, doc)
-    return [id, ...(display === id ? [] : [display]), ...extra(doc)]
-  })
+  return [
+    ...identityInputs(corpus, cat),
+    ...[...corpus[cat].values()].flatMap(extra),
+  ]
 }
 
 /**
@@ -296,16 +309,20 @@ function recordInputs<K extends DocCategory>(
  */
 const INPUT_RE = /^[\x20-\x7E]*$/
 
+function checkInput(where: string, input: string): void {
+  if (!INPUT_RE.test(input)) {
+    throw new Error(
+      `${where}: input ${JSON.stringify(input)} is not printable ASCII`,
+    )
+  }
+}
+
 function caseFor(
   corpus: DocCorpus,
   cat: DocCategory,
   input: string,
 ): ResolverFixtureCase {
-  if (!INPUT_RE.test(input)) {
-    throw new Error(
-      `${cat}: input ${JSON.stringify(input)} is not printable ASCII`,
-    )
-  }
+  checkInput(cat, input)
   const hit = resolve(corpus, cat, input)
   return { input, id: hit?.id ?? null, feedback: hit?.feedback ?? null }
 }
@@ -319,6 +336,32 @@ function casesFor(corpus: DocCorpus, cat: DocCategory): ResolverFixtureCases {
   return [...inputs].map(input => caseFor(corpus, cat, input))
 }
 
+function walkCaseFor(corpus: DocCorpus, input: string): WalkFixtureCase {
+  checkInput("walk", input)
+  const hits = resolveAll(corpus, input).map(hit => ({
+    category: hit.category,
+    id: hit.id as string,
+    feedback: hit.feedback ?? null,
+  }))
+  return { input, hits }
+}
+
+/**
+ * The walk's answers for every pinned input plus each record's identity
+ * inputs — the tie-break for every documented id — leaving out the
+ * per-record surface variants, which the per-category cases already pin.
+ */
+function walkCases(corpus: DocCorpus): WalkFixtureCases {
+  const inputs = new Set([
+    ...crossCategoryInputs,
+    ...docCategories.flatMap(cat => [
+      ...(pinnedInputs[cat] ?? []),
+      ...identityInputs(corpus, cat),
+    ]),
+  ])
+  return [...inputs].map(input => walkCaseFor(corpus, input))
+}
+
 export function buildResolverFixture(
   corpus: DocCorpus,
   meta: { readonly packageVersion: string; readonly dataHash: string },
@@ -326,5 +369,5 @@ export function buildResolverFixture(
   const cases = Object.fromEntries(
     docCategories.map(cat => [cat, casesFor(corpus, cat)]),
   ) as ResolverFixtureJson["cases"]
-  return { version: 1, ...meta, cases }
+  return { version: 2, ...meta, cases, walk: walkCases(corpus) }
 }

@@ -1,11 +1,11 @@
 //! `zsh_docs` — zsh key → per-category resolved matches.
 //!
-//! Without `category`, walks `CLASSIFY_ORDER` and returns one match per
-//! resolving category. Feedback (e.g. `NO_`-stripping → `input-negated`)
-//! is forwarded from the per-category resolver.
+//! Without `category`, the resolver walk answers: one match per admitting
+//! category, in its order. Feedback (e.g. `NO_`-stripping →
+//! `input-negated`) is forwarded from the per-category resolver.
 
-use crate::corpus::{CLASSIFY_ORDER, Corpus, DocCategory};
-use crate::resolver::{ResolvedHit, ResolverFeedback, resolve_in};
+use crate::corpus::{Corpus, DocCategory};
+use crate::resolver::{ResolvedHit, ResolverFeedback, resolve_all, resolve_in};
 use crate::tools::envelope::Envelope;
 use crate::tools::schema::{MatchShape, Shape, output_schema};
 use crate::tools::{Field, Tool, ToolName, prose};
@@ -73,12 +73,6 @@ impl<'c> From<ResolvedHit<'c>> for Match<'c> {
     }
 }
 
-/// In the category walk, `history_expn` counts only for event designators:
-/// a bare word designator or modifier (`0`, `h`) is not a history token.
-fn walk_admits(h: &ResolvedHit) -> bool {
-    h.category.as_str() != "history_expn" || h.rec.sub_kind() == Some("event-designator")
-}
-
 fn run(input: Input, corpus: &Corpus) -> Result<Value> {
     let key = input.key.as_str();
     let matches: Vec<Match> = if key.trim().is_empty() {
@@ -89,13 +83,9 @@ fn run(input: Input, corpus: &Corpus) -> Result<Value> {
                 .map(Match::from)
                 .into_iter()
                 .collect(),
-            None => CLASSIFY_ORDER
-                .iter()
-                .filter_map(|&cat| {
-                    resolve_in(corpus, cat, key)
-                        .filter(walk_admits)
-                        .map(Match::from)
-                })
+            None => resolve_all(corpus, key)
+                .into_iter()
+                .map(Match::from)
                 .collect(),
         }
     };
