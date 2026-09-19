@@ -282,7 +282,9 @@ Per doc category, `subKindOf` returns `undefined` for every record or a non-empt
 
 Vendored `.yo` is consumed three ways:
 
-- **`loadCorpus()`** — runtime parse into `DocCorpus`; cacheable.
+- **`loadCorpus()`** — runtime parse into `DocCorpus`; lazy per category, cached (its JSDoc).
+  - the caching rule: zsh-core memoizes where the key is its own immutable data (files, categories); consumers cache where the key is theirs (document versions, provider lifetimes)
+  - rendering is pure and cheap — the whole corpus renders in milliseconds — and stays unmemoized
 - **Pre-parsed JSON** — same records; markdown bodies pre-rendered at build time. Distribution: `PACKAGING.md`.
   - _schema:_ one bundle, generated from the TS types plus the corpus (`packages/zsh-core/scripts/build-schema.ts`)
     - consumers key on `#/$defs/<DocCategory>`, never on TS type names

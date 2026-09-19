@@ -174,24 +174,30 @@ function buildCategoryMap<K extends DocCategory>(
 }
 
 /**
- * Load the full parsed doc corpus. Eager, cached, immutable. The first call
- * locates the vendored data; importing this module touches no file system.
+ * The parsed doc corpus: immutable, cached, lazy per category. The first
+ * call locates the vendored data (throws when missing); a category is
+ * parsed on first access and never twice, and no `.yo` file is parsed more
+ * than once however many categories share it. Importing this module touches
+ * no file system.
  */
 export const loadCorpus: () => DocCorpus = cached(() => {
   const dataDir = resolveZshDataDir()
-  // Parse each .yo file at most once: several categories share a file, and
-  // parseNodes is the dominant cost. `cachedUnary` keeps the lookup lazy and
-  // per-file.
+  // Several categories share a file, and parseNodes is the dominant cost.
   const getNodes: GetNodes = cachedUnary(file => {
     const raw = readFileSync(join(dataDir, file), "utf8")
     return parseNodes(fileFixups[file]?.(raw) ?? raw)
   })
-  return Object.freeze(
-    Object.fromEntries(
-      docCategories.map(cat => [
-        cat,
-        buildCategoryMap(cat, categoryLoader[cat](getNodes)),
-      ]),
-    ),
-  ) as DocCorpus
+  // A record of lazy fields: each category map is built by its accessor on
+  // first read. Consumers that touch few categories pay for few files; the
+  // type and every access site stay those of a plain object of maps.
+  const fields = Object.fromEntries(
+    docCategories.map(cat => [
+      cat,
+      {
+        enumerable: true,
+        get: cached(() => buildCategoryMap(cat, categoryLoader[cat](getNodes))),
+      } satisfies PropertyDescriptor,
+    ]),
+  )
+  return Object.freeze(Object.defineProperties({}, fields)) as DocCorpus
 })
