@@ -37,6 +37,7 @@ Invariants those headers don't carry:
   - renaming the file or moving the repo breaks the next publish until it is re-pointed
 - Generated data artifacts ship as GitHub release assets on the package's own tag, never as a registry payload — a registry tarball carries code, and a data blob there is weight every consumer pays for.
   - generated outside the tree the registry packs — no exclusion rule has to hold them back
+  - the library's own runtime never reads them either; why: `DESIGN.md` §"Why the library parses at runtime"
   - the version lives in the release tag and inside the payload; the asset name carries neither
   - `/releases/latest/download/` is ambiguous while tag series share a repo — consumers pin the tag
   - the packing step validates the unpacked asset as a consumer sees it, dry runs included

@@ -290,7 +290,16 @@ Vendored `.yo` is consumed three ways:
     - precision posture: PRINCIPLES.md §"Schema precision when schemas are co-released"
 - **Raw Yodl** under `dist/data/zsh-docs/` — advanced consumers.
 
-Per-category renderers are internal; public entry is `renderDoc`. The JSON is a sibling consumer path (e.g. Rust `include_bytes!`); it stays in zsh-core for build convenience — package split deferred.
+Per-category renderers are internal; public entry is `renderDoc`. The JSON stays in zsh-core for build convenience — package split deferred.
+
+### Why the library parses at runtime
+
+The TS API is the root; the JSON is a derived view of it, for consumers that cannot run the TypeScript — renderer and resolvers included (e.g. Rust `include_bytes!`). Library consumers parse the vendored Yodl at runtime; loading a pre-parsed corpus instead was considered and rejected:
+
+- the package depends on committed source only — what a source-form registry (JSR) publishes and what an unbuilt checkout (tests, scripts) runs
+  - a generated corpus would need a parse fallback: two data paths inside zsh-core
+- the projection is a seam: the JSON may lag, omit or reshape without touching the runtime API; the API's fidelity is never capped by the JSON's
+- parse cost per process is a laziness concern, not a distribution one
 
 Parser and renderer are layered: the parser may capture structure the renderer chooses to flatten or compose. Rendered markdown is the byte-equal contract surface; record-shape changes (new typed fields) stay below it until they cross into the wire schema. Records carry prose twice — typed fields for routing, `_mdBody` for reading — roughly a third to a half of the payload; accepted. Cross-cutting "records are self-contained" framing: PRINCIPLES.md.
 
