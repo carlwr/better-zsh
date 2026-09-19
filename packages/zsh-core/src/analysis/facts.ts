@@ -21,7 +21,6 @@ export {
 } from "./doc.ts"
 export type {
   BaseFact,
-  CmdFact,
   CmdHeadFact,
   CtxFact,
   Fact,
@@ -29,7 +28,6 @@ export type {
   FactKind,
   FactStrength,
   FuncDeclFact,
-  LineFact,
   PrecmdFact,
   ProcessSubstFact,
   QuotedRegionFact,
@@ -47,12 +45,6 @@ export {
   isRedirFact,
   isReservedWordFact,
 } from "./fact-types.ts"
-export {
-  cmdHeadFactsOnLine,
-  type FuncDeclHit,
-  funcDeclsAtLine,
-} from "./line-facts.ts"
-export { quotedRegionFacts } from "./quoted-region.ts"
 
 function shiftFact<T extends { span: TextSpan }>(base: number, fact: T): T {
   return { ...fact, span: absSpan(base, fact.span) }

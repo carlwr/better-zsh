@@ -1,8 +1,8 @@
 import fc from "fast-check"
 import { describe, expect, test } from "vitest"
+import type { LineFact } from "../../analysis/fact-types"
 import {
   analyzeDoc,
-  cmdHeadFactsOnLine,
   factsAt,
   factText,
   isCmdHeadFact,
@@ -13,10 +13,10 @@ import {
   isQuotedRegionFact,
   isRedirFact,
   isReservedWordFact,
-  type LineFact,
   lineStarts,
   offsetAt,
 } from "../../analysis/facts"
+import { cmdHeadFactsOnLine } from "../../analysis/line-facts"
 import { mockDoc } from "./test-util"
 
 const textsOf =

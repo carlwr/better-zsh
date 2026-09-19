@@ -5,9 +5,9 @@ import {
   factText,
   isQuotedRegionFact,
   type QuotedRegionFact,
-  quotedRegionFacts,
   textDoc,
 } from "../../analysis/facts"
+import { quotedRegionFacts } from "../../analysis/quoted-region"
 import { mockDoc } from "./test-util"
 
 function texts(lines: readonly string[]): string[] {

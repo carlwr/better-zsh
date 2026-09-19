@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest"
-import { cmdHeadFactsOnLine } from "../../analysis/facts"
+import { cmdHeadFactsOnLine } from "../../analysis/line-facts"
 import { loadCorpus } from "../../docs/corpus"
 
 const corpus = loadCorpus()

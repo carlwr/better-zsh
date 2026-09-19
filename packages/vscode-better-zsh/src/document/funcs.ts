@@ -1,6 +1,7 @@
-import { funcDeclsAtLine } from "@carlwr/zsh-core/analysis"
+import { isFuncDeclFact, positionAt } from "@carlwr/zsh-core/analysis"
 import * as vscode from "vscode"
 import { docCache } from "./cache"
+import { docAnalysis } from "./facts"
 import { activeWordRangeAt } from "./words"
 
 // A `#!` line is never a docstring.
@@ -36,26 +37,21 @@ export function funcAt(doc: vscode.TextDocument, pos: vscode.Position) {
 }
 
 function buildData(doc: vscode.TextDocument): FuncData {
-  const decls: FuncDecl[] = []
-  for (let line = 0; line < doc.lineCount; line++) {
-    const text = doc.lineAt(line).text
-    const hits = funcDeclsAtLine(text)
-    if (!hits.length) continue
-    // Names declared together share the docstring.
-    const docstring =
-      collectComments(doc, line - 1, -1) ||
-      collectComments(doc, line + 1, 1) ||
-      undefined
-    for (const hit of hits) {
-      const end = hit.start + hit.name.length
-      decls.push({
-        name: hit.name,
-        range: new vscode.Range(line, 0, line, text.length),
-        selectionRange: new vscode.Range(line, hit.start, line, end),
-        doc: docstring,
-      })
+  const { facts, starts } = docAnalysis(doc)
+  const decls = facts.filter(isFuncDeclFact).map((fact): FuncDecl => {
+    const { line, char } = positionAt(starts, fact.nameSpan.start)
+    const end = char + fact.name.length
+    return {
+      name: fact.name,
+      range: new vscode.Range(line, 0, line, doc.lineAt(line).text.length),
+      selectionRange: new vscode.Range(line, char, line, end),
+      // Names declared together share the docstring.
+      doc:
+        collectComments(doc, line - 1, -1) ||
+        collectComments(doc, line + 1, 1) ||
+        undefined,
     }
-  }
+  })
   const byName = new Map<string, FuncDecl>()
   for (const decl of decls) {
     if (!byName.has(decl.name)) byName.set(decl.name, decl)

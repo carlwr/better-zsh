@@ -138,6 +138,14 @@ describe("HoverProvider dispatch", () => {
     expect(valueAt("for x; do :; done", 0)).not.toMatch(/d:rw-for/)
   })
 
+  // Facts come from the whole-document analysis: a command word inside a
+  // multi-line quoted string is no hover, as it is no semantic token.
+  test("no builtin hover inside a multi-line quoted string", () => {
+    const src = 'echo "a\n  echo b"\necho c'
+    expect(at(src, 1, 3)).toBeUndefined()
+    expect(at(src, 2, 1)?.value).toMatch(/d:e/)
+  })
+
   // The editor shows a record without its envelope, so the category line
   // travels in the markdown — last.
   test("category line ends the hover", () => {

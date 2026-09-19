@@ -1,15 +1,14 @@
 import { cached } from "@carlwr/typescript-extra"
 import type { DocCorpus } from "@carlwr/zsh-core"
 import {
-  cmdHeadFactsOnLine,
+  type Fact,
   isProcessSubstFact,
   isRedirFact,
-  type LineFact,
 } from "@carlwr/zsh-core/analysis"
 import { resolve } from "@carlwr/zsh-core/resolver"
 import type { DocCategory, DocRecordId } from "@carlwr/zsh-core/taxonomy"
 import * as vscode from "vscode"
-import { contextAt } from "../document/facts"
+import { contextAt, lineFacts } from "../document/facts"
 import { funcAt } from "../document/funcs"
 import {
   activeRedirRangeAt,
@@ -20,8 +19,8 @@ import {
 import { activeLineAt, activeWordRangeAt } from "../document/words"
 import { docMarkdown } from "./record-markdown"
 
-// `setopt NO_AUTO_CD` and `set +J` hover as `AUTO_CD`: the option resolver's
-// `input-negated` feedback (`resolverFeedback`) is not surfaced.
+// `setopt NO_AUTO_CD` and `set +J` hover as `AUTO_CD`: the hit's
+// `input-negated` feedback is not surfaced.
 
 const PUNCT_PARAM = /[$?@*!#-]/
 
@@ -112,7 +111,7 @@ export class HoverProvider implements vscode.HoverProvider {
 
   private factBasedHover(doc: vscode.TextDocument, pos: vscode.Position) {
     const line = doc.lineAt(pos.line).text
-    const af = cmdHeadFactsOnLine(line)
+    const af = lineFacts(doc, pos.line)
     const tokenRange = activeTokenRangeAt(doc, pos)
     const token = tokenRange ? doc.getText(tokenRange) : undefined
 
@@ -184,15 +183,15 @@ const spanHas = (span: { start: number }, at: number, len: number) =>
   span.start <= at && at < span.start + len
 
 /** Find a fact of the given kind whose span text equals `token`. */
-function factAt<K extends LineFact["kind"]>(
-  facts: readonly LineFact[],
+function factAt<K extends Fact["kind"]>(
+  facts: readonly Fact[],
   line: string,
   token: string | undefined,
   kind: K,
-): Extract<LineFact, { kind: K }> | undefined {
+): Extract<Fact, { kind: K }> | undefined {
   if (!token) return undefined
   return facts.find(
-    (f): f is Extract<LineFact, { kind: K }> =>
+    (f): f is Extract<Fact, { kind: K }> =>
       f.kind === kind && line.slice(f.span.start, f.span.end) === token,
   )
 }

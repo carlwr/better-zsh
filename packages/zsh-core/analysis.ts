@@ -1,6 +1,6 @@
 /**
  * @packageDocumentation
- * Zsh analysis primitives and scanner helpers.
+ * Whole-document zsh analysis: the fact model, its offset helpers, and syntactic context.
  */
 
 export * from "./src/analysis/comment.ts"
