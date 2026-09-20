@@ -610,7 +610,7 @@ describe("render markdown", () => {
     expect(recordTitle("comp_utility", cuu)).toBe("`_all_labels`")
   })
 
-  test("recordTitle — param_expn solo sig drops form-index decoration", () => {
+  test("recordTitle — param_expn solo sig has no form index", () => {
     const solo: ParamExpnDoc = {
       ...px,
       ...identity("param_expn", "${name}"),

@@ -280,6 +280,12 @@ export function recordTitle<K extends DocCategory>(
   return override ? override(doc) : bt(doc.display)
 }
 
+/**
+ * The `form N of M` index is content, not decoration: grouped forms share
+ * one manual paragraph that says "in the first form", "in the second form"
+ * — without the index the prose has no referent. Never drop it (the
+ * `# <- this form` marker in {@link paramExpnHead} serves the same reader).
+ */
 function paramExpnTitle(doc: ParamExpnDoc): string {
   const n = doc.groupSigs.length
   const formIdx = n > 1 ? `, form ${doc.orderInGroup + 1} of ${n}` : ""
