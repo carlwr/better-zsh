@@ -346,7 +346,9 @@ describe("resolveAll (category walk)", () => {
 
   test("history: only event designators are tokens in a walk", () => {
     // Scoped lookup keeps the modifier/word-designator records reachable.
-    expect(resolve(corpus, "history_expn", "h")?.record.kind).toBe("modifier")
+    expect(resolve(corpus, "history_expn", "h")?.record.subKind).toBe(
+      "modifier",
+    )
     expect(categoriesOf("h")).not.toContain("history_expn")
     expect(categoriesOf("!42")).toContain("history_expn")
   })

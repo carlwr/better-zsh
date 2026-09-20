@@ -48,7 +48,7 @@ const o = (
 const p = (name: string, desc: string): ShellParamDoc => ({
   ...ident("special_param", name),
   desc,
-  scope: "shell-set",
+  subKind: "shell-set",
 })
 
 const cc = (name: string, desc: string): ComplexCommandDoc => ({
@@ -65,7 +65,7 @@ const rw = (name: string, desc: string): ReservedWordDoc => ({
   sig: name,
   desc,
   section: "Reserved Words",
-  pos: "command",
+  subKind: "command",
 })
 
 // Synthetic corpus: exercises dispatch/precedence rules with `/d:.../` markers.
@@ -195,7 +195,7 @@ describe("HoverProvider on the real corpus", () => {
     expect(
       mismatches(real.conditional_op.values(), cop => {
         const line =
-          cop.arity === "binary" ? `[[ a ${cop.id} b ]]` : `[[ ${cop.id} a ]]`
+          cop.subKind === "binary" ? `[[ a ${cop.id} b ]]` : `[[ ${cop.id} a ]]`
         const value = realAt(line, 0, line.indexOf(cop.id, 3))?.value
         return [value, rendered("conditional_op", cop.id)]
       }),

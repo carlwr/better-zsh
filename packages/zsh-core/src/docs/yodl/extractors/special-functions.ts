@@ -41,7 +41,7 @@ function parseHooks(yo: YodlSrc): SpecialFunctionDoc[] {
         sig: normalizeHeader(item.header),
         desc: normalizeBody(item.body),
         section: HOOK_SECTION,
-        kind: "hook",
+        subKind: "hook",
         hookArray: `${name}_functions`,
       } satisfies SpecialFunctionDoc,
     ]
@@ -61,7 +61,7 @@ function parseTraps(yo: YodlSrc): SpecialFunctionDoc[] {
         sig,
         desc: normalizeBody(item.body),
         section: TRAP_SECTION,
-        kind,
+        subKind: kind,
       } satisfies SpecialFunctionDoc,
     ]
   })

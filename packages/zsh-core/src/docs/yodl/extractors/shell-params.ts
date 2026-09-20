@@ -70,7 +70,7 @@ function emitParams(
       out.push({
         ...identity("special_param", head.name),
         desc: split.desc,
-        scope,
+        subKind: scope,
         ...(head.tied && { tied: mkDocumented("special_param", head.tied) }),
         ...(split.keys && { keys: split.keys }),
         ...(split.outro && { outro: split.outro }),

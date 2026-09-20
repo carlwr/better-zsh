@@ -33,7 +33,14 @@ export type Documented<K extends DocCategory> = string & {
   readonly __documented: K
 }
 
-/** What every record carries: its corpus identity and its surface form. */
+/**
+ * What every record carries: its corpus identity and its surface form.
+ *
+ * Not here, but by convention: a category with a sub-facet — an operator's
+ * arity, a widget's manual section, a parameter's scope — declares it as
+ * `subKind` with a closed literal union; a category without one declares
+ * no `subKind`. Generic readers: `subKindOf`.
+ */
 export interface DocRecordBase<K extends DocCategory> {
   /** The record's corpus key: a shell-safe slug — printable ASCII without whitespace, non-empty. */
   readonly id: Documented<K>
@@ -115,7 +122,7 @@ export interface ZshOption extends DocRecordBase<"option"> {
 export interface UnaryCondOpDoc extends DocRecordBase<"conditional_op"> {
   readonly operands: UnaryCondOperands
   readonly desc: string
-  readonly arity: "unary"
+  readonly subKind: "unary"
   readonly module?: ModuleName
 }
 
@@ -123,7 +130,7 @@ export interface UnaryCondOpDoc extends DocRecordBase<"conditional_op"> {
 export interface BinaryCondOpDoc extends DocRecordBase<"conditional_op"> {
   readonly operands: BinaryCondOperands
   readonly desc: string
-  readonly arity: "binary"
+  readonly subKind: "binary"
   readonly module?: ModuleName
 }
 
@@ -239,7 +246,8 @@ export interface ShellParamKey {
 
 /**
  * Special-parameter doc record. Does not extend `SyntaxDocBase`: this category
- * carries a typed `scope` instead of a generic `section: string` prose field.
+ * carries a typed scope as `subKind` instead of a generic `section: string`
+ * prose field.
  *
  * `keys` captures an upstream-documented enumerated nested set (e.g. an
  * associative-array's keys); the renderer composes the visible body from
@@ -251,7 +259,7 @@ export interface ShellParamDoc extends DocRecordBase<"special_param"> {
    * composes intro → key headings → `outro`. Without `keys`, the full body.
    */
   readonly desc: string
-  readonly scope: ShellParamScope
+  readonly subKind: ShellParamScope
   readonly tied?: Documented<"special_param">
   readonly keys?: readonly ShellParamKey[]
   /** Prose after the key list. */
@@ -270,7 +278,7 @@ export interface ShellParamDoc extends DocRecordBase<"special_param"> {
  * per-word prose.
  */
 export interface ReservedWordDoc extends DocRecordBase<"reserved_word"> {
-  readonly pos: ReservedWordPos
+  readonly subKind: ReservedWordPos
   readonly sig: string
   readonly section: string
   readonly desc?: string
@@ -383,7 +391,7 @@ export interface ParamFlagDoc
 export interface HistoryDoc
   extends DocRecordBase<"history_expn">,
     SyntaxDocBase {
-  readonly kind: HistoryKind
+  readonly subKind: HistoryKind
 }
 
 export type GlobOpKind = "standard" | "ksh-like"
@@ -393,11 +401,11 @@ export type GlobOpKind = "standard" | "ksh-like"
  *
  * No `requires` field: `ksh-like` depends on `KSH_GLOB`, but a structured
  * hint would invite an expectation the corpus can't meet generally — many
- * forms depend on shell state we don't model. `kind` is the discriminator;
+ * forms depend on shell state we don't model. `subKind` is the discriminator;
  * option-dependency lookup stays in rendered prose.
  */
 export interface GlobOpDoc extends DocRecordBase<"glob_op">, SyntaxDocBase {
-  readonly kind: GlobOpKind
+  readonly subKind: GlobOpKind
 }
 
 /** Glob flags (`(#i)`, `(#b)`, ...) — in-pattern. */
@@ -428,11 +436,16 @@ export const promptSubsections = [
 
 export type PromptSubsection = (typeof promptSubsections)[number]
 
-/** Prompt-expansion escape sequences -- e.g. `%n`, `%~`, `%D{string}`, `%F{color}`. */
-export interface PromptEscapeDoc
-  extends DocRecordBase<"prompt_escape">,
-    SyntaxDocBase {
-  readonly section: PromptSubsection
+/**
+ * Prompt-expansion escape sequences -- e.g. `%n`, `%~`, `%D{string}`, `%F{color}`.
+ *
+ * Does not extend `SyntaxDocBase`: the manual subsection is the typed
+ * `subKind`, not a generic `section: string` prose field.
+ */
+export interface PromptEscapeDoc extends DocRecordBase<"prompt_escape"> {
+  readonly sig: string
+  readonly desc: string
+  readonly subKind: PromptSubsection
 }
 
 export const zleWidgetSubsections = [
@@ -447,8 +460,6 @@ export const zleWidgetSubsections = [
 ] as const
 
 export type ZleWidgetSubsection = (typeof zleWidgetSubsections)[number]
-
-export type ZleWidgetKind = "standard" | "special"
 
 /** Keymaps the manual attributes a widget's default bindings to. */
 export const zleBindingKeymaps = [
@@ -493,9 +504,8 @@ export interface ZleWidgetSubItem {
  */
 export interface ZleWidgetDoc extends DocRecordBase<"zle_widget"> {
   readonly desc: string
-  readonly section: ZleWidgetSubsection
-  /** `"standard"` for bindable editing widgets; `"special"` for shell-called hooks. */
-  readonly kind: ZleWidgetKind
+  /** The manual subsection: `Special Widgets` holds the shell-called hooks; every other holds bindable editing widgets. */
+  readonly subKind: ZleWidgetSubsection
   /**
    * Default bindings per keymap: the header's `(emacs) (vicmd) (viins)`
    * triple or, under `Text Objects`, its single `viopp`/`visual` group.
@@ -514,6 +524,9 @@ export interface ZleWidgetDoc extends DocRecordBase<"zle_widget"> {
   readonly module?: ModuleName
 }
 
+/** `special`: `.safe` — immutable and always present. */
+export type KeymapKind = "regular" | "special"
+
 /**
  * ZLE keymap — one of the fixed initial keymaps (`emacs`, `viins`, `vicmd`,
  * `viopp`, `visual`, `isearch`, `command`, `.safe`).
@@ -522,8 +535,7 @@ export interface ZleWidgetDoc extends DocRecordBase<"zle_widget"> {
  * `$VISUAL`/`$EDITOR`; tracked via `linkedFrom` on the default target (emacs).
  */
 export interface KeymapDoc extends DocRecordBase<"keymap">, SyntaxDocBase {
-  /** `.safe` is special — immutable and always present. */
-  readonly isSpecial: boolean
+  readonly subKind: KeymapKind
   /** Aliases onto this keymap (e.g. `main` onto `emacs`). */
   readonly linkedFrom: readonly string[]
 }
@@ -537,7 +549,7 @@ export type JobSpecKind =
   | "previous"
 
 export interface JobSpecDoc extends DocRecordBase<"job_spec">, SyntaxDocBase {
-  readonly kind: JobSpecKind
+  readonly subKind: JobSpecKind
 }
 
 /** Arithmetic operator arity; `overloaded` = same op as both unary and binary (`+`, `-`). */
@@ -545,7 +557,7 @@ export type ArithOpArity = "unary" | "binary" | "ternary" | "overloaded"
 
 /** Arithmetic operator — one record per op from `arith.yo`'s native-precedence table. */
 export interface ArithOpDoc extends DocRecordBase<"arith_op">, SyntaxDocBase {
-  readonly arity: ArithOpArity
+  readonly subKind: ArithOpArity
 }
 
 /**
@@ -561,7 +573,7 @@ export type SpecialFunctionKind = "hook" | "trap-literal" | "trap-template"
 export interface SpecialFunctionDoc
   extends DocRecordBase<"special_function">,
     SyntaxDocBase {
-  readonly kind: SpecialFunctionKind
+  readonly subKind: SpecialFunctionKind
   /** Hook's companion `${name}_functions` array name — the resolver's key for `<hook>_functions` input. Absent on TRAP*. */
   readonly hookArray?: string
 }

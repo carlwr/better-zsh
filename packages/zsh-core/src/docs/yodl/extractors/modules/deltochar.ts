@@ -15,8 +15,7 @@ export function extractDeltochar(yo: YodlSrc): readonly ZleWidgetDoc[] {
         (name): ZleWidgetDoc => ({
           ...identity("zle_widget", name),
           desc,
-          kind: "standard",
-          section: "Miscellaneous",
+          subKind: "Miscellaneous",
           defaultBindings: [],
           module: "zsh/deltochar",
         }),

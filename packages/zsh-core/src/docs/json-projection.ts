@@ -1,33 +1,27 @@
 // MIRRORED-IN: zshref-rs/src/corpus.rs
 
-import { isDefined, isEmpty } from "@carlwr/typescript-extra"
+import { isEmpty } from "@carlwr/typescript-extra"
 
 import { renderRecord } from "../render/md.ts"
 import { displayPattern, idPattern } from "./brands.ts"
 import type { DocCorpus } from "./corpus.ts"
 import type { WithMarkdown } from "./json-types.ts"
-import { type DocCategory, type DocRecordMap, subKindOf } from "./taxonomy.ts"
+import type { DocCategory, DocRecordMap } from "./taxonomy.ts"
 import type { DocRecordBase } from "./types.ts"
 
 /**
  * Project the records of `cat` as JSON consumers see them: each augmented
- * with its `RenderedRecord` fields and sub-kind. Generated fields are
- * `_`-prefixed (`_mdBody` included): a namespace apart from the records' own
- * field names (`id`, `display`, `subKind` on ParamExpnDoc).
+ * with its `RenderedRecord` fields. Generated fields are `_`-prefixed
+ * (`_mdBody` included): a namespace apart from the records' own field
+ * names (`id`, `display`, `subKind`).
  */
 export function projectRecords<K extends DocCategory>(
   corpus: DocCorpus,
   cat: K,
 ): readonly WithMarkdown<DocRecordMap[K]>[] {
   return [...corpus[cat].values()].map(rec => {
-    const subKind = subKindOf(cat, rec)
     const { title, mdBody } = renderRecord(corpus, cat, rec)
-    return {
-      ...rec,
-      _mdBody: mdBody,
-      _title: title,
-      ...(isDefined(subKind) ? { _subKind: subKind } : {}),
-    }
+    return { ...rec, _mdBody: mdBody, _title: title }
   })
 }
 

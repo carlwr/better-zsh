@@ -3,7 +3,6 @@ import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 import { createGenerator, type Schema } from "ts-json-schema-generator"
 import { displayPattern, idPattern } from "../src/docs/brands.ts"
-import { loadCorpus } from "../src/docs/corpus.ts"
 import {
   fmtJson,
   recordsSchemaDefs,
@@ -11,11 +10,7 @@ import {
   resolverFixture,
   schemaFile,
 } from "../src/docs/json-artifacts.ts"
-import {
-  type DocCategory,
-  docCategories,
-  subKindEnums,
-} from "../src/docs/taxonomy.ts"
+import { type DocCategory, docCategories } from "../src/docs/taxonomy.ts"
 import { PKG_REPO_URL } from "../src/meta/pkg-info.ts"
 
 const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), "..")
@@ -105,24 +100,6 @@ function propsOf(branch: Obj, key: string): Obj {
 }
 
 /**
- * Per-category `_subKind`: required with the corpus enum where the category
- * has sub-kinds, absent (so `additionalProperties: false` rejects it) where
- * it has none. The type declares an optional string; the corpus invariant
- * ("always-or-never per category") is what makes this precise.
- */
-function pinSubKind(record: Obj, values: readonly string[] | undefined): void {
-  for (const branch of branches(record)) {
-    const props = propsOf(branch, "_subKind")
-    if (values === undefined) {
-      delete props._subKind
-    } else {
-      props._subKind = { type: "string", enum: [...values] }
-      branch.required = [...(branch.required as string[]), "_subKind"]
-    }
-  }
-}
-
-/**
  * One identity definition per category: `id` and every cross-reference (a
  * `Documented<cat>` field such as `aliasOf`) point at it, so the schema says
  * they hold the same kind of value — the shell-safe slug pattern. `display`
@@ -171,7 +148,6 @@ function recordsBundle(gen: ReturnType<typeof createGenerator>): Obj {
   const defs = bundle.$defs as Defs
   const root = defOf(defs, bundle.$ref as string).def
   const rootProps = root.properties as Record<string, Obj>
-  const enums = subKindEnums(loadCorpus())
   const recordDefs = new Set(docCategories.map(recordsSchemaDefs.record))
 
   for (const cat of docCategories) {
@@ -184,8 +160,6 @@ function recordsBundle(gen: ReturnType<typeof createGenerator>): Obj {
     if (recordDefs.has(name)) {
       throw new Error(`${name} is also the record type of ${cat}`)
     }
-    pinSubKind(def, enums[cat])
-
     // Consumers key on category-named defs, not on TS type names.
     renameDef(defs, name, recordsSchemaDefs.record(cat))
     hoistId(defs, cat, def)

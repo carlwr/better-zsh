@@ -9,7 +9,7 @@ const SECTION = "Keymaps"
 /**
  * `main` is not its own keymap but an alias to `emacs` (default) or `viins`
  * (vi emulation); represented via `linkedFrom: ["main"]` on `emacs`. `.safe`
- * gets `isSpecial: true` — upstream prose marks it as immutable.
+ * is the `special` keymap — upstream prose marks it as immutable.
  */
 export function parseKeymaps(yo: YodlSrc): readonly KeymapDoc[] {
   const out: KeymapDoc[] = []
@@ -17,14 +17,14 @@ export function parseKeymaps(yo: YodlSrc): readonly KeymapDoc[] {
     if (!item.body) continue
     const name = firstTt(item.header)?.trim()
     if (!name) continue
-    const isSpecial = name === ".safe"
+    const subKind = name === ".safe" ? "special" : "regular"
     const linkedFrom = name === "emacs" ? ["main"] : []
     out.push({
       ...identity("keymap", name),
       sig: name,
       desc: normalizeBody(item.body),
       section: SECTION,
-      isSpecial,
+      subKind,
       linkedFrom,
     })
   }

@@ -13,7 +13,7 @@ true if file exists.
 )`
     const op = only(parseCondOps(yo))
     expect(op.id).toBe(cond("-a"))
-    expect(op.arity).toBe("unary")
+    expect(op.subKind).toBe("unary")
     expect(op.operands).toEqual(["file"])
     expect(op.desc).toContain("file exists")
   })
@@ -24,7 +24,7 @@ true if file1 is newer than file2.
 )`
     const op = only(parseCondOps(yo))
     expect(op.id).toBe(cond("-nt"))
-    expect(op.arity).toBe("binary")
+    expect(op.subKind).toBe("binary")
     expect(op.operands).toEqual(["file1", "file2"])
   })
 
@@ -60,7 +60,7 @@ true if string matches pattern.
       ["-eq", "binary"],
       ["=~", "binary"],
     ])("%s → %s", (op, arity) => {
-      expect(byOp.get(cond(op))?.arity).toBe(arity)
+      expect(byOp.get(cond(op))?.subKind).toBe(arity)
     })
   })
 })

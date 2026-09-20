@@ -162,16 +162,16 @@ Follow when the domain calls for it; deviate when it doesn't.
 
 ### The structural identity invariant
 
-Every record extends `DocRecordBase<K>` (`id: Documented<K>`, the corpus key, and `display`), asserted at compile time in `zsh-core/taxonomy`. The dropped alternative — per-category identity fields (`name`, `op`, `slug`, ...) behind an accessor table — read as domain vocabulary but cost each generic reader a dispatch and the JSON a duplicated generated id; once the JSON carried a uniform id anyway, the field won.
+Every record extends `DocRecordBase<K>` (`id: Documented<K>`, the corpus key, and `display`), asserted at compile time in `zsh-core/taxonomy`. The dropped alternative — per-category identity fields (`name`, `op`, `slug`, ...) behind an accessor table — read as domain vocabulary but cost each generic reader a dispatch and the JSON a duplicated generated id; once the JSON carried a uniform id anyway, the field won. The per-category sub-facet follows the same rule: `subKind` on the record, a closed union per category (DESIGN.md §"`subKind` is structural per category").
 
 ### Structural info beats markdown
 
 Prefer typed structural fields over encoding signals in markdown prose. Examples:
 
 - `subKind`
-- `kind`
 - `requires`
 - `args`
+- `hookArray`
 
 Agents pay tokens for markdown. Structured JSON beats it on:
 

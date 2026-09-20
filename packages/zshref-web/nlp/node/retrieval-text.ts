@@ -39,7 +39,7 @@ export interface Identity {
   subKind?: string
 }
 
-const headerFields: ReadonlySet<string> = new Set(["id", "display"])
+const headerFields: ReadonlySet<string> = new Set(["id", "display", "subKind"])
 
 /** All records in index order: `docCategories` order, corpus map order within. */
 export function corpusTexts(
@@ -57,7 +57,7 @@ export function recordText(
   indexGroups: IndexGroups,
 ): RecordText {
   const title = strField(rec, "_title")
-  const subKind = strField(rec, "_subKind")
+  const subKind = strField(rec, "subKind")
   const mdBody = strField(rec, "_mdBody")
   const ident: Identity = {
     category: cat,
@@ -83,9 +83,8 @@ export function recordText(
 }
 
 /**
- * Header lines, then every record field in emission order; the identity
- * fields (already in the header), the generated (`_`-prefixed) fields and
- * `desc` skipped.
+ * Header lines, then every record field in emission order; the header's
+ * fields, the generated (`_`-prefixed) fields and `desc` skipped.
  */
 export function structuredText(ident: Identity, rec: JsonRecord): string {
   const lines = [

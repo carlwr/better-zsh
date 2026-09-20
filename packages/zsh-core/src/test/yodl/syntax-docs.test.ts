@@ -82,8 +82,8 @@ enditem()`
       ["if", "command"],
       ["[[", "command"],
       ["}", "any"],
-    ] as const)("%s pos=%s", (word, pos) => {
-      expect(docs.get(rw(word))?.pos).toBe(pos)
+    ] as const)("%s subKind=%s", (word, pos) => {
+      expect(docs.get(rw(word))?.subKind).toBe(pos)
     })
   })
 
@@ -102,7 +102,7 @@ enditem()`
     expect(docs.every(d => d.desc === "Current history event number.")).toBe(
       true,
     )
-    expect(docs.every(d => d.section === "Shell state")).toBe(true)
+    expect(docs.every(d => d.subKind === "Shell state")).toBe(true)
   })
 
   const widgetYo = (subsect: string, ...items: readonly string[]) =>
@@ -125,8 +125,7 @@ enditem()`
     )
     const doc = only(parseZleWidgets(yo))
     expect(doc.id).toBe(zw("backward-char"))
-    expect(doc.kind).toBe("standard")
-    expect(doc.section).toBe("Movement")
+    expect(doc.subKind).toBe("Movement")
     expect(doc.defaultBindings).toEqual([{ keymap: "emacs", keys: ["^B"] }])
   })
 
@@ -241,7 +240,7 @@ enditem()`
           minCount: 80,
           keyOf: doc => doc.id,
           descOf: doc => doc.desc,
-          sectionOf: doc => doc.scope,
+          sectionOf: doc => doc.subKind,
           known: [
             "SECONDS",
             "argv",
@@ -276,7 +275,7 @@ enditem()`
         expectDocCorpus({
           docs: parseHistory(EXPN_YO),
           minCount: 30,
-          keyOf: doc => `${doc.kind}:${doc.id}`,
+          keyOf: doc => `${doc.subKind}:${doc.id}`,
           descOf: doc => doc.desc,
           sectionOf: doc => doc.section,
           known: [
@@ -345,7 +344,7 @@ enditem()`
           minCount: 40,
           keyOf: doc => doc.id,
           descOf: doc => doc.desc,
-          sectionOf: doc => doc.section,
+          sectionOf: doc => doc.subKind,
           known: ["%n", "%~", "%D{string}", "%F", "%{...%}"],
         }),
     ],

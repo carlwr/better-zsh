@@ -37,7 +37,7 @@ export function parseArithOps(yo: YodlSrc): readonly ArithOpDoc[] {
     sig: op,
     desc,
     section: SECTION,
-    arity,
+    subKind: arity,
   }))
 }
 

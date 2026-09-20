@@ -4,7 +4,6 @@ import {
   type ZleBindingKeymap,
   type ZleDefaultBinding,
   type ZleWidgetDoc,
-  type ZleWidgetKind,
   type ZleWidgetSubItem,
   type ZleWidgetSubsection,
   zleWidgetSubsections,
@@ -41,10 +40,9 @@ const SPECIAL_SECTION = "Special Widgets"
  */
 export function parseZleWidgets(yo: YodlSrc): readonly ZleWidgetDoc[] {
   return [
-    ...parseWidgetSection(extractSectBody(yo, STANDARD_SECTION), "standard"),
+    ...parseWidgetSection(extractSectBody(yo, STANDARD_SECTION)),
     ...parseWidgetSection(
       extractSectionBody(yo, SPECIAL_SECTION),
-      "special",
       SPECIAL_SECTION,
     ),
   ]
@@ -57,7 +55,6 @@ interface WidgetHead {
 
 function parseWidgetSection(
   section: YodlSrc,
-  kind: ZleWidgetKind,
   sectionDefault = "",
 ): ZleWidgetDoc[] {
   const out: ZleWidgetDoc[] = []
@@ -73,8 +70,7 @@ function parseWidgetSection(
     const mkDoc = (head: WidgetHead): ZleWidgetDoc => ({
       ...identity("zle_widget", head.name),
       desc: body.desc,
-      section,
-      kind,
+      subKind: section,
       defaultBindings: parseDefaultBindings(head.header, section),
       ...(body.subItems && { subItems: body.subItems }),
       ...(body.outro && { outro: body.outro }),

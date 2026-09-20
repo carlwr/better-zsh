@@ -513,7 +513,7 @@ const walkAdmits: {
   // Word designators and modifiers only mean something after an event
   // designator: a bare `h` or `0` is not a history token. The scoped lookup
   // keeps finding them — `history_expn` stays total over its keys.
-  history_expn: rec => rec.kind === "event-designator",
+  history_expn: rec => rec.subKind === "event-designator",
 }
 
 /** A `ResolvedHit<K>` for some category `K`: `category` narrows `id` and `record` together. */

@@ -22,7 +22,7 @@ const corpus: DocCorpus = {
       sig: "if list then list fi",
       desc: "",
       section: "Complex Commands",
-      pos: "command" as const,
+      subKind: "command" as const,
     },
   ]),
   precmd_modifier: by([
@@ -36,7 +36,7 @@ const corpus: DocCorpus = {
     {
       ...ident("special_param", "SECONDS"),
       desc: "",
-      scope: "shell-set" as const,
+      subKind: "shell-set" as const,
     },
   ]),
   option: by([
@@ -51,7 +51,7 @@ const corpus: DocCorpus = {
   conditional_op: by([
     {
       ...ident("conditional_op", "=="),
-      arity: "binary" as const,
+      subKind: "binary" as const,
       operands: ["s1", "s2"] as const,
       desc: "string equality",
     },

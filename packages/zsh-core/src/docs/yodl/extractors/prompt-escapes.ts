@@ -44,7 +44,7 @@ export function parsePromptEscapes(yo: YodlSrc): readonly PromptEscapeDoc[] {
           ...identity("prompt_escape", key),
           sig: head.sig,
           desc,
-          section,
+          subKind: section,
         })
       }
     }

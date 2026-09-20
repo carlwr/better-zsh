@@ -31,7 +31,7 @@ export function parseJobSpecs(yo: YodlSrc): readonly JobSpecDoc[] {
           sig: normalizeHeader(item.header),
           desc: normalizeBody(item.body),
           section: SECTION,
-          kind: entry.kind,
+          subKind: entry.kind,
         } satisfies JobSpecDoc,
       ]
     },

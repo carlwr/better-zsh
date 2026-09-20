@@ -23,7 +23,7 @@ function provider(
   })
   const rw = (name: string): ReservedWordDoc => ({
     ...ident("reserved_word", name),
-    pos: "command",
+    subKind: "command",
     sig: name,
     section: "",
   })

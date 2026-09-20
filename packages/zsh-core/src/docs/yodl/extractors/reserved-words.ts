@@ -72,7 +72,7 @@ export function parseReswords(yo: YodlSrc): readonly ReservedWordDoc[] {
       const desc = descFor(name)
       return {
         ...identity("reserved_word", name),
-        pos: "command",
+        subKind: "command",
         sig: name,
         section: SECTION,
         ...(desc === undefined ? {} : { desc }),
@@ -83,7 +83,7 @@ export function parseReswords(yo: YodlSrc): readonly ReservedWordDoc[] {
     ...cmdEntries,
     {
       ...identity("reserved_word", "}"),
-      pos: "any",
+      subKind: "any",
       sig: "}",
       desc: ANY_DESC,
       section: SECTION,

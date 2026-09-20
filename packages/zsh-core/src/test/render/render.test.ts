@@ -73,17 +73,17 @@ const zleOpt: ZshOption = {
   desc: "d:zle",
 }
 
-const cond = <A extends CondOpDoc["arity"]>(
-  arity: A,
+const cond = <A extends CondOpDoc["subKind"]>(
+  subKind: A,
   op: string,
-  operands: Extract<CondOpDoc, { arity: A }>["operands"],
+  operands: Extract<CondOpDoc, { subKind: A }>["operands"],
   desc: string,
 ): CondOpDoc =>
   ({
     ...identity("conditional_op", op),
     operands,
     desc,
-    arity,
+    subKind,
   }) as CondOpDoc
 
 const cu = cond("unary", "-a", ["file"], "d:u")
@@ -127,7 +127,7 @@ const word: ReservedWordDoc = {
   sig: "if list then list fi",
   desc: "d:rw",
   section: "",
-  pos: "command",
+  subKind: "command",
 }
 const cc: ComplexCommandDoc = {
   ...identity("complex_command", "if"),
@@ -140,7 +140,7 @@ const cc: ComplexCommandDoc = {
 const sec: ShellParamDoc = {
   ...identity("special_param", "SECONDS"),
   desc: "d:p",
-  scope: "shell-set",
+  subKind: "shell-set",
 }
 // Sig-shaped fixtures; `extra` carries the category's own fields, so the
 // result is only claimed to be `K`-shaped.
@@ -161,10 +161,10 @@ const stub = <K extends DocCategory>(
 const sf = stub("subscript_flag", "w", { desc: "d:sf", args: ["string"] })
 const pf = stub("param_expn_flag", "U", { desc: "d:pf" })
 const hi = stub("history_expn", "!!", {
-  kind: "event-designator",
+  subKind: "event-designator",
   desc: "d:hi",
 })
-const go = stub("glob_op", "*", { kind: "standard", desc: "d:go" })
+const go = stub("glob_op", "*", { subKind: "standard", desc: "d:go" })
 const gf = stub("glob_flag", "i", { desc: "d:gf", args: ["expr"] })
 const gq = stub("glob_qualifier", "@", { desc: "d:gq", args: [] })
 
@@ -172,13 +172,12 @@ const pe: PromptEscapeDoc = {
   ...identity("prompt_escape", "%n"),
   sig: "%n",
   desc: "d:pe",
-  section: "Login information",
+  subKind: "Login information",
 }
 const zw: ZleWidgetDoc = {
   ...identity("zle_widget", "backward-kill-word"),
   desc: "d:zw",
-  section: "Modifying Text",
-  kind: "standard",
+  subKind: "Modifying Text",
   defaultBindings: [{ keymap: "emacs", keys: ["^W", "ESC-^H", "ESC-^?"] }],
 }
 const km: KeymapDoc = {
@@ -186,7 +185,7 @@ const km: KeymapDoc = {
   sig: "emacs",
   desc: "d:km",
   section: "Keymaps",
-  isSpecial: false,
+  subKind: "regular",
   linkedFrom: ["main"],
 }
 const js: JobSpecDoc = {
@@ -194,21 +193,21 @@ const js: JobSpecDoc = {
   sig: "%%",
   desc: "d:js",
   section: "Jobs",
-  kind: "current",
+  subKind: "current",
 }
 const ao: ArithOpDoc = {
   ...identity("arith_op", "+"),
   sig: "+",
   desc: "d:ao",
   section: "Arithmetic Evaluation",
-  arity: "overloaded",
+  subKind: "overloaded",
 }
 const sfn: SpecialFunctionDoc = {
   ...identity("special_function", "chpwd"),
   sig: "chpwd",
   desc: "d:sfn",
   section: "Hook Functions",
-  kind: "hook",
+  subKind: "hook",
   hookArray: "chpwd_functions",
 }
 const cuu: CompUtilityDoc = {
@@ -438,7 +437,7 @@ describe("render markdown", () => {
   test.each(docCategories)("%s category line; body without one", cat => {
     const doc = baseArrays[cat][0]
     if (doc === undefined) throw new Error(`no fixture for ${cat}`)
-    const sub = subKindOf(cat, doc)
+    const sub = subKindOf(doc)
     const label = docCategoryLabels[cat]
     const want = sub === undefined ? label : `${label} (${sub})`
     expect(categoryFooter(cat, doc)).toBe(`_Category:_ ${want}`)
@@ -448,7 +447,7 @@ describe("render markdown", () => {
   })
 
   test("category line subKind — reserved word position", () => {
-    expect(categoryFooter("reserved_word", { ...word, pos: "any" })).toBe(
+    expect(categoryFooter("reserved_word", { ...word, subKind: "any" })).toBe(
       "_Category:_ reserved word (any)",
     )
   })
@@ -456,7 +455,7 @@ describe("render markdown", () => {
   // `ZLE` is an option name: composed into a body ahead of option-ref
   // bolding, the line would come out as `_Category:_ **`ZLE`** widget`.
   test.each([
-    ["zle_widget", zw, "ZLE widget (standard:Modifying Text)"],
+    ["zle_widget", zw, "ZLE widget (Modifying Text)"],
     ["keymap", km, "ZLE keymap (regular)"],
   ] as const)("category line is a bolding hazard — %s", (cat, doc, want) => {
     const withZle = mkTestCorpus({ option: [cd, zleOpt] })
@@ -470,7 +469,7 @@ describe("render markdown", () => {
       ...identity("reserved_word", "for"),
       sig: "for",
       section: "Reserved Words",
-      pos: "command",
+      subKind: "command",
     }
     expect(renderRecord(noOpts, "reserved_word", bare)).toEqual({
       title: "`for`",
@@ -520,7 +519,7 @@ describe("render markdown", () => {
 
     const special = body("keymap", {
       ...km,
-      isSpecial: true,
+      subKind: "special",
       linkedFrom: [],
     })
     expect(special).toMatch(/_Special:_ cannot be altered$/)

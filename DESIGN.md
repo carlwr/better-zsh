@@ -220,7 +220,7 @@ Ids are **shell-safe slugs**; `display` and `sig` keep the human-readable form (
 
 - **Corpus keys are templates** (`!n`, `!str`, `h`, …). For modifiers, the id is the bare letter (`h`) and `sig` keeps the documented form (`h [ digits ]`).
 - **`resolveHistory` is intentionally narrow** — event-designators only (same "totality, not utility" posture as `param_expn`); details and the future-`src/analysis/` placement: its JSDoc in `zsh-core/resolver`.
-- **`kind` is the typed facet** — search exposes `subKind` from each record's `kind`.
+- **`subKind` is the typed facet** — event designator, word designator or modifier; the walk admits only the first.
 
 ### Parameter-expansion identity and shape
 
@@ -241,7 +241,7 @@ Identity is the full sig (e.g. `${name:-word}` vs `${name-word}` as distinct rec
 
 Three sibling categories under `glob_*` — shared prefix is labelling only:
 
-- `glob_op` — in-pattern metacharacters; `kind: "standard" | "ksh-like"`
+- `glob_op` — in-pattern metacharacters; `subKind: "standard" | "ksh-like"`
 - `glob_flag` — in-pattern `(#…)`; needs `EXTENDED_GLOB`
 - `glob_qualifier` — pattern-trailing parenthesised filters; letter and multi-char keys
 
@@ -290,15 +290,12 @@ The manual's header groups (`(^B ESC-[D) (unbound) (unbound)`) are per-keymap de
 - **Keys stay in the manual's notation** (`^B`, `ESC-[D`) — lossless; `bindkey` syntax is a consumer or renderer concern.
 - **Rendered as one labeled paragraph** — a `bindkey`-form head was rejected: it needs notation translation plus shell quoting, and ranges (`digit-argument`) and prose (`self-insert`) have no `bindkey` form.
 
-### `subKind` is always-or-never per category
+### `subKind` is structural per category
 
-Per doc category, `subKindOf` returns `undefined` for every record or a non-empty string for every record — never mixed.
+A category's record type declares `subKind` with a closed literal union, or none (`DocRecordBase` JSDoc in `zsh-core/types`); `subKindOf` reads it generically. Presence and vocabulary follow from the type: the released schema requires the field with the union's enum, or forbids it, per category — no corpus scan, no post-processing. Same call as for `id` (PRINCIPLES.md §"The structural identity invariant"); the dropped shape: a per-category name behind an accessor table plus a generated JSON copy.
 
-- Enforced corpus-wide: `packages/zsh-core/src/test/doc-sub-kind.test.ts`.
-- Release-schema consumption (`_subKind` required with a closed enum, or absent, per category): `packages/zsh-core/scripts/build-schema.ts`.
-- Tool-layer schema consumption (per-category `oneOf` branching, no schema-level optionality): `zshref-rs/src/tools/schema.rs`.
-
-**Future work:** generalize to "per-category structural fields are always-or-never" so schemas encode presence structurally, not as blanket optionals. Fold tests and this section into one named invariant when a second concrete instance appears.
+- every declared literal occurs in the corpus: `packages/zsh-core/src/test/json-schema.test.ts`
+- the tool layer branches per category (`oneOf`, no schema-level optionality): `zshref-rs/src/tools/schema.rs`
 
 ---
 

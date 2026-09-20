@@ -28,7 +28,7 @@ describe("recordText", () => {
       operands: ["file1", "file2"],
       desc: "true if file1 exists and is newer than file2.",
       _mdBody: "`-nt` *file1* `-nt` *file2*",
-      _subKind: "binary",
+      subKind: "binary",
     }
     const text = recordText("conditional_op", rec, noGroups)
     expect(text.structured).toContain("category: conditional operator")
@@ -60,7 +60,7 @@ describe("recordText", () => {
     const rec: JsonRecord = {
       id: "x",
       display: "x",
-      _subKind: "unary",
+      subKind: "unary",
       _mdBody: "",
     }
     expect(Object.keys(recordText("glob_op", rec, noGroups))).toEqual([
@@ -76,7 +76,7 @@ describe("recordText", () => {
       "expanded",
     ])
     expect(
-      recordText("glob_op", { ...rec, _subKind: "" }, noGroups),
+      recordText("glob_op", { ...rec, subKind: "" }, noGroups),
     ).not.toHaveProperty("sub_kind")
     expect(recordText("glob_op", rec, noGroups).structured).toContain(
       "display: x\nsubKind: unary",

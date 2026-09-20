@@ -296,7 +296,7 @@ function paramExpnTitle(doc: ParamExpnDoc): string {
 
 function sigCond(cop: CondOpDoc): string {
   const op = bt(cop.id)
-  return cop.arity === "unary"
+  return cop.subKind === "unary"
     ? `${op} *${cop.operands[0]}*`
     : `*${cop.operands[0]}* ${op} *${cop.operands[1]}*`
 }
@@ -378,14 +378,14 @@ function isTrivialSynopsis(synopsis: readonly string[], name: string): boolean {
 }
 
 function canonicalCondForm(cop: CondOpDoc): string {
-  return cop.arity === "unary"
+  return cop.subKind === "unary"
     ? `[[ ${cop.id} ${cop.operands[0]} ]]`
     : `[[ ${cop.operands[0]} ${cop.id} ${cop.operands[1]} ]]`
 }
 
 function canonicalArithForm(doc: ArithOpDoc): NonEmpty<string> {
   const op = doc.id
-  switch (doc.arity) {
+  switch (doc.subKind) {
     case "unary":
       // ++/-- have both pre- and postfix forms; show both.
       return op === "++" || op === "--"
@@ -456,11 +456,11 @@ function specialFunctionHead(doc: SpecialFunctionDoc): DocHead | undefined {
 function specialFunctionLine(doc: SpecialFunctionDoc): string | undefined {
   if (doc.hookArray !== undefined)
     return `${doc.hookArray}=( funcname1 funcname2 ... )`
-  if (doc.kind === "trap-literal") return `${doc.id}() { ... }`
+  if (doc.subKind === "trap-literal") return `${doc.id}() { ... }`
   // `TRAPNAL`'s name is itself a template — replace the trailing `NAL` with
   // `INT` (a concrete, ubiquitous signal name) so the head is a runnable
   // form rather than a meta-name.
-  if (doc.kind === "trap-template")
+  if (doc.subKind === "trap-template")
     return `${doc.id.replace(/NAL$/, "INT")}() { ... }`
   return undefined
 }
@@ -640,7 +640,7 @@ function formatAlternateForm(a: AlternateForm): string {
 function mdKeymap(doc: KeymapDoc): string {
   return docBlock(
     doc.desc,
-    ...when(doc.isSpecial, "_Special:_ cannot be altered"),
+    ...when(doc.subKind === "special", "_Special:_ cannot be altered"),
     ...when(
       doc.linkedFrom.length > 0,
       `_Linked from:_ ${doc.linkedFrom.map(bt).join(", ")}`,
@@ -756,7 +756,7 @@ export function categoryFooter<K extends DocCategory>(
   cat: K,
   doc: DocRecordMap[K],
 ): string {
-  const sub = subKindOf(cat, doc)
+  const sub = subKindOf(doc)
   const label = docCategoryLabels[cat]
   return `_Category:_ ${sub === undefined ? label : `${label} (${sub})`}`
 }

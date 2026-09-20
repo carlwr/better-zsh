@@ -39,7 +39,7 @@ function parseSection(
       sig: op,
       desc,
       section: name,
-      kind,
+      subKind: kind,
     }),
   )
 }

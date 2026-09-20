@@ -191,9 +191,9 @@ pub struct Category {
 pub struct Record(Map<String, Value>);
 
 // MIRROR-OF: packages/zsh-core/src/docs/types.ts (`DocRecordBase`: every
-// record's `id` / `display`)
+// record's `id` / `display`; `subKind` on the categories that declare one)
 // MIRROR-OF: packages/zsh-core/src/docs/json-projection.ts (`_title` /
-// `_subKind` / `_mdBody`: the projection's generated fields, `_`-prefixed)
+// `_mdBody`: the projection's generated fields, `_`-prefixed)
 impl Record {
     /// `""` when absent or not a string.
     pub fn str(&self, key: &str) -> &str {
@@ -217,9 +217,9 @@ impl Record {
         self.str("_mdBody")
     }
 
-    /// `None` for categories whose records carry no `_subKind`.
+    /// `None` for categories whose records carry no `subKind`.
     pub fn sub_kind(&self) -> Option<&str> {
-        let s = self.str("_subKind");
+        let s = self.str("subKind");
         (!s.is_empty()).then_some(s)
     }
 
@@ -322,8 +322,8 @@ mod tests {
 
     #[test]
     fn record_identity_and_md_body_keys_populated_for_every_category() {
-        // Were zsh-core to rename `id`, `display` or `_mdBody`, the accessors
-        // would read "" everywhere.
+        // Were zsh-core to rename `id`, `display`, `_mdBody` or `subKind`, the
+        // accessors would read "" everywhere.
         let corpus = load_corpus().expect("load_corpus");
         for cat in &corpus.categories {
             let first = cat
@@ -346,6 +346,13 @@ mod tests {
                 cat.name
             );
         }
+        assert!(
+            corpus
+                .categories
+                .iter()
+                .any(|cat| cat.records.iter().any(|r| r.sub_kind().is_some())),
+            "no category carries a `subKind`"
+        );
     }
 
     #[test]

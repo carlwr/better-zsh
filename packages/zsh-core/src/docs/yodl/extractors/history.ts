@@ -35,7 +35,7 @@ function parseSection(
     extractFirstItemList(extractSectionBody(yo, section)),
     normalizeHeader,
     (sig, desc) => ({
-      kind,
+      subKind: kind,
       ...identity("history_expn", toKey(sig), sig),
       sig,
       desc,
@@ -50,7 +50,7 @@ function parseWordDesignators(yo: YodlSrc): HistoryDoc[] {
   ).map(item => {
     const sig = normalizeHeader(item.header)
     return {
-      kind: "word-designator",
+      subKind: "word-designator",
       ...identity("history_expn", sig, sig),
       sig,
       desc: normalizeBody(item.body),

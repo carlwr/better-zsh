@@ -1,5 +1,4 @@
 import type { Assert, Eq } from "@carlwr/typescript-extra"
-import type { DocCorpus } from "./corpus.ts"
 import type {
   ArithOpDoc,
   BuiltinDoc,
@@ -253,68 +252,17 @@ export const mkRecordId = <K extends DocCategory>(
   id: Documented<K>,
 ): DocRecordIdOf<K> => ({ category, id }) as DocRecordIdOf<K>
 
-const noSub = (_: unknown) => undefined
-
-type SubKindFn<K extends DocCategory> = (
-  doc: DocRecordMap[K],
-) => string | undefined
-
-type SubKindFnMap = { [K in DocCategory]: SubKindFn<K> }
-
-const subKindOverrides: Partial<SubKindFnMap> = {
-  conditional_op: d => d.arity,
-  special_param: d => d.scope,
-  reserved_word: d => d.pos,
-  param_expn: d => d.subKind,
-  history_expn: d => d.kind,
-  glob_op: d => d.kind,
-  prompt_escape: d => d.section,
-  zle_widget: d => `${d.kind}:${d.section}`,
-  keymap: d => (d.isSpecial ? "special" : "regular"),
-  job_spec: d => d.kind,
-  arith_op: d => d.arity,
-  special_function: d => d.kind,
-}
-
-// Per-category subKind accessors; `subKindOf` is the parametric entry.
-export const docSubKind: SubKindFnMap = Object.fromEntries(
-  docCategories.map(cat => [cat, subKindOverrides[cat] ?? noSub]),
-) as SubKindFnMap
-
 /**
- * Optional typed sub-facet of a doc record; `undefined` when a category has
- * no meaningful subKind. Surfaces record-level fields (`HistoryKind`,
- * `ParamExpnSubKind`, a cond-op's `arity`, ...) so consumers (MCP search
- * results) can give more structure than a bare id list; a category's closed
- * value set is the fold over its corpus records. Single dispatch-cast site.
+ * A record's typed sub-facet (`HistoryKind`, `ParamExpnSubKind`, a
+ * cond-op's arity, ...) under a generic `K`; `undefined` for a category
+ * that declares no `subKind`. A category declares it on every record or on
+ * none, and its closed value set is the field's union — the released
+ * schema's enum. Single cast site.
  */
 export const subKindOf = <K extends DocCategory>(
-  cat: K,
-  doc: DocRecordMap[K],
+  rec: DocRecordMap[K],
 ): string | undefined =>
-  (docSubKind[cat] as (d: DocRecordMap[K]) => string | undefined)(doc)
-
-/** Per-category `subKind` enumeration; see `subKindEnums`. */
-export type SubKindEnums = Readonly<{
-  [K in DocCategory]: readonly string[] | undefined
-}>
-
-/**
- * Per-category sorted, de-duplicated `subKind` values of a corpus;
- * `undefined` where `subKindOf` is `undefined` for every record. Total over
- * `DocCategory`. The source for JSON Schema `enum` keywords and the like.
- */
-export function subKindEnums(corpus: DocCorpus): SubKindEnums {
-  const entries = docCategories.map(cat => {
-    const seen = new Set<string>()
-    for (const rec of corpus[cat].values()) {
-      const k = subKindOf(cat, rec)
-      if (k) seen.add(k)
-    }
-    return [cat, seen.size === 0 ? undefined : [...seen].sort()] as const
-  })
-  return Object.freeze(Object.fromEntries(entries)) as SubKindEnums
-}
+  "subKind" in rec ? (rec as { readonly subKind: string }).subKind : undefined
 
 /**
  * Canonical zsh loadable-module string set. Values of any `module?:` field

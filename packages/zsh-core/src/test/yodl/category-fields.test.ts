@@ -47,10 +47,10 @@ describe("parseKeymaps", () => {
   })
 
   test.each([
-    [".safe", true],
-    ["emacs", false],
-  ])("isSpecial: %s → %s", (name, want) => {
-    expect(map.get(km(name))?.isSpecial).toBe(want)
+    [".safe", "special"],
+    ["emacs", "regular"],
+  ] as const)("subKind: %s → %s", (name, want) => {
+    expect(map.get(km(name))?.subKind).toBe(want)
   })
 
   test.each([
@@ -71,7 +71,7 @@ describe("parseJobSpecs", () => {
     ["%+", "current"],
     ["%-", "previous"],
   ] as const)("%s → %s", (key, kind) => {
-    expect(map.get(js(key))?.kind).toBe(kind)
+    expect(map.get(js(key))?.subKind).toBe(kind)
   })
 })
 
@@ -90,7 +90,7 @@ describe("parseArithOps", () => {
     ["+", "overloaded"],
     ["-", "overloaded"],
   ] as const)("%s → %s", (op, arity) => {
-    expect(map.get(ao(op))?.arity).toBe(arity)
+    expect(map.get(ao(op))?.subKind).toBe(arity)
   })
 
   test("C_PRECEDENCES table is not also emitted", () => {
@@ -119,15 +119,15 @@ describe("parseSpecialFunctions", () => {
     ["TRAPNAL", "trap-template"],
   ] as const)("%s is %s", (name, kind) => {
     const d = map.get(sfn(name))
-    expect(d?.kind).toBe(kind)
+    expect(d?.subKind).toBe(kind)
     expect(d?.hookArray).toBeUndefined()
   })
 
   // The resolver keys `<hook>_functions` input on `hookArray`.
   test("kind hook ⇔ hookArray present, and it is `${name}_functions`", () => {
     for (const d of map.values()) {
-      expect(d.hookArray !== undefined, d.id).toBe(d.kind === "hook")
-      if (d.kind === "hook") expect(d.hookArray).toBe(`${d.id}_functions`)
+      expect(d.hookArray !== undefined, d.id).toBe(d.subKind === "hook")
+      if (d.subKind === "hook") expect(d.hookArray).toBe(`${d.id}_functions`)
     }
   })
 })
@@ -135,7 +135,7 @@ describe("parseSpecialFunctions", () => {
 describe("parsePromptEscapes — typed subsection (enrichment)", () => {
   const docs = parsePromptEscapes(readVendoredYo("prompt.yo"))
   test("all records land on a closed-union subsection", () => {
-    expect([...new Set(docs.map(d => d.section))].sort()).toEqual(
+    expect([...new Set(docs.map(d => d.subKind))].sort()).toEqual(
       [...promptSubsections].sort(),
     )
   })
@@ -146,7 +146,7 @@ describe("parseShellParams — typed scope (enrichment)", () => {
   // carry the other two scopes.
   test("every record lands on a shell-set or shell-used scope", () => {
     for (const d of parseShellParams(readVendoredYo("params.yo"))) {
-      expect(["shell-set", "shell-used"]).toContain(d.scope)
+      expect(["shell-set", "shell-used"]).toContain(d.subKind)
     }
   })
 })
@@ -163,7 +163,7 @@ describe("parseWidgetParams (ZLE widget-local parameters)", () => {
 
   test("all records carry scope: zle-widget and no tied pairing", () => {
     for (const d of docs) {
-      expect(d.scope).toBe("zle-widget")
+      expect(d.subKind).toBe("zle-widget")
       expect(d.tied).toBeUndefined()
     }
   })
@@ -173,7 +173,7 @@ describe("parseZleWidgets — typed subsection (enrichment)", () => {
   test("all subsection values are in the closed union", () => {
     const subs = new Set(zleWidgetSubsections)
     for (const d of parseZleWidgets(readVendoredYo("zle.yo"))) {
-      expect(subs.has(d.section)).toBe(true)
+      expect(subs.has(d.subKind)).toBe(true)
     }
   })
 })

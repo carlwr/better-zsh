@@ -32,6 +32,38 @@ const validator = (cat: DocCategory) =>
 const records = (cat: DocCategory): Rec[] =>
   readJson(artifact("json", jsonDataFile(cat))) as unknown as Rec[]
 
+const defs = bundle.$defs as Record<string, Rec>
+const deref = (schema: Rec): Rec => {
+  if (typeof schema.$ref !== "string") return schema
+  const def = defs[decodeURIComponent(schema.$ref.replace(/^#\/\$defs\//, ""))]
+  if (!def) throw new Error(`unresolved $ref ${schema.$ref}`)
+  return def
+}
+
+/** The values a category's record schema admits for `subKind`; `undefined` when it declares none. */
+function subKindEnum(cat: DocCategory): string[] | undefined {
+  const record = defs[recordsSchemaDefs.record(cat)]
+  if (!record) throw new Error(`${cat}: no record def`)
+  const branches = Array.isArray(record.anyOf)
+    ? (record.anyOf as Rec[])
+    : [record]
+  const values = new Set<string>()
+  let declared = false
+  for (const branch of branches) {
+    const prop = (branch.properties as Rec | undefined)?.subKind as
+      | Rec
+      | undefined
+    if (!prop) continue
+    declared = true
+    const schema = deref(prop)
+    if (Array.isArray(schema.enum))
+      for (const v of schema.enum) values.add(String(v))
+    else if (typeof schema.const === "string") values.add(schema.const)
+    else throw new Error(`${cat}: subKind is neither an enum nor a const`)
+  }
+  return declared ? [...values].sort() : undefined
+}
+
 describe("records bundle", () => {
   test.each(docCategories)("%s: the emitted records validate", cat => {
     const validate = validator(cat)
@@ -55,23 +87,29 @@ describe("records bundle", () => {
     expect(validate(all), ajv.errorsText(validate.errors)).toBe(true)
   })
 
-  test("_subKind is required with an enum, or absent, per category", () => {
-    const withSub = docCategories.filter(cat =>
-      records(cat).some(r => "_subKind" in r),
-    )
+  // A category declares `subKind` on every record or on none; the schema
+  // then requires it with the closed union, or forbids it. The union is
+  // type-derived — every declared literal is to occur in the corpus, so the
+  // schema names no vocabulary the data never exhibits.
+  test("subKind: required with the corpus enum, or absent, per category", () => {
+    const withSub = docCategories.filter(cat => subKindEnum(cat) !== undefined)
     expect(withSub.length).toBeGreaterThan(0)
     expect(withSub.length).toBeLessThan(docCategories.length)
     for (const cat of docCategories) {
       const validate = validator(cat)
       const [rec] = records(cat)
       const off = { ...rec }
-      delete off._subKind
+      delete off.subKind
       expect(validate([off]), cat).toBe(!withSub.includes(cat))
-      expect(validate([{ ...rec, _subKind: "bogus" }]), cat).toBe(false)
+      expect(validate([{ ...rec, subKind: "bogus" }]), cat).toBe(false)
+      const seen = new Set(records(cat).map(r => r.subKind))
+      expect(subKindEnum(cat), cat).toEqual(
+        withSub.includes(cat) ? [...seen].sort() : undefined,
+      )
     }
   })
 
-  const binary = (rs: Rec[]) => rs.find(r => r.arity === "binary")
+  const binary = (rs: Rec[]) => rs.find(r => r.subKind === "binary")
   test.each<
     [string, DocCategory, (r: Rec) => Rec, ((rs: Rec[]) => Rec | undefined)?]
   >([
@@ -88,9 +126,9 @@ describe("records bundle", () => {
       r => ({ ...r, aliasOf: "has space" }),
     ],
     [
-      "arity outside the union",
+      "subKind outside the union",
       "conditional_op",
-      r => ({ ...r, arity: "ternary" }),
+      r => ({ ...r, subKind: "ternary" }),
     ],
     ["id with whitespace", "precmd_modifier", r => ({ ...r, id: "no glob" })],
     [

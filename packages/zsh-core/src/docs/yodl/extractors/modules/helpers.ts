@@ -188,7 +188,7 @@ export function parseModuleParamsFromList(
       out.push({
         ...identity("special_param", name),
         desc: split.desc,
-        scope,
+        subKind: scope,
         module: moduleName,
         ...(split.keys && { keys: split.keys }),
         ...(split.outro && { outro: split.outro }),

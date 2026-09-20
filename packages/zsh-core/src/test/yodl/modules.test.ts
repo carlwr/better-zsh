@@ -206,7 +206,7 @@ Match against PCRE.
 enditem()`
     const op = only(parseModuleCondOps(yo, "zsh/pcre"))
     expect(op.id).toBe(co("-pcre-match"))
-    expect(op.arity).toBe("binary")
+    expect(op.subKind).toBe("binary")
     expect(op.module).toBe("zsh/pcre")
   })
 })

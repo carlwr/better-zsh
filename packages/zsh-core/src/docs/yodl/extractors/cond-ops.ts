@@ -37,7 +37,7 @@ export function parseCondHeader(
   return arg ? { op, operands: [arg], arity: "unary" } : undefined
 }
 
-// Branches per arity so `operands` and `arity` stay correlated.
+// Branches per arity so `operands` and `subKind` stay correlated.
 export function buildCondOpDoc(
   parsed: CondHeader,
   desc: string,
@@ -49,14 +49,14 @@ export function buildCondOpDoc(
         ...id,
         operands: parsed.operands,
         desc,
-        arity: "unary",
+        subKind: "unary",
         ...(module && { module }),
       }
     : {
         ...id,
         operands: parsed.operands,
         desc,
-        arity: "binary",
+        subKind: "binary",
         ...(module && { module }),
       }
 }
