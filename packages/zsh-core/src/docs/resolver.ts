@@ -35,7 +35,7 @@
  */
 
 import { escapeRegExp, isSingle } from "@carlwr/typescript-extra"
-import { mkDocumented } from "./brands.ts"
+import { mkDocumented, redirSlugFromSig } from "./brands.ts"
 import type { DocCorpus } from "./corpus.ts"
 import {
   classifyOrder,
@@ -46,7 +46,7 @@ import {
   idOf,
   mkRecordId,
 } from "./taxonomy.ts"
-import { type Documented, type RedirDoc, redirSlugFromSig } from "./types.ts"
+import type { Documented, RedirDoc } from "./types.ts"
 
 // --- Resolvers --------------------------------------------------------------
 
@@ -482,8 +482,7 @@ export type ResolvedHit<K extends DocCategory> = DocRecordIdOf<K> & {
  * categories miss the direct step and resolve (`AUTO_CD` → `autocd`).
  *
  * The sole public brand-boundary crossing for untrusted raw strings; the
- * other legitimate routes to a `DocRecordId` are `mkRecordId(cat, record.id)`
- * from a corpus-iterated record, or internal iteration inside zsh-core.
+ * other route to an identity is corpus iteration.
  */
 export function resolve<K extends DocCategory>(
   corpus: DocCorpus,
@@ -596,20 +595,20 @@ const kindSchema = (
   properties: { kind: { const: kind }, ...extra },
 })
 
-export type ResolverFeedbackKindSchemas = {
-  readonly [K in ResolverFeedback["kind"]]: ResolverFeedbackKindSchema
-}
-
-export const resolverFeedbackKindSchemas: ResolverFeedbackKindSchemas = {
+/**
+ * The closed JSON Schema per `ResolverFeedback` kind — what a schema builder
+ * embeds instead of restating the shapes; `index.json` carries the same
+ * objects for out-of-process consumers.
+ */
+export const resolverFeedbackKindSchemas: Readonly<
+  Record<ResolverFeedback["kind"], ResolverFeedbackKindSchema>
+> = {
   "input-negated": kindSchema("input-negated"),
   subscripted: kindSchema("subscripted", {
     subscript: { type: "string", minLength: 1 },
   }),
 }
 
-/**
- * Closed list of `ResolverFeedback` kinds. Derived from
- * `resolverFeedbackKindSchemas`, the typed SoT.
- */
+/** Closed list of `ResolverFeedback` kinds — the keys of `resolverFeedbackKindSchemas`. */
 export const resolverFeedbackKinds: readonly ResolverFeedback["kind"][] =
   Object.keys(resolverFeedbackKindSchemas) as ResolverFeedback["kind"][]

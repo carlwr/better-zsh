@@ -1,5 +1,10 @@
 import type { DocCorpus } from "@carlwr/zsh-core"
-import { docCategories } from "@carlwr/zsh-core/taxonomy"
+import { type DocCategory, docCategories } from "@carlwr/zsh-core/taxonomy"
+import {
+  type Documented,
+  normalizeOptName,
+  type OptFlag,
+} from "@carlwr/zsh-core/types"
 import type * as vscode from "vscode"
 import { WORD } from "../document/words"
 
@@ -57,6 +62,16 @@ export const by = <K extends PropertyKey, T extends Record<K, unknown>>(
   field: K,
   xs: readonly T[],
 ) => new Map(xs.map(x => [x[field], x]))
+
+/** A fixture record's identity: `raw` brought to id form (`option` normalizes). */
+export const docId = <K extends DocCategory>(
+  cat: K,
+  raw: string,
+): Documented<K> =>
+  (cat === "option" ? normalizeOptName(raw) : raw.trim()) as Documented<K>
+
+/** A fixture option's single-letter flag. */
+export const optFlag = (char: string): OptFlag => char as OptFlag
 
 /** A `DocCorpus` with every category as an empty Map; override per test. */
 export function emptyCorpus(): DocCorpus {

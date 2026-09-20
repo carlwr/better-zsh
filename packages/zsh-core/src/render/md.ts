@@ -6,6 +6,7 @@ import {
   trim,
 } from "@carlwr/typescript-extra"
 import type { DocCorpus } from "../docs/corpus.ts"
+import { flipOptFlagSign } from "../docs/normalize-option.ts"
 import { resolve } from "../docs/resolver.ts"
 import type { DocCategory, DocRecordMap } from "../docs/taxonomy.ts"
 import { docCategoryLabels, subKindOf } from "../docs/taxonomy.ts"
@@ -25,7 +26,6 @@ import type {
   KeymapDoc,
   MathfuncDoc,
   OptFlagAlias,
-  OptState,
   ParamExpnDoc,
   ParamFlagDoc,
   PrecmdDoc,
@@ -40,7 +40,6 @@ import type {
   ZleWidgetDoc,
   ZshOption,
 } from "../docs/types.ts"
-import { flipOptFlagSign } from "../docs/types.ts"
 import { mdInlineCode } from "../docs/yodl/core/text.ts"
 import { splitInlineCode, walkProseLines } from "./prose-walk.ts"
 
@@ -785,6 +784,8 @@ export function mdMathfunc(doc: MathfuncDoc): string {
 }
 
 // --- option-rendering helpers ----------------------------------------------
+
+type OptState = "on" | "off"
 
 /** Whether an option defaults on/off under an emulation mode. */
 export function defaultStateIn(opt: ZshOption, emulation: Emulation): OptState {

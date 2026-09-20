@@ -9,11 +9,28 @@ const thisDir: string =
     ? resolve(__dirname)
     : dirname(fileURLToPath(import.meta.url))
 
-/** Conventional directory name for Yodl data copied into a consumer's output. */
+/** The one directory name the runtime lookup accepts beside the module. */
 export const runtimeZshDataDir = "zsh-core-data"
 
-/** Vendored zsh Yodl payload required by runtime loaders and packaging checks. */
-export const vendoredZshDocFiles = ["SOURCE.md", ...corpusYodlFiles] as const
+/**
+ * The vendored data set: what the source tree holds, what `build` copies to
+ * `dist/`, what `copyRuntimeZshData` copies on. Pinned against the source
+ * tree by `zsh-data-assets.test.ts`.
+ */
+export const vendoredZshDocFiles = [
+  "SOURCE.md",
+  "THIRD_PARTY_NOTICES.md",
+  ...corpusYodlFiles,
+] as const
+
+/**
+ * Every path `copyRuntimeZshData(outDir)` creates, relative to `outDir` and
+ * `/`-separated — for packaging checks. All share one top-level directory,
+ * the one `loadCorpus` looks for beside the loaded zsh-core module.
+ */
+export const runtimeZshDataPaths: readonly string[] = vendoredZshDocFiles.map(
+  file => `${runtimeZshDataDir}/${file}`,
+)
 
 // Three candidate layouts:
 //   built:   <baseDir>/data/zsh-docs         (dist/ bundle dir or explicit dist base)
@@ -31,8 +48,14 @@ export function resolveZshDataDir(baseDir = thisDir): string {
   throw new Error(`zsh docs dir not found: ${candidates.join(", ")}`)
 }
 
-/** Copy the vendored Yodl sources into a consumer's output directory, enabling the programmatic API at runtime. */
-export function copyRuntimeZshData(outDir: string, baseDir = thisDir) {
+/**
+ * Copy the vendored Yodl sources into `outDir`, so `loadCorpus` works from a
+ * bundle: `outDir` is the directory the bundled zsh-core module runs from
+ * (the lookup is relative to the module, not to the working directory).
+ * `baseDir` is where the sources are looked up; the default is the installed
+ * package.
+ */
+export function copyRuntimeZshData(outDir: string, baseDir = thisDir): void {
   cpSync(resolveZshDataDir(baseDir), join(outDir, runtimeZshDataDir), {
     recursive: true,
   })

@@ -99,7 +99,7 @@ Two phases:
 - **raw** — user-code text; untyped `string`
 - **`Documented<K>`** — corpus-confirmed identity
 
-`resolve` is the bridge: raw in, checked identity out. Brand contract and acquisition paths (trusted `mkDocumented` vs checked `resolve`): JSDoc on `Documented<K>` and `mkDocumented` (`zsh-core/types`).
+`resolve` is the bridge: raw in, checked identity out — the one public minting path; the trusted constructor (`mkDocumented`, `brands.ts`) is internal to corpus construction. Brand contract: JSDoc on `Documented<K>` (`zsh-core/types`).
 
 ### No intermediate brand
 
@@ -133,7 +133,7 @@ The hit carries the record, so the second step takes a value, not a reference:
 
 - no lookup between the steps, so no "not found" branch
 - TS cannot prove map membership from a branded key, so an id-keyed renderer would have to throw on a miss — removed for that reason
-- `recordOf` (record or `undefined`) stays for ids that crossed a boundary where the record was dropped — serialized, stored, from another corpus build; there a miss is honest
+- an id that crossed a boundary where the record was dropped — serialized, stored, from another corpus build — is a string again; `resolve` takes it back (an exact id hits directly), and there a miss is honest
 
 Corpus-driven aggregation helpers (`projectRecords`, the JSON projection) are fine — they operate on already-known records, not hidden brand crossings.
 

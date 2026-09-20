@@ -1,10 +1,9 @@
-import { mkDocumented } from "@carlwr/zsh-core/types"
 import fc from "fast-check"
 import { describe, expect, test } from "vitest"
 import { matchOptions } from "../../editor/option-match"
+import { docId } from "../test-util"
 
-const mkOpts = (raw: readonly string[]) =>
-  raw.map(r => mkDocumented("option", r))
+const mkOpts = (raw: readonly string[]) => raw.map(r => docId("option", r))
 const opts = mkOpts([
   "aliases",
   "errexit",

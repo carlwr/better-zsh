@@ -1,5 +1,4 @@
 import { describe, expect, expectTypeOf, test } from "vitest"
-import { mkDocumented } from "../docs/brands"
 import { loadCorpus } from "../docs/corpus"
 import { resolve } from "../docs/resolver"
 import {
@@ -8,9 +7,7 @@ import {
   type DocRecordMap,
   docCategories,
   isDocCategory,
-  mkRecordId,
   parseDocCategory,
-  recordOf,
 } from "../docs/taxonomy"
 import type { BuiltinDoc, ZshOption } from "../docs/types"
 
@@ -30,37 +27,20 @@ describe("parseDocCategory / isDocCategory", () => {
   })
 })
 
-describe("recordOf", () => {
-  test("hit: the record behind a resolved pid", () => {
-    const pid = resolve(corpus, "option", "AUTO_CD")
-    if (pid === undefined) throw new Error("AUTO_CD did not resolve")
-    expect(recordOf(corpus, pid)?.display).toBe("AUTO_CD")
-  })
-
-  test("miss: undefined for a key the corpus lacks", () => {
-    const pid = mkRecordId(
-      "builtin",
-      mkDocumented("builtin", "no-such-builtin"),
-    )
-    expect(recordOf(corpus, pid)).toBeUndefined()
-  })
-
-  // Compile-time contract of `DocRecordIdOf<K>`: a resolved pid keeps its
-  // category's record type, also through a generic `K`, while staying
-  // assignable to the `DocRecordId` union.
-  test("types: a K-shaped pid yields the K-shaped record", () => {
-    const pid = resolve(corpus, "option", "AUTO_CD")
-    if (pid === undefined) throw new Error("AUTO_CD did not resolve")
-    expectTypeOf(recordOf(corpus, pid)).toEqualTypeOf<ZshOption | undefined>()
-    expectTypeOf(pid).toMatchTypeOf<DocRecordId>()
+// Compile-time contract of `DocRecordIdOf<K>`: a resolved hit keeps its
+// category's record type, also through a generic `K`, while staying
+// assignable to the `DocRecordId` union.
+describe("ResolvedHit types", () => {
+  test("a K-shaped hit carries the K-shaped record", () => {
+    const hit = resolve(corpus, "option", "AUTO_CD")
+    if (hit === undefined) throw new Error("AUTO_CD did not resolve")
+    expectTypeOf(hit.record).toEqualTypeOf<ZshOption>()
+    expectTypeOf(hit).toMatchTypeOf<DocRecordId>()
 
     const viaK = <K extends DocCategory>(
       cat: K,
       raw: string,
-    ): DocRecordMap[K] | undefined => {
-      const p = resolve(corpus, cat, raw)
-      return p && recordOf(corpus, p)
-    }
+    ): DocRecordMap[K] | undefined => resolve(corpus, cat, raw)?.record
     expectTypeOf(viaK("builtin", "echo")).toEqualTypeOf<
       BuiltinDoc | undefined
     >()

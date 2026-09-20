@@ -1,10 +1,9 @@
 /**
  * @packageDocumentation
- * Helpers for bundlers that need to ship zsh-core's vendored Yodl data files.
+ * For bundlers: ship zsh-core's vendored Yodl data next to the bundle.
  */
 
 export {
   copyRuntimeZshData,
-  runtimeZshDataDir,
-  vendoredZshDocFiles,
+  runtimeZshDataPaths,
 } from "./src/assets/data-dir.ts"

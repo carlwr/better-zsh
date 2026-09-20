@@ -1,10 +1,6 @@
 import { type DocCorpus, loadCorpus } from "@carlwr/zsh-core"
 import { categoryFooter, renderRecordWithTitle } from "@carlwr/zsh-core/render"
-import {
-  type DocCategory,
-  mkRecordId,
-  recordOf,
-} from "@carlwr/zsh-core/taxonomy"
+import type { DocCategory } from "@carlwr/zsh-core/taxonomy"
 import type {
   BuiltinDoc,
   ComplexCommandDoc,
@@ -14,18 +10,17 @@ import type {
   ShellParamDoc,
   ZshOption,
 } from "@carlwr/zsh-core/types"
-import { mkDocumented, mkOptFlag } from "@carlwr/zsh-core/types"
 import fc from "fast-check"
 import { describe, expect, test } from "vitest"
 import type * as vscode from "vscode"
 import { activeEnd } from "../../document/words"
 import { HoverProvider } from "../../editor/hover"
-import { by, emptyCorpus, pos, wordDoc } from "../test-util"
+import { by, docId, emptyCorpus, optFlag, pos, wordDoc } from "../test-util"
 
 // --- fixtures ---------------------------------------------------------------
 
 const b = (name: string, desc: string): BuiltinDoc => ({
-  name: mkDocumented("builtin", name),
+  name: docId("builtin", name),
   synopsis: [name],
   desc,
 })
@@ -35,22 +30,22 @@ const o = (
   desc: string,
   emulations: OptFlagAlias["emulations"],
 ): ZshOption => ({
-  name: mkDocumented("option", name),
+  name: docId("option", name),
   display: name,
-  flags: [{ char: mkOptFlag("f"), on: "+", emulations }],
+  flags: [{ char: optFlag("f"), on: "+", emulations }],
   defaultIn: ["zsh"],
   section: "Shell State",
   desc,
 })
 
 const p = (name: string, desc: string): ShellParamDoc => ({
-  name: mkDocumented("special_param", name),
+  name: docId("special_param", name),
   desc,
   scope: "shell-set",
 })
 
 const cc = (name: string, desc: string): ComplexCommandDoc => ({
-  name: mkDocumented("complex_command", name),
+  name: docId("complex_command", name),
   sig: `${name} ...`,
   desc,
   section: "Complex Commands",
@@ -59,7 +54,7 @@ const cc = (name: string, desc: string): ComplexCommandDoc => ({
 })
 
 const rw = (name: string, desc: string): ReservedWordDoc => ({
-  name: mkDocumented("reserved_word", name),
+  name: docId("reserved_word", name),
   sig: name,
   desc,
   section: "Reserved Words",
@@ -106,7 +101,7 @@ const realAt = hoverWith(new HoverProvider(real))
 // What a hover shows: zsh-core's titled body, then the category line the
 // editor appends (`record-markdown.ts`).
 const rendered = <K extends DocCategory>(cat: K, id: Documented<K>) => {
-  const doc = recordOf(real, mkRecordId(cat, id))
+  const doc = real[cat].get(id)
   if (doc === undefined) throw new Error(`no ${cat} record ${String(id)}`)
   return `${renderRecordWithTitle(real, cat, doc)}\n\n${categoryFooter(cat, doc)}`
 }
@@ -229,9 +224,7 @@ describe("HoverProvider on the real corpus", () => {
     ["set -X", 5, "option", "listtypes"], // MARK_DIRS only under sh/ksh
     ["set +o pipefail", 7, "option", "pipefail"],
   ])("%s @%d -> %s %s", (line, char, cat, id) => {
-    expect(realAt(line, 0, char)?.value).toBe(
-      rendered(cat, mkDocumented(cat, id)),
-    )
+    expect(realAt(line, 0, char)?.value).toBe(rendered(cat, docId(cat, id)))
   })
 
   test.each([
@@ -246,9 +239,7 @@ describe("HoverProvider on the real corpus", () => {
     ["functions -t foo", 2, "builtin", "functions"],
     ["echo $functions", 8, "special_param", "functions"],
   ])("%s @%d -> %s", (line, char, cat, id) => {
-    expect(realAt(line, 0, char)?.value).toBe(
-      rendered(cat, mkDocumented(cat, id)),
-    )
+    expect(realAt(line, 0, char)?.value).toBe(rendered(cat, docId(cat, id)))
   })
 
   test("process substitution hovers on its opener only", () => {

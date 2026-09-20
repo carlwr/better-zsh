@@ -9,7 +9,6 @@ export {
   type ResolvedHit,
   type ResolverFeedback,
   type ResolverFeedbackKindSchema,
-  type ResolverFeedbackKindSchemas,
   resolve,
   resolveAll,
   resolverFeedbackKindSchemas,

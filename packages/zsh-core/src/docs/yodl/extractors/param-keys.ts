@@ -8,11 +8,8 @@
  * `%F{color} (%f)` (first-tt would drop everything after `{`). For simple
  * single-tt headers the two agree.
  */
-import {
-  mkShellParamKeyName,
-  type ShellParamKey,
-  type ShellParamKeyValue,
-} from "../../types.ts"
+import { mkShellParamKeyName } from "../../brands.ts"
+import type { ShellParamKey, ShellParamKeyValue } from "../../types.ts"
 import { splitBodyAtNestedList } from "../core/doc.ts"
 import type { YNodeSeq } from "../core/nodes.ts"
 import { normalizeBody, normalizeHeader } from "../core/text.ts"

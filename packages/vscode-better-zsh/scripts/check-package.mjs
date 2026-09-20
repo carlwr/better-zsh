@@ -6,10 +6,7 @@ import { fileURLToPath } from "node:url"
 
 const pnpm = process.platform === "win32" ? "pnpm.cmd" : "pnpm"
 const require = createRequire(import.meta.url)
-const {
-  runtimeZshDataDir,
-  vendoredZshDocFiles,
-} = require("@carlwr/zsh-core/assets")
+const { runtimeZshDataPaths } = require("@carlwr/zsh-core/assets")
 const stageRoot = resolve(
   dirname(fileURLToPath(import.meta.url)),
   "..",
@@ -45,7 +42,7 @@ const required = [
   "package.json",
   "syntaxes/THIRD_PARTY_NOTICES.md",
   ...referenced,
-  ...vendoredZshDocFiles.map(file => `out/${runtimeZshDataDir}/${file}`),
+  ...runtimeZshDataPaths.map(path => `out/${path}`),
 ]
 
 const forbidden = [

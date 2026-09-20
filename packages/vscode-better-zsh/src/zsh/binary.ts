@@ -1,10 +1,10 @@
 import { constants, existsSync } from "node:fs"
 import { access } from "node:fs/promises"
 import * as path from "node:path"
-import type { Brand } from "@carlwr/zsh-core/types"
+import type { Brand } from "../ids"
 
 /** A zsh binary: a bare name (looked up on PATH) or an absolute path. */
-export type ZshBinary = Brand<string, "ZshBinary">
+export type ZshBinary = Brand<"ZshBinary">
 export const mkZshBinary = (raw: string) => raw as ZshBinary
 
 /** How the configuration names the binary. */

@@ -6,6 +6,7 @@ import type {
   WalkFixtureCase,
   WalkFixtureCases,
 } from "../src/docs/json-types.ts"
+import { flipOptFlagSign } from "../src/docs/normalize-option.ts"
 import { resolve, resolveAll } from "../src/docs/resolver.ts"
 import {
   type DocCategory,
@@ -14,7 +15,6 @@ import {
   docDisplay,
   idOf,
 } from "../src/docs/taxonomy.ts"
-import { flipOptFlagSign } from "../src/docs/types.ts"
 
 type Inputs = readonly string[]
 

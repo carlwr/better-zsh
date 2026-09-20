@@ -1,8 +1,8 @@
 import { isNonEmpty } from "@carlwr/typescript-extra"
 
-import { mkDocumented } from "../../brands.ts"
+import { mkDocumented, mkOptFlag } from "../../brands.ts"
+import { flipOptFlagSign } from "../../normalize-option.ts"
 import type {
-  DefaultMarker,
   Documented,
   Emulation,
   OptFlag,
@@ -10,12 +10,7 @@ import type {
   OptFlagSign,
   ZshOption,
 } from "../../types.ts"
-import {
-  emulations,
-  flipOptFlagSign,
-  mkOptFlag,
-  optSections,
-} from "../../types.ts"
+import { emulations, optSections } from "../../types.ts"
 import {
   extractFirstSitemList,
   extractItems,
@@ -31,6 +26,9 @@ import {
   stripYodl,
   trimmedTtTexts,
 } from "../core/text.ts"
+
+/** zshoptions default-on marker: D=default, K=ksh, S=sh, C=csh, Z=zsh. */
+type DefaultMarker = "D" | "K" | "S" | "C" | "Z"
 
 const DEFAULT_EMULATIONS: Record<DefaultMarker, readonly Emulation[]> = {
   C: ["csh"],

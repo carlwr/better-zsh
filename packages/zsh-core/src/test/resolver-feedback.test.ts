@@ -9,7 +9,7 @@
  */
 
 import { describe, expect, test } from "vitest"
-import { mkDocumented } from "../docs/brands"
+import { mkDocumented, mkOptFlag } from "../docs/brands"
 import type { DocCorpus } from "../docs/corpus"
 import {
   type ResolvedHit,
@@ -17,7 +17,7 @@ import {
   resolve,
 } from "../docs/resolver"
 import { type DocCategory, mkRecordId } from "../docs/taxonomy"
-import { mkOptFlag, type OptFlagAlias, type ZshOption } from "../docs/types"
+import type { OptFlagAlias, ZshOption } from "../docs/types"
 import { emptyCorpus, membershipCorpus, mkDocumented_ } from "./id-fns"
 
 const opt = mkDocumented_("option")

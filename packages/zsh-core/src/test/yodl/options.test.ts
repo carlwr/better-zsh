@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest"
+import { mkOptFlag } from "../../docs/brands"
 import type { OptFlagAlias, OptFlagSign } from "../../docs/types"
-import { emulations, mkOptFlag, optSections } from "../../docs/types"
+import { emulations, optSections } from "../../docs/types"
 import { parseOptions } from "../../docs/yodl/extractors/options"
 import { mkDocumented_ } from "../id-fns"
 import {

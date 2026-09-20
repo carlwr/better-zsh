@@ -58,30 +58,26 @@ try {
 import { loadCorpus } from "@carlwr/zsh-core"
 import { commentStart } from "@carlwr/zsh-core/analysis"
 import { ZSH_UPSTREAM } from "@carlwr/zsh-core/meta"
-import { renderDoc } from "@carlwr/zsh-core/render"
+import { renderRecord } from "@carlwr/zsh-core/render"
 import { resolve } from "@carlwr/zsh-core/resolver"
-import { mkDocumented } from "@carlwr/zsh-core/types"
 
 const corpus = loadCorpus()
 // Categories parse on first access: touch each so every vendored file is
 // parsed from the installed layout.
 for (const cat of Object.keys(corpus)) corpus[cat]
-const recordId = resolve(corpus, "option", "AUTO_CD")
-if (!recordId || recordId.category !== "option") {
-  throw new Error("resolve('option','AUTO_CD') failed: " + JSON.stringify(recordId))
+const hit = resolve(corpus, "option", "AUTO_CD")
+if (!hit || hit.category !== "option" || hit.id !== "autocd") {
+  throw new Error("resolve('option','AUTO_CD') failed: " + JSON.stringify(hit))
 }
-const md = renderDoc(corpus, recordId)
+const md = renderRecord(corpus, hit.category, hit.record)
 if (typeof md !== "string" || md.length === 0) {
-  throw new Error("renderDoc returned non-string or empty")
+  throw new Error("renderRecord returned non-string or empty")
 }
 if (!/AUTO[_ ]?CD/i.test(md)) {
-  throw new Error("renderDoc output missing expected AUTO_CD reference")
+  throw new Error("renderRecord output missing expected AUTO_CD reference")
 }
 if (commentStart('echo "#" # tail') !== 9) {
   throw new Error("commentStart returned unexpected index")
-}
-if (mkDocumented("option", "AUTO_CD") !== "autocd") {
-  throw new Error("mkDocumented did not normalize AUTO_CD")
 }
 if (!/^zsh-/.test(ZSH_UPSTREAM.tag)) {
   throw new Error("ZSH_UPSTREAM tag missing expected prefix")

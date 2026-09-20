@@ -1,6 +1,5 @@
-import { mkDocumented } from "../../brands.ts"
+import { mkDocumented, mkRedirOp, redirSlugFromSig } from "../../brands.ts"
 import type { RedirDoc } from "../../types.ts"
-import { mkRedirOp, redirSlugFromSig } from "../../types.ts"
 import {
   extractItems,
   extractSectionBody,

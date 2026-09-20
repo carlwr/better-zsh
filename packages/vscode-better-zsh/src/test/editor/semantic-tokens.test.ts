@@ -1,14 +1,10 @@
 import type { DocCorpus } from "@carlwr/zsh-core"
-import {
-  type BuiltinDoc,
-  mkDocumented,
-  type ReservedWordDoc,
-} from "@carlwr/zsh-core/types"
+import type { BuiltinDoc, ReservedWordDoc } from "@carlwr/zsh-core/types"
 import fc from "fast-check"
 import { describe, expect, test } from "vitest"
 import { SemanticTokensProvider } from "../../editor/semantic-tokens"
 import { tokenModifiers, tokenTypes } from "../../manifest/semantic-tokens"
-import { by, emptyCorpus, lineDoc } from "../test-util"
+import { by, docId, emptyCorpus, lineDoc } from "../test-util"
 import type { RawToken } from "../vscode-stub"
 
 const KEYWORD = tokenTypes.indexOf("keyword")
@@ -21,12 +17,12 @@ function provider(
   reservedWords: readonly string[],
 ) {
   const b = (name: string): BuiltinDoc => ({
-    name: mkDocumented("builtin", name),
+    name: docId("builtin", name),
     synopsis: [name],
     desc: "",
   })
   const rw = (name: string): ReservedWordDoc => ({
-    name: mkDocumented("reserved_word", name),
+    name: docId("reserved_word", name),
     pos: "command",
     sig: name,
     section: "",

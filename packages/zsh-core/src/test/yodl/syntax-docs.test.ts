@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest"
-import { mkRedirOp } from "../../docs/types"
+import { mkRedirOp } from "../../docs/brands"
 import { parseComplexCommands } from "../../docs/yodl/extractors/complex-commands"
 import { parseGlobFlags } from "../../docs/yodl/extractors/glob-flags"
 import { parseGlobOps } from "../../docs/yodl/extractors/glob-ops"

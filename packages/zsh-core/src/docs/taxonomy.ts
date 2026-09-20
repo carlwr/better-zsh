@@ -196,16 +196,18 @@ export interface DocRecordMap {
  * narrows `id` to the matching Documented brand. The per-category member is
  * `DocRecordIdOf<K>`.
  *
- * Sanctioned acquisitions: `resolve(corpus, cat, raw)`, `mkRecordId(cat,
- * record-id)` from a corpus record, or internal corpus iteration.
+ * An output shape: `resolve` hands one out (as `ResolvedHit`); no zsh-core
+ * function takes one in. An id that crossed a process boundary travels as a
+ * string and comes back through `resolve`, which answers an exact id
+ * directly.
  */
 export type DocRecordId = {
   [K in DocCategory]: { readonly category: K; readonly id: Documented<K> }
 }[DocCategory]
 
 /**
- * The `DocRecordId` member for category `K` — what `mkRecordId` returns and
- * what `resolve`'s `ResolvedHit` extends.
+ * The `DocRecordId` member for category `K` — what `resolve`'s `ResolvedHit`
+ * extends.
  *
  * Intersection form on purpose: under a generic `K`, the `Extract` half keeps
  * the value assignable to `DocRecordId` (its constraint is the union), while
@@ -227,19 +229,6 @@ export const mkRecordId = <K extends DocCategory>(
   category: K,
   id: Documented<K>,
 ): DocRecordIdOf<K> => ({ category, id }) as DocRecordIdOf<K>
-
-/**
- * The record behind a `DocRecordId`; `undefined` when the corpus has no such
- * key. Single cast site for the id-to-record correlation; the result is the
- * `K`-shaped record when the id is a `DocRecordIdOf<K>`.
- */
-export const recordOf = <P extends DocRecordId>(
-  corpus: DocCorpus,
-  id: P,
-): DocRecordMap[P["category"]] | undefined =>
-  (corpus[id.category] as ReadonlyMap<string, DocRecordMap[P["category"]]>).get(
-    id.id as string,
-  )
 
 /** A required field of `K`'s record typed as its identity, `Documented<K>`. */
 type IdField<K extends DocCategory> = {
@@ -347,8 +336,9 @@ export const idOf = <K extends DocCategory>(
 /**
  * Optional typed sub-facet of a doc record; `undefined` when a category has
  * no meaningful subKind. Surfaces record-level fields (`HistoryKind`,
- * `ParamExpnSubKind`, `CondArity`, ...) so consumers (MCP search results) can
- * give more structure than a bare id list. Single dispatch-cast site.
+ * `ParamExpnSubKind`, a cond-op's `arity`, ...) so consumers (MCP search
+ * results) can give more structure than a bare id list; a category's closed
+ * value set is the fold over its corpus records. Single dispatch-cast site.
  */
 export const subKindOf = <K extends DocCategory>(
   cat: K,

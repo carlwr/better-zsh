@@ -7,7 +7,12 @@ import {
   refDocs,
   writeRefDump,
 } from "../../../scripts/ref-dump"
-import { mkDocumented } from "../../docs/brands"
+import {
+  mkDocumented,
+  mkOptFlag,
+  mkRedirOp,
+  mkShellParamKeyName,
+} from "../../docs/brands"
 import { docCategoryPreamble } from "../../docs/category-preamble"
 import type { DocCorpus } from "../../docs/corpus"
 import * as zd from "../../docs/corpus"
@@ -38,7 +43,6 @@ import type {
   ZleWidgetDoc,
   ZshOption,
 } from "../../docs/types"
-import { mkOptFlag, mkRedirOp, mkShellParamKeyName } from "../../docs/types"
 import {
   categoryFooter,
   defaultStateIn,

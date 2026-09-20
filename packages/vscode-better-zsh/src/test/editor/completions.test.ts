@@ -1,25 +1,24 @@
 import { nonEmpty } from "@carlwr/typescript-extra"
 import type { DocCorpus } from "@carlwr/zsh-core"
 import { categoryFooter, renderRecordWithTitle } from "@carlwr/zsh-core/render"
-import { mkRecordId, recordOf } from "@carlwr/zsh-core/taxonomy"
-import { mkDocumented, optSections } from "@carlwr/zsh-core/types"
+import { optSections } from "@carlwr/zsh-core/types"
 import { describe, expect, test } from "vitest"
 import * as vscode from "vscode"
 import { CompletionProvider } from "../../editor/completions"
-import { by, emptyCorpus, pos, wordDoc } from "../test-util"
+import { by, docId, emptyCorpus, pos, wordDoc } from "../test-util"
 
 const corpus: DocCorpus = {
   ...emptyCorpus(),
   builtin: by("name", [
     {
-      name: mkDocumented("builtin", "echo"),
+      name: docId("builtin", "echo"),
       synopsis: nonEmpty("echo"),
       desc: "",
     },
   ]),
   reserved_word: by("name", [
     {
-      name: mkDocumented("reserved_word", "if"),
+      name: docId("reserved_word", "if"),
       sig: "if list then list fi",
       desc: "",
       section: "Complex Commands",
@@ -35,14 +34,14 @@ const corpus: DocCorpus = {
   ]),
   special_param: by("name", [
     {
-      name: mkDocumented("special_param", "SECONDS"),
+      name: docId("special_param", "SECONDS"),
       desc: "",
       scope: "shell-set" as const,
     },
   ]),
   option: by("name", [
     {
-      name: mkDocumented("option", "autocd"),
+      name: docId("option", "autocd"),
       display: "AUTO_CD",
       flags: [],
       defaultIn: ["zsh" as const],
@@ -52,7 +51,7 @@ const corpus: DocCorpus = {
   ]),
   conditional_op: by("op", [
     {
-      op: mkDocumented("conditional_op", "=="),
+      op: docId("conditional_op", "=="),
       arity: "binary" as const,
       operands: ["s1", "s2"] as const,
       desc: "string equality",
@@ -101,8 +100,7 @@ describe("CompletionProvider", () => {
     expect(isIncomplete).toBe(true)
     // Documentation: zsh-core's titled body, then the category line the
     // editor appends (`record-markdown.ts`).
-    const autocd = mkRecordId("option", mkDocumented("option", "autocd"))
-    const doc = recordOf(corpus, autocd)
+    const doc = corpus.option.get(docId("option", "autocd"))
     if (doc === undefined) throw new Error("fixture: autocd")
     const md = `${renderRecordWithTitle(corpus, "option", doc)}\n\n${categoryFooter("option", doc)}`
     expect(items.map(i => [i.label, i.filterText, i.documentation])).toEqual([

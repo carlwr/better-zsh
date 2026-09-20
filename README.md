@@ -8,7 +8,7 @@ Improved zsh tooling, packaged as a set of focused libraries and adapters over a
 
 | Package | Purpose | Lives in | Distribution |
 |---|---|---|---|
-| `@carlwr/zsh-core` | Structured zsh reference: typed `DocCorpus`, closed `DocCategory` taxonomy, `resolve`/`renderDoc`, small analysis layer. Parsed from upstream zsh-5.9 Yodl source. | `packages/zsh-core/` | npm, JSR |
+| `@carlwr/zsh-core` | Structured zsh reference: typed `DocCorpus`, closed `DocCategory` taxonomy, `resolve`/`renderRecord`, small analysis layer. Parsed from upstream zsh-5.9 Yodl source. | `packages/zsh-core/` | npm, JSR |
 | `zshref` | Rust crate: the single-file executable `zshref` CLI (JSON on stdout) and the `zshref-mcp` Model Context Protocol server over stdio for MCP-aware clients (Claude Code, Claude Desktop, Cursor, VS Code MCP, Zed, …). Offline; no Node, Python, or zsh runtime dependency. | `zshref-rs/` | crates.io, Homebrew (planned) |
 | `better-zsh` | VS Code extension: hovers, completions, semantic tokens, diagnostics. | `packages/vscode-better-zsh/` | VS Code Marketplace, Open VSX |
 | `zshref-web` | Browser SPA: local semantic search over the same reference — embeddings computed in the browser; index built from `zsh-core` at build time. | `packages/zshref-web/` | static site (deploy planned) |

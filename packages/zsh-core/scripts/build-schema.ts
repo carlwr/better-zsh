@@ -150,21 +150,6 @@ function hoistId(defs: Defs, cat: DocCategory, record: Obj): void {
   if (brand in defs) redirectDef(defs, brand, idName)
 }
 
-// A brand alias resolves to its base type in two hops (`OptFlag` → `Brand<…>`
-// → string); the base is inlined into the alias, which keeps its JSDoc.
-function inlineBrands(defs: Defs): void {
-  const isBrand = (name: string) => name.startsWith("Brand<")
-  for (const alias of Object.values(defs)) {
-    if (typeof alias.$ref !== "string") continue
-    const { name, def } = defOf(defs, alias.$ref)
-    if (!isBrand(name)) continue
-    const { description: _, ...base } = def
-    delete alias.$ref
-    Object.assign(alias, base)
-  }
-  for (const name of Object.keys(defs)) if (isBrand(name)) delete defs[name]
-}
-
 // Every `$ref` resolves, and no TS generic leaked as a def name — a new brand
 // or record wrapper would surface here, not in a consumer's type generator.
 function assertClean(bundle: Obj): void {
@@ -207,7 +192,6 @@ function recordsBundle(gen: ReturnType<typeof createGenerator>): Obj {
     addDef(defs, recordsSchemaDefs.file(cat), rootProps[cat] as Obj)
     rootProps[cat] = { $ref: refTo(recordsSchemaDefs.file(cat)) }
   }
-  inlineBrands(defs)
   assertClean(bundle)
   return bundle
 }

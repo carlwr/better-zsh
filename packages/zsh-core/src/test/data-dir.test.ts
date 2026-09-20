@@ -5,6 +5,7 @@ import {
   copyRuntimeZshData,
   resolveZshDataDir,
   runtimeZshDataDir,
+  runtimeZshDataPaths,
   vendoredZshDocFiles,
 } from "../assets/data-dir"
 import { withTmpDir } from "./tmp-dir"
@@ -23,7 +24,7 @@ describe("resolveZshDataDir", () => {
 })
 
 describe("copyRuntimeZshData", () => {
-  test("copies the full vendored doc set under the runtime dir name", () => {
+  test("creates runtimeZshDataPaths under outDir, where the lookup finds them", () => {
     withTmpDir("better-zsh-zsh-core-", dir => {
       const srcBase = join(dir, "dist")
       const srcData = join(srcBase, "data", "zsh-docs")
@@ -37,8 +38,8 @@ describe("copyRuntimeZshData", () => {
       copyRuntimeZshData(outDir, srcBase)
 
       expect(resolveZshDataDir(outDir)).toBe(join(outDir, runtimeZshDataDir))
-      for (const name of vendoredZshDocFiles) {
-        expect(existsSync(join(outDir, runtimeZshDataDir, name))).toBe(true)
+      for (const path of runtimeZshDataPaths) {
+        expect(existsSync(join(outDir, path))).toBe(true)
       }
     })
   })

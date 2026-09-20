@@ -1,7 +1,7 @@
 import * as assert from "node:assert"
 import { existsSync, readFileSync } from "node:fs"
 import { join } from "node:path"
-import { runtimeZshDataDir, vendoredZshDocFiles } from "@carlwr/zsh-core/assets"
+import { runtimeZshDataPaths } from "@carlwr/zsh-core/assets"
 import * as vscode from "vscode"
 import { outAsset } from "../../manifest"
 import { highlightTexts, openFixture, pkgDir } from "../integration/helpers"
@@ -45,7 +45,7 @@ suite("bundled extension", function () {
     assert.ok(extPath, "expected installed extension path")
 
     for (const rel of [
-      ...vendoredZshDocFiles.map(file => join("out", runtimeZshDataDir, file)),
+      ...runtimeZshDataPaths.map(path => join("out", path)),
       ...Object.values(outAsset).map(file => join("out", file)),
     ]) {
       assertExists(join(extPath, rel))

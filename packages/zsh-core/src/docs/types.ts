@@ -2,42 +2,32 @@ import type { NonEmpty } from "@carlwr/typescript-extra"
 
 import type { DocCategory, ModuleName } from "./taxonomy.ts"
 
+// Every export here is public (`zsh-core/types` re-exports the module);
+// constructors and other helpers live in `brands.ts`.
+//
 // JSDoc on the exported types here is dual-audience: the `.d.ts` rollup and
 // the `description`s of the released `records.schema.json` (build-schema.ts).
 // Write for JSON consumers too — they see `$defs` names, not this file.
-
-/** Phantom-branded type. */
-export type Brand<T, B extends string> = T & { readonly __brand: B }
 
 // --- Auxiliary lookup brands ------------------------------------------------
 // Secondary-index brands; not corpus identities (`Documented<K>`).
 
 /** Single-letter option flag char. Secondary-index brand, not a record identity. */
-export type OptFlag = Brand<string, "OptFlag">
+export type OptFlag = string & { readonly __brand: "OptFlag" }
 
 /** Redirection operator token. Secondary-index brand, not a record identity. */
-export type RedirOp = Brand<string, "RedirOp">
-
-export const mkOptFlag = (raw: string): OptFlag => raw.trim() as OptFlag
-
-export const mkRedirOp = (raw: string): RedirOp => raw.trim() as RedirOp
-
-/** Shell-safe redirection slug from a sig (whitespace → `_`). See `RedirDoc.slug`. */
-export const redirSlugFromSig = (sig: string): string =>
-  sig.replace(/\s+/g, "_")
+export type RedirOp = string & { readonly __brand: "RedirOp" }
 
 // --- Corpus identity brand --------------------------------------------------
 
 /**
  * Phantom-branded identifier of a documented zsh element for category K.
- * Holding one is a *claim* that the string is a key in `corpus[K]`. Honest
- * acquisition paths:
- *
- * 1. `resolve` — **checked** against the corpus; the path for untrusted input.
- *    Lossy bits (e.g. option `NO_`-stripping) surface as the hit's `feedback`.
- * 2. `mkDocumented(cat, raw)` — **trusted**, no corpus check. Reserved for
- *    corpus construction (Yodl extractors) and test-corpus builders. Misuse
- *    surfaces only as later `Map.get` returning `undefined`.
+ * Holding one is a *claim* that the string is a key in `corpus[K]`. Minted
+ * by zsh-core alone: `resolve` **checks** a raw string against the corpus
+ * (lossy bits, e.g. option `NO_`-stripping, surface as the hit's
+ * `feedback`), and every corpus record carries its own identity. A test
+ * fixture casts a string already in id form — `normalizeOptName(raw)` for
+ * `option`, trimmed elsewhere; a mistake there surfaces as a `Map.get` miss.
  *
  * `precmd_modifier` and `process_subst` collapse to their closed literal
  * unions (every valid string is a corpus member); other categories phantom-brand.
@@ -67,24 +57,14 @@ const precmdNameSet: ReadonlySet<string> = new Set(precmdNames)
 export const isPrecmdName = (raw: string): raw is PrecmdName =>
   precmdNameSet.has(raw)
 
-/** zshoptions default-on marker: D=default, K=ksh, S=sh, C=csh, Z=zsh. */
-export type DefaultMarker = "D" | "K" | "S" | "C" | "Z"
-
-/** Conditional expression arity (`-a file` vs `f1 -nt f2`). */
-export type CondArity = "unary" | "binary"
 export type UnaryCondOperands = readonly [string]
 export type BinaryCondOperands = readonly [string, string]
 
 export const emulations = ["csh", "ksh", "sh", "zsh"] as const
 export type Emulation = (typeof emulations)[number]
 
-export type OptState = "on" | "off"
-
 /** Option-flag sign — zsh convention: `-` enables, `+` disables. */
 export type OptFlagSign = "+" | "-"
-
-export const flipOptFlagSign = (sign: OptFlagSign): OptFlagSign =>
-  sign === "-" ? "+" : "-"
 
 /** Position where zsh treats the word as reserved. */
 export type ReservedWordPos = "command" | "any"
@@ -248,10 +228,9 @@ export type ShellParamScope =
  * Branded sub-key name inside a `ShellParamDoc.keys` payload (associative-array
  * keys, colon-list enumerated values, ...).
  */
-export type ShellParamKeyName = Brand<string, "ShellParamKeyName">
-
-export const mkShellParamKeyName = (raw: string): ShellParamKeyName =>
-  raw.trim() as ShellParamKeyName
+export type ShellParamKeyName = string & {
+  readonly __brand: "ShellParamKeyName"
+}
 
 /**
  * One sub-value under a `ShellParamKey` whose body itself carries a nested

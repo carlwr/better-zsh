@@ -1,6 +1,7 @@
-import type { Brand } from "@carlwr/zsh-core/types"
+/** Phantom-branded string. */
+export type Brand<B extends string> = string & { readonly __brand: B }
 
-const id = <B extends string>(raw: string) => raw as Brand<string, B>
+const id = <B extends string>(raw: string) => raw as Brand<B>
 
 export const BETTER_ZSH_DISPLAY_NAME = "Better Zsh"
 export const ZSH_LANG_ID = id<"LangId">("zsh")

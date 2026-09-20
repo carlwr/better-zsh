@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "node:fs"
+import { readdirSync, readFileSync } from "node:fs"
 import { join } from "node:path"
 import { describe, expect, test } from "vitest"
 import { resolveZshDataDir, vendoredZshDocFiles } from "../assets/data-dir"
@@ -21,11 +21,10 @@ describe("vendored zsh data assets", () => {
     )
   })
 
-  test("ships the full doc set expected by runtime and packaging", () => {
+  test("vendored file list is exactly the data dir's contents, none empty", () => {
+    expect([...vendoredZshDocFiles].sort()).toEqual(readdirSync(dataDir).sort())
     for (const name of vendoredZshDocFiles) {
-      const path = join(dataDir, name)
-      expect(existsSync(path)).toBe(true)
-      expect(readFileSync(path, "utf8").trim().length).toBeGreaterThan(0)
+      expect(readFileSync(join(dataDir, name), "utf8").trim()).not.toBe("")
     }
   })
 
