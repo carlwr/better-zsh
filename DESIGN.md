@@ -65,7 +65,7 @@ Knows nothing about doc records or markdown rendering.
 
 Doc records → human-readable markdown. Depends on A; orthogonal to B.
 
-Bodies carry record content only; title (`recordTitle`) and category line (`categoryFooter`) are envelope data (`DocRecordId`; in the JSON, the record's `id` and its file's category) that consumers compose — a hover, showing nothing else, appends both.
+`renderRecord` yields a `RenderedRecord`: `title` and `mdBody` — the record's own content, the same pair the JSON ships as `_title` / `_mdBody`. The category line (`categoryFooter`) is envelope data (`DocRecordId`; in the JSON, the record's file) that consumers compose — a hover, showing nothing else, appends it.
 
 ### Inter-domain wiring
 

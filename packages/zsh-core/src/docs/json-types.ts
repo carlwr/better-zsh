@@ -6,20 +6,20 @@ import type {
 import type { DocCategory, DocRecordMap } from "./taxonomy.ts"
 
 // Generated fields attached to every JSON record; the in-memory corpus omits
-// them. All are `_`-prefixed, the rendered markdown body included — a
-// namespace apart from the records' own field names. Deliberately no JSDoc
-// here: the schema generator would make it the description of every record.
+// them. All are `_`-prefixed — a namespace apart from the records' own field
+// names; `_mdBody` / `_title` are `RenderedRecord`'s fields. Deliberately no
+// JSDoc here: the schema generator would make it the description of every
+// record.
 export type WithMarkdown<T> = T & {
   /**
-   * The rendered record as markdown; `_title` is split out of it, and the
-   * category is the envelope's (`_subKind` and the file's category), not the
-   * body's. Empty for a record without prose.
+   * The record's body as markdown; the title is `_title`, and the category
+   * is the envelope's (`_subKind` and the file's category), not the body's.
+   * Empty for a record without prose.
    */
   readonly _mdBody: string
   /**
-   * Rendered record title — short inline markdown (e.g. the backticked
-   * record name); split out of `_mdBody` so each consumer decides whether to
-   * show it.
+   * Record title — short inline markdown (e.g. the backticked record name);
+   * apart from `_mdBody` so each consumer decides whether to show it.
    */
   readonly _title: string
   /** `subKindOf`'s value; schema: required with an enum, or absent, per category (build-schema.ts). */

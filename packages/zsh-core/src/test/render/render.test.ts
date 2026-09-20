@@ -47,35 +47,9 @@ import {
   categoryFooter,
   defaultStateIn,
   fmtOptRefsInMd,
-  headFor,
   isDocoptSig,
   isSynonymList,
-  mdArithOp,
-  mdBuiltin,
-  mdComplexCommand,
-  mdCompUtility,
-  mdCondOp,
-  mdGlobFlag,
-  mdGlobOp,
-  mdGlobQualifier,
-  mdHistory,
-  mdJobSpec,
-  mdKeymap,
-  mdOpt,
-  mdParamExpn,
-  mdParamFlag,
-  mdPrecmd,
-  mdProcessSubst,
-  mdPromptEscape,
-  mdRedir,
-  mdReservedWord,
-  mdShellParam,
-  mdSpecialFunction,
-  mdSubscriptFlag,
-  mdZleWidget,
-  recordTitle,
   renderRecord,
-  renderRecordWithTitle,
 } from "../../render/md"
 import { withTmpDirAsync } from "../tmp-dir"
 
@@ -305,29 +279,41 @@ const headings = (t: string | undefined) => (t?.match(/^## /gm) ?? []).length
 const noOpts = mkTestCorpus({ option: [] })
 const cdCorpus = mkTestCorpus({ option: [cd] })
 
-// Title is composed downstream by `recordTitle` — body assertions below
-// deliberately exclude the title line. See the `recordTitle` and
-// `renderRecordWithTitle` tests further down for title-related coverage. The
-// category line is likewise separate: `categoryFooter`, see its tests.
+const body = <K extends DocCategory>(
+  cat: K,
+  doc: DocRecordMap[K],
+  corpus: DocCorpus = noOpts,
+): string => renderRecord(corpus, cat, doc).mdBody
+const title = <K extends DocCategory>(cat: K, doc: DocRecordMap[K]): string =>
+  renderRecord(noOpts, cat, doc).title
+const head = <K extends DocCategory>(cat: K, doc: DocRecordMap[K]) =>
+  renderRecord(noOpts, cat, doc).head
+
+// Body assertions exclude the title (`title` tests further down) and the
+// category line (`categoryFooter`, see its tests).
 const renderedMarkdownCases = [
-  ["special_param", mdShellParam(sec), ["d:p"]],
-  ["builtin", mdBuiltin(bi), ["```docopt", "echo [ -n ] [ arg ... ]", "d:bi"]],
+  ["special_param", body("special_param", sec), ["d:p"]],
+  [
+    "builtin",
+    body("builtin", bi),
+    ["```docopt", "echo [ -n ] [ arg ... ]", "d:bi"],
+  ],
   [
     "precmd_modifier",
-    mdPrecmd(pc),
+    body("precmd_modifier", pc),
     ["```docopt", "noglob command arg ...", "d:pc"],
   ],
-  ["redirection", mdRedir(rd), ["```docopt", ">> word", "d:r"]],
-  ["process_subst", mdProcessSubst(sub), ["d:ps"]],
+  ["redirection", body("redirection", rd), ["```docopt", ">> word", "d:r"]],
+  ["process_subst", body("process_subst", sub), ["d:ps"]],
   [
     "param_expn",
-    mdParamExpn(px),
+    body("param_expn", px),
     ["```zsh", "${name-word}", "${name:-word}    # <- this form", "d:px"],
   ],
-  ["reserved_word", mdReservedWord(word), ["d:rw"]],
+  ["reserved_word", body("reserved_word", word), ["d:rw"]],
   [
     "complex_command",
-    mdComplexCommand(cc, noOpts),
+    body("complex_command", cc),
     [
       "```docopt",
       "if list then list fi",
@@ -337,46 +323,50 @@ const renderedMarkdownCases = [
       "_Body keywords:_ `then` `fi`",
     ],
   ],
-  ["prompt_escape", mdPromptEscape(pe), ["```zsh", "print -P '%n'", "d:pe"]],
+  [
+    "prompt_escape",
+    body("prompt_escape", pe),
+    ["```zsh", "print -P '%n'", "d:pe"],
+  ],
   [
     "zle_widget",
-    mdZleWidget(zw),
+    body("zle_widget", zw),
     ["_Default bindings:_ emacs `^W` `ESC-^H` `ESC-^?`", "d:zw"],
   ],
-  ["keymap", mdKeymap(km), ["d:km", "_Linked from:_ `main`"]],
-  ["job_spec", mdJobSpec(js), ["d:js"]],
-  ["arith_op", mdArithOp(ao), ["d:ao"]],
+  ["keymap", body("keymap", km), ["d:km", "_Linked from:_ `main`"]],
+  ["job_spec", body("job_spec", js), ["d:js"]],
+  ["arith_op", body("arith_op", ao), ["d:ao"]],
   [
     "special_function",
-    mdSpecialFunction(sfn),
+    body("special_function", sfn),
     ["d:sfn", "```zsh", "chpwd_functions=( funcname1 funcname2 ... )"],
   ],
   [
     "subscript_flag",
-    mdSubscriptFlag(sf, noOpts),
+    body("subscript_flag", sf),
     ["```zsh", "${name[(w)exp]}", "d:sf", "_Args:_ string"],
   ],
   [
     "param_expn_flag",
-    mdParamFlag(pf, noOpts),
+    body("param_expn_flag", pf),
     ["```zsh", "${(U)spec}", "d:pf"],
   ],
-  ["history_expn", mdHistory(hi, noOpts), ["d:hi"]],
-  ["glob_op", mdGlobOp(go, noOpts), ["d:go"]],
+  ["history_expn", body("history_expn", hi), ["d:hi"]],
+  ["glob_op", body("glob_op", go), ["d:go"]],
   [
     "glob_flag",
-    mdGlobFlag(gf, noOpts),
+    body("glob_flag", gf),
     ["```zsh", "(#i)pat", "d:gf", "_Args:_ expr"],
   ],
-  ["glob_qualifier", mdGlobQualifier(gq, noOpts), ["```zsh", "*(@)", "d:gq"]],
-  ["comp_utility", mdCompUtility(cuu), ["d:cuu"]],
+  ["glob_qualifier", body("glob_qualifier", gq), ["```zsh", "*(@)", "d:gq"]],
+  ["comp_utility", body("comp_utility", cuu), ["d:cuu"]],
 ] as const
 
 // --- tests ------------------------------------------------------------------
 
 describe("render markdown", () => {
   test("option markdown", () => {
-    containsAll(mdOpt(cd, noOpts), [
+    containsAll(body("option", cd), [
       "```zsh",
       "setopt auto_cd",
       "unsetopt auto_cd",
@@ -397,7 +387,7 @@ describe("render markdown", () => {
         { char: mkOptFlag("5"), on: "-", emulations: ["csh", "zsh"] },
       ],
     }
-    expect(headFor("option", opt)?.lines.join("\n")).toBe(
+    expect(head("option", opt)?.lines.join("\n")).toBe(
       [
         "setopt auto_cd     # on",
         "unsetopt auto_cd   # off",
@@ -435,8 +425,7 @@ describe("render markdown", () => {
     [cu, "```zsh\n[[ -a file ]]\n```\n\nd:u"],
     [cb, "```zsh\n[[ left -nt right ]]\n```\n\nd:b"],
   ] as const)("cond op markdown — body only ($arity)", (op, want) => {
-    expect(mdCondOp(op, noOpts)).toBe(want)
-    expect(renderRecord(noOpts, "conditional_op", op)).toBe(want)
+    expect(body("conditional_op", op)).toBe(want)
   })
 
   test.each(renderedMarkdownCases)("%s markdown", (_, md, parts) => {
@@ -455,7 +444,7 @@ describe("render markdown", () => {
     const label = docCategoryLabels[cat]
     const want = sub === undefined ? label : `${label} (${sub})`
     expect(categoryFooter(cat, doc)).toBe(`_Category:_ ${want}`)
-    expect(renderRecord(noOpts, cat, doc)).not.toMatch(
+    expect(body(cat, doc)).not.toMatch(
       /^_(Category|Role|Subsection|Option category):_/m,
     )
   })
@@ -478,15 +467,30 @@ describe("render markdown", () => {
     expect(fmtOptRefsInMd(line, withZle)).toContain("**")
   })
 
-  test("desc-less reserved word — empty body; title alone when titled", () => {
+  test("desc-less reserved word — empty body, no head", () => {
     const bare: ReservedWordDoc = {
       ...identity("reserved_word", "for"),
       sig: "for",
       section: "Reserved Words",
       pos: "command",
     }
-    expect(renderRecord(noOpts, "reserved_word", bare)).toBe("")
-    expect(renderRecordWithTitle(noOpts, "reserved_word", bare)).toBe("`for`")
+    expect(renderRecord(noOpts, "reserved_word", bare)).toEqual({
+      title: "`for`",
+      mdBody: "",
+    })
+  })
+
+  // `head` is the block `mdBody` opens with, never something to prepend.
+  test.each(docCategories)("%s head opens the body", cat => {
+    const doc = baseArrays[cat][0]
+    if (doc === undefined) throw new Error(`no fixture for ${cat}`)
+    const r = renderRecord(noOpts, cat, doc)
+    if (r.head === undefined) return
+    expect(
+      r.mdBody.startsWith(
+        `\`\`\`${r.head.lang}\n${r.head.lines.join("\n")}\n\`\`\``,
+      ),
+    ).toBe(true)
   })
 
   // Typed extras end the body, and pass through bolding (the alias target is
@@ -497,17 +501,17 @@ describe("render markdown", () => {
       ...identity("option", "CDABLE_VARS", "CDABLE_VARS"),
       aliasOf: { target: cd.id, negated: false },
     }
-    const opt = renderRecord(cdCorpus, "option", alias)
+    const opt = body("option", alias, cdCorpus)
     expect(opt).toContain("_Alias of:_ **`AUTO_CD`**")
     expect(opt).toMatch(/_Section:_ Changing Directories$/)
 
-    const tied = renderRecord(noOpts, "special_param", {
+    const tied = body("special_param", {
       ...sec,
       tied: mkDocumented("special_param", "path"),
     })
     expect(tied).toMatch(/_Tied with:_ `path`$/)
 
-    const deprecated = renderRecord(noOpts, "builtin", {
+    const deprecated = body("builtin", {
       ...bi,
       deprecated: true,
       module: "zsh/files",
@@ -516,14 +520,14 @@ describe("render markdown", () => {
       /_Deprecated:_ not recommended for new code\n\n_Module:_ `zsh\/files`$/,
     )
 
-    const special = renderRecord(noOpts, "keymap", {
+    const special = body("keymap", {
       ...km,
       isSpecial: true,
       linkedFrom: [],
     })
     expect(special).toMatch(/_Special:_ cannot be altered$/)
 
-    expect(renderRecord(noOpts, "glob_flag", gf)).toMatch(/_Args:_ expr$/)
+    expect(body("glob_flag", gf)).toMatch(/_Args:_ expr$/)
   })
 
   test("default state by emulation", () => {
@@ -581,36 +585,36 @@ describe("render markdown", () => {
     expect(isDocoptSig("foo, bar")).toBe(false)
   })
 
-  test("recordTitle — per-category formatting", () => {
-    expect(recordTitle("option", cd)).toBe("`AUTO_CD`")
-    expect(recordTitle("conditional_op", cu)).toBe("`-a` *file*")
-    expect(recordTitle("conditional_op", cb)).toBe("*left* `-nt` *right*")
-    expect(recordTitle("builtin", bi)).toBe("`echo`")
-    expect(recordTitle("precmd_modifier", pc)).toBe("`noglob`")
-    expect(recordTitle("special_param", sec)).toBe("`SECONDS`")
-    expect(recordTitle("complex_command", cc)).toBe("`if`")
-    expect(recordTitle("reserved_word", word)).toBe("`if`")
-    expect(recordTitle("redirection", rd)).toBe("`>>`")
-    expect(recordTitle("process_subst", sub)).toBe("`<(...)`")
-    expect(recordTitle("param_expn", px)).toBe(
+  test("title — per-category formatting", () => {
+    expect(title("option", cd)).toBe("`AUTO_CD`")
+    expect(title("conditional_op", cu)).toBe("`-a` *file*")
+    expect(title("conditional_op", cb)).toBe("*left* `-nt` *right*")
+    expect(title("builtin", bi)).toBe("`echo`")
+    expect(title("precmd_modifier", pc)).toBe("`noglob`")
+    expect(title("special_param", sec)).toBe("`SECONDS`")
+    expect(title("complex_command", cc)).toBe("`if`")
+    expect(title("reserved_word", word)).toBe("`if`")
+    expect(title("redirection", rd)).toBe("`>>`")
+    expect(title("process_subst", sub)).toBe("`<(...)`")
+    expect(title("param_expn", px)).toBe(
       "`${name:-word}`    _(default, form 2 of 2)_",
     )
-    expect(recordTitle("subscript_flag", sf)).toBe("`w`")
-    expect(recordTitle("param_expn_flag", pf)).toBe("`U`")
-    expect(recordTitle("history_expn", hi)).toBe("`!!`")
-    expect(recordTitle("glob_op", go)).toBe("`*`")
-    expect(recordTitle("glob_flag", gf)).toBe("`i`")
-    expect(recordTitle("glob_qualifier", gq)).toBe("`@`")
-    expect(recordTitle("prompt_escape", pe)).toBe("`%n`")
-    expect(recordTitle("zle_widget", zw)).toBe("`backward-kill-word`")
-    expect(recordTitle("keymap", km)).toBe("`emacs`")
-    expect(recordTitle("job_spec", js)).toBe("`%%`")
-    expect(recordTitle("arith_op", ao)).toBe("`+`")
-    expect(recordTitle("special_function", sfn)).toBe("`chpwd`")
-    expect(recordTitle("comp_utility", cuu)).toBe("`_all_labels`")
+    expect(title("subscript_flag", sf)).toBe("`w`")
+    expect(title("param_expn_flag", pf)).toBe("`U`")
+    expect(title("history_expn", hi)).toBe("`!!`")
+    expect(title("glob_op", go)).toBe("`*`")
+    expect(title("glob_flag", gf)).toBe("`i`")
+    expect(title("glob_qualifier", gq)).toBe("`@`")
+    expect(title("prompt_escape", pe)).toBe("`%n`")
+    expect(title("zle_widget", zw)).toBe("`backward-kill-word`")
+    expect(title("keymap", km)).toBe("`emacs`")
+    expect(title("job_spec", js)).toBe("`%%`")
+    expect(title("arith_op", ao)).toBe("`+`")
+    expect(title("special_function", sfn)).toBe("`chpwd`")
+    expect(title("comp_utility", cuu)).toBe("`_all_labels`")
   })
 
-  test("recordTitle — param_expn solo sig has no form index", () => {
+  test("title — param_expn solo sig has no form index", () => {
     const solo: ParamExpnDoc = {
       ...px,
       ...identity("param_expn", "${name}"),
@@ -618,37 +622,29 @@ describe("render markdown", () => {
       groupSigs: ["${name}"],
       orderInGroup: 0,
     }
-    expect(recordTitle("param_expn", solo)).toBe("`${name}`    _(default)_")
+    expect(title("param_expn", solo)).toBe("`${name}`    _(default)_")
   })
 
-  test("renderRecordWithTitle — composes title + body", () => {
-    const docs = mkTestCorpus()
-    const out = renderRecordWithTitle(docs, "builtin", bi)
-    // Title is on the first line, body follows after a blank line.
-    expect(out).toMatch(/^`echo`\n\n/)
-    expect(out).toContain("d:bi")
-  })
-
-  test("headFor — returns structured head for head-emitting categories", () => {
-    const builtinHead = headFor("builtin", bi)
-    expect(builtinHead).toEqual({
+  test("head — structured head for head-emitting categories", () => {
+    expect(head("builtin", bi)).toEqual({
       lang: "docopt",
       lines: ["echo [ -n ] [ arg ... ]"],
     })
-    const condHead = headFor("conditional_op", cu)
-    expect(condHead).toEqual({ lang: "zsh", lines: ["[[ -a file ]]"] })
-    const arithHead = headFor("arith_op", ao)
-    expect(arithHead).toEqual({
+    expect(head("conditional_op", cu)).toEqual({
+      lang: "zsh",
+      lines: ["[[ -a file ]]"],
+    })
+    expect(head("arith_op", ao)).toEqual({
       lang: "zsh",
       lines: ["$(( + a ))", "$(( a + b ))"],
     })
   })
 
-  test("headFor — head-less categories return undefined", () => {
-    expect(headFor("keymap", km)).toBeUndefined()
-    expect(headFor("job_spec", js)).toBeUndefined()
-    expect(headFor("process_subst", sub)).toBeUndefined()
-    expect(headFor("zle_widget", zw)).toBeUndefined()
+  test("head — head-less categories have none", () => {
+    expect(head("keymap", km)).toBeUndefined()
+    expect(head("job_spec", js)).toBeUndefined()
+    expect(head("process_subst", sub)).toBeUndefined()
+    expect(head("zle_widget", zw)).toBeUndefined()
   })
 
   // The bindings paragraph opens the body; keymaps `; `-separated. A key
@@ -688,13 +684,13 @@ describe("render markdown", () => {
   test.each(bindingCases)(
     "zle widget bindings paragraph — %s",
     (_label, defaultBindings, want) => {
-      const md = mdZleWidget({ ...zw, defaultBindings })
+      const md = body("zle_widget", { ...zw, defaultBindings })
       expect(md.startsWith(`${want}\n\nd:zw`)).toBe(true)
     },
   )
 
   test("zle widget bindings paragraph — absent when empty", () => {
-    expect(mdZleWidget({ ...zw, defaultBindings: [] })).toBe("d:zw")
+    expect(body("zle_widget", { ...zw, defaultBindings: [] })).toBe("d:zw")
   })
 
   test("alternate-form requires annotation rendered as trailing comment", () => {
@@ -714,7 +710,7 @@ describe("render markdown", () => {
         { template: "plain form", keywords: [] },
       ],
     }
-    const md = mdComplexCommand(docWithReq, mkTestCorpus({ option: [] }))
+    const md = body("complex_command", docWithReq)
     expect(md).toContain("if list { list }    # requires SHORT_LOOPS")
     expect(md).toContain(
       "repeat word sublist    # requires SHORT_LOOPS or SHORT_REPEAT",
@@ -738,7 +734,7 @@ describe("render markdown", () => {
         { name: mkShellParamKeyName("plainkey"), desc: "leaf desc" },
       ],
     }
-    containsAll(mdShellParam(doc), [
+    containsAll(body("special_param", doc), [
       // docopt key: fenced bullet block, indented multi-paragraph desc
       "- ```docopt\n  [ key ] ...\n  ```",
       "  first para",
@@ -828,11 +824,11 @@ describe("render dump", () => {
       ])
     })
 
-    // Vendored-option lookup that throws on miss; mdOpt rendered inline.
+    // Vendored-option lookup that throws on miss; body rendered inline.
     const renderOpt = (name: string): string => {
       const opt = vendored.option.get(mkDocumented("option", name))
       if (!opt) throw new Error(`no vendored option: ${name}`)
-      return mdOpt(opt, vendored)
+      return body("option", opt, vendored)
     }
 
     test("formats real option cross-refs but not env vars", () => {

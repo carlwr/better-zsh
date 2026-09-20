@@ -1,6 +1,6 @@
 import { nonEmpty } from "@carlwr/typescript-extra"
 import type { DocCorpus } from "@carlwr/zsh-core"
-import { categoryFooter, renderRecordWithTitle } from "@carlwr/zsh-core/render"
+import { categoryFooter, renderRecord } from "@carlwr/zsh-core/render"
 import { optSections } from "@carlwr/zsh-core/types"
 import { describe, expect, test } from "vitest"
 import * as vscode from "vscode"
@@ -102,7 +102,8 @@ describe("CompletionProvider", () => {
     // editor appends (`record-markdown.ts`).
     const doc = corpus.option.get(docId("option", "autocd"))
     if (doc === undefined) throw new Error("fixture: autocd")
-    const md = `${renderRecordWithTitle(corpus, "option", doc)}\n\n${categoryFooter("option", doc)}`
+    const { title, mdBody } = renderRecord(corpus, "option", doc)
+    const md = `${title}\n\n${mdBody}\n\n${categoryFooter("option", doc)}`
     expect(items.map(i => [i.label, i.filterText, i.documentation])).toEqual([
       ["no_autocd", "no_au", new vscode.MarkdownString(md)],
     ])

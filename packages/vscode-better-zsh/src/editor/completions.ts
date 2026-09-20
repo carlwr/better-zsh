@@ -1,6 +1,6 @@
 import { cached } from "@carlwr/typescript-extra"
 import type { DocCorpus } from "@carlwr/zsh-core"
-import { headFor, recordTitle } from "@carlwr/zsh-core/render"
+import { renderRecord } from "@carlwr/zsh-core/render"
 import type { DocCategory, DocRecordMap } from "@carlwr/zsh-core/taxonomy"
 import * as vscode from "vscode"
 import { contextAt } from "../document/facts"
@@ -8,7 +8,7 @@ import { funcDecls } from "../document/funcs"
 import { paramNames } from "../document/params"
 import { WORD, WORD_EXACT } from "../document/words"
 import { matchOptions } from "./option-match"
-import { recordMarkdown } from "./record-markdown"
+import { recordMarkdown, renderedMarkdown } from "./record-markdown"
 
 const { CompletionItemKind: Kind } = vscode
 
@@ -52,9 +52,18 @@ export class CompletionProvider implements vscode.CompletionItemProvider {
         ]),
       ),
   )
-  private conditionalOps = cached(() => [
-    ...this.corpus.conditional_op.values(),
-  ])
+  // `CompletionItemKind.Operator`'s codicon is a stacked `%/x` glyph; `Keyword`'s
+  // icon reads cleaner and is semantically close (test/cond keywords).
+  private condItems = cached(() =>
+    [...this.corpus.conditional_op.values()].map(cop => {
+      const item = new vscode.CompletionItem(cop.id, Kind.Keyword)
+      item.detail = cop.desc
+      item.documentation = new vscode.MarkdownString(
+        renderRecord(this.corpus, "conditional_op", cop).title,
+      )
+      return item
+    }),
+  )
 
   constructor(private corpus: DocCorpus) {}
 
@@ -103,17 +112,7 @@ export class CompletionProvider implements vscode.CompletionItemProvider {
   }
 
   private condCompletions() {
-    // `CompletionItemKind.Operator`'s codicon is a stacked `%/x` glyph; `Keyword`'s
-    // icon reads cleaner and is semantically close (test/cond keywords).
-    const items = this.conditionalOps().map(cop => {
-      const item = new vscode.CompletionItem(cop.id, Kind.Keyword)
-      item.detail = cop.desc
-      item.documentation = new vscode.MarkdownString(
-        recordTitle("conditional_op", cop),
-      )
-      return item
-    })
-    return new vscode.CompletionList(items, false)
+    return new vscode.CompletionList(this.condItems(), false)
   }
 }
 
@@ -129,9 +128,10 @@ function mkCompletionItem<K extends WordCategory>(
   kind: vscode.CompletionItemKind,
 ): vscode.CompletionItem {
   const item = new vscode.CompletionItem(doc.id, kind)
+  const rendered = renderRecord(corpus, cat, doc)
   // The one-line slot: a synopsis where the record has one; the full doc
   // travels as `documentation`.
-  item.detail = headFor(cat, doc)?.lines[0]
-  item.documentation = recordMarkdown(corpus, cat, doc)
+  item.detail = rendered.head?.lines[0]
+  item.documentation = renderedMarkdown(rendered, cat, doc)
   return item
 }

@@ -41,7 +41,8 @@ const hit = resolve(corpus, "option", "NO_AUTO_CD")
 if (hit) {
   console.log(hit.id)                // → autocd
   console.log(hit.feedback)          // → { kind: "input-negated" }
-  console.log(renderRecord(corpus, hit.category, hit.record))
+  const { title, mdBody } = renderRecord(corpus, hit.category, hit.record)
+  console.log(`${title}\n\n${mdBody}`)
 }
 ```
 

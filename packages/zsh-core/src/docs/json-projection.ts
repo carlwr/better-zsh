@@ -2,7 +2,7 @@
 
 import { isDefined, isEmpty } from "@carlwr/typescript-extra"
 
-import { recordTitle, renderRecord } from "../render/md.ts"
+import { renderRecord } from "../render/md.ts"
 import { displayPattern, idPattern } from "./brands.ts"
 import type { DocCorpus } from "./corpus.ts"
 import type { WithMarkdown } from "./json-types.ts"
@@ -11,7 +11,7 @@ import type { DocRecordBase } from "./types.ts"
 
 /**
  * Project the records of `cat` as JSON consumers see them: each augmented
- * with its rendered markdown body and title. Generated fields are
+ * with its `RenderedRecord` fields and sub-kind. Generated fields are
  * `_`-prefixed (`_mdBody` included): a namespace apart from the records' own
  * field names (`id`, `display`, `subKind` on ParamExpnDoc).
  */
@@ -21,10 +21,11 @@ export function projectRecords<K extends DocCategory>(
 ): readonly WithMarkdown<DocRecordMap[K]>[] {
   return [...corpus[cat].values()].map(rec => {
     const subKind = subKindOf(cat, rec)
+    const { title, mdBody } = renderRecord(corpus, cat, rec)
     return {
       ...rec,
-      _mdBody: renderRecord(corpus, cat, rec),
-      _title: recordTitle(cat, rec),
+      _mdBody: mdBody,
+      _title: title,
       ...(isDefined(subKind) ? { _subKind: subKind } : {}),
     }
   })

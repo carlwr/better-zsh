@@ -6,8 +6,6 @@
 export {
   categoryFooter,
   type DocHead,
-  headFor,
-  recordTitle,
+  type RenderedRecord,
   renderRecord,
-  renderRecordWithTitle,
 } from "./src/render/md.ts"

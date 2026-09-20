@@ -36,7 +36,7 @@ function mkRefDocs<K extends DocCategory>(
     kind,
     id: genericId(doc),
     heading: doc.display,
-    md: renderRecord(corpus, kind, doc),
+    md: renderRecord(corpus, kind, doc).mdBody,
   }))
 }
 

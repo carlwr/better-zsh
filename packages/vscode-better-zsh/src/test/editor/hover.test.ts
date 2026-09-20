@@ -1,5 +1,5 @@
 import { type DocCorpus, loadCorpus } from "@carlwr/zsh-core"
-import { categoryFooter, renderRecordWithTitle } from "@carlwr/zsh-core/render"
+import { categoryFooter, renderRecord } from "@carlwr/zsh-core/render"
 import type { DocCategory } from "@carlwr/zsh-core/taxonomy"
 import type {
   BuiltinDoc,
@@ -110,7 +110,8 @@ const realAt = hoverWith(new HoverProvider(real))
 const rendered = <K extends DocCategory>(cat: K, id: Documented<K>) => {
   const doc = real[cat].get(id)
   if (doc === undefined) throw new Error(`no ${cat} record ${String(id)}`)
-  return `${renderRecordWithTitle(real, cat, doc)}\n\n${categoryFooter(cat, doc)}`
+  const { title, mdBody } = renderRecord(real, cat, doc)
+  return `${title}\n\n${mdBody}\n\n${categoryFooter(cat, doc)}`
 }
 
 // --- synthetic-corpus dispatch ----------------------------------------------

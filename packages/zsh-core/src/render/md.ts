@@ -18,24 +18,14 @@ import type {
   CompUtilityDoc,
   CondOpDoc,
   Emulation,
-  GlobFlagDoc,
-  GlobOpDoc,
-  GlobQualifierDoc,
-  HistoryDoc,
-  JobSpecDoc,
   KeymapDoc,
   MathfuncDoc,
   OptFlagAlias,
   ParamExpnDoc,
-  ParamFlagDoc,
-  PrecmdDoc,
-  ProcessSubstDoc,
   PromptEscapeDoc,
-  RedirDoc,
   ReservedWordDoc,
   ShellParamDoc,
   SpecialFunctionDoc,
-  SubscriptFlagDoc,
   ZleDefaultBinding,
   ZleWidgetDoc,
   ZshOption,
@@ -44,13 +34,25 @@ import { mdInlineCode } from "../docs/yodl/core/text.ts"
 import { splitInlineCode, walkProseLines } from "./prose-walk.ts"
 
 /**
- * Fenced executable form (or docopt template) immediately following the
- * record title. Constructed via {@link headFor}; no-head categories yield
- * `undefined`.
+ * Fenced executable form (or docopt template) that opens a record's body;
+ * no-head categories have none.
  */
 export interface DocHead {
   readonly lang: string
   readonly lines: NonEmpty<string>
+}
+
+/**
+ * A record rendered: what the JSON projection ships as `_title` / `_mdBody`
+ * and the zshref tools return as `title` / `mdBody`.
+ */
+export interface RenderedRecord {
+  /** Short inline markdown (e.g. the backticked record name); not repeated in `mdBody`. */
+  readonly title: string
+  /** Body markdown; the category is not in it (see {@link categoryFooter}). Empty for a record without prose. */
+  readonly mdBody: string
+  /** The fenced block `mdBody` opens with, as structure — for one-line uses; never prepend it. */
+  readonly head?: DocHead
 }
 
 // --- formatting primitives --------------------------------------------------
@@ -255,8 +257,8 @@ function isShellParameterRef(whole: string, offset: number): boolean {
  * Record titles that are not the backticked `display`: a composite like
  * `*lhs* \`op\` *rhs*` for cond-ops, or the manual's sig (`(#i)`,
  * `%D{string}`) where the id is a bare letter. Renderers omit the title
- * from their body; consumers compose via `recordTitle(cat, doc)` (or
- * {@link renderRecordWithTitle}). Dump output supplies its own `## heading`.
+ * from their body; `renderRecord` pairs it with the body as `title`.
+ * Dump output supplies its own `## heading`.
  */
 const titleOverrides: {
   readonly [K in DocCategory]?: (doc: DocRecordMap[K]) => string
@@ -270,7 +272,7 @@ const titleOverrides: {
 }
 
 /** Title line for a doc record: the category's override, else its backticked `display`. */
-export function recordTitle<K extends DocCategory>(
+function recordTitle<K extends DocCategory>(
   cat: K,
   doc: DocRecordMap[K],
 ): string {
@@ -301,10 +303,7 @@ function sigCond(cop: CondOpDoc): string {
 
 // --- head construction (per-category dispatch) -----------------------------
 
-/**
- * Render a {@link DocHead} as a fenced code block, or empty when absent.
- * Spread into `docBlock(...)` at the call site.
- */
+/** Render a {@link DocHead} as a fenced code block, or empty when absent. */
 const headBlock = (head: DocHead | undefined): readonly string[] =>
   maybe(head, h => codeBlock(h.lang, ...h.lines))
 
@@ -521,7 +520,7 @@ const headBuilders: {
  * category emits no head (or this particular record suppresses it). Prefer
  * over indexing `headBuilders` directly when `cat` is a generic `K`.
  */
-export function headFor<K extends DocCategory>(
+function headFor<K extends DocCategory>(
   cat: K,
   doc: DocRecordMap[K],
 ): DocHead | undefined {
@@ -529,12 +528,11 @@ export function headFor<K extends DocCategory>(
 }
 
 // --- per-category renderers ------------------------------------------------
-// Bodies only: no title (`recordTitle`) and no category line
-// (`categoryFooter`) — both are envelope data, composed by consumers.
+// What follows the head: `renderRecord` prepends the head (`headFor`) and
+// applies option-ref bolding. No title, no category line — see `RenderedRecord`.
 
-export function mdOpt(opt: ZshOption, corpus: DocCorpus): string {
+function mdOpt(opt: ZshOption, corpus: DocCorpus): string {
   return docBlock(
-    ...headBlock(headFor("option", opt)),
     `**Default in zsh: ${bt(defaultStateIn(opt, "zsh"))}**`,
     fmtOptRefsInMd(opt.desc, corpus),
     ...maybe(
@@ -557,15 +555,11 @@ function aliasTargetDisplay(
   return aliasOf.negated ? `NO_${display}` : display
 }
 
-export function mdCondOp(cop: CondOpDoc, corpus: DocCorpus): string {
-  return docBlock(
-    ...headBlock(headFor("conditional_op", cop)),
-    fmtOptRefsInMd(cop.desc, corpus),
-    ...modulePart(cop.module),
-  )
+function mdCondOp(cop: CondOpDoc, corpus: DocCorpus): string {
+  return docBlock(fmtOptRefsInMd(cop.desc, corpus), ...modulePart(cop.module))
 }
 
-export function mdShellParam(doc: ShellParamDoc): string {
+function mdShellParam(doc: ShellParamDoc): string {
   const keys = doc.keys?.map(
     (k): MemberItem => ({
       sigs: nonEmpty(k.name),
@@ -582,55 +576,19 @@ export function mdShellParam(doc: ShellParamDoc): string {
   )
 }
 
-export function mdParamFlag(doc: ParamFlagDoc, corpus: DocCorpus): string {
-  return sigBlock(doc, corpus, headFor("param_expn_flag", doc))
-}
-
-export function mdSubscriptFlag(
-  doc: SubscriptFlagDoc,
-  corpus: DocCorpus,
-): string {
-  return sigBlock(doc, corpus, headFor("subscript_flag", doc))
-}
-
-export function mdHistory(doc: HistoryDoc, corpus: DocCorpus): string {
-  return sigBlock(doc, corpus, headFor("history_expn", doc))
-}
-
-export function mdGlobOp(doc: GlobOpDoc, corpus: DocCorpus): string {
-  return sigBlock(doc, corpus, headFor("glob_op", doc))
-}
-
-export function mdGlobFlag(doc: GlobFlagDoc, corpus: DocCorpus): string {
-  return sigBlock(doc, corpus, headFor("glob_flag", doc))
-}
-
-export function mdGlobQualifier(
-  doc: GlobQualifierDoc,
-  corpus: DocCorpus,
-): string {
-  return sigBlock(doc, corpus, headFor("glob_qualifier", doc))
-}
-
-/** Head + desc, plus an `_Args:_` line for flag records with operand slots. */
-function sigBlock(
+/** Desc, plus an `_Args:_` line for flag records with operand slots. */
+function mdSigDoc(
   doc: { readonly desc: string; readonly args?: readonly string[] },
   corpus: DocCorpus,
-  head: DocHead | undefined,
 ): string {
-  return docBlock(
-    ...headBlock(head),
-    fmtOptRefsInMd(doc.desc, corpus),
-    ...argsPart(doc.args),
-  )
+  return docBlock(fmtOptRefsInMd(doc.desc, corpus), ...argsPart(doc.args))
 }
 
 const argsPart = (args: readonly string[] | undefined): readonly string[] =>
   args?.length ? [`_Args:_ ${args.join(", ")}`] : []
 
-export function mdBuiltin(doc: BuiltinDoc): string {
+function mdBuiltin(doc: BuiltinDoc): string {
   return docBlock(
-    ...headBlock(headFor("builtin", doc)),
     renderFlagGroupBody(doc.desc, doc.flagGroups, doc.outro),
     ...maybe(
       doc.aliasOf,
@@ -644,36 +602,18 @@ export function mdBuiltin(doc: BuiltinDoc): string {
   )
 }
 
-export function mdPrecmd(doc: PrecmdDoc): string {
-  return docBlock(...headBlock(headFor("precmd_modifier", doc)), doc.desc)
-}
-
-export function mdRedir(doc: RedirDoc): string {
-  return docBlock(...headBlock(headFor("redirection", doc)), doc.desc)
-}
-
-export function mdProcessSubst(doc: ProcessSubstDoc): string {
-  return doc.desc
-}
-
-export function mdParamExpn(doc: ParamExpnDoc): string {
-  return docBlock(...headBlock(headFor("param_expn", doc)), doc.desc)
-}
+const mdDesc = (doc: { readonly desc: string }): string => doc.desc
 
 /**
  * Empty for the desc-less reserved words: `for`, `[[`, ... — each is also a
  * complex command, and that record carries the prose.
  */
-export function mdReservedWord(doc: ReservedWordDoc): string {
+function mdReservedWord(doc: ReservedWordDoc): string {
   return doc.desc ?? ""
 }
 
-export function mdComplexCommand(
-  doc: ComplexCommandDoc,
-  corpus: DocCorpus,
-): string {
+function mdComplexCommand(doc: ComplexCommandDoc, corpus: DocCorpus): string {
   return docBlock(
-    ...headBlock(headFor("complex_command", doc)),
     fmtOptRefsInMd(doc.desc, corpus),
     // Alternate forms are a body element (not a head), so render inline here.
     ...when(
@@ -697,11 +637,7 @@ function formatAlternateForm(a: AlternateForm): string {
   return `${a.template}    # requires ${a.requires.join(" or ")}`
 }
 
-export function mdPromptEscape(doc: PromptEscapeDoc): string {
-  return docBlock(...headBlock(headFor("prompt_escape", doc)), doc.desc)
-}
-
-export function mdKeymap(doc: KeymapDoc): string {
+function mdKeymap(doc: KeymapDoc): string {
   return docBlock(
     doc.desc,
     ...when(doc.isSpecial, "_Special:_ cannot be altered"),
@@ -712,19 +648,7 @@ export function mdKeymap(doc: KeymapDoc): string {
   )
 }
 
-export function mdJobSpec(doc: JobSpecDoc): string {
-  return doc.desc
-}
-
-export function mdArithOp(doc: ArithOpDoc): string {
-  return docBlock(...headBlock(headFor("arith_op", doc)), doc.desc)
-}
-
-export function mdSpecialFunction(doc: SpecialFunctionDoc): string {
-  return docBlock(...headBlock(headFor("special_function", doc)), doc.desc)
-}
-
-export function mdZleWidget(doc: ZleWidgetDoc): string {
+function mdZleWidget(doc: ZleWidgetDoc): string {
   const subItems = doc.subItems?.map(
     (s): MemberItem => ({
       sigs: nonEmpty(s.sig),
@@ -756,19 +680,12 @@ function defaultBindingsPart(
     : [`_Default bindings:_ ${bindings.map(bindingMd).join("; ")}`]
 }
 
-export function mdCompUtility(doc: CompUtilityDoc): string {
-  return docBlock(
-    ...headBlock(headFor("comp_utility", doc)),
-    renderFlagGroupBody(doc.desc, doc.flagGroups, doc.outro),
-  )
+function mdCompUtility(doc: CompUtilityDoc): string {
+  return renderFlagGroupBody(doc.desc, doc.flagGroups, doc.outro)
 }
 
-export function mdMathfunc(doc: MathfuncDoc): string {
-  return docBlock(
-    ...headBlock(headFor("mathfunc", doc)),
-    doc.desc,
-    ...modulePart(doc.module),
-  )
+function mdMathfunc(doc: MathfuncDoc): string {
+  return docBlock(doc.desc, ...modulePart(doc.module))
 }
 
 // --- option-rendering helpers ----------------------------------------------
@@ -803,26 +720,26 @@ const mdRenderer: {
   option: mdOpt,
   conditional_op: mdCondOp,
   builtin: mdBuiltin,
-  precmd_modifier: mdPrecmd,
+  precmd_modifier: mdDesc,
   special_param: mdShellParam,
   complex_command: mdComplexCommand,
   reserved_word: mdReservedWord,
-  redirection: mdRedir,
-  process_subst: mdProcessSubst,
-  param_expn: mdParamExpn,
-  subscript_flag: mdSubscriptFlag,
-  param_expn_flag: mdParamFlag,
-  history_expn: mdHistory,
-  glob_op: mdGlobOp,
-  glob_flag: mdGlobFlag,
-  glob_qualifier: mdGlobQualifier,
-  prompt_escape: mdPromptEscape,
+  redirection: mdDesc,
+  process_subst: mdDesc,
+  param_expn: mdDesc,
+  subscript_flag: mdSigDoc,
+  param_expn_flag: mdSigDoc,
+  history_expn: mdSigDoc,
+  glob_op: mdSigDoc,
+  glob_flag: mdSigDoc,
+  glob_qualifier: mdSigDoc,
+  prompt_escape: mdDesc,
   zle_widget: mdZleWidget,
   keymap: mdKeymap,
-  job_spec: mdJobSpec,
-  arith_op: mdArithOp,
+  job_spec: mdDesc,
+  arith_op: mdDesc,
   mathfunc: mdMathfunc,
-  special_function: mdSpecialFunction,
+  special_function: mdDesc,
   comp_utility: mdCompUtility,
 }
 
@@ -831,10 +748,9 @@ const mdRenderer: {
  * ` (<subKind>)` for categories that have one — label and subKind from the
  * taxonomy. Not part of {@link renderRecord}: the category is envelope data
  * (`DocRecordId`; the record file's category in the JSON), so bodies never
- * encode it. A
- * consumer that shows a body without its envelope — an editor hover —
- * appends this line itself. Plain markdown; append it after any option-ref
- * bolding (a label word can be an option name: `ZLE`).
+ * encode it. A consumer that shows a body without its envelope — an editor
+ * hover — appends this line itself. Plain markdown; append it after any
+ * option-ref bolding (a label word can be an option name: `ZLE`).
  */
 export function categoryFooter<K extends DocCategory>(
   cat: K,
@@ -846,35 +762,25 @@ export function categoryFooter<K extends DocCategory>(
 }
 
 /**
- * Per-category body with option-ref bolding; no title (see
- * {@link recordTitle} or {@link renderRecordWithTitle}) and no category line
- * (see {@link categoryFooter}). Empty for a record without prose (the
- * desc-less reserved words).
+ * Render a doc record: title, and the body as head + per-category prose
+ * with option-ref bolding. The category line is not included (see
+ * {@link categoryFooter}). A consumer showing title and body composes
+ * them, skipping an empty body.
  */
 export function renderRecord<K extends DocCategory>(
   corpus: DocCorpus,
   cat: K,
   doc: DocRecordMap[K],
-): string {
+): RenderedRecord {
   const render = mdRenderer[cat] as (
     d: DocRecordMap[K],
     corpus: DocCorpus,
   ) => string
-  return fmtOptRefsInMd(render(doc, corpus), corpus)
-}
-
-/**
- * Composed title + body (title alone for a body-less record). Dump output
- * supplies its own `## heading` and skips this; other consumers use this
- * form.
- */
-export function renderRecordWithTitle<K extends DocCategory>(
-  corpus: DocCorpus,
-  cat: K,
-  doc: DocRecordMap[K],
-): string {
-  return docBlock(
-    recordTitle(cat, doc),
-    ...prose(renderRecord(corpus, cat, doc)),
-  )
+  const head = headFor(cat, doc)
+  const body = docBlock(...headBlock(head), render(doc, corpus))
+  return {
+    title: recordTitle(cat, doc),
+    mdBody: fmtOptRefsInMd(body, corpus),
+    ...(head && { head }),
+  }
 }

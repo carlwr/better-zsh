@@ -69,12 +69,12 @@ const hit = resolve(corpus, "option", "AUTO_CD")
 if (!hit || hit.category !== "option" || hit.id !== "autocd") {
   throw new Error("resolve('option','AUTO_CD') failed: " + JSON.stringify(hit))
 }
-const md = renderRecord(corpus, hit.category, hit.record)
-if (typeof md !== "string" || md.length === 0) {
-  throw new Error("renderRecord returned non-string or empty")
+const { title, mdBody } = renderRecord(corpus, hit.category, hit.record)
+if (title !== "\`AUTO_CD\`" || typeof mdBody !== "string" || mdBody.length === 0) {
+  throw new Error("renderRecord returned unexpected title or body")
 }
-if (!/AUTO[_ ]?CD/i.test(md)) {
-  throw new Error("renderRecord output missing expected AUTO_CD reference")
+if (!/AUTO[_ ]?CD/i.test(mdBody)) {
+  throw new Error("renderRecord body missing expected AUTO_CD reference")
 }
 if (commentStart('echo "#" # tail') !== 9) {
   throw new Error("commentStart returned unexpected index")

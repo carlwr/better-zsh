@@ -1,5 +1,9 @@
 import type { DocCorpus } from "@carlwr/zsh-core"
-import { categoryFooter, renderRecordWithTitle } from "@carlwr/zsh-core/render"
+import {
+  categoryFooter,
+  type RenderedRecord,
+  renderRecord,
+} from "@carlwr/zsh-core/render"
 import type { DocCategory, DocRecordMap } from "@carlwr/zsh-core/taxonomy"
 import * as vscode from "vscode"
 
@@ -14,7 +18,16 @@ export function recordMarkdown<K extends DocCategory>(
   cat: K,
   doc: DocRecordMap[K],
 ): vscode.MarkdownString {
+  return renderedMarkdown(renderRecord(corpus, cat, doc), cat, doc)
+}
+
+/** `recordMarkdown` for an already-rendered record (a body-less record shows title and category only). */
+export function renderedMarkdown<K extends DocCategory>(
+  { title, mdBody }: RenderedRecord,
+  cat: K,
+  doc: DocRecordMap[K],
+): vscode.MarkdownString {
   return new vscode.MarkdownString(
-    `${renderRecordWithTitle(corpus, cat, doc)}\n\n${categoryFooter(cat, doc)}`,
+    [title, mdBody, categoryFooter(cat, doc)].filter(Boolean).join("\n\n"),
   )
 }
