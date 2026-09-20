@@ -1,0 +1,26 @@
+{"tool":"zsh_docs","input":{"key":"NO_AUTO_CD"}}
+{"tool":"zsh_docs","input":{"key":"NO_AUTO_CD","category":"option"}}
+{"tool":"zsh_docs","input":{"key":"+J"}}
+{"tool":"zsh_docs","input":{"key":"compstate[context]"}}
+{"tool":"zsh_docs","input":{"key":"2>&1"}}
+{"tool":"zsh_docs","input":{"key":"!42"}}
+{"tool":"zsh_docs","input":{"key":"TRAPINT"}}
+{"tool":"zsh_docs","input":{"key":"h"}}
+{"tool":"zsh_docs","input":{"key":"h","category":"history_expn"}}
+{"tool":"zsh_docs","input":{"key":"for"}}
+{"tool":"zsh_docs","input":{"key":"for","category":"complex_command"}}
+{"tool":"zsh_docs","input":{"key":"nocorrect"}}
+{"tool":"zsh_docs","input":{"key":"<<<"}}
+{"tool":"zsh_docs","input":{"key":"> word"}}
+{"tool":"zsh_docs","input":{"key":"beginning-of-line"}}
+{"tool":"zsh_docs","input":{"key":".safe"}}
+{"tool":"zsh_docs","input":{"key":"%d"}}
+{"tool":"zsh_docs","input":{"key":"no-such-key-anywhere"}}
+{"tool":"zsh_search","input":{"query":"echo","category":"builtin","limit":5}}
+{"tool":"zsh_search","input":{"query":"move","category":"zle_widget","limit":10}}
+{"tool":"zsh_search","input":{"query":"glob","limit":20}}
+{"tool":"zsh_search","input":{"query":"history","limit":20}}
+{"tool":"zsh_search","input":{"query":"errreturn","limit":5}}
+{"tool":"zsh_list","input":{"category":"keymap","limit":50}}
+{"tool":"zsh_list","input":{"limit":0}}
+{"tool":"zsh_docs","input":{"key":"x","category":"not_a_category"}}

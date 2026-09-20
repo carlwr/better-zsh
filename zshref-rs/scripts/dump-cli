@@ -1,0 +1,78 @@
+#! /usr/bin/env zsh
+emulate -LR zsh
+set -eu -o pipefail
+
+me=${0:t}
+me_dir=${0:A:h}
+
+help="
+Dump the CLI's output surface to a directory, for diffing across changes:
+help text, info, schema, the whole corpus as \`list\` sees it, and the
+\`batch\` responses to a fixed request set plus a per-category sample.
+
+USAGE:
+  $me OUTDIR
+
+FILES (in OUTDIR):
+  help.txt          dump-help
+  info.json         zshref info
+  schema.json       zshref schema
+  list.json         zshref list, every record
+  requests.jsonl    zshref batch over $me.requests.jsonl
+  samples.jsonl     zshref batch: docs (walk + scoped) for the first few
+                    records of every category
+
+ENV:
+  ZSHREF            binary to dump (default: zshref-rs/target/debug/zshref)
+"
+
+readonly per_category=3
+
+
+# --- functions ---
+
+msg() { print -u2 -- "$me: $@"; }
+die() { msg $@ && exit 1; }
+
+docs-request() {
+  local key=$1 cat=${2-}
+  if [[ -z $cat ]]
+  then jq -nc --arg k $key '{tool:"zsh_docs",input:{key:$k}}'
+  else jq -nc --arg k $key --arg c $cat '{tool:"zsh_docs",input:{key:$k,category:$c}}'
+  fi
+}
+
+# One walk and one scoped `docs` request per sampled record, in category order.
+sample-requests() {
+  local cat id
+  for cat in $($bin info | jq -r '.categories[]')
+    for id in $($bin list --category $cat --limit $per_category | jq -r '.matches[].id')
+      docs-request $id && docs-request $id $cat
+}
+
+
+# --- main ---
+
+case ${1-} in
+     (-h|--help) print -- $help && exit 0
+  ;; (''       ) die "OUTDIR required"
+  ;;
+esac
+
+readonly out=$1
+readonly default_bin=${${:-$me_dir/../target/debug/zshref}:a}
+readonly bin=${ZSHREF:-$default_bin}
+readonly requests=$me_dir/$me.requests.jsonl
+
+[[ -x $bin ]] || die "not executable: $bin"
+[[ -r $requests ]] || die "not readable: $requests"
+mkdir -p $out
+
+ZSHREF=$bin $me_dir/dump-help $out/help.txt
+NO_COLOR=1 $bin info   >$out/info.json
+NO_COLOR=1 $bin schema >$out/schema.json
+total=$(jq '[.counts[]] | add' $out/info.json)
+NO_COLOR=1 $bin list --limit $total >$out/list.json
+$bin batch <$requests >$out/requests.jsonl
+sample-requests | $bin batch >$out/samples.jsonl
+msg "wrote $(ls $out | wc -l | tr -d ' ') files to $out"

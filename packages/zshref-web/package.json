@@ -8,6 +8,7 @@
   "scripts": {
     "prebuild": "node ../../scripts/build/upstream-ready.mjs ensure",
     "prebuild:index": "node ../../scripts/build/upstream-ready.mjs ensure",
+    "predump:texts": "node ../../scripts/build/upstream-ready.mjs ensure",
     "prenlp:eval-mechanical": "node ../../scripts/build/upstream-ready.mjs ensure",
     "prenlp:eval-sentence": "node ../../scripts/build/upstream-ready.mjs ensure",
     "prenlp:qa-score": "node ../../scripts/build/upstream-ready.mjs ensure",
@@ -19,6 +20,7 @@
     "dev": "vite dev",
     "build": "vite build",
     "build:index": "tsx scripts/build-index.ts",
+    "dump:texts": "tsx scripts/dump-texts.ts",
     "nlp:eval-mechanical": "tsx scripts/eval-mechanical.ts",
     "nlp:eval-sentence": "tsx scripts/eval-sentence.ts",
     "nlp:qa-score": "tsx scripts/qa-score.ts",
