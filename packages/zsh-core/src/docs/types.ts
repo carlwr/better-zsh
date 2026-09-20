@@ -211,6 +211,7 @@ export interface PrecmdDoc extends DocRecordBase<"precmd_modifier"> {
 export interface SyntaxDocBase {
   /** Usage signature from the upstream zsh manual. */
   readonly sig: string
+  /** Manual prose as markdown — paragraphs, inline and fenced code; occasionally `*emphasis*`, bullets or a heading. Every `desc` field has this shape. */
   readonly desc: string
   /** Manual section this element was parsed from. */
   readonly section: string

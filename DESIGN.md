@@ -139,6 +139,22 @@ Corpus-driven aggregation helpers (`projectRecords`, the JSON projection) are fi
 
 Not an absolute ban. A post-refactor convenience wrapper is fine as a conscious addition.
 
+### Off the surface by decision
+
+Raised by API reviews; each a decision, not an oversight:
+
+- **JSON assets in the registry package** (schema, index)
+  - the JSON side is one unit — data, index, schema, fixture — versioned by the release tag (`PACKAGING.md`)
+  - a part of it in the tarball: a second channel, with a version pin between the two
+  - an in-process consumer has the TS types the schema is generated from
+- **A runtime array for every closed union**
+  - `as const` where the library iterates the union (`emulations`, `optSections`, …); tag-only unions (`HistoryKind`, `JobSpecKind`, …) stay type-level
+  - the values ship as the released schema's enums; in-process, a fold over the corpus
+- **Option references as structure**
+  - the renderer bolds option mentions by heuristic — an ALL-CAPS token that `resolve`s (`fmtOptRefsInMd`); exported as spans, a heuristic becomes a contract
+  - a consumer wanting links `resolve`s tokens itself
+  - bodies stay markdown-only: the typed fields are the structure; `desc` is markdown prose (its JSDoc)
+
 ---
 
 ## Why per-category resolvers

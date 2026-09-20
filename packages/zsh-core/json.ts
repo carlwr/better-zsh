@@ -1,14 +1,19 @@
 /**
  * @packageDocumentation
- * JSON projection of corpus records: each record augmented with its rendered
- * markdown body and title, as JSON consumers see it; and the content hash
- * the JSON build stamps on its index.
+ * The JSON release assets as a TypeScript reader sees them: each record
+ * augmented with its rendered markdown body and title (`projectRecords`,
+ * the record files), the index that lists those files (`JsonIndex`), and
+ * the content hash the build stamps on it.
  */
 
-export { corpusDataHash } from "./src/docs/json-artifacts.ts"
+export {
+  corpusDataHash,
+  type JsonDataFile,
+} from "./src/docs/json-artifacts.ts"
 export { projectRecords } from "./src/docs/json-projection.ts"
 export type {
   JsonDocArrayMap,
+  JsonIndex,
   JsonRecordMap,
   WithMarkdown,
 } from "./src/docs/json-types.ts"
