@@ -1,15 +1,16 @@
-import { type DocCorpus, loadCorpus } from "@carlwr/zsh-core"
+import {
+  type BuiltinDoc,
+  type ComplexCommandDoc,
+  type DocCategory,
+  type DocCorpus,
+  type Documented,
+  loadCorpus,
+  type OptFlagAlias,
+  type ReservedWordDoc,
+  type ShellParamDoc,
+  type ZshOption,
+} from "@carlwr/zsh-core"
 import { categoryFooter, renderRecord } from "@carlwr/zsh-core/render"
-import type { DocCategory } from "@carlwr/zsh-core/taxonomy"
-import type {
-  BuiltinDoc,
-  ComplexCommandDoc,
-  Documented,
-  OptFlagAlias,
-  ReservedWordDoc,
-  ShellParamDoc,
-  ZshOption,
-} from "@carlwr/zsh-core/types"
 import fc from "fast-check"
 import { describe, expect, test } from "vitest"
 import type * as vscode from "vscode"

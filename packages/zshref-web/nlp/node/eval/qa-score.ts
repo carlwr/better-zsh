@@ -6,8 +6,7 @@
 // is a held-out set (NLP.md) — and a warning (an expected item's absence or
 // a negative's presence) is counted, never printed with its query.
 
-import type { DocCorpus } from "@carlwr/zsh-core"
-import type { DocCategory } from "@carlwr/zsh-core/taxonomy"
+import type { DocCategory, DocCorpus } from "@carlwr/zsh-core"
 import { byteOrder } from "../../core/text"
 import { type RecordId, recordKey, sameRecord } from "../../core/types"
 import { identityOf } from "../resolver-key"

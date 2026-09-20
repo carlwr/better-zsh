@@ -4,9 +4,12 @@
 // from it more than once (build, then validate).
 
 import { cachedUnary } from "@carlwr/typescript-extra"
-import type { DocCorpus } from "@carlwr/zsh-core"
+import {
+  type DocCategory,
+  type DocCorpus,
+  docCategories,
+} from "@carlwr/zsh-core"
 import { projectRecords } from "@carlwr/zsh-core/json"
-import { type DocCategory, docCategories } from "@carlwr/zsh-core/taxonomy"
 
 export interface ProjectedCategory {
   category: DocCategory

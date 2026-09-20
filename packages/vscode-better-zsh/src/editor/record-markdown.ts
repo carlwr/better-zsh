@@ -1,10 +1,9 @@
-import type { DocCorpus } from "@carlwr/zsh-core"
+import type { DocCategory, DocCorpus, DocRecordMap } from "@carlwr/zsh-core"
 import {
   categoryFooter,
   type RenderedRecord,
   renderRecord,
 } from "@carlwr/zsh-core/render"
-import type { DocCategory, DocRecordMap } from "@carlwr/zsh-core/taxonomy"
 import * as vscode from "vscode"
 
 /**

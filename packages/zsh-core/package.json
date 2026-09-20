@@ -61,18 +61,6 @@
       "require": "./dist/resolver.js",
       "default": "./dist/resolver.mjs"
     },
-    "./taxonomy": {
-      "types": "./dist/types/taxonomy.d.ts",
-      "import": "./dist/taxonomy.mjs",
-      "require": "./dist/taxonomy.js",
-      "default": "./dist/taxonomy.mjs"
-    },
-    "./types": {
-      "types": "./dist/types/types.d.ts",
-      "import": "./dist/types.mjs",
-      "require": "./dist/types.js",
-      "default": "./dist/types.mjs"
-    },
     "./package.json": "./package.json"
   },
   "scripts": {

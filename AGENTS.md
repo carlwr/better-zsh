@@ -45,7 +45,7 @@ Pre-1.0 everything (including public APIs) can still move freely.
 
 ### zsh-core package imports
 
-Prefer explicit subpaths from `@carlwr/zsh-core` so dependency arrows stay visible and rollups stay legible. Subpath inventory: `packages/zsh-core/AGENTS.md`.
+The root of `@carlwr/zsh-core` is the data model; import operations from their explicit subpaths so dependency arrows stay visible and rollups stay legible. Subpath inventory: `packages/zsh-core/AGENTS.md`.
 
 ### Never enumerate or count `DocCategory`
 

@@ -1,6 +1,6 @@
 // The core search pipeline over the Node embedder, for the evals.
 
-import { type DocCategory, isDocCategory } from "@carlwr/zsh-core/taxonomy"
+import { type DocCategory, isDocCategory } from "@carlwr/zsh-core"
 
 import type { LookupIndex } from "../core/lookup-map"
 import type { Rules } from "../core/rules"

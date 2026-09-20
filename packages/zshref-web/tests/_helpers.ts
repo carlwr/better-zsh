@@ -3,8 +3,7 @@
 
 import { existsSync } from "node:fs"
 import { writeFile } from "node:fs/promises"
-import type { DocCorpus } from "@carlwr/zsh-core"
-import { docCategories } from "@carlwr/zsh-core/taxonomy"
+import { type DocCorpus, docCategories } from "@carlwr/zsh-core"
 import { expect } from "vitest"
 import type { Rules } from "../nlp/core/rules"
 import type { RecordId, VectorIndex } from "../nlp/core/types"

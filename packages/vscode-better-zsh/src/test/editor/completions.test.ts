@@ -1,7 +1,6 @@
 import { nonEmpty } from "@carlwr/typescript-extra"
-import type { DocCorpus } from "@carlwr/zsh-core"
+import { type DocCorpus, optSections } from "@carlwr/zsh-core"
 import { categoryFooter, renderRecord } from "@carlwr/zsh-core/render"
-import { optSections } from "@carlwr/zsh-core/types"
 import { describe, expect, test } from "vitest"
 import * as vscode from "vscode"
 import { CompletionProvider } from "../../editor/completions"

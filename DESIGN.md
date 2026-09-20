@@ -99,7 +99,7 @@ Two phases:
 - **raw** — user-code text; untyped `string`
 - **`Documented<K>`** — corpus-confirmed identity
 
-`resolve` is the bridge: raw in, checked identity out — the one public minting path; the trusted constructor (`mkDocumented`, `brands.ts`) is internal to corpus construction. Brand contract: JSDoc on `Documented<K>` (`zsh-core/types`).
+`resolve` is the bridge: raw in, checked identity out — the one public minting path; the trusted constructor (`mkDocumented`, `brands.ts`) is internal to corpus construction. Brand contract: JSDoc on `Documented<K>` (`zsh-core`).
 
 One brand for every category — none is a literal union. The analysis layer's closed precommand list (`PrecmdName`, `zsh-core/analysis`) is its own vocabulary, pinned equal to the corpus by a lock-in test.
 
@@ -203,7 +203,7 @@ Any "one entry per `DocCategory`" table lives in zsh-core behind a structural co
 
 ### Identity per record, display separately
 
-Every record carries `id` and `display` as fields (`DocRecordBase<K>`; `PRINCIPLES.md` §"Category types"), not behind accessors. Where `display` diverges from `id`: its JSDoc in `zsh-core/types`; the default is the id, the divergent extractors pass the manual's form explicitly (`identity` in `brands.ts`).
+Every record carries `id` and `display` as fields (`DocRecordBase<K>`; `PRINCIPLES.md` §"Category types"), not behind accessors. Where `display` diverges from `id`: its JSDoc in `zsh-core`; the default is the id, the divergent extractors pass the manual's form explicitly (`identity` in `brands.ts`).
 
 Ids are **shell-safe slugs**; `display` and `sig` keep the human-readable form (spaces, placeholders). Patterns: `brands.ts`, pinned in the released schema; enforced by `packages/zsh-core/src/test/corpus-ascii.test.ts`.
 
@@ -224,7 +224,7 @@ Ids are **shell-safe slugs**; `display` and `sig` keep the human-readable form (
 
 ### Parameter-expansion identity and shape
 
-Identity is the full sig (e.g. `${name:-word}` vs `${name-word}` as distinct records) — sigs are already shell-safe slugs (printable ASCII, no whitespace). Record details: `ParamExpnDoc` / `ParamExpnSubKind` JSDoc in `zsh-core/types`.
+Identity is the full sig (e.g. `${name:-word}` vs `${name-word}` as distinct records) — sigs are already shell-safe slugs (printable ASCII, no whitespace). Record details: `ParamExpnDoc` / `ParamExpnSubKind` JSDoc in `zsh-core`.
 
 - **Trivial resolver for totality** — sigs are literal templates; the resolver entry exists only to keep completeness guards closed. `param_expn` entry comment in `zsh-core/resolver`.
 - **Placeholders via an exact-string table** — one source of truth for `subKind` and operand-slot names; bad renames fail at extraction, not as garbage markdown.
@@ -232,7 +232,7 @@ Identity is the full sig (e.g. `${name:-word}` vs `${name-word}` as distinct rec
 
 ### Complex commands + alternate forms
 
-`ComplexCommandDoc` models `grammar.yo` "Complex Commands" plus "Alternate Forms". Record shape and the `reserved_word` / `classifyOrder` overlap: `ComplexCommandDoc` / `AlternateForm` JSDoc in `zsh-core/types`.
+`ComplexCommandDoc` models `grammar.yo` "Complex Commands" plus "Alternate Forms". Record shape and the `reserved_word` / `classifyOrder` overlap: `ComplexCommandDoc` / `AlternateForm` JSDoc in `zsh-core`.
 
 - **Head-keyword identity** — closed key set; `for` and arithmetic `for ((…))` stay separate records to preserve structure.
 - **`alternateForms: readonly AlternateForm[]`** — variable-length composite data on one record (precedent: `ZshOption.flags`, `ParamExpnDoc.groupSigs`).
@@ -245,7 +245,7 @@ Three sibling categories under `glob_*` — shared prefix is labelling only:
 - `glob_flag` — in-pattern `(#…)`; needs `EXTENDED_GLOB`
 - `glob_qualifier` — pattern-trailing parenthesised filters; letter and multi-char keys
 
-Per-type details and the three-way distinction — JSDoc in `zsh-core/types`:
+Per-type details and the three-way distinction — JSDoc in `zsh-core`:
 
 - `GlobOpDoc`
 - `GlobFlagDoc`
@@ -265,7 +265,7 @@ Per-type details and the three-way distinction — JSDoc in `zsh-core/types`:
   - completions
   - `list`
   - syntactic checks
-- **Supplementary prose** — `desc` may appear except on `complex_command`-owned heads (which deliberately omit it). Epistemic-trap rationale + `SyntaxDocBase` non-extension: `ReservedWordDoc` JSDoc in `zsh-core/types`.
+- **Supplementary prose** — `desc` may appear except on `complex_command`-owned heads (which deliberately omit it). Epistemic-trap rationale + `SyntaxDocBase` non-extension: `ReservedWordDoc` JSDoc in `zsh-core`.
 - **Corpus identity** — every record is `Documented<"reserved_word">`, reachable via `DocRecordId` like other categories.
 
 Wiring:
@@ -285,14 +285,14 @@ Wiring:
 
 ### ZLE widget: default bindings are typed, not a header signature
 
-The manual's header groups (`(^B ESC-[D) (unbound) (unbound)`) are per-keymap default bindings, not a usage signature — lifted into `defaultBindings`; the record carries no `sig`. Shape and edge cases (`Text Objects`, `self-insert` prose): `ZleWidgetDoc` / `ZleDefaultBinding` JSDoc in `zsh-core/types`.
+The manual's header groups (`(^B ESC-[D) (unbound) (unbound)`) are per-keymap default bindings, not a usage signature — lifted into `defaultBindings`; the record carries no `sig`. Shape and edge cases (`Text Objects`, `self-insert` prose): `ZleWidgetDoc` / `ZleDefaultBinding` JSDoc in `zsh-core`.
 
 - **Keys stay in the manual's notation** (`^B`, `ESC-[D`) — lossless; `bindkey` syntax is a consumer or renderer concern.
 - **Rendered as one labeled paragraph** — a `bindkey`-form head was rejected: it needs notation translation plus shell quoting, and ranges (`digit-argument`) and prose (`self-insert`) have no `bindkey` form.
 
 ### `subKind` is structural per category
 
-A category's record type declares `subKind` with a closed literal union, or none (`DocRecordBase` JSDoc in `zsh-core/types`); `subKindOf` reads it generically. Presence and vocabulary follow from the type: the released schema requires the field with the union's enum, or forbids it, per category — no corpus scan, no post-processing. Same call as for `id` (PRINCIPLES.md §"The structural identity invariant"); the dropped shape: a per-category name behind an accessor table plus a generated JSON copy.
+A category's record type declares `subKind` with a closed literal union, or none (`DocRecordBase` JSDoc in `zsh-core`); `subKindOf` reads it generically. Presence and vocabulary follow from the type: the released schema requires the field with the union's enum, or forbids it, per category — no corpus scan, no post-processing. Same call as for `id` (PRINCIPLES.md §"The structural identity invariant"); the dropped shape: a per-category name behind an accessor table plus a generated JSON copy.
 
 - every declared literal occurs in the corpus: `packages/zsh-core/src/test/json-schema.test.ts`
 - the tool layer branches per category (`oneOf`, no schema-level optionality): `zshref-rs/src/tools/schema.rs`
@@ -396,7 +396,7 @@ Enforcement:
 
 `resolveAll` (`zsh-core/resolver`) resolves a token in every category, `classifyOrder` first to last, keeping the hits the categories admit; tight identity resolvers thereby beat `option`'s `no_` stripping and `redirection`'s loose matching (`nocorrect` must not shadow-resolve as a negated option).
 
-- order, per-entry rationale: inline comments on `classifyOrderTuple`, `zsh-core/taxonomy.ts`
+- order, per-entry rationale: inline comments on `classifyOrderTuple`, `taxonomy.ts`
 - admission — a category declining a scoped hit that is no token on its own (history modifiers): `walkAdmits`, `zsh-core/resolver.ts`
 
 Owned by zsh-core, not the tools: order and admission are corpus properties (PRINCIPLES.md §"Push decisions downstream"); a walk re-derived per consumer had drifted — one applied the history rule, one did not. Callers: `zsh_docs` with `category` omitted, zshref-web's lookup canonicalizer. The fixture's `walk` section pins it for the Rust mirror.

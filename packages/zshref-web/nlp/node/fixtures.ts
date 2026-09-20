@@ -16,8 +16,7 @@
 //   resolution: its scores carry the embedder runtime's platform noise, so
 //   they are asserted within a tolerance, never exactly.
 
-import type { DocCorpus } from "@carlwr/zsh-core"
-import type { DocCategory } from "@carlwr/zsh-core/taxonomy"
+import type { DocCategory, DocCorpus } from "@carlwr/zsh-core"
 import { z } from "zod"
 
 import { rank } from "../core/rank"

@@ -73,7 +73,7 @@ Different jobs:
 
 Don't introduce parallel scaffolding.
 
-`Documented<K>` plus `resolve` are the load-bearing connection (JSDoc in `zsh-core/types` and `zsh-core/resolver`):
+`Documented<K>` plus `resolve` are the load-bearing connection (JSDoc in `zsh-core` and `zsh-core/resolver`):
 
 - _facts_ carry raw text or closed literal unions (`PrecmdName`), never `Documented<K>`
 - `Documented<K>` carries doc identity
@@ -148,7 +148,7 @@ Not a separate type or interface — both roles use the same `DocCategory` machi
 
 ### Each category is almost its own type
 
-`DocRecordMap[K]` is a custom shape per category: beyond the shared identity (`id`, `display`), field names read as domain vocabulary (`operands`, `groupOp`, `args`). Per-category record shapes: JSDoc in `zsh-core/types`.
+`DocRecordMap[K]` is a custom shape per category: beyond the shared identity (`id`, `display`), field names read as domain vocabulary (`operands`, `groupOp`, `args`). Per-category record shapes: JSDoc in `zsh-core`.
 
 ### Shared structural patterns are a plus when genuine
 
@@ -162,7 +162,7 @@ Follow when the domain calls for it; deviate when it doesn't.
 
 ### The structural identity invariant
 
-Every record extends `DocRecordBase<K>` (`id: Documented<K>`, the corpus key, and `display`), asserted at compile time in `zsh-core/taxonomy`. The dropped alternative — per-category identity fields (`name`, `op`, `slug`, ...) behind an accessor table — read as domain vocabulary but cost each generic reader a dispatch and the JSON a duplicated generated id; once the JSON carried a uniform id anyway, the field won. The per-category sub-facet follows the same rule: `subKind` on the record, a closed union per category (DESIGN.md §"`subKind` is structural per category").
+Every record extends `DocRecordBase<K>` (`id: Documented<K>`, the corpus key, and `display`), asserted at compile time in `taxonomy.ts`. The dropped alternative — per-category identity fields (`name`, `op`, `slug`, ...) behind an accessor table — read as domain vocabulary but cost each generic reader a dispatch and the JSON a duplicated generated id; once the JSON carried a uniform id anyway, the field won. The per-category sub-facet follows the same rule: `subKind` on the record, a closed union per category (DESIGN.md §"`subKind` is structural per category").
 
 ### Structural info beats markdown
 

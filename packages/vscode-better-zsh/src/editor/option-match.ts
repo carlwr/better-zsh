@@ -1,4 +1,4 @@
-import { type Documented, normalizeOptName } from "@carlwr/zsh-core/types"
+import { type Documented, normalizeOptName } from "@carlwr/zsh-core"
 
 export interface OptionMatch {
   /** What to insert / display. */

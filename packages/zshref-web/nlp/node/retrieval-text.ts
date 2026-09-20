@@ -9,8 +9,11 @@
 // White_Space.
 
 import { isDefined } from "@carlwr/typescript-extra"
-import type { DocCorpus } from "@carlwr/zsh-core"
-import { type DocCategory, docCategoryLabels } from "@carlwr/zsh-core/taxonomy"
+import {
+  type DocCategory,
+  type DocCorpus,
+  docCategoryLabels,
+} from "@carlwr/zsh-core"
 
 import type { Synonyms } from "../core/rules"
 import { asciiLower } from "../core/text"

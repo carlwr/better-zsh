@@ -1,5 +1,4 @@
-import type { DocCorpus } from "@carlwr/zsh-core"
-import type { BuiltinDoc, ReservedWordDoc } from "@carlwr/zsh-core/types"
+import type { BuiltinDoc, DocCorpus, ReservedWordDoc } from "@carlwr/zsh-core"
 import fc from "fast-check"
 import { describe, expect, test } from "vitest"
 import { SemanticTokensProvider } from "../../editor/semantic-tokens"

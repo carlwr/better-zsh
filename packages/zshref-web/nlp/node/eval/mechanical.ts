@@ -13,8 +13,11 @@
 // id-shape slices.
 
 import { isDefined } from "@carlwr/typescript-extra"
-import type { DocCorpus } from "@carlwr/zsh-core"
-import { type DocCategory, docCategories } from "@carlwr/zsh-core/taxonomy"
+import {
+  type DocCategory,
+  type DocCorpus,
+  docCategories,
+} from "@carlwr/zsh-core"
 
 import type { RecordId } from "../../core/types"
 import { buildLookupContract } from "../contract"

@@ -173,7 +173,7 @@ describe("import fence", () => {
     ["src/lib/x.ts", "@carlwr/zsh-core", "Node-side package @carlwr/zsh-core"],
     [
       "src/lib/x.ts",
-      "@carlwr/zsh-core/taxonomy",
+      "@carlwr/zsh-core/resolver",
       "Node-side package @carlwr/zsh-core",
     ],
     ["src/lib/x.ts", "onnxruntime-node", "Node-side package onnxruntime-node"],

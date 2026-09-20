@@ -7,9 +7,7 @@
     "./json.ts",
     "./meta.ts",
     "./render.ts",
-    "./resolver.ts",
-    "./taxonomy.ts",
-    "./types.ts"
+    "./resolver.ts"
   ],
   "entryPointStrategy": "resolve",
   "tsconfig": "./tsconfig.build.json",

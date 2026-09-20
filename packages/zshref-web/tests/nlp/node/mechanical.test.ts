@@ -9,8 +9,7 @@
 // day-to-day form.
 
 import { isSingle, memoized } from "@carlwr/typescript-extra"
-import { loadCorpus } from "@carlwr/zsh-core"
-import { docCategories } from "@carlwr/zsh-core/taxonomy"
+import { docCategories, loadCorpus } from "@carlwr/zsh-core"
 import { describe, expect, it } from "vitest"
 import { syntheticVec } from "../../../nlp/core/vec"
 import { buildLookupContract } from "../../../nlp/node/contract"

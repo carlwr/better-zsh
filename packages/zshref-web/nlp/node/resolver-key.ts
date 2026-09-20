@@ -1,9 +1,8 @@
 // The resolver's verdict on a query: the canonicalizer behind the lookup
 // map and the lookup contract.
 
-import type { DocCorpus } from "@carlwr/zsh-core"
+import type { DocCategory, DocCorpus, DocRecordMap } from "@carlwr/zsh-core"
 import { resolve, resolveAll } from "@carlwr/zsh-core/resolver"
-import type { DocCategory, DocRecordMap } from "@carlwr/zsh-core/taxonomy"
 import type { RecordId, ResolverHit } from "../core/types"
 
 /** A corpus record's identity as the NLP carries it: the brand peeled. */

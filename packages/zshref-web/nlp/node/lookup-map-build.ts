@@ -3,12 +3,12 @@
 // mappings. Close-variant fuzziness (extra spaces, dashes, mixed case outside
 // the enumerated forms) is deliberately not in the map; the ranker handles it.
 
-import type { DocCorpus } from "@carlwr/zsh-core"
 import {
   type DocCategory,
+  type DocCorpus,
   type DocRecordMap,
   docCategories,
-} from "@carlwr/zsh-core/taxonomy"
+} from "@carlwr/zsh-core"
 import type { LookupEntry, LookupMap } from "../core/lookup-map"
 import { byteOrder } from "../core/text"
 import { compareRecordIds, type ResolverHit } from "../core/types"

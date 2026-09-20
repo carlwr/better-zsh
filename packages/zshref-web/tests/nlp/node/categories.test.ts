@@ -1,7 +1,7 @@
 // `categories.json` drift against the committed file (the UI's category
 // order + labels). Pure on the taxonomy — always runs.
 
-import { docCategories } from "@carlwr/zsh-core/taxonomy"
+import { docCategories } from "@carlwr/zsh-core"
 import { describe, expect, it } from "vitest"
 
 import { categoriesJson } from "../../../nlp/node/categories"

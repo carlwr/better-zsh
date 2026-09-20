@@ -8,9 +8,9 @@ Library-first: the VS Code extension, the web SPA, and the Rust crate (CLI + MCP
 
 ## What you get
 
-- **Tiny root** — `loadCorpus`, `DocCorpus`, `DocMap`.
-- **Focused subpaths** — `./types`, `./analysis`, `./resolver`, `./taxonomy`, `./render`, `./assets`, `./meta`, `./json`.
-- **Orthogonal primitives** — brands/types, raw-to-doc resolution, markdown rendering, and static analysis stay separate.
+- **The data model at the root** — the corpus (`loadCorpus`, `DocCorpus`), the category ontology (`DocCategory`, `docCategories`, `DocRecordMap`) and the record types with their identity brand (`Documented<K>`).
+- **Operations as subpaths** — `./resolver`, `./render`, `./analysis`, `./json`, `./assets`, `./meta`.
+- **Orthogonal primitives** — raw-to-doc resolution, markdown rendering, and static analysis stay separate.
 - **Release assets** — per-category JSON record files plus a versioned index, one JSON Schema bundle (each record file validates against its `#/$defs/<category>`), and a resolver conformance fixture for resolver mirrors; attached to the GitHub release tag for consumers outside TypeScript.
 
 Public reading surface: `dist/types/*.d.ts` after `pnpm build`.
@@ -51,7 +51,7 @@ if (hit) {
 - **Static, not environment-aware.** The corpus is bundled; no probing of the host zsh, no `$commands` / `$aliases` / runtime `setopt` readout. Answers are the same on every machine.
 - **Lazy corpus.** `loadCorpus()` locates the data and returns; a category is parsed on first access, once. Touch few categories, parse few files.
 - **Parametric over per-category specialisation.** `DocCategory` is a closed union; adding a category is a local drop-in that the type system propagates.
-- **Focused imports.** Root is corpus-only; import analysis, types, resolver, taxonomy, and metadata from named subpaths.
+- **Focused imports.** The root is the data model; import the operations on it — resolution, rendering, analysis, JSON projection, assets, metadata — from named subpaths.
 - **Orthogonal API.** `resolve` + `renderRecord` compose; a hit carries the record, so nothing is looked up twice, and no combined "raw string → markdown" convenience is exposed — that's a deliberate design choice, not an omission. See [`DESIGN.md`](https://github.com/carlwr/better-zsh/blob/main/DESIGN.md) §"API orthogonality".
 
 ## See also

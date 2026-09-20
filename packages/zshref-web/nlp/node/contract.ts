@@ -13,8 +13,11 @@
 // Family-selector entries (sig/template categories) are deferred: `>`, `<<`,
 // `${` … need a `top-K-equals-set` predicate, not `top1-in-set`.
 
-import type { DocCorpus } from "@carlwr/zsh-core"
-import { docCategories, docCategoryLabels } from "@carlwr/zsh-core/taxonomy"
+import {
+  type DocCorpus,
+  docCategories,
+  docCategoryLabels,
+} from "@carlwr/zsh-core"
 import type { LookupIndex } from "../core/lookup-map"
 import { byteOrder } from "../core/text"
 import {

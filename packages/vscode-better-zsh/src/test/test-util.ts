@@ -1,10 +1,11 @@
-import type { DocCorpus } from "@carlwr/zsh-core"
-import { type DocCategory, docCategories } from "@carlwr/zsh-core/taxonomy"
 import {
+  type DocCategory,
+  type DocCorpus,
   type Documented,
+  docCategories,
   normalizeOptName,
   type OptFlag,
-} from "@carlwr/zsh-core/types"
+} from "@carlwr/zsh-core"
 import type * as vscode from "vscode"
 import { WORD } from "../document/words"
 

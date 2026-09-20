@@ -1,7 +1,6 @@
 import { cached } from "@carlwr/typescript-extra"
-import type { DocCorpus } from "@carlwr/zsh-core"
+import type { DocCategory, DocCorpus, DocRecordMap } from "@carlwr/zsh-core"
 import { renderRecord } from "@carlwr/zsh-core/render"
-import type { DocCategory, DocRecordMap } from "@carlwr/zsh-core/taxonomy"
 import * as vscode from "vscode"
 import { contextAt } from "../document/facts"
 import { funcDecls } from "../document/funcs"

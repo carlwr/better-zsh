@@ -2,7 +2,7 @@ import type { NonEmpty } from "@carlwr/typescript-extra"
 
 import type { DocCategory, ModuleName } from "./taxonomy.ts"
 
-// Every export here is public (`zsh-core/types` re-exports the module);
+// Every export here is public (the package root re-exports the module);
 // constructors and other helpers live in `brands.ts`.
 //
 // JSDoc on the exported types here is dual-audience: the `.d.ts` rollup and

@@ -3,8 +3,7 @@
 // checks and one synthetic entry through the whole pipeline. The held-out
 // corpus is loaded (that is the loader's job) and never printed.
 
-import { loadCorpus } from "@carlwr/zsh-core"
-import { docCategories } from "@carlwr/zsh-core/taxonomy"
+import { docCategories, loadCorpus } from "@carlwr/zsh-core"
 import fc from "fast-check"
 import { beforeAll, describe, expect, it } from "vitest"
 import type { z } from "zod"
