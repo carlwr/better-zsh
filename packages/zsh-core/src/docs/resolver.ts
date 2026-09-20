@@ -576,7 +576,11 @@ function resolveAdmitted<K extends DocCategory>(
  */
 export type ResolverFeedback =
   | { readonly kind: "input-negated" }
-  | { readonly kind: "subscripted"; readonly subscript: string }
+  | {
+      readonly kind: "subscripted"
+      /** @minLength 1 */
+      readonly subscript: string
+    }
 
 /** One closed JSON Schema object: the shape of one `ResolverFeedback` kind. */
 export type ResolverFeedbackKindSchema = Readonly<Record<string, unknown>>
@@ -592,13 +596,14 @@ const kindSchema = (
   type: "object",
   additionalProperties: false,
   required: ["kind", ...Object.keys(extra)],
-  properties: { kind: { const: kind }, ...extra },
+  properties: { kind: { type: "string", const: kind }, ...extra },
 })
 
 /**
  * The closed JSON Schema per `ResolverFeedback` kind — what a schema builder
  * embeds instead of restating the shapes; `index.json` carries the same
- * objects for out-of-process consumers.
+ * objects for out-of-process consumers. Hand-authored: a test pins each to
+ * the schema generated from the type (the fixture schema's).
  */
 export const resolverFeedbackKindSchemas: Readonly<
   Record<ResolverFeedback["kind"], ResolverFeedbackKindSchema>

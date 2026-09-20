@@ -15,7 +15,10 @@ import {
   schemaFile,
 } from "../docs/json-artifacts"
 import type { JsonIndex } from "../docs/json-types"
-import { resolverFeedbackKinds } from "../docs/resolver"
+import {
+  resolverFeedbackKindSchemas,
+  resolverFeedbackKinds,
+} from "../docs/resolver"
 import { docCategories } from "../docs/taxonomy"
 
 const pkgDir = join(dirname(fileURLToPath(import.meta.url)), "..", "..")
@@ -83,6 +86,18 @@ describe("generated JSON is a release asset, not a registry payload", () => {
       readJson(join("artifacts", resolverFixture.dir, resolverFixture.file))
         .dataHash,
     ).toBe(readJson("artifacts/json/index.json").dataHash)
+  })
+
+  // Two shipped schemas describe `ResolverFeedback`: the fixture's, generated
+  // from the type, and `index.json`'s per-kind objects, hand-authored. One
+  // union, one shape.
+  test("the fixture schema's ResolverFeedback equals the hand-authored kind schemas", () => {
+    const defs = readJson(
+      join("artifacts", resolverFixture.dir, schemaFile(resolverFixture.file)),
+    ).$defs as Record<string, { anyOf?: unknown[] }>
+    expect(defs.ResolverFeedback?.anyOf).toEqual(
+      resolverFeedbackKinds.map(k => resolverFeedbackKindSchemas[k]),
+    )
   })
 
   test("index.dataHash matches the emitted record bytes", () => {
