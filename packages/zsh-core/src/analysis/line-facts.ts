@@ -1,4 +1,3 @@
-import { isPrecmdName, type PrecmdName } from "../docs/types.ts"
 import { commentStart } from "./comment.ts"
 import { activeText, type TextSpan } from "./doc.ts"
 import {
@@ -7,6 +6,7 @@ import {
   type LineFact,
   type PrecmdFact,
 } from "./fact-types.ts"
+import { isPrecmdName, type PrecmdName } from "./precmd-names.ts"
 
 // Keyword heads after which the next word is still a command head ("transparent").
 // ⊆ `KEYWORD_HEADS` — `TRANSPARENT.has` is consulted only inside that branch.

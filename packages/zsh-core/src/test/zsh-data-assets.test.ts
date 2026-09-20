@@ -4,7 +4,6 @@ import { describe, expect, test } from "vitest"
 import { resolveZshDataDir, vendoredZshDocFiles } from "../assets/data-dir"
 import { loadCorpus } from "../docs/corpus"
 import { corpusYodlFiles } from "../docs/source-files"
-import { precmdNames } from "../docs/types"
 import { mkDocumented_ } from "./id-fns"
 
 const dataDir = resolveZshDataDir()
@@ -43,12 +42,6 @@ describe("vendored zsh data assets", () => {
     expect(corpus.builtin.has(bi("bindkey"))).toBe(true)
     // macro template placeholder name must not leak
     expect(corpus.builtin.has(bi("ARG1"))).toBe(false)
-  })
-
-  test("parses vendored precommand modifier docs", () => {
-    expect(
-      [...corpus.precmd_modifier.values()].map(doc => doc.id).sort(),
-    ).toEqual([...precmdNames].sort())
   })
 
   test("parses newly vendored structured syntax docs", () => {

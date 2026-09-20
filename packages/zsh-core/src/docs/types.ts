@@ -28,15 +28,10 @@ export type RedirOp = string & { readonly __brand: "RedirOp" }
  * `feedback`), and every corpus record carries its own as `id`. A test
  * fixture casts a string already in id form — `normalizeOptName(raw)` for
  * `option`, trimmed elsewhere; a mistake there surfaces as a `Map.get` miss.
- *
- * `precmd_modifier` and `process_subst` collapse to their closed literal
- * unions (every valid string is a corpus member); other categories phantom-brand.
  */
-export type Documented<K extends DocCategory> = K extends "precmd_modifier"
-  ? PrecmdName
-  : K extends "process_subst"
-    ? ProcessSubstOp
-    : string & { readonly __documented: K }
+export type Documented<K extends DocCategory> = string & {
+  readonly __documented: K
+}
 
 /** What every record carries: its corpus identity and its surface form. */
 export interface DocRecordBase<K extends DocCategory> {
@@ -53,23 +48,6 @@ export interface DocRecordBase<K extends DocCategory> {
 
 // --- Closed literal unions --------------------------------------------------
 
-export const precmdNames = [
-  "-",
-  "builtin",
-  "command",
-  "exec",
-  "nocorrect",
-  "noglob",
-] as const
-
-export type PrecmdName = (typeof precmdNames)[number]
-
-const precmdNameSet: ReadonlySet<string> = new Set(precmdNames)
-
-/** Type guard over `precmdNames`. */
-export const isPrecmdName = (raw: string): raw is PrecmdName =>
-  precmdNameSet.has(raw)
-
 export type UnaryCondOperands = readonly [string]
 export type BinaryCondOperands = readonly [string, string]
 
@@ -83,7 +61,6 @@ export type OptFlagSign = "+" | "-"
 export type ReservedWordPos = "command" | "any"
 
 export type HistoryKind = "event-designator" | "word-designator" | "modifier"
-export type ProcessSubstOp = "<(...)" | ">(...)" | "=(...)"
 
 // MIRRORED-IN: zshref-rs/src/corpus.rs
 /**

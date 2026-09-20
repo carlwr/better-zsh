@@ -27,8 +27,7 @@ const corpus: DocCorpus = {
   ]),
   precmd_modifier: by([
     {
-      id: "noglob" as const,
-      display: "noglob",
+      ...ident("precmd_modifier", "noglob"),
       synopsis: nonEmpty("noglob command arg ..."),
       desc: "",
     },

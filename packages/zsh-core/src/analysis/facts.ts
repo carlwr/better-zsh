@@ -45,6 +45,7 @@ export {
   isRedirFact,
   isReservedWordFact,
 } from "./fact-types.ts"
+export { isPrecmdName, type PrecmdName, precmdNames } from "./precmd-names.ts"
 
 function shiftFact<T extends { span: TextSpan }>(base: number, fact: T): T {
   return { ...fact, span: absSpan(base, fact.span) }

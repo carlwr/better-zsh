@@ -125,9 +125,8 @@ function pinSubKind(record: Obj, values: readonly string[] | undefined): void {
 /**
  * One identity definition per category: `id` and every cross-reference (a
  * `Documented<cat>` field such as `aliasOf`) point at it, so the schema says
- * they hold the same kind of value — the shell-safe slug pattern, or the
- * enum where the category is a closed union (`precmd_modifier`,
- * `process_subst`). `display` gets its pattern pinned in place.
+ * they hold the same kind of value — the shell-safe slug pattern. `display`
+ * gets its pattern pinned in place.
  */
 function hoistId(defs: Defs, cat: DocCategory, record: Obj): void {
   const idName = recordsSchemaDefs.id(cat)
@@ -140,18 +139,15 @@ function hoistId(defs: Defs, cat: DocCategory, record: Obj): void {
     display.pattern = displayPattern.source
   }
   if (!identity) throw new Error(`${cat}: record has no branch`)
-  // The generator names the `Documented<cat>` instantiation (a def that
-  // would leak): a bare string for a phantom brand, its enum's `$ref` for a
-  // literal union. The brand's own description is `Documented`'s, not the
-  // field's.
-  const brand = `Documented<"${cat}">`
-  const { description: _, ...brandDef } = defOf(defs, refTo(brand)).def
-  const literal = "$ref" in brandDef
+  // The generator names the `Documented<cat>` instantiation (a def that would
+  // leak); it becomes this def. The brand's own description is `Documented`'s,
+  // not the field's.
   addDef(defs, idName, {
-    ...(literal ? brandDef : { type: "string", pattern: idPattern.source }),
+    type: "string",
+    pattern: idPattern.source,
     description: `\`${cat}\` record identity — the record's \`id\`, and what a field referring to one holds. ${String(identity.description)}`,
   })
-  redirectDef(defs, brand, idName)
+  redirectDef(defs, `Documented<"${cat}">`, idName)
 }
 
 // Every `$ref` resolves, and no TS generic leaked as a def name — a new brand

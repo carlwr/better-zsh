@@ -95,8 +95,7 @@ const bi: BuiltinDoc = {
   desc: "d:bi",
 }
 const pc: PrecmdDoc = {
-  id: "noglob",
-  display: "noglob",
+  ...identity("precmd_modifier", "noglob"),
   synopsis: ["noglob command arg ..."],
   desc: "d:pc",
 }
@@ -108,8 +107,7 @@ const rd: RedirDoc = {
   section: "",
 }
 const sub: ProcessSubstDoc = {
-  id: "<(...)",
-  display: "<(...)",
+  ...identity("process_subst", "<(...)"),
   sig: "<(list)",
   desc: "d:ps",
   section: "",

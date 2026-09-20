@@ -92,8 +92,7 @@ describe("records bundle", () => {
       "conditional_op",
       r => ({ ...r, arity: "ternary" }),
     ],
-    // A literal-union identity is its enum, not just any slug.
-    ["id outside precmdNames", "precmd_modifier", r => ({ ...r, id: "bogus" })],
+    ["id with whitespace", "precmd_modifier", r => ({ ...r, id: "no glob" })],
     [
       "binary op with one operand",
       "conditional_op",

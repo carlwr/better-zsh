@@ -101,9 +101,11 @@ Two phases:
 
 `resolve` is the bridge: raw in, checked identity out — the one public minting path; the trusted constructor (`mkDocumented`, `brands.ts`) is internal to corpus construction. Brand contract: JSDoc on `Documented<K>` (`zsh-core/types`).
 
+One brand for every category — none is a literal union. The analysis layer's closed precommand list (`PrecmdName`, `zsh-core/analysis`) is its own vocabulary, pinned equal to the corpus by a lock-in test.
+
 ### No intermediate brand
 
-A "normalized, not corpus-checked" brand for user-code tokens was removed: no API accepted it, and its one instantiation collapsed to a closed literal union. Facts carry raw text (domain B); corpus-free normalization is `normalizeOptName`.
+A "normalized, not corpus-checked" brand for user-code tokens was removed: no API accepted it, and its one instantiation became the analysis layer's `PrecmdName`. Facts carry raw text (domain B); corpus-free normalization is `normalizeOptName`.
 
 ### Why the smart constructor is not corpus-aware
 
