@@ -1,5 +1,5 @@
 // The corpus as JSON consumers see it: zsh-core's projection of every record
-// (rendered markdown body and identity fields added), per category in
+// (rendered markdown body and title added), per category in
 // `docCategories` order. Cached per corpus: the retrieval texts are derived
 // from it more than once (build, then validate).
 

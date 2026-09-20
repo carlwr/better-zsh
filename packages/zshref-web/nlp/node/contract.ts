@@ -14,11 +14,7 @@
 // `${` … need a `top-K-equals-set` predicate, not `top1-in-set`.
 
 import type { DocCorpus } from "@carlwr/zsh-core"
-import {
-  docCategories,
-  docCategoryLabels,
-  docDisplay,
-} from "@carlwr/zsh-core/taxonomy"
+import { docCategories, docCategoryLabels } from "@carlwr/zsh-core/taxonomy"
 import type { LookupIndex } from "../core/lookup-map"
 import { byteOrder } from "../core/text"
 import {
@@ -136,8 +132,7 @@ function expectedSetFor(corpus: DocCorpus, query: string): readonly RecordId[] {
   for (const cat of docCategories) {
     for (const rec of corpus[cat].values()) {
       const identity = identityOf(cat, rec)
-      if (identity.id === query || docDisplay(cat, rec) === query)
-        found.push(identity)
+      if (identity.id === query || rec.display === query) found.push(identity)
     }
   }
   return dedupeSorted(found.sort(compareRecordIds))

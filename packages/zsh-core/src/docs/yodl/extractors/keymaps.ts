@@ -1,4 +1,4 @@
-import { mkDocumented } from "../../brands.ts"
+import { identity } from "../../brands.ts"
 import type { KeymapDoc } from "../../types.ts"
 import { extractFirstSitemList, extractSectBody } from "../core/doc.ts"
 import type { YodlSrc } from "../core/nodes.ts"
@@ -20,7 +20,7 @@ export function parseKeymaps(yo: YodlSrc): readonly KeymapDoc[] {
     const isSpecial = name === ".safe"
     const linkedFrom = name === "emacs" ? ["main"] : []
     out.push({
-      name: mkDocumented("keymap", name),
+      ...identity("keymap", name),
       sig: name,
       desc: normalizeBody(item.body),
       section: SECTION,

@@ -7,7 +7,7 @@
 // a negative's presence) is counted, never printed with its query.
 
 import type { DocCorpus } from "@carlwr/zsh-core"
-import { type DocCategory, docDisplay } from "@carlwr/zsh-core/taxonomy"
+import type { DocCategory } from "@carlwr/zsh-core/taxonomy"
 import { byteOrder } from "../../core/text"
 import { type RecordId, recordKey, sameRecord } from "../../core/types"
 import { identityOf } from "../resolver-key"
@@ -53,7 +53,7 @@ export function hardChecks(corpus: DocCorpus): HardCheck[] {
     return [...corpus[category].values()].map(rec => ({
       category,
       id: identityOf(category, rec).id,
-      query: template(docDisplay(category, rec)),
+      query: template(rec.display),
     }))
   })
 }

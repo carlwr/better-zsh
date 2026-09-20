@@ -71,7 +71,7 @@ function writeJsonArtifacts() {
 
   const dataHash = hashRecordFiles(recordTexts)
   const index: JsonIndex = {
-    version: 2,
+    version: 3,
     packageVersion: PKG_VERSION,
     zshUpstream: ZSH_UPSTREAM,
     dataHash,

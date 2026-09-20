@@ -9,7 +9,7 @@
  */
 
 import { describe, expect, test } from "vitest"
-import { mkDocumented, mkOptFlag } from "../docs/brands"
+import { identity, mkDocumented, mkOptFlag } from "../docs/brands"
 import type { DocCorpus } from "../docs/corpus"
 import {
   type ResolvedHit,
@@ -54,11 +54,10 @@ const KSH: OptFlagAlias["emulations"] = ["ksh", "sh"]
 const option = (
   name: string,
   flags: readonly OptFlagAlias[],
-): readonly [ZshOption["name"], ZshOption] => [
+): readonly [ZshOption["id"], ZshOption] => [
   opt(name),
   {
-    name: opt(name),
-    display: name,
+    ...identity("option", name, name),
     flags,
     defaultIn: [],
     section: "Shell State",

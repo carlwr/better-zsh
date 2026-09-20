@@ -23,12 +23,11 @@ const noGroups: string[][] = []
 describe("recordText", () => {
   it("uses the structured fields and the body", () => {
     const rec: JsonRecord = {
-      op: "-nt",
+      id: "-nt",
+      display: "-nt",
       operands: ["file1", "file2"],
       desc: "true if file1 exists and is newer than file2.",
       _mdBody: "`-nt` *file1* `-nt` *file2*",
-      _id: "-nt",
-      _display: "-nt",
       _subKind: "binary",
     }
     const text = recordText("conditional_op", rec, noGroups)
@@ -39,20 +38,18 @@ describe("recordText", () => {
     expect(text.expanded).toContain("conditional operator")
   })
 
-  it("emits header lines, then fields in record order, skipping desc and projections", () => {
+  it("emits header lines, then fields in record order, skipping identity, desc and projections", () => {
     const rec: JsonRecord = {
-      name: "autocd",
+      id: "autocd",
       display: "AUTO_CD",
       flags: { char: "J", on: "-" },
       desc: "not in structured",
       _mdBody: "body",
-      _id: "autocd",
-      _display: "AUTO_CD",
       _title: "`AUTO_CD`",
     }
     const text = recordText("option", rec, noGroups)
     expect(text.structured).toBe(
-      "category: option\ncategory id: option\nid: autocd\ndisplay: AUTO_CD\nname: autocd\ndisplay: AUTO_CD\nflags: char J on -",
+      "category: option\ncategory id: option\nid: autocd\ndisplay: AUTO_CD\nflags: char J on -",
     )
     expect(text.title).toBe("`AUTO_CD`")
     expect(text.md_body).toBe("body")
@@ -61,8 +58,8 @@ describe("recordText", () => {
 
   it("omits sub_kind when the record has none, and puts it after display", () => {
     const rec: JsonRecord = {
-      _id: "x",
-      _display: "x",
+      id: "x",
+      display: "x",
       _subKind: "unary",
       _mdBody: "",
     }

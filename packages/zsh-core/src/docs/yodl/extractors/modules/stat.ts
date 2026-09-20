@@ -15,6 +15,6 @@ const ZSTAT = mkDocumented("builtin", "zstat")
 
 export function extractStat(yo: YodlSrc): readonly BuiltinDoc[] {
   return parseModuleBuiltins(yo, "zsh/stat").map(doc =>
-    doc.name === STAT ? { ...doc, aliasOf: { target: ZSTAT } } : doc,
+    doc.id === STAT ? { ...doc, aliasOf: { target: ZSTAT } } : doc,
   )
 }

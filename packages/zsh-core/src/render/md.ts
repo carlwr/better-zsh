@@ -252,50 +252,32 @@ function isShellParameterRef(whole: string, offset: number): boolean {
 // --- record-title construction (per-category dispatch) --------------------
 
 /**
- * Per-category record-title dispatch. The "title" is the short identifier
- * line — `\`name\``, `\`sig\``, `\`op\``, or a composite like
- * `*lhs* \`op\` *rhs*` for cond-ops. Renderers omit the title from their
- * body; consumers compose via `recordTitle(cat, doc)` (or
+ * Record titles that are not the backticked `display`: a composite like
+ * `*lhs* \`op\` *rhs*` for cond-ops, or the manual's sig (`(#i)`,
+ * `%D{string}`) where the id is a bare letter. Renderers omit the title
+ * from their body; consumers compose via `recordTitle(cat, doc)` (or
  * {@link renderRecordWithTitle}). Dump output supplies its own `## heading`.
  */
-const titleBuilders: {
-  [K in DocCategory]: (doc: DocRecordMap[K]) => string
+const titleOverrides: {
+  readonly [K in DocCategory]?: (doc: DocRecordMap[K]) => string
 } = {
-  option: doc => bt(doc.display),
   conditional_op: sigCond,
-  builtin: doc => bt(doc.name),
-  precmd_modifier: doc => bt(doc.name),
-  special_param: doc => bt(doc.name),
-  complex_command: doc => bt(doc.name),
-  reserved_word: doc => bt(doc.name),
   redirection: doc => bt(doc.groupOp),
-  process_subst: doc => bt(doc.op),
   param_expn: paramExpnTitle,
-  subscript_flag: doc => bt(doc.sig),
-  param_expn_flag: doc => bt(doc.sig),
-  history_expn: doc => bt(doc.sig),
-  glob_op: doc => bt(doc.sig),
   glob_flag: doc => bt(doc.sig),
   glob_qualifier: doc => bt(doc.sig),
   prompt_escape: doc => bt(doc.sig),
-  zle_widget: doc => bt(doc.name),
-  keymap: doc => bt(doc.name),
-  job_spec: doc => bt(doc.sig),
-  arith_op: doc => bt(doc.op),
-  mathfunc: doc => bt(doc.name),
-  special_function: doc => bt(doc.name),
-  comp_utility: doc => bt(doc.name),
 }
 
-/**
- * Title line for a doc record. Prefer over indexing `titleBuilders`
- * directly when `cat` is a generic `K`.
- */
+/** Title line for a doc record: the category's override, else its backticked `display`. */
 export function recordTitle<K extends DocCategory>(
   cat: K,
   doc: DocRecordMap[K],
 ): string {
-  return (titleBuilders[cat] as (d: DocRecordMap[K]) => string)(doc)
+  const override = titleOverrides[cat] as
+    | ((doc: DocRecordMap[K]) => string)
+    | undefined
+  return override ? override(doc) : bt(doc.display)
 }
 
 function paramExpnTitle(doc: ParamExpnDoc): string {
@@ -305,7 +287,7 @@ function paramExpnTitle(doc: ParamExpnDoc): string {
 }
 
 function sigCond(cop: CondOpDoc): string {
-  const op = bt(cop.op)
+  const op = bt(cop.id)
   return cop.arity === "unary"
     ? `${op} *${cop.operands[0]}*`
     : `*${cop.operands[0]}* ${op} *${cop.operands[1]}*`
@@ -392,12 +374,12 @@ function isTrivialSynopsis(synopsis: readonly string[], name: string): boolean {
 
 function canonicalCondForm(cop: CondOpDoc): string {
   return cop.arity === "unary"
-    ? `[[ ${cop.op} ${cop.operands[0]} ]]`
-    : `[[ ${cop.operands[0]} ${cop.op} ${cop.operands[1]} ]]`
+    ? `[[ ${cop.id} ${cop.operands[0]} ]]`
+    : `[[ ${cop.operands[0]} ${cop.id} ${cop.operands[1]} ]]`
 }
 
 function canonicalArithForm(doc: ArithOpDoc): NonEmpty<string> {
-  const op = doc.op
+  const op = doc.id
   switch (doc.arity) {
     case "unary":
       // ++/-- have both pre- and postfix forms; show both.
@@ -469,12 +451,12 @@ function specialFunctionHead(doc: SpecialFunctionDoc): DocHead | undefined {
 function specialFunctionLine(doc: SpecialFunctionDoc): string | undefined {
   if (doc.hookArray !== undefined)
     return `${doc.hookArray}=( funcname1 funcname2 ... )`
-  if (doc.kind === "trap-literal") return `${doc.name}() { ... }`
+  if (doc.kind === "trap-literal") return `${doc.id}() { ... }`
   // `TRAPNAL`'s name is itself a template — replace the trailing `NAL` with
   // `INT` (a concrete, ubiquitous signal name) so the head is a runnable
   // form rather than a meta-name.
   if (doc.kind === "trap-template")
-    return `${doc.name.replace(/NAL$/, "INT")}() { ... }`
+    return `${doc.id.replace(/NAL$/, "INT")}() { ... }`
   return undefined
 }
 
@@ -487,8 +469,8 @@ const headBuilders: {
 } = {
   option: optHead,
   conditional_op: cop => ({ lang: "zsh", lines: [canonicalCondForm(cop)] }),
-  builtin: doc => builtinSynopsisHead(doc.synopsis, doc.name),
-  precmd_modifier: doc => builtinSynopsisHead(doc.synopsis, doc.name),
+  builtin: doc => builtinSynopsisHead(doc.synopsis, doc.id),
+  precmd_modifier: doc => builtinSynopsisHead(doc.synopsis, doc.id),
   special_param: () => undefined,
   complex_command: doc => ({ lang: "docopt", lines: [doc.sig] }),
   reserved_word: () => undefined,
@@ -525,7 +507,7 @@ const headBuilders: {
   arith_op: doc => ({ lang: "zsh", lines: canonicalArithForm(doc) }),
   mathfunc: doc => ({ lang: "docopt", lines: doc.synopsis }),
   special_function: specialFunctionHead,
-  comp_utility: doc => builtinSynopsisHead(doc.synopsis, doc.name),
+  comp_utility: doc => builtinSynopsisHead(doc.synopsis, doc.id),
 }
 
 /**
@@ -842,7 +824,8 @@ const mdRenderer: {
  * The record's category as a markdown paragraph: `_Category:_ <label>`, plus
  * ` (<subKind>)` for categories that have one — label and subKind from the
  * taxonomy. Not part of {@link renderRecord}: the category is envelope data
- * (`DocRecordId`, the JSON identity fields), so bodies never encode it. A
+ * (`DocRecordId`; the record file's category in the JSON), so bodies never
+ * encode it. A
  * consumer that shows a body without its envelope — an editor hover —
  * appends this line itself. Plain markdown; append it after any option-ref
  * bolding (a label word can be an option name: `ZLE`).

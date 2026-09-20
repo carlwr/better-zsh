@@ -4,13 +4,13 @@ import { parsePrecmds } from "../../docs/yodl/extractors/precmds"
 import { by, readVendoredYo } from "./test-util"
 
 const docs = parsePrecmds(readVendoredYo("grammar.yo"))
-const byName = by(docs, d => d.name)
+const byName = by(docs, d => d.id)
 
 // `synopsis: NonEmpty<string>` is type-level non-empty; no runtime check.
 
 describe("parsePrecmds", () => {
   test("parses every documented precommand modifier", () => {
-    expect(docs.map(d => d.name).sort()).toEqual([...precmdNames].sort())
+    expect(docs.map(d => d.id).sort()).toEqual([...precmdNames].sort())
   })
 
   test.each([

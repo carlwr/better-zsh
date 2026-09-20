@@ -1,4 +1,4 @@
-import { mkDocumented } from "../../brands.ts"
+import { identity } from "../../brands.ts"
 import type { ReservedWordDoc } from "../../types.ts"
 import { extractSectionBody } from "../core/doc.ts"
 import type { YodlSrc } from "../core/nodes.ts"
@@ -71,7 +71,7 @@ export function parseReswords(yo: YodlSrc): readonly ReservedWordDoc[] {
     .map(name => {
       const desc = descFor(name)
       return {
-        name: mkDocumented("reserved_word", name),
+        ...identity("reserved_word", name),
         pos: "command",
         sig: name,
         section: SECTION,
@@ -82,7 +82,7 @@ export function parseReswords(yo: YodlSrc): readonly ReservedWordDoc[] {
   return [
     ...cmdEntries,
     {
-      name: mkDocumented("reserved_word", "}"),
+      ...identity("reserved_word", "}"),
       pos: "any",
       sig: "}",
       desc: ANY_DESC,

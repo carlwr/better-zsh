@@ -2,8 +2,8 @@
  * Global, category-agnostic string-field invariants for the corpus.
  *
  * Three tiers from tightest to loosest:
- * - `_id` (lookup key): printable ASCII, no whitespace, non-empty.
- * - `_display` / `sig` (surface form): printable ASCII + space.
+ * - `id` (lookup key): printable ASCII, no whitespace, non-empty.
+ * - `display` / `sig` (surface form): printable ASCII + space.
  * - `desc` / `_mdBody` / `section` (prose): no control characters except
  *   `\n` and `\t`; Unicode allowed (upstream prose carries em-dashes etc.).
  *
@@ -13,15 +13,16 @@
  */
 
 import { describe, expect, test } from "vitest"
-import { mkDocumented } from "../docs/brands.ts"
+import { displayPattern, idPattern, mkDocumented } from "../docs/brands.ts"
 import { loadCorpus } from "../docs/corpus.ts"
 import { projectRecords } from "../docs/json-projection.ts"
 import { docCategories } from "../docs/taxonomy.ts"
 
 const corpus = loadCorpus()
 
-const ID_RE = /^[\x21-\x7E]+$/
-const SURFACE_RE = /^[\x20-\x7E]+$/
+const records = docCategories.map(
+  cat => [cat, [...corpus[cat].values()]] as const,
+)
 
 // Allows `\t` (0x09) and `\n` (0x0A); rejects all other control chars and DEL.
 // Function form because lint forbids control-char escapes in regex literals.
@@ -46,23 +47,23 @@ const strField = (rec: object, key: string): string | undefined => {
 }
 
 describe("corpus string-field invariants", () => {
-  test("every _id is printable ASCII with no whitespace", () => {
+  test("every id is printable ASCII with no whitespace", () => {
     const violations: string[] = []
-    for (const [cat, recs] of projected)
-      for (const rec of recs)
-        if (!ID_RE.test(rec._id))
-          violations.push(`${cat}: _id ${JSON.stringify(rec._id)}`)
+    for (const [cat, recs] of records)
+      for (const { id } of recs)
+        if (!idPattern.test(id))
+          violations.push(`${cat}: id ${JSON.stringify(id)}`)
     expect(violations, violations.join("\n  ")).toEqual([])
   })
 
-  test("every _display and sig is printable ASCII (space allowed)", () => {
+  test("every display and sig is printable ASCII (space allowed)", () => {
     const violations: string[] = []
-    for (const [cat, recs] of projected)
+    for (const [cat, recs] of records)
       for (const rec of recs) {
-        if (!SURFACE_RE.test(rec._display))
-          violations.push(`${cat}: _display ${JSON.stringify(rec._display)}`)
+        if (!displayPattern.test(rec.display))
+          violations.push(`${cat}: display ${JSON.stringify(rec.display)}`)
         const sig = strField(rec, "sig")
-        if (sig !== undefined && !SURFACE_RE.test(sig))
+        if (sig !== undefined && !displayPattern.test(sig))
           violations.push(`${cat}: sig ${JSON.stringify(sig)}`)
       }
     expect(violations, violations.join("\n  ")).toEqual([])
@@ -70,8 +71,8 @@ describe("corpus string-field invariants", () => {
 
   // Catches an extractor minting a record from a non-canonical raw form
   // (e.g. lowercase "auto_cd" instead of "autocd"): every corpus id must
-  // already be its own brand-normalized form. `idOf`-keyed corpus maps make
-  // `corpus[cat].keys()` the canonical id list.
+  // already be its own brand-normalized form. Corpus maps are keyed by the
+  // record's `id`, so `corpus[cat].keys()` is the canonical id list.
   test("every corpus id is idempotent under mkDocumented", () => {
     const violations: string[] = []
     for (const cat of docCategories)

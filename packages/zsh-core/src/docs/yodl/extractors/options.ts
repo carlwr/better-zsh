@@ -1,8 +1,9 @@
 import { isNonEmpty } from "@carlwr/typescript-extra"
 
-import { mkDocumented, mkOptFlag } from "../../brands.ts"
+import { identity, mkDocumented, mkOptFlag } from "../../brands.ts"
 import { flipOptFlagSign } from "../../normalize-option.ts"
 import type {
+  DocRecordBase,
   Documented,
   Emulation,
   OptFlag,
@@ -98,9 +99,9 @@ export function parseOptions(yo: YodlSrc): readonly ZshOption[] {
     const aliasOf =
       section === "Option Aliases" ? parseAliasTarget(item.body) : undefined
     return {
-      name: head.name,
+      id: head.id,
       display: head.display,
-      flags: mergeFlags([...head.flags, ...(tableFlags.get(head.name) ?? [])]),
+      flags: mergeFlags([...head.flags, ...(tableFlags.get(head.id) ?? [])]),
       defaultIn: head.defaultIn,
       section,
       desc: normalizeBody(item.body),
@@ -123,9 +124,7 @@ function parseAliasTarget(body: YodlSrc): ZshOption["aliasOf"] {
   }
 }
 
-function parseOptHeader(header: YodlSrc): {
-  name: Documented<"option">
-  display: string
+function parseOptHeader(header: YodlSrc): DocRecordBase<"option"> & {
   flags: OptFlagAlias[]
   defaultIn: readonly Emulation[]
 } {
@@ -133,8 +132,8 @@ function parseOptHeader(header: YodlSrc): {
   const m = HEADER_RE.exec(text)?.groups
   if (!m?.name) throw new Error(`Unexpected zsh option header: ${text}`)
   return {
-    name: mkDocumented("option", m.name),
-    display: m.name,
+    // `display` keeps the manual's spelling; `id` is its normalized form.
+    ...identity("option", m.name, m.name),
     flags: [
       ...headerFlag(m.flag, FLAG_TABLES.default),
       ...headerFlag(m.kshFlag, FLAG_TABLES.ksh),
@@ -159,8 +158,8 @@ function parseFlagTables(
   for (const table of Object.values(FLAG_TABLES)) {
     const rows = extractFirstSitemList(extractSectionBody(yo, table.section))
     for (const row of rows) {
-      const { name, alias } = parseTableRow(row, table)
-      out.set(name, [...(out.get(name) ?? []), alias])
+      const { id, alias } = parseTableRow(row, table)
+      out.set(id, [...(out.get(id) ?? []), alias])
     }
   }
   return out
@@ -171,7 +170,7 @@ function parseFlagTables(
 function parseTableRow(
   row: YodlEntry,
   table: FlagTable,
-): { name: Documented<"option">; alias: OptFlagAlias } {
+): { id: Documented<"option">; alias: OptFlagAlias } {
   const token = trimmedTtTexts(row.header)[0]
   const flag = token === undefined ? undefined : parseFlagToken(token)
   const target = stripYodl(row.body ?? "", "code").trim()
@@ -182,7 +181,7 @@ function parseTableRow(
   }
   const negated = target.startsWith("NO_")
   return {
-    name: mkDocumented("option", target.replace(/^NO_/, "")),
+    id: mkDocumented("option", target.replace(/^NO_/, "")),
     alias: mkAlias(
       flag.char,
       negated ? flipOptFlagSign(flag.on) : flag.on,

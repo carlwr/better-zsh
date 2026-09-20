@@ -1,5 +1,5 @@
 import { escapeRegExp } from "@carlwr/typescript-extra"
-import { mkDocumented } from "../../brands.ts"
+import { identity, mkDocumented } from "../../brands.ts"
 import type { ShellParamDoc, ShellParamScope } from "../../types.ts"
 import {
   extractFirstItemList,
@@ -68,7 +68,7 @@ function emitParams(
     const split = splitParamBody(item.body)
     for (const head of [...heads, ...pending]) {
       out.push({
-        name: mkDocumented("special_param", head.name),
+        ...identity("special_param", head.name),
         desc: split.desc,
         scope,
         ...(head.tied && { tied: mkDocumented("special_param", head.tied) }),

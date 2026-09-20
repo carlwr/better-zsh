@@ -1,4 +1,4 @@
-import { mkDocumented } from "../../brands.ts"
+import { identity } from "../../brands.ts"
 import type { ArithOpArity, ArithOpDoc } from "../../types.ts"
 import { extractFirstSitemList, withBody } from "../core/doc.ts"
 import type { YodlSrc } from "../core/nodes.ts"
@@ -33,7 +33,7 @@ export function parseArithOps(yo: YodlSrc): readonly ArithOpDoc[] {
   }
 
   return [...byOp.entries()].map(([op, { arity, desc }]) => ({
-    op: mkDocumented("arith_op", op),
+    ...identity("arith_op", op),
     sig: op,
     desc,
     section: SECTION,

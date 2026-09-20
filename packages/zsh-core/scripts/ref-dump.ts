@@ -11,8 +11,7 @@ import {
   type DocCategory,
   type DocRecordMap,
   docCategories,
-  docDisplay,
-  idOf,
+  genericId,
 } from "../src/docs/taxonomy.ts"
 import type { Documented } from "../src/docs/types.ts"
 import { renderRecord } from "../src/render/md.ts"
@@ -20,7 +19,7 @@ import { renderRecord } from "../src/render/md.ts"
 interface RefDocK<K extends DocCategory> {
   readonly kind: K
   readonly id: Documented<K>
-  /** Display heading used in dump output; may differ from the typed `id`. */
+  /** The record's `display`: the dump's `## heading`. */
   readonly heading: string
   readonly md: string
 }
@@ -35,8 +34,8 @@ function mkRefDocs<K extends DocCategory>(
 ): RefDocK<K>[] {
   return docs.map(doc => ({
     kind,
-    id: idOf(kind, doc),
-    heading: docDisplay(kind, doc),
+    id: genericId(doc),
+    heading: doc.display,
     md: renderRecord(corpus, kind, doc),
   }))
 }

@@ -1,5 +1,5 @@
 import { isDefined, isNonEmpty } from "@carlwr/typescript-extra"
-import { mkDocumented } from "../../brands.ts"
+import { identity } from "../../brands.ts"
 import {
   type ZleBindingKeymap,
   type ZleDefaultBinding,
@@ -71,7 +71,7 @@ function parseWidgetSection(
     const body = splitWidgetBody(aliased.entry.body ?? [])
     const section = parseSubsection(aliased.entry.section || sectionDefault)
     const mkDoc = (head: WidgetHead): ZleWidgetDoc => ({
-      name: mkDocumented("zle_widget", head.name),
+      ...identity("zle_widget", head.name),
       desc: body.desc,
       section,
       kind,

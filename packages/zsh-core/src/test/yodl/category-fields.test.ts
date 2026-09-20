@@ -29,7 +29,7 @@ const cu = mkDocumented_("comp_utility")
 const zw = mkDocumented_("zle_widget")
 
 describe("parseKeymaps", () => {
-  const map = by(parseKeymaps(readVendoredYo("zle.yo")), d => d.name)
+  const map = by(parseKeymaps(readVendoredYo("zle.yo")), d => d.id)
 
   test("covers the eight initial keymaps", () => {
     expect([...map.keys()].sort()).toEqual(
@@ -62,7 +62,7 @@ describe("parseKeymaps", () => {
 })
 
 describe("parseJobSpecs", () => {
-  const map = by(parseJobSpecs(readVendoredYo("jobs.yo")), d => d.key)
+  const map = by(parseJobSpecs(readVendoredYo("jobs.yo")), d => d.id)
   test.each([
     ["%number", "number"],
     ["%string", "string"],
@@ -77,7 +77,7 @@ describe("parseJobSpecs", () => {
 
 describe("parseArithOps", () => {
   const docs = parseArithOps(readVendoredYo("arith.yo"))
-  const map = by(docs, d => d.op)
+  const map = by(docs, d => d.id)
 
   test.each([
     ["!", "unary"],
@@ -102,7 +102,7 @@ describe("parseArithOps", () => {
 })
 
 describe("parseSpecialFunctions", () => {
-  const map = by(parseSpecialFunctions(readVendoredYo("func.yo")), d => d.name)
+  const map = by(parseSpecialFunctions(readVendoredYo("func.yo")), d => d.id)
 
   test.each([
     ["chpwd", "chpwd_functions"],
@@ -126,8 +126,8 @@ describe("parseSpecialFunctions", () => {
   // The resolver keys `<hook>_functions` input on `hookArray`.
   test("kind hook ⇔ hookArray present, and it is `${name}_functions`", () => {
     for (const d of map.values()) {
-      expect(d.hookArray !== undefined, d.name).toBe(d.kind === "hook")
-      if (d.kind === "hook") expect(d.hookArray).toBe(`${d.name}_functions`)
+      expect(d.hookArray !== undefined, d.id).toBe(d.kind === "hook")
+      if (d.kind === "hook") expect(d.hookArray).toBe(`${d.id}_functions`)
     }
   })
 })
@@ -153,7 +153,7 @@ describe("parseShellParams — typed scope (enrichment)", () => {
 
 describe("parseWidgetParams (ZLE widget-local parameters)", () => {
   const docs = parseWidgetParams(readVendoredYo("zle.yo"))
-  const map = by(docs, d => d.name)
+  const map = by(docs, d => d.id)
 
   test("includes well-known widget params", () => {
     for (const n of ["BUFFER", "CURSOR", "CONTEXT", "WIDGET", "LBUFFER"]) {
@@ -184,8 +184,8 @@ describe("zle widgets — default bindings (corpus invariants)", () => {
     ...parseZleWidgets(zleYo),
     ...extractDeltochar(readVendoredYo("mod_deltochar.yo")),
   ]
-  const map = by(docs, d => d.name)
-  const keymaps = by(parseKeymaps(zleYo), d => d.name)
+  const map = by(docs, d => d.id)
+  const keymaps = by(parseKeymaps(zleYo), d => d.id)
   const KEY_RE = /^[\x21-\x7E]+$/ // printable ASCII, no whitespace
   const PROSE_RE = /^[\x20-\x7E]+$/ // printable ASCII, spaces allowed
 
@@ -205,7 +205,7 @@ describe("zle widgets — default bindings (corpus invariants)", () => {
     for (const d of docs) {
       for (const key of d.defaultBindings.flatMap(b => b.keys)) {
         expect(key).toMatch(PROSE_RE)
-        if (!KEY_RE.test(key)) prose.push([d.name, key])
+        if (!KEY_RE.test(key)) prose.push([d.id, key])
       }
     }
     expect(prose).toEqual([
@@ -252,11 +252,11 @@ describe("zle widgets — default bindings (corpus invariants)", () => {
 
 describe("parseCompUtils", () => {
   const docs = parseCompUtils(readVendoredYo("compsys.yo"))
-  const map = by(docs, d => d.name)
+  const map = by(docs, d => d.id)
 
   test("every record: leading underscore, non-empty synopsis+desc, Utility section", () => {
     for (const d of docs) {
-      expect(d.name).toMatch(/^_/)
+      expect(d.id).toMatch(/^_/)
       expect(d.synopsis[0]).toBeTruthy()
       expect(d.desc).toBeTruthy()
       expect(d.section).toBe("Utility Functions")
@@ -304,6 +304,6 @@ describe("parseCompUtils", () => {
   })
 
   test("no function names appear more than once", () => {
-    expect(allUnique(docs.map(d => d.name))).toBe(true)
+    expect(allUnique(docs.map(d => d.id))).toBe(true)
   })
 })

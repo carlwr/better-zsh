@@ -12,8 +12,6 @@ import {
   type DocCategory,
   type DocRecordMap,
   docCategories,
-  docDisplay,
-  idOf,
 } from "../src/docs/taxonomy.ts"
 
 type Inputs = readonly string[]
@@ -242,17 +240,17 @@ const redirInputs: ExtraInputs<"redirection"> = ({ sig, groupOp }) => {
 
 const colonFlagInputs: ExtraInputs<
   "subscript_flag" | "param_expn_flag"
-> = d => [`(${d.flag})`, `(${d.sig})`]
+> = d => [`(${d.id})`, `(${d.sig})`]
 
 const globInputs =
   (marker: string): ExtraInputs<"glob_flag" | "glob_qualifier"> =>
-  d => [`(${marker}${d.flag})`, `(${d.flag})`]
+  d => [`(${marker}${d.id})`, `(${d.id})`]
 
 // Negated forms and both polarities of every short flag (on-form, flipped).
 const optionInputs: ExtraInputs<"option"> = d => [
   `NO_${d.display}`,
-  `no${d.name}`,
-  d.name.toUpperCase(),
+  `no${d.id}`,
+  d.id.toUpperCase(),
   ...d.flags.flatMap(f => [
     `${f.on}${f.char}`,
     `${flipOptFlagSign(f.on)}${f.char}`,
@@ -265,18 +263,13 @@ const optionInputs: ExtraInputs<"option"> = d => [
  */
 const extraInputs: { readonly [K in DocCategory]?: ExtraInputs<K> } = {
   option: optionInputs,
-  special_param: d => [
-    `$${d.name}`,
-    `\${${d.name}}`,
-    `${d.name}[1]`,
-    `$${d.name}[1]`,
-  ],
+  special_param: d => [`$${d.id}`, `\${${d.id}}`, `${d.id}[1]`, `$${d.id}[1]`],
   redirection: redirInputs,
   subscript_flag: colonFlagInputs,
   param_expn_flag: colonFlagInputs,
   glob_flag: globInputs("#"),
   glob_qualifier: globInputs("#q"),
-  special_function: d => [`${d.name}_functions`],
+  special_function: d => [`${d.id}_functions`],
 }
 
 /** Every record's id, and its display where that differs. */
@@ -284,11 +277,10 @@ function identityInputs<K extends DocCategory>(
   corpus: DocCorpus,
   cat: K,
 ): Inputs {
-  return [...corpus[cat].values()].flatMap(doc => {
-    const id: string = idOf(cat, doc)
-    const display = docDisplay(cat, doc)
-    return [id, ...(display === id ? [] : [display])]
-  })
+  return [...corpus[cat].values()].flatMap(({ id, display }) => [
+    id,
+    ...(display === id ? [] : [display]),
+  ])
 }
 
 function recordInputs<K extends DocCategory>(

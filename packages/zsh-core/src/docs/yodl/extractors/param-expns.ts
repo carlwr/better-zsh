@@ -1,5 +1,5 @@
 import { isNonEmpty, type NonEmpty, nonEmpty } from "@carlwr/typescript-extra"
-import { mkDocumented } from "../../brands.ts"
+import { identity } from "../../brands.ts"
 import type { ParamExpnDoc, ParamExpnSubKind } from "../../types.ts"
 import {
   collectAliasedEntries,
@@ -139,7 +139,8 @@ export function parseParamExpns(yo: YodlSrc): readonly ParamExpnDoc[] {
         )
       }
       out.push({
-        sig: mkDocumented("param_expn", sig),
+        ...identity("param_expn", sig),
+        sig,
         groupSigs,
         orderInGroup: i,
         subKind: cls.subKind,

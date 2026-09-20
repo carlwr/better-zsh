@@ -1,4 +1,4 @@
-import { mkDocumented } from "../../brands.ts"
+import { identity } from "../../brands.ts"
 import type { GlobQualifierDoc } from "../../types.ts"
 import {
   extractFirstItemList,
@@ -21,7 +21,7 @@ export function parseGlobQualifiers(yo: YodlSrc): readonly GlobQualifierDoc[] {
       const sig = normalizeHeader(item.header)
       const [flag = sig] = ttTexts(item.header)
       return {
-        flag: mkDocumented("glob_qualifier", flag),
+        ...identity("glob_qualifier", flag),
         args: varTexts(item.header),
         sig,
         desc: normalizeBody(item.body),

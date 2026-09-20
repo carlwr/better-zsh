@@ -25,12 +25,10 @@ describe.runIf(existsSync(jsonDir))(
   "emitted JSON records carry rendered markdown body",
   () => {
     interface MdRec {
+      readonly id: string
       readonly _mdBody: string
       readonly _title: string
       readonly desc?: string
-    }
-    interface NamedMdRec extends MdRec {
-      readonly name: string
     }
 
     test.each(jsonDataFiles)("%s records have an _mdBody string", file => {
@@ -52,8 +50,8 @@ describe.runIf(existsSync(jsonDir))(
       [jsonDataFile("builtin"), "echo", 50, ["echo"], ["echo"]],
     ] as const)(
       "%s:%s splits title from body",
-      (file, name, minLen, titleParts, bodyParts) => {
-        const rec = loadRecs<NamedMdRec>(file).find(r => r.name === name)
+      (file, id, minLen, titleParts, bodyParts) => {
+        const rec = loadRecs<MdRec>(file).find(r => r.id === id)
         expect(rec).toBeDefined()
         const md = rec?._mdBody ?? ""
         const title = rec?._title ?? ""

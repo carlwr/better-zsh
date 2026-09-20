@@ -411,7 +411,7 @@ fn try_flag_key<'c>(corpus: &'c Corpus, cat: DocCategory, key: &str) -> Option<R
 }
 
 fn resolve_redir<'c>(corpus: &'c Corpus, cat: DocCategory, raw: &str) -> Option<ResolvedHit<'c>> {
-    // Sig-form close-variant: `> word` → its shell-safe slug `>_word`.
+    // Sig-form close-variant: `> word` → its shell-safe id `>_word`.
     let sig_slug: String = raw.split_whitespace().collect::<Vec<_>>().join("_");
     if !sig_slug.is_empty()
         && let Some(h) = find_by_id(corpus, cat, &sig_slug, None)

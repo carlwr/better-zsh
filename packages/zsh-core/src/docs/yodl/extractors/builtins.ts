@@ -1,5 +1,5 @@
 import { isNonEmpty, nonEmpty } from "@carlwr/typescript-extra"
-import { mkDocumented } from "../../brands.ts"
+import { identity, mkDocumented } from "../../brands.ts"
 import { type ModuleName, parseModuleName } from "../../taxonomy.ts"
 import type { BuiltinDoc } from "../../types.ts"
 import { collectAliasedEntries, extractItems } from "../core/doc.ts"
@@ -58,7 +58,7 @@ export function parseBuiltins(
   const byName = new Map<string, BuiltinDoc>()
 
   for (const doc of macroDocs(nodes)) {
-    byName.set(doc.name, doc)
+    byName.set(doc.id, doc)
   }
 
   for (const entry of collectAliasedEntries(
@@ -111,7 +111,7 @@ export function parseBuiltins(
       if (!first) continue
       const synopsis = nonEmpty(first, ...rest, ...synopsisTail)
       byName.set(g.name, {
-        name: mkDocumented("builtin", g.name),
+        ...identity("builtin", g.name),
         synopsis,
         desc,
         ...(aliasOf && { aliasOf }),
@@ -134,7 +134,7 @@ function macroDocs(nodes: YNodeSeq): BuiltinDoc[] {
       const target = normalizeHeader(node.args[1] ?? [])
       if (!name || !target) continue
       docs.push({
-        name: mkDocumented("builtin", name),
+        ...identity("builtin", name),
         synopsis: [name],
         desc: `Same as \`${target}\`.`,
         aliasOf: aliasOf(target),
@@ -150,7 +150,7 @@ function macroDocs(nodes: YNodeSeq): BuiltinDoc[] {
       // would be a low-quality duplicate (no synopsis or desc).
       if (MODULES_WITH_REAL_RECORDS.has(module)) continue
       docs.push({
-        name: mkDocumented("builtin", name),
+        ...identity("builtin", name),
         synopsis: [name],
         desc: `Available via the \`${module}\` module.`,
         module,
@@ -162,7 +162,7 @@ function macroDocs(nodes: YNodeSeq): BuiltinDoc[] {
       const name = normalizeHeader(node.args[0] ?? [])
       if (!name) continue
       docs.push({
-        name: mkDocumented("builtin", name),
+        ...identity("builtin", name),
         synopsis: [name],
         desc: "See ZLE builtins.",
       })
@@ -209,7 +209,7 @@ export function applyBuiltinTags(
   docs: readonly BuiltinDoc[],
 ): readonly BuiltinDoc[] {
   return docs.map(doc => {
-    const override = BUILTIN_MODULE_TAGS[doc.name]
+    const override = BUILTIN_MODULE_TAGS[doc.id]
     if (!override) return doc
     return {
       ...doc,

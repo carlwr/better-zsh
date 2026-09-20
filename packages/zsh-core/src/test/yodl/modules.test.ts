@@ -44,7 +44,7 @@ Bar command.
 )
 enditem()`
     const docs = parseModuleBuiltins(yo, "zsh/attr")
-    expect(docs.map(d => d.name)).toEqual([bi("foo"), bi("bar")])
+    expect(docs.map(d => d.id)).toEqual([bi("foo"), bi("bar")])
     for (const d of docs) expect(d.module).toBe("zsh/attr")
   })
 
@@ -59,7 +59,7 @@ Format dates.
 )
 enditem()`
     const doc = only(parseModuleBuiltins(yo, "zsh/datetime"))
-    expect(doc.name).toBe(bi("strftime"))
+    expect(doc.id).toBe(bi("strftime"))
     expect(doc.synopsis).toHaveLength(2)
     expect(doc.synopsis[0]).toContain("strftime [")
     expect(doc.synopsis[1]).toContain("strftime -r")
@@ -81,8 +81,8 @@ Shared body.
 )
 enditem()`
     const docs = parseModuleBuiltins(yo, "zsh/stat")
-    const stat = docs.find(d => d.name === bi("stat"))
-    const zstat = docs.find(d => d.name === bi("zstat"))
+    const stat = docs.find(d => d.id === bi("stat"))
+    const zstat = docs.find(d => d.id === bi("zstat"))
     expect(zstat?.synopsis[0]).toBe("zstat [ -gnNol ] [ -f fd ]")
     expect(stat?.synopsis[0]).toBe("stat [ -gnNol ] [ -f fd ]")
     // Continuation lines still apply to both.
@@ -99,7 +99,7 @@ Shared body.
 )
 enditem()`
     const docs = parseModuleBuiltins(yo, "zsh/computil")
-    expect(docs.map(d => d.name).sort()).toEqual(
+    expect(docs.map(d => d.id).sort()).toEqual(
       [bi("comptags"), bi("comptry")].sort(),
     )
     for (const d of docs) expect(d.desc).toBe("Shared body.")
@@ -126,7 +126,7 @@ enditem()
 )
 enditem()`
     const doc = only(parseModuleParams(yo, "zsh/watch"))
-    expect(doc.name).toBe(sp("WATCHFMT"))
+    expect(doc.id).toBe(sp("WATCHFMT"))
     expect(doc.keys).toBeDefined()
     const sigs = doc.keys?.map(k => k.name as string)
     expect(sigs).toEqual(["%F{color} (%f)", "%S (%s)"])
@@ -175,8 +175,8 @@ enditem()`
       { kind: "builtins" },
       { kind: "params", scope: "shell-set" },
     ])
-    expect(out.builtins.map(d => d.name)).toEqual([bi("echotc")])
-    expect(out.params.map(d => d.name)).toEqual([sp("termcap")])
+    expect(out.builtins.map(d => d.id)).toEqual([bi("echotc")])
+    expect(out.params.map(d => d.id)).toEqual([sp("termcap")])
     expect(out.condOps).toEqual([])
     expect(out.builtins[0]?.module).toBe("zsh/termcap")
     expect(out.params[0]?.module).toBe("zsh/termcap")
@@ -205,7 +205,7 @@ Match against PCRE.
 )
 enditem()`
     const op = only(parseModuleCondOps(yo, "zsh/pcre"))
-    expect(op.op).toBe(co("-pcre-match"))
+    expect(op.id).toBe(co("-pcre-match"))
     expect(op.arity).toBe("binary")
     expect(op.module).toBe("zsh/pcre")
   })

@@ -15,12 +15,20 @@ import { describe, expect, test } from "vitest"
 import type * as vscode from "vscode"
 import { activeEnd } from "../../document/words"
 import { HoverProvider } from "../../editor/hover"
-import { by, docId, emptyCorpus, optFlag, pos, wordDoc } from "../test-util"
+import {
+  by,
+  docId,
+  emptyCorpus,
+  ident,
+  optFlag,
+  pos,
+  wordDoc,
+} from "../test-util"
 
 // --- fixtures ---------------------------------------------------------------
 
 const b = (name: string, desc: string): BuiltinDoc => ({
-  name: docId("builtin", name),
+  ...ident("builtin", name),
   synopsis: [name],
   desc,
 })
@@ -30,8 +38,7 @@ const o = (
   desc: string,
   emulations: OptFlagAlias["emulations"],
 ): ZshOption => ({
-  name: docId("option", name),
-  display: name,
+  ...ident("option", name, name),
   flags: [{ char: optFlag("f"), on: "+", emulations }],
   defaultIn: ["zsh"],
   section: "Shell State",
@@ -39,13 +46,13 @@ const o = (
 })
 
 const p = (name: string, desc: string): ShellParamDoc => ({
-  name: docId("special_param", name),
+  ...ident("special_param", name),
   desc,
   scope: "shell-set",
 })
 
 const cc = (name: string, desc: string): ComplexCommandDoc => ({
-  name: docId("complex_command", name),
+  ...ident("complex_command", name),
   sig: `${name} ...`,
   desc,
   section: "Complex Commands",
@@ -54,7 +61,7 @@ const cc = (name: string, desc: string): ComplexCommandDoc => ({
 })
 
 const rw = (name: string, desc: string): ReservedWordDoc => ({
-  name: docId("reserved_word", name),
+  ...ident("reserved_word", name),
   sig: name,
   desc,
   section: "Reserved Words",
@@ -65,14 +72,14 @@ const rw = (name: string, desc: string): ReservedWordDoc => ({
 const corpus: DocCorpus = {
   ...emptyCorpus(),
   // Both options carry `+f`; only RCS's is in the plain-zsh letter table.
-  option: by("name", [
+  option: by([
     o("GLOB", "d:g", ["ksh", "sh"]),
     o("RCS", "d:r", ["csh", "zsh"]),
   ]),
-  builtin: by("name", [b("echo", "d:e"), b("fc", "d:f")]),
-  complex_command: by("name", [cc("for", "d:cc-for")]),
-  reserved_word: by("name", [rw("for", "d:rw-for"), rw("do", "d:rw-do")]),
-  special_param: by("name", [p("?", "d:exit")]),
+  builtin: by([b("echo", "d:e"), b("fc", "d:f")]),
+  complex_command: by([cc("for", "d:cc-for")]),
+  reserved_word: by([rw("for", "d:rw-for"), rw("do", "d:rw-do")]),
+  special_param: by([p("?", "d:exit")]),
 }
 
 // --- helpers ----------------------------------------------------------------
@@ -187,9 +194,9 @@ describe("HoverProvider on the real corpus", () => {
     expect(
       mismatches(real.conditional_op.values(), cop => {
         const line =
-          cop.arity === "binary" ? `[[ a ${cop.op} b ]]` : `[[ ${cop.op} a ]]`
-        const value = realAt(line, 0, line.indexOf(cop.op, 3))?.value
-        return [value, rendered("conditional_op", cop.op)]
+          cop.arity === "binary" ? `[[ a ${cop.id} b ]]` : `[[ ${cop.id} a ]]`
+        const value = realAt(line, 0, line.indexOf(cop.id, 3))?.value
+        return [value, rendered("conditional_op", cop.id)]
       }),
     ).toEqual([])
   })
@@ -210,7 +217,7 @@ describe("HoverProvider on the real corpus", () => {
         const concrete = concreteRedir(redir.sig)
         if (!concrete) return
         const value = realAt(`echo ${concrete}`, 0, 5)?.value
-        return [value, rendered("redirection", redir.slug)]
+        return [value, rendered("redirection", redir.id)]
       }),
     ).toEqual([])
   })

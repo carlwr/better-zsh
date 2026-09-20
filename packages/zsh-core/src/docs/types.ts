@@ -25,7 +25,7 @@ export type RedirOp = string & { readonly __brand: "RedirOp" }
  * Holding one is a *claim* that the string is a key in `corpus[K]`. Minted
  * by zsh-core alone: `resolve` **checks** a raw string against the corpus
  * (lossy bits, e.g. option `NO_`-stripping, surface as the hit's
- * `feedback`), and every corpus record carries its own identity. A test
+ * `feedback`), and every corpus record carries its own as `id`. A test
  * fixture casts a string already in id form — `normalizeOptName(raw)` for
  * `option`, trimmed elsewhere; a mistake there surfaces as a `Map.get` miss.
  *
@@ -37,6 +37,19 @@ export type Documented<K extends DocCategory> = K extends "precmd_modifier"
   : K extends "process_subst"
     ? ProcessSubstOp
     : string & { readonly __documented: K }
+
+/** What every record carries: its corpus identity and its surface form. */
+export interface DocRecordBase<K extends DocCategory> {
+  /** The record's corpus key: a shell-safe slug — printable ASCII without whitespace, non-empty. */
+  readonly id: Documented<K>
+  /**
+   * Surface form for display: printable ASCII with spaces, non-empty. The
+   * `id` unless the manual's form is not shell-safe — an option's
+   * `AUTO_CD`, a redirection's `> word`, a colon flag's `j:string:`, a
+   * history modifier's `h [ digits ]`.
+   */
+  readonly display: string
+}
 
 // --- Closed literal unions --------------------------------------------------
 
@@ -108,9 +121,7 @@ export const optSections = [
 export type OptSection = (typeof optSections)[number]
 
 /** Parsed zsh option metadata normalized from upstream docs. */
-export interface ZshOption {
-  readonly name: Documented<"option">
-  readonly display: string
+export interface ZshOption extends DocRecordBase<"option"> {
   readonly flags: readonly OptFlagAlias[]
   readonly defaultIn: readonly Emulation[]
   /** Manual section this option was parsed from. */
@@ -124,8 +135,7 @@ export interface ZshOption {
 }
 
 /** Parsed unary `[[ ... ]]` conditional operator docs. */
-export interface UnaryCondOpDoc {
-  readonly op: Documented<"conditional_op">
+export interface UnaryCondOpDoc extends DocRecordBase<"conditional_op"> {
   readonly operands: UnaryCondOperands
   readonly desc: string
   readonly arity: "unary"
@@ -133,8 +143,7 @@ export interface UnaryCondOpDoc {
 }
 
 /** Parsed binary `[[ ... ]]` conditional operator docs. */
-export interface BinaryCondOpDoc {
-  readonly op: Documented<"conditional_op">
+export interface BinaryCondOpDoc extends DocRecordBase<"conditional_op"> {
   readonly operands: BinaryCondOperands
   readonly desc: string
   readonly arity: "binary"
@@ -166,8 +175,7 @@ export interface FlagGroup {
 }
 
 /** Parsed builtin command doc block. */
-export interface BuiltinDoc {
-  readonly name: Documented<"builtin">
+export interface BuiltinDoc extends DocRecordBase<"builtin"> {
   readonly synopsis: NonEmpty<string>
   /**
    * Body prose. With `flagGroups`, the intro before the first group; the
@@ -194,16 +202,15 @@ export interface BuiltinDoc {
 }
 
 /** Parsed precommand modifier doc block. */
-export interface PrecmdDoc {
-  readonly name: PrecmdName
+export interface PrecmdDoc extends DocRecordBase<"precmd_modifier"> {
   readonly synopsis: NonEmpty<string>
   readonly desc: string
 }
 
 /** Base interface for syntax-element doc records. */
-export interface SyntaxDocBase<Sig extends string = string> {
+export interface SyntaxDocBase {
   /** Usage signature from the upstream zsh manual. */
-  readonly sig: Sig
+  readonly sig: string
   readonly desc: string
   /** Manual section this element was parsed from. */
   readonly section: string
@@ -260,8 +267,7 @@ export interface ShellParamKey {
  * associative-array's keys); the renderer composes the visible body from
  * `desc` plus `keys`. See PRINCIPLES.md §"Records are self-contained".
  */
-export interface ShellParamDoc {
-  readonly name: Documented<"special_param">
+export interface ShellParamDoc extends DocRecordBase<"special_param"> {
   /**
    * Body prose. With `keys`, the intro before the key list; the renderer
    * composes intro → key headings → `outro`. Without `keys`, the full body.
@@ -285,8 +291,7 @@ export interface ShellParamDoc {
  * `then`, ...) and standalones (`!`, `coproc`, typeset family) keep enriched
  * per-word prose.
  */
-export interface ReservedWordDoc {
-  readonly name: Documented<"reserved_word">
+export interface ReservedWordDoc extends DocRecordBase<"reserved_word"> {
   readonly pos: ReservedWordPos
   readonly sig: string
   readonly section: string
@@ -315,30 +320,28 @@ export interface AlternateForm {
  * `[[`, `{`, `time`) is deliberate; `classifyOrder` places this category
  * first. See PRINCIPLES.md §"Overlap between categories is accepted".
  */
-export interface ComplexCommandDoc extends SyntaxDocBase {
-  readonly name: Documented<"complex_command">
+export interface ComplexCommandDoc
+  extends DocRecordBase<"complex_command">,
+    SyntaxDocBase {
   /** Alternate synopses; may be empty. */
   readonly alternateForms: readonly AlternateForm[]
   /** Body-position tt tokens in the canonical synopsis (`do`, `done`, `esac`, ...). */
   readonly bodyKeywords: readonly string[]
 }
 
-export interface RedirDoc extends SyntaxDocBase {
-  /**
-   * Shell-safe identity. Derived from `sig` by replacing spaces with `_`
-   * (`"> word"` → `">_word"`, `"<<[-] word"` → `"<<[-]_word"`).
-   */
-  readonly slug: Documented<"redirection">
-  /** Human-readable signature; not the identity. */
-  readonly sig: string
+/**
+ * Redirection. `id` is `sig` with whitespace replaced by `_` (`"> word"` →
+ * `">_word"`, `"<<[-] word"` → `"<<[-]_word"`); `display` is `sig`.
+ */
+export interface RedirDoc extends DocRecordBase<"redirection">, SyntaxDocBase {
   /** Grouping token; multiple redirection docs share a `groupOp`. */
   readonly groupOp: RedirOp
 }
 
 /** Process substitution -- `<(...)` and `>(...)`. */
-export interface ProcessSubstDoc extends SyntaxDocBase {
-  readonly op: ProcessSubstOp
-}
+export interface ProcessSubstDoc
+  extends DocRecordBase<"process_subst">,
+    SyntaxDocBase {}
 
 /**
  * Semantic kind of a parameter-expansion form. One literal per logical
@@ -373,8 +376,9 @@ export type ParamExpnSubKind =
  * `replace` variants) carry identical `desc`; each record knows its siblings
  * via `groupSigs` (manual source order) and its own position via `orderInGroup`.
  */
-export interface ParamExpnDoc extends SyntaxDocBase<Documented<"param_expn">> {
-  readonly sig: Documented<"param_expn">
+export interface ParamExpnDoc
+  extends DocRecordBase<"param_expn">,
+    SyntaxDocBase {
   /** Every sig sharing this record's desc, in manual source order. */
   readonly groupSigs: NonEmpty<string>
   /** Zero-based position of `sig` within `groupSigs`. */
@@ -385,19 +389,22 @@ export interface ParamExpnDoc extends SyntaxDocBase<Documented<"param_expn">> {
 }
 
 /** Subscript flags -- e.g. `(e)`, `(w)` inside `${arr[(...)...]}`. */
-export interface SubscriptFlagDoc extends SyntaxDocBase {
-  readonly flag: Documented<"subscript_flag">
+export interface SubscriptFlagDoc
+  extends DocRecordBase<"subscript_flag">,
+    SyntaxDocBase {
   readonly args: readonly string[]
 }
 
 /** Parameter-expansion flags -- e.g. `(U)`, `(L)` inside `${(...)var}`. */
-export interface ParamFlagDoc extends SyntaxDocBase {
-  readonly flag: Documented<"param_expn_flag">
+export interface ParamFlagDoc
+  extends DocRecordBase<"param_expn_flag">,
+    SyntaxDocBase {
   readonly args: readonly string[]
 }
 
-export interface HistoryDoc extends SyntaxDocBase {
-  readonly key: Documented<"history_expn">
+export interface HistoryDoc
+  extends DocRecordBase<"history_expn">,
+    SyntaxDocBase {
   readonly kind: HistoryKind
 }
 
@@ -411,14 +418,12 @@ export type GlobOpKind = "standard" | "ksh-like"
  * forms depend on shell state we don't model. `kind` is the discriminator;
  * option-dependency lookup stays in rendered prose.
  */
-export interface GlobOpDoc extends SyntaxDocBase {
-  readonly op: Documented<"glob_op">
+export interface GlobOpDoc extends DocRecordBase<"glob_op">, SyntaxDocBase {
   readonly kind: GlobOpKind
 }
 
 /** Glob flags (`(#i)`, `(#b)`, ...) — in-pattern. */
-export interface GlobFlagDoc extends SyntaxDocBase {
-  readonly flag: Documented<"glob_flag">
+export interface GlobFlagDoc extends DocRecordBase<"glob_flag">, SyntaxDocBase {
   readonly args: readonly string[]
 }
 
@@ -428,8 +433,9 @@ export interface GlobFlagDoc extends SyntaxDocBase {
  * from `glob_op` (in-pattern) and `glob_flag` (in-pattern `(#...)`): qualifiers
  * trail the pattern and filter the match list.
  */
-export interface GlobQualifierDoc extends SyntaxDocBase {
-  readonly flag: Documented<"glob_qualifier">
+export interface GlobQualifierDoc
+  extends DocRecordBase<"glob_qualifier">,
+    SyntaxDocBase {
   readonly args: readonly string[]
 }
 
@@ -445,8 +451,9 @@ export const promptSubsections = [
 export type PromptSubsection = (typeof promptSubsections)[number]
 
 /** Prompt-expansion escape sequences -- e.g. `%n`, `%~`, `%D{string}`, `%F{color}`. */
-export interface PromptEscapeDoc extends SyntaxDocBase {
-  readonly key: Documented<"prompt_escape">
+export interface PromptEscapeDoc
+  extends DocRecordBase<"prompt_escape">,
+    SyntaxDocBase {
   readonly section: PromptSubsection
 }
 
@@ -506,8 +513,7 @@ export interface ZleWidgetSubItem {
  * beyond the name — its parenthesised groups are default bindings, lifted
  * into `defaultBindings`.
  */
-export interface ZleWidgetDoc {
-  readonly name: Documented<"zle_widget">
+export interface ZleWidgetDoc extends DocRecordBase<"zle_widget"> {
   readonly desc: string
   readonly section: ZleWidgetSubsection
   /** `"standard"` for bindable editing widgets; `"special"` for shell-called hooks. */
@@ -537,8 +543,7 @@ export interface ZleWidgetDoc {
  * `main` is not a keymap, but an alias to `emacs`/`viins` depending on
  * `$VISUAL`/`$EDITOR`; tracked via `linkedFrom` on the default target (emacs).
  */
-export interface KeymapDoc extends SyntaxDocBase {
-  readonly name: Documented<"keymap">
+export interface KeymapDoc extends DocRecordBase<"keymap">, SyntaxDocBase {
   /** `.safe` is special — immutable and always present. */
   readonly isSpecial: boolean
   /** Aliases onto this keymap (e.g. `main` onto `emacs`). */
@@ -553,8 +558,7 @@ export type JobSpecKind =
   | "current"
   | "previous"
 
-export interface JobSpecDoc extends SyntaxDocBase {
-  readonly key: Documented<"job_spec">
+export interface JobSpecDoc extends DocRecordBase<"job_spec">, SyntaxDocBase {
   readonly kind: JobSpecKind
 }
 
@@ -562,8 +566,7 @@ export interface JobSpecDoc extends SyntaxDocBase {
 export type ArithOpArity = "unary" | "binary" | "ternary" | "overloaded"
 
 /** Arithmetic operator — one record per op from `arith.yo`'s native-precedence table. */
-export interface ArithOpDoc extends SyntaxDocBase {
-  readonly op: Documented<"arith_op">
+export interface ArithOpDoc extends DocRecordBase<"arith_op">, SyntaxDocBase {
   readonly arity: ArithOpArity
 }
 
@@ -577,8 +580,9 @@ export interface ArithOpDoc extends SyntaxDocBase {
 export type SpecialFunctionKind = "hook" | "trap-literal" | "trap-template"
 
 /** Special function — hooks and TRAP* from `func.yo` §Special Functions. */
-export interface SpecialFunctionDoc extends SyntaxDocBase {
-  readonly name: Documented<"special_function">
+export interface SpecialFunctionDoc
+  extends DocRecordBase<"special_function">,
+    SyntaxDocBase {
   readonly kind: SpecialFunctionKind
   /** Hook's companion `${name}_functions` array name — the resolver's key for `<hook>_functions` input. Absent on TRAP*. */
   readonly hookArray?: string
@@ -593,8 +597,7 @@ export interface SpecialFunctionDoc extends SyntaxDocBase {
  * preceding line — rendered as a multi-line code block; `synopsis[0]` is the
  * canonical line.
  */
-export interface CompUtilityDoc {
-  readonly name: Documented<"comp_utility">
+export interface CompUtilityDoc extends DocRecordBase<"comp_utility"> {
   readonly synopsis: NonEmpty<string>
   readonly desc: string
   /** Manual section this element was parsed from. */
@@ -610,8 +613,7 @@ export interface CompUtilityDoc {
  * (`$(( cos(0) ))`). `module` is always set: mathfuncs only exist inside
  * modules. `synopsis` mirrors `BuiltinDoc.synopsis` — multi-line rendered.
  */
-export interface MathfuncDoc {
-  readonly name: Documented<"mathfunc">
+export interface MathfuncDoc extends DocRecordBase<"mathfunc"> {
   /** Call signature(s) — multiple forms render as separate lines. */
   readonly synopsis: NonEmpty<string>
   readonly desc: string

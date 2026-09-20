@@ -1,4 +1,4 @@
-import { mkDocumented } from "../../brands.ts"
+import { identity } from "../../brands.ts"
 import type { SpecialFunctionDoc, SpecialFunctionKind } from "../../types.ts"
 import {
   extractFirstItemList,
@@ -37,7 +37,7 @@ function parseHooks(yo: YodlSrc): SpecialFunctionDoc[] {
     if (!name) return []
     return [
       {
-        name: mkDocumented("special_function", name),
+        ...identity("special_function", name),
         sig: normalizeHeader(item.header),
         desc: normalizeBody(item.body),
         section: HOOK_SECTION,
@@ -57,7 +57,7 @@ function parseTraps(yo: YodlSrc): SpecialFunctionDoc[] {
     if (!name) return []
     return [
       {
-        name: mkDocumented("special_function", name),
+        ...identity("special_function", name),
         sig,
         desc: normalizeBody(item.body),
         section: TRAP_SECTION,

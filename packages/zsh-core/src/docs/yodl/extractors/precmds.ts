@@ -16,7 +16,8 @@ export function parsePrecmds(yo: YodlSrc): readonly PrecmdDoc[] {
     if (!name || !isPrecmdName(name)) return []
     return [
       {
-        name,
+        id: name,
+        display: name,
         synopsis: nonEmpty(synopsis),
         desc: normalizeBody(item.body),
       } satisfies PrecmdDoc,

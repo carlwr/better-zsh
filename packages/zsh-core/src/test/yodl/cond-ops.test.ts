@@ -12,7 +12,7 @@ describe("parseCondOps", () => {
 true if file exists.
 )`
     const op = only(parseCondOps(yo))
-    expect(op.op).toBe(cond("-a"))
+    expect(op.id).toBe(cond("-a"))
     expect(op.arity).toBe("unary")
     expect(op.operands).toEqual(["file"])
     expect(op.desc).toContain("file exists")
@@ -23,7 +23,7 @@ true if file exists.
 true if file1 is newer than file2.
 )`
     const op = only(parseCondOps(yo))
-    expect(op.op).toBe(cond("-nt"))
+    expect(op.id).toBe(cond("-nt"))
     expect(op.arity).toBe("binary")
     expect(op.operands).toEqual(["file1", "file2"])
   })
@@ -35,19 +35,19 @@ true if string matches pattern.
 )`
     const ops = parseCondOps(yo)
     expect(ops).toHaveLength(2)
-    expect(ops[0]?.op).toBe(cond("=="))
-    expect(ops[1]?.op).toBe(cond("="))
+    expect(ops[0]?.id).toBe(cond("=="))
+    expect(ops[1]?.id).toBe(cond("="))
   })
 
   describe("vendored cond.yo", () => {
     const ops = parseCondOps(COND_YO)
-    const byOp = by(ops, o => o.op)
+    const byOp = by(ops, o => o.id)
 
     test("corpus parses", () =>
       expectDocCorpus({
         docs: ops,
         minCount: 20,
-        keyOf: o => o.op,
+        keyOf: o => o.id,
         descOf: o => o.desc,
         known: [cond("-a"), cond("-f"), cond("-nt"), cond("=~")],
       }))

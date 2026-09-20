@@ -43,7 +43,7 @@ and the command is the name of a directory, perform the cd
 command to that directory.
 )`
     const o = only(parseOptions(yo))
-    expect(o.name).toBe(opt("AUTO_CD"))
+    expect(o.id).toBe(opt("AUTO_CD"))
     expect(o.display).toBe("AUTO_CD")
     expect(o.flags).toEqual([alias("J", "-", ZSH)])
     expect(o.section).toBe("Changing Directories")
@@ -152,13 +152,13 @@ Report status of background jobs immediately.
 
   describe("vendored options.yo", () => {
     const opts = parseOptions(OPTS_YO)
-    const byName = by(opts, o => o.name)
+    const byName = by(opts, o => o.id)
 
     test("corpus parses", () =>
       expectDocCorpus({
         docs: opts,
         minCount: 100,
-        keyOf: o => o.name,
+        keyOf: o => o.id,
         descOf: o => o.desc,
         sectionOf: o => o.section,
         known: [opt("AUTO_CD"), opt("EXTENDED_GLOB"), opt("GLOB_DOTS")],
@@ -197,7 +197,7 @@ Report status of background jobs immediately.
       for (const o of opts)
         for (const f of o.flags)
           if (f.emulations.includes(emu))
-            owners.set(f.char, [...(owners.get(f.char) ?? []), o.name])
+            owners.set(f.char, [...(owners.get(f.char) ?? []), o.id])
       expect([...owners].filter(([, names]) => names.length > 1)).toEqual([])
     })
 

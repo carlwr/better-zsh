@@ -32,7 +32,7 @@ export class CompletionProvider implements vscode.CompletionItemProvider {
   private general = cached(() =>
     wordCategories.flatMap(([cat, kind]) =>
       [...this.corpus[cat].values()]
-        .filter(doc => WORD_EXACT.test(doc.name))
+        .filter(doc => WORD_EXACT.test(doc.id))
         .map(doc => mkCompletionItem(this.corpus, cat, doc, kind)),
     ),
   )
@@ -47,7 +47,7 @@ export class CompletionProvider implements vscode.CompletionItemProvider {
     () =>
       new Map(
         [...this.corpus.option.values()].map(doc => [
-          doc.name,
+          doc.id,
           recordMarkdown(this.corpus, "option", doc),
         ]),
       ),
@@ -106,7 +106,7 @@ export class CompletionProvider implements vscode.CompletionItemProvider {
     // `CompletionItemKind.Operator`'s codicon is a stacked `%/x` glyph; `Keyword`'s
     // icon reads cleaner and is semantically close (test/cond keywords).
     const items = this.conditionalOps().map(cop => {
-      const item = new vscode.CompletionItem(cop.op, Kind.Keyword)
+      const item = new vscode.CompletionItem(cop.id, Kind.Keyword)
       item.detail = cop.desc
       item.documentation = new vscode.MarkdownString(
         recordTitle("conditional_op", cop),
@@ -128,7 +128,7 @@ function mkCompletionItem<K extends WordCategory>(
   doc: DocRecordMap[K],
   kind: vscode.CompletionItemKind,
 ): vscode.CompletionItem {
-  const item = new vscode.CompletionItem(doc.name, kind)
+  const item = new vscode.CompletionItem(doc.id, kind)
   // The one-line slot: a synopsis where the record has one; the full doc
   // travels as `documentation`.
   item.detail = headFor(cat, doc)?.lines[0]

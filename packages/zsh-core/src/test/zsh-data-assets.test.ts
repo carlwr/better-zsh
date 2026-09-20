@@ -47,7 +47,7 @@ describe("vendored zsh data assets", () => {
 
   test("parses vendored precommand modifier docs", () => {
     expect(
-      [...corpus.precmd_modifier.values()].map(doc => doc.name).sort(),
+      [...corpus.precmd_modifier.values()].map(doc => doc.id).sort(),
     ).toEqual([...precmdNames].sort())
   })
 
@@ -57,22 +57,22 @@ describe("vendored zsh data assets", () => {
     ).toBe(true)
     expect(corpus.reserved_word.has(rw("if"))).toBe(true)
     expect(
-      [...corpus.special_param.values()].some(doc => doc.name === "SECONDS"),
+      [...corpus.special_param.values()].some(doc => doc.id === "SECONDS"),
     ).toBe(true)
     expect(
-      [...corpus.subscript_flag.values()].some(doc => doc.flag === "w"),
+      [...corpus.subscript_flag.values()].some(doc => doc.id === "w"),
     ).toBe(true)
     expect(
-      [...corpus.param_expn_flag.values()].some(doc => doc.flag === "@"),
+      [...corpus.param_expn_flag.values()].some(doc => doc.id === "@"),
     ).toBe(true)
-    expect(
-      [...corpus.history_expn.values()].some(doc => doc.key === "!!"),
-    ).toBe(true)
-    expect([...corpus.glob_op.values()].some(doc => doc.op === "*")).toBe(true)
-    expect([...corpus.glob_flag.values()].some(doc => doc.flag === "i")).toBe(
+    expect([...corpus.history_expn.values()].some(doc => doc.id === "!!")).toBe(
       true,
     )
-    expect([...corpus.process_subst.values()].map(doc => doc.op)).toEqual([
+    expect([...corpus.glob_op.values()].some(doc => doc.id === "*")).toBe(true)
+    expect([...corpus.glob_flag.values()].some(doc => doc.id === "i")).toBe(
+      true,
+    )
+    expect([...corpus.process_subst.values()].map(doc => doc.id)).toEqual([
       "<(...)",
       ">(...)",
       "=(...)",
@@ -81,11 +81,11 @@ describe("vendored zsh data assets", () => {
       [...corpus.param_expn.values()].some(doc => doc.sig === "${name:-word}"),
     ).toBe(true)
     expect(
-      [...corpus.prompt_escape.values()].some(doc => doc.key === "%n"),
+      [...corpus.prompt_escape.values()].some(doc => doc.id === "%n"),
     ).toBe(true)
     expect(
       [...corpus.zle_widget.values()].some(
-        doc => doc.name === "backward-kill-word",
+        doc => doc.id === "backward-kill-word",
       ),
     ).toBe(true)
   })

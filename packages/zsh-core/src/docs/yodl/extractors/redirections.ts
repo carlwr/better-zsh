@@ -1,4 +1,4 @@
-import { mkDocumented, mkRedirOp, redirSlugFromSig } from "../../brands.ts"
+import { identity, mkRedirOp, redirSlugFromSig } from "../../brands.ts"
 import type { RedirDoc } from "../../types.ts"
 import {
   extractItems,
@@ -16,8 +16,8 @@ export function parseRedirs(yo: YodlSrc): readonly RedirDoc[] {
     extractItems(section.length > 0 ? section : yo, 1),
     normalizeHeader,
     (sig, desc) => ({
+      ...identity("redirection", redirSlugFromSig(sig), sig),
       groupOp: mkRedirOp(sig.match(/^\S+/)?.[0] ?? sig),
-      slug: mkDocumented("redirection", redirSlugFromSig(sig)),
       sig,
       desc,
       section: SECTION,

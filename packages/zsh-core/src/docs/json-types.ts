@@ -9,8 +9,6 @@ import type { DocCategory, DocRecordMap } from "./taxonomy.ts"
 // them. All are `_`-prefixed, the rendered markdown body included — a
 // namespace apart from the records' own field names. Deliberately no JSDoc
 // here: the schema generator would make it the description of every record.
-// `_id` / `_display` patterns mirror the corpus-ASCII test's `ID_RE` /
-// `SURFACE_RE` — keep aligned.
 export type WithMarkdown<T> = T & {
   /**
    * The rendered record as markdown; `_title` is split out of it, and the
@@ -19,28 +17,20 @@ export type WithMarkdown<T> = T & {
    */
   readonly _mdBody: string
   /**
-   * Shell-safe identity slug: printable ASCII, no whitespace, non-empty.
-   * @pattern ^[\x21-\x7E]+$
-   */
-  readonly _id: string
-  /**
-   * Surface form for display: printable ASCII with spaces; non-empty.
-   * @pattern ^[\x20-\x7E]+$
-   */
-  readonly _display: string
-  /**
    * Rendered record title — short inline markdown (e.g. the backticked
    * record name); split out of `_mdBody` so each consumer decides whether to
    * show it.
    */
   readonly _title: string
-  // schema: required + enum per category, see build-schema.ts
+  /** `subKindOf`'s value; schema: required with an enum, or absent, per category (build-schema.ts). */
   readonly _subKind?: string
 }
 
+/** A JSON record per category: the corpus record plus the generated fields. */
 export type JsonRecordMap = {
   readonly [K in DocCategory]: WithMarkdown<DocRecordMap[K]>
 }
+/** The record files: `<category>.json` is the array under its category. */
 export type JsonDocArrayMap = {
   [K in DocCategory]: readonly JsonRecordMap[K][]
 }
@@ -51,7 +41,7 @@ export type JsonDocArrayMap = {
  * record file set, never with record content (that is `dataHash`).
  */
 export interface JsonIndex {
-  readonly version: 2
+  readonly version: 3
   readonly packageVersion: string
   readonly zshUpstream: {
     readonly tag: string

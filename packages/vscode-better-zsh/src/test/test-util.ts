@@ -57,11 +57,9 @@ export function wordDoc(text: string, scope = "doc") {
 export const pos = (line: number, character: number) =>
   ({ line, character }) as vscode.Position
 
-/** Index records by a field value into a Map. */
-export const by = <K extends PropertyKey, T extends Record<K, unknown>>(
-  field: K,
-  xs: readonly T[],
-) => new Map(xs.map(x => [x[field], x]))
+/** Index records by their `id`, as a corpus category map does. */
+export const by = <I, T extends { readonly id: I }>(xs: readonly T[]) =>
+  new Map<I, T>(xs.map(x => [x.id, x]))
 
 /** A fixture record's identity: `raw` brought to id form (`option` normalizes). */
 export const docId = <K extends DocCategory>(
@@ -69,6 +67,16 @@ export const docId = <K extends DocCategory>(
   raw: string,
 ): Documented<K> =>
   (cat === "option" ? normalizeOptName(raw) : raw.trim()) as Documented<K>
+
+/** A fixture record's identity fields; `display` defaults to the id. */
+export const ident = <K extends DocCategory>(
+  cat: K,
+  raw: string,
+  display?: string,
+) => {
+  const id = docId(cat, raw)
+  return { id, display: display ?? id }
+}
 
 /** A fixture option's single-letter flag. */
 export const optFlag = (char: string): OptFlag => char as OptFlag

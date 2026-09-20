@@ -7,7 +7,7 @@ import {
   type DocCategory,
   type DocRecordMap,
   docCategories,
-  idOf,
+  genericId,
 } from "./taxonomy.ts"
 import type {
   BuiltinDoc,
@@ -167,10 +167,9 @@ export type DocMap<K extends DocCategory> = ReadonlyMap<
 export type DocCorpus = { readonly [K in DocCategory]: DocMap<K> }
 
 function buildCategoryMap<K extends DocCategory>(
-  cat: K,
   docs: readonly DocRecordMap[K][],
 ): DocMap<K> {
-  return new Map(docs.map(d => [idOf(cat, d), d]))
+  return new Map(docs.map(d => [genericId(d), d]))
 }
 
 /**
@@ -195,7 +194,7 @@ export const loadCorpus: () => DocCorpus = cached(() => {
       cat,
       {
         enumerable: true,
-        get: cached(() => buildCategoryMap(cat, categoryLoader[cat](getNodes))),
+        get: cached(() => buildCategoryMap(categoryLoader[cat](getNodes))),
       } satisfies PropertyDescriptor,
     ]),
   )

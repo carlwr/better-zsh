@@ -1,4 +1,4 @@
-import { mkDocumented } from "../../brands.ts"
+import { identity } from "../../brands.ts"
 import type { HistoryDoc, HistoryKind } from "../../types.ts"
 import {
   extractFirstItemList,
@@ -36,7 +36,7 @@ function parseSection(
     normalizeHeader,
     (sig, desc) => ({
       kind,
-      key: mkDocumented("history_expn", toKey(sig)),
+      ...identity("history_expn", toKey(sig), sig),
       sig,
       desc,
       section,
@@ -51,7 +51,7 @@ function parseWordDesignators(yo: YodlSrc): HistoryDoc[] {
     const sig = normalizeHeader(item.header)
     return {
       kind: "word-designator",
-      key: mkDocumented("history_expn", sig),
+      ...identity("history_expn", sig, sig),
       sig,
       desc: normalizeBody(item.body),
       section: WORD_DESIG_SECTION,

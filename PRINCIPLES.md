@@ -148,14 +148,7 @@ Not a separate type or interface — both roles use the same `DocCategory` machi
 
 ### Each category is almost its own type
 
-`DocRecordMap[K]` is a custom shape per category. Field names read as domain vocabulary:
-
-- `name` for builtin
-- `op` for conditional_op
-- `slug` for redirection
-- `flag` for glob_flag
-
-A shared `id` field name would obscure, not clarify. Per-category record shapes: JSDoc in `zsh-core/types`.
+`DocRecordMap[K]` is a custom shape per category: beyond the shared identity (`id`, `display`), field names read as domain vocabulary (`operands`, `groupOp`, `args`). Per-category record shapes: JSDoc in `zsh-core/types`.
 
 ### Shared structural patterns are a plus when genuine
 
@@ -169,7 +162,7 @@ Follow when the domain calls for it; deviate when it doesn't.
 
 ### The structural identity invariant
 
-Every record carries a branded identity field; field names vary, the invariant is uniform — `idOf(cat, record) is Documented<K>`. `idOf` (in `zsh-core/taxonomy`) is the single source of truth; there is deliberately no shared `DocRecordBase<K>` interface.
+Every record extends `DocRecordBase<K>` (`id: Documented<K>`, the corpus key, and `display`), asserted at compile time in `zsh-core/taxonomy`. The dropped alternative — per-category identity fields (`name`, `op`, `slug`, ...) behind an accessor table — read as domain vocabulary but cost each generic reader a dispatch and the JSON a duplicated generated id; once the JSON carried a uniform id anyway, the field won.
 
 ### Structural info beats markdown
 

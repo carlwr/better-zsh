@@ -43,7 +43,7 @@ import {
   type DocRecordIdOf,
   type DocRecordMap,
   docCategories,
-  idOf,
+  genericId,
   mkRecordId,
 } from "./taxonomy.ts"
 import type { Documented, RedirDoc } from "./types.ts"
@@ -114,7 +114,7 @@ function resolveRedir(
 ): Hit<"redirection"> | undefined {
   return (
     hitAt(c, "redirection", mkDocumented("redirection", raw)) ??
-    // Sig-form close-variant: doc sig (`> word`) → slug (`>_word`).
+    // Sig-form close-variant: doc sig (`> word`) → id (`>_word`).
     hitAt(
       c,
       "redirection",
@@ -142,7 +142,7 @@ function matchRedirKey(c: DocCorpus, t: string): string | undefined {
       groupOpPrefixLen(doc.groupOp, text) === longest &&
       redirTailMatches(doc, text.slice(longest)),
   )
-  return isSingle(hit) ? hit[0].slug : undefined
+  return isSingle(hit) ? hit[0].id : undefined
 }
 
 /** Length of `groupOp` as a prefix of `text`, 0 when it is none; `<<[-]` stands for `<<-` or `<<`. */
@@ -368,7 +368,7 @@ const TRAP_TEMPLATE_RE = /^TRAP[A-Z0-9]+$/
 
 function matchSpecialFunctionKey(c: DocCorpus, t: string): string | undefined {
   const hook = [...c.special_function.values()].find(d => d.hookArray === t)
-  if (hook) return hook.name
+  if (hook) return hook.id
   if (TRAP_TEMPLATE_RE.test(t)) return "TRAPNAL"
   return undefined
 }
@@ -493,8 +493,8 @@ export function resolve<K extends DocCategory>(
   const hit =
     (key ? hitAt(corpus, cat, key) : undefined) ?? resolvers[cat](corpus, raw)
   if (!hit) return undefined
-  // Corpus maps are keyed by `idOf`, so the record names its own key.
-  const id = mkRecordId(cat, idOf(cat, hit.record))
+  // Corpus maps are keyed by the record's own `id`.
+  const id = mkRecordId(cat, genericId(hit.record))
   return hit.feedback
     ? { ...id, record: hit.record, feedback: hit.feedback }
     : { ...id, record: hit.record }

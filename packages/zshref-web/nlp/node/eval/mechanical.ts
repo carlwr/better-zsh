@@ -14,11 +14,7 @@
 
 import { isDefined } from "@carlwr/typescript-extra"
 import type { DocCorpus } from "@carlwr/zsh-core"
-import {
-  type DocCategory,
-  docCategories,
-  docDisplay,
-} from "@carlwr/zsh-core/taxonomy"
+import { type DocCategory, docCategories } from "@carlwr/zsh-core/taxonomy"
 
 import type { RecordId } from "../../core/types"
 import { buildLookupContract } from "../contract"
@@ -86,9 +82,7 @@ export function buildMechanical(corpus: DocCorpus): SentenceEntry[] {
     [...corpus[cat].values()].flatMap(rec => {
       const record = identityOf(cat, rec)
       if (record.id === "") return []
-      return nlQuestions(cat, docDisplay(cat, rec)).map(q =>
-        mechanicalEntry(q, record),
-      )
+      return nlQuestions(cat, rec.display).map(q => mechanicalEntry(q, record))
     }),
   )
   return [...decorated, ...questions]

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest"
-import { mkDocumented } from "../docs/brands"
+import { identity } from "../docs/brands"
 import { loadCorpus } from "../docs/corpus"
 import {
   type DocCategory,
@@ -95,12 +95,12 @@ describe("subKindEnums", () => {
       name: string,
       scope: ShellParamDoc["scope"],
     ): ShellParamDoc => ({
-      name: mkDocumented("special_param", name),
+      ...identity("special_param", name),
       desc: "",
       scope,
     })
     const echo: BuiltinDoc = {
-      name: mkDocumented("builtin", "echo"),
+      ...identity("builtin", "echo"),
       synopsis: ["echo"],
       desc: "",
     }
@@ -110,9 +110,9 @@ describe("subKindEnums", () => {
           sp("SECONDS", "shell-set"),
           sp("HOME", "shell-used"),
           sp("PWD", "shell-set"),
-        ].map(d => [d.name, d]),
+        ].map(d => [d.id, d]),
       ),
-      builtin: new Map([[echo.name, echo]]),
+      builtin: new Map([[echo.id, echo]]),
     })
     const enums = subKindEnums(small)
     expect(enums.special_param).toEqual(["shell-set", "shell-used"])

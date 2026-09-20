@@ -6,6 +6,7 @@ import type {
   ComplexCommandDoc,
   CompUtilityDoc,
   CondOpDoc,
+  DocRecordBase,
   Documented,
   GlobFlagDoc,
   GlobOpDoc,
@@ -191,6 +192,28 @@ export interface DocRecordMap {
   comp_utility: CompUtilityDoc
 }
 
+// Every record carries `id: Documented<K>` and `display` — the structural
+// identity invariant (PRINCIPLES.md §"Category types").
+type _AssertRecordsExtendBase = Assert<
+  Eq<
+    {
+      [K in DocCategory]: DocRecordMap[K] extends DocRecordBase<K>
+        ? true
+        : false
+    }[DocCategory],
+    true
+  >
+>
+
+/**
+ * A record's `id` under a generic `K`. TS reads `DocRecordMap[K]["id"]` as
+ * the union of every category's brand; the assert above is what makes the
+ * narrowing sound. Single cast site.
+ */
+export const genericId = <K extends DocCategory>(
+  rec: DocRecordMap[K],
+): Documented<K> => rec.id as Documented<K>
+
 /**
  * Discriminated-union identity for a documented corpus element. `category`
  * narrows `id` to the matching Documented brand. The per-category member is
@@ -230,74 +253,6 @@ export const mkRecordId = <K extends DocCategory>(
   id: Documented<K>,
 ): DocRecordIdOf<K> => ({ category, id }) as DocRecordIdOf<K>
 
-/** A required field of `K`'s record typed as its identity, `Documented<K>`. */
-type IdField<K extends DocCategory> = {
-  [F in keyof DocRecordMap[K]]-?: DocRecordMap[K] extends Record<
-    F,
-    Documented<K>
-  >
-    ? F
-    : never
-}[keyof DocRecordMap[K]]
-
-/** The identity field per category: what `idOf` reads. */
-export const docIdField: { readonly [K in DocCategory]: IdField<K> } = {
-  option: "name",
-  conditional_op: "op",
-  builtin: "name",
-  precmd_modifier: "name",
-  special_param: "name",
-  complex_command: "name",
-  reserved_word: "name",
-  redirection: "slug",
-  process_subst: "op",
-  param_expn: "sig",
-  subscript_flag: "flag",
-  param_expn_flag: "flag",
-  history_expn: "key",
-  glob_op: "op",
-  glob_flag: "flag",
-  glob_qualifier: "flag",
-  prompt_escape: "key",
-  zle_widget: "name",
-  keymap: "name",
-  job_spec: "key",
-  arith_op: "op",
-  mathfunc: "name",
-  special_function: "name",
-  comp_utility: "name",
-}
-
-/**
- * Display heading for a doc record; may differ from the typed id (a
- * shell-safe slug). Divergent categories:
- *
- * - `option`: id `autocd`, display `AUTO_CD` (preserves upstream case/underscores).
- * - `redirection`: id `slug` (`>_word`), display `sig` (`> word`).
- * - `param_expn_flag`, `subscript_flag`: id `j`, display `j:string:`.
- * - `history_expn`: id `h` for modifiers, display `h [ digits ]`. Event/word
- *   designators unchanged.
- *
- * User-facing renderers (hover, MCP tool responses, dumps) should prefer
- * this over reading identity fields directly.
- */
-export const docDisplay = <K extends DocCategory>(
-  cat: K,
-  doc: DocRecordMap[K],
-): string => {
-  switch (cat) {
-    case "option":
-      return (doc as ZshOption).display
-    case "redirection":
-    case "param_expn_flag":
-    case "subscript_flag":
-    case "history_expn":
-      return (doc as { readonly sig: string }).sig
-    default:
-      return idOf(cat, doc) as string
-  }
-}
-
 const noSub = (_: unknown) => undefined
 
 type SubKindFn<K extends DocCategory> = (
@@ -325,13 +280,6 @@ const subKindOverrides: Partial<SubKindFnMap> = {
 export const docSubKind: SubKindFnMap = Object.fromEntries(
   docCategories.map(cat => [cat, subKindOverrides[cat] ?? noSub]),
 ) as SubKindFnMap
-
-/** A record's identity, `doc[docIdField[cat]]`. Single dispatch-cast site. */
-export const idOf = <K extends DocCategory>(
-  cat: K,
-  doc: DocRecordMap[K],
-): Documented<K> =>
-  doc[docIdField[cat] as keyof DocRecordMap[K]] as Documented<K>
 
 /**
  * Optional typed sub-facet of a doc record; `undefined` when a category has

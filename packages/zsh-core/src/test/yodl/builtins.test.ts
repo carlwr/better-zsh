@@ -1,4 +1,5 @@
 import { beforeAll, describe, expect, test } from "vitest"
+import { identity } from "../../docs/brands"
 import {
   MODULES_WITH_REAL_RECORDS,
   parseBuiltins,
@@ -18,7 +19,7 @@ Write text.
 )
 enditem()`
     const doc = only(parseBuiltins(yo))
-    expect(doc.name).toBe(bi("echo"))
+    expect(doc.id).toBe(bi("echo"))
     expect(doc.synopsis).toEqual(["echo [ -n ]"])
     expect(doc.desc).toBe("Write text.")
   })
@@ -36,7 +37,7 @@ alias(bye)(exit)
 module(zftp)(zsh/zftp)
 enditem()`
     const docs = parseBuiltins(yo)
-    expect(docs.map(d => d.name)).toEqual([bi("bye"), bi("zftp")])
+    expect(docs.map(d => d.id)).toEqual([bi("bye"), bi("zftp")])
     expect(docs[0]?.aliasOf).toEqual({ target: bi("exit") })
     expect(docs[1]?.module).toBe("zsh/zftp")
   })
@@ -52,12 +53,12 @@ enditem()`
     const docs = parseBuiltins(yo)
     expect(docs).toEqual([
       {
-        name: bi("foo"),
+        ...identity("builtin", "foo"),
         synopsis: ["foo [ one ]", "[ two ]"],
         desc: "Shared description.",
       },
       {
-        name: bi("bar"),
+        ...identity("builtin", "bar"),
         synopsis: ["bar [ three ]", "[ two ]"],
         desc: "Shared description.",
       },
@@ -66,7 +67,7 @@ enditem()`
 
   describe("vendored builtins.yo", () => {
     const docs = parseBuiltins(BUILTINS_YO)
-    const byName = by(docs, d => d.name)
+    const byName = by(docs, d => d.id)
 
     test.each([
       ["test", "test [ arg ... ]"],
@@ -80,10 +81,10 @@ enditem()`
     })
 
     test("excludes macro template placeholders", () => {
-      expect(docs.some(d => d.name === bi("ARG1"))).toBe(false)
+      expect(docs.some(d => d.id === bi("ARG1"))).toBe(false)
     })
 
-    const names = new Set(docs.map(d => d.name))
+    const names = new Set(docs.map(d => d.id))
     test.each([
       // bindkey — from zlecmd() macro; always present regardless of module displacement
       ["bindkey", true],
@@ -114,7 +115,7 @@ enditem()`
     test("every alias target is a builtin", () => {
       for (const doc of docs) {
         if (doc.aliasOf)
-          expect(names.has(doc.aliasOf.target), doc.name).toBe(true)
+          expect(names.has(doc.aliasOf.target), doc.id).toBe(true)
       }
     })
   })

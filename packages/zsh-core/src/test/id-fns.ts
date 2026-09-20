@@ -1,10 +1,9 @@
-import { mkDocumented } from "../docs/brands"
+import { identity, mkDocumented } from "../docs/brands"
 import type { DocCorpus } from "../docs/corpus"
 import {
   type DocCategory,
   type DocRecordMap,
   docCategories,
-  docIdField,
 } from "../docs/taxonomy"
 import type { Documented } from "../docs/types"
 
@@ -27,17 +26,16 @@ export function emptyCorpus(overrides: Partial<DocCorpus> = {}): DocCorpus {
 
 /**
  * `DocCorpus` populated only with ids in one category; each record carries
- * just its identity field (`docIdField`) — for resolver tests that exercise
- * membership, not record content. The single cast site is here.
+ * just its identity fields — for resolver tests that exercise membership,
+ * not record content. The single cast site is here.
  */
 export function membershipCorpus<K extends DocCategory>(
   cat: K,
   rawIds: readonly string[],
 ): DocCorpus {
   const entries = rawIds.map(raw => {
-    const id = mkDocumented(cat, raw)
-    const record = { [docIdField[cat]]: id } as unknown as DocRecordMap[K]
-    return [id, record] as const
+    const base = identity(cat, raw)
+    return [base.id, base as unknown as DocRecordMap[K]] as const
   })
   return emptyCorpus({ [cat]: new Map(entries) } as Partial<DocCorpus>)
 }

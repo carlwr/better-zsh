@@ -10,7 +10,7 @@
 
 import { isSingle, memoized } from "@carlwr/typescript-extra"
 import { loadCorpus } from "@carlwr/zsh-core"
-import { docCategories, docDisplay } from "@carlwr/zsh-core/taxonomy"
+import { docCategories } from "@carlwr/zsh-core/taxonomy"
 import { describe, expect, it } from "vitest"
 import { syntheticVec } from "../../../nlp/core/vec"
 import { buildLookupContract } from "../../../nlp/node/contract"
@@ -78,9 +78,7 @@ describe("build", () => {
     )
     expect(decorated.length).toBeGreaterThan(0)
     const questions = docCategories.flatMap(cat =>
-      [...corpus[cat].values()].flatMap(rec =>
-        nlQuestions(cat, docDisplay(cat, rec)),
-      ),
+      [...corpus[cat].values()].flatMap(rec => nlQuestions(cat, rec.display)),
     )
     expect(questions.length).toBeGreaterThan(0)
     expect(entries).toHaveLength(decorated.length + questions.length)

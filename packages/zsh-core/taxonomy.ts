@@ -1,7 +1,7 @@
 /**
  * @packageDocumentation
  * Doc category ontology: ordered lists, labels, category parsing, record
- * identity and display, per-category preambles and sub-kinds.
+ * identity types, per-category preambles and sub-kinds.
  */
 
 export { docCategoryPreamble } from "./src/docs/category-preamble.ts"
@@ -13,8 +13,6 @@ export {
   type DocRecordMap,
   docCategories,
   docCategoryLabels,
-  docDisplay,
-  idOf,
   isDocCategory,
   parseDocCategory,
   subKindOf,

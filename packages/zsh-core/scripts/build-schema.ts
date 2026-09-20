@@ -2,6 +2,7 @@ import { mkdirSync, rmSync, writeFileSync } from "node:fs"
 import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 import { createGenerator, type Schema } from "ts-json-schema-generator"
+import { displayPattern, idPattern } from "../src/docs/brands.ts"
 import { loadCorpus } from "../src/docs/corpus.ts"
 import {
   fmtJson,
@@ -13,7 +14,6 @@ import {
 import {
   type DocCategory,
   docCategories,
-  docIdField,
   subKindEnums,
 } from "../src/docs/taxonomy.ts"
 import { PKG_REPO_URL } from "../src/meta/pkg-info.ts"
@@ -123,31 +123,35 @@ function pinSubKind(record: Obj, values: readonly string[] | undefined): void {
 }
 
 /**
- * One identity definition per category: `_id`, the identity field and every
- * cross-reference (a `Documented<cat>` field such as `aliasOf`) point at it,
- * so the schema says they hold the same kind of value — `_id`'s slug schema,
- * or the identity field's enum where the category is a closed union.
+ * One identity definition per category: `id` and every cross-reference (a
+ * `Documented<cat>` field such as `aliasOf`) point at it, so the schema says
+ * they hold the same kind of value — the shell-safe slug pattern, or the
+ * enum where the category is a closed union (`precmd_modifier`,
+ * `process_subst`). `display` gets its pattern pinned in place.
  */
 function hoistId(defs: Defs, cat: DocCategory, record: Obj): void {
   const idName = recordsSchemaDefs.id(cat)
-  const field = docIdField[cat]
-  let slug: Obj | undefined
   let identity: Obj | undefined
   for (const branch of branches(record)) {
-    const props = propsOf(branch, field)
-    slug ??= propsOf(branch, "_id")._id as Obj
-    identity ??= props[field] as Obj
-    props._id = { $ref: refTo(idName) }
-    props[field] = { $ref: refTo(idName) }
+    const props = propsOf(branch, "id")
+    identity ??= props.id as Obj
+    props.id = { $ref: refTo(idName) }
+    const display = propsOf(branch, "display").display as Obj
+    display.pattern = displayPattern.source
   }
-  if (!slug || !identity) throw new Error(`${cat}: record has no branch`)
+  if (!identity) throw new Error(`${cat}: record has no branch`)
+  // The generator names the `Documented<cat>` instantiation (a def that
+  // would leak): a bare string for a phantom brand, its enum's `$ref` for a
+  // literal union. The brand's own description is `Documented`'s, not the
+  // field's.
   const brand = `Documented<"${cat}">`
-  const { description: slugDesc, ...slugSchema } = slug
+  const { description: _, ...brandDef } = defOf(defs, refTo(brand)).def
+  const literal = "$ref" in brandDef
   addDef(defs, idName, {
-    ...(brand in defs ? slugSchema : identity),
-    description: `\`${cat}\` record identity — the record's \`_id\`, and what a field referring to one holds. ${String(slugDesc)}`,
+    ...(literal ? brandDef : { type: "string", pattern: idPattern.source }),
+    description: `\`${cat}\` record identity — the record's \`id\`, and what a field referring to one holds. ${String(identity.description)}`,
   })
-  if (brand in defs) redirectDef(defs, brand, idName)
+  redirectDef(defs, brand, idName)
 }
 
 // Every `$ref` resolves, and no TS generic leaked as a def name — a new brand

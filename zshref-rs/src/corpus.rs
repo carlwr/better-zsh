@@ -34,7 +34,7 @@ fn file_bytes(name: &str) -> Option<&'static [u8]> {
 }
 
 /// The `index.json` shape this crate reads: `JsonIndex.version` in zsh-core.
-const INDEX_VERSION: u32 = 2;
+const INDEX_VERSION: u32 = 3;
 
 /// Parsed `index.json`. Lazy-decoded once; taxonomy statics project from it.
 pub static INDEX: LazyLock<Index> = LazyLock::new(|| decode_index(INDEX_JSON));
@@ -190,9 +190,10 @@ pub struct Category {
 #[serde(transparent)]
 pub struct Record(Map<String, Value>);
 
-// MIRROR-OF: packages/zsh-core/src/docs/json-projection.ts
-// (`_id` / `_display` / `_title` / `_subKind` / `_mdBody`: the projection's
-// generated field names, all `_`-prefixed)
+// MIRROR-OF: packages/zsh-core/src/docs/types.ts (`DocRecordBase`: every
+// record's `id` / `display`)
+// MIRROR-OF: packages/zsh-core/src/docs/json-projection.ts (`_title` /
+// `_subKind` / `_mdBody`: the projection's generated fields, `_`-prefixed)
 impl Record {
     /// `""` when absent or not a string.
     pub fn str(&self, key: &str) -> &str {
@@ -200,11 +201,11 @@ impl Record {
     }
 
     pub fn id(&self) -> &str {
-        self.str("_id")
+        self.str("id")
     }
 
     pub fn display(&self) -> &str {
-        self.str("_display")
+        self.str("display")
     }
 
     pub fn title(&self) -> &str {
@@ -301,11 +302,11 @@ mod tests {
         for cat in &corpus.categories {
             for rec in &cat.records {
                 if !rec.id().is_ascii() {
-                    violations.push(format!("category {}: _id {:?}", cat.name, rec.id()));
+                    violations.push(format!("category {}: id {:?}", cat.name, rec.id()));
                 }
                 if !rec.display().is_ascii() {
                     violations.push(format!(
-                        "category {}: _display {:?}",
+                        "category {}: display {:?}",
                         cat.name,
                         rec.display()
                     ));
@@ -314,15 +315,15 @@ mod tests {
         }
         assert!(
             violations.is_empty(),
-            "non-ASCII _id/_display in corpus — src/fuzzy.rs assumes ASCII:\n  {}",
+            "non-ASCII id/display in corpus — src/fuzzy.rs assumes ASCII:\n  {}",
             violations.join("\n  ")
         );
     }
 
     #[test]
-    fn record_id_and_md_body_keys_populated_for_every_category() {
-        // Were zsh-core to rename `_id` or `_mdBody`, the accessors would read
-        // "" everywhere.
+    fn record_identity_and_md_body_keys_populated_for_every_category() {
+        // Were zsh-core to rename `id`, `display` or `_mdBody`, the accessors
+        // would read "" everywhere.
         let corpus = load_corpus().expect("load_corpus");
         for cat in &corpus.categories {
             let first = cat
@@ -331,7 +332,12 @@ mod tests {
                 .unwrap_or_else(|| panic!("category {} has no records", cat.name));
             assert!(
                 !first.id().is_empty(),
-                "baked `_id` field is absent or empty for category {}",
+                "`id` field is absent or empty for category {}",
+                cat.name
+            );
+            assert!(
+                !first.display().is_empty(),
+                "`display` field is absent or empty for category {}",
                 cat.name
             );
             assert!(

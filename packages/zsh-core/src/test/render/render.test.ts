@@ -8,6 +8,7 @@ import {
   writeRefDump,
 } from "../../../scripts/ref-dump"
 import {
+  identity,
   mkDocumented,
   mkOptFlag,
   mkRedirOp,
@@ -20,7 +21,6 @@ import type { DocCategory, DocRecordMap } from "../../docs/taxonomy"
 import {
   docCategories,
   docCategoryLabels,
-  idOf,
   subKindOf,
 } from "../../docs/taxonomy"
 import type {
@@ -84,8 +84,7 @@ import { withTmpDirAsync } from "../tmp-dir"
 // subKinds aside, unused by renderers.
 
 const cd: ZshOption = {
-  name: mkDocumented("option", "AUTO_CD"),
-  display: "AUTO_CD",
+  ...identity("option", "AUTO_CD", "AUTO_CD"),
   flags: [{ char: mkOptFlag("J"), on: "-", emulations: ["csh", "zsh"] }],
   defaultIn: ["csh", "ksh", "sh", "zsh"],
   section: "Changing Directories",
@@ -93,8 +92,7 @@ const cd: ZshOption = {
 }
 // An option whose name is also a category-label word (`ZLE widget`).
 const zleOpt: ZshOption = {
-  name: mkDocumented("option", "ZLE"),
-  display: "ZLE",
+  ...identity("option", "ZLE", "ZLE"),
   flags: [],
   defaultIn: ["zsh"],
   section: "Zle",
@@ -108,7 +106,7 @@ const cond = <A extends CondOpDoc["arity"]>(
   desc: string,
 ): CondOpDoc =>
   ({
-    op: mkDocumented("conditional_op", op),
+    ...identity("conditional_op", op),
     operands,
     desc,
     arity,
@@ -118,30 +116,33 @@ const cu = cond("unary", "-a", ["file"], "d:u")
 const cb = cond("binary", "-nt", ["left", "right"], "d:b")
 
 const bi: BuiltinDoc = {
-  name: mkDocumented("builtin", "echo"),
+  ...identity("builtin", "echo"),
   synopsis: ["echo [ -n ] [ arg ... ]"],
   desc: "d:bi",
 }
 const pc: PrecmdDoc = {
-  name: "noglob",
+  id: "noglob",
+  display: "noglob",
   synopsis: ["noglob command arg ..."],
   desc: "d:pc",
 }
 const rd: RedirDoc = {
+  ...identity("redirection", ">>_word", ">> word"),
   groupOp: mkRedirOp(">>"),
-  slug: mkDocumented("redirection", ">>_word"),
   sig: ">> word",
   desc: "d:r",
   section: "",
 }
 const sub: ProcessSubstDoc = {
-  op: "<(...)",
+  id: "<(...)",
+  display: "<(...)",
   sig: "<(list)",
   desc: "d:ps",
   section: "",
 }
 const px: ParamExpnDoc = {
-  sig: mkDocumented("param_expn", "${name:-word}"),
+  ...identity("param_expn", "${name:-word}"),
+  sig: "${name:-word}",
   groupSigs: ["${name-word}", "${name:-word}"],
   orderInGroup: 1,
   subKind: "default",
@@ -150,14 +151,14 @@ const px: ParamExpnDoc = {
   section: "Parameter Expansion",
 }
 const word: ReservedWordDoc = {
-  name: mkDocumented("reserved_word", "if"),
+  ...identity("reserved_word", "if"),
   sig: "if list then list fi",
   desc: "d:rw",
   section: "",
   pos: "command",
 }
 const cc: ComplexCommandDoc = {
-  name: mkDocumented("complex_command", "if"),
+  ...identity("complex_command", "if"),
   sig: "if list then list fi",
   desc: "d:cc",
   section: "Complex Commands",
@@ -165,19 +166,19 @@ const cc: ComplexCommandDoc = {
   bodyKeywords: ["then", "fi"],
 }
 const sec: ShellParamDoc = {
-  name: mkDocumented("special_param", "SECONDS"),
+  ...identity("special_param", "SECONDS"),
   desc: "d:p",
   scope: "shell-set",
 }
-// Flag/key/op-shaped fixtures: TS can't propagate K↔idField through a computed key.
+// Sig-shaped fixtures; `extra` carries the category's own fields, so the
+// result is only claimed to be `K`-shaped.
 const stub = <K extends DocCategory>(
   cat: K,
-  idField: "flag" | "key" | "op",
   value: string,
   extra: object = {},
 ): DocRecordMap[K] =>
   ({
-    [idField]: mkDocumented(cat, value),
+    ...identity(cat, value),
     args: [],
     sig: value,
     desc: "",
@@ -185,34 +186,31 @@ const stub = <K extends DocCategory>(
     ...extra,
   }) as unknown as DocRecordMap[K]
 
-const sf = stub("subscript_flag", "flag", "w", {
-  desc: "d:sf",
-  args: ["string"],
-})
-const pf = stub("param_expn_flag", "flag", "U", { desc: "d:pf" })
-const hi = stub("history_expn", "key", "!!", {
+const sf = stub("subscript_flag", "w", { desc: "d:sf", args: ["string"] })
+const pf = stub("param_expn_flag", "U", { desc: "d:pf" })
+const hi = stub("history_expn", "!!", {
   kind: "event-designator",
   desc: "d:hi",
 })
-const go = stub("glob_op", "op", "*", { kind: "standard", desc: "d:go" })
-const gf = stub("glob_flag", "flag", "i", { desc: "d:gf", args: ["expr"] })
-const gq = stub("glob_qualifier", "flag", "@", { desc: "d:gq", args: [] })
+const go = stub("glob_op", "*", { kind: "standard", desc: "d:go" })
+const gf = stub("glob_flag", "i", { desc: "d:gf", args: ["expr"] })
+const gq = stub("glob_qualifier", "@", { desc: "d:gq", args: [] })
 
 const pe: PromptEscapeDoc = {
-  key: mkDocumented("prompt_escape", "%n"),
+  ...identity("prompt_escape", "%n"),
   sig: "%n",
   desc: "d:pe",
   section: "Login information",
 }
 const zw: ZleWidgetDoc = {
-  name: mkDocumented("zle_widget", "backward-kill-word"),
+  ...identity("zle_widget", "backward-kill-word"),
   desc: "d:zw",
   section: "Modifying Text",
   kind: "standard",
   defaultBindings: [{ keymap: "emacs", keys: ["^W", "ESC-^H", "ESC-^?"] }],
 }
 const km: KeymapDoc = {
-  name: mkDocumented("keymap", "emacs"),
+  ...identity("keymap", "emacs"),
   sig: "emacs",
   desc: "d:km",
   section: "Keymaps",
@@ -220,21 +218,21 @@ const km: KeymapDoc = {
   linkedFrom: ["main"],
 }
 const js: JobSpecDoc = {
-  key: mkDocumented("job_spec", "%%"),
+  ...identity("job_spec", "%%"),
   sig: "%%",
   desc: "d:js",
   section: "Jobs",
   kind: "current",
 }
 const ao: ArithOpDoc = {
-  op: mkDocumented("arith_op", "+"),
+  ...identity("arith_op", "+"),
   sig: "+",
   desc: "d:ao",
   section: "Arithmetic Evaluation",
   arity: "overloaded",
 }
 const sfn: SpecialFunctionDoc = {
-  name: mkDocumented("special_function", "chpwd"),
+  ...identity("special_function", "chpwd"),
   sig: "chpwd",
   desc: "d:sfn",
   section: "Hook Functions",
@@ -242,13 +240,13 @@ const sfn: SpecialFunctionDoc = {
   hookArray: "chpwd_functions",
 }
 const cuu: CompUtilityDoc = {
-  name: mkDocumented("comp_utility", "_all_labels"),
+  ...identity("comp_utility", "_all_labels"),
   synopsis: ["_all_labels [ -x ] [ -12VJ ] tag name descr [ command arg ... ]"],
   desc: "d:cuu",
   section: "Utility Functions",
 }
 const mf: MathfuncDoc = {
-  name: mkDocumented("mathfunc", "sin"),
+  ...identity("mathfunc", "sin"),
   synopsis: ["sin(x)"],
   desc: "d:mf",
   module: "zsh/mathfunc",
@@ -289,7 +287,7 @@ function mkTestCorpus(overrides: Partial<DocArrays> = {}): DocCorpus {
   const all = { ...baseArrays, ...overrides }
   const out: Record<string, unknown> = {}
   for (const k of docCategories) {
-    out[k] = new Map(all[k].map(d => [idOf(k, d), d]))
+    out[k] = new Map(all[k].map(d => [d.id, d]))
   }
   return out as unknown as DocCorpus
 }
@@ -482,7 +480,7 @@ describe("render markdown", () => {
 
   test("desc-less reserved word — empty body; title alone when titled", () => {
     const bare: ReservedWordDoc = {
-      name: mkDocumented("reserved_word", "for"),
+      ...identity("reserved_word", "for"),
       sig: "for",
       section: "Reserved Words",
       pos: "command",
@@ -496,9 +494,8 @@ describe("render markdown", () => {
   test("typed extras end the body", () => {
     const alias: ZshOption = {
       ...cd,
-      name: mkDocumented("option", "CDABLE_VARS"),
-      display: "CDABLE_VARS",
-      aliasOf: { target: cd.name, negated: false },
+      ...identity("option", "CDABLE_VARS", "CDABLE_VARS"),
+      aliasOf: { target: cd.id, negated: false },
     }
     const opt = renderRecord(cdCorpus, "option", alias)
     expect(opt).toContain("_Alias of:_ **`AUTO_CD`**")
@@ -616,7 +613,8 @@ describe("render markdown", () => {
   test("recordTitle — param_expn solo sig drops form-index decoration", () => {
     const solo: ParamExpnDoc = {
       ...px,
-      sig: mkDocumented("param_expn", "${name}"),
+      ...identity("param_expn", "${name}"),
+      sig: "${name}",
       groupSigs: ["${name}"],
       orderInGroup: 0,
     }
@@ -730,7 +728,7 @@ describe("render markdown", () => {
     // exercise the fenced-bullet path end to end.
     const doc: ShellParamDoc = {
       ...sec,
-      name: mkDocumented("special_param", "PSEUDO"),
+      ...identity("special_param", "PSEUDO"),
       desc: "intro",
       keys: [
         {

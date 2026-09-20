@@ -4,7 +4,7 @@ import fc from "fast-check"
 import { describe, expect, test } from "vitest"
 import { SemanticTokensProvider } from "../../editor/semantic-tokens"
 import { tokenModifiers, tokenTypes } from "../../manifest/semantic-tokens"
-import { by, docId, emptyCorpus, lineDoc } from "../test-util"
+import { by, emptyCorpus, ident, lineDoc } from "../test-util"
 import type { RawToken } from "../vscode-stub"
 
 const KEYWORD = tokenTypes.indexOf("keyword")
@@ -17,20 +17,20 @@ function provider(
   reservedWords: readonly string[],
 ) {
   const b = (name: string): BuiltinDoc => ({
-    name: docId("builtin", name),
+    ...ident("builtin", name),
     synopsis: [name],
     desc: "",
   })
   const rw = (name: string): ReservedWordDoc => ({
-    name: docId("reserved_word", name),
+    ...ident("reserved_word", name),
     pos: "command",
     sig: name,
     section: "",
   })
   const corpus: DocCorpus = {
     ...emptyCorpus(),
-    builtin: by("name", builtins.map(b)),
-    reserved_word: by("name", reservedWords.map(rw)),
+    builtin: by(builtins.map(b)),
+    reserved_word: by(reservedWords.map(rw)),
   }
   return new SemanticTokensProvider(corpus)
 }

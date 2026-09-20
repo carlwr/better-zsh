@@ -65,7 +65,7 @@ Knows nothing about doc records or markdown rendering.
 
 Doc records → human-readable markdown. Depends on A; orthogonal to B.
 
-Bodies carry record content only; title (`recordTitle`) and category line (`categoryFooter`) are envelope data (`DocRecordId`, the JSON identity fields) that consumers compose — a hover, showing nothing else, appends both.
+Bodies carry record content only; title (`recordTitle`) and category line (`categoryFooter`) are envelope data (`DocRecordId`; in the JSON, the record's `id` and its file's category) that consumers compose — a hover, showing nothing else, appends both.
 
 ### Inter-domain wiring
 
@@ -185,15 +185,15 @@ Any "one entry per `DocCategory`" table lives in zsh-core behind a structural co
 
 ### Identity per record, display separately
 
-Category-specific identity fields behind the `docIdField` table and parametric `idOf`: `PRINCIPLES.md` §"Category types". `docDisplay` is the public display function — divergence from id and consumer guidance: its JSDoc in `zsh-core/taxonomy`.
+Every record carries `id` and `display` as fields (`DocRecordBase<K>`; `PRINCIPLES.md` §"Category types"), not behind accessors. Where `display` diverges from `id`: its JSDoc in `zsh-core/types`; the default is the id, the divergent extractors pass the manual's form explicitly (`identity` in `brands.ts`).
 
-Ids are **shell-safe slugs** — printable ASCII, no whitespace, non-empty. The surface `sig`/`_display` fields keep the human-readable form (with spaces, placeholders). Invariants enforced by `packages/zsh-core/src/test/corpus-ascii.test.ts`.
+Ids are **shell-safe slugs**; `display` and `sig` keep the human-readable form (spaces, placeholders). Patterns: `brands.ts`, pinned in the released schema; enforced by `packages/zsh-core/src/test/corpus-ascii.test.ts`.
 
 ### Redirection: shell-safe slug identity, sig surface
 
-- Identity is `slug`, derived from `sig` by replacing whitespace with `_` (`>_word`, `<<[-]_word`). `sig` keeps the upstream form (`> word`).
+- `id` is `sig` with whitespace replaced by `_` (`>_word`, `<<[-]_word`); `sig` keeps the upstream form (`> word`).
 - `groupOp` is the shared lookup bucket: the longest `groupOp` prefixing the token wins (zsh lexes the longest operator — `>&` never falls back to `>`), then the resolver disambiguates by tail — corpus-aware, not plain map lookup.
-- Both forms round-trip through `docs`: direct on `slug`, close-variant resolver on `sig`.
+- Both forms round-trip through `docs`: direct on `id`, close-variant resolver on `sig`.
 - `OptFlag` and `RedirOp` are secondary-index brands, not `Documented<K>` identities.
 
 ### History expansion: grammar components, not independent tokens

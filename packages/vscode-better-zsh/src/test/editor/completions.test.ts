@@ -5,53 +5,53 @@ import { optSections } from "@carlwr/zsh-core/types"
 import { describe, expect, test } from "vitest"
 import * as vscode from "vscode"
 import { CompletionProvider } from "../../editor/completions"
-import { by, docId, emptyCorpus, pos, wordDoc } from "../test-util"
+import { by, docId, emptyCorpus, ident, pos, wordDoc } from "../test-util"
 
 const corpus: DocCorpus = {
   ...emptyCorpus(),
-  builtin: by("name", [
+  builtin: by([
     {
-      name: docId("builtin", "echo"),
+      ...ident("builtin", "echo"),
       synopsis: nonEmpty("echo"),
       desc: "",
     },
   ]),
-  reserved_word: by("name", [
+  reserved_word: by([
     {
-      name: docId("reserved_word", "if"),
+      ...ident("reserved_word", "if"),
       sig: "if list then list fi",
       desc: "",
       section: "Complex Commands",
       pos: "command" as const,
     },
   ]),
-  precmd_modifier: by("name", [
+  precmd_modifier: by([
     {
-      name: "noglob" as const,
+      id: "noglob" as const,
+      display: "noglob",
       synopsis: nonEmpty("noglob command arg ..."),
       desc: "",
     },
   ]),
-  special_param: by("name", [
+  special_param: by([
     {
-      name: docId("special_param", "SECONDS"),
+      ...ident("special_param", "SECONDS"),
       desc: "",
       scope: "shell-set" as const,
     },
   ]),
-  option: by("name", [
+  option: by([
     {
-      name: docId("option", "autocd"),
-      display: "AUTO_CD",
+      ...ident("option", "autocd", "AUTO_CD"),
       flags: [],
       defaultIn: ["zsh" as const],
       section: optSections[0],
       desc: "cd by directory name",
     },
   ]),
-  conditional_op: by("op", [
+  conditional_op: by([
     {
-      op: docId("conditional_op", "=="),
+      ...ident("conditional_op", "=="),
       arity: "binary" as const,
       operands: ["s1", "s2"] as const,
       desc: "string equality",

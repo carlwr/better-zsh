@@ -4,7 +4,7 @@
  * `extractTopLevelItemRegions`. `zsystem flock` / `zsystem supports` are
  * separate items sharing head name `zsystem`; `mergeBuiltinsByName` folds them.
  */
-import { mkDocumented } from "../../../brands.ts"
+import { identity } from "../../../brands.ts"
 import type { BuiltinDoc, MathfuncDoc, ShellParamDoc } from "../../../types.ts"
 import { extractFirstItemList } from "../../core/doc.ts"
 import type { YNodeSeq, YodlSrc } from "../../core/nodes.ts"
@@ -48,7 +48,7 @@ function parseSystemMathfuncs(region: YNodeSeq): readonly MathfuncDoc[] {
     if (!sig.startsWith("systell")) continue
     return [
       {
-        name: mkDocumented("mathfunc", "systell"),
+        ...identity("mathfunc", "systell"),
         synopsis: ["systell(fd)"],
         desc: item.body ? normalizeBody(item.body) : "",
         module: "zsh/system",

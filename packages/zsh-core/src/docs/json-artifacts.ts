@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto"
 import type { DocCorpus } from "./corpus.ts"
-import { assertAsciiIdentity, projectRecords } from "./json-projection.ts"
+import { assertShellSafeIdentity, projectRecords } from "./json-projection.ts"
 import { type DocCategory, docCategories } from "./taxonomy.ts"
 
 /** A category's record file — named after the category, one spelling for id, file and schema entry. */
@@ -25,7 +25,7 @@ export const recordsSchemaFile = "records.schema.json"
 /**
  * The records bundle's per-category `$defs` entries: `file` describes the
  * category's record file (an array of its records), `record` one record, `id`
- * a record's identity — what its `_id` holds, and what a field referring to a
+ * a record's identity — what its `id` holds, and what a field referring to a
  * record of that category holds.
  */
 export const recordsSchemaDefs = {
@@ -69,8 +69,8 @@ export function fmtJson(data: unknown): string {
 
 /**
  * The record files of `corpus`' JSON build, text by data file — what the
- * build writes and `dataHash` covers. Refuses a corpus whose projected
- * identity fields are not ASCII (`assertAsciiIdentity`).
+ * build writes and `dataHash` covers. Refuses a corpus whose identity
+ * fields are not shell-safe ASCII (`assertShellSafeIdentity`).
  */
 export function jsonRecordTexts(
   corpus: DocCorpus,
@@ -78,7 +78,7 @@ export function jsonRecordTexts(
   return new Map<JsonDataFile, string>(
     docCategories.map(cat => {
       const projected = projectRecords(corpus, cat)
-      assertAsciiIdentity(cat, projected)
+      assertShellSafeIdentity(cat, projected)
       return [jsonDataFile(cat), fmtJson(projected)] as const
     }),
   )

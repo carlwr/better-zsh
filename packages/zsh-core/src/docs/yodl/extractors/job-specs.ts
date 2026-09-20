@@ -1,4 +1,4 @@
-import { mkDocumented } from "../../brands.ts"
+import { identity } from "../../brands.ts"
 import type { JobSpecDoc, JobSpecKind } from "../../types.ts"
 import { extractFirstSitemList, extractSectBody } from "../core/doc.ts"
 import type { YodlSrc } from "../core/nodes.ts"
@@ -27,7 +27,7 @@ export function parseJobSpecs(yo: YodlSrc): readonly JobSpecDoc[] {
       if (!entry || !item.body) return []
       return [
         {
-          key: mkDocumented("job_spec", entry.key),
+          ...identity("job_spec", entry.key),
           sig: normalizeHeader(item.header),
           desc: normalizeBody(item.body),
           section: SECTION,

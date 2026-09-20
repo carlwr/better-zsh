@@ -1,4 +1,4 @@
-import { mkDocumented } from "../../brands.ts"
+import { identity } from "../../brands.ts"
 import type { ModuleName } from "../../taxonomy.ts"
 import type { CondOpDoc } from "../../types.ts"
 import { extractItems, flattenAliasedEntries } from "../core/doc.ts"
@@ -43,17 +43,17 @@ export function buildCondOpDoc(
   desc: string,
   module?: ModuleName,
 ): CondOpDoc {
-  const op = mkDocumented("conditional_op", parsed.op)
+  const id = identity("conditional_op", parsed.op)
   return parsed.arity === "unary"
     ? {
-        op,
+        ...id,
         operands: parsed.operands,
         desc,
         arity: "unary",
         ...(module && { module }),
       }
     : {
-        op,
+        ...id,
         operands: parsed.operands,
         desc,
         arity: "binary",

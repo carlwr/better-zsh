@@ -3,18 +3,14 @@
 
 import type { DocCorpus } from "@carlwr/zsh-core"
 import { resolve, resolveAll } from "@carlwr/zsh-core/resolver"
-import {
-  type DocCategory,
-  type DocRecordMap,
-  idOf,
-} from "@carlwr/zsh-core/taxonomy"
+import type { DocCategory, DocRecordMap } from "@carlwr/zsh-core/taxonomy"
 import type { RecordId, ResolverHit } from "../core/types"
 
 /** A corpus record's identity as the NLP carries it: the brand peeled. */
 export const identityOf = <K extends DocCategory>(
   cat: K,
   rec: DocRecordMap[K],
-): RecordId => ({ category: cat, id: idOf(cat, rec) as string })
+): RecordId => ({ category: cat, id: rec.id as string })
 
 /**
  * zsh-core's verdict on `query`: scoped to `category` if given, else the

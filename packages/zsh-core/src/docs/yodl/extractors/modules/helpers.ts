@@ -4,7 +4,7 @@ import {
   mapNonEmpty,
   type NonEmpty,
 } from "@carlwr/typescript-extra"
-import { mkDocumented } from "../../../brands.ts"
+import { identity } from "../../../brands.ts"
 import type { ModuleName } from "../../../taxonomy.ts"
 import type {
   BuiltinDoc,
@@ -75,7 +75,7 @@ export function parseModuleBuiltins(
 
     for (const { name, sigs } of namedGroups) {
       out.push({
-        name: mkDocumented("builtin", name),
+        ...identity("builtin", name),
         synopsis: [...sigs, ...synopsisTail],
         desc,
         module: moduleName,
@@ -134,12 +134,12 @@ export function mergeBuiltinsByName(
 ): readonly BuiltinDoc[] {
   const byName = new Map<Documented<"builtin">, BuiltinDoc>()
   for (const d of docs) {
-    const prev = byName.get(d.name)
+    const prev = byName.get(d.id)
     if (!prev) {
-      byName.set(d.name, d)
+      byName.set(d.id, d)
       continue
     }
-    byName.set(d.name, {
+    byName.set(d.id, {
       ...prev,
       synopsis: [...prev.synopsis, ...d.synopsis],
       desc: [prev.desc, d.desc].filter(Boolean).join("\n\n"),
@@ -186,7 +186,7 @@ export function parseModuleParamsFromList(
     const split = splitParamBody(item.body)
     for (const name of [...names, ...pending]) {
       out.push({
-        name: mkDocumented("special_param", name),
+        ...identity("special_param", name),
         desc: split.desc,
         scope,
         module: moduleName,

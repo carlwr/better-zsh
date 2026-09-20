@@ -9,7 +9,7 @@
  * `min`, `max`, `sum` are excluded (autoloadable, not in this module).
  */
 import type { NonEmpty } from "@carlwr/typescript-extra"
-import { mkDocumented } from "../../../brands.ts"
+import { identity } from "../../../brands.ts"
 import type { MathfuncDoc } from "../../../types.ts"
 import type { YNodeSeq, YodlSrc } from "../../core/nodes.ts"
 
@@ -45,7 +45,7 @@ function rec(
   desc: string,
 ): MathfuncDoc {
   return {
-    name: mkDocumented("mathfunc", name),
+    ...identity("mathfunc", name),
     synopsis,
     desc,
     module: MODULE,

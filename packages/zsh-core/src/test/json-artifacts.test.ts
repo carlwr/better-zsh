@@ -43,9 +43,9 @@ describe("generated JSON is a release asset, not a registry payload", () => {
     }
   })
 
-  test("index.json: v2 shape, one record file per category", () => {
+  test("index.json: v3 shape, one record file per category", () => {
     const index = readJson("artifacts/json/index.json") as unknown as JsonIndex
-    expect(index.version).toBe(2)
+    expect(index.version).toBe(3)
     expect(index.files).toEqual(jsonDataFiles)
     expect(index.docCategories).toEqual(docCategories)
     for (const cat of docCategories) {

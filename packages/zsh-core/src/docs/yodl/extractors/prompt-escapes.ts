@@ -1,6 +1,6 @@
 import { type NonEmpty, nonEmpty } from "@carlwr/typescript-extra"
 
-import { mkDocumented } from "../../brands.ts"
+import { identity } from "../../brands.ts"
 import { type PromptEscapeDoc, promptSubsections } from "../../types.ts"
 import {
   collectAliasedEntries,
@@ -41,7 +41,7 @@ export function parsePromptEscapes(yo: YodlSrc): readonly PromptEscapeDoc[] {
     for (const head of [aliased.head, ...aliased.aliases]) {
       for (const key of head.keys) {
         out.push({
-          key: mkDocumented("prompt_escape", key),
+          ...identity("prompt_escape", key),
           sig: head.sig,
           desc,
           section,

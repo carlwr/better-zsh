@@ -39,6 +39,8 @@ export interface Identity {
   subKind?: string
 }
 
+const headerFields: ReadonlySet<string> = new Set(["id", "display"])
+
 /** All records in index order: `docCategories` order, corpus map order within. */
 export function corpusTexts(
   corpus: DocCorpus,
@@ -60,8 +62,8 @@ export function recordText(
   const ident: Identity = {
     category: cat,
     label: docCategoryLabels[cat],
-    id: strField(rec, "_id"),
-    display: strField(rec, "_display"),
+    id: strField(rec, "id"),
+    display: strField(rec, "display"),
     ...(subKind !== "" ? { subKind } : {}),
   }
   // `_mdBody` is title-less; the body view embeds the whole rendered record.
@@ -81,8 +83,9 @@ export function recordText(
 }
 
 /**
- * Header lines, then every record field in emission order; the generated
- * (`_`-prefixed) fields and `desc` skipped.
+ * Header lines, then every record field in emission order; the identity
+ * fields (already in the header), the generated (`_`-prefixed) fields and
+ * `desc` skipped.
  */
 export function structuredText(ident: Identity, rec: JsonRecord): string {
   const lines = [
@@ -93,7 +96,7 @@ export function structuredText(ident: Identity, rec: JsonRecord): string {
     ...(ident.subKind !== undefined ? [`subKind: ${ident.subKind}`] : []),
   ]
   for (const [key, value] of Object.entries(rec)) {
-    if (key.startsWith("_") || key === "desc") continue
+    if (headerFields.has(key) || key.startsWith("_") || key === "desc") continue
     const s = compactValue(value)
     if (s !== undefined) lines.push(`${keyWords(key)}: ${s}`)
   }

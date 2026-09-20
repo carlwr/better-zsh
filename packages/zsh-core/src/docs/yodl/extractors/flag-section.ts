@@ -1,5 +1,12 @@
 import { isNonEmpty, type NonEmpty, nonEmpty } from "@carlwr/typescript-extra"
-import type { FlagEntry, FlagGroup } from "../../types.ts"
+import { identity } from "../../brands.ts"
+import type { DocCategory } from "../../taxonomy.ts"
+import type {
+  DocRecordBase,
+  FlagEntry,
+  FlagGroup,
+  SyntaxDocBase,
+} from "../../types.ts"
 import {
   collectAliasedEntries,
   extractItems,
@@ -67,26 +74,22 @@ export function splitFlagBody(body: YNodeSeq): SigDescBody {
   return outro ? { desc, flagGroups, outro } : { desc, flagGroups }
 }
 
-export function parseFlagSection<T>(
+export function parseFlagSection<K extends DocCategory>(
   yo: YodlSrc,
   section: string,
-  mkFlag: (raw: string) => T,
-): readonly {
-  readonly flag: T
-  readonly args: readonly string[]
-  readonly sig: string
-  readonly desc: string
-  readonly section: string
-}[] {
+  cat: K,
+): readonly (DocRecordBase<K> &
+  SyntaxDocBase & { readonly args: readonly string[] })[] {
   return withBody(extractItems(extractSectionBody(yo, section), 1)).map(
     item => {
       const sig = normalizeHeader(item.header)
       // Flag sigs from expn.yo can carry colon-delimited operand markers, e.g.
       // `(C:expression:)`: the first segment is the flag name and the middle
       // segments are operand names; the trailing empty segment is dropped.
+      // The id is the flag name; the display keeps the markers.
       const parts = sig.split(":")
       return {
-        flag: mkFlag(parts[0] ?? sig),
+        ...identity(cat, parts[0] ?? sig, sig),
         args: parts.slice(1, -1).filter(Boolean),
         sig,
         desc: normalizeBody(item.body),

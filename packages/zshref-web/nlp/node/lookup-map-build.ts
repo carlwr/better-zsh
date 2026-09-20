@@ -8,7 +8,6 @@ import {
   type DocCategory,
   type DocRecordMap,
   docCategories,
-  docDisplay,
 } from "@carlwr/zsh-core/taxonomy"
 import type { LookupEntry, LookupMap } from "../core/lookup-map"
 import { byteOrder } from "../core/text"
@@ -42,7 +41,7 @@ const idOnly: SurfaceFormsFn = id => [{ form: id, kind: "id" }]
 //
 // The option resolver strips `_` and case and handles `NO_`/`no_` negation,
 // so each option form canonicalizes to the same id. `toLowerCase()` is
-// ASCII lowercasing here: `_display` is printable ASCII.
+// ASCII lowercasing here: `display` is printable ASCII.
 const surfaceForms: { readonly [K in DocCategory]: SurfaceFormsFn } = {
   option: (id, display) => [
     { form: id, kind: "id" },
@@ -81,10 +80,9 @@ export function surfaceFormsFor<K extends DocCategory>(
   cat: K,
   rec: DocRecordMap[K],
 ): readonly SurfaceForm[] {
-  return surfaceForms[cat](
-    identityOf(cat, rec).id,
-    docDisplay(cat, rec),
-  ).filter(s => s.form !== "")
+  return surfaceForms[cat](identityOf(cat, rec).id, rec.display).filter(
+    s => s.form !== "",
+  )
 }
 
 const compareEntries = (a: LookupEntry, b: LookupEntry): number =>

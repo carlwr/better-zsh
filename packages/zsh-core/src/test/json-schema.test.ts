@@ -10,7 +10,7 @@ import {
   resolverFixture,
   schemaFile,
 } from "../docs/json-artifacts"
-import { type DocCategory, docCategories, docIdField } from "../docs/taxonomy"
+import { type DocCategory, docCategories } from "../docs/taxonomy"
 
 // The emitted artifacts against the emitted schemas, under pack-release's
 // ajv options: data/schema drift fails here, not only at packing time.
@@ -38,15 +38,15 @@ describe("records bundle", () => {
     expect(validate(records(cat)), ajv.errorsText(validate.errors)).toBe(true)
   })
 
-  test.each(docCategories)("%s: _id and the identity field are ids", cat => {
+  test.each(docCategories)("%s: id is an id; display is printable", cat => {
     const [rec] = records(cat)
     const record = defValidator(recordsSchemaDefs.record(cat))
     const id = defValidator(recordsSchemaDefs.id(cat))
     expect(record(rec)).toBe(true)
-    expect(id(rec?._id)).toBe(true)
-    for (const key of ["_id", docIdField[cat]]) {
-      expect(record({ ...rec, [key]: "has space" }), key).toBe(false)
-    }
+    expect(id(rec?.id)).toBe(true)
+    expect(record({ ...rec, id: "has space" })).toBe(false)
+    expect(record({ ...rec, display: "" })).toBe(false)
+    expect(record({ ...rec, display: "tab\there" })).toBe(false)
   })
 
   test("the whole category map validates against the root", () => {
@@ -92,6 +92,8 @@ describe("records bundle", () => {
       "conditional_op",
       r => ({ ...r, arity: "ternary" }),
     ],
+    // A literal-union identity is its enum, not just any slug.
+    ["id outside precmdNames", "precmd_modifier", r => ({ ...r, id: "bogus" })],
     [
       "binary op with one operand",
       "conditional_op",

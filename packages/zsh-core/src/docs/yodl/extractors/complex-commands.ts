@@ -1,5 +1,5 @@
 import { type NonEmpty, nonEmpty } from "@carlwr/typescript-extra"
-import { mkDocumented } from "../../brands.ts"
+import { identity } from "../../brands.ts"
 import type { AlternateForm, ComplexCommandDoc } from "../../types.ts"
 import {
   collectAliasedEntries,
@@ -142,7 +142,7 @@ export function parseComplexCommands(
     const winner = [...grp.aliases, grp.head].find(x => x.head !== undefined)
     if (!winner?.head || out.has(winner.head)) continue
     out.set(winner.head, {
-      name: mkDocumented("complex_command", winner.head),
+      ...identity("complex_command", winner.head),
       sig: winner.sig,
       desc: normalizeBody(grp.entry.body),
       section: BASE_SECTION,

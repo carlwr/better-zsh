@@ -44,6 +44,6 @@ describe("ResolvedHit types", () => {
     expectTypeOf(viaK("builtin", "echo")).toEqualTypeOf<
       BuiltinDoc | undefined
     >()
-    expect(viaK("builtin", "echo")?.name).toBe("echo")
+    expect(viaK("builtin", "echo")?.id).toBe("echo")
   })
 })

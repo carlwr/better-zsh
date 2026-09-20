@@ -1,4 +1,4 @@
-import { mkDocumented } from "../../brands.ts"
+import { identity } from "../../brands.ts"
 import type { GlobFlagDoc } from "../../types.ts"
 import {
   extractFirstItemList,
@@ -30,7 +30,7 @@ export function parseGlobFlags(yo: YodlSrc): readonly GlobFlagDoc[] {
       return tt.map(
         flag =>
           ({
-            flag: mkDocumented("glob_flag", flag),
+            ...identity("glob_flag", flag),
             args: [],
             sig: flag,
             desc,
@@ -42,7 +42,7 @@ export function parseGlobFlags(yo: YodlSrc): readonly GlobFlagDoc[] {
     const [flag = sig] = tt
     return [
       {
-        flag: mkDocumented("glob_flag", flag),
+        ...identity("glob_flag", flag),
         args: vars,
         sig,
         desc,

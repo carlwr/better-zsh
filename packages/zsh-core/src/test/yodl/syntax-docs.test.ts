@@ -41,7 +41,7 @@ describe("more yodl parsers", () => {
       "item(tt(RPS1) <S>)(Prompt docs.)",
       "enditem()",
     ].join("\n")
-    const docs = by(parseShellParams(yo), doc => doc.name)
+    const docs = by(parseShellParams(yo), doc => doc.id)
     const get = (raw: string) => docs.get(sp(raw))
     expect(get("path")?.tied).toBe(sp("PATH"))
     expect(get("PATH")?.tied).toBe(sp("path"))
@@ -77,7 +77,7 @@ enditem()`
   )
 
   describe("reserved words command-position and any-position forms", () => {
-    const docs = by(parseReswords(GRAMMAR_YO), doc => doc.name)
+    const docs = by(parseReswords(GRAMMAR_YO), doc => doc.id)
     test.each([
       ["if", "command"],
       ["[[", "command"],
@@ -98,7 +98,7 @@ enditem()`
       "enditem()",
     ].join("\n")
     const docs = parsePromptEscapes(yo)
-    expect(docs.map(d => d.key).sort()).toEqual(["%!", "%h"])
+    expect(docs.map(d => d.id).sort()).toEqual(["%!", "%h"])
     expect(docs.every(d => d.desc === "Current history event number.")).toBe(
       true,
     )
@@ -124,7 +124,7 @@ enditem()`
       ")",
     )
     const doc = only(parseZleWidgets(yo))
-    expect(doc.name).toBe(zw("backward-char"))
+    expect(doc.id).toBe(zw("backward-char"))
     expect(doc.kind).toBe("standard")
     expect(doc.section).toBe("Movement")
     expect(doc.defaultBindings).toEqual([{ keymap: "emacs", keys: ["^B"] }])
@@ -186,7 +186,7 @@ enditem()`
   })
 
   test("process substitution exports the three canonical forms", () => {
-    expect(parseProcessSubsts(EXPN_YO).map(doc => doc.op)).toEqual([
+    expect(parseProcessSubsts(EXPN_YO).map(doc => doc.id)).toEqual([
       "<(...)",
       ">(...)",
       "=(...)",
@@ -215,7 +215,7 @@ enditem()`
         expectDocCorpus({
           docs: parseReswords(GRAMMAR_YO),
           minCount: 20,
-          keyOf: doc => doc.name,
+          keyOf: doc => doc.id,
           descOf: doc => doc.desc,
           sectionOf: doc => doc.section,
           known: ["do", "done", "foreach", "typeset", "!", "if", "for", "[["],
@@ -239,7 +239,7 @@ enditem()`
         expectDocCorpus({
           docs: parseShellParams(PARAMS_YO),
           minCount: 80,
-          keyOf: doc => doc.name,
+          keyOf: doc => doc.id,
           descOf: doc => doc.desc,
           sectionOf: doc => doc.scope,
           known: [
@@ -276,7 +276,7 @@ enditem()`
         expectDocCorpus({
           docs: parseHistory(EXPN_YO),
           minCount: 30,
-          keyOf: doc => `${doc.kind}:${doc.key}`,
+          keyOf: doc => `${doc.kind}:${doc.id}`,
           descOf: doc => doc.desc,
           sectionOf: doc => doc.section,
           known: [
@@ -295,7 +295,7 @@ enditem()`
         expectDocCorpus({
           docs: parseGlobOps(EXPN_YO),
           minCount: 12,
-          keyOf: doc => doc.op,
+          keyOf: doc => doc.id,
           descOf: doc => doc.desc,
           sectionOf: doc => doc.section,
           known: ["*", "[...]", "@(...)", "x|y", "x##"],
@@ -319,7 +319,7 @@ enditem()`
         expectDocCorpus({
           docs: parseGlobQualifiers(EXPN_YO),
           minCount: 30,
-          keyOf: doc => doc.flag,
+          keyOf: doc => doc.id,
           descOf: doc => doc.desc,
           sectionOf: doc => doc.section,
           known: ["/", ".", "@", "=", "*", "%", "%b", "r", "w", "x"],
@@ -331,7 +331,7 @@ enditem()`
         expectDocCorpus({
           docs: parseComplexCommands(GRAMMAR_YO),
           minCount: 10,
-          keyOf: doc => doc.name,
+          keyOf: doc => doc.id,
           descOf: doc => doc.desc,
           sectionOf: doc => doc.section,
           known: ["if", "for", "for-arith", "while", "case", "[["],
@@ -343,7 +343,7 @@ enditem()`
         expectDocCorpus({
           docs: parsePromptEscapes(PROMPT_YO),
           minCount: 40,
-          keyOf: doc => doc.key,
+          keyOf: doc => doc.id,
           descOf: doc => doc.desc,
           sectionOf: doc => doc.section,
           known: ["%n", "%~", "%D{string}", "%F", "%{...%}"],
@@ -355,7 +355,7 @@ enditem()`
         expectDocCorpus({
           docs: parseZleWidgets(ZLE_YO),
           minCount: 180,
-          keyOf: doc => doc.name,
+          keyOf: doc => doc.id,
           descOf: doc => doc.desc,
           known: [
             "backward-kill-word",

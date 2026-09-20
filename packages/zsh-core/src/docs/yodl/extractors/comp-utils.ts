@@ -4,7 +4,7 @@ import {
   type NonEmpty,
   nonEmpty,
 } from "@carlwr/typescript-extra"
-import { mkDocumented } from "../../brands.ts"
+import { identity } from "../../brands.ts"
 import type { CompUtilityDoc } from "../../types.ts"
 import { extractSectionBody } from "../core/doc.ts"
 import {
@@ -54,7 +54,7 @@ export function parseCompUtils(yo: YodlSrc): readonly CompUtilityDoc[] {
       const synopsis = nonEmpty(rewriteSharedSig(first, n, names), ...rest)
       return [
         {
-          name: mkDocumented("comp_utility", n),
+          ...identity("comp_utility", n),
           synopsis,
           desc: split.desc,
           section: SECTION,
