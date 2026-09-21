@@ -43,7 +43,8 @@ export type Documented<K extends DocCategory> = string & {
  * Not here, but by convention: a category with a sub-facet — an operator's
  * arity, a widget's manual section, a parameter's scope — declares it as
  * `subKind` with a closed literal union; a category without one declares
- * no `subKind`. Generic readers: `categoryOf`, `subKindOf`.
+ * no `subKind`. Both are read as fields; under a generic `K`, `"subKind" in
+ * rec` narrows.
  */
 export interface DocRecordBase<K extends DocCategory> {
   /** The record's category — the `DocCorpus` map it sits in; in the JSON, its file. One constant per record definition. */
@@ -60,9 +61,6 @@ export interface DocRecordBase<K extends DocCategory> {
 }
 
 // --- Closed literal unions --------------------------------------------------
-
-export type UnaryCondOperands = readonly [string]
-export type BinaryCondOperands = readonly [string, string]
 
 export const emulations = ["csh", "ksh", "sh", "zsh"] as const
 export type Emulation = (typeof emulations)[number]
@@ -126,7 +124,7 @@ export interface ZshOption extends DocRecordBase<"option"> {
 
 /** Parsed unary `[[ ... ]]` conditional operator docs. */
 export interface UnaryCondOpDoc extends DocRecordBase<"conditional_op"> {
-  readonly operands: UnaryCondOperands
+  readonly operands: readonly [string]
   readonly desc: string
   readonly subKind: "unary"
   readonly module?: ModuleName
@@ -134,7 +132,7 @@ export interface UnaryCondOpDoc extends DocRecordBase<"conditional_op"> {
 
 /** Parsed binary `[[ ... ]]` conditional operator docs. */
 export interface BinaryCondOpDoc extends DocRecordBase<"conditional_op"> {
-  readonly operands: BinaryCondOperands
+  readonly operands: readonly [string, string]
   readonly desc: string
   readonly subKind: "binary"
   readonly module?: ModuleName

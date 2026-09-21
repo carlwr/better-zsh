@@ -7,22 +7,19 @@ import {
   type DocRecordMap,
   docCategories,
   isDocCategory,
-  parseDocCategory,
 } from "../docs/taxonomy"
 import type { BuiltinDoc, ComplexCommandDoc, ZshOption } from "../docs/types"
 
 const corpus = loadCorpus()
 
-describe("parseDocCategory / isDocCategory", () => {
+describe("isDocCategory", () => {
   test("accepts every docCategories entry", () => {
     for (const cat of docCategories) {
-      expect(parseDocCategory(cat)).toBe(cat)
       expect(isDocCategory(cat)).toBe(true)
     }
   })
 
   test.each(["nope", "", "Option"])("rejects %j", raw => {
-    expect(parseDocCategory(raw)).toBeUndefined()
     expect(isDocCategory(raw)).toBe(false)
   })
 })

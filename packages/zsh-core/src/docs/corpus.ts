@@ -157,18 +157,14 @@ function loadMathfuncs(gn: GetNodes): readonly MathfuncDoc[] {
   ]
 }
 
-/** Per-category map from `Documented<K>` identity to the K-shaped record. */
-export type DocMap<K extends DocCategory> = ReadonlyMap<
-  Documented<K>,
-  DocRecordMap[K]
->
-
-/** In-memory corpus of parsed zsh documentation, keyed by category then identity. */
-export type DocCorpus = { readonly [K in DocCategory]: DocMap<K> }
+/** In-memory corpus: per category, a map from identity to record. */
+export type DocCorpus = {
+  readonly [K in DocCategory]: ReadonlyMap<Documented<K>, DocRecordMap[K]>
+}
 
 function buildCategoryMap<K extends DocCategory>(
   docs: readonly DocRecordMap[K][],
-): DocMap<K> {
+): ReadonlyMap<Documented<K>, DocRecordMap[K]> {
   return new Map(docs.map(d => [genericId(d), d]))
 }
 

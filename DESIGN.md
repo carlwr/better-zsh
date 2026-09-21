@@ -295,7 +295,7 @@ The manual's header groups (`(^B ESC-[D) (unbound) (unbound)`) are per-keymap de
 
 ### `subKind` is structural per category
 
-A category's record type declares `subKind` with a closed literal union, or none (`DocRecordBase` JSDoc in `zsh-core`); `subKindOf` reads it generically. Presence and vocabulary follow from the type: the released schema requires the field with the union's enum, or forbids it, per category — no corpus scan, no post-processing. Same call as for `id` (PRINCIPLES.md §"The structural identity invariant"); the dropped shape: a per-category name behind an accessor table plus a generated JSON copy.
+A category's record type declares `subKind` with a closed literal union, or none (`DocRecordBase` JSDoc in `zsh-core`); like `category`, it is read as a field — under a generic `K`, a `"subKind" in rec` check narrows. Presence and vocabulary follow from the type: the released schema requires the field with the union's enum, or forbids it, per category — no corpus scan, no post-processing. Same call as for `id` (PRINCIPLES.md §"The structural identity invariant"); the dropped shape: a per-category name behind an accessor table plus a generated JSON copy.
 
 - every declared literal occurs in the corpus: `packages/zsh-core/src/test/json-schema.test.ts`
 - the tool layer branches per category (`oneOf`, no schema-level optionality): `zshref-rs/src/tools/schema.rs`

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest"
-import { isModuleName, parseModuleName } from "../../docs/taxonomy"
+import { parseModuleName } from "../../docs/taxonomy"
 import {
   parseModuleBuiltins,
   parseModuleByRegions,
@@ -23,11 +23,6 @@ describe("parseModuleName", () => {
     expect(parseModuleName("zsh/bogus")).toBeUndefined()
     expect(parseModuleName("attr")).toBeUndefined()
     expect(parseModuleName("")).toBeUndefined()
-  })
-  test("type-guard form narrows", () => {
-    const candidate = "zsh/mathfunc"
-    expect(isModuleName(candidate)).toBe(true)
-    expect(isModuleName("nope")).toBe(false)
   })
 })
 
@@ -128,7 +123,7 @@ enditem()`
     const doc = only(parseModuleParams(yo, "zsh/watch"))
     expect(doc.id).toBe(sp("WATCHFMT"))
     expect(doc.keys).toBeDefined()
-    const sigs = doc.keys?.map(k => k.name as string)
+    const sigs = doc.keys?.map(k => k.name)
     expect(sigs).toEqual(["%F{color} (%f)", "%S (%s)"])
   })
 
@@ -150,7 +145,7 @@ enditem()
 enditem()`
     const doc = only(parseModuleParams(yo, "zsh/parameter"))
     expect(doc.desc).toContain("Intro")
-    expect(doc.keys?.map(k => k.name as string)).toEqual(["alpha", "beta"])
+    expect(doc.keys?.map(k => k.name)).toEqual(["alpha", "beta"])
   })
 })
 

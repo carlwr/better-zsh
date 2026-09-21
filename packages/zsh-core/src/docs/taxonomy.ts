@@ -61,15 +61,10 @@ export type DocCategory = (typeof docCategories)[number]
 const docCategorySet: ReadonlySet<string> = new Set(docCategories)
 
 /**
- * Validate a raw string against `docCategories`. Returns the value narrowed
- * to `DocCategory` when known, `undefined` otherwise. Use at trust boundaries
- * (request parameters, deserialised input) instead of an `as DocCategory`
- * cast. Case-sensitive.
+ * Validate a raw string against `docCategories` — a type guard narrowing to
+ * `DocCategory`. Use at trust boundaries (request parameters, deserialised
+ * input) instead of an `as DocCategory` cast. Case-sensitive.
  */
-export const parseDocCategory = (raw: string): DocCategory | undefined =>
-  docCategorySet.has(raw) ? (raw as DocCategory) : undefined
-
-/** Type-guard form of `parseDocCategory`. */
 export const isDocCategory = (raw: string): raw is DocCategory =>
   docCategorySet.has(raw)
 
@@ -298,7 +293,3 @@ const moduleNameSet: ReadonlySet<string> = new Set(moduleNames)
  */
 export const parseModuleName = (raw: string): ModuleName | undefined =>
   moduleNameSet.has(raw) ? (raw as ModuleName) : undefined
-
-/** Type-guard form of `parseModuleName`. */
-export const isModuleName = (raw: string): raw is ModuleName =>
-  moduleNameSet.has(raw)
