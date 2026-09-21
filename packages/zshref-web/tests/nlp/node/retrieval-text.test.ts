@@ -23,6 +23,7 @@ const noGroups: string[][] = []
 describe("recordText", () => {
   it("uses the structured fields and the body", () => {
     const rec: JsonRecord = {
+      category: "conditional_op",
       id: "-nt",
       display: "-nt",
       operands: ["file1", "file2"],
@@ -40,6 +41,7 @@ describe("recordText", () => {
 
   it("emits header lines, then fields in record order, skipping identity, desc and projections", () => {
     const rec: JsonRecord = {
+      category: "option",
       id: "autocd",
       display: "AUTO_CD",
       flags: { char: "J", on: "-" },

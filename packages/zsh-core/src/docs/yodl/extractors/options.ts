@@ -99,6 +99,7 @@ export function parseOptions(yo: YodlSrc): readonly ZshOption[] {
     const aliasOf =
       section === "Option Aliases" ? parseAliasTarget(item.body) : undefined
     return {
+      category: head.category,
       id: head.id,
       display: head.display,
       flags: mergeFlags([...head.flags, ...(tableFlags.get(head.id) ?? [])]),

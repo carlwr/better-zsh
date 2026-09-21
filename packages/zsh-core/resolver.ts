@@ -5,7 +5,6 @@
  */
 
 export {
-  type AnyResolvedHit,
   type ResolvedHit,
   type ResolverFeedback,
   type ResolverFeedbackKindSchema,

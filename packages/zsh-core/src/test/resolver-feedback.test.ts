@@ -16,7 +16,7 @@ import {
   type ResolverFeedback,
   resolve,
 } from "../docs/resolver"
-import { type DocCategory, mkRecordId } from "../docs/taxonomy"
+import type { DocCategory } from "../docs/taxonomy"
 import type { OptFlagAlias, ZshOption } from "../docs/types"
 import { emptyCorpus, membershipCorpus, mkDocumented_ } from "./id-fns"
 
@@ -37,7 +37,7 @@ const hitIn = <K extends DocCategory>(
   const key = mkDocumented(cat, id)
   const record = corpus[cat].get(key)
   if (record === undefined) throw new Error(`test corpus lacks ${cat} ${id}`)
-  return { ...mkRecordId(cat, key), record, feedback }
+  return { record, feedback }
 }
 
 const optCorpus = membershipCorpus("option", ["AUTO_CD", "NOTIFY"])

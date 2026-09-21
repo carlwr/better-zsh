@@ -38,7 +38,8 @@ export const mkDocumented = <K extends DocCategory>(
 ): Documented<K> => norm(cat, raw) as Documented<K>
 
 /**
- * A record's identity fields. `display` defaults to the id — the rule for
+ * A record's identity fields — `category`, `id`, `display`, in that order,
+ * so a spread puts them first. `display` defaults to the id — the rule for
  * every category whose manual form is shell-safe; the others pass the
  * manual's form explicitly (see `DocRecordBase.display`).
  */
@@ -48,7 +49,7 @@ export function identity<K extends DocCategory>(
   display?: string,
 ): DocRecordBase<K> {
   const id = mkDocumented(cat, raw)
-  return { id, display: display ?? id }
+  return { category: cat, id, display: display ?? id }
 }
 
 // MIRRORED-IN: zshref-rs/src/tools/schema.rs

@@ -9,7 +9,7 @@ import type { DocCorpus } from "../docs/corpus.ts"
 import { flipOptFlagSign } from "../docs/normalize-option.ts"
 import { resolve } from "../docs/resolver.ts"
 import type { DocCategory, DocRecordMap } from "../docs/taxonomy.ts"
-import { docCategoryLabels, subKindOf } from "../docs/taxonomy.ts"
+import { categoryOf, docCategoryLabels, subKindOf } from "../docs/taxonomy.ts"
 import type {
   AlternateForm,
   ArithOpDoc,
@@ -272,11 +272,8 @@ const titleOverrides: {
 }
 
 /** Title line for a doc record: the category's override, else its backticked `display`. */
-function recordTitle<K extends DocCategory>(
-  cat: K,
-  doc: DocRecordMap[K],
-): string {
-  const override = titleOverrides[cat] as
+function recordTitle<K extends DocCategory>(doc: DocRecordMap[K]): string {
+  const override = titleOverrides[categoryOf(doc)] as
     | ((doc: DocRecordMap[K]) => string)
     | undefined
   return override ? override(doc) : bt(doc.display)
@@ -518,13 +515,14 @@ const headBuilders: {
 /**
  * Per-category {@link DocHead} for a doc record, or `undefined` when the
  * category emits no head (or this particular record suppresses it). Prefer
- * over indexing `headBuilders` directly when `cat` is a generic `K`.
+ * over indexing `headBuilders` directly under a generic `K`.
  */
 function headFor<K extends DocCategory>(
-  cat: K,
   doc: DocRecordMap[K],
 ): DocHead | undefined {
-  return (headBuilders[cat] as (d: DocRecordMap[K]) => DocHead | undefined)(doc)
+  return (
+    headBuilders[categoryOf(doc)] as (d: DocRecordMap[K]) => DocHead | undefined
+  )(doc)
 }
 
 // --- per-category renderers ------------------------------------------------
@@ -746,18 +744,17 @@ const mdRenderer: {
 /**
  * The record's category as a markdown paragraph: `_Category:_ <label>`, plus
  * ` (<subKind>)` for categories that have one — label and subKind from the
- * taxonomy. Not part of {@link renderRecord}: the category is envelope data
- * (`DocRecordId`; the record file's category in the JSON), so bodies never
- * encode it. A consumer that shows a body without its envelope — an editor
- * hover — appends this line itself. Plain markdown; append it after any
- * option-ref bolding (a label word can be an option name: `ZLE`).
+ * taxonomy. Not part of {@link renderRecord}: the record's `category` field
+ * is the structured form, so bodies never encode it. A consumer that shows
+ * a body and nothing structured beside it — an editor hover — appends this
+ * line itself. Plain markdown; append it after any option-ref bolding (a
+ * label word can be an option name: `ZLE`).
  */
 export function categoryFooter<K extends DocCategory>(
-  cat: K,
   doc: DocRecordMap[K],
 ): string {
   const sub = subKindOf(doc)
-  const label = docCategoryLabels[cat]
+  const label = docCategoryLabels[categoryOf(doc)]
   return `_Category:_ ${sub === undefined ? label : `${label} (${sub})`}`
 }
 
@@ -769,17 +766,16 @@ export function categoryFooter<K extends DocCategory>(
  */
 export function renderRecord<K extends DocCategory>(
   corpus: DocCorpus,
-  cat: K,
   doc: DocRecordMap[K],
 ): RenderedRecord {
-  const render = mdRenderer[cat] as (
+  const render = mdRenderer[categoryOf(doc)] as (
     d: DocRecordMap[K],
     corpus: DocCorpus,
   ) => string
-  const head = headFor(cat, doc)
+  const head = headFor(doc)
   const body = docBlock(...headBlock(head), render(doc, corpus))
   return {
-    title: recordTitle(cat, doc),
+    title: recordTitle(doc),
     mdBody: fmtOptRefsInMd(body, corpus),
     ...(head && { head }),
   }

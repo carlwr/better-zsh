@@ -13,14 +13,14 @@ import type { DocRecordBase } from "./types.ts"
  * Project the records of `cat` as JSON consumers see them: each augmented
  * with its `RenderedRecord` fields. Generated fields are `_`-prefixed
  * (`_mdBody` included): a namespace apart from the records' own field
- * names (`id`, `display`, `subKind`).
+ * names (`category`, `id`, `display`, `subKind`).
  */
 export function projectRecords<K extends DocCategory>(
   corpus: DocCorpus,
   cat: K,
 ): readonly WithMarkdown<DocRecordMap[K]>[] {
   return [...corpus[cat].values()].map(rec => {
-    const { title, mdBody } = renderRecord(corpus, cat, rec)
+    const { title, mdBody } = renderRecord(corpus, rec)
     return { ...rec, _mdBody: mdBody, _title: title }
   })
 }
@@ -32,14 +32,14 @@ export function projectRecords<K extends DocCategory>(
  * Rust side.
  */
 export function assertShellSafeIdentity(
-  cat: DocCategory,
   records: readonly DocRecordBase<DocCategory>[],
 ): void {
   const violations: string[] = []
-  for (const { id, display } of records) {
-    if (!idPattern.test(id)) violations.push(`${cat}: id ${JSON.stringify(id)}`)
+  for (const { category, id, display } of records) {
+    if (!idPattern.test(id))
+      violations.push(`${category}: id ${JSON.stringify(id)}`)
     if (!displayPattern.test(display))
-      violations.push(`${cat}: display ${JSON.stringify(display)}`)
+      violations.push(`${category}: display ${JSON.stringify(display)}`)
   }
   if (!isEmpty(violations)) {
     throw new Error(

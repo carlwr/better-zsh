@@ -1,6 +1,6 @@
 import type { DocCategory } from "./taxonomy.ts"
 
-const historyPreamble = `History expansions compose three parts: \`<event>[:<word>][:<modifier>…]\`. Each record below belongs to exactly one of those three roles, indicated by its \`kind\` field (\`event-designator\`, \`word-designator\`, \`modifier\`).
+const historyPreamble = `History expansions compose three parts: \`<event>[:<word>][:<modifier>…]\`. Each record below belongs to exactly one of those three roles, indicated by its \`subKind\` field (\`event-designator\`, \`word-designator\`, \`modifier\`).
 
 Many corpus keys are templates, not literals: \`n\` stands for any non-negative integer, \`str\` for a word, and \`[ digits ]\` after a letter is an optional digit run. For example \`!n\` matches user-code tokens like \`!42\`, and \`h [ digits ]\` matches \`:h\` or \`:h3\`. Literal-key entries (\`!!\`, \`!#\`, \`!{...}\`) are also present.
 

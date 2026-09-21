@@ -34,14 +34,20 @@ export type Documented<K extends DocCategory> = string & {
 }
 
 /**
- * What every record carries: its corpus identity and its surface form.
+ * What every record carries: its category, its corpus identity and its
+ * surface form — the structural identity invariant (PRINCIPLES.md). A
+ * record is its own identity unit wherever it goes: off its corpus map, on
+ * a resolver hit, in the JSON. `DocRecordMap[DocCategory]` discriminates on
+ * `category`.
  *
  * Not here, but by convention: a category with a sub-facet — an operator's
  * arity, a widget's manual section, a parameter's scope — declares it as
  * `subKind` with a closed literal union; a category without one declares
- * no `subKind`. Generic readers: `subKindOf`.
+ * no `subKind`. Generic readers: `categoryOf`, `subKindOf`.
  */
 export interface DocRecordBase<K extends DocCategory> {
+  /** The record's category — the `DocCorpus` map it sits in; in the JSON, its file. One constant per record definition. */
+  readonly category: K
   /** The record's corpus key: a shell-safe slug — printable ASCII without whitespace, non-empty. */
   readonly id: Documented<K>
   /**

@@ -12,7 +12,7 @@ import type { DocCategory, DocRecordMap } from "./taxonomy.ts"
 export type WithMarkdown<T> = T & {
   /**
    * The record's body as markdown; the title is `_title`, and the category
-   * is the envelope's (the file's), not the body's.
+   * is the record's `category`, not the body's.
    * Empty for a record without prose.
    */
   readonly _mdBody: string

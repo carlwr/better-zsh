@@ -32,7 +32,7 @@ export class CompletionProvider implements vscode.CompletionItemProvider {
     wordCategories.flatMap(([cat, kind]) =>
       [...this.corpus[cat].values()]
         .filter(doc => WORD_EXACT.test(doc.id))
-        .map(doc => mkCompletionItem(this.corpus, cat, doc, kind)),
+        .map(doc => mkCompletionItem(this.corpus, doc, kind)),
     ),
   )
   private generalLabels = cached(
@@ -47,7 +47,7 @@ export class CompletionProvider implements vscode.CompletionItemProvider {
       new Map(
         [...this.corpus.option.values()].map(doc => [
           doc.id,
-          recordMarkdown(this.corpus, "option", doc),
+          recordMarkdown(this.corpus, doc),
         ]),
       ),
   )
@@ -58,7 +58,7 @@ export class CompletionProvider implements vscode.CompletionItemProvider {
       const item = new vscode.CompletionItem(cop.id, Kind.Keyword)
       item.detail = cop.desc
       item.documentation = new vscode.MarkdownString(
-        renderRecord(this.corpus, "conditional_op", cop).title,
+        renderRecord(this.corpus, cop).title,
       )
       return item
     }),
@@ -122,15 +122,14 @@ function wordTextAt(doc: vscode.TextDocument, pos: vscode.Position): string {
 
 function mkCompletionItem<K extends WordCategory>(
   corpus: DocCorpus,
-  cat: K,
   doc: DocRecordMap[K],
   kind: vscode.CompletionItemKind,
 ): vscode.CompletionItem {
   const item = new vscode.CompletionItem(doc.id, kind)
-  const rendered = renderRecord(corpus, cat, doc)
+  const rendered = renderRecord(corpus, doc)
   // The one-line slot: a synopsis where the record has one; the full doc
   // travels as `documentation`.
   item.detail = rendered.head?.lines[0]
-  item.documentation = renderedMarkdown(rendered, cat, doc)
+  item.documentation = renderedMarkdown(rendered, doc)
   return item
 }

@@ -191,7 +191,9 @@ pub struct Category {
 pub struct Record(Map<String, Value>);
 
 // MIRROR-OF: packages/zsh-core/src/docs/types.ts (`DocRecordBase`: every
-// record's `id` / `display`; `subKind` on the categories that declare one)
+// record's `category` / `id` / `display`; `subKind` on the categories that
+// declare one). The crate tags records by file and reads `category` only to
+// check the two agree.
 // MIRROR-OF: packages/zsh-core/src/docs/json-projection.ts (`_title` /
 // `_mdBody`: the projection's generated fields, `_`-prefixed)
 impl Record {
@@ -322,14 +324,20 @@ mod tests {
 
     #[test]
     fn record_identity_and_md_body_keys_populated_for_every_category() {
-        // Were zsh-core to rename `id`, `display`, `_mdBody` or `subKind`, the
-        // accessors would read "" everywhere.
+        // Were zsh-core to rename `category`, `id`, `display`, `_mdBody` or
+        // `subKind`, the accessors would read "" everywhere.
         let corpus = load_corpus().expect("load_corpus");
         for cat in &corpus.categories {
             let first = cat
                 .records
                 .first()
                 .unwrap_or_else(|| panic!("category {} has no records", cat.name));
+            assert_eq!(
+                first.str("category"),
+                cat.name.as_str(),
+                "`category` field disagrees with the record file for category {}",
+                cat.name
+            );
             assert!(
                 !first.id().is_empty(),
                 "`id` field is absent or empty for category {}",

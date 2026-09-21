@@ -1,15 +1,15 @@
 // The resolver's verdict on a query: the canonicalizer behind the lookup
 // map and the lookup contract.
 
-import type { DocCategory, DocCorpus, DocRecordMap } from "@carlwr/zsh-core"
+import type { DocCategory, DocCorpus, DocRecord } from "@carlwr/zsh-core"
 import { resolve, resolveAll } from "@carlwr/zsh-core/resolver"
 import type { RecordId, ResolverHit } from "../core/types"
 
 /** A corpus record's identity as the NLP carries it: the brand peeled. */
-export const identityOf = <K extends DocCategory>(
-  cat: K,
-  rec: DocRecordMap[K],
-): RecordId => ({ category: cat, id: rec.id as string })
+export const identityOf = (rec: DocRecord): RecordId => ({
+  category: rec.category,
+  id: rec.id as string,
+})
 
 /**
  * zsh-core's verdict on `query`: scoped to `category` if given, else the
@@ -24,5 +24,5 @@ export function resolverKey(
     category === undefined
       ? resolveAll(corpus, query)[0]
       : resolve(corpus, category, query)
-  return hit ? { category: hit.category, id: hit.id as string } : null
+  return hit ? identityOf(hit.record) : null
 }

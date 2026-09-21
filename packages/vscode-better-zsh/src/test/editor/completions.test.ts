@@ -100,8 +100,8 @@ describe("CompletionProvider", () => {
     // editor appends (`record-markdown.ts`).
     const doc = corpus.option.get(docId("option", "autocd"))
     if (doc === undefined) throw new Error("fixture: autocd")
-    const { title, mdBody } = renderRecord(corpus, "option", doc)
-    const md = `${title}\n\n${mdBody}\n\n${categoryFooter("option", doc)}`
+    const { title, mdBody } = renderRecord(corpus, doc)
+    const md = `${title}\n\n${mdBody}\n\n${categoryFooter(doc)}`
     expect(items.map(i => [i.label, i.filterText, i.documentation])).toEqual([
       ["no_autocd", "no_au", new vscode.MarkdownString(md)],
     ])

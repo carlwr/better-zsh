@@ -66,10 +66,10 @@ const corpus = loadCorpus()
 // parsed from the installed layout.
 for (const cat of Object.keys(corpus)) corpus[cat]
 const hit = resolve(corpus, "option", "AUTO_CD")
-if (!hit || hit.category !== "option" || hit.id !== "autocd") {
+if (!hit || hit.record.category !== "option" || hit.record.id !== "autocd") {
   throw new Error("resolve('option','AUTO_CD') failed: " + JSON.stringify(hit))
 }
-const { title, mdBody } = renderRecord(corpus, hit.category, hit.record)
+const { title, mdBody } = renderRecord(corpus, hit.record)
 if (title !== "\`AUTO_CD\`" || typeof mdBody !== "string" || mdBody.length === 0) {
   throw new Error("renderRecord returned unexpected title or body")
 }

@@ -148,7 +148,7 @@ Not a separate type or interface — both roles use the same `DocCategory` machi
 
 ### Each category is almost its own type
 
-`DocRecordMap[K]` is a custom shape per category: beyond the shared identity (`id`, `display`), field names read as domain vocabulary (`operands`, `groupOp`, `args`). Per-category record shapes: JSDoc in `zsh-core`.
+`DocRecordMap[K]` is a custom shape per category: beyond the shared identity (`category`, `id`, `display`), field names read as domain vocabulary (`operands`, `groupOp`, `args`). Per-category record shapes: JSDoc in `zsh-core`.
 
 ### Shared structural patterns are a plus when genuine
 
@@ -162,7 +162,11 @@ Follow when the domain calls for it; deviate when it doesn't.
 
 ### The structural identity invariant
 
-Every record extends `DocRecordBase<K>` (`id: Documented<K>`, the corpus key, and `display`), asserted at compile time in `taxonomy.ts`. The dropped alternative — per-category identity fields (`name`, `op`, `slug`, ...) behind an accessor table — read as domain vocabulary but cost each generic reader a dispatch and the JSON a duplicated generated id; once the JSON carried a uniform id anyway, the field won. The per-category sub-facet follows the same rule: `subKind` on the record, a closed union per category (DESIGN.md §"`subKind` is structural per category").
+Every record extends `DocRecordBase<K>` — `category: K` and `id: Documented<K>` (the corpus map and key it sits under) and `display` — asserted at compile time in `taxonomy.ts`. Each field won over its alternative for one reason: a record that leaves its map is its own identity unit, and the JSON carries the field uniformly anyway.
+
+- _`id`_ — not chosen: per-category identity fields (`name`, `op`, `slug`, ...) behind an accessor table; domain vocabulary, at the price of a dispatch per generic reader and a duplicated generated id in the JSON.
+- _`category`_ — was context first (the `DocCorpus` key, the JSON file), re-attached by `resolve` on the hit and by every reader on load. On the record, the hit is record plus feedback and the schema's per-category definitions are disjoint. Not chosen: category as context (table-per-type; a `(cat, doc)` pair on every generic signature), and a JSON-only `_category` (a fact the runtime lacks — the asymmetry `id` and `subKind` had just shed).
+- _`subKind`_ — the per-category sub-facet follows the same rule: on the record, a closed union per category (DESIGN.md §"`subKind` is structural per category").
 
 ### Structural info beats markdown
 

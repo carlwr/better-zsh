@@ -83,7 +83,7 @@ export function buildMechanical(corpus: DocCorpus): SentenceEntry[] {
     .map(e => mechanicalEntry(e.query, e.record))
   const questions = docCategories.flatMap(cat =>
     [...corpus[cat].values()].flatMap(rec => {
-      const record = identityOf(cat, rec)
+      const record = identityOf(rec)
       if (record.id === "") return []
       return nlQuestions(cat, rec.display).map(q => mechanicalEntry(q, record))
     }),

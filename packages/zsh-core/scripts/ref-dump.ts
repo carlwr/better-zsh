@@ -8,6 +8,7 @@ import { join } from "node:path"
 import { docCategoryPreamble } from "../src/docs/category-preamble.ts"
 import type { DocCorpus } from "../src/docs/corpus.ts"
 import {
+  categoryOf,
   type DocCategory,
   type DocRecordMap,
   docCategories,
@@ -28,22 +29,21 @@ interface RefDocK<K extends DocCategory> {
 export type RefDoc = { [K in DocCategory]: RefDocK<K> }[DocCategory]
 
 function mkRefDocs<K extends DocCategory>(
-  kind: K,
   docs: readonly DocRecordMap[K][],
   corpus: DocCorpus,
 ): RefDocK<K>[] {
   return docs.map(doc => ({
-    kind,
+    kind: categoryOf(doc),
     id: genericId(doc),
     heading: doc.display,
-    md: renderRecord(corpus, kind, doc).mdBody,
+    md: renderRecord(corpus, doc).mdBody,
   }))
 }
 
 /** All records rendered, in corpus order — the dump never re-sorts. */
 export function refDocs(corpus: DocCorpus): readonly RefDoc[] {
   return docCategories.flatMap(
-    kind => mkRefDocs(kind, [...corpus[kind].values()], corpus) as RefDoc[],
+    kind => mkRefDocs([...corpus[kind].values()], corpus) as RefDoc[],
   )
 }
 

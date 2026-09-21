@@ -40,26 +40,17 @@ import type { DocCorpus } from "./corpus.ts"
 import {
   classifyOrder,
   type DocCategory,
-  type DocRecordIdOf,
   type DocRecordMap,
   docCategories,
-  genericId,
-  mkRecordId,
 } from "./taxonomy.ts"
 import type { Documented, RedirDoc } from "./types.ts"
 
 // --- Resolvers --------------------------------------------------------------
 
-/** A resolver's verdict: the corpus record, plus feedback when normalization was lossy. */
-type Hit<K extends DocCategory> = {
-  readonly record: DocRecordMap[K]
-  readonly feedback?: ResolverFeedback
-}
-
 type Resolver<K extends DocCategory> = (
   c: DocCorpus,
   raw: string,
-) => Hit<K> | undefined
+) => ResolvedHit<K> | undefined
 
 /**
  * The hit for `id` when `corpus[cat]` has it — membership check and record
@@ -71,7 +62,7 @@ function hitAt<K extends DocCategory>(
   cat: K,
   id: Documented<K>,
   feedback?: ResolverFeedback,
-): Hit<K> | undefined {
+): ResolvedHit<K> | undefined {
   const record = (c[cat] as ReadonlyMap<string, DocRecordMap[K]>).get(
     id as string,
   )
@@ -93,7 +84,7 @@ function resolveByKey<K extends DocCategory>(
   cat: K,
   raw: string,
   matchKey: (t: string) => string | undefined,
-): Hit<K> | undefined {
+): ResolvedHit<K> | undefined {
   const t = raw.trim()
   if (!t) return undefined
   const key = matchKey(t)
@@ -111,7 +102,7 @@ function resolveByKey<K extends DocCategory>(
 function resolveRedir(
   c: DocCorpus,
   raw: string,
-): Hit<"redirection"> | undefined {
+): ResolvedHit<"redirection"> | undefined {
   return (
     hitAt(c, "redirection", mkDocumented("redirection", raw)) ??
     // Sig-form close-variant: doc sig (`> word`) → id (`>_word`).
@@ -179,7 +170,7 @@ function redirTailPattern(groupOp: string, tail: string): string {
 function resolveHistory(
   c: DocCorpus,
   raw: string,
-): Hit<"history_expn"> | undefined {
+): ResolvedHit<"history_expn"> | undefined {
   return resolveByKey(c, "history_expn", raw, matchHistoryKey)
 }
 
@@ -243,7 +234,7 @@ function tryFlagKey<K extends FlagCategory>(
   c: DocCorpus,
   cat: K,
   key: string,
-): Hit<K> | undefined {
+): ResolvedHit<K> | undefined {
   const direct = hitAt(c, cat, mkDocumented(cat, key))
   if (direct) return direct
   if (!COLON_ARG_FLAG_CATS.has(cat) || !key.includes(":")) return undefined
@@ -283,7 +274,7 @@ function stripParamSigil(t: string): string | undefined {
 function resolveParamSubscript(
   c: DocCorpus,
   raw: string,
-): Hit<"special_param"> | undefined {
+): ResolvedHit<"special_param"> | undefined {
   const m = raw.trim().match(SUBSCRIPTED_PARAM_RE)
   if (!m) return undefined
   return hitAt(c, "special_param", mkDocumented("special_param", m[1] ?? ""), {
@@ -303,7 +294,7 @@ function resolveParamSubscript(
 function resolveSpecialParam(
   c: DocCorpus,
   raw: string,
-): Hit<"special_param"> | undefined {
+): ResolvedHit<"special_param"> | undefined {
   const name = stripParamSigil(raw.trim())
   if (name !== undefined) {
     return (
@@ -324,7 +315,7 @@ function resolveSpecialParam(
 function resolveJobSpec(
   c: DocCorpus,
   raw: string,
-): Hit<"job_spec"> | undefined {
+): ResolvedHit<"job_spec"> | undefined {
   return resolveByKey(c, "job_spec", raw, t =>
     t.startsWith("%") ? jobSpecKey(t) : undefined,
   )
@@ -357,7 +348,7 @@ function jobSpecKey(t: string): string | undefined {
 function resolveSpecialFunction(
   c: DocCorpus,
   raw: string,
-): Hit<"special_function"> | undefined {
+): ResolvedHit<"special_function"> | undefined {
   return (
     hitAt(c, "special_function", mkDocumented("special_function", raw)) ??
     resolveByKey(c, "special_function", raw, t => matchSpecialFunctionKey(c, t))
@@ -387,7 +378,7 @@ const INPUT_NEGATED: ResolverFeedback = { kind: "input-negated" }
 function resolveOption(
   corpus: DocCorpus,
   raw: string,
-): Hit<"option"> | undefined {
+): ResolvedHit<"option"> | undefined {
   const literal = hitAt(corpus, "option", mkDocumented("option", raw))
   if (literal) return literal
   const trimmed = raw.trim()
@@ -413,7 +404,7 @@ function resolveOption(
 function resolveOptionFlag(
   corpus: DocCorpus,
   trimmed: string,
-): Hit<"option"> | undefined {
+): ResolvedHit<"option"> | undefined {
   const m = trimmed.match(OPT_FLAG_RE)
   const sign = m?.[1]
   const char = m?.[2]
@@ -457,13 +448,13 @@ const resolvers: { [K in DocCategory]: Resolver<K> } = Object.fromEntries(
 ) as { [K in DocCategory]: Resolver<K> }
 
 /**
- * What `resolve` answers: the record's identity and the record itself, plus
- * `feedback` when reaching it normalized away something meaningful (absent
- * on loss-free paths and for non-lossy categories). Assignable to
- * `DocRecordId` wherever identity alone is wanted; `record` is what the
- * renderers take, so a hit never has to be looked up again.
+ * What `resolve` answers: the corpus record — which carries its own
+ * identity, `category` and `id` — plus `feedback` when reaching it
+ * normalized away something meaningful (absent on loss-free paths and for
+ * non-lossy categories). `record` is what the renderers take, so a hit
+ * never has to be looked up again.
  */
-export type ResolvedHit<K extends DocCategory> = DocRecordIdOf<K> & {
+export type ResolvedHit<K extends DocCategory> = {
   readonly record: DocRecordMap[K]
   readonly feedback?: ResolverFeedback
 }
@@ -490,14 +481,9 @@ export function resolve<K extends DocCategory>(
   raw: string,
 ): ResolvedHit<K> | undefined {
   const key = raw.trim() as Documented<K>
-  const hit =
+  return (
     (key ? hitAt(corpus, cat, key) : undefined) ?? resolvers[cat](corpus, raw)
-  if (!hit) return undefined
-  // Corpus maps are keyed by the record's own `id`.
-  const id = mkRecordId(cat, genericId(hit.record))
-  return hit.feedback
-    ? { ...id, record: hit.record, feedback: hit.feedback }
-    : { ...id, record: hit.record }
+  )
 }
 
 // --- Category walk ----------------------------------------------------------
@@ -516,16 +502,14 @@ const walkAdmits: {
   history_expn: rec => rec.subKind === "event-designator",
 }
 
-/** A `ResolvedHit<K>` for some category `K`: `category` narrows `id` and `record` together. */
-export type AnyResolvedHit = { [K in DocCategory]: ResolvedHit<K> }[DocCategory]
-
 /**
  * Resolve a raw token in every category, `classifyOrder` first to last, and
  * keep the hits the categories admit to a walk — one per category at most,
  * so `for` yields its complex-command record before its reserved-word one.
  * Empty when nothing resolves. The first element is the tie-broken answer
  * to "what is this token?"; a scoped `resolve` is the answer for a known
- * category.
+ * category. Each hit's `record` is a `DocRecord`: `record.category`
+ * narrows it.
  *
  * The walk order and the admission rule are corpus properties, owned here
  * and pinned by the resolver fixture — consumers neither re-walk nor
@@ -534,8 +518,8 @@ export type AnyResolvedHit = { [K in DocCategory]: ResolvedHit<K> }[DocCategory]
 export function resolveAll(
   corpus: DocCorpus,
   raw: string,
-): readonly AnyResolvedHit[] {
-  const hits: AnyResolvedHit[] = []
+): readonly ResolvedHit<DocCategory>[] {
+  const hits: ResolvedHit<DocCategory>[] = []
   for (const cat of classifyOrder) {
     const hit = resolveAdmitted(corpus, cat, raw)
     if (hit) hits.push(hit)
@@ -543,24 +527,18 @@ export function resolveAll(
   return hits
 }
 
-/**
- * Scoped `resolve` under the walk's admission rule. Single cast site: under
- * a generic `K` the hit is `ResolvedHit<K>`, which TS does not correlate
- * back to the `AnyResolvedHit` union.
- */
+/** Scoped `resolve` under the walk's admission rule. */
 function resolveAdmitted<K extends DocCategory>(
   corpus: DocCorpus,
   cat: K,
   raw: string,
-): AnyResolvedHit | undefined {
+): ResolvedHit<K> | undefined {
   const hit = resolve(corpus, cat, raw)
   if (!hit) return undefined
   const admits = walkAdmits[cat] as
     | ((record: DocRecordMap[K]) => boolean)
     | undefined
-  return admits === undefined || admits(hit.record)
-    ? (hit as AnyResolvedHit)
-    : undefined
+  return admits === undefined || admits(hit.record) ? hit : undefined
 }
 
 // --- Resolver feedback ------------------------------------------------------

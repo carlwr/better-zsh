@@ -12,10 +12,10 @@ export { docCategoryPreamble } from "./src/docs/category-preamble.ts"
 export { type DocCorpus, type DocMap, loadCorpus } from "./src/docs/corpus.ts"
 export { normalizeOptName } from "./src/docs/normalize-option.ts"
 export {
+  categoryOf,
   classifyOrder,
   type DocCategory,
-  type DocRecordId,
-  type DocRecordIdOf,
+  type DocRecord,
   type DocRecordMap,
   docCategories,
   docCategoryLabels,

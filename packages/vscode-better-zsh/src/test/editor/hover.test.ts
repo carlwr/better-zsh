@@ -111,8 +111,8 @@ const realAt = hoverWith(new HoverProvider(real))
 const rendered = <K extends DocCategory>(cat: K, id: Documented<K>) => {
   const doc = real[cat].get(id)
   if (doc === undefined) throw new Error(`no ${cat} record ${String(id)}`)
-  const { title, mdBody } = renderRecord(real, cat, doc)
-  return `${title}\n\n${mdBody}\n\n${categoryFooter(cat, doc)}`
+  const { title, mdBody } = renderRecord(real, doc)
+  return `${title}\n\n${mdBody}\n\n${categoryFooter(doc)}`
 }
 
 // --- synthetic-corpus dispatch ----------------------------------------------

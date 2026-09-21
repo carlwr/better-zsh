@@ -76,7 +76,7 @@ export const ident = <K extends DocCategory>(
   display?: string,
 ) => {
   const id = docId(cat, raw)
-  return { id, display: display ?? id }
+  return { category: cat, id, display: display ?? id }
 }
 
 /** A fixture option's single-letter flag. */

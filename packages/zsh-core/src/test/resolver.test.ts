@@ -2,7 +2,7 @@ import { describe, expect, test } from "vitest"
 import { mkDocumented } from "../docs/brands"
 import { loadCorpus } from "../docs/corpus"
 import { type ResolverFeedback, resolve, resolveAll } from "../docs/resolver"
-import { type DocCategory, docCategories, mkRecordId } from "../docs/taxonomy"
+import { type DocCategory, docCategories } from "../docs/taxonomy"
 
 const corpus = loadCorpus()
 
@@ -13,7 +13,6 @@ function cases<K extends DocCategory>(cat: K) {
     hit: (raw: string, id: string, feedback?: ResolverFeedback) => {
       const key = mkDocumented(cat, id)
       expect(resolve(corpus, cat, raw)).toEqual({
-        ...mkRecordId(cat, key),
         record: corpus[cat].get(key),
         feedback,
       })
@@ -280,8 +279,8 @@ describe("resolve round-trip (corpus-wide)", () => {
     const mismatched: { id: string; got: string | undefined }[] = []
     for (const [id, rec] of map) {
       const hit = resolve(corpus, cat, id)
-      if (hit?.id !== id || hit.record !== rec)
-        mismatched.push({ id, got: hit?.id as string | undefined })
+      if (hit?.record.id !== id || hit.record !== rec)
+        mismatched.push({ id, got: hit?.record.id as string | undefined })
     }
     expect(mismatched).toEqual([])
   })
@@ -300,11 +299,11 @@ describe("resolve round-trip (corpus-wide)", () => {
         if (!rec.sig || rec.sig === id) continue
         n++
         const pid = resolve(corpus, cat, rec.sig)
-        if (pid?.id !== id)
+        if (pid?.record.id !== id)
           mismatched.push({
             sig: rec.sig,
             id,
-            got: pid?.id as string | undefined,
+            got: pid?.record.id as string | undefined,
           })
       }
       expect(n).toBeGreaterThan(0)
@@ -315,7 +314,7 @@ describe("resolve round-trip (corpus-wide)", () => {
 
 describe("resolveAll (category walk)", () => {
   const categoriesOf = (raw: string) =>
-    resolveAll(corpus, raw).map(hit => hit.category)
+    resolveAll(corpus, raw).map(hit => hit.record.category)
 
   test("walks classifyOrder: the richer record first on overlap", () => {
     expect(categoriesOf("for")).toEqual(["complex_command", "reserved_word"])
@@ -339,8 +338,10 @@ describe("resolveAll (category walk)", () => {
 
   test("hits carry their records and feedback", () => {
     const [hit] = resolveAll(corpus, "NO_AUTO_CD")
-    if (hit?.category !== "option") throw new Error("expected an option hit")
-    expect(hit.record).toBe(corpus.option.get(hit.id))
+    if (hit?.record.category !== "option") {
+      throw new Error("expected an option hit")
+    }
+    expect(hit.record).toBe(corpus.option.get(hit.record.id))
     expect(hit.feedback).toEqual({ kind: "input-negated" })
   })
 

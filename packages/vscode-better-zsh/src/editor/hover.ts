@@ -170,10 +170,7 @@ export class HoverProvider implements vscode.HoverProvider {
   ): vscode.Hover | undefined {
     const hit = resolve(this.corpus, category, raw)
     if (!hit) return
-    return new vscode.Hover(
-      recordMarkdown(this.corpus, category, hit.record),
-      range,
-    )
+    return new vscode.Hover(recordMarkdown(this.corpus, hit.record), range)
   }
 }
 

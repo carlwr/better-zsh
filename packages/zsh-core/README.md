@@ -8,7 +8,7 @@ Library-first: the VS Code extension, the web SPA, and the Rust crate (CLI + MCP
 
 ## What you get
 
-- **The data model at the root** — the corpus (`loadCorpus`, `DocCorpus`), the category ontology (`DocCategory`, `docCategories`, `DocRecordMap`) and the record types with their identity brand (`Documented<K>`).
+- **The data model at the root** — the corpus (`loadCorpus`, `DocCorpus`), the category ontology (`DocCategory`, `docCategories`, `DocRecordMap`) and the record types, each carrying its `category` and its identity brand (`Documented<K>`).
 - **Operations as subpaths** — `./resolver`, `./render`, `./analysis`, `./json`, `./assets`, `./meta`.
 - **Orthogonal primitives** — raw-to-doc resolution, markdown rendering, and static analysis stay separate.
 - **Release assets** — per-category JSON record files plus a versioned index, one JSON Schema bundle (each record file validates against its `#/$defs/<category>`), and a resolver conformance fixture for resolver mirrors; attached to the GitHub release tag for consumers outside TypeScript.
@@ -39,9 +39,9 @@ import { renderRecord } from "@carlwr/zsh-core/render"
 const corpus = loadCorpus()
 const hit = resolve(corpus, "option", "NO_AUTO_CD")
 if (hit) {
-  console.log(hit.id)                // → autocd
+  console.log(hit.record.id)         // → autocd
   console.log(hit.feedback)          // → { kind: "input-negated" }
-  const { title, mdBody } = renderRecord(corpus, hit.category, hit.record)
+  const { title, mdBody } = renderRecord(corpus, hit.record)
   console.log(`${title}\n\n${mdBody}`)
 }
 ```

@@ -80,7 +80,7 @@ export function surfaceFormsFor<K extends DocCategory>(
   cat: K,
   rec: DocRecordMap[K],
 ): readonly SurfaceForm[] {
-  return surfaceForms[cat](identityOf(cat, rec).id, rec.display).filter(
+  return surfaceForms[cat](identityOf(rec).id, rec.display).filter(
     s => s.form !== "",
   )
 }

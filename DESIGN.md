@@ -65,7 +65,7 @@ Knows nothing about doc records or markdown rendering.
 
 Doc records → human-readable markdown. Depends on A; orthogonal to B.
 
-`renderRecord` yields a `RenderedRecord`: `title` and `mdBody` — the record's own content, the same pair the JSON ships as `_title` / `_mdBody`. The category line (`categoryFooter`) is envelope data (`DocRecordId`; in the JSON, the record's file) that consumers compose — a hover, showing nothing else, appends it.
+`renderRecord` yields a `RenderedRecord`: `title` and `mdBody` — the record's own content, the same pair the JSON ships as `_title` / `_mdBody`. The category line (`categoryFooter`) is not in the body: the record's `category` field is the structured form; a consumer showing nothing structured beside the markdown — a hover — appends the line itself.
 
 ### Inter-domain wiring
 
@@ -127,7 +127,7 @@ If an operation decomposes into A→B→C, export A→B and B→C, not also A→
 
 The rendering path is `raw string → hit → markdown` (`resolve` + `renderRecord`). No combined convenience function. Reasons:
 
-- The hit is a first-class concept (type-safe corpus identity plus the record); an A→C function hides it.
+- The hit is a first-class concept (the record — its identity with it — plus feedback); an A→C function hides it.
 - Two ways to do the same thing force consumers to choose and encourage drift.
 - Each step has a crisp meaning: "is this in the corpus?" vs "render this known element."
 
@@ -203,7 +203,7 @@ Any "one entry per `DocCategory`" table lives in zsh-core behind a structural co
 
 ### Identity per record, display separately
 
-Every record carries `id` and `display` as fields (`DocRecordBase<K>`; `PRINCIPLES.md` §"Category types"), not behind accessors. Where `display` diverges from `id`: its JSDoc in `zsh-core`; the default is the id, the divergent extractors pass the manual's form explicitly (`identity` in `brands.ts`).
+Every record carries `category`, `id` and `display` as fields (`DocRecordBase<K>`; `PRINCIPLES.md` §"Category types"), not behind accessors. Where `display` diverges from `id`: its JSDoc in `zsh-core`; the default is the id, the divergent extractors pass the manual's form explicitly (`identity` in `brands.ts`).
 
 Ids are **shell-safe slugs**; `display` and `sig` keep the human-readable form (spaces, placeholders). Patterns: `brands.ts`, pinned in the released schema; enforced by `packages/zsh-core/src/test/corpus-ascii.test.ts`.
 
@@ -266,7 +266,7 @@ Per-type details and the three-way distinction — JSDoc in `zsh-core`:
   - `list`
   - syntactic checks
 - **Supplementary prose** — `desc` may appear except on `complex_command`-owned heads (which deliberately omit it). Epistemic-trap rationale + `SyntaxDocBase` non-extension: `ReservedWordDoc` JSDoc in `zsh-core`.
-- **Corpus identity** — every record is `Documented<"reserved_word">`, reachable via `DocRecordId` like other categories.
+- **Corpus identity** — every record is `Documented<"reserved_word">`, carrying `category` and `id` like other categories.
 
 Wiring:
 
@@ -369,7 +369,7 @@ The mirror is accepted because it is bounded — it changes only with categories
 
 ## `resolve`: direct ∥ resolver, direct preferred
 
-`resolve` (`zsh-core/resolver`) is the one entry: direct corpus-key lookup, then the category's resolver, one hit carrying identity, record and feedback. Its JSDoc holds the mechanism and why direct precedence is load-bearing for template-key categories (`!n` vs `!42 → !n`). **Do not** run the paths separately for the same query; **do not** re-implement the rule in consumers.
+`resolve` (`zsh-core/resolver`) is the one entry: direct corpus-key lookup, then the category's resolver, one hit carrying the record — its identity with it — and feedback. Its JSDoc holds the mechanism and why direct precedence is load-bearing for template-key categories (`!n` vs `!42 → !n`). **Do not** run the paths separately for the same query; **do not** re-implement the rule in consumers.
 
 ### Resolver input is wider than the id set
 

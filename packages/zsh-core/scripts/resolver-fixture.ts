@@ -316,7 +316,11 @@ function caseFor(
 ): ResolverFixtureCase {
   checkInput(cat, input)
   const hit = resolve(corpus, cat, input)
-  return { input, id: hit?.id ?? null, feedback: hit?.feedback ?? null }
+  return {
+    input,
+    id: hit?.record.id ?? null,
+    feedback: hit?.feedback ?? null,
+  }
 }
 
 function casesFor(corpus: DocCorpus, cat: DocCategory): ResolverFixtureCases {
@@ -331,8 +335,8 @@ function casesFor(corpus: DocCorpus, cat: DocCategory): ResolverFixtureCases {
 function walkCaseFor(corpus: DocCorpus, input: string): WalkFixtureCase {
   checkInput("walk", input)
   const hits = resolveAll(corpus, input).map(hit => ({
-    category: hit.category,
-    id: hit.id as string,
+    category: hit.record.category,
+    id: hit.record.id as string,
     feedback: hit.feedback ?? null,
   }))
   return { input, hits }

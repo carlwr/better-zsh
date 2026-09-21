@@ -74,7 +74,7 @@ export function buildLookupContract(corpus: DocCorpus): LookupContract {
   for (const cat of docCategories) {
     const label = docCategoryLabels[cat]
     for (const rec of corpus[cat].values()) {
-      const record = identityOf(cat, rec)
+      const record = identityOf(rec)
       for (const { form, kind } of surfaceFormsFor(cat, rec)) {
         const expectedSet = expectedSetFor(corpus, form)
         if (expectedSet.length === 0) continue
@@ -134,7 +134,7 @@ function expectedSetFor(corpus: DocCorpus, query: string): readonly RecordId[] {
   if (hit) found.push(hit)
   for (const cat of docCategories) {
     for (const rec of corpus[cat].values()) {
-      const identity = identityOf(cat, rec)
+      const identity = identityOf(rec)
       if (identity.id === query || rec.display === query) found.push(identity)
     }
   }

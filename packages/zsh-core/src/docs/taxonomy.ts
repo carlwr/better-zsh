@@ -191,8 +191,8 @@ export interface DocRecordMap {
   comp_utility: CompUtilityDoc
 }
 
-// Every record carries `id: Documented<K>` and `display` — the structural
-// identity invariant (PRINCIPLES.md §"Category types").
+// Every record carries `category: K`, `id: Documented<K>` and `display` —
+// the structural identity invariant (PRINCIPLES.md §"Category types").
 type _AssertRecordsExtendBase = Assert<
   Eq<
     {
@@ -205,6 +205,22 @@ type _AssertRecordsExtendBase = Assert<
 >
 
 /**
+ * Any corpus record: the union over the categories, discriminated by
+ * `category` — what the category walk hands out (`resolveAll`). For the
+ * boundary where a record's category is a runtime fact; code inside stays
+ * parametric over `K` (PRINCIPLES.md: no per-category branches downstream).
+ */
+export type DocRecord = DocRecordMap[DocCategory]
+
+/**
+ * A record's `category` under a generic `K`. TS reads
+ * `DocRecordMap[K]["category"]` as the union of every category; the assert
+ * above is what makes the narrowing sound. Single cast site.
+ */
+export const categoryOf = <K extends DocCategory>(rec: DocRecordMap[K]): K =>
+  rec.category as K
+
+/**
  * A record's `id` under a generic `K`. TS reads `DocRecordMap[K]["id"]` as
  * the union of every category's brand; the assert above is what makes the
  * narrowing sound. Single cast site.
@@ -212,45 +228,6 @@ type _AssertRecordsExtendBase = Assert<
 export const genericId = <K extends DocCategory>(
   rec: DocRecordMap[K],
 ): Documented<K> => rec.id as Documented<K>
-
-/**
- * Discriminated-union identity for a documented corpus element. `category`
- * narrows `id` to the matching Documented brand. The per-category member is
- * `DocRecordIdOf<K>`.
- *
- * An output shape: `resolve` hands one out (as `ResolvedHit`); no zsh-core
- * function takes one in. An id that crossed a process boundary travels as a
- * string and comes back through `resolve`, which answers an exact id
- * directly.
- */
-export type DocRecordId = {
-  [K in DocCategory]: { readonly category: K; readonly id: Documented<K> }
-}[DocCategory]
-
-/**
- * The `DocRecordId` member for category `K` — what `resolve`'s `ResolvedHit`
- * extends.
- *
- * Intersection form on purpose: under a generic `K`, the `Extract` half keeps
- * the value assignable to `DocRecordId` (its constraint is the union), while
- * the second half keeps `.id` typed as `Documented<K>` rather than widening
- * to the union of all brands. Either half alone loses one of the two. For a
- * concrete `K` it is structurally the plain member.
- */
-export type DocRecordIdOf<K extends DocCategory> = Extract<
-  DocRecordId,
-  { readonly category: K }
-> & { readonly id: Documented<K> }
-
-/**
- * Construct a `DocRecordId`. Centralizes the correlated-union cast TS cannot
- * propagate through a generic. Valid only when the id is genuinely a corpus
- * key (typically read off a corpus record).
- */
-export const mkRecordId = <K extends DocCategory>(
-  category: K,
-  id: Documented<K>,
-): DocRecordIdOf<K> => ({ category, id }) as DocRecordIdOf<K>
 
 /**
  * A record's typed sub-facet (`HistoryKind`, `ParamExpnSubKind`, a

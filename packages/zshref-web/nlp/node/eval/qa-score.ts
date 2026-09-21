@@ -51,7 +51,7 @@ export function hardChecks(corpus: DocCorpus): HardCheck[] {
     if (template === undefined) return []
     return [...corpus[category].values()].map(rec => ({
       category,
-      id: identityOf(category, rec).id,
+      id: identityOf(rec).id,
       query: template(rec.display),
     }))
   })

@@ -1,9 +1,8 @@
 import { describe, expect, test } from "vitest"
 import { refDocs } from "../../../scripts/ref-dump.ts"
 import { loadCorpus } from "../../docs/corpus.ts"
-import { type DocRecordId, mkRecordId } from "../../docs/taxonomy.ts"
 import { heuristics } from "./heuristics.ts"
-import { knownOffenders } from "./known-offenders.ts"
+import { knownOffenders, type OffenderId } from "./known-offenders.ts"
 
 describe("render heuristics", () => {
   const docs = refDocs(loadCorpus())
@@ -12,14 +11,14 @@ describe("render heuristics", () => {
     const actual = sortPids(
       docs
         .filter(d => h.detects(d.md).length > 0)
-        .map(d => mkRecordId(d.kind, d.id)),
+        .map(d => ({ category: d.kind, id: d.id })),
     )
     const expected = sortPids(knownOffenders[h.name] ?? [])
     expect(actual).toEqual(expected)
   })
 })
 
-const sortPids = (xs: readonly DocRecordId[]): readonly DocRecordId[] =>
+const sortPids = (xs: readonly OffenderId[]): readonly OffenderId[] =>
   [...xs].sort((a, b) =>
     a.category === b.category
       ? a.id.localeCompare(b.id)

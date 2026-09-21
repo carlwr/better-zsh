@@ -81,6 +81,25 @@ describe("records bundle", () => {
     expect(record({ ...rec, display: "tab\there" })).toBe(false)
   })
 
+  // `category` pins each record definition to its category: the defs are
+  // disjoint, so a record validates against its own and no other — a
+  // bare record classifies without its file.
+  test.each(docCategories)("%s: category pins the definition", cat => {
+    const [rec] = records(cat)
+    const record = defValidator(recordsSchemaDefs.record(cat))
+    expect(rec?.category).toBe(cat)
+    const off = { ...rec }
+    delete off.category
+    expect(record(off)).toBe(false)
+    for (const other of docCategories) {
+      if (other === cat) continue
+      expect(record({ ...rec, category: other }), other).toBe(false)
+      expect(defValidator(recordsSchemaDefs.record(other))(rec), other).toBe(
+        false,
+      )
+    }
+  })
+
   test("the whole category map validates against the root", () => {
     const validate = ajv.compile({ $ref: String(bundle.$id) })
     const all = Object.fromEntries(docCategories.map(c => [c, records(c)]))

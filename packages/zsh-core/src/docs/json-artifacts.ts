@@ -78,7 +78,7 @@ export function jsonRecordTexts(
   return new Map<JsonDataFile, string>(
     docCategories.map(cat => {
       const projected = projectRecords(corpus, cat)
-      assertShellSafeIdentity(cat, projected)
+      assertShellSafeIdentity(projected)
       return [jsonDataFile(cat), fmtJson(projected)] as const
     }),
   )

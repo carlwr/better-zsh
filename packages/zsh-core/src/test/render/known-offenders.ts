@@ -13,18 +13,22 @@
  */
 
 import { mkDocumented } from "../../docs/brands.ts"
-import {
-  type DocCategory,
-  type DocRecordId,
-  mkRecordId,
-} from "../../docs/taxonomy.ts"
+import type { DocCategory } from "../../docs/taxonomy.ts"
 import type { HeuristicName } from "./heuristics.ts"
 
-const pid = <K extends DocCategory>(cat: K, raw: string): DocRecordId =>
-  mkRecordId(cat, mkDocumented(cat, raw))
+/** An offender: a record's `category` + `id`, the pair the drift test compares on. */
+export interface OffenderId {
+  readonly category: DocCategory
+  readonly id: string
+}
+
+const pid = <K extends DocCategory>(cat: K, raw: string): OffenderId => ({
+  category: cat,
+  id: mkDocumented(cat, raw),
+})
 
 export const knownOffenders: Readonly<
-  Record<HeuristicName, readonly DocRecordId[]>
+  Record<HeuristicName, readonly OffenderId[]>
 > = {
   // --- zero-tolerance: bug-shaped detectors with empty lists ---------------
 

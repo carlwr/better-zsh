@@ -42,7 +42,12 @@ export interface Identity {
   subKind?: string
 }
 
-const headerFields: ReadonlySet<string> = new Set(["id", "display", "subKind"])
+const headerFields: ReadonlySet<string> = new Set([
+  "category",
+  "id",
+  "display",
+  "subKind",
+])
 
 /** All records in index order: `docCategories` order, corpus map order within. */
 export function corpusTexts(

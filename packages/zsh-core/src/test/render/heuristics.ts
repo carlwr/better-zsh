@@ -3,7 +3,7 @@
  * Render-quality heuristics over the rendered markdown corpus. Each entry
  * is a shape-detector returning the prose / fence-open lines that matched
  * in a given record body. A drift test pins the matched set against a
- * frozen `DocRecordId` offender list (contract: `known-offenders.ts`).
+ * frozen offender list (contract: `known-offenders.ts`).
  */
 
 import { moduleNames } from "../../docs/taxonomy.ts"
