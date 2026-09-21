@@ -68,7 +68,7 @@ indoc = "2"
 rmcp = { version = "3.3", default-features = false, features = ["server", "transport-io"], optional = true }
 tokio = { version = "1", features = ["rt", "macros"], optional = true }
 
-# `build.rs` reads `index.json.files` to generate the embed table.
+# `build.rs` reads `index.json.categories[].file` to generate the embed table.
 [build-dependencies]
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

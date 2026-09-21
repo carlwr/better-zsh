@@ -2,4 +2,4 @@
 //! One constant for `build.rs` (which fails a stale data source at compile
 //! time) and `corpus.rs` (which re-checks the embedded bytes).
 
-pub const INDEX_VERSION: u32 = 5;
+pub const INDEX_VERSION: u32 = 6;

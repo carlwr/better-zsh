@@ -16,13 +16,15 @@ import {
   fmtJson,
   hashRecordFiles,
   jsonDataFile,
-  jsonDataFiles,
   jsonRecordTexts,
   recordsSchemaFile,
   resolverFixture,
   schemaFile,
 } from "./src/docs/json-artifacts.ts"
-import type { JsonIndex } from "./src/docs/json-types.ts"
+import type {
+  JsonCategoryDescriptor,
+  JsonIndex,
+} from "./src/docs/json-types.ts"
 import {
   classifyOrder,
   docCategories,
@@ -59,6 +61,20 @@ function writeJson(path: string, data: unknown) {
   writeFileSync(path, fmtJson(data), "utf8")
 }
 
+function categoryDescriptor<K extends (typeof docCategories)[number]>(
+  id: K,
+): JsonCategoryDescriptor {
+  const preamble = docCategoryPreamble[id]
+  // TS cannot preserve the id/file correlation while constructing a mapped
+  // union; `jsonDataFile(id)` is the single source of that invariant.
+  return {
+    id,
+    file: jsonDataFile(id),
+    label: docCategoryLabels[id],
+    ...(preamble === undefined ? {} : { preamble }),
+  } as JsonCategoryDescriptor
+}
+
 function writeJsonArtifacts() {
   for (const dir of [jsonDir, fixtureDir, schemaDir]) {
     rmSync(dir, { recursive: true, force: true })
@@ -72,10 +88,6 @@ function writeJsonArtifacts() {
     writeFileSync(join(jsonDir, file), text, "utf8")
   }
 
-  const categoryFiles = Object.fromEntries(
-    docCategories.map(cat => [cat, jsonDataFile(cat)]),
-  ) as JsonIndex["categoryFiles"]
-
   // One generator instance behind every shipped schema; the index carries
   // the fixture schema's `ResolverFeedback` def, so the two never diverge.
   const gen = createSchemaGen(pkgDir)
@@ -83,18 +95,14 @@ function writeJsonArtifacts() {
 
   const dataHash = hashRecordFiles(recordTexts)
   const index: JsonIndex = {
-    version: 5,
+    version: 6,
     packageVersion: PKG_VERSION,
     zshUpstream: ZSH_UPSTREAM,
     dataHash,
-    files: [...jsonDataFiles],
-    // Canonical taxonomy lists, consumed by out-of-process consumers (the
+    // Canonical taxonomy metadata, consumed by out-of-process consumers (the
     // Rust crate) as the source of truth — no Rust-side mirror.
-    docCategories: [...docCategories],
+    categories: docCategories.map(categoryDescriptor),
     classifyOrder: [...classifyOrder],
-    categoryFiles,
-    docCategoryLabels: { ...docCategoryLabels },
-    docCategoryPreamble: { ...docCategoryPreamble },
     resolverFeedbackSchema: resolverFeedbackDef(fixtureSchema),
   }
 

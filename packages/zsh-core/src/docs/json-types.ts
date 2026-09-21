@@ -1,4 +1,3 @@
-import type { JsonDataFile } from "./json-artifacts.ts"
 import type { ResolverFeedback } from "./resolver.ts"
 import type { DocCategory, DocRecordMap } from "./taxonomy.ts"
 
@@ -32,6 +31,16 @@ export type JsonDocArrayMap = {
 /** One self-contained JSON Schema object (draft 2020-12, no `$ref`). */
 export type JsonSchemaObject = Readonly<Record<string, unknown>>
 
+/** One category row in `JsonIndex.categories`, in primary category order. */
+export type JsonCategoryDescriptor = {
+  readonly [K in DocCategory]: {
+    readonly id: K
+    readonly file: `${K}.json`
+    readonly label: string
+    readonly preamble?: string
+  }
+}[DocCategory]
+
 /**
  * `index.json`: what a consumer needs to read the record files and mirror
  * the taxonomy. `version` moves with the shape of this object, of the
@@ -40,7 +49,7 @@ export type JsonSchemaObject = Readonly<Record<string, unknown>>
  * or with a category's own fields (the records schema describes those).
  */
 export interface JsonIndex {
-  readonly version: 5
+  readonly version: 6
   readonly packageVersion: string
   readonly zshUpstream: {
     readonly tag: string
@@ -49,18 +58,10 @@ export interface JsonIndex {
   }
   /** SHA-256 over the emitted record files, `index.json` excluded — corpus-content identity, independent of `packageVersion`. */
   readonly dataHash: string
-  /** Every record file, sorted by name — the inventory: what to embed or copy, with nothing missing. */
-  readonly files: readonly JsonDataFile[]
-  /** Canonical list of `DocCategory` values, in primary ordering. */
-  readonly docCategories: readonly DocCategory[]
+  /** Category identity, record file and display metadata, in primary category order. */
+  readonly categories: readonly JsonCategoryDescriptor[]
   /** Resolver-walk order for raw-token lookup. */
   readonly classifyOrder: readonly DocCategory[]
-  /** Per-category JSON filename — the role: which file holds a category's records. Derivable from `docCategories`; carried so a reader needs no naming rule. */
-  readonly categoryFiles: { readonly [K in DocCategory]: `${K}.json` }
-  /** Human-readable per-category labels — SoT for display in out-of-process consumers. */
-  readonly docCategoryLabels: { readonly [K in DocCategory]: string }
-  /** Category-level note where records need one to be read on their own — `docCategoryPreamble` at the TS root; absent key = none. */
-  readonly docCategoryPreamble: { readonly [K in DocCategory]?: string }
   /**
    * `ResolverFeedback`'s JSON Schema, generated from the type — the fixture
    * schema's def, same object. Each `anyOf` branch is one kind, closed on

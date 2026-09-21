@@ -346,8 +346,13 @@ mod tests {
     #[test]
     fn docs_category_help_lists_every_category_label() {
         let help = field_long(TOOLS.get(ToolName::Docs), "category", Target::Json);
-        for (cat, label) in &CORPUS.index.doc_category_labels {
-            assert!(help.contains(label.as_str()), "{cat}: {label:?}");
+        for descriptor in &CORPUS.index.categories {
+            assert!(
+                help.contains(&descriptor.label),
+                "{}: {:?}",
+                descriptor.id,
+                descriptor.label
+            );
         }
     }
 

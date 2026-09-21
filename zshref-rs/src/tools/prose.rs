@@ -55,10 +55,7 @@ fn category_table(index: &Index) -> String {
     let rows: Vec<String> = CLASSIFY_ORDER
         .iter()
         .map(|c| {
-            let label = index
-                .doc_category_labels
-                .get(c.as_str())
-                .unwrap_or_else(|| panic!("index.json lacks a label for category {c}"));
+            let label = &index.category_descriptor(*c).label;
             format!("  {c:<width$}      {label}")
         })
         .collect();

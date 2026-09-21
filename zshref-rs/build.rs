@@ -6,8 +6,8 @@
 //!
 //! - `ZSHREF_INDEX_JSON`, `ZSHREF_RESOLVER_FIXTURE` — absolute paths, via `env!`
 //! - `$OUT_DIR/file_bytes.rs` — the `(file, include_bytes!(…))` table for
-//!   every `index.json.files` entry, so the record-file inventory has no
-//!   hand-kept mirror
+//!   every `index.json.categories[].file`, so the record-file inventory has
+//!   no hand-kept mirror
 //!
 //! `index.json.version` is checked here first, so a stale data source fails
 //! the build with the re-vendor hint rather than on whichever field moved.
@@ -103,7 +103,7 @@ fn data_source<'s>(manifest: &Path, vendored: &'s Source, monorepo: &'s Source) 
     }
 }
 
-/// `&[("<file>", include_bytes!("<abs path>")), …]` over `index.json.files`.
+/// `&[("<file>", include_bytes!("<abs path>")), …]` over the category descriptors.
 /// Paths go through `{:?}` so they land as valid string literals on every host.
 fn file_bytes_table(source: &Source) -> String {
     #[derive(serde::Deserialize)]
@@ -111,8 +111,12 @@ fn file_bytes_table(source: &Source) -> String {
         version: u32,
     }
     #[derive(serde::Deserialize)]
+    struct Category {
+        file: String,
+    }
+    #[derive(serde::Deserialize)]
     struct Index {
-        files: Vec<String>,
+        categories: Vec<Category>,
     }
     let index = source.index();
     let bytes = fs::read(&index).unwrap_or_else(|e| panic!("read {}: {e}", index.display()));
@@ -124,9 +128,10 @@ fn file_bytes_table(source: &Source) -> String {
         "{} is version {version}; this crate reads version {INDEX_VERSION} — re-vendor `data/` (DATA-SYNC.md)",
         index.display()
     );
-    let Index { files } =
+    let Index { categories } =
         serde_json::from_slice(&bytes).unwrap_or_else(|e| panic!("parse {}: {e}", index.display()));
-    let entries = files.iter().map(|f| {
+    let entries = categories.iter().map(|category| {
+        let f = &category.file;
         let path = source.json_dir.join(f);
         let path = path
             .to_str()

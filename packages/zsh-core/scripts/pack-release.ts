@@ -20,6 +20,7 @@ import {
   resolverFixture,
   schemaFile,
 } from "../src/docs/json-artifacts.ts"
+import type { JsonIndex } from "../src/docs/json-types.ts"
 import { PKG_VERSION } from "../src/meta/pkg-info.ts"
 
 const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), "..")
@@ -50,8 +51,8 @@ const baseOf = (asset: Asset) => `zsh-core-${asset.name}`
 const stemOf = (asset: Asset) => `${baseOf(asset)}-${PKG_VERSION}`
 
 const read = (path: string) => readFileSync(path, "utf8")
-const readJson = (path: string): Record<string, unknown> =>
-  JSON.parse(read(path))
+const readJson = <T = Record<string, unknown>>(path: string): T =>
+  JSON.parse(read(path)) as T
 const jsonNames = (dir: string) =>
   readdirSync(dir)
     .filter(name => name.endsWith(".json"))
@@ -74,13 +75,13 @@ function validateWithSchema(json: string, schema: string, fail: Fail) {
 function validateRecordFiles(
   jsonDir: string,
   bundle: string,
-  categoryFiles: Record<string, string>,
+  categories: readonly { id: string; file: string }[],
   fail: Fail,
 ) {
   const ajv = newAjv()
   const schema = readJson(bundle)
   ajv.addSchema(schema as AnySchema)
-  for (const [cat, file] of Object.entries(categoryFiles)) {
+  for (const { id: cat, file } of categories) {
     const validate = ajv.compile({
       $ref: `${String(schema.$id)}#/$defs/${cat}`,
     })
@@ -106,15 +107,21 @@ const jsonAsset: Asset = {
       fail(`packed record files ${dataFiles.join(", ")} != jsonDataFiles`)
     }
 
-    const index = readJson(join(root, "json", "index.json"))
+    const index = readJson<JsonIndex>(join(root, "json", "index.json"))
     if (index.packageVersion !== PKG_VERSION) {
       fail(
         `index.packageVersion ${String(index.packageVersion)} != ${PKG_VERSION}`,
       )
     }
-    if ((index.files as string[]).join() !== dataFiles.join()) {
-      fail("index.files does not match the packed record files")
-    }
+    const { categories } = index
+    const categoryFiles = categories.map(c => c.file).sort()
+    if (categoryFiles.join() !== dataFiles.join())
+      fail("index.categories does not cover the packed record files")
+    const categoryIds = categories.map(c => c.id)
+    if (new Set(categoryIds).size !== categoryIds.length)
+      fail("index.categories contains duplicate ids")
+    if (new Set(categoryFiles).size !== categoryFiles.length)
+      fail("index.categories contains duplicate files")
 
     const texts = new Map(
       dataFiles.map(name => [name, read(join(root, "json", name))]),
@@ -128,14 +135,10 @@ const jsonAsset: Asset = {
       join(root, "schema", schemaFile("index.json")),
       fail,
     )
-    const categoryFiles = index.categoryFiles as Record<string, string>
-    if (Object.values(categoryFiles).sort().join() !== dataFiles.join()) {
-      fail("index.categoryFiles does not cover the packed record files")
-    }
     validateRecordFiles(
       join(root, "json"),
       join(root, "schema", recordsSchemaFile),
-      categoryFiles,
+      categories,
       fail,
     )
     return String(index.dataHash)

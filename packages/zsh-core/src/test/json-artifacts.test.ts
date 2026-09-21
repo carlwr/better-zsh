@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { describe, expect, test } from "vitest"
+import { docCategoryPreamble } from "../docs/category-preamble"
 import { loadCorpus } from "../docs/corpus"
 import {
   corpusDataHash,
@@ -15,7 +16,11 @@ import {
   schemaFile,
 } from "../docs/json-artifacts"
 import type { JsonIndex } from "../docs/json-types"
-import { docCategories } from "../docs/taxonomy"
+import {
+  classifyOrder,
+  docCategories,
+  docCategoryLabels,
+} from "../docs/taxonomy"
 
 const pkgDir = join(dirname(fileURLToPath(import.meta.url)), "..", "..")
 const jsonDir = join(pkgDir, "artifacts", "json")
@@ -42,14 +47,21 @@ describe("generated JSON is a release asset, not a registry payload", () => {
     }
   })
 
-  test("index.json: v5 shape, one record file per category", () => {
+  test("index.json: category descriptors and resolver order", () => {
     const index = readJson("artifacts/json/index.json") as unknown as JsonIndex
-    expect(index.version).toBe(5)
-    expect(index.files).toEqual(jsonDataFiles)
-    expect(index.docCategories).toEqual(docCategories)
-    for (const cat of docCategories) {
-      expect(index.categoryFiles[cat]).toBe(jsonDataFile(cat))
-    }
+    expect(index.version).toBe(6)
+    expect(index.categories).toEqual(
+      docCategories.map(id => {
+        const preamble = docCategoryPreamble[id]
+        return {
+          id,
+          file: jsonDataFile(id),
+          label: docCategoryLabels[id],
+          ...(preamble === undefined ? {} : { preamble }),
+        }
+      }),
+    )
+    expect(index.classifyOrder).toEqual(classifyOrder)
   })
 
   test("one draft 2020-12 records bundle; $defs named by category, never by TS type", () => {

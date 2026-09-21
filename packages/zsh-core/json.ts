@@ -12,6 +12,7 @@ export {
 } from "./src/docs/json-artifacts.ts"
 export { projectRecords } from "./src/docs/json-projection.ts"
 export type {
+  JsonCategoryDescriptor,
   JsonDocArrayMap,
   JsonIndex,
   JsonRecordMap,
