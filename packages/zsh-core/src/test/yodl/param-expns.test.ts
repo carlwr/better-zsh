@@ -20,7 +20,6 @@ describe("parseParamExpns", () => {
     expect(doc.subKind).toBe("plain")
     expect(doc.placeholders).toEqual(["name"])
     expect(doc.desc).toContain("value")
-    expect(doc.section).toBe("Parameter Expansion")
   })
 
   test("xitem + item group preserves manual source order", () => {
@@ -97,7 +96,6 @@ describe("parseParamExpns", () => {
         minCount: 25,
         keyOf: d => d.sig as string,
         descOf: d => d.desc,
-        sectionOf: d => d.section,
         known: [
           "${name}",
           "${+name}",

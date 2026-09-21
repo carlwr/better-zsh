@@ -34,7 +34,7 @@ const o = (
   ...ident("option", name, name),
   flags: [{ char: "f", on: "+", emulations }],
   defaultIn: ["zsh"],
-  section: "Shell State",
+  subKind: "Shell State",
   desc,
 })
 
@@ -48,7 +48,6 @@ const cc = (name: string, desc: string): ComplexCommandDoc => ({
   ...ident("complex_command", name),
   sig: `${name} ...`,
   desc,
-  section: "Complex Commands",
   alternateForms: [],
   bodyKeywords: [],
 })
@@ -57,7 +56,6 @@ const rw = (name: string, desc: string): ReservedWordDoc => ({
   ...ident("reserved_word", name),
   sig: name,
   desc,
-  section: "Reserved Words",
   subKind: "command",
 })
 

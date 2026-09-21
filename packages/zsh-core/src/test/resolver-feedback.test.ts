@@ -60,7 +60,7 @@ const option = (
     ...identity("option", name, name),
     flags,
     defaultIn: [],
-    section: "Shell State",
+    subKind: "Shell State",
     desc: "",
   },
 ]

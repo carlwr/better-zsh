@@ -20,7 +20,6 @@ export function parseRedirs(yo: YodlSrc): readonly RedirDoc[] {
       groupOp: sig.match(/^\S+/)?.[0] ?? sig,
       sig,
       desc,
-      section: SECTION,
     }),
   )
 }

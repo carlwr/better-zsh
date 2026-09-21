@@ -34,7 +34,6 @@ export function parseGlobFlags(yo: YodlSrc): readonly GlobFlagDoc[] {
             args: [],
             sig: flag,
             desc,
-            section: SECTION,
           }) satisfies GlobFlagDoc,
       )
     }
@@ -46,7 +45,6 @@ export function parseGlobFlags(yo: YodlSrc): readonly GlobFlagDoc[] {
         args: vars,
         sig,
         desc,
-        section: SECTION,
       } satisfies GlobFlagDoc,
     ]
   })

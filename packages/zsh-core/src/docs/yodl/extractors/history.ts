@@ -39,7 +39,6 @@ function parseSection(
       subKind: kind,
       sig,
       desc,
-      section,
     }),
   )
 }
@@ -54,7 +53,6 @@ function parseWordDesignators(yo: YodlSrc): HistoryDoc[] {
       subKind: "word-designator",
       sig,
       desc: normalizeBody(item.body),
-      section: WORD_DESIG_SECTION,
     } satisfies HistoryDoc
   })
 }

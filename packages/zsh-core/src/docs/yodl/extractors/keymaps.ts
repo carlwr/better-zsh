@@ -23,7 +23,6 @@ export function parseKeymaps(yo: YodlSrc): readonly KeymapDoc[] {
       ...identity("keymap", name),
       sig: name,
       desc: normalizeBody(item.body),
-      section: SECTION,
       subKind,
       linkedFrom,
     })

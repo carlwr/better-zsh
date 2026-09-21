@@ -57,7 +57,6 @@ export function parseCompUtils(yo: YodlSrc): readonly CompUtilityDoc[] {
           ...identity("comp_utility", n),
           synopsis,
           desc: split.desc,
-          section: SECTION,
           ...(split.flagGroups && { flagGroups: split.flagGroups }),
           ...(split.outro && { outro: split.outro }),
         } satisfies CompUtilityDoc,

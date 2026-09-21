@@ -45,7 +45,7 @@ command to that directory.
     expect(o.id).toBe(opt("AUTO_CD"))
     expect(o.display).toBe("AUTO_CD")
     expect(o.flags).toEqual([alias("J", "-", ZSH)])
-    expect(o.section).toBe("Changing Directories")
+    expect(o.subKind).toBe("Changing Directories")
     expect(o.desc).toContain("command is the name of a directory")
   })
 
@@ -159,14 +159,14 @@ Report status of background jobs immediately.
         minCount: 100,
         keyOf: o => o.id,
         descOf: o => o.desc,
-        sectionOf: o => o.section,
+        subKindOf: o => o.subKind,
         known: [opt("AUTO_CD"), opt("EXTENDED_GLOB"), opt("GLOB_DOTS")],
       }))
 
-    // Closed-union check: every observed section is in `optSections` AND
+    // Closed-union check: every observed subKind is in `optSections` AND
     // every `optSections` value appears (no orphan literals).
-    test("section set equals optSections", () => {
-      expect([...new Set(opts.map(o => o.section))].sort()).toEqual(
+    test("subKind set equals optSections", () => {
+      expect([...new Set(opts.map(o => o.subKind))].sort()).toEqual(
         [...optSections].sort(),
       )
     })
@@ -240,7 +240,7 @@ Report status of background jobs immediately.
       ["DOT_GLOB", "GLOB_DOTS", false],
     ] as const)("alias %s → %s (negated=%s)", (name, target, negated) => {
       const rec = byName.get(opt(name))
-      expect(rec?.section).toBe("Option Aliases")
+      expect(rec?.subKind).toBe("Option Aliases")
       expect(rec?.aliasOf).toEqual({ target: opt(target), negated })
     })
 

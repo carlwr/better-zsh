@@ -93,7 +93,6 @@ export function parseFlagSection<K extends DocCategory>(
         args: parts.slice(1, -1).filter(Boolean),
         sig,
         desc: normalizeBody(item.body),
-        section,
       }
     },
   )

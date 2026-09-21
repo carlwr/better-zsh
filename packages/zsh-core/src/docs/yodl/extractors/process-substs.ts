@@ -27,7 +27,6 @@ export function parseProcessSubsts(yo: YodlSrc): readonly ProcessSubstDoc[] {
         ...identity("process_subst", op),
         sig: op,
         desc,
-        section: SECTION,
       }))
     : []
 }

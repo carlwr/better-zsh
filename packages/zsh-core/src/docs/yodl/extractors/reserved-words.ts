@@ -74,7 +74,6 @@ export function parseReswords(yo: YodlSrc): readonly ReservedWordDoc[] {
         ...identity("reserved_word", name),
         subKind: "command",
         sig: name,
-        section: SECTION,
         ...(desc === undefined ? {} : { desc }),
       }
     })
@@ -86,7 +85,6 @@ export function parseReswords(yo: YodlSrc): readonly ReservedWordDoc[] {
       subKind: "any",
       sig: "}",
       desc: ANY_DESC,
-      section: SECTION,
     },
   ]
 }

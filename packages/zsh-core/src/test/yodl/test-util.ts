@@ -41,7 +41,7 @@ export function expectDocCorpus<T>({
   keyOf,
   descOf,
   known = [],
-  sectionOf,
+  subKindOf,
 }: {
   docs: readonly T[]
   minCount: number
@@ -49,7 +49,8 @@ export function expectDocCorpus<T>({
   /** Return `undefined` for records whose desc is legitimately absent. */
   descOf: (doc: T) => string | undefined
   known?: readonly string[]
-  sectionOf?: (doc: T) => string
+  /** For a category with a `subKind`: the sub-facet, checked non-empty. */
+  subKindOf?: (doc: T) => string
 }) {
   expect(docs.length).toBeGreaterThanOrEqual(minCount)
 
@@ -63,7 +64,7 @@ export function expectDocCorpus<T>({
       expect(desc).toBeTruthy()
       expectNoYodlLeaks(desc)
     }
-    if (sectionOf) expect(sectionOf(doc).trim()).toBeTruthy()
+    if (subKindOf) expect(subKindOf(doc).trim()).toBeTruthy()
   }
 
   for (const key of known) expect(keys).toContain(key)

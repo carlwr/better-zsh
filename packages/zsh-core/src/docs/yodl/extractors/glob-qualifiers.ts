@@ -25,7 +25,6 @@ export function parseGlobQualifiers(yo: YodlSrc): readonly GlobQualifierDoc[] {
         args: varTexts(item.header),
         sig,
         desc: normalizeBody(item.body),
-        section: SECTION,
       } satisfies GlobQualifierDoc
     },
   )

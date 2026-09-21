@@ -10,12 +10,12 @@
       "topMatch": {
         "category": "option",
         "id": "kshoptionprint",
-        "score": 0.9395345045278198
+        "score": 0.9391482644181972
       },
       "runnerUp": {
         "category": "option",
         "id": "shoptionletters",
-        "score": 0.7905196579065192
+        "score": 0.7900012726681858
       }
     },
     {
@@ -23,12 +23,12 @@
       "topMatch": {
         "category": "option",
         "id": "autopushd",
-        "score": 0.9058650306034812
+        "score": 0.9061328314947164
       },
       "runnerUp": {
         "category": "option",
         "id": "autolist",
-        "score": 0.7856813703268992
+        "score": 0.7861577667197184
       }
     },
     {
@@ -49,12 +49,12 @@
       "topMatch": {
         "category": "option",
         "id": "rcexpandparam",
-        "score": 0.892395965853239
+        "score": 0.892466843268994
       },
       "runnerUp": {
         "category": "option",
         "id": "shfileexpansion",
-        "score": 0.7828389730595302
+        "score": 0.7830877828515588
       }
     },
     {
@@ -62,12 +62,12 @@
       "topMatch": {
         "category": "option",
         "id": "promptbang",
-        "score": 0.9521749748255646
+        "score": 0.950234517764452
       },
       "runnerUp": {
         "category": "option",
         "id": "promptvars",
-        "score": 0.8458098136133811
+        "score": 0.8446821405717202
       }
     }
   ]

@@ -249,12 +249,11 @@ describe("parseCompUtils", () => {
   const docs = parseCompUtils(readVendoredYo("compsys.yo"))
   const map = by(docs, d => d.id)
 
-  test("every record: leading underscore, non-empty synopsis+desc, Utility section", () => {
+  test("every record: leading underscore, non-empty synopsis+desc", () => {
     for (const d of docs) {
       expect(d.id).toMatch(/^_/)
       expect(d.synopsis[0]).toBeTruthy()
       expect(d.desc).toBeTruthy()
-      expect(d.section).toBe("Utility Functions")
     }
   })
 

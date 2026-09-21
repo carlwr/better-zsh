@@ -48,14 +48,12 @@ import {
 import { withTmpDirAsync } from "../tmp-dir"
 
 // --- fixtures ---------------------------------------------------------------
-// `section` is required by the types but, the option `_Section:_` line and
-// subKinds aside, unused by renderers.
 
 const cd: ZshOption = {
   ...identity("option", "AUTO_CD", "AUTO_CD"),
   flags: [{ char: "J", on: "-", emulations: ["csh", "zsh"] }],
   defaultIn: ["csh", "ksh", "sh", "zsh"],
-  section: "Changing Directories",
+  subKind: "Changing Directories",
   desc: "d:o",
 }
 // An option whose name is also a category-label word (`ZLE widget`).
@@ -63,7 +61,7 @@ const zleOpt: ZshOption = {
   ...identity("option", "ZLE", "ZLE"),
   flags: [],
   defaultIn: ["zsh"],
-  section: "Zle",
+  subKind: "Zle",
   desc: "d:zle",
 }
 
@@ -98,13 +96,11 @@ const rd: RedirDoc = {
   groupOp: ">>",
   sig: ">> word",
   desc: "d:r",
-  section: "",
 }
 const sub: ProcessSubstDoc = {
   ...identity("process_subst", "<(...)"),
   sig: "<(list)",
   desc: "d:ps",
-  section: "",
 }
 const px: ParamExpnDoc = {
   ...identity("param_expn", "${name:-word}"),
@@ -114,20 +110,17 @@ const px: ParamExpnDoc = {
   subKind: "default",
   placeholders: ["name", "word"],
   desc: "d:px",
-  section: "Parameter Expansion",
 }
 const word: ReservedWordDoc = {
   ...identity("reserved_word", "if"),
   sig: "if list then list fi",
   desc: "d:rw",
-  section: "",
   subKind: "command",
 }
 const cc: ComplexCommandDoc = {
   ...identity("complex_command", "if"),
   sig: "if list then list fi",
   desc: "d:cc",
-  section: "Complex Commands",
   alternateForms: [{ template: "if list { list }", keywords: [] }],
   bodyKeywords: ["then", "fi"],
 }
@@ -148,7 +141,6 @@ const stub = <K extends DocCategory>(
     args: [],
     sig: value,
     desc: "",
-    section: "",
     ...extra,
   }) as unknown as DocRecordMap[K]
 
@@ -178,7 +170,6 @@ const km: KeymapDoc = {
   ...identity("keymap", "emacs"),
   sig: "emacs",
   desc: "d:km",
-  section: "Keymaps",
   subKind: "regular",
   linkedFrom: ["main"],
 }
@@ -186,21 +177,18 @@ const js: JobSpecDoc = {
   ...identity("job_spec", "%%"),
   sig: "%%",
   desc: "d:js",
-  section: "Jobs",
   subKind: "current",
 }
 const ao: ArithOpDoc = {
   ...identity("arith_op", "+"),
   sig: "+",
   desc: "d:ao",
-  section: "Arithmetic Evaluation",
   subKind: "overloaded",
 }
 const sfn: SpecialFunctionDoc = {
   ...identity("special_function", "chpwd"),
   sig: "chpwd",
   desc: "d:sfn",
-  section: "Hook Functions",
   subKind: "hook",
   hookArray: "chpwd_functions",
 }
@@ -208,7 +196,6 @@ const cuu: CompUtilityDoc = {
   ...identity("comp_utility", "_all_labels"),
   synopsis: ["_all_labels [ -x ] [ -12VJ ] tag name descr [ command arg ... ]"],
   desc: "d:cuu",
-  section: "Utility Functions",
 }
 const mf: MathfuncDoc = {
   ...identity("mathfunc", "sin"),
@@ -347,8 +334,8 @@ describe("render markdown", () => {
       "set -J",
       "set +J",
       "**Default in zsh: `on`**",
-      "_Section:_ Changing Directories",
     ])
+    expect(body(cd)).toMatch(/d:o$/)
   })
 
   // A letter from the sh/ksh table only is not plain-zsh syntax: rendered
@@ -419,7 +406,7 @@ describe("render markdown", () => {
     const want = sub === undefined ? label : `${label} (${sub})`
     expect(categoryFooter(doc)).toBe(`_Category:_ ${want}`)
     expect(body(doc)).not.toMatch(
-      /^_(Category|Role|Subsection|Option category):_/m,
+      /^_(Category|Role|Section|Subsection|Option category):_/m,
     )
   })
 
@@ -445,7 +432,6 @@ describe("render markdown", () => {
     const bare: ReservedWordDoc = {
       ...identity("reserved_word", "for"),
       sig: "for",
-      section: "Reserved Words",
       subKind: "command",
     }
     expect(renderRecord(noOpts, bare)).toEqual({
@@ -476,8 +462,7 @@ describe("render markdown", () => {
       aliasOf: { target: cd.id, negated: false },
     }
     const opt = body(alias, cdCorpus)
-    expect(opt).toContain("_Alias of:_ **`AUTO_CD`**")
-    expect(opt).toMatch(/_Section:_ Changing Directories$/)
+    expect(opt).toMatch(/_Alias of:_ \*\*`AUTO_CD`\*\*$/)
 
     const tied = body({
       ...sec,

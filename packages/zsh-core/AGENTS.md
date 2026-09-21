@@ -20,7 +20,7 @@ Canonical subpath list: `package.json` `exports`; per-subpath surface: `dist/typ
 When adding or changing parsing/rendering, dump the full rendered corpus and inspect — both parse and render bugs surface there.
 
 - Prefer actual zsh usage over raw upstream notation.
-- Option docs: `zsh` forms first, plain-zsh defaults over emulation forms, `_Section:_` last.
+- Option docs: `zsh` forms first, plain-zsh defaults over emulation forms.
 - No category line in bodies (the record's `category` field is the structured form; `DESIGN.md`); typed extras (`_Module:_`, `_Args:_`, ...) end the body.
 - Preserve visible prose unless there is a strong reason to change user-facing output.
 - Generate: `dump:refs [OUTDIR]`. Diff dumps before/after edits to spot regressions.

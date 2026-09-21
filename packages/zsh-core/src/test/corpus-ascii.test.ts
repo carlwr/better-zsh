@@ -4,7 +4,7 @@
  * Three tiers from tightest to loosest:
  * - `id` (lookup key): printable ASCII, no whitespace, non-empty.
  * - `display` / `sig` (surface form): printable ASCII + space.
- * - `desc` / `_mdBody` / `section` (prose): no control characters except
+ * - `desc` / `_mdBody` (prose): no control characters except
  *   `\n` and `\t`; Unicode allowed (upstream prose carries em-dashes etc.).
  *
  * Rationale: id strings must be shell-safe and URL/CLI-friendly. The Rust
@@ -84,10 +84,10 @@ describe("corpus string-field invariants", () => {
     expect(violations).toEqual([])
   })
 
-  test("every desc / _mdBody / section is printable ASCII (space, \\n, \\t)", () => {
+  test("every desc / _mdBody is printable ASCII (space, \\n, \\t)", () => {
     const violations: string[] = []
-    // `desc`/`section` are optional on some records (e.g. reserved words
-    // whose head is documented by complex_command); skip when absent.
+    // `desc` is optional on some records (e.g. reserved words whose head is
+    // documented by complex_command); skip when absent.
     const checkProse = (cat: string, key: string, val: string | undefined) => {
       if (val !== undefined && val && !isProse(val))
         violations.push(`${cat}: ${key} ${JSON.stringify(val.slice(0, 60))}`)
@@ -95,7 +95,6 @@ describe("corpus string-field invariants", () => {
     for (const [cat, recs] of projected)
       for (const rec of recs) {
         checkProse(cat, "desc", strField(rec, "desc"))
-        checkProse(cat, "section", strField(rec, "section"))
         checkProse(cat, "_title", strField(rec, "_title"))
         const md = strField(rec, "_mdBody")
         if (md === undefined) continue

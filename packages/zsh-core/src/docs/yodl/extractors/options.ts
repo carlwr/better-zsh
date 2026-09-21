@@ -103,7 +103,7 @@ export function parseOptions(yo: YodlSrc): readonly ZshOption[] {
       display: head.display,
       flags: mergeFlags([...head.flags, ...(tableFlags.get(head.id) ?? [])]),
       defaultIn: head.defaultIn,
-      section,
+      subKind: section,
       desc: normalizeBody(item.body),
       ...(aliasOf && { aliasOf }),
     } satisfies ZshOption

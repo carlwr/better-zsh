@@ -145,7 +145,6 @@ export function parseComplexCommands(
       ...identity("complex_command", winner.head),
       sig: winner.sig,
       desc: normalizeBody(grp.entry.body),
-      section: BASE_SECTION,
       alternateForms: [],
       bodyKeywords: bodyKeywords(winner.header),
     })

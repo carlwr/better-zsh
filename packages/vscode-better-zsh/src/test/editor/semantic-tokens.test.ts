@@ -24,7 +24,6 @@ function provider(
     ...ident("reserved_word", name),
     subKind: "command",
     sig: name,
-    section: "",
   })
   const corpus: DocCorpus = {
     ...emptyCorpus(),

@@ -39,10 +39,10 @@ export type Documented<K extends DocCategory> = string & {
  * `category`.
  *
  * Not here, but by convention: a category with a sub-facet — an operator's
- * arity, a widget's manual section, a parameter's scope — declares it as
- * `subKind` with a closed literal union; a category without one declares
- * no `subKind`. Both are read as fields; under a generic `K`, `"subKind" in
- * rec` narrows.
+ * arity, an option's or a widget's manual section, a parameter's scope —
+ * declares it as `subKind` with a closed literal union; a category without
+ * one declares no `subKind`. Both are read as fields; under a generic `K`,
+ * `"subKind" in rec` narrows.
  */
 export interface DocRecordBase<K extends DocCategory> {
   /** The record's category — the `DocCorpus` map it sits in; in the JSON, its file. One constant per record definition. */
@@ -94,8 +94,8 @@ export type OptSection = (typeof optSections)[number]
 export interface ZshOption extends DocRecordBase<"option"> {
   readonly flags: readonly OptFlagAlias[]
   readonly defaultIn: readonly Emulation[]
-  /** Manual section this option was parsed from. */
-  readonly section: OptSection
+  /** The manual section this option sits under; `Option Aliases` entries carry `aliasOf`. */
+  readonly subKind: OptSection
   readonly desc: string
   /** Present on `Option Aliases` entries: the option this alias resolves to, and whether it inverts. */
   readonly aliasOf?: {
@@ -183,8 +183,6 @@ export interface SyntaxDocBase {
   readonly sig: string
   /** Manual prose as markdown — paragraphs, inline and fenced code; occasionally `*emphasis*`, bullets or a heading. Every `desc` field has this shape. */
   readonly desc: string
-  /** Manual section this element was parsed from. */
-  readonly section: string
 }
 
 /**
@@ -225,9 +223,8 @@ export interface ShellParamKey {
 }
 
 /**
- * Special-parameter doc record. Does not extend `SyntaxDocBase`: this category
- * carries a typed scope as `subKind` instead of a generic `section: string`
- * prose field.
+ * Special-parameter doc record. Does not extend `SyntaxDocBase`: a
+ * parameter has a `name`, not a `sig`; its scope is the typed `subKind`.
  *
  * `keys` captures an upstream-documented enumerated nested set (e.g. an
  * associative-array's keys); the renderer composes the visible body from
@@ -260,7 +257,6 @@ export interface ShellParamDoc extends DocRecordBase<"special_param"> {
 export interface ReservedWordDoc extends DocRecordBase<"reserved_word"> {
   readonly subKind: ReservedWordPos
   readonly sig: string
-  readonly section: string
   readonly desc?: string
 }
 
@@ -407,15 +403,11 @@ export interface GlobQualifierDoc
 
 export type PromptSubsection = (typeof promptSubsections)[number]
 
-/**
- * Prompt-expansion escape sequences -- e.g. `%n`, `%~`, `%D{string}`, `%F{color}`.
- *
- * Does not extend `SyntaxDocBase`: the manual subsection is the typed
- * `subKind`, not a generic `section: string` prose field.
- */
-export interface PromptEscapeDoc extends DocRecordBase<"prompt_escape"> {
-  readonly sig: string
-  readonly desc: string
+/** Prompt-expansion escape sequences -- e.g. `%n`, `%~`, `%D{string}`, `%F{color}`. */
+export interface PromptEscapeDoc
+  extends DocRecordBase<"prompt_escape">,
+    SyntaxDocBase {
+  /** The manual subsection the escape sits under. */
   readonly subKind: PromptSubsection
 }
 
@@ -542,8 +534,6 @@ export interface SpecialFunctionDoc
 export interface CompUtilityDoc extends DocRecordBase<"comp_utility"> {
   readonly synopsis: NonEmpty<string>
   readonly desc: string
-  /** Manual section this element was parsed from. */
-  readonly section: string
   /** Per-group flags; same posture as `BuiltinDoc.flagGroups`. */
   readonly flagGroups?: readonly FlagGroup[]
   /** Prose after the last flag group. */

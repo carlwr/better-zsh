@@ -4,8 +4,6 @@ import { extractFirstSitemList, withBody } from "../core/doc.ts"
 import type { YodlSrc } from "../core/nodes.ts"
 import { firstTt, normalizeBody } from "../core/text.ts"
 
-const SECTION = "Arithmetic Evaluation"
-
 /**
  * `arith.yo` has two precedence tables (native, `C_PRECEDENCES`); we use the
  * first only — same operator set, no value in duplicates. Precedence numbers
@@ -36,7 +34,6 @@ export function parseArithOps(yo: YodlSrc): readonly ArithOpDoc[] {
     ...identity("arith_op", op),
     sig: op,
     desc,
-    section: SECTION,
     subKind: arity,
   }))
 }

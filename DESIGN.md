@@ -303,6 +303,8 @@ A category's record type declares `subKind` with a closed literal union, or none
 - every declared literal occurs in the corpus: `packages/zsh-core/src/test/json-schema.test.ts`
 - the tool layer branches per category (`oneOf`, no schema-level optionality): `zshref-rs/src/tools/schema.rs`
 
+Manual provenance is not a record field: where the heading varies within a category it is the record's `subKind` (`option`, `prompt_escape`, `zle_widget`); elsewhere it is a category fact, carried by the label. The dropped shape: a `section: string` on most records — constant per category or a function of `subKind`, read only by the option renderer as a `_Section:_` body line.
+
 ---
 
 ## Data flow

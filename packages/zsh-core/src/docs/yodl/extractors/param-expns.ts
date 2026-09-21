@@ -146,7 +146,6 @@ export function parseParamExpns(yo: YodlSrc): readonly ParamExpnDoc[] {
         subKind: cls.subKind,
         placeholders: cls.placeholders,
         desc,
-        section: SECTION,
       })
     })
   }

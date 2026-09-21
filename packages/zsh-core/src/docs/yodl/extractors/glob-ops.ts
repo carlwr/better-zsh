@@ -13,24 +13,12 @@ const KSH_SECTION = "ksh-like Glob Operators"
 
 export function parseGlobOps(yo: YodlSrc): readonly GlobOpDoc[] {
   return [
-    ...parseSection(
-      extractSectionBody(yo, STD_SECTION),
-      STD_SECTION,
-      "standard",
-    ),
-    ...parseSection(
-      extractSectionBody(yo, KSH_SECTION),
-      KSH_SECTION,
-      "ksh-like",
-    ),
+    ...parseSection(extractSectionBody(yo, STD_SECTION), "standard"),
+    ...parseSection(extractSectionBody(yo, KSH_SECTION), "ksh-like"),
   ]
 }
 
-function parseSection(
-  section: YodlSrc,
-  name: string,
-  kind: GlobOpKind,
-): GlobOpDoc[] {
+function parseSection(section: YodlSrc, kind: GlobOpKind): GlobOpDoc[] {
   return flattenAliasedEntries(
     extractItems(section, 1),
     normalizeHeader,
@@ -38,7 +26,6 @@ function parseSection(
       ...identity("glob_op", op),
       sig: op,
       desc,
-      section: name,
       subKind: kind,
     }),
   )

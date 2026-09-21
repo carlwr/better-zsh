@@ -537,7 +537,6 @@ function mdOpt(opt: ZshOption, corpus: DocCorpus): string {
       opt.aliasOf,
       a => `_Alias of:_ ${bt(aliasTargetDisplay(a, corpus))}`,
     ),
-    `_Section:_ ${opt.section}`,
   )
 }
 

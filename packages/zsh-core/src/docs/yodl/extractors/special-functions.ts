@@ -40,7 +40,6 @@ function parseHooks(yo: YodlSrc): SpecialFunctionDoc[] {
         ...identity("special_function", name),
         sig: normalizeHeader(item.header),
         desc: normalizeBody(item.body),
-        section: HOOK_SECTION,
         subKind: "hook",
         hookArray: `${name}_functions`,
       } satisfies SpecialFunctionDoc,
@@ -60,7 +59,6 @@ function parseTraps(yo: YodlSrc): SpecialFunctionDoc[] {
         ...identity("special_function", name),
         sig,
         desc: normalizeBody(item.body),
-        section: TRAP_SECTION,
         subKind: kind,
       } satisfies SpecialFunctionDoc,
     ]
