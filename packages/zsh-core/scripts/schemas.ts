@@ -171,8 +171,8 @@ export function recordsBundle(gen: SchemaGen): Obj {
     // Consumers key on category-named defs, not on TS type names.
     renameDef(defs, name, recordsSchemaDefs.record(cat))
     hoistId(defs, cat, def)
-    addDef(defs, recordsSchemaDefs.file(cat), rootProps[cat] as Obj)
-    rootProps[cat] = { $ref: refTo(recordsSchemaDefs.file(cat)) }
+    addDef(defs, recordsSchemaDefs.records(cat), rootProps[cat] as Obj)
+    rootProps[cat] = { $ref: refTo(recordsSchemaDefs.records(cat)) }
   }
   assertClean(bundle)
   return bundle

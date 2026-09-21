@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url"
 import Ajv2020, { type AnySchema } from "ajv/dist/2020"
 import { describe, expect, test } from "vitest"
 import {
-  jsonDataFile,
+  recordsFile,
   recordsSchemaDefs,
   recordsSchemaFile,
   resolverFixture,
@@ -28,9 +28,9 @@ ajv.addSchema(bundle as AnySchema)
 const defValidator = (def: string) =>
   ajv.compile({ $ref: `${String(bundle.$id)}#/$defs/${def}` })
 const validator = (cat: DocCategory) =>
-  defValidator(recordsSchemaDefs.file(cat))
-const records = (cat: DocCategory): Rec[] =>
-  readJson(artifact("json", jsonDataFile(cat))) as unknown as Rec[]
+  defValidator(recordsSchemaDefs.records(cat))
+const all = readJson(artifact("json", recordsFile))
+const records = (cat: DocCategory): Rec[] => all[cat] as Rec[]
 
 const defs = bundle.$defs as Record<string, Rec>
 const deref = (schema: Rec): Rec => {
@@ -98,12 +98,6 @@ describe("records bundle", () => {
         false,
       )
     }
-  })
-
-  test("the whole category map validates against the root", () => {
-    const validate = ajv.compile({ $ref: String(bundle.$id) })
-    const all = Object.fromEntries(docCategories.map(c => [c, records(c)]))
-    expect(validate(all), ajv.errorsText(validate.errors)).toBe(true)
   })
 
   // A category declares `subKind` on every record or on none; the schema
@@ -182,13 +176,22 @@ describe.each([
     artifact("schema", schemaFile("index.json")),
   ],
   [
+    recordsFile,
+    artifact("json", recordsFile),
+    artifact("schema", recordsSchemaFile),
+  ],
+  [
     resolverFixture.file,
     artifact(resolverFixture.dir, resolverFixture.file),
     artifact(resolverFixture.dir, schemaFile(resolverFixture.file)),
   ],
 ])("%s", (_, json, schema) => {
   test("validates against its emitted schema", () => {
-    const validate = ajv.compile(readJson(schema) as AnySchema)
-    expect(validate(readJson(json)), ajv.errorsText(validate.errors)).toBe(true)
+    // A fresh instance: `ajv` above already holds the records bundle by `$id`.
+    const fresh = new Ajv2020({ allErrors: true, strict: true })
+    const validate = fresh.compile(readJson(schema) as AnySchema)
+    expect(validate(readJson(json)), fresh.errorsText(validate.errors)).toBe(
+      true,
+    )
   })
 })

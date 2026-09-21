@@ -2,7 +2,8 @@ import { existsSync, readFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { describe, expect, test } from "vitest"
-import { jsonDataFile, jsonDataFiles } from "../docs/json-artifacts"
+import { recordsFile } from "../docs/json-artifacts"
+import { type DocCategory, docCategories } from "../docs/taxonomy"
 
 /**
  * Smoke test: every emitted corpus JSON record carries an `_mdBody` string —
@@ -11,15 +12,19 @@ import { jsonDataFile, jsonDataFiles } from "../docs/json-artifacts"
  * seam between TS (renderer) and the out-of-process Rust crate; this test
  * guards against accidental drift in the JSON-emit path.
  *
- * Every category has a renderer; this checks the generated JSON files using
- * the canonical artifact list so new categories join the guard automatically.
+ * Every category has a renderer; this checks the generated record file over
+ * the canonical category list so new categories join the guard automatically.
  */
 
 const pkgDir = join(dirname(fileURLToPath(import.meta.url)), "..", "..")
 const jsonDir = join(pkgDir, "artifacts", "json")
 
-const loadRecs = <T>(file: string): T[] =>
-  JSON.parse(readFileSync(join(jsonDir, file), "utf8")) as T[]
+const loadRecs = <T>(cat: DocCategory): T[] => {
+  const all = JSON.parse(
+    readFileSync(join(jsonDir, recordsFile), "utf8"),
+  ) as Record<DocCategory, T[]>
+  return all[cat]
+}
 
 describe.runIf(existsSync(jsonDir))(
   "emitted JSON records carry rendered markdown body",
@@ -31,11 +36,11 @@ describe.runIf(existsSync(jsonDir))(
       readonly desc?: string
     }
 
-    test.each(jsonDataFiles)("%s records have an _mdBody string", file => {
-      const recs = loadRecs<MdRec>(file)
+    test.each(docCategories)("%s records have an _mdBody string", cat => {
+      const recs = loadRecs<MdRec>(cat)
       expect(recs.length).toBeGreaterThan(0)
       const proseless = (r: MdRec) =>
-        file === jsonDataFile("reserved_word") && r.desc === undefined
+        cat === "reserved_word" && r.desc === undefined
       for (const r of recs) {
         expect(typeof r._mdBody).toBe("string")
         if (!proseless(r)) expect(r._mdBody.length).toBeGreaterThan(0)
@@ -46,12 +51,12 @@ describe.runIf(existsSync(jsonDir))(
     })
 
     test.each([
-      [jsonDataFile("option"), "autocd", 100, ["AUTO_CD"], ["setopt"]],
-      [jsonDataFile("builtin"), "echo", 50, ["echo"], ["echo"]],
+      ["option", "autocd", 100, ["AUTO_CD"], ["setopt"]],
+      ["builtin", "echo", 50, ["echo"], ["echo"]],
     ] as const)(
       "%s:%s splits title from body",
-      (file, id, minLen, titleParts, bodyParts) => {
-        const rec = loadRecs<MdRec>(file).find(r => r.id === id)
+      (cat, id, minLen, titleParts, bodyParts) => {
+        const rec = loadRecs<MdRec>(cat).find(r => r.id === id)
         expect(rec).toBeDefined()
         const md = rec?._mdBody ?? ""
         const title = rec?._title ?? ""

@@ -14,8 +14,8 @@ import { basename, dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 import Ajv2020, { type AnySchema } from "ajv/dist/2020"
 import {
-  hashRecordFiles,
-  jsonDataFiles,
+  hashRecords,
+  recordsFile,
   recordsSchemaFile,
   resolverFixture,
   schemaFile,
@@ -68,29 +68,6 @@ function validateWithSchema(json: string, schema: string, fail: Fail) {
   }
 }
 
-/**
- * Each record file against its category's `$defs` entry in the bundle; the
- * category-to-file pairing is the one a consumer reads from `index.json`.
- */
-function validateRecordFiles(
-  jsonDir: string,
-  bundle: string,
-  categories: readonly { id: string; file: string }[],
-  fail: Fail,
-) {
-  const ajv = newAjv()
-  const schema = readJson(bundle)
-  ajv.addSchema(schema as AnySchema)
-  for (const { id: cat, file } of categories) {
-    const validate = ajv.compile({
-      $ref: `${String(schema.$id)}#/$defs/${cat}`,
-    })
-    if (!validate(readJson(join(jsonDir, file)))) {
-      fail(`${file}: ${ajv.errorsText(validate.errors)}`)
-    }
-  }
-}
-
 const jsonAsset: Asset = {
   name: "json",
   stage(root) {
@@ -100,45 +77,42 @@ const jsonAsset: Asset = {
     })
   },
   verify(root, fail) {
-    const dataFiles = jsonNames(join(root, "json")).filter(
-      name => name !== "index.json",
-    )
-    if (dataFiles.join() !== [...jsonDataFiles].sort().join()) {
-      fail(`packed record files ${dataFiles.join(", ")} != jsonDataFiles`)
+    const jsonDir = join(root, "json")
+    const files = jsonNames(jsonDir)
+    const want = ["index.json", recordsFile].sort()
+    if (files.join() !== want.join()) {
+      fail(`packed files ${files.join(", ")} != ${want.join(", ")}`)
     }
 
-    const index = readJson<JsonIndex>(join(root, "json", "index.json"))
+    const index = readJson<JsonIndex>(join(jsonDir, "index.json"))
     if (index.packageVersion !== PKG_VERSION) {
       fail(
         `index.packageVersion ${String(index.packageVersion)} != ${PKG_VERSION}`,
       )
     }
-    const { categories } = index
-    const categoryFiles = categories.map(c => c.file).sort()
-    if (categoryFiles.join() !== dataFiles.join())
-      fail("index.categories does not cover the packed record files")
-    const categoryIds = categories.map(c => c.id)
+    const categoryIds = index.categories.map(c => c.id)
     if (new Set(categoryIds).size !== categoryIds.length)
       fail("index.categories contains duplicate ids")
-    if (new Set(categoryFiles).size !== categoryFiles.length)
-      fail("index.categories contains duplicate files")
 
-    const texts = new Map(
-      dataFiles.map(name => [name, read(join(root, "json", name))]),
-    )
-    if (index.dataHash !== hashRecordFiles(texts)) {
+    const recordsText = read(join(jsonDir, recordsFile))
+    if (index.dataHash !== hashRecords(recordsText)) {
       fail("index.dataHash does not match the packed record bytes")
+    }
+    // The schema pins the record file's key set; a consumer pairs keys with
+    // `index.categories` by walking both in order.
+    const recordKeys = Object.keys(JSON.parse(recordsText) as object)
+    if (recordKeys.join() !== categoryIds.join()) {
+      fail(`${recordsFile} keys are not index.categories, in order`)
     }
 
     validateWithSchema(
-      join(root, "json", "index.json"),
+      join(jsonDir, "index.json"),
       join(root, "schema", schemaFile("index.json")),
       fail,
     )
-    validateRecordFiles(
-      join(root, "json"),
+    validateWithSchema(
+      join(jsonDir, recordsFile),
       join(root, "schema", recordsSchemaFile),
-      categories,
       fail,
     )
     return String(index.dataHash)

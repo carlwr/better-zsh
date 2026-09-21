@@ -1,4 +1,5 @@
-import { existsSync, readFileSync } from "node:fs"
+import { createHash } from "node:crypto"
+import { existsSync, readdirSync, readFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { describe, expect, test } from "vitest"
@@ -6,10 +7,8 @@ import { docCategoryPreamble } from "../docs/category-preamble"
 import { loadCorpus } from "../docs/corpus"
 import {
   corpusDataHash,
-  hashRecordFiles,
-  jsonDataFile,
-  jsonDataFiles,
-  jsonFiles,
+  hashRecords,
+  recordsFile,
   recordsSchemaDefs,
   recordsSchemaFile,
   resolverFixture,
@@ -41,27 +40,34 @@ describe("generated JSON is a release asset, not a registry payload", () => {
     }
   })
 
-  test("every jsonFiles entry is emitted", () => {
-    for (const file of jsonFiles) {
-      expect(existsSync(join(jsonDir, file))).toBe(true)
-    }
+  test("the index and the record file are the emitted data files", () => {
+    expect(readdirSync(jsonDir).sort()).toEqual(["index.json", recordsFile])
   })
 
   test("index.json: category descriptors and resolver order", () => {
     const index = readJson("artifacts/json/index.json") as unknown as JsonIndex
-    expect(index.version).toBe(6)
+    expect(index.version).toBe(7)
     expect(index.categories).toEqual(
       docCategories.map(id => {
         const preamble = docCategoryPreamble[id]
         return {
           id,
-          file: jsonDataFile(id),
           label: docCategoryLabels[id],
           ...(preamble === undefined ? {} : { preamble }),
         }
       }),
     )
     expect(index.classifyOrder).toEqual(classifyOrder)
+  })
+
+  // A consumer pairs the record file's entries with `index.categories` by
+  // walking both in order (the schema pins the key set, not the order).
+  test("records.json: one array per category, in index.categories order", () => {
+    const records = readJson(join("artifacts", "json", recordsFile))
+    expect(Object.keys(records)).toEqual([...docCategories])
+    for (const cat of docCategories) {
+      expect(Array.isArray(records[cat]), cat).toBe(true)
+    }
   })
 
   test("one draft 2020-12 records bundle; $defs named by category, never by TS type", () => {
@@ -122,15 +128,13 @@ describe("generated JSON is a release asset, not a registry payload", () => {
     expect([...seen].sort()).toEqual(kinds)
   })
 
-  test("index.dataHash matches the emitted record bytes", () => {
-    const texts = new Map(
-      jsonDataFiles.map(file => [
-        file,
-        readFileSync(join(jsonDir, file), "utf8"),
-      ]),
-    )
+  test("index.dataHash is the SHA-256 of the emitted record file", () => {
+    const text = readFileSync(join(jsonDir, recordsFile), "utf8")
     expect(readJson("artifacts/json/index.json").dataHash).toBe(
-      hashRecordFiles(texts),
+      hashRecords(text),
+    )
+    expect(hashRecords(text)).toBe(
+      createHash("sha256").update(text).digest("hex"),
     )
   })
 })

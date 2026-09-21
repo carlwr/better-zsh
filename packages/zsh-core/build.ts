@@ -14,9 +14,9 @@ import { docCategoryPreamble } from "./src/docs/category-preamble.ts"
 import { loadCorpus } from "./src/docs/corpus.ts"
 import {
   fmtJson,
-  hashRecordFiles,
-  jsonDataFile,
-  jsonRecordTexts,
+  hashRecords,
+  jsonRecordsText,
+  recordsFile,
   recordsSchemaFile,
   resolverFixture,
   schemaFile,
@@ -27,6 +27,7 @@ import type {
 } from "./src/docs/json-types.ts"
 import {
   classifyOrder,
+  type DocCategory,
   docCategories,
   docCategoryLabels,
 } from "./src/docs/taxonomy.ts"
@@ -61,18 +62,13 @@ function writeJson(path: string, data: unknown) {
   writeFileSync(path, fmtJson(data), "utf8")
 }
 
-function categoryDescriptor<K extends (typeof docCategories)[number]>(
-  id: K,
-): JsonCategoryDescriptor {
+function categoryDescriptor(id: DocCategory): JsonCategoryDescriptor {
   const preamble = docCategoryPreamble[id]
-  // TS cannot preserve the id/file correlation while constructing a mapped
-  // union; `jsonDataFile(id)` is the single source of that invariant.
   return {
     id,
-    file: jsonDataFile(id),
     label: docCategoryLabels[id],
     ...(preamble === undefined ? {} : { preamble }),
-  } as JsonCategoryDescriptor
+  }
 }
 
 function writeJsonArtifacts() {
@@ -83,19 +79,17 @@ function writeJsonArtifacts() {
 
   const corpus = loadCorpus()
 
-  const recordTexts = jsonRecordTexts(corpus)
-  for (const [file, text] of recordTexts) {
-    writeFileSync(join(jsonDir, file), text, "utf8")
-  }
+  const recordsText = jsonRecordsText(corpus)
+  writeFileSync(join(jsonDir, recordsFile), recordsText, "utf8")
 
   // One generator instance behind every shipped schema; the index carries
   // the fixture schema's `ResolverFeedback` def, so the two never diverge.
   const gen = createSchemaGen(pkgDir)
   const fixtureSchema = fixtureBundle(gen)
 
-  const dataHash = hashRecordFiles(recordTexts)
+  const dataHash = hashRecords(recordsText)
   const index: JsonIndex = {
-    version: 6,
+    version: 7,
     packageVersion: PKG_VERSION,
     zshUpstream: ZSH_UPSTREAM,
     dataHash,

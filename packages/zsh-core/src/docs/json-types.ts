@@ -23,7 +23,7 @@ export type WithMarkdown<T> = T & {
 export type JsonRecordMap = {
   readonly [K in DocCategory]: WithMarkdown<DocRecordMap[K]>
 }
-/** The record files: `<category>.json` is the array under its category. */
+/** `records.json`: every category's record array under its category, in primary category order. */
 export type JsonDocArrayMap = {
   [K in DocCategory]: readonly JsonRecordMap[K][]
 }
@@ -31,34 +31,31 @@ export type JsonDocArrayMap = {
 /** One self-contained JSON Schema object (draft 2020-12, no `$ref`). */
 export type JsonSchemaObject = Readonly<Record<string, unknown>>
 
-/** One category row in `JsonIndex.categories`, in primary category order. */
-export type JsonCategoryDescriptor = {
-  readonly [K in DocCategory]: {
-    readonly id: K
-    readonly file: `${K}.json`
-    readonly label: string
-    readonly preamble?: string
-  }
-}[DocCategory]
+/** One category row in `JsonIndex.categories`. */
+export interface JsonCategoryDescriptor {
+  readonly id: DocCategory
+  readonly label: string
+  readonly preamble?: string
+}
 
 /**
- * `index.json`: what a consumer needs to read the record files and mirror
+ * `index.json`: what a consumer needs to read the record file and mirror
  * the taxonomy. `version` moves with the shape of this object, of the
- * record file set or of the record envelope (`category`, `id`, `display`,
- * the generated fields) — never with record content (that is `dataHash`)
- * or with a category's own fields (the records schema describes those).
+ * record file or of the record envelope (`category`, `id`, `display`, the
+ * generated fields) — never with record content (that is `dataHash`) or
+ * with a category's own fields (the records schema describes those).
  */
 export interface JsonIndex {
-  readonly version: 6
+  readonly version: 7
   readonly packageVersion: string
   readonly zshUpstream: {
     readonly tag: string
     readonly commit: string
     readonly date: string
   }
-  /** SHA-256 over the emitted record files, `index.json` excluded — corpus-content identity, independent of `packageVersion`. */
+  /** SHA-256 of `records.json`'s bytes — corpus-content identity, independent of `packageVersion`. */
   readonly dataHash: string
-  /** Category identity, record file and display metadata, in primary category order. */
+  /** Category identity and display metadata, in primary category order — `records.json`'s key order. */
   readonly categories: readonly JsonCategoryDescriptor[]
   /** Resolver-walk order for raw-token lookup. */
   readonly classifyOrder: readonly DocCategory[]

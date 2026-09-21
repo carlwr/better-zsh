@@ -2,12 +2,9 @@
 //!
 //! `src/corpus.rs` embeds JSONs via `include_bytes!`, which takes a literal
 //! path, so the source is picked at compile time here — from
-//! `ZSHREF_DATA_SOURCE` or what exists on disk — and handed over as:
-//!
-//! - `ZSHREF_INDEX_JSON`, `ZSHREF_RESOLVER_FIXTURE` — absolute paths, via `env!`
-//! - `$OUT_DIR/file_bytes.rs` — the `(file, include_bytes!(…))` table for
-//!   every `index.json.categories[].file`, so the record-file inventory has
-//!   no hand-kept mirror
+//! `ZSHREF_DATA_SOURCE` or what exists on disk — and handed over as absolute
+//! paths via `env!`: `ZSHREF_INDEX_JSON`, `ZSHREF_RECORDS_JSON`,
+//! `ZSHREF_RESOLVER_FIXTURE`.
 //!
 //! `index.json.version` is checked here first, so a stale data source fails
 //! the build with the re-vendor hint rather than on whichever field moved.
@@ -33,6 +30,9 @@ struct Source {
 impl Source {
     fn index(&self) -> PathBuf {
         self.json_dir.join("index.json")
+    }
+    fn records(&self) -> PathBuf {
+        self.json_dir.join("records.json")
     }
 }
 
@@ -66,18 +66,19 @@ fn main() {
         println!("cargo:rerun-if-changed={}", path.display());
     }
     let source = data_source(&manifest, &vendored, &monorepo);
+    check_version(&source.index());
     println!(
         "cargo:rustc-env=ZSHREF_INDEX_JSON={}",
         source.index().display()
     );
     println!(
+        "cargo:rustc-env=ZSHREF_RECORDS_JSON={}",
+        source.records().display()
+    );
+    println!(
         "cargo:rustc-env=ZSHREF_RESOLVER_FIXTURE={}",
         source.fixture.display()
     );
-
-    let out_dir: PathBuf = env::var_os("OUT_DIR").expect("OUT_DIR unset").into();
-    fs::write(out_dir.join("file_bytes.rs"), file_bytes_table(source))
-        .expect("write file_bytes.rs");
 }
 
 fn data_source<'s>(manifest: &Path, vendored: &'s Source, monorepo: &'s Source) -> &'s Source {
@@ -103,23 +104,12 @@ fn data_source<'s>(manifest: &Path, vendored: &'s Source, monorepo: &'s Source) 
     }
 }
 
-/// `&[("<file>", include_bytes!("<abs path>")), …]` over the category descriptors.
-/// Paths go through `{:?}` so they land as valid string literals on every host.
-fn file_bytes_table(source: &Source) -> String {
+fn check_version(index: &Path) {
     #[derive(serde::Deserialize)]
     struct Versioned {
         version: u32,
     }
-    #[derive(serde::Deserialize)]
-    struct Category {
-        file: String,
-    }
-    #[derive(serde::Deserialize)]
-    struct Index {
-        categories: Vec<Category>,
-    }
-    let index = source.index();
-    let bytes = fs::read(&index).unwrap_or_else(|e| panic!("read {}: {e}", index.display()));
+    let bytes = fs::read(index).unwrap_or_else(|e| panic!("read {}: {e}", index.display()));
     let Versioned { version } =
         serde_json::from_slice(&bytes).unwrap_or_else(|e| panic!("parse {}: {e}", index.display()));
     assert_eq!(
@@ -128,17 +118,6 @@ fn file_bytes_table(source: &Source) -> String {
         "{} is version {version}; this crate reads version {INDEX_VERSION} — re-vendor `data/` (DATA-SYNC.md)",
         index.display()
     );
-    let Index { categories } =
-        serde_json::from_slice(&bytes).unwrap_or_else(|e| panic!("parse {}: {e}", index.display()));
-    let entries = categories.iter().map(|category| {
-        let f = &category.file;
-        let path = source.json_dir.join(f);
-        let path = path
-            .to_str()
-            .unwrap_or_else(|| panic!("non-UTF-8 path {}", path.display()));
-        format!("    ({f:?}, include_bytes!({path:?})),\n")
-    });
-    format!("&[\n{}]\n", entries.collect::<String>())
 }
 
 fn panic_with_help(manifest: &Path) -> ! {

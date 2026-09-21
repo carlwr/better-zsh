@@ -1,43 +1,34 @@
 import { createHash } from "node:crypto"
 import type { DocCorpus } from "./corpus.ts"
 import { assertShellSafeIdentity, projectRecords } from "./json-projection.ts"
+import type { JsonDocArrayMap } from "./json-types.ts"
 import { type DocCategory, docCategories } from "./taxonomy.ts"
 
-/** A category's record file — named after the category, one spelling for id, file and schema entry. */
-export type JsonDataFile = `${DocCategory}.json`
+/** The record file: every category's record array under its category (`JsonDocArrayMap`). */
+export const recordsFile = "records.json"
 
-export function jsonDataFile<K extends DocCategory>(cat: K): `${K}.json` {
-  return `${cat}.json`
-}
-
-export const jsonDataFiles: readonly JsonDataFile[] = docCategories
-  .map(cat => jsonDataFile(cat))
-  .sort()
-
-export const jsonFiles = ["index.json", ...jsonDataFiles] as const
-
-/**
- * One schema bundle for every record file; `$defs` are named by category
- * (`recordsSchemaDefs`), never by TS type.
- */
-export const recordsSchemaFile = "records.schema.json"
-
-/**
- * The records bundle's per-category `$defs` entries: `file` describes the
- * category's record file (an array of its records), `record` one record, `id`
- * a record's identity — what its `id` holds, and what a field referring to a
- * record of that category holds.
- */
-export const recordsSchemaDefs = {
-  file: (cat: DocCategory) => cat,
-  record: (cat: DocCategory) => `${cat}.record`,
-  id: (cat: DocCategory) => `${cat}.id`,
-} as const
-
-/** Schema file beside a non-record JSON file (`index.json`, the fixture). */
+/** Schema file beside a JSON file (`index.json`, the record file, the fixture). */
 export function schemaFile(file: string): string {
   return file.replace(/\.json$/, ".schema.json")
 }
+
+/**
+ * The record file's schema bundle; `$defs` are named by category
+ * (`recordsSchemaDefs`), never by TS type.
+ */
+export const recordsSchemaFile = schemaFile(recordsFile)
+
+/**
+ * The records bundle's per-category `$defs` entries: `records` describes the
+ * category's record array, `record` one record, `id` a record's identity —
+ * what its `id` holds, and what a field referring to a record of that
+ * category holds.
+ */
+export const recordsSchemaDefs = {
+  records: (cat: DocCategory) => cat,
+  record: (cat: DocCategory) => `${cat}.record`,
+  id: (cat: DocCategory) => `${cat}.id`,
+} as const
 
 // The resolver conformance fixture is a release asset of its own.
 const fixtureBase = "resolver-fixture"
@@ -48,15 +39,12 @@ export const resolverFixture = {
 } as const
 
 /**
- * Lets a consumer ask "same bytes as the release I already have?" without a
- * version line someone has to author and keep honest.
+ * `dataHash`: SHA-256 of the record file's bytes (`shasum -a 256
+ * records.json`). Lets a consumer ask "same bytes as the release I already
+ * have?" without a version line someone has to author and keep honest.
  */
-export function hashRecordFiles(texts: ReadonlyMap<string, string>): string {
-  const h = createHash("sha256")
-  for (const file of [...texts.keys()].sort()) {
-    h.update(`${file}\0${texts.get(file)}\0`)
-  }
-  return h.digest("hex")
+export function hashRecords(text: string): string {
+  return createHash("sha256").update(text).digest("hex")
 }
 
 /**
@@ -68,27 +56,30 @@ export function fmtJson(data: unknown): string {
 }
 
 /**
- * The record files of `corpus`' JSON build, text by data file — what the
- * build writes and `dataHash` covers. Refuses a corpus whose identity
+ * The record file of `corpus`' JSON build: the record arrays keyed by
+ * category, in primary category order. Refuses a corpus whose identity
  * fields are not shell-safe ASCII (`assertShellSafeIdentity`).
  */
-export function jsonRecordTexts(
-  corpus: DocCorpus,
-): ReadonlyMap<JsonDataFile, string> {
-  return new Map<JsonDataFile, string>(
-    docCategories.map(cat => {
-      const projected = projectRecords(corpus, cat)
-      assertShellSafeIdentity(projected)
-      return [jsonDataFile(cat), fmtJson(projected)] as const
-    }),
-  )
+export function jsonRecords(corpus: DocCorpus): JsonDocArrayMap {
+  const entries = docCategories.map(cat => {
+    const projected = projectRecords(corpus, cat)
+    assertShellSafeIdentity(projected)
+    return [cat, projected] as const
+  })
+  // TS cannot carry the key/value correlation through `fromEntries`.
+  return Object.fromEntries(entries) as JsonDocArrayMap
+}
+
+/** `jsonRecords` as the text the build writes — what `dataHash` covers. */
+export function jsonRecordsText(corpus: DocCorpus): string {
+  return fmtJson(jsonRecords(corpus))
 }
 
 /**
  * Content identity of `corpus`: equals `JsonIndex.dataHash` of its JSON
- * build. Hashes the record file names plus their formatted record texts —
- * renders every record (cheap, not free).
+ * build. Hashes the formatted record file — renders every record (cheap,
+ * not free).
  */
 export function corpusDataHash(corpus: DocCorpus): string {
-  return hashRecordFiles(jsonRecordTexts(corpus))
+  return hashRecords(jsonRecordsText(corpus))
 }

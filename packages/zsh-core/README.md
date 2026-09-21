@@ -11,7 +11,7 @@ Library-first: the VS Code extension, the web SPA, and the Rust crate (CLI + MCP
 - **The data model at the root** — the corpus (`loadCorpus`, `DocCorpus`), the category ontology (`DocCategory`, `docCategories`, `DocRecordMap`) and the record types, each carrying its `category` and its identity brand (`Documented<K>`).
 - **Operations as subpaths** — `./resolver`, `./render`, `./analysis`, `./json`, `./assets`, `./meta`.
 - **Orthogonal primitives** — raw-to-doc resolution, markdown rendering, and static analysis stay separate.
-- **Release assets** — per-category JSON record files plus a versioned index, one JSON Schema bundle (each record file validates against its `#/$defs/<category>`), and a resolver conformance fixture for resolver mirrors; attached to the GitHub release tag for consumers outside TypeScript.
+- **Release assets** — a versioned index plus one record file (every category's records under its category), one JSON Schema bundle (the record file validates against its root, a category's records against `#/$defs/<category>`), and a resolver conformance fixture for resolver mirrors; attached to the GitHub release tag for consumers outside TypeScript.
 
 Public reading surface: `dist/types/*.d.ts` after `pnpm build`.
 
