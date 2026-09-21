@@ -1,10 +1,11 @@
-import { mkdirSync, rmSync, writeFileSync } from "node:fs"
-import { dirname, join, resolve } from "node:path"
-import { fileURLToPath } from "node:url"
+// The shipped JSON Schemas, generated from `json-types.ts` — one generator
+// instance, three bundles, plus the `ResolverFeedback` def the index carries.
+// `build.ts` writes them; nothing here touches the filesystem.
+
+import { join } from "node:path"
 import { createGenerator, type Schema } from "ts-json-schema-generator"
 import { displayPattern, idPattern } from "../src/docs/brands.ts"
 import {
-  fmtJson,
   recordsSchemaDefs,
   recordsSchemaFile,
   resolverFixture,
@@ -13,10 +14,17 @@ import {
 import { type DocCategory, docCategories } from "../src/docs/taxonomy.ts"
 import { PKG_REPO_URL } from "../src/meta/pkg-info.ts"
 
-const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), "..")
-const outDir = join(rootDir, "artifacts", "schema")
-const fixtureDir = join(rootDir, "artifacts", resolverFixture.dir)
-const typePath = join(rootDir, "src", "docs", "json-types.ts")
+export type SchemaGen = ReturnType<typeof createGenerator>
+
+/** One generator over `json-types.ts`; every shipped schema comes from it. */
+export function createSchemaGen(pkgDir: string): SchemaGen {
+  return createGenerator({
+    path: join(pkgDir, "src", "docs", "json-types.ts"),
+    tsconfig: join(pkgDir, "tsconfig.build.json"),
+    expose: "export",
+    skipTypeCheck: false,
+  })
+}
 
 // The generator emits draft-07; the shipped schemas are draft 2020-12, as the
 // crate's tool schemas. The rewrite is mechanical while the generator uses no
@@ -140,7 +148,7 @@ function assertClean(bundle: Obj): void {
   }
 }
 
-function recordsBundle(gen: ReturnType<typeof createGenerator>): Obj {
+export function recordsBundle(gen: SchemaGen): Obj {
   const bundle = toDraft2020(
     gen.createSchema("JsonDocArrayMap"),
     recordsSchemaFile,
@@ -170,34 +178,27 @@ function recordsBundle(gen: ReturnType<typeof createGenerator>): Obj {
   return bundle
 }
 
-rmSync(outDir, { recursive: true, force: true })
-mkdirSync(outDir, { recursive: true })
-// The fixture's schema sits beside the fixture; `build.ts` owns that dir.
-mkdirSync(fixtureDir, { recursive: true })
+export function indexBundle(gen: SchemaGen): Obj {
+  return toDraft2020(gen.createSchema("JsonIndex"), schemaFile("index.json"))
+}
 
-const gen = createGenerator({
-  path: typePath,
-  tsconfig: join(rootDir, "tsconfig.build.json"),
-  expose: "export",
-  skipTypeCheck: false,
-})
+export function fixtureBundle(gen: SchemaGen): Obj {
+  return toDraft2020(
+    gen.createSchema(resolverFixture.schema),
+    schemaFile(resolverFixture.file),
+  )
+}
 
-writeFileSync(
-  join(outDir, recordsSchemaFile),
-  fmtJson(recordsBundle(gen)),
-  "utf8",
-)
-
-const indexSchema = schemaFile("index.json")
-writeFileSync(
-  join(outDir, indexSchema),
-  fmtJson(toDraft2020(gen.createSchema("JsonIndex"), indexSchema)),
-  "utf8",
-)
-
-const fixtureSchema = schemaFile(resolverFixture.file)
-writeFileSync(
-  join(fixtureDir, fixtureSchema),
-  fmtJson(toDraft2020(gen.createSchema(resolverFixture.schema), fixtureSchema)),
-  "utf8",
-)
+/**
+ * `ResolverFeedback` as one self-contained schema object: the fixture
+ * bundle's def, which `index.json` carries — so the index and the fixture
+ * schema hold the same object by construction. Refuses a def with a
+ * `$ref`: embedded alone, it would resolve against nothing.
+ */
+export function resolverFeedbackDef(fixture: Obj): Obj {
+  const { name, def } = defOf(fixture.$defs as Defs, refTo("ResolverFeedback"))
+  eachObj(def, o => {
+    if ("$ref" in o) throw new Error(`${name}: not self-contained, has a $ref`)
+  })
+  return def
+}

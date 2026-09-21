@@ -7,9 +7,6 @@
 export {
   type ResolvedHit,
   type ResolverFeedback,
-  type ResolverFeedbackKindSchema,
   resolve,
   resolveAll,
-  resolverFeedbackKindSchemas,
-  resolverFeedbackKinds,
 } from "./src/docs/resolver.ts"

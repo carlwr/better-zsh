@@ -544,8 +544,10 @@ function resolveAdmitted<K extends DocCategory>(
 // --- Resolver feedback ------------------------------------------------------
 
 /**
- * Lossy-resolution feedback, carried on the `ResolvedHit`. Closed kind-tagged
- * union; consumers route programmatically (wording is not API surface).
+ * Lossy-resolution feedback, carried on the `ResolvedHit`: a closed union
+ * tagged by `kind`, to route on. Its JSON Schema ships generated from this
+ * type (`index.json`, the resolver fixture's schema); the kinds are
+ * type-level only.
  *
  * - `input-negated`: input denotes the option's off state — `NO_` prefix or
  *   flipped-sign single-letter flag (canonical-form inputs do not carry this).
@@ -559,39 +561,3 @@ export type ResolverFeedback =
       /** @minLength 1 */
       readonly subscript: string
     }
-
-/** One closed JSON Schema object: the shape of one `ResolverFeedback` kind. */
-export type ResolverFeedbackKindSchema = Readonly<Record<string, unknown>>
-
-/**
- * JSON Schema fragment per `ResolverFeedback` kind; per-kind extra fields
- * (`subscript`) live here.
- */
-const kindSchema = (
-  kind: ResolverFeedback["kind"],
-  extra: Readonly<Record<string, unknown>> = {},
-): ResolverFeedbackKindSchema => ({
-  type: "object",
-  additionalProperties: false,
-  required: ["kind", ...Object.keys(extra)],
-  properties: { kind: { type: "string", const: kind }, ...extra },
-})
-
-/**
- * The closed JSON Schema per `ResolverFeedback` kind — what a schema builder
- * embeds instead of restating the shapes; `index.json` carries the same
- * objects for out-of-process consumers. Hand-authored: a test pins each to
- * the schema generated from the type (the fixture schema's).
- */
-export const resolverFeedbackKindSchemas: Readonly<
-  Record<ResolverFeedback["kind"], ResolverFeedbackKindSchema>
-> = {
-  "input-negated": kindSchema("input-negated"),
-  subscripted: kindSchema("subscripted", {
-    subscript: { type: "string", minLength: 1 },
-  }),
-}
-
-/** Closed list of `ResolverFeedback` kinds — the keys of `resolverFeedbackKindSchemas`. */
-export const resolverFeedbackKinds: readonly ResolverFeedback["kind"][] =
-  Object.keys(resolverFeedbackKindSchemas) as ResolverFeedback["kind"][]

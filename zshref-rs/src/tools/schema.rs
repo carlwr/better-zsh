@@ -172,10 +172,7 @@ fn defs(shape: &MatchShape, sub_kinds: &[(DocCategory, Vec<String>)]) -> Value {
         defs.insert(format!("SubKind.{cat}"), json!({ "enum": values }));
     }
     if shape.feedback {
-        defs.insert(
-            "Feedback".into(),
-            json!({ "oneOf": ResolverFeedback::kind_schemas() }),
-        );
+        defs.insert("Feedback".into(), ResolverFeedback::schema());
     }
     Value::Object(defs)
 }

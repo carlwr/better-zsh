@@ -44,11 +44,11 @@ pub enum ResolverFeedback {
 }
 
 impl ResolverFeedback {
-    /// One closed JSON Schema per kind, variant order — the `oneOf` behind
-    /// the tool output schemas' `Feedback`. Read from `index.json`, where
-    /// zsh-core emits them in its kind order; a variant per kind, same order.
-    pub fn kind_schemas() -> Vec<Value> {
-        INDEX.resolver_feedback_kind_schemas.clone()
+    /// The union's JSON Schema — zsh-core's, from `index.json`; the tool
+    /// output schemas embed it as `Feedback`. A variant per `anyOf` branch,
+    /// matched by the branch's `kind` const (the test below).
+    pub fn schema() -> Value {
+        INDEX.resolver_feedback_schema.clone()
     }
 }
 
@@ -603,25 +603,38 @@ mod tests {
         );
     }
 
-    // Cross-language pin: the schemas are zsh-core's (`index.json`), each
-    // closed on its `kind` const, so a variant validating against the schema
-    // at its own position ties the enum's serde tags, arity and order to TS.
+    // Cross-language pin: the schema is zsh-core's (`index.json`), one
+    // `anyOf` branch per kind closed on its `kind` const, so a variant
+    // validating against the branch of its own tag ties the enum's serde
+    // tags and arity to TS; one sample per branch ties the kind set.
     #[test]
-    fn every_feedback_kind_validates_against_its_schema() {
+    fn every_feedback_kind_validates_against_its_schema_branch() {
         let samples = [
             ResolverFeedback::InputNegated,
             ResolverFeedback::Subscripted {
                 subscript: "context".into(),
             },
         ];
-        let schemas = ResolverFeedback::kind_schemas();
-        assert_eq!(samples.len(), schemas.len());
-        for (fb, schema) in samples.iter().zip(&schemas) {
-            let validator = jsonschema::draft202012::options()
-                .build(schema)
-                .expect("kind schema compiles");
+        let schema = ResolverFeedback::schema();
+        let branches = schema["anyOf"]
+            .as_array()
+            .expect("feedback schema is an anyOf");
+        assert_eq!(samples.len(), branches.len());
+        let union = jsonschema::draft202012::options()
+            .build(&schema)
+            .expect("feedback schema compiles");
+        for fb in &samples {
             let v = json!(fb);
-            assert!(validator.is_valid(&v), "{v} fails {schema}");
+            let kind = v["kind"].as_str().expect("kind tag");
+            let branch = branches
+                .iter()
+                .find(|b| b["properties"]["kind"]["const"] == kind)
+                .unwrap_or_else(|| panic!("no schema branch for kind {kind}"));
+            let validator = jsonschema::draft202012::options()
+                .build(branch)
+                .expect("kind branch compiles");
+            assert!(validator.is_valid(&v), "{v} fails {branch}");
+            assert!(union.is_valid(&v), "{v} fails the union schema");
         }
     }
 }

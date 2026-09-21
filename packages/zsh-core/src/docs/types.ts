@@ -6,7 +6,7 @@ import type { DocCategory, ModuleName } from "./taxonomy.ts"
 // constructors and other helpers live in `brands.ts`.
 //
 // JSDoc on the exported types here is dual-audience: the `.d.ts` rollup and
-// the `description`s of the released `records.schema.json` (build-schema.ts).
+// the `description`s of the released `records.schema.json` (scripts/schemas.ts).
 // Write for JSON consumers too — they see `$defs` names, not this file.
 
 // --- Auxiliary lookup brands ------------------------------------------------

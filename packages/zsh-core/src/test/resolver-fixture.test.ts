@@ -1,8 +1,6 @@
-import { isDefined } from "@carlwr/typescript-extra"
 import { describe, expect, test } from "vitest"
 import { buildResolverFixture } from "../../scripts/resolver-fixture"
 import { loadCorpus } from "../docs/corpus"
-import { resolverFeedbackKinds } from "../docs/resolver"
 import { classifyOrder, docCategories } from "../docs/taxonomy"
 
 const corpus = loadCorpus()
@@ -29,15 +27,6 @@ describe("resolver conformance fixture", () => {
     const inputs = fixture.cases[cat].map(c => c.input)
     expect(new Set(inputs).size).toBe(inputs.length)
     expect(fixture.cases[cat].some(c => c.id === null)).toBe(true)
-  })
-
-  test("every feedback kind occurs", () => {
-    const seen = new Set(
-      docCategories.flatMap(cat =>
-        fixture.cases[cat].map(c => c.feedback?.kind).filter(isDefined),
-      ),
-    )
-    expect([...seen].sort()).toEqual([...resolverFeedbackKinds].sort())
   })
 
   test("walk: inputs are unique; every id is walked; a miss occurs", () => {

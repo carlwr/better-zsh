@@ -9,12 +9,19 @@
 //!   every `index.json.files` entry, so the record-file inventory has no
 //!   hand-kept mirror
 //!
+//! `index.json.version` is checked here first, so a stale data source fails
+//! the build with the re-vendor hint rather than on whichever field moved.
+//!
 //! Design: DATA-SYNC.md.
 
 use std::{
     env, fs,
     path::{Path, PathBuf},
 };
+
+#[path = "src/index_version.rs"]
+mod index_version;
+use index_version::INDEX_VERSION;
 
 /// Where one data source keeps the corpus JSONs and the resolver fixture.
 struct Source {
@@ -100,11 +107,23 @@ fn data_source<'s>(manifest: &Path, vendored: &'s Source, monorepo: &'s Source) 
 /// Paths go through `{:?}` so they land as valid string literals on every host.
 fn file_bytes_table(source: &Source) -> String {
     #[derive(serde::Deserialize)]
+    struct Versioned {
+        version: u32,
+    }
+    #[derive(serde::Deserialize)]
     struct Index {
         files: Vec<String>,
     }
     let index = source.index();
     let bytes = fs::read(&index).unwrap_or_else(|e| panic!("read {}: {e}", index.display()));
+    let Versioned { version } =
+        serde_json::from_slice(&bytes).unwrap_or_else(|e| panic!("parse {}: {e}", index.display()));
+    assert_eq!(
+        version,
+        INDEX_VERSION,
+        "{} is version {version}; this crate reads version {INDEX_VERSION} — re-vendor `data/` (DATA-SYNC.md)",
+        index.display()
+    );
     let Index { files } =
         serde_json::from_slice(&bytes).unwrap_or_else(|e| panic!("parse {}: {e}", index.display()));
     let entries = files.iter().map(|f| {

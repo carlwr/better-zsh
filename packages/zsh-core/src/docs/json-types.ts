@@ -1,8 +1,5 @@
 import type { JsonDataFile } from "./json-artifacts.ts"
-import type {
-  ResolverFeedback,
-  ResolverFeedbackKindSchema,
-} from "./resolver.ts"
+import type { ResolverFeedback } from "./resolver.ts"
 import type { DocCategory, DocRecordMap } from "./taxonomy.ts"
 
 // Generated fields attached to every JSON record; the in-memory corpus omits
@@ -32,13 +29,18 @@ export type JsonDocArrayMap = {
   [K in DocCategory]: readonly JsonRecordMap[K][]
 }
 
+/** One self-contained JSON Schema object (draft 2020-12, no `$ref`). */
+export type JsonSchemaObject = Readonly<Record<string, unknown>>
+
 /**
  * `index.json`: what a consumer needs to read the record files and mirror
- * the taxonomy. `version` moves with the shape of this object or of the
- * record file set, never with record content (that is `dataHash`).
+ * the taxonomy. `version` moves with the shape of this object, of the
+ * record file set or of the record envelope (`category`, `id`, `display`,
+ * the generated fields) — never with record content (that is `dataHash`)
+ * or with a category's own fields (the records schema describes those).
  */
 export interface JsonIndex {
-  readonly version: 3
+  readonly version: 4
   readonly packageVersion: string
   readonly zshUpstream: {
     readonly tag: string
@@ -47,18 +49,23 @@ export interface JsonIndex {
   }
   /** SHA-256 over the emitted record files, `index.json` excluded — corpus-content identity, independent of `packageVersion`. */
   readonly dataHash: string
-  /** Every record file, sorted by name. */
+  /** Every record file, sorted by name — the inventory: what to embed or copy, with nothing missing. */
   readonly files: readonly JsonDataFile[]
   /** Canonical list of `DocCategory` values, in primary ordering. */
   readonly docCategories: readonly DocCategory[]
   /** Resolver-walk order for raw-token lookup. */
   readonly classifyOrder: readonly DocCategory[]
-  /** Per-category JSON filename — pairs each `docCategories` entry with the file holding its records. */
+  /** Per-category JSON filename — the role: which file holds a category's records. Derivable from `docCategories`; carried so a reader needs no naming rule. */
   readonly categoryFiles: { readonly [K in DocCategory]: `${K}.json` }
   /** Human-readable per-category labels — SoT for display in out-of-process consumers. */
   readonly docCategoryLabels: { readonly [K in DocCategory]: string }
-  /** One closed JSON Schema per `ResolverFeedback` kind, in `resolverFeedbackKinds` order — what a resolver mirror's output schemas embed. */
-  readonly resolverFeedbackKindSchemas: readonly ResolverFeedbackKindSchema[]
+  /**
+   * `ResolverFeedback`'s JSON Schema, generated from the type — the fixture
+   * schema's def, same object. Each `anyOf` branch is one kind, closed on
+   * `properties.kind.const`; a resolver mirror embeds it in its output
+   * schemas and matches its kinds by that const.
+   */
+  readonly resolverFeedbackSchema: JsonSchemaObject
 }
 
 /** What the resolvers answer for one raw input; `null` where they answer nothing. */

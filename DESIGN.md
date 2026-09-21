@@ -150,8 +150,9 @@ Raised by API reviews; each a decision, not an oversight:
   - a part of it in the tarball: a second channel, with a version pin between the two
   - an in-process consumer has the TS types the schema is generated from
 - **A runtime array for every closed union**
-  - `as const` where the library iterates the union (`emulations`, `optSections`, …); tag-only unions (`HistoryKind`, `JobSpecKind`, …) stay type-level
+  - `as const` where the library iterates the union (`emulations`, `optSections`, …); tag-only unions (`HistoryKind`, `JobSpecKind`, `ResolverFeedback["kind"]`, …) stay type-level
   - the values ship as the released schema's enums; in-process, a fold over the corpus
+  - `ResolverFeedback`: a runtime kinds list and hand-authored per-kind schemas, pinned equal to the generated schema by a test, were two peers with no owner — the build now lifts the generated def into `index.json`; nothing runtime remains
 - **Option references as structure**
   - the renderer bolds option mentions by heuristic — an ALL-CAPS token that `resolve`s (`fmtOptRefsInMd`); exported as spans, a heuristic becomes a contract
   - a consumer wanting links `resolve`s tokens itself
@@ -184,7 +185,7 @@ Authoritative homes:
 - JSDoc on `ResolverFeedback` / `ResolvedHit`, `zsh-core/docs/resolver.ts`:
   - kinds
   - where feedback rides (the `resolve` hit)
-  - runtime list `resolverFeedbackKinds`
+  - the schema: generated from the type; `index.json` carries the fixture schema's def (`JsonIndex` JSDoc)
 - "why one parametric entry, not per-category APIs" — module-header block, same file
 
 ---
@@ -305,7 +306,7 @@ Vendored `.yo` is consumed three ways:
 
 - **`loadCorpus()`** — runtime parse into `DocCorpus`; lazy per category, cached (its JSDoc). Rendering measured cheap for the whole corpus, so it stays unmemoized — PRINCIPLES.md §"Cost and laziness".
 - **Pre-parsed JSON** — same records; markdown bodies pre-rendered at build time. Distribution: `PACKAGING.md`.
-  - _schema:_ one bundle, generated from the TS types plus the corpus (`packages/zsh-core/scripts/build-schema.ts`)
+  - _schema:_ one bundle, generated from the TS types plus the corpus (`packages/zsh-core/scripts/schemas.ts`, written by the package build)
     - `$defs` are named by category (`recordsSchemaDefs` in `json-artifacts.ts`), never by TS type
     - draft 2020-12, as the crate's tool schemas
     - precision posture: PRINCIPLES.md §"Schema precision when schemas are co-released"
@@ -328,7 +329,7 @@ Parser and renderer are layered: the parser may capture structure the renderer c
 ## Output schemas (crate-owned)
 
 - Each tool's `outputSchema` is generated in the `zshref` crate beside its implementation (`src/tools/schema.rs`).
-- `subKind` enums and the record total come from the loaded corpus; feedback kind schemas from `index.json`.
+- `subKind` enums and the record total come from the loaded corpus; the feedback schema from `index.json`.
 - Cross-cutting "co-released schema precision" rationale: PRINCIPLES.md.
 - Drift enforced at test time: every tool response the crate's test suite sees is validated against its schema (`zshref-rs/tests/common/`).
 

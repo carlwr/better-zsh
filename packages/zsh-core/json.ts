@@ -15,5 +15,6 @@ export type {
   JsonDocArrayMap,
   JsonIndex,
   JsonRecordMap,
+  JsonSchemaObject,
   WithMarkdown,
 } from "./src/docs/json-types.ts"

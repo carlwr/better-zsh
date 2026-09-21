@@ -15,10 +15,6 @@ import {
   schemaFile,
 } from "../docs/json-artifacts"
 import type { JsonIndex } from "../docs/json-types"
-import {
-  resolverFeedbackKindSchemas,
-  resolverFeedbackKinds,
-} from "../docs/resolver"
 import { docCategories } from "../docs/taxonomy"
 
 const pkgDir = join(dirname(fileURLToPath(import.meta.url)), "..", "..")
@@ -46,17 +42,14 @@ describe("generated JSON is a release asset, not a registry payload", () => {
     }
   })
 
-  test("index.json: v3 shape, one record file per category", () => {
+  test("index.json: v4 shape, one record file per category", () => {
     const index = readJson("artifacts/json/index.json") as unknown as JsonIndex
-    expect(index.version).toBe(3)
+    expect(index.version).toBe(4)
     expect(index.files).toEqual(jsonDataFiles)
     expect(index.docCategories).toEqual(docCategories)
     for (const cat of docCategories) {
       expect(index.categoryFiles[cat]).toBe(jsonDataFile(cat))
     }
-    expect(index.resolverFeedbackKindSchemas).toHaveLength(
-      resolverFeedbackKinds.length,
-    )
   })
 
   test("one draft 2020-12 records bundle; $defs named by category, never by TS type", () => {
@@ -88,16 +81,33 @@ describe("generated JSON is a release asset, not a registry payload", () => {
     ).toBe(readJson("artifacts/json/index.json").dataHash)
   })
 
-  // Two shipped schemas describe `ResolverFeedback`: the fixture's, generated
-  // from the type, and `index.json`'s per-kind objects, hand-authored. One
-  // union, one shape.
-  test("the fixture schema's ResolverFeedback equals the hand-authored kind schemas", () => {
+  // `ResolverFeedback` ships in two assets — the fixture schema's def and
+  // `index.json` — as one generated object: self-contained, one `anyOf`
+  // branch per kind closed on its `kind` const, and every kind exercised by
+  // the fixture (what a mirror validates its own feedback against).
+  test("index.json carries the fixture schema's ResolverFeedback; every kind occurs", () => {
+    const index = readJson("artifacts/json/index.json") as unknown as JsonIndex
     const defs = readJson(
       join("artifacts", resolverFixture.dir, schemaFile(resolverFixture.file)),
-    ).$defs as Record<string, { anyOf?: unknown[] }>
-    expect(defs.ResolverFeedback?.anyOf).toEqual(
-      resolverFeedbackKinds.map(k => resolverFeedbackKindSchemas[k]),
+    ).$defs as Record<string, unknown>
+    expect(index.resolverFeedbackSchema).toEqual(defs.ResolverFeedback)
+    expect(JSON.stringify(index.resolverFeedbackSchema)).not.toContain('"$ref"')
+
+    const branches = index.resolverFeedbackSchema.anyOf as {
+      properties: { kind: { const: string } }
+    }[]
+    const kinds = branches.map(b => b.properties.kind.const).sort()
+    expect(kinds.length).toBeGreaterThan(0)
+    const fixture = readJson(
+      join("artifacts", resolverFixture.dir, resolverFixture.file),
+    ) as { cases: Record<string, { feedback: { kind: string } | null }[]> }
+    const seen = new Set(
+      Object.values(fixture.cases)
+        .flat()
+        .map(c => c.feedback?.kind)
+        .filter(k => k !== undefined),
     )
+    expect([...seen].sort()).toEqual(kinds)
   })
 
   test("index.dataHash matches the emitted record bytes", () => {

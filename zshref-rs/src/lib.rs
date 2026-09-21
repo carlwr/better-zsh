@@ -7,5 +7,6 @@ pub mod tools;
 
 mod batch;
 mod fuzzy;
+mod index_version;
 mod output;
 mod resolver;

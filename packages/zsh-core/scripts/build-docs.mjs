@@ -1,4 +1,11 @@
-import { cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import {
+  cpSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs"
 import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 
@@ -18,8 +25,13 @@ const apiDir = join(distDir, "api")
 const dataDir = join(pkgDir, "artifacts", "json")
 
 const pkg = JSON.parse(readFileSync(join(pkgDir, "package.json"), "utf8"))
-const index = JSON.parse(readFileSync(join(dataDir, "index.json"), "utf8"))
-const dataFiles = ["index.json", ...(index.files ?? [])]
+// What `data/` is copied from, listed as is — nothing to drift from the copy.
+const dataFiles = [
+  "index.json",
+  ...readdirSync(dataDir)
+    .filter(f => f.endsWith(".json") && f !== "index.json")
+    .sort(),
+]
 const entryPoints = Object.keys(pkg.exports).filter(
   sub => !sub.includes("*") && sub !== "./package.json",
 )

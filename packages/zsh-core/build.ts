@@ -3,6 +3,13 @@ import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 import { build } from "tsup"
 import { buildResolverFixture } from "./scripts/resolver-fixture.ts"
+import {
+  createSchemaGen,
+  fixtureBundle,
+  indexBundle,
+  recordsBundle,
+  resolverFeedbackDef,
+} from "./scripts/schemas.ts"
 import { loadCorpus } from "./src/docs/corpus.ts"
 import {
   fmtJson,
@@ -10,13 +17,11 @@ import {
   jsonDataFile,
   jsonDataFiles,
   jsonRecordTexts,
+  recordsSchemaFile,
   resolverFixture,
+  schemaFile,
 } from "./src/docs/json-artifacts.ts"
 import type { JsonIndex } from "./src/docs/json-types.ts"
-import {
-  resolverFeedbackKindSchemas,
-  resolverFeedbackKinds,
-} from "./src/docs/resolver.ts"
 import {
   classifyOrder,
   docCategories,
@@ -32,6 +37,7 @@ const pkgDir =
 const distDir = join(pkgDir, "dist")
 const jsonDir = join(pkgDir, "artifacts", "json")
 const fixtureDir = join(pkgDir, "artifacts", resolverFixture.dir)
+const schemaDir = join(pkgDir, "artifacts", "schema")
 
 /**
  * One bundle per non-glob `exports` subpath, read from the manifest rather
@@ -53,7 +59,7 @@ function writeJson(path: string, data: unknown) {
 }
 
 function writeJsonArtifacts() {
-  for (const dir of [jsonDir, fixtureDir]) {
+  for (const dir of [jsonDir, fixtureDir, schemaDir]) {
     rmSync(dir, { recursive: true, force: true })
     mkdirSync(dir, { recursive: true })
   }
@@ -69,9 +75,14 @@ function writeJsonArtifacts() {
     docCategories.map(cat => [cat, jsonDataFile(cat)]),
   ) as JsonIndex["categoryFiles"]
 
+  // One generator instance behind every shipped schema; the index carries
+  // the fixture schema's `ResolverFeedback` def, so the two never diverge.
+  const gen = createSchemaGen(pkgDir)
+  const fixtureSchema = fixtureBundle(gen)
+
   const dataHash = hashRecordFiles(recordTexts)
   const index: JsonIndex = {
-    version: 3,
+    version: 4,
     packageVersion: PKG_VERSION,
     zshUpstream: ZSH_UPSTREAM,
     dataHash,
@@ -82,9 +93,7 @@ function writeJsonArtifacts() {
     classifyOrder: [...classifyOrder],
     categoryFiles,
     docCategoryLabels: { ...docCategoryLabels },
-    resolverFeedbackKindSchemas: resolverFeedbackKinds.map(
-      kind => resolverFeedbackKindSchemas[kind],
-    ),
+    resolverFeedbackSchema: resolverFeedbackDef(fixtureSchema),
   }
 
   writeJson(join(jsonDir, "index.json"), index)
@@ -92,6 +101,9 @@ function writeJsonArtifacts() {
     join(fixtureDir, resolverFixture.file),
     buildResolverFixture(corpus, { packageVersion: PKG_VERSION, dataHash }),
   )
+  writeJson(join(fixtureDir, schemaFile(resolverFixture.file)), fixtureSchema)
+  writeJson(join(schemaDir, recordsSchemaFile), recordsBundle(gen))
+  writeJson(join(schemaDir, schemaFile("index.json")), indexBundle(gen))
 }
 
 ;(async () => {
