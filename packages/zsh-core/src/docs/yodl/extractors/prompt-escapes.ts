@@ -1,7 +1,8 @@
 import { type NonEmpty, nonEmpty } from "@carlwr/typescript-extra"
 
 import { identity } from "../../brands.ts"
-import { type PromptEscapeDoc, promptSubsections } from "../../types.ts"
+import type { PromptEscapeDoc } from "../../types.ts"
+import { promptSubsections } from "../../vocab.ts"
 import {
   collectAliasedEntries,
   extractItems,

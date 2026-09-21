@@ -1,10 +1,6 @@
 import { allUnique } from "@carlwr/typescript-extra"
 import { describe, expect, test } from "vitest"
-import {
-  promptSubsections,
-  zleBindingKeymaps,
-  zleWidgetSubsections,
-} from "../../docs/types"
+import { promptSubsections, zleWidgetSubsections } from "../../docs/vocab"
 import { parseArithOps } from "../../docs/yodl/extractors/arith-ops"
 import { parseCompUtils } from "../../docs/yodl/extractors/comp-utils"
 import { parseJobSpecs } from "../../docs/yodl/extractors/job-specs"
@@ -194,7 +190,6 @@ describe("zle widgets — default bindings (corpus invariants)", () => {
       expect(Array.isArray(d.defaultBindings)).toBe(true)
       expect(allUnique(d.defaultBindings.map(b => b.keymap))).toBe(true)
       for (const b of d.defaultBindings) {
-        expect(zleBindingKeymaps).toContain(b.keymap)
         expect(keymaps.has(km(b.keymap))).toBe(true)
       }
     }

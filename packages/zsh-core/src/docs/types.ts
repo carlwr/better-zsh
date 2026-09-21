@@ -1,9 +1,16 @@
 import type { NonEmpty } from "@carlwr/typescript-extra"
 
 import type { DocCategory, ModuleName } from "./taxonomy.ts"
+import type {
+  emulations,
+  optSections,
+  promptSubsections,
+  zleWidgetSubsections,
+} from "./vocab.ts"
 
-// Every export here is public (the package root re-exports the module);
-// constructors and other helpers live in `brands.ts`.
+// Every export here is public (the package root re-exports the module):
+// types only — runtime vocabularies and constructors live in modules the
+// root does not re-export.
 //
 // JSDoc on the exported types here is dual-audience: the `.d.ts` rollup and
 // the `description`s of the released `records.schema.json` (scripts/schemas.ts).
@@ -53,7 +60,6 @@ export interface DocRecordBase<K extends DocCategory> {
 
 // --- Closed literal unions --------------------------------------------------
 
-export const emulations = ["csh", "ksh", "sh", "zsh"] as const
 export type Emulation = (typeof emulations)[number]
 
 /** Option-flag sign — zsh convention: `-` enables, `+` disables. */
@@ -77,26 +83,10 @@ export interface OptFlagAlias {
   readonly on: OptFlagSign
   /**
    * Emulation modes whose single-letter option table maps this flag to this
-   * option; plain zsh is `zsh`. In `emulations` tuple order.
+   * option; plain zsh is `zsh`. Alphabetical.
    */
   readonly emulations: NonEmpty<Emulation>
 }
-
-export const optSections = [
-  "Changing Directories",
-  "Completion",
-  "Expansion and Globbing",
-  "History",
-  "Initialisation",
-  "Input/Output",
-  "Job Control",
-  "Prompting",
-  "Scripts and Functions",
-  "Shell Emulation",
-  "Shell State",
-  "Zle",
-  "Option Aliases",
-] as const
 
 export type OptSection = (typeof optSections)[number]
 
@@ -415,15 +405,6 @@ export interface GlobQualifierDoc
   readonly args: readonly string[]
 }
 
-export const promptSubsections = [
-  "Special characters",
-  "Login information",
-  "Shell state",
-  "Date and time",
-  "Visual effects",
-  "Conditional Substrings in Prompts",
-] as const
-
 export type PromptSubsection = (typeof promptSubsections)[number]
 
 /**
@@ -438,29 +419,10 @@ export interface PromptEscapeDoc extends DocRecordBase<"prompt_escape"> {
   readonly subKind: PromptSubsection
 }
 
-export const zleWidgetSubsections = [
-  "Movement",
-  "History Control",
-  "Modifying Text",
-  "Arguments",
-  "Completion",
-  "Miscellaneous",
-  "Text Objects",
-  "Special Widgets",
-] as const
-
 export type ZleWidgetSubsection = (typeof zleWidgetSubsections)[number]
 
 /** Keymaps the manual attributes a widget's default bindings to. */
-export const zleBindingKeymaps = [
-  "emacs",
-  "vicmd",
-  "viins",
-  "viopp",
-  "visual",
-] as const
-
-export type ZleBindingKeymap = (typeof zleBindingKeymaps)[number]
+export type ZleBindingKeymap = "emacs" | "vicmd" | "viins" | "viopp" | "visual"
 
 /**
  * A widget's default bindings in one keymap, as the manual lists them.

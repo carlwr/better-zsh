@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest"
 import type { OptFlagAlias, OptFlagSign } from "../../docs/types"
-import { emulations, optSections } from "../../docs/types"
+import { emulations, optSections } from "../../docs/vocab"
 import { parseOptions } from "../../docs/yodl/extractors/options"
 import { mkDocumented_ } from "../id-fns"
 import {
@@ -200,7 +200,10 @@ Report status of background jobs immediately.
       expect([...owners].filter(([, names]) => names.length > 1)).toEqual([])
     })
 
-    test("every alias is valid in a non-empty, tuple-ordered emulation set", () => {
+    // The public contract says "alphabetical"; the tuple is what the
+    // extractor orders by.
+    test("every alias is valid in a non-empty, alphabetical emulation set", () => {
+      expect([...emulations].sort()).toEqual([...emulations])
       for (const o of opts)
         for (const f of o.flags) {
           expect(f.emulations).not.toEqual([])

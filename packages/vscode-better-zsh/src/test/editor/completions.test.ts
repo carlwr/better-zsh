@@ -1,5 +1,5 @@
 import { nonEmpty } from "@carlwr/typescript-extra"
-import { type DocCorpus, optSections } from "@carlwr/zsh-core"
+import type { DocCorpus } from "@carlwr/zsh-core"
 import { categoryFooter, renderRecord } from "@carlwr/zsh-core/render"
 import { describe, expect, test } from "vitest"
 import * as vscode from "vscode"
@@ -43,7 +43,7 @@ const corpus: DocCorpus = {
       ...ident("option", "autocd", "AUTO_CD"),
       flags: [],
       defaultIn: ["zsh" as const],
-      section: optSections[0],
+      section: "Changing Directories",
       desc: "cd by directory name",
     },
   ]),

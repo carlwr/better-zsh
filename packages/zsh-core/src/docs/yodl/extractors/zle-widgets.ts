@@ -1,13 +1,13 @@
 import { isDefined, isNonEmpty } from "@carlwr/typescript-extra"
 import { identity } from "../../brands.ts"
-import {
-  type ZleBindingKeymap,
-  type ZleDefaultBinding,
-  type ZleWidgetDoc,
-  type ZleWidgetSubItem,
-  type ZleWidgetSubsection,
-  zleWidgetSubsections,
+import type {
+  ZleBindingKeymap,
+  ZleDefaultBinding,
+  ZleWidgetDoc,
+  ZleWidgetSubItem,
+  ZleWidgetSubsection,
 } from "../../types.ts"
+import { zleWidgetSubsections } from "../../vocab.ts"
 import {
   collectAliasedEntries,
   extractItems,

@@ -152,8 +152,9 @@ Raised by API reviews; each a decision, not an oversight:
   - a part of it in the tarball: a second channel, with a version pin between the two
   - an in-process consumer has the TS types the schema is generated from
 - **A runtime array for every closed union**
-  - `as const` where the library iterates the union (`emulations`, `optSections`, …); tag-only unions (`HistoryKind`, `JobSpecKind`, `ResolverFeedback["kind"]`, …) stay type-level
+  - a tuple exists where the library itself iterates or validates against the union, as the type's single source, and stays internal; tag-only unions (`HistoryKind`, `JobSpecKind`, `ResolverFeedback["kind"]`, …) have none
   - the values ship as the released schema's enums; in-process, a fold over the corpus
+  - public only where a consumer cannot recover the list from the corpus: the taxonomy itself, a vocabulary with members the corpus does not exhibit
   - `ResolverFeedback`: a runtime kinds list and hand-authored per-kind schemas, pinned equal to the generated schema by a test, were two peers with no owner — the build now lifts the generated def into `index.json`; nothing runtime remains
 - **Option references as structure**
   - the renderer bolds option mentions by heuristic — an ALL-CAPS token that `resolve`s (`fmtOptRefsInMd`); exported as spans, a heuristic becomes a contract

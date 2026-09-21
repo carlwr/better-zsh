@@ -10,7 +10,7 @@ import type {
   OptFlagSign,
   ZshOption,
 } from "../../types.ts"
-import { emulations, optSections } from "../../types.ts"
+import { emulations, optSections } from "../../vocab.ts"
 import {
   extractFirstSitemList,
   extractItems,
@@ -200,7 +200,7 @@ function parseFlagToken(
 
 /**
  * The sole `OptFlagAlias` constructor: one key order for every source (the
- * JSON export shows it), `emulations` deduped in `emulations` tuple order.
+ * JSON export shows it), `emulations` deduped into the vocabulary's order.
  */
 function mkAlias(
   char: string,

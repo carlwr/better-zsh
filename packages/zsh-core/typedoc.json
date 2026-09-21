@@ -27,6 +27,10 @@
   "treatWarningsAsErrors": true,
   "intentionallyNotExported": [
     "src/analysis/fact-types.ts:quoteStyles",
-    "src/analysis/fact-types.ts:FactGuard"
+    "src/analysis/fact-types.ts:FactGuard",
+    "src/docs/vocab.ts:emulations",
+    "src/docs/vocab.ts:optSections",
+    "src/docs/vocab.ts:promptSubsections",
+    "src/docs/vocab.ts:zleWidgetSubsections"
   ]
 }
