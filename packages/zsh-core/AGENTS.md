@@ -15,8 +15,6 @@ Canonical subpath list: `package.json` `exports`; per-subpath surface: `dist/typ
 
 **Static entrypoint fence:** the whole public surface is execution-, network- and env-free; hosts that run a zsh binary own that code, never zsh-core — tests are exempt (the rule is about the published surface). Enforced by a test in `src/test/`.
 
-**Potential gap (observation, not a decision):** `docCategoryPreamble` has no out-of-process consumer — it is not in `index.json`, so `zshref` lists a category without its preamble. Consider carrying it in the index.
-
 ## Reference-dump review workflow
 
 When adding or changing parsing/rendering, dump the full rendered corpus and inspect — both parse and render bugs surface there.

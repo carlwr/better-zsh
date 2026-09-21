@@ -10,6 +10,7 @@ import {
   recordsBundle,
   resolverFeedbackDef,
 } from "./scripts/schemas.ts"
+import { docCategoryPreamble } from "./src/docs/category-preamble.ts"
 import { loadCorpus } from "./src/docs/corpus.ts"
 import {
   fmtJson,
@@ -82,7 +83,7 @@ function writeJsonArtifacts() {
 
   const dataHash = hashRecordFiles(recordTexts)
   const index: JsonIndex = {
-    version: 4,
+    version: 5,
     packageVersion: PKG_VERSION,
     zshUpstream: ZSH_UPSTREAM,
     dataHash,
@@ -93,6 +94,7 @@ function writeJsonArtifacts() {
     classifyOrder: [...classifyOrder],
     categoryFiles,
     docCategoryLabels: { ...docCategoryLabels },
+    docCategoryPreamble: { ...docCategoryPreamble },
     resolverFeedbackSchema: resolverFeedbackDef(fixtureSchema),
   }
 

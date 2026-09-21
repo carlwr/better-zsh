@@ -40,7 +40,7 @@ export type JsonSchemaObject = Readonly<Record<string, unknown>>
  * or with a category's own fields (the records schema describes those).
  */
 export interface JsonIndex {
-  readonly version: 4
+  readonly version: 5
   readonly packageVersion: string
   readonly zshUpstream: {
     readonly tag: string
@@ -59,6 +59,8 @@ export interface JsonIndex {
   readonly categoryFiles: { readonly [K in DocCategory]: `${K}.json` }
   /** Human-readable per-category labels — SoT for display in out-of-process consumers. */
   readonly docCategoryLabels: { readonly [K in DocCategory]: string }
+  /** Category-level note where records need one to be read on their own — `docCategoryPreamble` at the TS root; absent key = none. */
+  readonly docCategoryPreamble: { readonly [K in DocCategory]?: string }
   /**
    * `ResolverFeedback`'s JSON Schema, generated from the type — the fixture
    * schema's def, same object. Each `anyOf` branch is one kind, closed on
