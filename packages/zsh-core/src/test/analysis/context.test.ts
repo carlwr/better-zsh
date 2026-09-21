@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest"
-import { syntacticContext } from "../../analysis/context"
+import { type SyntacticContext, syntacticContext } from "../../analysis/context"
 import { analyzeDoc, lineStarts, offsetAt } from "../../analysis/facts"
 import { mockDoc } from "./test-util"
 
@@ -12,7 +12,7 @@ const contextAt = (lines: readonly string[], line: number, char: number) => {
 }
 
 describe("syntacticContext", () => {
-  test.each([
+  const cases = [
     ["setopt line", ["setopt autocd"], 0, 10, "setopt"],
     ["unsetopt line", ["unsetopt beep"], 0, 10, "setopt"],
     ["set -o line", ["set -o autocd"], 0, 10, "setopt"],
@@ -33,7 +33,9 @@ describe("syntacticContext", () => {
     ["setopt after command", ["command setopt extendedglob"], 0, 20, "general"],
     ["setopt as argument", ["echo setopt"], 0, 8, "general"],
     ["set without -o", ["set extendedglob"], 0, 10, "general"],
-  ])('%s → kind "%s"', (_desc, lines, lineOffs, charOffs, kind) => {
-    expect(contextAt(lines, lineOffs, charOffs).kind).toBe(kind)
+  ] satisfies [string, string[], number, number, SyntacticContext][]
+
+  test.each(cases)("%s", (_desc, lines, line, char, want) => {
+    expect(contextAt(lines, line, char)).toBe(want)
   })
 })

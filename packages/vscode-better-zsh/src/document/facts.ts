@@ -17,7 +17,7 @@ export const docAnalysis = docCache(doc => ({
 
 export function contextAt(doc: vscode.TextDocument, pos: vscode.Position) {
   const { facts, starts } = docAnalysis(doc)
-  return syntacticContext(facts, offsetAt(starts, pos.line, pos.character)).kind
+  return syntacticContext(facts, offsetAt(starts, pos.line, pos.character))
 }
 
 /**
