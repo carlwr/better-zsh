@@ -220,7 +220,7 @@ The arrows and their invariants: `REPO-SHAPE.md`. The principles behind them:
 
 - Built for stability over time: implementation effort once, then version bumps for years; uptake expected limited but not zero.
 - Post-release maintenance must be cheap. The expensive thing is re-understanding a non-natural organization; an easy-to-understand overall structure outranks preserving effort already spent.
-- `zsh-core` is the future-proof part; `zshref` is the main surface; the SPA is an NLP retrieval showcase — NLP inside the CLI is not wanted.
+- `zsh-core` is the future-proof surface; `zshref` the main one; the SPA is an NLP retrieval showcase — NLP inside the CLI is not wanted.
 - Build outputs are never committed; the tree is committable in any build state.
 
 ## Cost and laziness

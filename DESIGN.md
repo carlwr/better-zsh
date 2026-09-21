@@ -29,7 +29,7 @@ Surface and posture: `packages/zsh-core/README.md`. The static-scope guarantee i
 
 Not a grammar, not a tokenizer. Zsh is not generally parseable without running zsh; we take bounded, corpus-aware wins that do not require shell execution.
 
-`src/analysis/` is conceptually separable from `src/docs/` + `src/render/` + JSON-dist artifacts. Splitting into two workspace packages was deferred: the static-scope test enforces the seam structurally; a separate package would add extraction config without payoff today.
+`src/analysis/` is conceptually separable from `src/docs/` + `src/render/` + JSON-dist artifacts; the extension is its only consumer today. It stays in zsh-core, rather than in the extension or its own package, because it is corpus-free and editor-neutral: a further consumer — an LSP, another editor — should find fact extraction on the reusable surface, not inside an extension. The static-scope test enforces the seam structurally; the placement remains open.
 
 ---
 
@@ -72,8 +72,8 @@ Doc records → human-readable markdown. Depends on A; orthogonal to B.
 Consumers plumb A+B→C:
 
 - extension
-- `zshref` CLI and `zshref-mcp` (the Rust crate)
-- future wrappers
+- `zshref` CLI and `zshref-mcp` (the Rust crate; B is the caller's token)
+- any further consumer
 
 Composition:
 
@@ -198,6 +198,8 @@ One runtime list yields the type, iteration and every category-keyed mapped type
 
 Any "one entry per `DocCategory`" table lives in zsh-core behind a structural completeness guard; consumers import it. Hand-maintained parallel lists drift silently when categories are added — neither tests nor types flag it. `DocCategory`-keyed tables turn that class of drift into a compile error.
 
+Category-level metadata — labels, orderings, notes needed to interpret a category's records — is zsh-core's to offer on both surfaces (TS root, `index.json`); showing it is the consumer's call.
+
 ---
 
 ## Per-category modeling
@@ -220,7 +222,7 @@ Ids are **shell-safe slugs**; `display` and `sig` keep the human-readable form (
 `history_expn` resembles short-key categories structurally but models **components** of `![event][:word][:modifier…]`, not parallel standalone tokens. A bare `^` or `:h` is not a zsh token in isolation — unlike `glob_op`, where each record is a single user-code token.
 
 - **Corpus keys are templates** (`!n`, `!str`, `h`, …). For modifiers, the id is the bare letter (`h`) and `sig` keeps the documented form (`h [ digits ]`).
-- **`resolveHistory` is intentionally narrow** — event-designators only (same "totality, not utility" posture as `param_expn`); details and the future-`src/analysis/` placement: its JSDoc in `zsh-core/resolver`.
+- **`resolveHistory` is intentionally narrow** — event-designators only (same "totality, not utility" posture as `param_expn`); details: its JSDoc.
 - **`subKind` is the typed facet** — event designator, word designator or modifier; the walk admits only the first.
 
 ### Parameter-expansion identity and shape
@@ -384,7 +386,7 @@ Inputs that fall outside the id charset (whitespace, etc.) are not errors; they 
 
 The contract on the canonical-id subset is tight:
 
-- every `id` returned by any tool is shell-safe (printable ASCII, no whitespace)
+- every corpus `id` is shell-safe (printable ASCII, no whitespace)
 - re-feeding such an `id` as `key` is guaranteed to resolve: ≥1 match overall, ≤1 per category
 - with `category` set to the resolved category, the returned `id` equals the input
 

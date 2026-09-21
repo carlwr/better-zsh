@@ -18,7 +18,7 @@ Single source of truth for the layout and the product dependency arrow set.
 └── zshref-rs/               Rust crate: `zshref` CLI + `zshref-mcp` bins; not a pnpm member
 ```
 
-The product is named `zshref`; `zshref-rs/` is its directory here.
+The crate ships as `zshref`; `zshref-rs/` is its directory here.
 
 ## Dependencies
 
@@ -39,7 +39,7 @@ An arrow reads "consumes, pinned by version"; its label is the mechanism:
 - workspace link: pnpm `workspace:*` onto the upstream's built `dist/`; freshness: `scripts/build/README.md`
 - release assets: tarballs on zsh-core's release tag, vendored by `make vendor` — `zshref-rs/DATA-SYNC.md`
 - `zshref-web` consumes `zsh-core` at build time only — the index build; the browser bundle is `zsh-core`-free (`packages/zshref-web/AGENTS.md`)
-- zsh-core is the only producer; the three consumers are leaves with no consumer of their own
+- zsh-core is the only producer; the in-repo consumers are leaves with no consumer of their own
 
 Invariants — what the shape was chosen for, and the constraint on any change to it (principles: `PRINCIPLES.md` §"Cross-project structure"):
 

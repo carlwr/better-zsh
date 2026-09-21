@@ -6,7 +6,7 @@ Repo-level notes that do not fit better in a package-local `DEVELOPMENT.md`.
 
 `pnpm dump:refs` writes the current static reference markdown — visual QA for zsh-core's rendered reference corpus, including the subset consumed by VS Code hovers.
 
-## Changes that feed the Rust crate
+## Changes to the release assets
 
 `zshref-rs/` embeds the JSON artifacts `zsh-core` produces and tests its
 resolvers against the conformance fixture `zsh-core` emits beside them.
