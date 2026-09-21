@@ -8,7 +8,6 @@
  * `%F{color} (%f)` (first-tt would drop everything after `{`). For simple
  * single-tt headers the two agree.
  */
-import { mkShellParamKeyName } from "../../brands.ts"
 import type { ShellParamKey, ShellParamKeyValue } from "../../types.ts"
 import { splitBodyAtNestedList } from "../core/doc.ts"
 import type { YNodeSeq } from "../core/nodes.ts"
@@ -44,7 +43,7 @@ export function splitParamBody(body: YNodeSeq): SplitParamBody {
 // param's POV — e.g. `compstate.context`) as `values`. Deeper nesting
 // is not captured.
 function buildKey(sig: string, body: YNodeSeq): ShellParamKey {
-  const name = mkShellParamKeyName(sig)
+  const name = sig
   const inner = splitBodyAtNestedList(body)
   if (!inner) return { name, desc: normalizeBody(body) }
   const values: ShellParamKeyValue[] = []
@@ -52,7 +51,7 @@ function buildKey(sig: string, body: YNodeSeq): ShellParamKey {
     const vSig = normalizeHeader(entry.header)
     if (!vSig || !entry.body) continue
     values.push({
-      name: mkShellParamKeyName(vSig),
+      name: vSig,
       desc: normalizeBody(entry.body),
     })
   }

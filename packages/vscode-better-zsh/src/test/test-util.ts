@@ -4,7 +4,6 @@ import {
   type Documented,
   docCategories,
   normalizeOptName,
-  type OptFlag,
 } from "@carlwr/zsh-core"
 import type * as vscode from "vscode"
 import { WORD } from "../document/words"
@@ -78,9 +77,6 @@ export const ident = <K extends DocCategory>(
   const id = docId(cat, raw)
   return { category: cat, id, display: display ?? id }
 }
-
-/** A fixture option's single-letter flag. */
-export const optFlag = (char: string): OptFlag => char as OptFlag
 
 /** A `DocCorpus` with every category as an empty Map; override per test. */
 export function emptyCorpus(): DocCorpus {

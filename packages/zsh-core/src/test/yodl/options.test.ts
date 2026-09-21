@@ -1,5 +1,4 @@
 import { describe, expect, test } from "vitest"
-import { mkOptFlag } from "../../docs/brands"
 import type { OptFlagAlias, OptFlagSign } from "../../docs/types"
 import { emulations, optSections } from "../../docs/types"
 import { parseOptions } from "../../docs/yodl/extractors/options"
@@ -23,7 +22,7 @@ const alias = (
   char: string,
   on: OptFlagSign,
   emulations: OptFlagAlias["emulations"],
-): OptFlagAlias => ({ char: mkOptFlag(char), on, emulations })
+): OptFlagAlias => ({ char, on, emulations })
 
 /** `yo` without the `subsect(title)` … up to the next `subsect(` (a whole sitem list). */
 function withoutSubsect(yo: string, title: string): string {

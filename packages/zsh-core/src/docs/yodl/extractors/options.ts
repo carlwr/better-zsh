@@ -1,12 +1,11 @@
 import { isNonEmpty } from "@carlwr/typescript-extra"
 
-import { identity, mkDocumented, mkOptFlag } from "../../brands.ts"
+import { identity, mkDocumented } from "../../brands.ts"
 import { flipOptFlagSign } from "../../normalize-option.ts"
 import type {
   DocRecordBase,
   Documented,
   Emulation,
-  OptFlag,
   OptFlagAlias,
   OptFlagSign,
   ZshOption,
@@ -194,9 +193,9 @@ function parseTableRow(
 /** Parse a `+X`/`-X` flag token; the sole `OptFlagSign` narrowing point. */
 function parseFlagToken(
   token: string,
-): { char: OptFlag; on: OptFlagSign } | undefined {
+): { char: string; on: OptFlagSign } | undefined {
   if (!FLAG_TOKEN_RE.test(token)) return undefined
-  return { char: mkOptFlag(token.slice(1)), on: token[0] as OptFlagSign }
+  return { char: token.slice(1), on: token[0] as OptFlagSign }
 }
 
 /**
@@ -204,7 +203,7 @@ function parseFlagToken(
  * JSON export shows it), `emulations` deduped in `emulations` tuple order.
  */
 function mkAlias(
-  char: OptFlag,
+  char: string,
   on: OptFlagSign,
   validIn: readonly Emulation[],
 ): OptFlagAlias {

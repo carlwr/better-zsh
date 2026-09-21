@@ -9,15 +9,6 @@ import type { DocCategory, ModuleName } from "./taxonomy.ts"
 // the `description`s of the released `records.schema.json` (scripts/schemas.ts).
 // Write for JSON consumers too — they see `$defs` names, not this file.
 
-// --- Auxiliary lookup brands ------------------------------------------------
-// Secondary-index brands; not corpus identities (`Documented<K>`).
-
-/** Single-letter option flag char. Secondary-index brand, not a record identity. */
-export type OptFlag = string & { readonly __brand: "OptFlag" }
-
-/** Redirection operator token. Secondary-index brand, not a record identity. */
-export type RedirOp = string & { readonly __brand: "RedirOp" }
-
 // --- Corpus identity brand --------------------------------------------------
 
 /**
@@ -81,7 +72,8 @@ export type HistoryKind = "event-designator" | "word-designator" | "modifier"
  * `LIST_TYPES` in plain zsh, `MARK_DIRS` under `emulate ksh`).
  */
 export interface OptFlagAlias {
-  readonly char: OptFlag
+  /** The flag letter; case-significant (`-J` ≠ `-j`). */
+  readonly char: string
   readonly on: OptFlagSign
   /**
    * Emulation modes whose single-letter option table maps this flag to this
@@ -221,19 +213,12 @@ export type ShellParamScope =
   | "completion-widget"
 
 /**
- * Branded sub-key name inside a `ShellParamDoc.keys` payload (associative-array
- * keys, colon-list enumerated values, ...).
- */
-export type ShellParamKeyName = string & {
-  readonly __brand: "ShellParamKeyName"
-}
-
-/**
  * One sub-value under a `ShellParamKey` whose body itself carries a nested
  * item list (e.g. `compstate.context`). No further nesting is captured.
  */
 export interface ShellParamKeyValue {
-  readonly name: ShellParamKeyName
+  /** As the manual writes it (an associative-array key, a colon-list value, …). */
+  readonly name: string
   readonly desc: string
 }
 
@@ -243,7 +228,8 @@ export interface ShellParamKeyValue {
  * parameter) rendered as a nested bullet list.
  */
 export interface ShellParamKey {
-  readonly name: ShellParamKeyName
+  /** As the manual writes it (an associative-array key, a colon-list value, …). */
+  readonly name: string
   readonly desc: string
   readonly values?: readonly ShellParamKeyValue[]
 }
@@ -325,7 +311,7 @@ export interface ComplexCommandDoc
  */
 export interface RedirDoc extends DocRecordBase<"redirection">, SyntaxDocBase {
   /** Grouping token; multiple redirection docs share a `groupOp`. */
-  readonly groupOp: RedirOp
+  readonly groupOp: string
 }
 
 /** Process substitution -- `<(...)` and `>(...)`. */

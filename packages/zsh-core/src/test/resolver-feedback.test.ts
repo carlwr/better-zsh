@@ -9,7 +9,7 @@
  */
 
 import { describe, expect, test } from "vitest"
-import { identity, mkDocumented, mkOptFlag } from "../docs/brands"
+import { identity, mkDocumented } from "../docs/brands"
 import type { DocCorpus } from "../docs/corpus"
 import {
   type ResolvedHit,
@@ -48,7 +48,7 @@ const alias = (
   char: string,
   on: OptFlagAlias["on"],
   emulations: OptFlagAlias["emulations"],
-): OptFlagAlias => ({ char: mkOptFlag(char), on, emulations })
+): OptFlagAlias => ({ char, on, emulations })
 const ZSH: OptFlagAlias["emulations"] = ["csh", "zsh"]
 const KSH: OptFlagAlias["emulations"] = ["ksh", "sh"]
 const option = (

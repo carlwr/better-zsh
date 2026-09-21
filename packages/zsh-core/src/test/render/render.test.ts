@@ -7,13 +7,7 @@ import {
   refDocs,
   writeRefDump,
 } from "../../../scripts/ref-dump"
-import {
-  identity,
-  mkDocumented,
-  mkOptFlag,
-  mkRedirOp,
-  mkShellParamKeyName,
-} from "../../docs/brands"
+import { identity, mkDocumented } from "../../docs/brands"
 import { docCategoryPreamble } from "../../docs/category-preamble"
 import type { DocCorpus } from "../../docs/corpus"
 import * as zd from "../../docs/corpus"
@@ -59,7 +53,7 @@ import { withTmpDirAsync } from "../tmp-dir"
 
 const cd: ZshOption = {
   ...identity("option", "AUTO_CD", "AUTO_CD"),
-  flags: [{ char: mkOptFlag("J"), on: "-", emulations: ["csh", "zsh"] }],
+  flags: [{ char: "J", on: "-", emulations: ["csh", "zsh"] }],
   defaultIn: ["csh", "ksh", "sh", "zsh"],
   section: "Changing Directories",
   desc: "d:o",
@@ -101,7 +95,7 @@ const pc: PrecmdDoc = {
 }
 const rd: RedirDoc = {
   ...identity("redirection", ">>_word", ">> word"),
-  groupOp: mkRedirOp(">>"),
+  groupOp: ">>",
   sig: ">> word",
   desc: "d:r",
   section: "",
@@ -363,8 +357,8 @@ describe("render markdown", () => {
     const opt: ZshOption = {
       ...cd,
       flags: [
-        { char: mkOptFlag("b"), on: "-", emulations: ["ksh", "sh"] },
-        { char: mkOptFlag("5"), on: "-", emulations: ["csh", "zsh"] },
+        { char: "b", on: "-", emulations: ["ksh", "sh"] },
+        { char: "5", on: "-", emulations: ["csh", "zsh"] },
       ],
     }
     expect(head(opt)?.lines.join("\n")).toBe(
@@ -706,10 +700,10 @@ describe("render markdown", () => {
       desc: "intro",
       keys: [
         {
-          name: mkShellParamKeyName("[ key ] ..."),
+          name: "[ key ] ...",
           desc: "first para\n\nsecond para",
         },
-        { name: mkShellParamKeyName("plainkey"), desc: "leaf desc" },
+        { name: "plainkey", desc: "leaf desc" },
       ],
     }
     containsAll(body(doc), [

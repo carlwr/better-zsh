@@ -2,13 +2,7 @@ import { trim } from "@carlwr/typescript-extra"
 
 import { normalizeOptName } from "./normalize-option.ts"
 import type { DocCategory } from "./taxonomy.ts"
-import type {
-  DocRecordBase,
-  Documented,
-  OptFlag,
-  RedirOp,
-  ShellParamKeyName,
-} from "./types.ts"
+import type { DocRecordBase, Documented } from "./types.ts"
 
 // Per-category normalization. Default is `trim`; categories below the default
 // are listed as overrides. `option` normalizes case and strips underscores,
@@ -57,15 +51,6 @@ export function identity<K extends DocCategory>(
 export const idPattern = /^[\x21-\x7E]+$/
 /** `DocRecordBase.display`: printable ASCII, non-empty. */
 export const displayPattern = /^[\x20-\x7E]+$/
-
-// --- Secondary-index brands -------------------------------------------------
-
-export const mkOptFlag = (raw: string): OptFlag => raw.trim() as OptFlag
-
-export const mkRedirOp = (raw: string): RedirOp => raw.trim() as RedirOp
-
-export const mkShellParamKeyName = (raw: string): ShellParamKeyName =>
-  raw.trim() as ShellParamKeyName
 
 /** A redirection's `id` from its sig (whitespace → `_`). See `RedirDoc`. */
 export const redirSlugFromSig = (sig: string): string =>

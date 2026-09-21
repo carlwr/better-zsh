@@ -69,8 +69,10 @@ Accidental similarity of conceptually-different values may stay duplicated; when
 
 ## Types
 
-- Branded types for domain strings.
+- Branded types for domain strings — where holding one records that a check was passed.
 - Smart constructors (e.g. `mkBrand`) are the trusted cast points for brands.
+- On a public surface, a brand only where the surface both mints it (a checking constructor or resolver) and requires it (an operation that takes it).
+  - a field consumers only read, compare or display stays `string`: a brand there guarantees nothing and forces a cast on every fixture
 - Named type aliases for literal unions.
 - Short field names where clear.
 - If a value deserves to travel, give it a type.

@@ -1,5 +1,4 @@
 import { describe, expect, test } from "vitest"
-import { mkRedirOp } from "../../docs/brands"
 import { parseComplexCommands } from "../../docs/yodl/extractors/complex-commands"
 import { parseGlobFlags } from "../../docs/yodl/extractors/glob-flags"
 import { parseGlobOps } from "../../docs/yodl/extractors/glob-ops"
@@ -71,7 +70,7 @@ enditem()`
     (op, sigs) => {
       const docs = parseRedirs(REDIR_YO)
       expect(
-        docs.filter(doc => doc.groupOp === mkRedirOp(op)).map(doc => doc.sig),
+        docs.filter(doc => doc.groupOp === op).map(doc => doc.sig),
       ).toEqual(sigs)
     },
   )

@@ -1,6 +1,5 @@
 import fc from "fast-check"
 import { describe, expect, test } from "vitest"
-import { mkOptFlag } from "../docs/brands"
 import { mkDocumented_ } from "./id-fns"
 
 const opt = mkDocumented_("option")
@@ -51,11 +50,5 @@ describe("mkDocumented conditional_op (trims)", () => {
         expect(cond(s) as string).toBe(s.trim())
       }),
     )
-  })
-})
-
-describe("mkOptFlag", () => {
-  test("trims whitespace", () => {
-    expect(mkOptFlag(" J ")).toBe(mkOptFlag("J"))
   })
 })

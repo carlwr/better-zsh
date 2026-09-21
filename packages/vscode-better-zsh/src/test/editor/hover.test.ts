@@ -16,15 +16,7 @@ import { describe, expect, test } from "vitest"
 import type * as vscode from "vscode"
 import { activeEnd } from "../../document/words"
 import { HoverProvider } from "../../editor/hover"
-import {
-  by,
-  docId,
-  emptyCorpus,
-  ident,
-  optFlag,
-  pos,
-  wordDoc,
-} from "../test-util"
+import { by, docId, emptyCorpus, ident, pos, wordDoc } from "../test-util"
 
 // --- fixtures ---------------------------------------------------------------
 
@@ -40,7 +32,7 @@ const o = (
   emulations: OptFlagAlias["emulations"],
 ): ZshOption => ({
   ...ident("option", name, name),
-  flags: [{ char: optFlag("f"), on: "+", emulations }],
+  flags: [{ char: "f", on: "+", emulations }],
   defaultIn: ["zsh"],
   section: "Shell State",
   desc,

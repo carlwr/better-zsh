@@ -103,6 +103,8 @@ Two phases:
 
 One brand for every category — none is a literal union. The analysis layer's closed precommand list (`PrecmdName`, `zsh-core/analysis`) is its own vocabulary, pinned equal to the corpus by a lock-in test.
 
+Public-surface rule (`STYLE-CODE.md` §"Types"): a brand crosses the surface only where the surface mints and requires it — here, corpus identity alone; every other string field is plain.
+
 ### No intermediate brand
 
 A "normalized, not corpus-checked" brand for user-code tokens was removed: no API accepted it, and its one instantiation became the analysis layer's `PrecmdName`. Facts carry raw text (domain B); corpus-free normalization is `normalizeOptName`.
@@ -215,7 +217,7 @@ Ids are **shell-safe slugs**; `display` and `sig` keep the human-readable form (
 - `id` is `sig` with whitespace replaced by `_` (`>_word`, `<<[-]_word`); `sig` keeps the upstream form (`> word`).
 - `groupOp` is the shared lookup bucket: the longest `groupOp` prefixing the token wins (zsh lexes the longest operator — `>&` never falls back to `>`), then the resolver disambiguates by tail — corpus-aware, not plain map lookup.
 - Both forms round-trip through `docs`: direct on `id`, close-variant resolver on `sig`.
-- `OptFlag` and `RedirOp` are secondary-index brands, not `Documented<K>` identities.
+- `groupOp`, like an option's flag `char`, is a plain string: a lookup facet, not a `Documented<K>` identity.
 
 ### History expansion: grammar components, not independent tokens
 
