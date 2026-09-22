@@ -138,7 +138,7 @@ The hit carries the record, so the second step takes a value, not a reference:
 - TS cannot prove map membership from a branded key, so an id-keyed renderer would have to throw on a miss — removed for that reason
 - an id that crossed a boundary where the record was dropped — serialized, stored, from another corpus build — is a string again; `resolve` takes it back (an exact id hits directly), and there a miss is honest
 
-Corpus-driven aggregation helpers (`projectRecords`, the JSON projection) are fine — they operate on already-known records, not hidden brand crossings.
+Corpus-driven aggregation (the build's JSON projection over every record) is fine — it operates on already-known records, not hidden brand crossings.
 
 Not an absolute ban. A post-refactor convenience wrapper is fine as a conscious addition.
 
@@ -149,7 +149,11 @@ Raised by API reviews; each a decision, not an oversight:
 - **JSON assets in the registry package** (schema, index)
   - the JSON side is one unit — data, index, schema, fixture — versioned by the release tag (`PACKAGING.md`)
   - a part of it in the tarball: a second channel, with a version pin between the two
-  - an in-process consumer has the TS types the schema is generated from
+  - an in-process consumer holds the corpus the JSON is projected from
+- **The JSON build's in-process view** (record projection, corpus content hash, the release files' TS types)
+  - JSON is for consumers that cannot run the TypeScript; an in-process consumer composes `renderRecord` over the corpus it already holds
+  - the release files' contract is their schema; a TS reader generates types from it
+  - a content hash answers "which corpus?": for a registry consumer the package version does; the web build, tracking an unreleased corpus, fingerprints its own projection
 - **A runtime array for every closed union**
   - a tuple exists where the library itself iterates or validates against the union, as the type's single source, and stays internal; tag-only unions (`HistoryKind`, `JobSpecKind`, `ResolverFeedback["kind"]`, …) have none
   - the values ship as the released schema's enums; in-process, a fold over the corpus

@@ -8,7 +8,6 @@ import { join } from "node:path"
 import { escapeRegExp, memoized } from "@carlwr/typescript-extra"
 import { rm_rf } from "@carlwr/typescript-extra/node"
 import { loadCorpus } from "@carlwr/zsh-core"
-import { corpusDataHash } from "@carlwr/zsh-core/json"
 import fc from "fast-check"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 import type { Rules } from "../../../nlp/core/rules"
@@ -32,6 +31,7 @@ import {
   validateIndex,
   writeIndex,
 } from "../../../nlp/node/index-build"
+import { corpusFingerprint } from "../../../nlp/node/projection"
 import { corpusTexts } from "../../../nlp/node/retrieval-text"
 import { loadRulesYaml } from "../../../nlp/node/rules-load"
 import { makeRecordText } from "../../_fixtures"
@@ -164,7 +164,7 @@ describe("validateIndex", () => {
     model: MODEL_ID,
     dims: DIMS,
     normalized: true,
-    corpus_hash: corpusDataHash(corpus),
+    corpus_hash: corpusFingerprint(corpus),
     records: corpusTexts(corpus, rules.synonyms.index_groups).map(text => ({
       text,
       vectors: perView(() => new Float32Array(DIMS)),
@@ -257,8 +257,8 @@ describe("buildIndex", () => {
       onProgress: (done, total) => progress.push([done, total]),
     })
     expect(validateIndex(index, corpus, rules)).toEqual({ ok: true })
-    // The stamp is zsh-core's content hash: what `validateIndex` compares.
-    expect(index.corpus_hash).toBe(corpusDataHash(corpus))
+    // The stamp is the projection's fingerprint: what `validateIndex` compares.
+    expect(index.corpus_hash).toBe(corpusFingerprint(corpus))
     // By value: view texts repeat across records, so the map holds one array per text.
     const misaligned: string[] = []
     let worst = 0

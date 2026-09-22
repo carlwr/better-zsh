@@ -74,12 +74,3 @@ export function jsonRecords(corpus: DocCorpus): JsonDocArrayMap {
 export function jsonRecordsText(corpus: DocCorpus): string {
   return fmtJson(jsonRecords(corpus))
 }
-
-/**
- * Content identity of `corpus`: equals `JsonIndex.dataHash` of its JSON
- * build. Hashes the formatted record file — renders every record (cheap,
- * not free).
- */
-export function corpusDataHash(corpus: DocCorpus): string {
-  return hashRecords(jsonRecordsText(corpus))
-}

@@ -6,7 +6,6 @@
   "include": [
     "assets.ts",
     "index.ts",
-    "json.ts",
     "meta.ts",
     "render.ts",
     "resolver.ts",

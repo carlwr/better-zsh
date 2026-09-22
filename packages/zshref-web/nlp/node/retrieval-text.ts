@@ -2,9 +2,8 @@
 // expanded) that get embedded. Changes here invalidate the corpus vectors;
 // re-embed required.
 //
-// The record walked here is the JSON projection (`projection.ts`) after a
-// `JSON.stringify` round trip (undefined-valued keys gone, key order kept) —
-// the same text a JSON consumer of the corpus sees.
+// The record walked here is the projection (`projection.ts`) after a
+// `JSON.stringify` round trip (undefined-valued keys gone, key order kept).
 // Lowercasing and alphanumeric tests are ASCII-only; whitespace is Unicode
 // White_Space.
 

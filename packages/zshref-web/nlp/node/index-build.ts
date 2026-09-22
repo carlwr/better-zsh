@@ -4,7 +4,6 @@
 
 import { isDeepStrictEqual } from "node:util"
 import type { DocCorpus } from "@carlwr/zsh-core"
-import { corpusDataHash } from "@carlwr/zsh-core/json"
 
 import type { Rules } from "../core/rules"
 import {
@@ -20,6 +19,7 @@ import { normalizeF32 } from "../core/vec"
 import type { Embedder } from "./embedder-node"
 import { readJson, writeFileDeep } from "./io"
 import { f32VecJson, jsonWithRawField } from "./json-f32"
+import { corpusFingerprint } from "./projection"
 import { corpusTexts } from "./retrieval-text"
 
 export const INDEX_VERSION = 2
@@ -81,7 +81,7 @@ export async function buildIndex({
     model: MODEL_ID,
     dims: DIMS,
     normalized: true,
-    corpus_hash: corpusDataHash(corpus),
+    corpus_hash: corpusFingerprint(corpus),
     records,
   }
   const check = validateIndex(index, corpus, rules)
@@ -105,7 +105,7 @@ export function validateIndex(
     return fail(`nlp index model is ${index.model}, expected ${MODEL_ID}`)
   if (index.dims !== DIMS)
     return fail(`nlp index dims is ${index.dims}, expected ${DIMS}`)
-  if (index.corpus_hash !== corpusDataHash(corpus)) {
+  if (index.corpus_hash !== corpusFingerprint(corpus)) {
     return fail("nlp index corpus hash does not match this corpus; rebuild it")
   }
   if (!index.normalized)

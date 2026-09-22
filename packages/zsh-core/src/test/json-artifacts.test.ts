@@ -6,8 +6,8 @@ import { describe, expect, test } from "vitest"
 import { docCategoryPreamble } from "../docs/category-preamble"
 import { loadCorpus } from "../docs/corpus"
 import {
-  corpusDataHash,
   hashRecords,
+  jsonRecordsText,
   recordsFile,
   recordsSchemaDefs,
   recordsSchemaFile,
@@ -139,36 +139,13 @@ describe("generated JSON is a release asset, not a registry payload", () => {
   })
 })
 
-// `corpusDataHash` recomputes the JSON build's `dataHash` from source, so the
-// artifact comparison also flags artifacts stale against the source: wanted
-// under `pnpm qa` (stale upstream output is rebuilt first); a mid-iteration
-// `vitest` run before a rebuild fails here.
-describe("corpusDataHash", () => {
-  test("equals the emitted index.dataHash", () => {
-    expect(corpusDataHash(loadCorpus())).toBe(
+// Recomputing `dataHash` from source flags artifacts stale against the
+// source: wanted under `pnpm qa` (stale upstream output is rebuilt first); a
+// mid-iteration `vitest` run before a rebuild fails here.
+describe("index.dataHash", () => {
+  test("equals the hash of the record file rebuilt from source", () => {
+    expect(hashRecords(jsonRecordsText(loadCorpus()))).toBe(
       readJson("artifacts/json/index.json").dataHash,
-    )
-  })
-
-  test("is deterministic; object identity is irrelevant", () => {
-    const corpus = loadCorpus()
-    const hash = corpusDataHash(corpus)
-    expect(hash).toMatch(/^[0-9a-f]{64}$/)
-    expect(corpusDataHash(corpus)).toBe(hash)
-    // `loadCorpus` is cached; a structured clone is a distinct object graph.
-    expect(corpusDataHash(structuredClone(corpus))).toBe(hash)
-  })
-
-  test("moves with record content", () => {
-    const corpus = loadCorpus()
-    const option = new Map(
-      [...corpus.option].map(([id, rec]) => [
-        id,
-        { ...rec, desc: `${rec.desc} x` },
-      ]),
-    )
-    expect(corpusDataHash({ ...corpus, option })).not.toBe(
-      corpusDataHash(corpus),
     )
   })
 })
