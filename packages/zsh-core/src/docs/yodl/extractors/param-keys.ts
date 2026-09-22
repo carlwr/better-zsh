@@ -8,10 +8,11 @@
  * `%F{color} (%f)` (first-tt would drop everything after `{`). For simple
  * single-tt headers the two agree.
  */
-import type { ShellParamKey, ShellParamKeyValue } from "../../types.ts"
+import type { ItemEntry, ShellParamKey } from "../../types.ts"
 import { splitBodyAtNestedList } from "../core/doc.ts"
 import type { YNodeSeq } from "../core/nodes.ts"
-import { normalizeBody, normalizeHeader } from "../core/text.ts"
+import { normalizeBody } from "../core/text.ts"
+import { aliasedItems, collectItemEntries, itemSigs } from "./item-entries.ts"
 
 export interface SplitParamBody {
   readonly desc: string
@@ -27,12 +28,9 @@ export interface SplitParamBody {
 export function splitParamBody(body: YNodeSeq): SplitParamBody {
   const split = splitBodyAtNestedList(body)
   if (!split) return { desc: normalizeBody(body) }
-  const keys: ShellParamKey[] = []
-  for (const entry of split.entries) {
-    const headerSig = normalizeHeader(entry.header)
-    if (!headerSig || !entry.body) continue
-    keys.push(buildKey(headerSig, entry.body))
-  }
+  const keys = aliasedItems(split.entries).map(grp =>
+    buildKey(itemSigs(grp), grp.entry.body ?? []),
+  )
   if (keys.length === 0) return { desc: normalizeBody(body) }
   const desc = normalizeBody(split.intro)
   const outro = normalizeBody(split.outro)
@@ -42,19 +40,10 @@ export function splitParamBody(body: YNodeSeq): SplitParamBody {
 // Captures depth-1 nested item list inside the body (depth-2 from the
 // param's POV — e.g. `compstate.context`) as `values`. Deeper nesting
 // is not captured.
-function buildKey(sig: string, body: YNodeSeq): ShellParamKey {
-  const name = sig
+function buildKey(sigs: ItemEntry["sigs"], body: YNodeSeq): ShellParamKey {
   const inner = splitBodyAtNestedList(body)
-  if (!inner) return { name, desc: normalizeBody(body) }
-  const values: ShellParamKeyValue[] = []
-  for (const entry of inner.entries) {
-    const vSig = normalizeHeader(entry.header)
-    if (!vSig || !entry.body) continue
-    values.push({
-      name: vSig,
-      desc: normalizeBody(entry.body),
-    })
-  }
-  if (values.length === 0) return { name, desc: normalizeBody(body) }
-  return { name, desc: normalizeBody(inner.intro), values }
+  if (!inner) return { sigs, desc: normalizeBody(body) }
+  const values = collectItemEntries(inner.entries)
+  if (values.length === 0) return { sigs, desc: normalizeBody(body) }
+  return { sigs, desc: normalizeBody(inner.intro), values }
 }

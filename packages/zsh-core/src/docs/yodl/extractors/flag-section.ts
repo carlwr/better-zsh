@@ -1,22 +1,15 @@
-import { isNonEmpty, type NonEmpty, nonEmpty } from "@carlwr/typescript-extra"
 import { identity } from "../../brands.ts"
 import type { DocCategory } from "../../taxonomy.ts"
-import type {
-  DocRecordBase,
-  FlagEntry,
-  FlagGroup,
-  SyntaxDocBase,
-} from "../../types.ts"
+import type { DocRecordBase, FlagGroup, SyntaxDocBase } from "../../types.ts"
 import {
-  collectAliasedEntries,
   extractItems,
   extractSectionBody,
   splitBodyAtAllNestedLists,
   withBody,
-  type YodlEntry,
 } from "../core/doc.ts"
 import type { YNodeSeq, YodlSrc } from "../core/nodes.ts"
 import { normalizeBody, normalizeHeader } from "../core/text.ts"
+import { collectItemEntries } from "./item-entries.ts"
 
 // Shape shared by every record category whose body carries flag-style nested
 // lists.
@@ -24,27 +17,6 @@ export interface SigDescBody {
   readonly desc: string
   readonly flagGroups?: readonly FlagGroup[]
   readonly outro?: string
-}
-
-// Consecutive `xitem(...)` headers preceding an `item(...)(body)` fold onto
-// the body-bearing item; each alias plus the head becomes an entry sharing
-// the same desc.
-export function collectSigDescPairs(
-  entries: readonly YodlEntry[],
-): FlagEntry[] {
-  const out: FlagEntry[] = []
-  for (const grp of collectAliasedEntries(
-    entries,
-    h => normalizeHeader(h) || undefined,
-  )) {
-    // branch narrows for `NonEmpty`; `[...aliases, head]` alone isn't
-    // provably non-empty to TS even though `head` is always present.
-    const sigs: NonEmpty<string> = isNonEmpty(grp.aliases)
-      ? [...grp.aliases, grp.head]
-      : nonEmpty(grp.head)
-    out.push({ sigs, desc: normalizeBody(grp.entry.body ?? []) })
-  }
-  return out
 }
 
 /**
@@ -62,7 +34,7 @@ export function splitFlagBody(body: YNodeSeq): SigDescBody {
 
   const flagGroups: FlagGroup[] = []
   for (const g of split.groups) {
-    const flags = collectSigDescPairs(g.entries)
+    const flags = collectItemEntries(g.entries)
     if (flags.length === 0) continue
     const intro = flagGroups.length === 0 ? "" : normalizeBody(g.preIntro)
     flagGroups.push({ intro, flags })

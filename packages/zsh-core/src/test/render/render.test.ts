@@ -42,7 +42,6 @@ import {
   defaultStateIn,
   fmtOptRefsInMd,
   isDocoptSig,
-  isSynonymList,
   renderRecord,
 } from "../../render/md"
 import { withTmpDirAsync } from "../tmp-dir"
@@ -528,22 +527,6 @@ describe("render markdown", () => {
     },
   )
 
-  // comma-separated bare identifiers (widget synonym lists) carve out from docopt
-  test.each([
-    ["foo, bar", true],
-    ["history-incremental-search-backward, foo", true],
-    // single item / non-identifier / brackets / spaces → not a synonym list
-    ["foo", false],
-    ["foo, [bar]", false],
-    ["foo bar", false],
-  ] as const)("isSynonymList(%j) → %s", (sig, want) => {
-    expect(isSynonymList(sig)).toBe(want)
-  })
-
-  test("isDocoptSig rejects synonym list", () => {
-    expect(isDocoptSig("foo, bar")).toBe(false)
-  })
-
   test("title — per-category formatting", () => {
     expect(title(cd)).toBe("`AUTO_CD`")
     expect(title(cu)).toBe("`-a` *file*")
@@ -685,19 +668,22 @@ describe("render markdown", () => {
       desc: "intro",
       keys: [
         {
-          name: "[ key ] ...",
+          sigs: ["[ key ] ...", "[ alias ] ..."],
           desc: "first para\n\nsecond para",
         },
-        { name: "plainkey", desc: "leaf desc" },
+        { sigs: ["plainkey"], desc: "leaf desc" },
+        { sigs: ["alpha", "beta"], desc: "shared desc" },
       ],
     }
     containsAll(body(doc), [
-      // docopt key: fenced bullet block, indented multi-paragraph desc
-      "- ```docopt\n  [ key ] ...\n  ```",
+      // docopt key: fenced bullet block, every sig on its own line
+      "- ```docopt\n  [ key ] ...\n  [ alias ] ...\n  ```",
       "  first para",
       "  second para",
       // plain key: inline form
       "- `plainkey`: leaf desc",
+      // folded alias chain: one bullet, comma-separated inline sigs
+      "- `alpha`, `beta`: shared desc",
     ])
   })
 })

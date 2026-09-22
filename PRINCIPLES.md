@@ -157,8 +157,9 @@ Existing precedents to compare new records against — recur because they model 
 - array fields for composite data (`ZshOption.flags`, `ParamExpnDoc.groupSigs`)
 - `SyntaxDocBase` extension for sig-shaped records
 - `args` arrays for parameterized flags
+- `ItemEntry` for nested item-list rows (`BuiltinDoc.flagGroups`, `ShellParamDoc.keys`, `ZleWidgetDoc.subItems`)
 
-Follow when the domain calls for it; deviate when it doesn't.
+Follow when the domain calls for it; deviate when it doesn't. The containers around `ItemEntry` stay per-category: grouping with intro prose and depth-2 nesting are not general, and a shared wrapper would advertise shapes the parser never emits.
 
 ### The structural identity invariant
 
@@ -190,6 +191,11 @@ Markdown explains; typed fields route.
 One identity unit, one rendered markdown body. The ontology has no "see also" between records; consumers receive a self-contained body per identity unit.
 
 A record's typed sub-payload (variable-length composite field) is *internal structure*, not navigation: when an upstream item documents an enumerated nested set whose members carry their own prose, capture it as a typed field on the record and let the renderer compose prose from it. The producer can grow richer shapes without consumers lifting navigation primitives.
+
+Upstream alias chains resolve by level, not uniformly — each way keeps one body per identity unit:
+
+- _record-level_ — one record per alias, each a full identity unit sharing the body
+- _sub-payload-level_ — one entry carrying every alias in `sigs`, since a row is not an identity unit
 
 ### Parsers parse yodl; renderers may shape-infer
 

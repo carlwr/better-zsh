@@ -1,10 +1,10 @@
 import { isDefined, isNonEmpty } from "@carlwr/typescript-extra"
 import { identity } from "../../brands.ts"
 import type {
+  ItemEntry,
   ZleBindingKeymap,
   ZleDefaultBinding,
   ZleWidgetDoc,
-  ZleWidgetSubItem,
   ZleWidgetSubsection,
 } from "../../types.ts"
 import { zleWidgetSubsections } from "../../vocab.ts"
@@ -23,6 +23,7 @@ import {
   type YodlSrc,
 } from "../core/nodes.ts"
 import { firstTt, normalizeBody, normalizeHeader } from "../core/text.ts"
+import { collectItemEntries } from "./item-entries.ts"
 
 const parseSubsection = mkClosedUnionParser(
   zleWidgetSubsections,
@@ -176,25 +177,12 @@ function parenGroups(header: YNodeSeq): readonly YNodeSeq[] {
 // otherwise the whole body stays flat in `desc`.
 function splitWidgetBody(body: YNodeSeq): {
   desc: string
-  subItems?: readonly ZleWidgetSubItem[]
+  subItems?: readonly ItemEntry[]
   outro?: string
 } {
   const split = splitBodyAtNestedList(body)
   if (!split) return { desc: normalizeBody(body) }
-  const subItems: ZleWidgetSubItem[] = []
-  for (const aliased of collectAliasedEntries(split.entries, header => {
-    const sig = normalizeHeader(header)
-    return sig.length > 0 ? sig : undefined
-  })) {
-    if (!aliased.entry.body) continue
-    // `aliases` are the body-less `xitem` headers preceding the entry that
-    // carries the body — restore source order by putting them first.
-    const allHeads = [...aliased.aliases, aliased.head]
-    subItems.push({
-      sig: allHeads.join(", "),
-      desc: normalizeBody(aliased.entry.body),
-    })
-  }
+  const subItems = collectItemEntries(split.entries)
   if (subItems.length === 0) return { desc: normalizeBody(body) }
   const desc = normalizeBody(split.intro)
   const outro = normalizeBody(split.outro)

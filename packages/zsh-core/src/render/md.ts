@@ -1,10 +1,4 @@
-import {
-  isSingle,
-  mapNonEmpty,
-  type NonEmpty,
-  nonEmpty,
-  trim,
-} from "@carlwr/typescript-extra"
+import { isSingle, mapNonEmpty, type NonEmpty } from "@carlwr/typescript-extra"
 import type { DocCorpus } from "../docs/corpus.ts"
 import { flipOptFlagSign } from "../docs/normalize-option.ts"
 import { resolve } from "../docs/resolver.ts"
@@ -18,6 +12,8 @@ import type {
   CompUtilityDoc,
   CondOpDoc,
   Emulation,
+  FlagGroup,
+  ItemEntry,
   KeymapDoc,
   MathfuncDoc,
   OptFlagAlias,
@@ -78,27 +74,17 @@ const modulePart = (mod: string | undefined): readonly string[] =>
 
 // --- docopt-shape sig detection --------------------------------------------
 
-const IDENT = /^[A-Za-z_][A-Za-z0-9_-]*$/
-
-/**
- * Comma-separated list of bare identifiers (e.g. ZLE-widget synonym groups
- * like `history-incremental-search-backward, …`). Carve-out so these don't
- * trip the bracket-/whitespace-based docopt-shape detector.
- */
-export function isSynonymList(sig: string): boolean {
-  const parts = sig.split(",").map(trim)
-  return parts.length >= 2 && parts.every(p => IDENT.test(p))
-}
-
 /**
  * True iff `sig` looks like a man-page synopsis fragment (brackets, braces,
  * alternation bars, ellipses, `*meta*` placeholders, or whitespace
  * separators) rather than a bare flag / key / escape. Renderer switches the
  * bullet head from inline `` `sig` `` to a fenced `docopt` block when true —
  * synopsis fragments read as code, not as a label.
+ *
+ * One sig at a time: alias chains arrive as separate `ItemEntry.sigs`, never
+ * as one joined string.
  */
 export function isDocoptSig(sig: string): boolean {
-  if (isSynonymList(sig)) return false
   if (/[[\]{}|]/.test(sig)) return true
   if (/\.\.\.|…/.test(sig)) return true
   if (/\*[A-Za-z][A-Za-z0-9_-]*\*/.test(sig)) return true
@@ -115,12 +101,10 @@ export function isDocoptSig(sig: string): boolean {
  * render as depth-2 leaf bullets.
  *
  * Multi-sig folding consolidates upstream `xitem(form-a) item(form-b)(body)`
- * chains so each shared body renders once; see `[[FlagEntry]]`.
+ * chains so each shared body renders once; see `[[ItemEntry]]`.
  */
-interface MemberItem {
-  readonly sigs: NonEmpty<string>
-  readonly desc: string
-  readonly subItems?: readonly { readonly sig: string; readonly desc: string }[]
+interface MemberItem extends ItemEntry {
+  readonly subItems?: readonly ItemEntry[]
 }
 
 function renderMemberList(
@@ -138,10 +122,7 @@ function renderMemberList(
 
 function renderMemberBullet(m: MemberItem): string {
   // subItems are leaf bullets (no deeper nesting) — recurse to render them.
-  const subBlock = (m.subItems ?? [])
-    .filter(s => s.sig)
-    .map(s => renderMemberBullet({ sigs: nonEmpty(s.sig), desc: s.desc }))
-    .join("\n\n")
+  const subBlock = (m.subItems ?? []).map(renderMemberBullet).join("\n\n")
   return m.sigs.some(isDocoptSig)
     ? renderDocoptBullet(m.sigs, m.desc, subBlock)
     : renderInlineBullet(m.sigs, m.desc, subBlock)
@@ -198,12 +179,7 @@ function composeBody(desc: string, subBlock: string): string {
  */
 function renderFlagGroupBody(
   desc: string,
-  groups:
-    | readonly {
-        readonly intro: string
-        readonly flags: readonly MemberItem[]
-      }[]
-    | undefined,
+  groups: readonly FlagGroup[] | undefined,
   outro?: string,
 ): string {
   if (!groups?.length) return desc
@@ -558,13 +534,8 @@ function mdCondOp(cop: CondOpDoc, corpus: DocCorpus): string {
 
 function mdShellParam(doc: ShellParamDoc): string {
   const keys = doc.keys?.map(
-    (k): MemberItem => ({
-      sigs: nonEmpty(k.name),
-      desc: k.desc,
-      ...(k.values && {
-        subItems: k.values.map(v => ({ sig: v.name, desc: v.desc })),
-      }),
-    }),
+    ({ values, ...key }): MemberItem =>
+      values ? { ...key, subItems: values } : key,
   )
   return docBlock(
     renderMemberList(doc.desc, keys, doc.outro),
@@ -646,15 +617,9 @@ function mdKeymap(doc: KeymapDoc): string {
 }
 
 function mdZleWidget(doc: ZleWidgetDoc): string {
-  const subItems = doc.subItems?.map(
-    (s): MemberItem => ({
-      sigs: nonEmpty(s.sig),
-      desc: s.desc,
-    }),
-  )
   return docBlock(
     ...defaultBindingsPart(doc.defaultBindings),
-    renderMemberList(doc.desc, subItems, doc.outro),
+    renderMemberList(doc.desc, doc.subItems, doc.outro),
     ...modulePart(doc.module),
   )
 }

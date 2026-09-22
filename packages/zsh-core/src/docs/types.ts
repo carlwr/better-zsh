@@ -124,11 +124,17 @@ export interface BinaryCondOpDoc extends DocRecordBase<"conditional_op"> {
 export type CondOpDoc = UnaryCondOpDoc | BinaryCondOpDoc
 
 /**
- * One row in a nested item list inside a builtin/comp-utility body. `sigs`
- * carries every header sharing the row's body — upstream `xitem` chains
- * terminating in `item(...)(body)` fold into one entry, not one per alias.
+ * One row of a nested item list inside a record body — a builtin's or
+ * comp-utility's flag, a special parameter's key, a ZLE widget's sub-entry.
+ * Every category that documents such a list uses this shape.
  */
-export interface FlagEntry {
+export interface ItemEntry {
+  /**
+   * Every header sharing the row's body, in manual source order — upstream
+   * `xitem` alias chains terminating in `item(...)(body)` fold into one
+   * entry, not one per alias. As the manual writes them: a flag, an
+   * associative-array key, a widget name, …
+   */
   readonly sigs: NonEmpty<string>
   readonly desc: string
 }
@@ -141,7 +147,7 @@ export interface FlagEntry {
  */
 export interface FlagGroup {
   readonly intro: string
-  readonly flags: readonly FlagEntry[]
+  readonly flags: readonly ItemEntry[]
 }
 
 /** Parsed builtin command doc block. */
@@ -201,25 +207,13 @@ export type ShellParamScope =
   | "completion-widget"
 
 /**
- * One sub-value under a `ShellParamKey` whose body itself carries a nested
- * item list (e.g. `compstate.context`). No further nesting is captured.
- */
-export interface ShellParamKeyValue {
-  /** As the manual writes it (an associative-array key, a colon-list value, …). */
-  readonly name: string
-  readonly desc: string
-}
-
-/**
  * One member of `ShellParamDoc.keys`. `desc` is the member's intro prose;
  * `values`, when present, holds an enumerated sub-list (depth-2 from the
- * parameter) rendered as a nested bullet list.
+ * parameter, e.g. `compstate.context`) rendered as a nested bullet list. No
+ * further nesting is captured.
  */
-export interface ShellParamKey {
-  /** As the manual writes it (an associative-array key, a colon-list value, …). */
-  readonly name: string
-  readonly desc: string
-  readonly values?: readonly ShellParamKeyValue[]
+export interface ShellParamKey extends ItemEntry {
+  readonly values?: readonly ItemEntry[]
 }
 
 /**
@@ -430,16 +424,6 @@ export interface ZleDefaultBinding {
 }
 
 /**
- * One nested entry within a ZLE widget's body (e.g. inside
- * `history-incremental-search-backward`'s mini-buffer support list). `sig` is
- * the normalized full header with `xitem` aliases folded in.
- */
-export interface ZleWidgetSubItem {
-  readonly sig: string
-  readonly desc: string
-}
-
-/**
  * ZLE widget — standard and special widgets from `zle.yo`.
  *
  * Does not extend `SyntaxDocBase`: the header carries no usage signature
@@ -462,7 +446,7 @@ export interface ZleWidgetDoc extends DocRecordBase<"zle_widget"> {
    * `history-incremental-search-backward`). When present, `desc` is the
    * intro; renderer composes intro → sub-items → `outro`.
    */
-  readonly subItems?: readonly ZleWidgetSubItem[]
+  readonly subItems?: readonly ItemEntry[]
   /** Prose after the sub-item list. */
   readonly outro?: string
   readonly module?: ModuleName

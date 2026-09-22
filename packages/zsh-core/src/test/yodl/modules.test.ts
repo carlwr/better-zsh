@@ -114,6 +114,10 @@ startitem()
 item(tt(%F{)var(color)tt(}) LPAR()tt(%f)RPAR())(
 Start (stop) foreground color.
 )
+xitem(tt(%t))
+item(tt(%@))(
+The time, in 12-hour, am/pm format.
+)
 item(tt(%S) LPAR()tt(%s)RPAR())(
 Start (stop) standout.
 )
@@ -123,8 +127,12 @@ enditem()`
     const doc = only(parseModuleParams(yo, "zsh/watch"))
     expect(doc.id).toBe(sp("WATCHFMT"))
     expect(doc.keys).toBeDefined()
-    const sigs = doc.keys?.map(k => k.name)
-    expect(sigs).toEqual(["%F{color} (%f)", "%S (%s)"])
+    // the body-less `xitem` head folds onto the entry that carries the body
+    expect(doc.keys?.map(k => k.sigs)).toEqual([
+      ["%F{color} (%f)"],
+      ["%t", "%@"],
+      ["%S (%s)"],
+    ])
   })
 
   test("captures nested key list (compstate.context-style)", () => {
@@ -145,7 +153,7 @@ enditem()
 enditem()`
     const doc = only(parseModuleParams(yo, "zsh/parameter"))
     expect(doc.desc).toContain("Intro")
-    expect(doc.keys?.map(k => k.name)).toEqual(["alpha", "beta"])
+    expect(doc.keys?.map(k => k.sigs)).toEqual([["alpha"], ["beta"]])
   })
 })
 
