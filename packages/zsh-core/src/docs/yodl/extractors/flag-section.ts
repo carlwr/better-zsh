@@ -25,21 +25,19 @@ export interface SigDescBody {
  * multiple sibling lists. The first group's intro is empty (its preceding
  * prose lives in the returned `desc`).
  *
- * Falls back to a flat `desc` when no nested list exists or none of the
- * captured lists contain sig-bearing entries.
+ * Falls back to a flat `desc` when no nested list exists or any captured
+ * list lacks sig-bearing entries — such a list has no group to hold its text.
  */
 export function splitFlagBody(body: YNodeSeq): SigDescBody {
   const split = splitBodyAtAllNestedLists(body)
   if (!split) return { desc: normalizeBody(body) }
 
   const flagGroups: FlagGroup[] = []
-  for (const g of split.groups) {
+  for (const [i, g] of split.groups.entries()) {
     const flags = collectItemEntries(g.entries)
-    if (flags.length === 0) continue
-    const intro = flagGroups.length === 0 ? "" : normalizeBody(g.preIntro)
-    flagGroups.push({ intro, flags })
+    if (flags.length === 0) return { desc: normalizeBody(body) }
+    flagGroups.push({ intro: i === 0 ? "" : normalizeBody(g.preIntro), flags })
   }
-  if (flagGroups.length === 0) return { desc: normalizeBody(body) }
 
   const desc = normalizeBody(split.intro)
   const outro = normalizeBody(split.outro)

@@ -1,7 +1,7 @@
 /**
- * Nested item lists: no producer loses a header, and no corpus entry holds
- * an alias chain as one joined string. A lost header leaves nothing behind
- * to assert on — hence generated input, whose answer is known.
+ * Nested item lists: no producer loses a header or a line of prose, and no
+ * corpus entry holds an alias chain as one joined string. Lost text leaves
+ * nothing behind to assert on — hence generated input, whose answer is known.
  */
 
 import { describe, expect, test } from "vitest"
@@ -33,18 +33,19 @@ const desc = (k: number) => `Body of ${head(k)}.`
 const line = (sigs: readonly string[], body: string) =>
   `${sigs.join(" ")}: ${body}`
 
+/** One `startitem()` list; entries are numbered from `from`. */
+const listLines = (pattern: string, from = 0): string[] => [
+  "startitem()",
+  ...[...pattern].flatMap((kind, i) =>
+    kind === ALIAS
+      ? [`xitem(tt(${head(from + i)}))`]
+      : [`item(tt(${head(from + i)}))(`, desc(from + i), ")"],
+  ),
+  "enditem()",
+]
+
 const listYo = (pattern: string): string =>
-  [
-    "Intro prose.",
-    "",
-    "startitem()",
-    ...[...pattern].flatMap((kind, k) =>
-      kind === ALIAS
-        ? [`xitem(tt(${head(k)}))`]
-        : [`item(tt(${head(k)}))(`, desc(k), ")"],
-    ),
-    "enditem()",
-  ].join("\n")
+  ["Intro prose.", "", ...listLines(pattern)].join("\n")
 
 /** What the list must yield: each alias run folded onto the entry after it. */
 const expected = (pattern: string): string[] => {
@@ -65,7 +66,7 @@ const summary = (entries: readonly ItemEntry[]): string[] =>
   entries.map(e => line(e.sigs, e.desc))
 
 // Only reachable through the section walk, unlike the other two.
-const widgetSubItems = (body: string): readonly ItemEntry[] =>
+const widgetRecord = (body: string): unknown =>
   parseZleWidgets(
     [
       "sect(Standard Widgets)",
@@ -77,32 +78,95 @@ const widgetSubItems = (body: string): readonly ItemEntry[] =>
       "enditem()",
       "sect(Character Highlighting)",
     ].join("\n"),
-  )[0]?.subItems ?? []
+  )[0]
+
+const widgetSubItems = (body: string): readonly ItemEntry[] =>
+  (widgetRecord(body) as { subItems?: readonly ItemEntry[] }).subItems ?? []
 
 const producers: readonly (readonly [
   string,
   (body: string) => readonly ItemEntry[],
+  (body: string) => unknown,
 ])[] = [
   [
     "flag groups",
     b => splitFlagBody(asNodes(b)).flagGroups?.flatMap(g => g.flags) ?? [],
+    b => splitFlagBody(asNodes(b)),
   ],
-  ["parameter keys", b => splitParamBody(asNodes(b)).keys ?? []],
-  ["widget sub-items", widgetSubItems],
+  [
+    "parameter keys",
+    b => splitParamBody(asNodes(b)).keys ?? [],
+    b => splitParamBody(asNodes(b)),
+  ],
+  ["widget sub-items", widgetSubItems, widgetRecord],
 ]
 
-describe.each(producers)("nested item list — %s", (_label, entriesOf) => {
-  test("no arrangement of `xitem` / `item` loses a header", () => {
-    const wrong = arrangements(5).flatMap(pattern => {
-      const got = summary(entriesOf(listYo(pattern)))
-      const want = expected(pattern)
-      return got.join(" | ") === want.join(" | ")
-        ? []
-        : [{ pattern, got, want }]
-    })
-    expect(wrong).toEqual([])
+// A body of prose and sibling lists; every list may be empty or alias-only,
+// i.e. yield no rows.
+const prose = (k: number) => `Prose ${k}.`
+const listPatterns = ["", ...arrangements(2)]
+const layouts = (max: number): readonly (readonly string[])[] =>
+  max === 0
+    ? []
+    : listPatterns.flatMap(p => [
+        [p],
+        ...layouts(max - 1).map(ps => [p, ...ps]),
+      ])
+
+const layoutYo = (lists: readonly string[]): string => {
+  let from = 0
+  const lines = lists.flatMap((pattern, k) => {
+    const ls = [prose(k), "", ...listLines(pattern, from), ""]
+    from += pattern.length
+    return ls
   })
-})
+  return [...lines, prose(lists.length)].join("\n")
+}
+
+/** Texts the output must hold: all prose, and each bodied entry's body. */
+const mustKeep = (lists: readonly string[]): string[] => {
+  let from = 0
+  const bodies = lists.flatMap(pattern => {
+    const ds = [...pattern].flatMap((kind, i) =>
+      kind === BODIED ? [desc(from + i)] : [],
+    )
+    from += pattern.length
+    return ds
+  })
+  return [...lists.map((_, k) => prose(k)), prose(lists.length), ...bodies]
+}
+
+/** Every string inside `node`, at any depth. */
+function* strings(node: unknown): Generator<string> {
+  if (typeof node === "string") yield node
+  else if (typeof node === "object" && node !== null)
+    for (const v of Object.values(node)) yield* strings(v)
+}
+
+describe.each(producers)(
+  "nested item list — %s",
+  (_label, entriesOf, recOf) => {
+    test("no arrangement of `xitem` / `item` loses a header", () => {
+      const wrong = arrangements(5).flatMap(pattern => {
+        const got = summary(entriesOf(listYo(pattern)))
+        const want = expected(pattern)
+        return got.join(" | ") === want.join(" | ")
+          ? []
+          : [{ pattern, got, want }]
+      })
+      expect(wrong).toEqual([])
+    })
+
+    test("no arrangement of prose and lists loses text", () => {
+      const wrong = layouts(3).flatMap(lists => {
+        const out = [...strings(recOf(layoutYo(lists)))].join("\n")
+        const lost = mustKeep(lists).filter(t => !out.includes(t))
+        return lost.length === 0 ? [] : [{ lists, lost }]
+      })
+      expect(wrong).toEqual([])
+    })
+  },
+)
 
 // --- corpus-wide entry shape -----------------------------------------------
 

@@ -216,9 +216,10 @@ export interface ShellParamKey extends ItemEntry {
  * Special-parameter doc record. Does not extend `SyntaxDocBase`: a
  * parameter has a `name`, not a `sig`; its scope is the typed `subKind`.
  *
- * `keys` captures an upstream-documented enumerated nested set (e.g. an
- * associative-array's keys); the renderer composes the visible body from
- * `desc` plus `keys`. See PRINCIPLES.md §"Records are self-contained".
+ * `keys` captures an upstream-documented enumerated nested set — keys,
+ * values or escapes (e.g. `compstate` keys, `zsh_eval_context` values,
+ * `WATCHFMT` escapes); the renderer composes the visible body from `desc`
+ * plus `keys`. See PRINCIPLES.md §"Records are self-contained".
  */
 export interface ShellParamDoc extends DocRecordBase<"special_param"> {
   /**
