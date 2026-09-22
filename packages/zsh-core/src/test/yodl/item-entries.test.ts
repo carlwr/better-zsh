@@ -1,11 +1,12 @@
 /**
  * The nested item list, wherever a record body carries one.
  *
- * Two layers: every producer folds a body-less `xitem` head onto the
- * `item(...)(body)` that terminates the chain, and no entry anywhere in the
- * corpus encodes such a chain as one joined string. The bug both pin: a
- * producer that walked raw entries and skipped the body-less ones, silently
- * dropping every `xitem` alias in its category.
+ * Two layers: no producer loses a header for any arrangement of `xitem` and
+ * `item`, and no entry anywhere in the corpus encodes an alias chain as one
+ * joined string. The bug both pin: a producer that walked raw entries and
+ * skipped the body-less ones, silently dropping every `xitem` alias in its
+ * category. A drop leaves nothing behind to assert on, so the check runs
+ * against generated input whose expected output is known.
  */
 
 import { describe, expect, test } from "vitest"
@@ -17,24 +18,57 @@ import { splitFlagBody } from "../../docs/yodl/extractors/flag-section"
 import { splitParamBody } from "../../docs/yodl/extractors/param-keys"
 import { parseZleWidgets } from "../../docs/yodl/extractors/zle-widgets"
 
-// --- alias folding, once per nested-list producer ---------------------------
+// --- alias folding: every arrangement, every nested-list producer -----------
 
-// A record body: intro prose, then a list whose first entry is an `xitem`
-// alias chain (`%t` has no body of its own — upstream means it as a synonym
-// of `%@`) and whose second stands alone.
-const body = [
-  "Intro prose.",
-  "",
-  "startitem()",
-  "xitem(tt(%t))",
-  "item(tt(%@))(",
-  "The time, in 12-hour, am/pm format.",
-  ")",
-  "item(tt(%T))(",
-  "The time, in 24-hour format.",
-  ")",
-  "enditem()",
-].join("\n")
+// One character per list entry: `x` a body-less `xitem` header, `i` an
+// `item(...)(body)`. Exhaustive up to this length — long enough for runs of
+// several aliases, several groups, and a chain in every position.
+const PATTERNS: readonly string[] = Array.from({ length: 5 }, (_, i) => i + 1)
+  .flatMap(len =>
+    Array.from({ length: 1 << len }, (_, bits) =>
+      Array.from({ length: len }, (_, k) => ((bits >> k) & 1 ? "i" : "x")),
+    ),
+  )
+  .map(chars => chars.join(""))
+
+const head = (k: number) => `h${k}`
+const desc = (k: number) => `Body of ${head(k)}.`
+const line = (sigs: readonly string[], body: string) =>
+  `${sigs.join(" ")}: ${body}`
+
+/** A record body: intro prose, then the list `pattern` describes. */
+const listYo = (pattern: string): string =>
+  [
+    "Intro prose.",
+    "",
+    "startitem()",
+    ...[...pattern].flatMap((kind, k) =>
+      kind === "x"
+        ? [`xitem(tt(${head(k)}))`]
+        : [`item(tt(${head(k)}))(`, desc(k), ")"],
+    ),
+    "enditem()",
+  ].join("\n")
+
+/** What the list must yield: each `x` run folded onto the `i` after it. */
+const expected = (pattern: string): string[] => {
+  const out: string[] = []
+  let pending: string[] = []
+  for (const [k, kind] of [...pattern].entries()) {
+    if (kind === "x") {
+      pending.push(head(k))
+      continue
+    }
+    out.push(line([...pending, head(k)], desc(k)))
+    pending = []
+  }
+  // A trailing `x` run terminates nothing, so it has no body and no entry —
+  // the one arrangement in which losing a header is correct.
+  return out
+}
+
+const summary = (entries: readonly ItemEntry[]): string[] =>
+  entries.map(e => line(e.sigs, e.desc))
 
 // A ZLE widget's sub-items are only reachable through the section walk.
 const widgetSubItems = (body: string): readonly ItemEntry[] =>
@@ -64,14 +98,15 @@ const producers: readonly (readonly [
 ]
 
 describe.each(producers)("nested item list — %s", (_label, entriesOf) => {
-  const entries = entriesOf(body)
-
-  test("the `xitem` head folds onto the entry carrying the body", () => {
-    expect(entries.map(e => e.sigs)).toEqual([["%t", "%@"], ["%T"]])
-  })
-
-  test("the folded heads share one desc", () => {
-    expect(entries[0]?.desc).toBe("The time, in 12-hour, am/pm format.")
+  test("no arrangement of `xitem` / `item` loses a header", () => {
+    const wrong = PATTERNS.flatMap(pattern => {
+      const got = summary(entriesOf(listYo(pattern)))
+      const want = expected(pattern)
+      return got.join(" | ") === want.join(" | ")
+        ? []
+        : [{ pattern, got, want }]
+    })
+    expect(wrong).toEqual([])
   })
 })
 
