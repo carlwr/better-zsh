@@ -10,10 +10,9 @@ import type { DocCategory, DocRecordMap } from "./taxonomy.ts"
 import type { DocRecordBase } from "./types.ts"
 
 /**
- * Project the records of `cat` as JSON consumers see them: each augmented
- * with its `RenderedRecord` fields. Generated fields are `_`-prefixed
- * (`_mdBody` included): a namespace apart from the records' own field
- * names (`category`, `id`, `display`, `subKind`).
+ * The records of `cat` as the release record file carries them: each
+ * augmented with `_title` / `_mdBody` (`renderRecord`'s `title` /
+ * `mdBody`). Renders every record on each call.
  */
 export function projectRecords<K extends DocCategory>(
   corpus: DocCorpus,

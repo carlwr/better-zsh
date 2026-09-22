@@ -128,7 +128,9 @@ If an operation decomposes into A→B→C, export A→B and B→C, not also A→
 
 The rendering path is `raw string → hit → markdown` (`resolve` + `renderRecord`). No combined convenience function. Reasons:
 
-- The hit is a first-class concept (the record — its identity with it — plus feedback); an A→C function hides it.
+- The hit is a first-class concept: the record plus feedback on a lossy match (`NO_AUTO_CD` → `autocd`, negated).
+  - showing that feedback is a presentation choice
+  - an A→C function would drop it, or return hit plus markdown — both steps again
 - Two ways to do the same thing force consumers to choose and encourage drift.
 - Each step has a crisp meaning: "is this in the corpus?" vs "render this known element."
 
@@ -138,9 +140,17 @@ The hit carries the record, so the second step takes a value, not a reference:
 - TS cannot prove map membership from a branded key, so an id-keyed renderer would have to throw on a miss — removed for that reason
 - an id that crossed a boundary where the record was dropped — serialized, stored, from another corpus build — is a string again; `resolve` takes it back (an exact id hits directly), and there a miss is honest
 
-Corpus-driven aggregation (the build's JSON projection over every record) is fine — it operates on already-known records, not hidden brand crossings.
-
 Not an absolute ban. A post-refactor convenience wrapper is fine as a conscious addition.
+
+### Where rendered text ships
+
+- JSON records carry `_title` / `_mdBody`: their consumers cannot run the renderer
+- a hit does not: in-process, rendering is one call on the record the hit carries
+
+`projectRecords` — the JSON record shape, in-process — is public:
+
+- corpus-driven rendering over known records, not A→C: no brand crossing, nothing hidden
+- a shape contract: an in-process reader matching the JSON (the web index) would otherwise re-implement it and drift silently
 
 ### Off the surface by decision
 
@@ -150,10 +160,9 @@ Raised by API reviews; each a decision, not an oversight:
   - the JSON side is one unit — data, index, schema, fixture — versioned by the release tag (`PACKAGING.md`)
   - a part of it in the tarball: a second channel, with a version pin between the two
   - an in-process consumer holds the corpus the JSON is projected from
-- **The JSON build's in-process view** (record projection, corpus content hash, the release files' TS types)
-  - JSON is for consumers that cannot run the TypeScript; an in-process consumer composes `renderRecord` over the corpus it already holds
+- **The JSON build's in-process view** (corpus content hash, the release files' TS types)
   - the release files' contract is their schema; a TS reader generates types from it
-  - a content hash answers "which corpus?": for a registry consumer the package version does; the web build, tracking an unreleased corpus, fingerprints its own projection
+  - a content hash answers "which corpus?": for a registry consumer the package version does; the web build, tracking an unreleased corpus, fingerprints its projected corpus
 - **A runtime array for every closed union**
   - a tuple exists where the library itself iterates or validates against the union, as the type's single source, and stays internal; tag-only unions (`HistoryKind`, `JobSpecKind`, `ResolverFeedback["kind"]`, …) have none
   - the values ship as the released schema's enums; in-process, a fold over the corpus
@@ -329,7 +338,7 @@ Per-category renderers are internal; public entry is `renderRecord`. The JSON st
 The TS API is the root; the JSON is a derived view of it, for consumers that cannot run the TypeScript — renderer and resolvers included (e.g. Rust `include_bytes!`). Library consumers parse the vendored Yodl at runtime; loading a pre-parsed corpus instead was considered and rejected — the instance of PRINCIPLES.md §"Cross-project structure" (derived data, committed files) and §"Cost and laziness":
 
 - the vendored `.yo` is committed; a generated corpus is not — JSR publishes only the former, and tests and scripts run on an unbuilt checkout, so the runtime would need a parse fallback
-- the projection is a seam: the JSON may lag, omit or reshape without touching the runtime API
+- the projection is a seam: the JSON may lag or omit without touching the runtime API
 - parse cost is met by per-category laziness, not by shipping a different form
 
 Parser and renderer are layered: the parser may capture structure the renderer chooses to flatten or compose. Rendered markdown is the byte-equal contract surface; record-shape changes (new typed fields) stay below it until they cross into the wire schema. Records carry prose twice — typed fields for routing, `_mdBody` for reading — roughly a third to a half of the payload; accepted. Cross-cutting "records are self-contained" framing: PRINCIPLES.md.
