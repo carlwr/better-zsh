@@ -1,6 +1,7 @@
 // Shared fixtures. Pure (no IO); excluded from the test glob (not *.test.ts).
 
 import { lookupIndex } from "../nlp/core/lookup-map"
+import { INDEX_VERSION } from "../nlp/core/search-index"
 import {
   DIMS,
   type IndexedRecord,
@@ -10,7 +11,6 @@ import {
   type ViewVectors,
 } from "../nlp/core/types"
 import { syntheticVec } from "../nlp/core/vec"
-import { INDEX_VERSION } from "../nlp/node/index-build"
 
 export function makeRecordText(over: Partial<RecordText> = {}): RecordText {
   return {

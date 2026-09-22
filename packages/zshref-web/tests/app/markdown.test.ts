@@ -2,11 +2,13 @@
 // to the data; a red output test localises it to the renderer.
 
 import { beforeAll, describe, expect, it } from "vitest"
-import type { IndexedRecord, VectorIndex } from "../../nlp/core/types"
+import type { SearchIndexText } from "../../nlp/core/search-index"
+import type { RecordText } from "../../nlp/core/types"
 import { renderInline, renderMarkdown } from "../../src/lib/markdown"
-import { artifactGate, loadIndexFromDisk, STAGED } from "../_helpers"
+import { artifactGate, loadIndexTextFromDisk, STAGED } from "../_helpers"
 
-const skipReason = artifactGate("markdown rendering", [STAGED.index])
+// Record text only: no vectors are read, so none are gated on.
+const skipReason = artifactGate("markdown rendering", [...STAGED.indexText])
 
 const FENCE = /^ {0,3}(`{3,}|~{3,})(.*)$/
 // A fenced block can also open on a list-marker line, e.g. "- ```docopt"
@@ -43,20 +45,18 @@ function fences(src: string): { count: number; balanced: boolean } {
   return { count, balanced: !open }
 }
 
-const ref = (r: IndexedRecord) => `${r.text.category}/${r.text.id}`
+const ref = (r: RecordText) => `${r.category}/${r.id}`
 
 describe("markdown", () => {
-  let index: VectorIndex
+  let index: SearchIndexText
   beforeAll(async () => {
-    if (!skipReason) index = await loadIndexFromDisk()
+    if (!skipReason) index = await loadIndexTextFromDisk()
   }, 60_000)
 
   it("every md_body has balanced fences", ctx => {
     if (skipReason) ctx.skip(skipReason)
 
-    const bad = index.records
-      .filter(r => !fences(r.text.md_body).balanced)
-      .map(ref)
+    const bad = index.records.filter(r => !fences(r.md_body).balanced).map(ref)
     expect(bad).toEqual([])
   })
 
@@ -65,9 +65,9 @@ describe("markdown", () => {
 
     const bad: string[] = []
     for (const r of index.records) {
-      const { count, balanced } = fences(r.text.md_body)
+      const { count, balanced } = fences(r.md_body)
       if (!balanced) continue
-      const html = await renderMarkdown(r.text.md_body)
+      const html = await renderMarkdown(r.md_body)
       const pre = (html.match(/<pre[\s>]/g) ?? []).length
       if (pre !== count || /SHIKI_\d+/.test(html))
         bad.push(`${ref(r)} pre=${pre}/${count}`)

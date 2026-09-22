@@ -1,8 +1,8 @@
 // The app's one door into `nlp/`: what `src/` may import (`$nlp`), and all
 // of it — the import fence pins the door, this file its width.
 
-export type { Artifacts } from "./browser/artifacts"
-export { getArtifacts } from "./browser/artifacts"
+export type { Artifacts, TextArtifacts } from "./browser/artifacts"
+export { getArtifacts, getTextArtifacts } from "./browser/artifacts"
 export type { ModelProgress } from "./browser/embedder"
 export { onModelProgress } from "./browser/embedder"
 export { search } from "./browser/search"

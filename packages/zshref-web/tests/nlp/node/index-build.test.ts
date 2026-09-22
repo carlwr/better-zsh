@@ -11,10 +11,10 @@ import { loadCorpus } from "@carlwr/zsh-core"
 import fc from "fast-check"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 import type { Rules } from "../../../nlp/core/rules"
+import { INDEX_VERSION, loadSearchIndex } from "../../../nlp/core/search-index"
 import {
   DIMS,
   type IndexedRecord,
-  loadVectorIndex,
   MODEL_ID,
   perView,
   type VectorIndex,
@@ -23,19 +23,21 @@ import {
 import { syntheticVec } from "../../../nlp/core/vec"
 import {
   buildIndex,
-  INDEX_VERSION,
+  type IndexPaths,
   type IndexValidation,
   indexJson,
+  indexVectors,
   PROGRESS_CHUNK,
   readIndex,
   validateIndex,
   writeIndex,
 } from "../../../nlp/node/index-build"
-import { corpusFingerprint } from "../../../nlp/node/projection"
+import { corpusFingerprint } from "../../../nlp/node/rendered-corpus"
 import { corpusTexts } from "../../../nlp/node/retrieval-text"
 import { loadRulesYaml } from "../../../nlp/node/rules-load"
+import { arbViewVectors } from "../../_arbs"
 import { makeRecordText } from "../../_fixtures"
-import { artifactGate, PATHS, STAGED } from "../../_helpers"
+import { artifactGate, loadIndexFromDisk, STAGED } from "../../_helpers"
 
 const corpus = loadCorpus()
 let rules: Rules
@@ -79,14 +81,21 @@ const tinyIndex = (): VectorIndex => {
   }
 }
 
-describe("indexJson / writeIndex / readIndex", () => {
+describe("writeIndex / readIndex", () => {
   let dir: string
+  let at = 0
   beforeAll(async () => {
     dir = await mkdtemp(join(tmpdir(), "index-build-"))
   })
   afterAll(() => rm_rf(dir))
 
-  it("is compact, header keys first, with shortest-f32 components", () => {
+  /** A fresh, nested pair of paths — the writer creates the parents. */
+  const paths = (): IndexPaths => {
+    const base = join(dir, `nested-${at++}`, "search-index")
+    return { json: `${base}.json`, vectors: `${base}.bin` }
+  }
+
+  it("writes a JSON half that is compact, header first, and text only", () => {
     const json = indexJson(tinyIndex())
     expect(json).not.toContain("\n")
     expect(
@@ -94,63 +103,89 @@ describe("indexJson / writeIndex / readIndex", () => {
         `{"version":${INDEX_VERSION},"model":"${MODEL_ID}","dims":3,"normalized":true,"corpus_hash":"`,
       ),
     ).toBe(true)
-    expect(json).toContain('"records":[{"text":{"category":"option",')
-    expect(json).toContain(
-      '"vectors":{"structured":[1,0.5,-0.25],"body":[0.1,1,1e-7],"expanded":[0,0.75,0.3]}}',
-    )
+    expect(json).toContain('"records":[{"category":"option",')
+    expect(json).not.toContain("vectors")
   })
 
   it("round-trips through the production loader", async () => {
     const index = tinyIndex()
-    const path = join(dir, "nested", "index.json")
+    const path = paths()
     await writeIndex(path, index)
     expect(await readIndex(path)).toEqual(index)
   })
 
-  // Any index shape: arbitrary finite f32 vectors of a few dims (`-0`
-  // reads back as `0`, so it is not generated), record text with a
-  // `sub_kind` or without, any header strings.
-  const arbVector = fc
-    .float32Array({
-      minLength: 2,
-      maxLength: 4,
-      noNaN: true,
-      noDefaultInfinity: true,
-    })
-    .map(v => v.map(x => (x === 0 ? 0 : x)))
-  const arbIndex: fc.Arbitrary<VectorIndex> = fc.record({
-    version: fc.constant(INDEX_VERSION),
-    model: fc.string(),
-    dims: fc.nat(),
-    normalized: fc.boolean(),
-    corpus_hash: fc.string(),
-    records: fc.array(
-      fc.record({
-        text: fc
-          .record({
-            id: fc.string(),
-            body: fc.string(),
-            sub_kind: fc.option(fc.string({ minLength: 1 }), {
-              nil: undefined,
-            }),
-          })
-          .map(({ sub_kind, ...t }) =>
-            makeRecordText(sub_kind === undefined ? t : { ...t, sub_kind }),
-          ),
-        vectors: fc
-          .tuple(arbVector, arbVector, arbVector)
-          .map(vs => perView((_, at) => vs[at] ?? new Float32Array())),
-      }),
-      { maxLength: 3 },
-    ),
+  /** `tinyIndex` at another width, so its own blob stays self-consistent. */
+  const wideIndex = (dims: number): VectorIndex => ({
+    ...tinyIndex(),
+    dims,
+    records: tinyIndex().records.map(r => ({
+      ...r,
+      vectors: perView(() => new Float32Array(dims)),
+    })),
   })
 
-  it("indexJson reads back equal through the production loader, for any index", () => {
+  // Halves of different builds: the one failure the split introduced.
+  it.each([
+    [
+      "another corpus",
+      () => ({ ...tinyIndex(), corpus_hash: "cd".repeat(32) }),
+      /vectors of corpus/,
+    ],
+    ["another vector width", () => wideIndex(4), /-dim vectors/],
+    [
+      "another record count",
+      () => ({ ...tinyIndex(), records: tinyIndex().records.slice(1) }),
+      /vector records/,
+    ],
+  ])("rejects a vector half built from %s", (_label, other, reason) => {
+    expect(() =>
+      loadSearchIndex(
+        JSON.parse(indexJson(tinyIndex())),
+        indexVectors(other()),
+      ),
+    ).toThrow(reason)
+  })
+
+  // Any index shape: the declared dims and the vector widths agree (a
+  // fixed-stride format admits nothing else), record text with a `sub_kind`
+  // or without, any header strings.
+  const arbIndex: fc.Arbitrary<VectorIndex> = fc
+    .integer({ min: 0, max: 4 })
+    .chain(dims =>
+      fc.record({
+        version: fc.constant(INDEX_VERSION),
+        model: fc.string(),
+        dims: fc.constant(dims),
+        normalized: fc.boolean(),
+        corpus_hash: fc.string(),
+        records: fc.array(
+          fc.record({
+            text: fc
+              .record({
+                id: fc.string(),
+                body: fc.string(),
+                sub_kind: fc.option(fc.string({ minLength: 1 }), {
+                  nil: undefined,
+                }),
+              })
+              .map(({ sub_kind, ...t }) =>
+                makeRecordText(sub_kind === undefined ? t : { ...t, sub_kind }),
+              ),
+            vectors: arbViewVectors(dims),
+          }),
+          { maxLength: 3 },
+        ),
+      }),
+    )
+
+  it("both halves read back equal through the production loader, for any index", () => {
     fc.assert(
       fc.property(arbIndex, index => {
         const json = indexJson(index)
         expect(json).not.toContain("\n")
-        expect(loadVectorIndex(JSON.parse(json))).toEqual(index)
+        expect(loadSearchIndex(JSON.parse(json), indexVectors(index))).toEqual(
+          index,
+        )
       }),
     )
   })
@@ -257,7 +292,6 @@ describe("buildIndex", () => {
       onProgress: (done, total) => progress.push([done, total]),
     })
     expect(validateIndex(index, corpus, rules)).toEqual({ ok: true })
-    // The stamp is the projection's fingerprint: what `validateIndex` compares.
     expect(index.corpus_hash).toBe(corpusFingerprint(corpus))
     // By value: view texts repeat across records, so the map holds one array per text.
     const misaligned: string[] = []
@@ -279,9 +313,10 @@ describe("buildIndex", () => {
   })
 })
 
-const skipReason = artifactGate("built index", [STAGED.index])
-// Read once (20 MB, schema-validated), shared by the tests below; none mutates it.
-const staged = memoized(() => readIndex(PATHS.indexJson))
+const skipReason = artifactGate("built index", [...STAGED.index])
+// Read once, shared by the tests below; none mutates it (the vectors are
+// views over one buffer).
+const staged = memoized(loadIndexFromDisk)
 
 describe("built index", () => {
   it("validates the staged index and rejects it tampered", async ctx => {

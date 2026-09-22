@@ -165,9 +165,9 @@ describe("record links", () => {
 describe("findRecord", () => {
   // Two 'echo's in different categories — the collision the match resolves.
   const records = [
-    { text: { category: "builtin", id: "echo" } },
-    { text: { category: "param", id: "PATH" } },
-    { text: { category: "param", id: "echo" } },
+    { category: "builtin", id: "echo" },
+    { category: "param", id: "PATH" },
+    { category: "param", id: "echo" },
   ]
 
   it("matches category+id, not id alone", () => {

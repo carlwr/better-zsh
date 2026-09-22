@@ -1,9 +1,10 @@
-// JSON printing for f32 data (index and fixture vectors): each component
+// JSON printing for f32 data (query-cache and fixture vectors): each component
 // the shortest decimal that reads back to the same f32 — `JSON.stringify`
 // prints a number as a double, and an f32 read back from JSON is exact in
 // f64, so it would print its full expansion (`0.10000000149011612` for the
-// f32 nearest 0.1), several times the bytes. The compact index form, then
-// the pretty fixture form.
+// f32 nearest 0.1), several times the bytes. The compact query-cache
+// form, then the pretty fixture form. The search index's vectors are bytes
+// and come nowhere near here (`nlp/core/vector-blob.ts`).
 
 /**
  * Shortest decimal `s` with `Math.fround(Number(s)) === v`, as `toPrecision`

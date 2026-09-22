@@ -8,7 +8,7 @@
 // fence's other half — this test names the offender before the bundle breaks.
 
 import { readdirSync, readFileSync } from "node:fs"
-import { builtinModules } from "node:module"
+import { builtinModules, createRequire } from "node:module"
 import { dirname, isAbsolute, join, relative, resolve } from "node:path"
 import { describe, expect, it } from "vitest"
 import { PATHS } from "../nlp/node/paths"
@@ -64,12 +64,9 @@ const SPECIFIER_RES = [
   /^\s*import\s+['"]([^'"]+)['"]/gm,
 ]
 
-const FORBIDDEN_PACKAGES = [
-  "@carlwr/zsh-core",
-  "onnxruntime-node",
-  "yaml",
-  "tsx",
-]
+const UPSTREAM = "@carlwr/zsh-core"
+
+const FORBIDDEN_PACKAGES = [UPSTREAM, "onnxruntime-node", "yaml", "tsx"]
 const NODE_BUILTINS: ReadonlySet<string> = new Set(builtinModules)
 
 interface Import {
@@ -163,6 +160,30 @@ describe("import fence", () => {
     expect(
       offenders,
       `imports crossing the fence:\n${offenders.join("\n")}`,
+    ).toEqual([])
+  })
+
+  // The upstream is consumed as a library, never as files inside its
+  // package: a reach past its export map (`…/dist/…`, a JSON asset) is what
+  // makes a reader think the release artifacts are involved. They are not —
+  // their consumer is the Rust crate.
+  it("every upstream import is a declared export subpath", () => {
+    const manifest = createRequire(import.meta.url).resolve(
+      `${UPSTREAM}/package.json`,
+    )
+    const exports: Record<string, unknown> = JSON.parse(
+      readFileSync(manifest, "utf8"),
+    ).exports
+    const declared = new Set(
+      Object.keys(exports).map(k => k.replace(/^\./, UPSTREAM)),
+    )
+    const all = [...files, ...walk(resolve(pkgDir, "tests"))].flatMap(importsOf)
+    const upstream = all.filter(i => isPackage(i.specifier, UPSTREAM))
+    expect(upstream.length).toBeGreaterThan(0)
+    expect(
+      upstream
+        .filter(i => !declared.has(i.specifier))
+        .map(i => `${relative(pkgDir, i.file)}:${i.line}  ${i.specifier}`),
     ).toEqual([])
   })
 

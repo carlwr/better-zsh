@@ -34,17 +34,25 @@ export const PATHS = {
   parityFixture: resolve(dataDir, "parity-fixture.json"),
   sanityFixture: resolve(dataDir, "sanity-fixture.json"),
   qaCorpus: resolve(dataDir, "nlp-corpus.yaml"),
-  qaSchema: resolve(dataDir, "schema.json"),
+  qaSchema: resolve(dataDir, "nlp-corpus.schema.json"),
   modelDir: resolve(auxDir, "model"),
   queryCache: resolve(auxDir, "query-cache.json"),
   artifactsDir,
-  indexJson: resolve(artifactsDir, ARTIFACT.index),
+  searchIndex: {
+    json: resolve(artifactsDir, ARTIFACT.searchIndex),
+    vectors: resolve(artifactsDir, ARTIFACT.searchVectors),
+  },
 } as const
 
 // The gitignored inputs — the only PATHS members whose absence is normal, so
 // the ones tests gate on. Everything else PATHS reads is committed: its
-// absence is a defect and must not resolve to a skip.
+// absence is a defect and must not resolve to a skip. Each entry is every
+// file it stands for: gating on one half of a pair would skip silently when
+// the other went missing.
 export const STAGED = {
-  index: PATHS.indexJson,
-  model: PATHS.modelDir,
+  index: Object.values(PATHS.searchIndex),
+  /** The half a text-only reader needs; gating such a reader on the blob
+   * would skip it in exactly the state its claim is most alive. */
+  indexText: [PATHS.searchIndex.json],
+  model: [PATHS.modelDir],
 } as const

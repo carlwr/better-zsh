@@ -36,8 +36,8 @@ import {
 } from "../../_helpers"
 
 const skipReason = artifactGate("full-pipeline sanity", [
-  STAGED.index,
-  STAGED.model,
+  ...STAGED.index,
+  ...STAGED.model,
 ])
 
 // Browser pipeline vs Node embedder, in score units.

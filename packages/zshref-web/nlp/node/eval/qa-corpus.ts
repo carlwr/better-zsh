@@ -62,7 +62,7 @@ export const QaEntrySchema = z
   .describe("A query with its expected record matches.")
 export type QaEntry = z.infer<typeof QaEntrySchema>
 
-// Loose at the root only: the YAML carries a `$schema: ./schema.json` editor
+// Loose at the root only: the YAML carries a `$schema:` editor
 // hint beside `entries`; entries and expected items are strict.
 export const QaCorpusSchema = z
   .object({

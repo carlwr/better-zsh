@@ -4,17 +4,18 @@
   import { errMsg } from "$lib/errors"
   import { renderInline } from "$lib/markdown"
   import { findRecord, recordView } from "$lib/view"
-  import { type Artifacts, getArtifacts } from "$nlp"
+  import { getTextArtifacts, type TextArtifacts } from "$nlp"
 
-  let artifacts = $state<Artifacts | null>(null)
+  let artifacts = $state<TextArtifacts | null>(null)
   let loadError = $state("")
 
   // Load once (param-independent, memoized); the param-dependent lookup is the
   // synchronous derivation below, so navigation needs no out-of-order guard.
+  // The text half only — showing a record needs no vectors.
   $effect(() => {
     void (async () => {
       try {
-        artifacts = await getArtifacts()
+        artifacts = await getTextArtifacts()
       } catch (e) {
         loadError = errMsg(e)
       }
@@ -30,7 +31,7 @@
       loadError,
       ready: artifacts !== null,
       found: artifacts
-        ? findRecord(artifacts.index.records, params)?.text
+        ? findRecord(artifacts.index.records, params)
         : undefined,
       categories: artifacts?.categories ?? [],
       want: params,

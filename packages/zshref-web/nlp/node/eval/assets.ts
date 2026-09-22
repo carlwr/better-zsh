@@ -45,9 +45,12 @@ async function validIndexOnDisk(
   corpus: DocCorpus,
   rules: Rules,
 ): Promise<VectorIndex | null> {
-  if (!existsSync(PATHS.indexJson)) return null
-  const index = await readIndex(PATHS.indexJson)
-  return validateIndex(index, corpus, rules).ok ? index : null
+  if (Object.values(PATHS.searchIndex).some(p => !existsSync(p))) return null
+  // Unreadable counts as absent, as in `scripts/build-index.ts`: a torn or
+  // truncated pair falls back to the in-memory build, it does not kill the
+  // reporter.
+  const index = await readIndex(PATHS.searchIndex).catch(() => null)
+  return index && validateIndex(index, corpus, rules).ok ? index : null
 }
 
 export async function loadEvalAssets(): Promise<EvalAssets> {

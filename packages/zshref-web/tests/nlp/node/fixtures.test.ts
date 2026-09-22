@@ -43,8 +43,8 @@ const SANITY_DECIMALS = 5
 
 describe("sanity fixture", () => {
   const skipReason = artifactGate("sanity fixture build", [
-    STAGED.index,
-    STAGED.model,
+    ...STAGED.index,
+    ...STAGED.model,
   ])
 
   // Identities and structure exact, scores within `SANITY_DECIMALS`.

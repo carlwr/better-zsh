@@ -328,7 +328,8 @@ describe("qa corpus", () => {
     const ok = { entries: [{ query: "x", expected: [exp("a", 1)] }] }
     expect(QaCorpusSchema.safeParse(ok).success).toBe(true)
     expect(
-      QaCorpusSchema.safeParse({ ...ok, $schema: "./schema.json" }).success,
+      QaCorpusSchema.safeParse({ ...ok, $schema: "./nlp-corpus.schema.json" })
+        .success,
     ).toBe(true)
     expect(
       QaCorpusSchema.safeParse({ entries: [{ query: "x", expected: [] }] })
@@ -371,7 +372,7 @@ describe("qa corpus", () => {
   })
 })
 
-const skipReason = artifactGate("qa score", [STAGED.index, STAGED.model])
+const skipReason = artifactGate("qa score", [...STAGED.index, ...STAGED.model])
 
 describe("qa scoring over the staged assets", () => {
   let assets: EvalAssets

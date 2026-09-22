@@ -2,10 +2,12 @@
 // expanded) that get embedded. Changes here invalidate the corpus vectors;
 // re-embed required.
 //
-// The record walked here is the projection (`projection.ts`) after a
-// `JSON.stringify` round trip (undefined-valued keys gone, key order kept).
-// Lowercasing and alphanumeric tests are ASCII-only; whitespace is Unicode
-// White_Space.
+// The record walked here is a rendered record (`rendered-corpus.ts`) after
+// a `JSON.stringify` round trip (undefined-valued keys gone, key order
+// kept). The round trip makes `compactValue` total over what it meets, and
+// keeps the corpus fingerprint — a hash of the same JSON — over exactly the
+// values these texts are built from. Lowercasing and
+// alphanumeric tests are ASCII-only; whitespace is Unicode White_Space.
 
 import { isDefined } from "@carlwr/typescript-extra"
 import {
@@ -17,7 +19,7 @@ import {
 import type { Synonyms } from "../core/rules"
 import { asciiLower } from "../core/text"
 import type { RecordText } from "../core/types"
-import { projectCorpus } from "./projection"
+import { renderedCorpus } from "./rendered-corpus"
 
 export type JsonValue =
   | string
@@ -26,7 +28,7 @@ export type JsonValue =
   | null
   | JsonValue[]
   | { [key: string]: JsonValue }
-/** A projected record as JSON (insertion-ordered keys). */
+/** A rendered record as JSON (insertion-ordered keys). */
 export type JsonRecord = { readonly [key: string]: JsonValue }
 
 /** `synonyms.json` `index_groups`, normalized (trimmed, lowercased) at rules load. */
@@ -53,7 +55,7 @@ export function corpusTexts(
   corpus: DocCorpus,
   indexGroups: IndexGroups,
 ): RecordText[] {
-  return projectCorpus(corpus).flatMap(({ category, records }) =>
+  return renderedCorpus(corpus).flatMap(({ category, records }) =>
     records.map(rec => recordText(category, asJson(rec), indexGroups)),
   )
 }
@@ -203,6 +205,6 @@ const strField = (rec: JsonRecord, key: string): string => {
   return typeof v === "string" ? v : ""
 }
 
-/** The projected record as its JSON text reads back. */
+/** The rendered record as its JSON text reads back. */
 const asJson = (rec: object): JsonRecord =>
   JSON.parse(JSON.stringify(rec)) as JsonRecord

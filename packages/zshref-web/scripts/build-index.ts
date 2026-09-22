@@ -39,12 +39,14 @@ const corpus = loadCorpus()
 const rules = await loadRulesYaml()
 const out = PATHS.artifactsDir
 
-/** The on-disk index against this corpus; an unreadable file is invalid, not fatal. */
+/** The on-disk index against this corpus; an unreadable or torn pair is
+ * invalid, not fatal — it reads as a rebuild. */
 async function existingIndex(): Promise<IndexValidation> {
-  if (!existsSync(PATHS.indexJson))
-    return { ok: false, reason: `no index at ${PATHS.indexJson}` }
+  const missing = Object.values(PATHS.searchIndex).filter(p => !existsSync(p))
+  if (missing.length > 0)
+    return { ok: false, reason: `no index at ${missing.join(", ")}` }
   try {
-    return validateIndex(await readIndex(PATHS.indexJson), corpus, rules)
+    return validateIndex(await readIndex(PATHS.searchIndex), corpus, rules)
   } catch (e) {
     return {
       ok: false,
@@ -57,7 +59,7 @@ const existing = await existingIndex()
 if (args.has("--validate")) {
   say(
     existing.ok
-      ? `index: valid for this corpus (${PATHS.indexJson})`
+      ? `index: valid for this corpus (${PATHS.searchIndex.json})`
       : `index: invalid — ${existing.reason}`,
   )
   process.exit(existing.ok ? 0 : 1)
@@ -86,7 +88,7 @@ if (existing.ok && !args.has("--force")) {
       say(`embedded ${done}/${total} texts (${seconds(t1)})`)
     },
   })
-  await writeIndex(PATHS.indexJson, index)
+  await writeIndex(PATHS.searchIndex, index)
   say(
     `index: ${index.records.length} records, built and validated in ${seconds(t0)}`,
   )

@@ -6,6 +6,10 @@ import { writeFile } from "node:fs/promises"
 import { type DocCorpus, docCategories } from "@carlwr/zsh-core"
 import { expect } from "vitest"
 import type { Rules } from "../nlp/core/rules"
+import {
+  type SearchIndexText,
+  SearchIndexTextSchema,
+} from "../nlp/core/search-index"
 import type { RecordId, VectorIndex } from "../nlp/core/types"
 import type { RankAssets } from "../nlp/node/eval/sentence"
 import { buildParityIndex } from "../nlp/node/fixtures"
@@ -109,4 +113,9 @@ export const readData = (path: string): Promise<unknown> =>
 
 /** The staged index, schema-validated (not corpus-validated: that is `validateIndex`'s test). */
 export const loadIndexFromDisk = (): Promise<VectorIndex> =>
-  readIndex(PATHS.indexJson)
+  readIndex(PATHS.searchIndex)
+
+/** Its text half alone — no blob read, no finiteness scan, and it gates on
+ * `STAGED.indexText`. What a test reading only record text wants. */
+export const loadIndexTextFromDisk = async (): Promise<SearchIndexText> =>
+  SearchIndexTextSchema.parse(await readJson(PATHS.searchIndex.json))

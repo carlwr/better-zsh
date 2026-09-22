@@ -191,8 +191,8 @@ describe("over generated inputs", () => {
 })
 
 const skipReason = artifactGate("query set over the staged assets", [
-  STAGED.index,
-  STAGED.model,
+  ...STAGED.index,
+  ...STAGED.model,
 ])
 
 /** Entries per set: a slice, not the hundreds — real vectors and real lookup hits are the point. */

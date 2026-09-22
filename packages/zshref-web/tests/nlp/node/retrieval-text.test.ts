@@ -39,7 +39,7 @@ describe("recordText", () => {
     expect(text.expanded).toContain("conditional operator")
   })
 
-  it("emits header lines, then fields in record order, skipping identity, desc and projections", () => {
+  it("emits header lines, then fields in record order, skipping identity, desc and rendered fields", () => {
     const rec: JsonRecord = {
       category: "option",
       id: "autocd",
@@ -120,7 +120,7 @@ describe("hayHasWord", () => {
 })
 
 describe("compactValue", () => {
-  // JSON values with identifier-like keys, as projected records have.
+  // JSON values with identifier-like keys, as rendered records have.
   const arbJson = fc.letrec<{ value: JsonValue }>(tie => ({
     value: fc.oneof(
       { depthSize: "small" },

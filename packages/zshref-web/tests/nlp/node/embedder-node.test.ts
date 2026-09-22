@@ -33,7 +33,7 @@ it("fetch-model pins MODEL_ID", () => {
   expect(/^repo=(\S+)/m.exec(script)?.[1]).toBe(MODEL_ID)
 })
 
-const skipReason = artifactGate("node embedder", [STAGED.model])
+const skipReason = artifactGate("node embedder", [...STAGED.model])
 
 describe("node embedder", () => {
   let e: Embedder

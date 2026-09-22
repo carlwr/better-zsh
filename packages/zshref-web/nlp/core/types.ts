@@ -59,9 +59,9 @@ export const RecordTextSchema = z.object({
 })
 export type RecordText = z.infer<typeof RecordTextSchema>
 
-// Float32Array transform: vectors are f32 data (the embedder's output,
-// printed as the shortest decimal per component). Ranker math reads them
-// as ArrayLike, so Float32Array indexing returns the same JS-number
+// Float32Array transform: vectors as JSON numbers, each the shortest
+// decimal for its f32 (`json-f32.ts`). Ranker math reads them as
+// ArrayLike, so Float32Array indexing returns the same JS-number
 // representation as the original f32.
 export const F32VecSchema = z
   .array(z.number())
@@ -76,17 +76,25 @@ export const IndexedRecordSchema = z.object({
 })
 export type IndexedRecord = z.infer<typeof IndexedRecordSchema>
 
-export const VectorIndexSchema = z.object({
-  version: z.number().int(),
+/** What every index shape declares about itself; `search-index.ts` reuses it. */
+export const indexHeaderShape = {
   model: z.string(),
   dims: z.number().int(),
   normalized: z.boolean(),
   corpus_hash: z.string(),
+}
+
+export const VectorIndexSchema = z.object({
+  // Any version — this is the in-memory shape, which `validateIndex`
+  // judges; the artifact's JSON half pins the literal (`search-index.ts`).
+  version: z.number().int(),
+  ...indexHeaderShape,
   records: z.array(IndexedRecordSchema),
 })
 export type VectorIndex = z.infer<typeof VectorIndexSchema>
 
-/** Parse + validate an `index.json` blob; the vectors come back as `Float32Array`s. */
+/** Parse + validate an index in inline JSON form (the parity fixture); the
+ * vectors come back as `Float32Array`s. The built artifact: `search-index.ts`. */
 export const loadVectorIndex = (raw: unknown): VectorIndex =>
   VectorIndexSchema.parse(raw)
 

@@ -21,6 +21,7 @@ import { z } from "zod"
 
 import { rank } from "../core/rank"
 import type { Rules } from "../core/rules"
+import { INDEX_VERSION } from "../core/search-index"
 import {
   DIMS,
   F32VecSchema,
@@ -33,7 +34,6 @@ import {
 } from "../core/types"
 import { syntheticVec } from "../core/vec"
 import { type Embedder, embedQuery } from "./embedder-node"
-import { INDEX_VERSION } from "./index-build"
 import { readJson } from "./io"
 import { PATHS } from "./paths"
 import { corpusTexts, type IndexGroups } from "./retrieval-text"
@@ -43,14 +43,14 @@ import { corpusTexts, type IndexGroups } from "./retrieval-text"
 const ScoredSchema = RecordIdSchema.extend({ score: z.number() })
 export type Scored = z.infer<typeof ScoredSchema>
 
-export const PARITY_VERSION = 4
+export const PARITY_VERSION = 5
 export const PARITY_LIMIT = 5
 
 export const ParityFixtureSchema = z.object({
   version: z.literal(PARITY_VERSION),
   limit: z.number().int(),
-  // Through the production loader, not just its schema: whatever validation
-  // a staged index gets, the fixture's embedded one gets too.
+  // Through `loadVectorIndex`, the in-memory shape the built artifact's two
+  // halves also land in — not a shape of the fixture's own.
   index: z.unknown().transform(loadVectorIndex),
   entries: z.array(
     z.object({

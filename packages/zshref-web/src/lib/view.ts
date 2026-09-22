@@ -84,13 +84,13 @@ export function recordHref(rec: RecordId): string {
   return `/r/${encodeURIComponent(rec.category)}/${encodeURIComponent(rec.id)}`
 }
 
-// Match category AND id: an id recurs across categories. Generic so tests pass
-// {text:{category,id}}, not full index vectors.
-export function findRecord<T extends { text: RecordId }>(
+// Match category AND id: an id recurs across categories. Generic over the
+// identity alone, so any record shape carrying one can be searched.
+export function findRecord<T extends RecordId>(
   records: readonly T[],
   want: RecordId,
 ): T | undefined {
-  return records.find(r => sameRecord(r.text, want))
+  return records.find(r => sameRecord(r, want))
 }
 
 // not-found is distinct from load-error: a stale deep link is expected (render

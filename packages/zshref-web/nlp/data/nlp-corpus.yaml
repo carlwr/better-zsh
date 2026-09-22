@@ -1,4 +1,4 @@
-$schema: ./schema.json
+$schema: ./nlp-corpus.schema.json
 entries:
   - query: "compare files by modification time"
     expected:

@@ -5,8 +5,10 @@ import type { RuleFile } from "./rules"
 
 export const ARTIFACTS_DIR = "artifacts"
 
+// The search index is two files — why, and how they join: `search-index.ts`.
 export const ARTIFACT = {
-  index: "index.json",
+  searchIndex: "search-index.json",
+  searchVectors: "search-vectors.bin",
   categories: "categories.json",
   lookupMap: "lookup-map.json",
 } as const

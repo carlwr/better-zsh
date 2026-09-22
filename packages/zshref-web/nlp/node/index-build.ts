@@ -1,28 +1,32 @@
-// The vector index: build from the corpus (embed the three retrieval-text
-// views per record), validate against the corpus it claims to be built from,
-// read and write `index.json`.
+// The vector index: build from the corpus (embed each record's
+// retrieval-text views), validate against the corpus it claims to be built
+// from, read and write the two artifact files.
 
 import { isDeepStrictEqual } from "node:util"
 import type { DocCorpus } from "@carlwr/zsh-core"
 
 import type { Rules } from "../core/rules"
+import { INDEX_VERSION, loadSearchIndex } from "../core/search-index"
 import {
   DIMS,
   type IndexedRecord,
-  loadVectorIndex,
   MODEL_ID,
   perView,
   type VectorIndex,
   VIEWS,
 } from "../core/types"
 import { normalizeF32 } from "../core/vec"
+import { encodeVectorBlob } from "../core/vector-blob"
 import type { Embedder } from "./embedder-node"
-import { readJson, writeFileDeep } from "./io"
-import { f32VecJson, jsonWithRawField } from "./json-f32"
-import { corpusFingerprint } from "./projection"
+import { readBytes, readJson, writeFileAtomic } from "./io"
+import { corpusFingerprint } from "./rendered-corpus"
 import { corpusTexts } from "./retrieval-text"
 
-export const INDEX_VERSION = 2
+/** `PATHS.searchIndex` is the built one. */
+export interface IndexPaths {
+  json: string
+  vectors: string
+}
 
 /** Texts per `embed` call during a build; paces `onProgress` only. */
 export const PROGRESS_CHUNK = 32
@@ -134,24 +138,38 @@ export function validateIndex(
   return { ok: true }
 }
 
-/** `index.json`: compact, fixed key order, each vector component the
- * shortest decimal for its f32 (`f32VecJson`). */
-export function indexJson(index: VectorIndex): string {
-  const { version, model, dims, normalized, corpus_hash } = index
-  const vectors = (r: IndexedRecord) =>
-    `{${VIEWS.map(v => `"${v}":${f32VecJson(r.vectors[v])}`).join(",")}}`
-  const record = (r: IndexedRecord) =>
-    jsonWithRawField({ text: r.text }, "vectors", vectors(r))
-  return jsonWithRawField(
-    { version, model, dims, normalized, corpus_hash },
-    "records",
-    `[${index.records.map(record).join(",")}]`,
-  )
+/** The JSON half: the header as the index carries it, then every record's
+ * text — compact, one line. */
+export const indexJson = (index: VectorIndex): string => {
+  const { records, ...header } = index
+  return JSON.stringify({ ...header, records: records.map(r => r.text) })
 }
 
-export const writeIndex = (path: string, index: VectorIndex): Promise<void> =>
-  writeFileDeep(path, indexJson(index))
+export const indexVectors = (index: VectorIndex): ArrayBuffer =>
+  encodeVectorBlob({
+    dims: index.dims,
+    corpusHash: index.corpus_hash,
+    vectors: index.records.map(r => r.vectors),
+  })
 
-/** Parse + schema-validate; `validateIndex` is the caller's. */
-export const readIndex = async (path: string): Promise<VectorIndex> =>
-  loadVectorIndex(await readJson(path))
+/** Each half renamed into place, the vectors first: the JSON half is the
+ * commit. `validateIndex` checks record text, not vectors, so an
+ * interrupted build must leave old text beside new vectors — rejected
+ * whenever the texts changed — never new text beside old vectors, which
+ * would validate. */
+export async function writeIndex(
+  paths: IndexPaths,
+  index: VectorIndex,
+): Promise<void> {
+  await writeFileAtomic(paths.vectors, new Uint8Array(indexVectors(index)))
+  await writeFileAtomic(paths.json, indexJson(index))
+}
+
+/** Parse + schema-validate both halves; `validateIndex` is the caller's. */
+export async function readIndex(paths: IndexPaths): Promise<VectorIndex> {
+  const [json, vectors] = await Promise.all([
+    readJson(paths.json),
+    readBytes(paths.vectors),
+  ])
+  return loadSearchIndex(json, vectors)
+}

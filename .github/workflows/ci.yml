@@ -59,7 +59,7 @@ jobs:
           key: nlp-model-${{ hashFiles('packages/zshref-web/scripts/fetch-model') }}
       - run: packages/zshref-web/scripts/fetch-model
       - run: pnpm --filter @carlwr/zsh-core build
-      # The index derives from the corpus and its projection, the NLP (rules,
+      # The index derives from the corpus as rendered, the NLP (rules,
       # schemas, the Node side), the model and the embedder's package — all in
       # the key, so a hit is an index of these exact inputs. No `restore-keys`:
       # `build:index` keeps an index that validates against the corpus, and

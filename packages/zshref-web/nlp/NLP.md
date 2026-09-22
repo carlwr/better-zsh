@@ -72,24 +72,34 @@ Two mechanisms in `nlp/rules/synonyms.yaml` (index-time `index_groups`, query-ti
 - **Query expansion is embedding-only.** `query_expansions` append to the *embedded* query string only; the raw query still drives lexical boosts (`nlp/core/rank.ts` `wordOverlap` / exact-word). Feeding expansions into the lexical bag promotes literal-name records and swamps short queries — don't.
 - **Minimal RHS + cap.** One canonical `add` per rule, capped append count (`nlp/core/query-expand.ts`). Don't grow `add` into a bag, or short queries collapse toward a generic centroid.
 
-## Measurements (2026-05-19)
+## Measurements (2026-09-22)
 
 Dated history; re-measure before relying on a number.
 
 | Asset | Size |
 |---|---:|
 | BGE-small ONNX model | 127M |
-| tokenizer / config JSONs | ~708K |
-| generated vector index JSON | 18M |
+| tokenizer / config JSONs | ~696K |
+| `search-index.json` (record text) | 1.6M |
+| `search-vectors.bin` (f32 matrix) | 5.8M |
 
-Compression checks:
+_served artifacts:_
+
+| Payload | gzip -6 | brotli -11 |
+|---|---:|---:|
+| `search-index.json` | 250K | 189K |
+| `search-vectors.bin` | 5.1M | 5.0M |
+
+Large win on disk, small on the wire — hosts rarely gzip binary types (why the split: `nlp/core/search-index.ts`).
+
+_the model:_
 
 | Payload | gzip -9 | zstd -19 |
 |---|---:|---:|
 | ONNX model | 76M | 66M |
-| index JSON | 6.6M | 5.7M |
 | quantized ONNX model | 61M | 61M |
 
 ## Open
 
 - Retrieval-quality eval on quantized BGE-small (gates mobile-friendly browser-side embedding).
+- Fewer embedded views per record — the largest size lever left in the index; needs an eval, not a format change.

@@ -203,8 +203,8 @@ describe("eval over the parity index", () => {
 
 describe("mechanical eval over the staged assets", () => {
   const skipReason = artifactGate("mechanical eval", [
-    STAGED.index,
-    STAGED.model,
+    ...STAGED.index,
+    ...STAGED.model,
   ])
   const assets = memoized(loadEvalAssets)
 

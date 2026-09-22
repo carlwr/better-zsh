@@ -1,5 +1,5 @@
 // Static lookup map: canonical surface form → (category, id). Shipped as
-// JSON alongside index.json; consumed before the ranker as a hard-promote
+// JSON alongside the search index; consumed before the ranker as a hard-promote
 // bypass for canonical-identifier queries (e.g. `AUTO_CD`, `_arguments`,
 // `NO_AUTO_CD`, `fc`). Close-variant fuzziness stays in the ranker.
 

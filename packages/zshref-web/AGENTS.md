@@ -31,6 +31,8 @@ The seams are a static import fence, not package boundaries — `tests/import-fe
 Two, both pinned:
 
 - **`@carlwr/zsh-core`** at build time — `workspace:*`; corpus, taxonomy, resolver
+  - through its declared export subpaths only, never a file inside the package (`tests/import-fence.test.ts`)
+  - its release JSON feeds the Rust crate, not this package
   - every script reading it carries a `pre*` hook -> `upstream-ready.mjs ensure` (`PACKAGING.md`; `BZ_SKIP_UPSTREAM`: root `AGENTS.md`)
   - the browser bundle is zsh-core-free: the index carries each record's markdown body
 - **Hugging Face Hub** at runtime — the browser embedder downloads the model on first visit
@@ -44,6 +46,7 @@ Both gitignored:
 - `scripts/fetch-model` -> `.aux/model/` — what every reporter needs (a missing or stale index is built in memory, never written)
 - `.aux/query-cache.json` — query vectors the reporters and the gated tests keep across runs; self-invalidating (`nlp/node/query-cache.ts`), delete to reset
 - `pnpm build:index` -> `static/artifacts/` — what `nlp/browser/artifacts.ts` fetches under `/artifacts`
+  - the search index is a pair, record text (JSON) and vectors (binary); why: `nlp/core/search-index.ts`
   - an index that still validates against the corpus is kept; `--force`, `--validate`: `--help`
   - a rebuild embeds the corpus: a minute on CPU
   - the rules YAML is the editable form; the JSON is build output
@@ -73,7 +76,7 @@ One mechanism, `assertCommittedJson` (`tests/_helpers.ts`): compare, or rewrite 
 | `UPDATE_LOOKUP_CONTRACT` | `nlp/data/lookup-contract.json` | `contract.test.ts` |
 | `UPDATE_PARITY_FIXTURE` | `nlp/data/parity-fixture.json` | `fixtures.test.ts` |
 | `UPDATE_SANITY_FIXTURE` | `nlp/data/sanity-fixture.json` — needs the model and the index | `fixtures.test.ts` |
-| `UPDATE_SCHEMAS` | `nlp/rules/schema/*.schema.json`, `nlp/data/schema.json` | `rules.test.ts`, `qa-score.test.ts` |
+| `UPDATE_SCHEMAS` | `nlp/rules/schema/*.schema.json`, `nlp/data/nlp-corpus.schema.json` | `rules.test.ts`, `qa-score.test.ts` |
 
 ## Parity and sanity fixtures
 

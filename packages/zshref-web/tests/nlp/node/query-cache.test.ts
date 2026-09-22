@@ -165,7 +165,7 @@ describe("embedderIdentity", () => {
     expect(embedderIdentity(a)).not.toBe(id)
   })
 
-  const skipReason = artifactGate("embedder identity", [STAGED.model])
+  const skipReason = artifactGate("embedder identity", [...STAGED.model])
   it("is stable over the staged model", ctx => {
     if (skipReason) ctx.skip(skipReason)
     expect(embedderIdentity()).toBe(embedderIdentity())

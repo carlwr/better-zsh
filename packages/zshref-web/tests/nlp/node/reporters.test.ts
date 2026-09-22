@@ -115,7 +115,10 @@ describe("script entry points", () => {
 
 // --- over the staged assets ----------------------------------------------------
 
-const skipReason = artifactGate("reporter smokes", [STAGED.index, STAGED.model])
+const skipReason = artifactGate("reporter smokes", [
+  ...STAGED.index,
+  ...STAGED.model,
+])
 
 /** Entries per input in the smoke bench: enough for embed → rank → score → render, not the hundreds. */
 const CAP = 8

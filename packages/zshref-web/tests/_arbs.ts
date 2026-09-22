@@ -5,7 +5,14 @@ import fc from "fast-check"
 
 import { type LookupIndex, lookupIndex } from "../nlp/core/lookup-map"
 import type { Tuning } from "../nlp/core/rules"
-import type { IndexedRecord, RecordId, VectorIndex } from "../nlp/core/types"
+import {
+  type IndexedRecord,
+  perView,
+  type RecordId,
+  type VectorIndex,
+  VIEWS,
+  type View,
+} from "../nlp/core/types"
 import { syntheticVec } from "../nlp/core/vec"
 import { makeRecordText, syntheticIndexOf, syntheticVectors } from "./_fixtures"
 
@@ -50,6 +57,24 @@ const WORDS = [
   '"$0"',
   "<<<",
 ]
+
+/** A record's view vectors, all `dims` wide — the only width a fixed-stride
+ * artifact can hold. Finite: the blob decoder rejects anything else. */
+export const arbViewVectors = (
+  dims: number,
+): fc.Arbitrary<Record<View, Float32Array<ArrayBuffer>>> =>
+  fc
+    .tuple(
+      ...VIEWS.map(() =>
+        fc.float32Array({
+          minLength: dims,
+          maxLength: dims,
+          noNaN: true,
+          noDefaultInfinity: true,
+        }),
+      ),
+    )
+    .map(vs => perView((_, at) => vs[at] ?? new Float32Array()))
 
 export const arbText = (max: number): fc.Arbitrary<string> =>
   fc

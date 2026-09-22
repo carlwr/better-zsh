@@ -96,8 +96,8 @@ describe("committed sentence fixture", () => {
 
 describe("sentence eval report", () => {
   const skipReason = artifactGate("sentence eval report", [
-    STAGED.index,
-    STAGED.model,
+    ...STAGED.index,
+    ...STAGED.model,
   ])
 
   it("the report", async ctx => {
