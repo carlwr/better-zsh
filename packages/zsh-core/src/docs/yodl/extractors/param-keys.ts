@@ -1,13 +1,6 @@
-/**
- * Shared body-splitting for `ShellParamDoc.keys` — the nested key-list shape
- * is identical across special-param extractors.
- *
- * Key sigs come from full `normalizeHeader(header)`, not just the first
- * `tt()` token: catches composite headers like WATCHFMT's
- * `tt(%F{)var(color)tt(}) LPAR()tt(%f)RPAR()` whose rendered sig is
- * `%F{color} (%f)` (first-tt would drop everything after `{`). For simple
- * single-tt headers the two agree.
- */
+// Body-splitting for `ShellParamDoc.keys`; the nested key-list shape is
+// identical across special-param extractors.
+
 import type { ItemEntry, ShellParamKey } from "../../types.ts"
 import { splitBodyAtNestedList } from "../core/doc.ts"
 import type { YNodeSeq } from "../core/nodes.ts"
@@ -37,9 +30,6 @@ export function splitParamBody(body: YNodeSeq): SplitParamBody {
   return outro ? { desc, keys, outro } : { desc, keys }
 }
 
-// Captures depth-1 nested item list inside the body (depth-2 from the
-// param's POV — e.g. `compstate.context`) as `values`. Deeper nesting
-// is not captured.
 function buildKey(sigs: ItemEntry["sigs"], body: YNodeSeq): ShellParamKey {
   const inner = splitBodyAtNestedList(body)
   if (!inner) return { sigs, desc: normalizeBody(body) }

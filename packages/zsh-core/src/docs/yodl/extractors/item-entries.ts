@@ -1,9 +1,5 @@
-/**
- * The nested item list, as every record body encodes it: `ItemEntry` rows
- * whose `sigs` fold in the body-less `xitem` alias headers preceding the
- * body-bearing `item(...)`. One collector for flags, parameter keys and
- * widget sub-items, so the three cannot drift apart again.
- */
+// A nested item list as `ItemEntry` rows, `xitem` alias headers folded in.
+
 import { isNonEmpty, type NonEmpty, nonEmpty } from "@carlwr/typescript-extra"
 import type { ItemEntry } from "../../types.ts"
 import {
@@ -14,9 +10,9 @@ import {
 import { normalizeBody, normalizeHeader } from "../core/text.ts"
 
 /**
- * A nested item list's entries grouped by shared body. Entries whose header
- * normalizes to nothing are dropped, as is a trailing `xitem` chain no
- * `item(...)(body)` terminates.
+ * Entries grouped by shared body. A sig is the whole normalized header, not
+ * its first `tt()` token — a composite header (`%F{color} (%f)`) would
+ * otherwise lose everything after the first macro.
  */
 export function aliasedItems(
   entries: readonly YodlEntry[],
@@ -26,8 +22,7 @@ export function aliasedItems(
 
 /** One group's headers in manual source order — the `xitem` aliases first. */
 export function itemSigs(grp: AliasedYodlEntry<string>): NonEmpty<string> {
-  // The branch narrows for `NonEmpty`; `[...aliases, head]` alone isn't
-  // provably non-empty to TS even though `head` is always present.
+  // TS cannot see that a spread ending in `head` is non-empty.
   return isNonEmpty(grp.aliases)
     ? [...grp.aliases, grp.head]
     : nonEmpty(grp.head)

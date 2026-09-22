@@ -127,7 +127,6 @@ enditem()`
     const doc = only(parseModuleParams(yo, "zsh/watch"))
     expect(doc.id).toBe(sp("WATCHFMT"))
     expect(doc.keys).toBeDefined()
-    // the body-less `xitem` head folds onto the entry that carries the body
     expect(doc.keys?.map(k => k.sigs)).toEqual([
       ["%F{color} (%f)"],
       ["%t", "%@"],

@@ -80,9 +80,6 @@ const modulePart = (mod: string | undefined): readonly string[] =>
  * separators) rather than a bare flag / key / escape. Renderer switches the
  * bullet head from inline `` `sig` `` to a fenced `docopt` block when true —
  * synopsis fragments read as code, not as a label.
- *
- * One sig at a time: alias chains arrive as separate `ItemEntry.sigs`, never
- * as one joined string.
  */
 export function isDocoptSig(sig: string): boolean {
   if (/[[\]{}|]/.test(sig)) return true
@@ -94,15 +91,7 @@ export function isDocoptSig(sig: string): boolean {
 
 // --- nested member-list helpers --------------------------------------------
 
-/**
- * Item in a depth-1 nested bullet list. Inline form
- * `- \`s1\`, \`s2\`: <desc>`; any docopt-shaped sig promotes all sigs to a
- * fenced block. Continuation paragraphs use 2-space indent; `subItems`
- * render as depth-2 leaf bullets.
- *
- * Multi-sig folding consolidates upstream `xitem(form-a) item(form-b)(body)`
- * chains so each shared body renders once; see `[[ItemEntry]]`.
- */
+/** A depth-1 bullet-list item; `subItems` render as depth-2 leaf bullets. */
 interface MemberItem extends ItemEntry {
   readonly subItems?: readonly ItemEntry[]
 }
@@ -121,7 +110,6 @@ function renderMemberList(
 }
 
 function renderMemberBullet(m: MemberItem): string {
-  // subItems are leaf bullets (no deeper nesting) — recurse to render them.
   const subBlock = (m.subItems ?? []).map(renderMemberBullet).join("\n\n")
   return m.sigs.some(isDocoptSig)
     ? renderDocoptBullet(m.sigs, m.desc, subBlock)

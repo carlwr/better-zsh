@@ -659,9 +659,7 @@ describe("render markdown", () => {
     expect(md).toMatch(/^plain form$/m)
   })
 
-  test("member-list bullet — docopt sig becomes fenced docopt block", () => {
-    // ShellParamDoc.keys feed renderMemberList; use a docopt-shaped key to
-    // exercise the fenced-bullet path end to end.
+  test("member-list bullets — fenced docopt, inline, folded aliases", () => {
     const doc: ShellParamDoc = {
       ...sec,
       ...identity("special_param", "PSEUDO"),
@@ -676,13 +674,10 @@ describe("render markdown", () => {
       ],
     }
     containsAll(body(doc), [
-      // docopt key: fenced bullet block, every sig on its own line
       "- ```docopt\n  [ key ] ...\n  [ alias ] ...\n  ```",
       "  first para",
       "  second para",
-      // plain key: inline form
       "- `plainkey`: leaf desc",
-      // folded alias chain: one bullet, comma-separated inline sigs
       "- `alpha`, `beta`: shared desc",
     ])
   })

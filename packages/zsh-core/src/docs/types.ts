@@ -124,16 +124,13 @@ export interface BinaryCondOpDoc extends DocRecordBase<"conditional_op"> {
 export type CondOpDoc = UnaryCondOpDoc | BinaryCondOpDoc
 
 /**
- * One row of a nested item list inside a record body — a builtin's or
- * comp-utility's flag, a special parameter's key, a ZLE widget's sub-entry.
- * Every category that documents such a list uses this shape.
+ * One row of a nested item list inside a record body — a builtin's flag, a
+ * parameter's key, a widget's sub-entry.
  */
 export interface ItemEntry {
   /**
-   * Every header sharing the row's body, in manual source order — upstream
-   * `xitem` alias chains terminating in `item(...)(body)` fold into one
-   * entry, not one per alias. As the manual writes them: a flag, an
-   * associative-array key, a widget name, …
+   * Every header sharing the row's body, as the manual writes them and in
+   * its order: an upstream alias chain is one entry, not one per alias.
    */
   readonly sigs: NonEmpty<string>
   readonly desc: string
@@ -207,10 +204,9 @@ export type ShellParamScope =
   | "completion-widget"
 
 /**
- * One member of `ShellParamDoc.keys`. `desc` is the member's intro prose;
- * `values`, when present, holds an enumerated sub-list (depth-2 from the
- * parameter, e.g. `compstate.context`) rendered as a nested bullet list. No
- * further nesting is captured.
+ * A key whose own body enumerates a sub-list: `desc` is then the intro prose
+ * and `values` the sub-list (depth-2 from the parameter, e.g.
+ * `compstate.context`). No deeper nesting is captured.
  */
 export interface ShellParamKey extends ItemEntry {
   readonly values?: readonly ItemEntry[]
