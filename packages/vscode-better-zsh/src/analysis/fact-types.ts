@@ -1,5 +1,5 @@
-import type { TextSpan } from "./doc.ts"
-import type { PrecmdName } from "./precmd-names.ts"
+import type { TextSpan } from "./doc"
+import type { PrecmdName } from "./precmd-names"
 
 /** Confidence level: "hard" for structural syntax, "heuristic" for best-effort detection. */
 export type FactStrength = "hard" | "heuristic"

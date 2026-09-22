@@ -1,12 +1,12 @@
+import type * as vscode from "vscode"
+import { syntacticContext } from "../analysis/context"
 import {
   analyzeDoc,
   type Fact,
   lineStarts,
   offsetAt,
-  syntacticContext,
   type TextSpan,
-} from "@carlwr/zsh-core/analysis"
-import type * as vscode from "vscode"
+} from "../analysis/facts"
 import { docCache } from "./cache"
 
 /** The document's facts and offset model, once per document version. */

@@ -1,7 +1,6 @@
 {
   "$schema": "https://typedoc.org/schema.json",
   "entryPoints": [
-    "./analysis.ts",
     "./assets.ts",
     "./index.ts",
     "./json.ts",
@@ -26,8 +25,6 @@
   "githubPages": false,
   "treatWarningsAsErrors": true,
   "intentionallyNotExported": [
-    "src/analysis/fact-types.ts:quoteStyles",
-    "src/analysis/fact-types.ts:FactGuard",
     "src/docs/vocab.ts:emulations",
     "src/docs/vocab.ts:optSections",
     "src/docs/vocab.ts:promptSubsections",

@@ -1,6 +1,6 @@
+import { loadCorpus } from "@carlwr/zsh-core"
 import { expect, test } from "vitest"
 import { precmdNames } from "../../analysis/precmd-names"
-import { loadCorpus } from "../../docs/corpus"
 
 // The scanner's precommand vocabulary is analysis-owned (it imports nothing
 // from the docs domain) and meant to equal the manual's precommand-modifier

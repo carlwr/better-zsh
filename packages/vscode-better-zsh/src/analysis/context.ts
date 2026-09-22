@@ -1,5 +1,5 @@
-import type { Fact } from "./fact-types.ts"
-import { factsAt, isCtxFact } from "./facts.ts"
+import type { Fact } from "./fact-types"
+import { factsAt, isCtxFact } from "./facts"
 
 /** Best-effort syntactic bucket for the cursor position. */
 export type SyntacticContext = "setopt" | "cond" | "arith" | "general"

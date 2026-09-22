@@ -1,5 +1,5 @@
-import type { RedirFact } from "@carlwr/zsh-core/analysis"
 import * as vscode from "vscode"
+import type { RedirFact } from "../analysis/facts"
 import { activeLineAt } from "./words"
 
 export function isTokenDelimiter(ch: string): boolean {

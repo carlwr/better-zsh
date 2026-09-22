@@ -6,7 +6,6 @@
   "nodeModulesDir": "auto",
   "exports": {
     ".": "./index.ts",
-    "./analysis": "./analysis.ts",
     "./assets": "./assets.ts",
     "./json": "./json.ts",
     "./meta": "./meta.ts",
@@ -18,7 +17,6 @@
       "LICENSE",
       "README.md",
       "THIRD_PARTY_NOTICES.md",
-      "analysis.ts",
       "assets.ts",
       "index.ts",
       "json.ts",
@@ -32,7 +30,6 @@
   },
   "lint": {
     "include": [
-      "analysis.ts",
       "assets.ts",
       "index.ts",
       "json.ts",

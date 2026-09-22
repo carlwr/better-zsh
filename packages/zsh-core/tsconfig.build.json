@@ -4,7 +4,6 @@
     "types": ["node"]
   },
   "include": [
-    "analysis.ts",
     "assets.ts",
     "index.ts",
     "json.ts",

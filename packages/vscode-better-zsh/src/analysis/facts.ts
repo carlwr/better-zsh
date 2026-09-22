@@ -1,4 +1,4 @@
-import { ctxFacts } from "./ctx-facts.ts"
+import { ctxFacts } from "./ctx-facts"
 import {
   absSpan,
   hasOffset,
@@ -6,19 +6,19 @@ import {
   readLines,
   type TextDoc,
   type TextSpan,
-} from "./doc.ts"
-import type { Fact } from "./fact-types.ts"
-import { cmdHeadFactsOnLine, funcDeclsAtLine } from "./line-facts.ts"
-import { quotedRegionFacts } from "./quoted-region.ts"
+} from "./doc"
+import type { Fact } from "./fact-types"
+import { cmdHeadFactsOnLine, funcDeclsAtLine } from "./line-facts"
+import { quotedRegionFacts } from "./quoted-region"
 
-export type { TextDoc, TextLine, TextSpan } from "./doc.ts"
+export type { TextDoc, TextLine, TextSpan } from "./doc"
 export {
   factText,
   lineStarts,
   offsetAt,
   positionAt,
   textDoc,
-} from "./doc.ts"
+} from "./doc"
 export type {
   BaseFact,
   CmdHeadFact,
@@ -34,7 +34,7 @@ export type {
   QuoteStyle,
   RedirFact,
   ReservedWordFact,
-} from "./fact-types.ts"
+} from "./fact-types"
 export {
   isCmdHeadFact,
   isCtxFact,
@@ -44,8 +44,8 @@ export {
   isQuotedRegionFact,
   isRedirFact,
   isReservedWordFact,
-} from "./fact-types.ts"
-export { isPrecmdName, type PrecmdName, precmdNames } from "./precmd-names.ts"
+} from "./fact-types"
+export { isPrecmdName, type PrecmdName, precmdNames } from "./precmd-names"
 
 function shiftFact<T extends { span: TextSpan }>(base: number, fact: T): T {
   return { ...fact, span: absSpan(base, fact.span) }

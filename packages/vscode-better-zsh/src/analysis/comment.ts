@@ -1,4 +1,4 @@
-import { advanceQuote, isQuoted, mkQuoteState } from "./quote-state.ts"
+import { advanceQuote, isQuoted, mkQuoteState } from "./quote-state"
 
 // zsh treats `#` as a comment only at word start. Word starters: line start,
 // whitespace, or one of `;|&(`. Mid-word `#` (`abc#def`, `$#`, `${#}`,

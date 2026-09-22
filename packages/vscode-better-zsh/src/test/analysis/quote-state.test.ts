@@ -5,7 +5,7 @@ import {
   isQuoted,
   mkQuoteState,
   type QuoteState,
-} from "../analysis/quote-state"
+} from "../../analysis/quote-state"
 
 function scan(s: string): QuoteState {
   let st = mkQuoteState()

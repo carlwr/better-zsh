@@ -22,14 +22,13 @@ Don't duplicate JSDoc; point to it. If a rule already lives in PRINCIPLES or any
 A standalone package of structured zsh knowledge:
 
 - parses vendored Yodl (`.yo`) into typed records
-- extracts facts from user zsh code
 - renders markdown
 
 Surface and posture: `packages/zsh-core/README.md`. The static-scope guarantee is enforced — and described — by `packages/zsh-core/src/test/static-scope.test.ts`.
 
 Not a grammar, not a tokenizer. Zsh is not generally parseable without running zsh; we take bounded, corpus-aware wins that do not require shell execution.
 
-`src/analysis/` is conceptually separable from `src/docs/` + `src/render/` + JSON-dist artifacts; the extension is its only consumer today. It stays in zsh-core, rather than in the extension or its own package, because it is corpus-free and editor-neutral: a further consumer — an LSP, another editor — should find fact extraction on the reusable surface, not inside an extension. The static-scope test enforces the seam structurally; the placement remains open.
+The user-code analyzer (domain B below) lives in the extension. Corpus-free and editor-neutral, it was once kept here for a future LSP or other editor; re-weighed with one consumer, a heuristic scanner inside a total reference library blurred the package's scope and shipped a mostly unused surface. The extension's seam test keeps it liftable — into its own package should a second consumer appear.
 
 ---
 
@@ -37,7 +36,7 @@ Not a grammar, not a tokenizer. Zsh is not generally parseable without running z
 
 Every change should preserve this decomposition. It shows up in:
 
-- directory layout (`src/docs/`, `src/analysis/`, `src/render/`)
+- directory layout (zsh-core `src/docs/` and `src/render/`; the extension's `src/analysis/`)
 - types
 - naming
 
@@ -51,7 +50,7 @@ Static vendored knowledge about zsh language elements. A **closed taxonomy** of 
 
 Knows nothing about user code. The universe of documented elements is statically enumerable from the corpus.
 
-### B. Fact Extraction (`src/analysis/`)
+### B. Fact Extraction (extension `src/analysis/`)
 
 Coarse, potentially overlapping annotations about user zsh code. A `Fact` discriminated union keyed by `FactKind` with confidence levels (`"hard"` / `"heuristic"`).
 
@@ -59,7 +58,7 @@ The term "fact" is load-bearing: facts are what the analyzer *asserts*, not a co
 
 Payloads are raw text (`text: string`) or closed literal unions (`PrecmdName`) — **never** `Documented<K>`. Facts annotate syntax, not corpus membership.
 
-Knows nothing about doc records or markdown rendering.
+Knows nothing about doc records or markdown rendering; imports nothing from zsh-core (the extension's seam test). Its two corpus-pinned vocabularies are the extension's mirrors (`PRINCIPLES.md` §"Cross-project structure").
 
 ### C. Markdown Rendering (`src/render/`)
 
@@ -101,7 +100,7 @@ Two phases:
 
 `resolve` is the bridge: raw in, checked identity out — the one public minting path; the trusted constructor (`mkDocumented`, `brands.ts`) is internal to corpus construction. Brand contract: JSDoc on `Documented<K>` (`zsh-core`).
 
-One brand for every category — none is a literal union. The analysis layer's closed precommand list (`PrecmdName`, `zsh-core/analysis`) is its own vocabulary, pinned equal to the corpus by a lock-in test.
+One brand for every category — none is a literal union. The analyzer's closed precommand list (`PrecmdName`, extension `src/analysis/`) is its own vocabulary — a mirror, pinned equal to the corpus by a lock-in test.
 
 Public-surface rule (`STYLE-CODE.md` §"Types"): a brand crosses the surface only where the surface mints and requires it — here, corpus identity alone; every other string field is plain.
 
@@ -286,7 +285,7 @@ Wiring:
   - completions
   - MCP `list`/`search`
   - extra semantic-token painting (with `cmd-head`) for words the analyzer treats only as command heads (`declare`, `typeset`, …)
-- **Analysis** — pinned `KEYWORD_HEADS` subset for command-position facts; narrower than corpus by design. Rationale + lock-in test: `analysis/line-facts.ts` and `src/test/analysis/`.
+- **Analysis** — pinned `KEYWORD_HEADS` subset for command-position facts; narrower than corpus by design. Rationale + lock-in test: the extension's `src/analysis/line-facts.ts` and `src/test/analysis/`.
 - **Extension** — semantic tokens: analyzer `reserved-word` facts **and** corpus-driven painting for manual reserved words in command position (`semantic-tokens.ts`).
 
 ### ZLE widget: default bindings are typed, not a header signature

@@ -1,6 +1,6 @@
 {
   "name": "@carlwr/zsh-core",
-  "description": "Structured zsh reference data parsed from official zsh documentation + analysis APIs",
+  "description": "Structured zsh reference data parsed from official zsh documentation",
   "version": "0.1.0-alpha.2",
   "license": "MIT",
   "repository": {
@@ -24,12 +24,6 @@
       "import": "./dist/index.mjs",
       "require": "./dist/index.js",
       "default": "./dist/index.mjs"
-    },
-    "./analysis": {
-      "types": "./dist/types/analysis.d.ts",
-      "import": "./dist/analysis.mjs",
-      "require": "./dist/analysis.js",
-      "default": "./dist/analysis.mjs"
     },
     "./assets": {
       "types": "./dist/types/assets.d.ts",

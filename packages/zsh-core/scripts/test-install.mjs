@@ -56,7 +56,7 @@ try {
   // Representative subpaths, not every one.
   const driver = `
 import { loadCorpus } from "@carlwr/zsh-core"
-import { commentStart } from "@carlwr/zsh-core/analysis"
+import { runtimeZshDataDir } from "@carlwr/zsh-core/assets"
 import { ZSH_UPSTREAM } from "@carlwr/zsh-core/meta"
 import { renderRecord } from "@carlwr/zsh-core/render"
 import { resolve } from "@carlwr/zsh-core/resolver"
@@ -76,8 +76,8 @@ if (title !== "\`AUTO_CD\`" || typeof mdBody !== "string" || mdBody.length === 0
 if (!/AUTO[_ ]?CD/i.test(mdBody)) {
   throw new Error("renderRecord body missing expected AUTO_CD reference")
 }
-if (commentStart('echo "#" # tail') !== 9) {
-  throw new Error("commentStart returned unexpected index")
+if (typeof runtimeZshDataDir !== "string" || runtimeZshDataDir.length === 0) {
+  throw new Error("runtimeZshDataDir is not a non-empty string")
 }
 if (!/^zsh-/.test(ZSH_UPSTREAM.tag)) {
   throw new Error("ZSH_UPSTREAM tag missing expected prefix")

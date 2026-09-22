@@ -8,7 +8,10 @@ VS Code extension package: editor providers and host-zsh execution.
 
 - `manifest.ts` + `manifest/` — the manifest's contribution points, staged into the published `package.json`; per-point data and generated-asset sources under `manifest/`
 - `contributions.ts` — everything registered at activation
-- `editor/` — one module per language feature: providers wiring zsh-core analysis + doc records to VS Code APIs
+- `analysis/` — the user-code analyzer: coarse zsh syntax facts
+  - editor-neutral and corpus-free; a seam test under `test/analysis/` fences its imports
+  - `facts.ts` is its surface; scanner mechanics stay in sibling modules
+- `editor/` — one module per language feature: providers wiring facts + doc records to VS Code APIs
   - provider-local dispatch stays here; reusable parsing goes to `document/`
 - `document/` — per-document models the providers share
 - `settings.ts` — the settings boundary: raw configuration values parsed into domain types
@@ -46,7 +49,7 @@ No Language Model tools; the MCP server is the agent-facing surface over the sam
 
 ## Testing scope
 
-Extension tests cover VS Code wiring: position→record dispatch, command/provider registration, priority resolution. Hover/doc-record content and formatting are `@carlwr/zsh-core`'s concern — assert them in zsh-core unit tests, not here.
+Extension tests cover the analyzer (`test/analysis/`, incl. the lock-in tests pinning its vocabularies to the corpus) and VS Code wiring: position→record dispatch, command/provider registration, priority resolution. Hover/doc-record content and formatting are `@carlwr/zsh-core`'s concern — assert them in zsh-core unit tests, not here.
 
 ## Container-only integration tests
 
@@ -54,7 +57,7 @@ The zsh-path matrix harness (`scripts/testINTERACTIVE-zsh-path-matrix`) is CI/Do
 
 ## Gotchas
 
-**Delimiter-like reserved-word facts are filtered out** in the semantic token provider (`{`, `[[`, …); the analysis layer may still emit them for other editor features. Token types and modifiers are declared under `src/manifest/`, beside their TM scope mapping.
+**Delimiter-like reserved-word facts are filtered out** in the semantic token provider (`{`, `[[`, …); the analyzer may still emit them for other editor features. Token types and modifiers are declared under `src/manifest/`, beside their TM scope mapping.
 
 **Zsh process env isolation:** spawned zsh processes receive only an explicit allowlist of env vars. Check the exec module under `src/zsh/` if a subprocess is missing an expected variable (search for `ZSH_ENV_KEEP` or `ZSH_ENV_DROP`).
 

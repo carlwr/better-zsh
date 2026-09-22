@@ -1,5 +1,5 @@
-import { isFuncDeclFact, positionAt } from "@carlwr/zsh-core/analysis"
 import * as vscode from "vscode"
+import { isFuncDeclFact, positionAt } from "../analysis/facts"
 import { docCache } from "./cache"
 import { docAnalysis } from "./facts"
 import { activeWordRangeAt } from "./words"

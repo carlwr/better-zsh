@@ -1,7 +1,7 @@
 import { cached } from "@carlwr/typescript-extra"
 import type { DocCorpus } from "@carlwr/zsh-core"
-import { positionAt, type TextSpan } from "@carlwr/zsh-core/analysis"
 import * as vscode from "vscode"
+import { positionAt, type TextSpan } from "../analysis/facts"
 import { docAnalysis } from "../document/facts"
 import {
   type TokenModifier,

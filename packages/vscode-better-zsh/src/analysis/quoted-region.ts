@@ -1,9 +1,9 @@
-import type { TextSpan } from "./doc.ts"
+import type { TextSpan } from "./doc"
 import {
   type QuotedRegionFact,
   type QuoteStyle,
   quoteStyles,
-} from "./fact-types.ts"
+} from "./fact-types"
 
 type ScanResult =
   | { readonly kind: "closed"; readonly end: number }

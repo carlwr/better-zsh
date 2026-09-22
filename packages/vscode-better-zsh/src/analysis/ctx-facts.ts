@@ -4,15 +4,15 @@ import {
   continuedLineBlock,
   continuedText,
   type TextSpan,
-} from "./doc.ts"
-import type { CtxFact, FactCtx } from "./fact-types.ts"
+} from "./doc"
+import type { CtxFact, FactCtx } from "./fact-types"
 import {
   COMMAND_PRECMD,
   cmdHeadFactsOnLine,
   firstCmdHeadOnLine,
-} from "./line-facts.ts"
-import { advanceQuote, isQuoted, mkQuoteState } from "./quote-state.ts"
-import { isSetoptCommandText } from "./setopt-cmd.ts"
+} from "./line-facts"
+import { advanceQuote, isQuoted, mkQuoteState } from "./quote-state"
+import { isSetoptCommandText } from "./setopt-cmd"
 
 export function ctxFacts(
   lines: readonly string[],

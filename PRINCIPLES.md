@@ -28,7 +28,7 @@ Static zsh knowledge is the product. We parse vendored Yodl into typed records d
   - `$aliases`
   - `$fpath` beyond system defaults
 - **Mental model:** "if we could bundle a zsh binary and run it in an isolated container, we would." System zsh is invoked only where shell execution is intrinsically required (diagnostics, completion enrichment); otherwise bundled/static.
-- **`analysis/`:** low-hanging fruit — what bounded, static logic can recognize. Everything else is silence.
+- **The extension's `analysis/`:** low-hanging fruit — what bounded, static logic can recognize. Everything else is silence.
 
 ### Resolver scope balance
 
@@ -40,7 +40,7 @@ Per-category resolvers bridge raw user text to documented identity. Corpus-aware
   - decompose a redirection token into group-op + tail
 - **Out:** extracting individual flags from an in-context parameter-expansion arg list like `(@rs:/:j[\])`. User-code parsing — a different problem class.
 
-In-context tokenization, if it belongs anywhere, belongs in `src/analysis/`. Resolvers stop at "is this raw string a documented thing?".
+In-context tokenization, if it belongs anywhere, belongs in the extension's `src/analysis/`. Resolvers stop at "is this raw string a documented thing?".
 
 ### Resolver feedback (lossy normalization)
 
@@ -61,7 +61,7 @@ See DESIGN.md.
 
 ## Facts and docs: asymmetric, not parallel
 
-`src/docs/` and `src/analysis/` are intentionally asymmetric:
+zsh-core's `src/docs/` and the extension's `src/analysis/` are intentionally asymmetric:
 
 - **`docs/` is exhaustive over a closed `DocCategory` taxonomy** with `DocCorpus`-keyed tables. Adding a category is a structural change with type-checked completeness everywhere.
 - **`analysis/` is partial.** Narrow document-spanning facts exist only when they reduce false positives without claiming a full parse. `Fact` kinds overlap `DocCategory` only incidentally and don't share its parametric machinery.

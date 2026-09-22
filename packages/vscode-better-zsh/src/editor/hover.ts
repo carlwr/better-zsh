@@ -1,12 +1,8 @@
 import { cached } from "@carlwr/typescript-extra"
 import type { DocCategory, DocCorpus } from "@carlwr/zsh-core"
-import {
-  type Fact,
-  isProcessSubstFact,
-  isRedirFact,
-} from "@carlwr/zsh-core/analysis"
 import { resolve } from "@carlwr/zsh-core/resolver"
 import * as vscode from "vscode"
+import { type Fact, isProcessSubstFact, isRedirFact } from "../analysis/facts"
 import { contextAt, lineFacts } from "../document/facts"
 import { funcAt } from "../document/funcs"
 import {

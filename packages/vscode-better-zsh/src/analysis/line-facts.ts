@@ -1,12 +1,12 @@
-import { commentStart } from "./comment.ts"
-import { activeText, type TextSpan } from "./doc.ts"
+import { commentStart } from "./comment"
+import { activeText, type TextSpan } from "./doc"
 import {
   type CmdHeadFact,
   isCmdHeadFact,
   type LineFact,
   type PrecmdFact,
-} from "./fact-types.ts"
-import { isPrecmdName, type PrecmdName } from "./precmd-names.ts"
+} from "./fact-types"
+import { isPrecmdName, type PrecmdName } from "./precmd-names"
 
 // Keyword heads after which the next word is still a command head ("transparent").
 // ⊆ `KEYWORD_HEADS` — `TRANSPARENT.has` is consulted only inside that branch.
@@ -33,8 +33,9 @@ const TRANSPARENT: ReadonlySet<string> = new Set([
 //     them as ordinary command heads (or precmd modifiers, for `nocorrect`);
 //     past tests pinned this as load-bearing for command-position features.
 //
-// Extension reserved-word painting is broader (consumes `corpus.reserved_word`
-// directly). See DESIGN.md §"Reserved word: an enumeration-primary doc category".
+// The semantic-token provider paints reserved words more broadly (it consumes
+// `corpus.reserved_word` directly). See DESIGN.md §"Reserved word: an
+// enumeration-primary doc category".
 //
 // Exact membership is pinned by a lock-in test under `src/test/analysis/`.
 const KEYWORD_HEADS: ReadonlySet<string> = new Set([

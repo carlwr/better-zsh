@@ -5,7 +5,6 @@
 - `src/docs/yodl/core/` — shared Yodl parsing machinery only.
 - `src/docs/yodl/extractors/` — corpus-specific extraction into zsh doc records.
 - `src/docs/yodl/extractors/modules/` — quirky modules get their own file; table-driven region modules go in `by-regions.ts`, flat lists in `trivial.ts`.
-- `src/analysis/facts.ts` — public fact-model surface. Keep scanner mechanics and heuristics in sibling modules.
 
 ## Package imports
 
