@@ -54,6 +54,42 @@ if (hit) {
 - **Focused imports.** The root is the data model; import the operations on it — resolution, rendering, assets, metadata — from named subpaths.
 - **Orthogonal API.** `resolve` + `renderRecord` compose; a hit carries the record, so nothing is looked up twice, and no combined "raw string → markdown" convenience is exposed — that's a deliberate design choice, not an omission. See [`DESIGN.md`](https://github.com/carlwr/better-zsh/blob/main/DESIGN.md) §"API orthogonality".
 
+## Performance
+
+Measured on an Apple M1 with Node 26, calling the built ESM entry points (`dist/*.mjs`). Median of 5–7 fresh processes for cold figures. Corpus: 40 `.yo` files (1.06 MB, 25k lines) → 1,312 records.
+
+Loading, cold (fresh process):
+
+| step | time |
+|---|---|
+| import `@carlwr/zsh-core` | ~5 ms |
+| `loadCorpus()` | ~0.1 ms (locates the data; parses nothing) |
+| first access, one category (`option`, 197 records) | ~14 ms |
+| first access, one category (`builtin`, 131 records) | ~35 ms |
+| first access, every category | ~105 ms |
+
+Of the all-categories figure, parsing the Yodl source is ~30 ms; extracting records is the rest.
+
+Warm: `loadCorpus()` is memoized per process and each category is built once, so later calls and re-accesses cost microseconds. A long-lived host (editor, server) pays the cold cost once.
+
+Queries, corpus already loaded, over every record's `id` (1,312 queries):
+
+| operation | throughput | per op |
+|---|---|---|
+| `resolve(corpus, cat, raw)`, hit | ~7.7M/s | ~0.1 µs |
+| `resolve(corpus, cat, raw)`, miss | ~3M/s | ~0.3 µs |
+| `resolveAll(corpus, raw)` | ~250k/s | ~4 µs |
+| `renderRecord(corpus, record)` | ~180k/s | ~5.5 µs |
+| `resolve` + `renderRecord` | ~190k/s | ~5 µs |
+| `resolveAll` + `renderRecord` per hit | ~90k/s | ~11 µs |
+
+Steady state after JIT warm-up; the first pass runs at 20–60% of these rates. In-process library calls, no I/O or serialization — not directly comparable to a CLI's batch-mode rate.
+
+One-shot lookup, as a CLI would do it (fresh process, wall clock; bare `node -e 0` takes ~30 ms):
+
+- `resolve` + render of one option: ~50 ms
+- `resolveAll` + render (touches every category): ~150 ms
+
 ## See also
 
 - [`zshref`](https://github.com/carlwr/zshref) — single-file executable Rust CLI, and the same reference as a Model Context Protocol server.
