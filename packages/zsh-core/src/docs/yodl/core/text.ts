@@ -257,7 +257,9 @@ export function normalizeDoc(raw: string): string {
   flushPara()
   while (out[0] === "") out.shift()
   while (out[out.length - 1] === "") out.pop()
-  return finishDoc(mergeReferenceParas(out).join("\n"))
+  // A tt()/var() span crossing a blank line leaves its sentinels unpaired
+  // across paragraphs; `renderInlineMd` only consumes pairs.
+  return stripSentinels(finishDoc(mergeReferenceParas(out).join("\n")))
 }
 
 export function extractTokens(src: YodlSrc): YodlToken[] {
@@ -500,16 +502,19 @@ function stripSentinels(s: string): string {
 }
 
 /**
- * Wrap content as a markdown inline-code span, using a longer backtick
- * fence (and one-space padding) when the content itself contains a
- * backtick — per CommonMark. Without this, `` `\\\`` `` would render as
- * three literal backticks rather than a code span containing a backtick.
+ * Wrap content as a markdown inline-code span, per CommonMark: the fence is
+ * one backtick longer than the longest backtick run in the content, padded
+ * with one space when the content starts or ends with a backtick, or is
+ * space-bounded (CommonMark strips one such pair).
  */
 export function mdInlineCode(content: string): string {
-  if (!content.includes("`")) return `\`${content}\``
-  const padded =
-    content.startsWith("`") || content.endsWith("`") ? ` ${content} ` : content
-  return `\`\`${padded}\`\``
+  const longest = Math.max(
+    0,
+    ...(content.match(/`+/g) ?? []).map(r => r.length),
+  )
+  const fence = "`".repeat(longest + 1)
+  const pad = /^`|`$|^ .*[^ ].* $/s.test(content) ? " " : ""
+  return `${fence}${pad}${content}${pad}${fence}`
 }
 
 // Reference-prose connectives that almost always continue into the next

@@ -1,6 +1,8 @@
 import { readFileSync } from "node:fs"
 import { join } from "node:path"
+import * as fcu from "@carlwr/fastcheck-utils"
 import type { NonEmpty } from "@carlwr/typescript-extra"
+import fc from "fast-check"
 import { describe, expect, test } from "vitest"
 import {
   dumpFile,
@@ -379,6 +381,24 @@ describe("render markdown", () => {
     ["only known", "AUTO_CD CDPATH POSIX", "**`AUTO_CD`** CDPATH POSIX"],
   ])("option refs — %s", (_label, input, want) => {
     expect(fmtOptRefsInMd(input, cdCorpus)).toBe(want)
+  })
+
+  test("option-ref bolding changes nothing but `*` and backticks", () => {
+    const md = fc.string({
+      unit: fcu.element([
+        " ",
+        "\n",
+        ..."AUTO_CD autocd no_autocd NO_AUTOCD CDPATH ``` ` ** $ ${ } see".split(
+          " ",
+        ),
+      ]),
+    })
+    const unmarked = (s: string) => s.replace(/[*`]/g, "")
+    fc.assert(
+      fc.property(md, s => {
+        expect(unmarked(fmtOptRefsInMd(s, cdCorpus))).toBe(unmarked(s))
+      }),
+    )
   })
 
   // The record is its body: no title, no category line.

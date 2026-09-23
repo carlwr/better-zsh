@@ -1,11 +1,29 @@
 import { readFileSync } from "node:fs"
 import { resolve } from "node:path"
+import * as fcu from "@carlwr/fastcheck-utils"
 import { allUnique, isSingle } from "@carlwr/typescript-extra"
+import fc from "fast-check"
 import { expect } from "vitest"
 
 export function readVendoredYo(name: string): string {
   return readFileSync(resolve(__dirname, `../../data/zsh-docs/${name}`), "utf8")
 }
+
+const YODL_TOKENS: readonly [string, ...string[]] = [
+  "a",
+  " ",
+  "\n\n",
+  "\\\n",
+  ..."see tt( var( item( xitem( sitem( startitem() enditem() example( PLUS() LPAR() RPAR() + ( ) ` ' ''".split(
+    " ",
+  ),
+]
+
+/** Strings dense in Yodl markup, which `fc.string()` practically never hits. */
+export const yodlish = fc.string({
+  unit: fcu.element(YODL_TOKENS),
+  maxLength: 40,
+})
 
 export function only<T>(xs: readonly T[]): T {
   expect(xs).toHaveLength(1)

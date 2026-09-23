@@ -1,4 +1,8 @@
+import * as fcu from "@carlwr/fastcheck-utils"
+import { isNonEmpty } from "@carlwr/typescript-extra"
+import fc from "fast-check"
 import { describe, expect, test } from "vitest"
+import { buildResolverFixture } from "../../scripts/resolver-fixture"
 import { mkDocumented } from "../docs/brands"
 import { loadCorpus } from "../docs/corpus"
 import { type ResolverFeedback, resolve, resolveAll } from "../docs/resolver"
@@ -310,6 +314,72 @@ describe("resolve round-trip (corpus-wide)", () => {
       expect(mismatched).toEqual([])
     },
   )
+})
+
+describe("resolve properties (corpus-wide)", () => {
+  const opts = [...corpus.option.values()]
+  if (!isNonEmpty(opts)) throw new Error("no options")
+  // per-char random case, optional `_` before each char
+  const spelled = fcu.element(opts).chain(o =>
+    fc
+      .tuple(
+        ...[...o.id].map(ch => {
+          const up = ch.toUpperCase()
+          return fc.constantFrom(ch, up, `_${ch}`, `_${up}`)
+        }),
+      )
+      .map(cs => ({ o, raw: cs.join("") })),
+  )
+
+  // Sound only while no option `x` coexists with an option `nox`.
+  test("any case/underscore spelling of an option id resolves to it", () => {
+    fc.assert(
+      fc.property(spelled, ({ o, raw }) => {
+        expect(resolve(corpus, "option", raw)).toEqual({ record: o })
+      }),
+    )
+  })
+
+  test("a no-prefixed spelling resolves input-negated", () => {
+    fc.assert(
+      fc.property(
+        spelled,
+        fcu.element(["no", "NO", "no_", "No_"]),
+        ({ o, raw }, no) => {
+          expect(resolve(corpus, "option", no + raw)).toEqual({
+            record: o,
+            feedback: NEGATED,
+          })
+        },
+      ),
+    )
+  })
+
+  // ASCII only: JS `trim` and Rust `str::trim` disagree beyond it (U+FEFF, U+0085).
+  test("surrounding ASCII whitespace never changes the answer", () => {
+    const { cases } = buildResolverFixture(corpus, {
+      packageVersion: "0",
+      dataHash: "0",
+    })
+    const catRaw = fcu.element(docCategories).chain(cat => {
+      const inputs = cases[cat].map(c => c.input)
+      const raw = isNonEmpty(inputs)
+        ? fc.oneof(fcu.element(inputs), fc.string())
+        : fc.string()
+      return fc.tuple(fc.constant(cat), raw)
+    })
+    const ws = fc.string({
+      unit: fcu.element([" ", "\t", "\n", "\r", "\v", "\f"]),
+    })
+    fc.assert(
+      fc.property(catRaw, ws, ws, ([cat, raw], w1, w2) => {
+        const bare = resolve(corpus, cat, raw)
+        const padded = resolve(corpus, cat, w1 + raw + w2)
+        expect(padded?.record).toBe(bare?.record)
+        expect(padded?.feedback).toEqual(bare?.feedback)
+      }),
+    )
+  })
 })
 
 describe("resolveAll (category walk)", () => {
