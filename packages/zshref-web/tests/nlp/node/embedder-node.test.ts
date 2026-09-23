@@ -3,6 +3,7 @@
 
 import { readFileSync } from "node:fs"
 import { resolve } from "node:path"
+import { isSingle } from "@carlwr/typescript-extra"
 import { beforeAll, describe, expect, it } from "vitest"
 
 import { DIMS, MODEL_ID } from "../../../nlp/core/types"
@@ -38,9 +39,9 @@ const skipReason = artifactGate("node embedder", [...STAGED.model])
 describe("node embedder", () => {
   let e: Embedder
   const one = async (text: string): Promise<Float32Array> => {
-    const [v] = await e.embed([text])
-    if (!v) throw new Error("no vector")
-    return v
+    const vs = await e.embed([text])
+    if (!isSingle(vs)) throw new Error(`${vs.length} vectors`)
+    return vs[0]
   }
 
   beforeAll(async () => {

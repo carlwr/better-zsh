@@ -1,5 +1,6 @@
 // Pure — synthetic records, no corpus, no staged assets.
 
+import { allUnique } from "@carlwr/typescript-extra"
 import fc from "fast-check"
 import { describe, expect, it } from "vitest"
 
@@ -236,7 +237,7 @@ describe("expandedText", () => {
           "$HISTSIZE",
         ]
         expect(hints.slice(0, own.length)).toEqual(own)
-        expect(new Set(hints).size).toBe(hints.length)
+        expect(allUnique(hints)).toBe(true)
         const hay = [
           ident.category,
           ident.label,

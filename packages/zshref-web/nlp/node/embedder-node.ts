@@ -18,7 +18,7 @@ import { createHash } from "node:crypto"
 import { readdirSync, readFileSync, statSync } from "node:fs"
 import { basename, dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
-import { hasAtleastTwo } from "@carlwr/typescript-extra"
+import { hasAtleastTwo, isSingle } from "@carlwr/typescript-extra"
 import {
   AutoModel,
   AutoTokenizer,
@@ -145,10 +145,12 @@ export async function embedText(
   e: Embedder,
   text: string,
 ): Promise<Float32Array> {
-  const [v] = await e.embed([text])
-  if (!v)
-    throw new Error(`embedder returned no vector for ${JSON.stringify(text)}`)
-  return normalizeF32(v)
+  const vs = await e.embed([text])
+  if (!isSingle(vs))
+    throw new Error(
+      `embedder returned ${vs.length} vectors for ${JSON.stringify(text)}`,
+    )
+  return normalizeF32(vs[0])
 }
 
 /** Embed one query as search does: expand, prefix, embed, normalize. */

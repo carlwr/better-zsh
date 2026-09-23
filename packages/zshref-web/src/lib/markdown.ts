@@ -3,7 +3,7 @@
 // (`defaultColor: false`) so one HTML reacts to the `data-theme` attribute.
 
 import docoptGrammar from "@carlwr/docopt-tmlanguage/grammar.json"
-import { memoized } from "@carlwr/typescript-extra"
+import { memoizedRetry } from "@carlwr/typescript-extra"
 // markdown-it v15 bundles its own types: the default export is a callable
 // back-compat wrapper (a value), so the class type is the named export.
 import MarkdownIt, { type MarkdownIt as Md } from "markdown-it"
@@ -36,8 +36,8 @@ async function build(): Promise<Md> {
 }
 
 // Single-flight: the highlighter (themes + grammars) is built once, lazily,
-// and shared across every render.
-const getMd = memoized(build)
+// and shared across every render; a failed build is retried on the next.
+const getMd = memoizedRetry(build)
 
 export async function renderMarkdown(src: string): Promise<string> {
   const md = await getMd()
