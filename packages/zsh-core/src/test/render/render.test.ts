@@ -47,6 +47,7 @@ import {
   isDocoptSig,
   renderRecord,
 } from "../../render/md"
+import { splitInlineCode } from "../../render/prose-walk"
 import { withTmpDirAsync } from "../tmp-dir"
 
 // --- fixtures ---------------------------------------------------------------
@@ -379,26 +380,71 @@ describe("render markdown", () => {
         "**`AUTO_CD`** **`AUTO_CD`**\n```zsh\nAUTO_CD\n```\n**`AUTOCD`**",
     ],
     ["only known", "AUTO_CD CDPATH POSIX", "**`AUTO_CD`** CDPATH POSIX"],
+    ["unclosed backtick", "`AUTO_CD", "`AUTO_CD"],
+    ["unclosed backtick after", "AUTO_CD `x", "**`AUTO_CD`** `x"],
+    ["unclosed double tick", "`` AUTO_CD", "`` **`AUTO_CD`**"],
+    ["double-tick span", "``AUTO_CD`` `AUTO_CD`", "``AUTO_CD`` **`AUTO_CD`**"],
+    [
+      "glued refs",
+      "`AUTO_CD`AUTO_CD `AUTO_CD`s",
+      "`AUTO_CD`AUTO_CD `AUTO_CD`s",
+    ],
   ])("option refs — %s", (_label, input, want) => {
     expect(fmtOptRefsInMd(input, cdCorpus)).toBe(want)
   })
 
-  test("option-ref bolding changes nothing but `*` and backticks", () => {
+  describe("option-ref bolding", () => {
     const md = fc.string({
       unit: fcu.element([
         " ",
         "\n",
-        ..."AUTO_CD autocd no_autocd NO_AUTOCD CDPATH ``` ` ** $ ${ } see".split(
+        ..."AUTO_CD autocd no_autocd NO_AUTOCD CDPATH ``` ` `` ** $ ${ } see".split(
           " ",
         ),
       ]),
     })
-    const unmarked = (s: string) => s.replace(/[*`]/g, "")
-    fc.assert(
-      fc.property(md, s => {
-        expect(unmarked(fmtOptRefsInMd(s, cdCorpus))).toBe(unmarked(s))
-      }),
-    )
+    const fmt = (s: string) => fmtOptRefsInMd(s, cdCorpus)
+
+    test("changes nothing but `*` and backticks", () => {
+      const unmarked = (s: string) => s.replace(/[*`]/g, "")
+      fc.assert(
+        fc.property(md, s => {
+          expect(unmarked(fmt(s))).toBe(unmarked(s))
+        }),
+      )
+    })
+
+    test("is idempotent", () => {
+      fc.assert(
+        fc.property(md, s => {
+          expect(fmt(fmt(s))).toBe(fmt(s))
+        }),
+      )
+    })
+
+    test("never glues onto a `*` run", () => {
+      const runs = (s: string) =>
+        (s.match(/\*+/g) ?? []).filter(r => r.length > 2)
+      fc.assert(
+        fc.property(md, s => {
+          expect(runs(fmt(s))).toEqual(runs(s))
+        }),
+      )
+    })
+
+    // Bolding may add `OPT` spans, but never alters or merges existing ones.
+    test("keeps every other code span", () => {
+      const otherSpans = (s: string) =>
+        s
+          .split("\n")
+          .flatMap(line => splitInlineCode(line).filter((_, i) => i % 2 === 1))
+          .filter(span => !/^`[A-Z_]+`$/.test(span))
+      fc.assert(
+        fc.property(md, s => {
+          expect(otherSpans(fmt(s))).toEqual(otherSpans(s))
+        }),
+      )
+    })
   })
 
   // The record is its body: no title, no category line.

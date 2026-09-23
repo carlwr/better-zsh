@@ -221,9 +221,15 @@ export function normalizeDoc(raw: string): string {
   let inCode = false
   let continued = false
 
+  // Sentinel spans a paragraph leaves open; reopened in the next one unless
+  // it opens a block (list item, heading), which a span would swallow.
+  let carry = ""
   const flushPara = () => {
     if (para.length === 0) return
-    out.push(renderInlineMd(para.join(" ").replace(/\s+/g, " ").trim()))
+    const body = para.join(" ").replace(/\s+/g, " ").trim()
+    const text = (BLOCK_START_RE.test(body) ? "" : carry) + body
+    carry = openSentinels(text)
+    out.push(renderInlineMd(closeSpans(text, carry)))
     para.length = 0
   }
 
@@ -232,6 +238,7 @@ export function normalizeDoc(raw: string): string {
     let lineContinues = false
     if (trimmed.startsWith("```")) {
       flushPara()
+      carry = ""
       out.push(trimmed)
       inCode = !inCode
       continued = false
@@ -257,8 +264,8 @@ export function normalizeDoc(raw: string): string {
   flushPara()
   while (out[0] === "") out.shift()
   while (out[out.length - 1] === "") out.pop()
-  // A tt()/var() span crossing a blank line leaves its sentinels unpaired
-  // across paragraphs; `renderInlineMd` only consumes pairs.
+  // Backstop for spans a code fence cuts off; `renderInlineMd` only
+  // consumes pairs.
   return stripSentinels(finishDoc(mergeReferenceParas(out).join("\n")))
 }
 
@@ -496,6 +503,41 @@ function renderInlineMd(s: string): string {
       .replace(ITAL_PROMOTE_RE, "*$1*"),
   )
 }
+
+const CLOSER_OF: Readonly<Record<string, string>> = {
+  [TT_OPEN]: TT_CLOSE,
+  [ITAL_OPEN]: ITAL_CLOSE,
+}
+
+/** Openers of the sentinel spans `s` leaves unclosed, outermost first. */
+function openSentinels(s: string): string {
+  const stack: string[] = []
+  for (const ch of s) {
+    if (CLOSER_OF[ch]) stack.push(ch)
+    else if (ch === CLOSER_OF[stack.at(-1) ?? ""]) stack.pop()
+  }
+  return stack.join("")
+}
+
+/**
+ * Close the spans `opens` (from `openSentinels(text)`) at the end of `text`,
+ * so a tt()/var() crossing a blank line renders per paragraph; a span left
+ * empty at either paragraph edge is dropped.
+ */
+function closeSpans(text: string, opens: string): string {
+  const closers = [...opens]
+    .reverse()
+    .map(o => CLOSER_OF[o])
+    .join("")
+  return (text + closers).replace(EDGE_EMPTY_SPAN_RE, "")
+}
+const EMPTY_SPAN = `${TT_OPEN}${TT_CLOSE}|${ITAL_OPEN}${ITAL_CLOSE}`
+const EDGE_EMPTY_SPAN_RE = new RegExp(
+  `^(?:${EMPTY_SPAN})+|(?:${EMPTY_SPAN})+$`,
+  "g",
+)
+// Markdown block openers a paragraph can start with.
+const BLOCK_START_RE = /^(?:[-*+] |#|\d+[.)] )/
 
 function stripSentinels(s: string): string {
   return s.replace(ALL_SENTINEL_RE, "")

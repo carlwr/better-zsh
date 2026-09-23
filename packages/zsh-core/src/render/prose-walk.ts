@@ -59,16 +59,33 @@ export function walkProseLines(
 
 /**
  * Split into alternating non-code (even indices) and inline-code (odd
- * indices) segments. Doubled-tick spans (`` `<x>` ``) match as one unit.
+ * indices) segments, per CommonMark within the one line: a backtick run
+ * opens a span that the next run of the same length closes; a run with no
+ * closer is literal text.
  */
 export function splitInlineCode(line: string): readonly string[] {
-  return line.split(INLINE_CODE_SPLIT)
+  const runs = [...line.matchAll(/`+/g)]
+  const out: string[] = []
+  let proseStart = 0
+  for (let i = 0; i < runs.length; i++) {
+    const open = runs[i] as RegExpExecArray
+    const j = runs.findIndex((r, k) => k > i && r[0] === open[0])
+    if (j < 0) continue
+    const close = runs[j] as RegExpExecArray
+    out.push(
+      line.slice(proseStart, open.index),
+      line.slice(open.index, close.index + close[0].length),
+    )
+    proseStart = close.index + close[0].length
+    i = j
+  }
+  out.push(line.slice(proseStart))
+  return out
 }
 
-// Capture group preserves the span at odd indices. Doubled-tick alternative
-// comes first so we don't eat its outer ticks as two single-tick spans.
-const INLINE_CODE_SPLIT = /(``[^\n]*?``|`[^`\n]+?`)/
-
+/** `line` without its inline-code spans. */
 export function stripInlineCode(line: string): string {
-  return line.replace(/``[^\n]*?``/g, "").replace(/`[^`\n]+?`/g, "")
+  return splitInlineCode(line)
+    .filter((_, i) => i % 2 === 0)
+    .join("")
 }

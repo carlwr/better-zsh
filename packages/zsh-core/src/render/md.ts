@@ -187,25 +187,48 @@ export function fmtOptRefsInMd(md: string, corpus: DocCorpus): string {
 
 // Bare ALL_CAPS, optionally NO_-prefixed; `\b` anchors keep `FOO_BAR` whole.
 const OPT_REF_RE = /\b(?:NO_?)?[A-Z][A-Z0-9_]*\b/g
-// Backticked option ref (from upstream `tt(OPT)`). Lookbehind/-ahead skip
-// cases already bolded so re-running this pass is a no-op.
-const BACKTICKED_OPT_RE = /(?<!\*\*)`([A-Z][A-Z0-9_]*)`(?!\*\*)/g
+// Single-backtick option ref (from upstream `tt(OPT)`).
+const BACKTICKED_OPT_RE = /^`([A-Z][A-Z0-9_]*)`$/
+
+// A bolded ref's neighbours must not be alphanumeric (the `**` would not
+// open or close; `_` is punctuation to CommonMark), a backtick or `*` (it
+// would glue onto an adjacent code span or bold run; this also keeps
+// re-running a no-op).
+const GLUE = /[\p{L}\p{N}`*]/u
 
 function fmtOptRefsInLine(line: string, corpus: DocCorpus): string {
-  const bolded = splitInlineCode(line)
-    .map((part, i) => (i % 2 === 1 ? part : fmtOptRefsInText(part, corpus)))
+  let end = 0
+  const parts = splitInlineCode(line).map((text, i) => {
+    const at = end
+    end += text.length
+    return { text, at, code: i % 2 === 1 }
+  })
+  // Code spans inserted after a literal single backtick would pair with it.
+  const strayAt = Math.min(
+    ...parts.map(({ text, at, code }) => {
+      const tick = code ? -1 : text.search(/(?<!`)`(?!`)/)
+      return tick < 0 ? Number.POSITIVE_INFINITY : at + tick
+    }),
+  )
+  const bolds = (at: number, len: number, ref: string) =>
+    !GLUE.test(line[at - 1] ?? "") &&
+    !GLUE.test(line[at + len] ?? "") &&
+    resolve(corpus, "option", ref)
+  return parts
+    .map(({ text, at, code }) => {
+      if (code) {
+        const name = BACKTICKED_OPT_RE.exec(text)?.[1]
+        return name && bolds(at, text.length, name) ? `**${text}**` : text
+      }
+      return text.replace(OPT_REF_RE, (raw, offset: number) =>
+        at + offset < strayAt &&
+        !isShellParameterRef(line, at + offset) &&
+        bolds(at + offset, raw.length, raw)
+          ? `**${bt(raw)}**`
+          : raw,
+      )
+    })
     .join("")
-  return bolded.replace(BACKTICKED_OPT_RE, (m, name) =>
-    resolve(corpus, "option", name) ? `**${m}**` : m,
-  )
-}
-
-function fmtOptRefsInText(text: string, corpus: DocCorpus): string {
-  return text.replace(OPT_REF_RE, (raw, offset, whole) =>
-    isShellParameterRef(whole, offset) || !resolve(corpus, "option", raw)
-      ? raw
-      : `**${bt(raw)}**`,
-  )
 }
 
 /** True iff the match at `offset` is preceded by `$` or `${` (a parameter ref). */

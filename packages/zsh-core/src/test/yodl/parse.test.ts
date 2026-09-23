@@ -118,8 +118,14 @@ describe("normalizeDoc", () => {
 })
 
 describe("normalizeBody", () => {
-  test("tt() across a blank line leaks no sentinel", () => {
-    expect(normalizeBody("tt(a\n\nb)")).toBe("a\n\nb")
+  // A span crossing a blank line closes and reopens per paragraph.
+  test.each([
+    ["tt(a\n\nb)", "`a`\n\n`b`"],
+    ["tt(a)tt(b\n\nc)", "`ab`\n\n`c`"],
+    ["var(x y\n\nz w) end", "*x y*\n\n*z w* end"],
+    ["tt(a\n\n)b", "`a`\n\nb"],
+  ])("%j -> %j", (s, want) => {
+    expect(normalizeBody(s)).toBe(want)
   })
 
   test("output never contains sentinel chars", () => {
