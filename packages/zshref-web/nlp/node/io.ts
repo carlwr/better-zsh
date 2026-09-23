@@ -1,7 +1,8 @@
 // The file reads and writes every Node-side module shares.
 
-import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises"
+import { mkdir, readFile, rename, writeFile } from "node:fs/promises"
 import { dirname } from "node:path"
+import { rm_rf } from "@carlwr/typescript-extra/node"
 import { parse as parseYaml } from "yaml"
 
 export const readJson = async (path: string): Promise<unknown> =>
@@ -33,7 +34,7 @@ export async function writeFileAtomic(
     await writeFileDeep(tmp, data)
     await rename(tmp, path)
   } catch (e) {
-    await rm(tmp, { force: true })
+    await rm_rf(tmp)
     throw e
   }
 }

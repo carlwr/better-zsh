@@ -11,6 +11,7 @@ import { execFile } from "node:child_process"
 import { readdirSync, readFileSync } from "node:fs"
 import { createRequire } from "node:module"
 import { resolve } from "node:path"
+import { withoutFirstSubstring } from "@carlwr/typescript-extra"
 import { beforeAll, describe, expect, it } from "vitest"
 
 import { type EvalAssets, loadEvalAssets } from "../../../nlp/node/eval/assets"
@@ -326,7 +327,7 @@ describe("reporters over the staged assets, capped", () => {
     const summary = lines.at(-2)
     expect(summary).toMatch(/^SUMMARY_JSON \{/)
     const parsed = JSON.parse(
-      summary?.slice("SUMMARY_JSON ".length) ?? "",
+      withoutFirstSubstring("SUMMARY_JSON ", summary ?? ""),
     ) as Record<string, unknown>
     expect(Object.keys(parsed)).toEqual(["avgPercent", "hardPercent"])
     for (const v of Object.values(parsed)) expect(Number.isFinite(v)).toBe(true)
