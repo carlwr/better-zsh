@@ -3,7 +3,7 @@
   "name": "@carlwr/zsh-core",
   "version": "0.1.0-alpha.2",
   "license": "MIT",
-  "nodeModulesDir": "auto",
+  "nodeModulesDir": "manual",
   "exports": {
     ".": "./index.ts",
     "./assets": "./assets.ts",
