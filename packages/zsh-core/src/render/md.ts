@@ -93,18 +93,17 @@ export function isDocoptSig(sig: string): boolean {
 
 /** A depth-1 bullet-list item; `subItems` render as depth-2 leaf bullets. */
 interface MemberItem extends ItemEntry {
-  readonly subItems?: readonly ItemEntry[]
+  readonly subItems?: NonEmpty<ItemEntry>
 }
 
 function renderMemberList(
   intro: string,
-  members: readonly MemberItem[] | undefined,
+  members: NonEmpty<MemberItem> | undefined,
   outro?: string,
 ): string {
-  const items = (members ?? []).map(renderMemberBullet)
   return docBlock(
     ...prose(intro),
-    ...when(items.length > 0, items.join("\n\n")),
+    ...maybe(members, ms => ms.map(renderMemberBullet).join("\n\n")),
     ...prose(outro),
   )
 }
@@ -162,15 +161,15 @@ function composeBody(desc: string, subBlock: string): string {
 /**
  * `desc` (intro) + sibling flag groups (each: optional intro + bullet list
  * of flags) + optional `outro`. Falls back to just `desc` when `groups` is
- * empty/missing. For records (builtins, comp utilities) with multiple
+ * absent. For records (builtins, comp utilities) with multiple
  * sibling flag sections.
  */
 function renderFlagGroupBody(
   desc: string,
-  groups: readonly FlagGroup[] | undefined,
+  groups: NonEmpty<FlagGroup> | undefined,
   outro?: string,
 ): string {
-  if (!groups?.length) return desc
+  if (!groups) return desc
   return docBlock(
     ...prose(desc),
     ...groups.flatMap(g => [...prose(g.intro), renderMemberList("", g.flags)]),
@@ -521,10 +520,13 @@ function mdCondOp(cop: CondOpDoc, corpus: DocCorpus): string {
 }
 
 function mdShellParam(doc: ShellParamDoc): string {
-  const keys = doc.keys?.map(
-    ({ values, ...key }): MemberItem =>
-      values ? { ...key, subItems: values } : key,
-  )
+  const keys =
+    doc.keys &&
+    mapNonEmpty(
+      doc.keys,
+      ({ values, ...key }): MemberItem =>
+        values ? { ...key, subItems: values } : key,
+    )
   return docBlock(
     renderMemberList(doc.desc, keys, doc.outro),
     ...maybe(doc.tied, t => `_Tied with:_ ${bt(t)}`),

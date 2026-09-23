@@ -1,4 +1,4 @@
-import { isDefined, isNonEmpty } from "@carlwr/typescript-extra"
+import { isDefined, isNonEmpty, type NonEmpty } from "@carlwr/typescript-extra"
 import { identity } from "../../brands.ts"
 import type {
   ItemEntry,
@@ -177,13 +177,13 @@ function parenGroups(header: YNodeSeq): readonly YNodeSeq[] {
 // otherwise the whole body stays flat in `desc`.
 function splitWidgetBody(body: YNodeSeq): {
   desc: string
-  subItems?: readonly ItemEntry[]
+  subItems?: NonEmpty<ItemEntry>
   outro?: string
 } {
   const split = splitBodyAtNestedList(body)
   if (!split) return { desc: normalizeBody(body) }
   const subItems = collectItemEntries(split.entries)
-  if (subItems.length === 0) return { desc: normalizeBody(body) }
+  if (!isNonEmpty(subItems)) return { desc: normalizeBody(body) }
   const desc = normalizeBody(split.intro)
   const outro = normalizeBody(split.outro)
   return outro ? { desc, subItems, outro } : { desc, subItems }

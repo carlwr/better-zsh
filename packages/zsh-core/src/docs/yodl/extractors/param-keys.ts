@@ -1,6 +1,7 @@
 // Body-splitting for `ShellParamDoc.keys`; the nested key-list shape is
 // identical across special-param extractors.
 
+import { isNonEmpty, type NonEmpty } from "@carlwr/typescript-extra"
 import type { ItemEntry, ShellParamKey } from "../../types.ts"
 import { splitBodyAtNestedList } from "../core/doc.ts"
 import type { YNodeSeq } from "../core/nodes.ts"
@@ -9,7 +10,7 @@ import { aliasedItems, collectItemEntries, itemSigs } from "./item-entries.ts"
 
 export interface SplitParamBody {
   readonly desc: string
-  readonly keys?: readonly ShellParamKey[]
+  readonly keys?: NonEmpty<ShellParamKey>
   readonly outro?: string
 }
 
@@ -24,7 +25,7 @@ export function splitParamBody(body: YNodeSeq): SplitParamBody {
   const keys = aliasedItems(split.entries).map(grp =>
     buildKey(itemSigs(grp), grp.entry.body ?? []),
   )
-  if (keys.length === 0) return { desc: normalizeBody(body) }
+  if (!isNonEmpty(keys)) return { desc: normalizeBody(body) }
   const desc = normalizeBody(split.intro)
   const outro = normalizeBody(split.outro)
   return outro ? { desc, keys, outro } : { desc, keys }
@@ -34,6 +35,6 @@ function buildKey(sigs: ItemEntry["sigs"], body: YNodeSeq): ShellParamKey {
   const inner = splitBodyAtNestedList(body)
   if (!inner) return { sigs, desc: normalizeBody(body) }
   const values = collectItemEntries(inner.entries)
-  if (values.length === 0) return { sigs, desc: normalizeBody(body) }
+  if (!isNonEmpty(values)) return { sigs, desc: normalizeBody(body) }
   return { sigs, desc: normalizeBody(inner.intro), values }
 }

@@ -1,3 +1,4 @@
+import { isNonEmpty, type NonEmpty } from "@carlwr/typescript-extra"
 import { identity } from "../../brands.ts"
 import type { DocCategory } from "../../taxonomy.ts"
 import type { DocRecordBase, FlagGroup, SyntaxDocBase } from "../../types.ts"
@@ -15,7 +16,7 @@ import { collectItemEntries } from "./item-entries.ts"
 // lists.
 export interface SigDescBody {
   readonly desc: string
-  readonly flagGroups?: readonly FlagGroup[]
+  readonly flagGroups?: NonEmpty<FlagGroup>
   readonly outro?: string
 }
 
@@ -35,9 +36,10 @@ export function splitFlagBody(body: YNodeSeq): SigDescBody {
   const flagGroups: FlagGroup[] = []
   for (const [i, g] of split.groups.entries()) {
     const flags = collectItemEntries(g.entries)
-    if (flags.length === 0) return { desc: normalizeBody(body) }
+    if (!isNonEmpty(flags)) return { desc: normalizeBody(body) }
     flagGroups.push({ intro: i === 0 ? "" : normalizeBody(g.preIntro), flags })
   }
+  if (!isNonEmpty(flagGroups)) return { desc: normalizeBody(body) }
 
   const desc = normalizeBody(split.intro)
   const outro = normalizeBody(split.outro)

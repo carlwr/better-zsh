@@ -144,7 +144,7 @@ export interface ItemEntry {
  */
 export interface FlagGroup {
   readonly intro: string
-  readonly flags: readonly ItemEntry[]
+  readonly flags: NonEmpty<ItemEntry>
 }
 
 /** Parsed builtin command doc block. */
@@ -169,7 +169,7 @@ export interface BuiltinDoc extends DocRecordBase<"builtin"> {
   /** Upstream zsh recommends against new use. */
   readonly deprecated?: boolean
   /** Per-group flags when upstream documents nested item lists inside the body. */
-  readonly flagGroups?: readonly FlagGroup[]
+  readonly flagGroups?: NonEmpty<FlagGroup>
   /** Prose after the last flag group. */
   readonly outro?: string
 }
@@ -209,7 +209,7 @@ export type ShellParamScope =
  * `compstate.context`). No deeper nesting is captured.
  */
 export interface ShellParamKey extends ItemEntry {
-  readonly values?: readonly ItemEntry[]
+  readonly values?: NonEmpty<ItemEntry>
 }
 
 /**
@@ -229,7 +229,7 @@ export interface ShellParamDoc extends DocRecordBase<"special_param"> {
   readonly desc: string
   readonly subKind: ShellParamScope
   readonly tied?: Documented<"special_param">
-  readonly keys?: readonly ShellParamKey[]
+  readonly keys?: NonEmpty<ShellParamKey>
   /** Prose after the key list. */
   readonly outro?: string
   readonly module?: ModuleName
@@ -443,7 +443,7 @@ export interface ZleWidgetDoc extends DocRecordBase<"zle_widget"> {
    * `history-incremental-search-backward`). When present, `desc` is the
    * intro; renderer composes intro → sub-items → `outro`.
    */
-  readonly subItems?: readonly ItemEntry[]
+  readonly subItems?: NonEmpty<ItemEntry>
   /** Prose after the sub-item list. */
   readonly outro?: string
   readonly module?: ModuleName
@@ -516,7 +516,7 @@ export interface CompUtilityDoc extends DocRecordBase<"comp_utility"> {
   readonly synopsis: NonEmpty<string>
   readonly desc: string
   /** Per-group flags; same posture as `BuiltinDoc.flagGroups`. */
-  readonly flagGroups?: readonly FlagGroup[]
+  readonly flagGroups?: NonEmpty<FlagGroup>
   /** Prose after the last flag group. */
   readonly outro?: string
 }
