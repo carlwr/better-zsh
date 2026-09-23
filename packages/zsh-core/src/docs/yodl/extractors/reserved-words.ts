@@ -22,41 +22,45 @@ const COMPLEX_HEADS: ReadonlySet<string> = new Set([
   "{",
 ])
 
-const ROLE: Readonly<Record<string, string>> = {
-  do: "Body keyword delimiting the action block of `for`, `while`, `until`, `repeat`, `select`.",
-  done: "Body keyword closing the action block of `for`, `while`, `until`, `repeat`, `select`.",
-  // biome-ignore lint/suspicious/noThenProperty: zsh reserved-word name, not a thenable
-  then: "Body keyword introducing the true branch of `if` / `elif`.",
-  elif: "Body keyword introducing a chained condition in `if`.",
-  else: "Body keyword introducing the false branch of `if`.",
-  fi: "Body keyword closing an `if` construct.",
-  esac: "Body keyword closing a `case` construct.",
-  in: "Body keyword marking the value list of `for`, `case`, or `select`.",
-  foreach:
-    "Alternate-form head for `for`; used with the `foreach name (word ...) list end` syntax.",
-  end: "Alternate-form closing keyword for the `foreach` construct.",
-  "!": "Pipeline negation modifier — inverts the exit status of the following pipeline.",
-  coproc:
-    "Runs the following command as a coprocess connected via bidirectional pipes.",
-  declare: "Reserved-word alias for the `typeset` builtin.",
-  typeset:
-    "Declares scope / attributes for variables; reserved so it parses like an assignment.",
-  export: "Reserved-word alias for `typeset -gx` (mark variables for export).",
-  readonly: "Reserved-word alias for `typeset -r` (mark variables read-only).",
-  local: "Reserved-word alias for `typeset` within a function's local scope.",
-  integer: "Reserved-word alias for `typeset -i` (integer variables).",
-  float:
-    "Reserved-word alias for `typeset -F` / `-E` (floating-point variables).",
-  nocorrect:
-    "Precommand-modifier-shaped reserved word that disables spelling correction for the command.",
-}
+const ROLE: ReadonlyMap<string, string> = new Map(
+  Object.entries({
+    do: "Body keyword delimiting the action block of `for`, `while`, `until`, `repeat`, `select`.",
+    done: "Body keyword closing the action block of `for`, `while`, `until`, `repeat`, `select`.",
+    // biome-ignore lint/suspicious/noThenProperty: zsh reserved-word name, not a thenable
+    then: "Body keyword introducing the true branch of `if` / `elif`.",
+    elif: "Body keyword introducing a chained condition in `if`.",
+    else: "Body keyword introducing the false branch of `if`.",
+    fi: "Body keyword closing an `if` construct.",
+    esac: "Body keyword closing a `case` construct.",
+    in: "Body keyword marking the value list of `for`, `case`, or `select`.",
+    foreach:
+      "Alternate-form head for `for`; used with the `foreach name (word ...) list end` syntax.",
+    end: "Alternate-form closing keyword for the `foreach` construct.",
+    "!": "Pipeline negation modifier — inverts the exit status of the following pipeline.",
+    coproc:
+      "Runs the following command as a coprocess connected via bidirectional pipes.",
+    declare: "Reserved-word alias for the `typeset` builtin.",
+    typeset:
+      "Declares scope / attributes for variables; reserved so it parses like an assignment.",
+    export:
+      "Reserved-word alias for `typeset -gx` (mark variables for export).",
+    readonly:
+      "Reserved-word alias for `typeset -r` (mark variables read-only).",
+    local: "Reserved-word alias for `typeset` within a function's local scope.",
+    integer: "Reserved-word alias for `typeset -i` (integer variables).",
+    float:
+      "Reserved-word alias for `typeset -F` / `-E` (floating-point variables).",
+    nocorrect:
+      "Precommand-modifier-shaped reserved word that disables spelling correction for the command.",
+  }),
+)
 
 const ANY_DESC =
   "Recognized in any position if neither `IGNORE_BRACES` nor `IGNORE_CLOSE_BRACES` is set."
 
 function descFor(name: string): string | undefined {
   if (COMPLEX_HEADS.has(name)) return undefined
-  return ROLE[name]
+  return ROLE.get(name)
 }
 
 export function parseReswords(yo: YodlSrc): readonly ReservedWordDoc[] {

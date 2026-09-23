@@ -276,14 +276,14 @@ const headBlock = (head: DocHead | undefined): readonly string[] =>
 // - Conditional `%(x.true-text.false-text)` — `x` is upstream placeholder
 //   notation that errors at runtime; substitute a concrete test (`?` for
 //   "last exit status was zero").
-const promptEscapeOverride: Readonly<Record<string, string>> = {
-  "%B (%b)": "print -P '%Bbold%b normal'",
-  "%U (%u)": "print -P '%Uunderline%u normal'",
-  "%S (%s)": "print -P '%Sstandout%s normal'",
-  "%F (%f)": "print -P '%Fred%f default'",
-  "%K (%k)": "print -P '%Kbg%k default'",
-  "%(x.true-text.false-text)": "print -P '%(?.YES.NO)'",
-}
+const promptEscapeOverride: ReadonlyMap<string, string> = new Map([
+  ["%B (%b)", "print -P '%Bbold%b normal'"],
+  ["%U (%u)", "print -P '%Uunderline%u normal'"],
+  ["%S (%s)", "print -P '%Sstandout%s normal'"],
+  ["%F (%f)", "print -P '%Fred%f default'"],
+  ["%K (%k)", "print -P '%Kbg%k default'"],
+  ["%(x.true-text.false-text)", "print -P '%(?.YES.NO)'"],
+])
 // Notation-only sigs whose templates aren't literal forms — `print -P`
 // produces misleading or no-op output, so the head is suppressed.
 const promptEscapeNoHead: ReadonlySet<string> = new Set([
@@ -297,10 +297,10 @@ const promptEscapeNoHead: ReadonlySet<string> = new Set([
 // Syntactic exceptions to the mechanical `(#SIG)pat` shape: `s` and `e` are
 // anchors (start/end-of-string); `q` is the glob-qualifier marker (appears
 // at the end of a glob, not as a prefix) and has no concise standalone form.
-const globFlagOverride: Readonly<Record<string, string>> = {
-  s: "(#s)foo",
-  e: "foo(#e)",
-}
+const globFlagOverride: ReadonlyMap<string, string> = new Map([
+  ["s", "(#s)foo"],
+  ["e", "foo(#e)"],
+])
 const globFlagNoHead: ReadonlySet<string> = new Set(["q"])
 
 // Per-flag placeholder for the subscript content (the part after the flag,
@@ -313,21 +313,21 @@ const globFlagNoHead: ReadonlySet<string> = new Set(["q"])
 // - `s:string:` configures the `w` flag's separator — typically composed.
 //
 // The full subscript-flag head therefore reads `${name[(SIG)CONTENT]}`.
-const subscriptContentPlaceholder: Readonly<Record<string, string>> = {
-  r: "pattern",
-  R: "pattern",
-  i: "pattern",
-  I: "pattern",
-  k: "pattern",
-  K: "pattern",
-  "n:expr:": "pattern",
-  "b:expr:": "pattern",
-  e: "exp",
-  w: "exp",
-  p: "exp",
-  f: "exp",
-  "s:string:": "exp",
-}
+const subscriptContentPlaceholder: ReadonlyMap<string, string> = new Map([
+  ["r", "pattern"],
+  ["R", "pattern"],
+  ["i", "pattern"],
+  ["I", "pattern"],
+  ["k", "pattern"],
+  ["K", "pattern"],
+  ["n:expr:", "pattern"],
+  ["b:expr:", "pattern"],
+  ["e", "exp"],
+  ["w", "exp"],
+  ["p", "exp"],
+  ["f", "exp"],
+  ["s:string:", "exp"],
+])
 
 /**
  * Synopsis is "trivial" when it's a single line containing just the record
@@ -404,7 +404,7 @@ function builtinSynopsisHead(
 
 function promptEscapeHead(doc: PromptEscapeDoc): DocHead | undefined {
   if (promptEscapeNoHead.has(doc.sig)) return undefined
-  const line = promptEscapeOverride[doc.sig] ?? `print -P '${doc.sig}'`
+  const line = promptEscapeOverride.get(doc.sig) ?? `print -P '${doc.sig}'`
   return { lang: "zsh", lines: [line] }
 }
 
@@ -443,7 +443,7 @@ const headBuilders: {
   process_subst: () => undefined,
   param_expn: paramExpnHead,
   subscript_flag: doc => {
-    const content = subscriptContentPlaceholder[doc.sig] ?? "..."
+    const content = subscriptContentPlaceholder.get(doc.sig) ?? "..."
     return { lang: "zsh", lines: [`\${name[(${doc.sig})${content}]}`] }
   },
   param_expn_flag: doc => ({ lang: "zsh", lines: [`\${(${doc.sig})spec}`] }),
@@ -453,7 +453,7 @@ const headBuilders: {
     if (globFlagNoHead.has(doc.sig)) return undefined
     return {
       lang: "zsh",
-      lines: [globFlagOverride[doc.sig] ?? `(#${doc.sig})pat`],
+      lines: [globFlagOverride.get(doc.sig) ?? `(#${doc.sig})pat`],
     }
   },
   glob_qualifier: doc => ({
