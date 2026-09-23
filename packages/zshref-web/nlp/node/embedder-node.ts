@@ -171,14 +171,15 @@ export async function embedUnique(
 ): Promise<Map<string, Float32Array>> {
   const unique = [...new Set(queries)]
   const vectors = await e.embed(unique.map(q => queryEmbedText(q, rules)))
-  const out = new Map<string, Float32Array>()
-  for (const [i, q] of unique.entries()) {
-    const v = vectors[i]
-    if (!v)
-      throw new Error(
-        `embedder returned ${vectors.length} vectors for ${unique.length} queries`,
-      )
-    out.set(q, normalizeF32(v))
-  }
-  return out
+  if (vectors.length !== unique.length)
+    throw new Error(
+      `embedder returned ${vectors.length} vectors for ${unique.length} queries`,
+    )
+  return new Map(
+    unique.map((q, i) => {
+      const v = vectors[i]
+      if (!v) throw new Error("vector count checked")
+      return [q, normalizeF32(v)]
+    }),
+  )
 }
