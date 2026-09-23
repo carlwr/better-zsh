@@ -7,6 +7,7 @@ import {
 } from "node:fs"
 import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
+import { withoutFirstSubstring } from "@carlwr/typescript-extra"
 import { Extractor, ExtractorConfig } from "@microsoft/api-extractor"
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
@@ -25,7 +26,9 @@ function readJson(path) {
 }
 
 function packageName(pkg, subpath) {
-  return subpath === "." ? pkg.name : `${pkg.name}/${subpath.slice(2)}`
+  return subpath === "."
+    ? pkg.name
+    : `${pkg.name}/${withoutFirstSubstring("./", subpath)}`
 }
 
 function packageDocFromSource(sourcePath) {

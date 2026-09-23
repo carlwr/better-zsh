@@ -1,6 +1,7 @@
 import { mkdtempSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
+import { rm_rf } from "@carlwr/typescript-extra/node"
 
 export function withTmpDir<T>(prefix: string, run: (dir: string) => T): T {
   const dir = mkdtempSync(join(tmpdir(), prefix))
@@ -19,6 +20,6 @@ export async function withTmpDirAsync<T>(
   try {
     return await run(dir)
   } finally {
-    rmSync(dir, { recursive: true, force: true })
+    await rm_rf(dir)
   }
 }

@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs"
 import { dirname, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
+import { cachedUnary } from "@carlwr/typescript-extra"
 import ts from "typescript"
 import { describe, expect, test } from "vitest"
 import { publicEntries } from "../../scripts/pkg-entries.ts"
@@ -63,6 +64,8 @@ const IO_BUILTINS: ReadonlySet<string> = new Set([
 ])
 const ENV_PATTERN = /\bprocess\.env\b/
 
+const readSrc = cachedUnary((file: string) => readFileSync(file, "utf8"))
+
 // The only entries allowed to reach I/O: both locate the vendored data.
 const IO_ALLOWED: readonly string[] = ["assets.ts", "index.ts"]
 
@@ -74,7 +77,7 @@ const IO_ALLOWED: readonly string[] = ["assets.ts", "index.ts"]
 function importSpecs(file: string, valueOnly: boolean): readonly string[] {
   const sf = ts.createSourceFile(
     file,
-    readFileSync(file, "utf8"),
+    readSrc(file),
     ts.ScriptTarget.Latest,
     true,
   )
@@ -119,7 +122,7 @@ function resolveImport(fromFile: string, spec: string): string | null {
   for (const ext of [".ts", ".tsx", "/index.ts"]) {
     try {
       const candidate = base + ext
-      readFileSync(candidate, "utf8")
+      readSrc(candidate)
       return candidate
     } catch {}
   }
@@ -161,7 +164,7 @@ describe("static-entrypoint scope fence", () => {
     expect(reached.size).toBeGreaterThan(10)
     const violations: string[] = []
     for (const file of reached) {
-      const body = readFileSync(file, "utf8")
+      const body = readSrc(file)
       for (const pat of forbidden) {
         if (pat.test(body)) violations.push(`${file}: ${pat}`)
       }
@@ -175,8 +178,7 @@ describe("static-entrypoint scope fence", () => {
       const { files, bare } = reachable([entry], true)
       const hits = [...bare].filter(spec => IO_BUILTINS.has(spec))
       for (const file of files) {
-        if (ENV_PATTERN.test(readFileSync(file, "utf8")))
-          hits.push(`${file}: process.env`)
+        if (ENV_PATTERN.test(readSrc(file))) hits.push(`${file}: process.env`)
       }
       if (hits.length > 0) reachingIo.push(entry)
     }

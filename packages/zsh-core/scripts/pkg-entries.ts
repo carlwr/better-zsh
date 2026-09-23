@@ -4,6 +4,7 @@
 
 import { readFileSync } from "node:fs"
 import { join } from "node:path"
+import { withoutFirstSubstring } from "@carlwr/typescript-extra"
 
 /**
  * Every non-glob `exports` subpath, sorted. `./data/*`, `./schema/*` and
@@ -23,7 +24,7 @@ export function sharedSubpaths(pkgDir: string): string[] {
  * (`STYLE-CODE.md` §"Module layout").
  */
 function entryName(subpath: string): string {
-  return subpath === "." ? "index" : subpath.slice(2)
+  return subpath === "." ? "index" : withoutFirstSubstring("./", subpath)
 }
 
 /** Entry names behind {@link sharedSubpaths}, sorted. */

@@ -2,6 +2,7 @@ import { createHash } from "node:crypto"
 import { existsSync, readdirSync, readFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
+import { cached, isDefined } from "@carlwr/typescript-extra"
 import { describe, expect, test } from "vitest"
 import { docCategoryPreamble } from "../docs/category-preamble"
 import { loadCorpus } from "../docs/corpus"
@@ -27,6 +28,10 @@ const jsonDir = join(pkgDir, "artifacts", "json")
 const readJson = (file: string): Record<string, unknown> =>
   JSON.parse(readFileSync(join(pkgDir, file), "utf8"))
 
+const index = cached(
+  () => readJson("artifacts/json/index.json") as unknown as JsonIndex,
+)
+
 const pkgExports = readJson("package.json").exports as Record<string, unknown>
 const denoExports = readJson("deno.json").exports as Record<string, unknown>
 
@@ -45,9 +50,8 @@ describe("generated JSON is a release asset, not a registry payload", () => {
   })
 
   test("index.json: category descriptors and resolver order", () => {
-    const index = readJson("artifacts/json/index.json") as unknown as JsonIndex
-    expect(index.version).toBe(7)
-    expect(index.categories).toEqual(
+    expect(index().version).toBe(7)
+    expect(index().categories).toEqual(
       docCategories.map(id => {
         const preamble = docCategoryPreamble[id]
         return {
@@ -57,7 +61,7 @@ describe("generated JSON is a release asset, not a registry payload", () => {
         }
       }),
     )
-    expect(index.classifyOrder).toEqual(classifyOrder)
+    expect(index().classifyOrder).toEqual(classifyOrder)
   })
 
   // A consumer pairs the record file's entries with `index.categories` by
@@ -96,7 +100,7 @@ describe("generated JSON is a release asset, not a registry payload", () => {
     expect(
       readJson(join("artifacts", resolverFixture.dir, resolverFixture.file))
         .dataHash,
-    ).toBe(readJson("artifacts/json/index.json").dataHash)
+    ).toBe(index().dataHash)
   })
 
   // `ResolverFeedback` ships in two assets — the fixture schema's def and
@@ -104,14 +108,15 @@ describe("generated JSON is a release asset, not a registry payload", () => {
   // branch per kind closed on its `kind` const, and every kind exercised by
   // the fixture (what a mirror validates its own feedback against).
   test("index.json carries the fixture schema's ResolverFeedback; every kind occurs", () => {
-    const index = readJson("artifacts/json/index.json") as unknown as JsonIndex
     const defs = readJson(
       join("artifacts", resolverFixture.dir, schemaFile(resolverFixture.file)),
     ).$defs as Record<string, unknown>
-    expect(index.resolverFeedbackSchema).toEqual(defs.ResolverFeedback)
-    expect(JSON.stringify(index.resolverFeedbackSchema)).not.toContain('"$ref"')
+    expect(index().resolverFeedbackSchema).toEqual(defs.ResolverFeedback)
+    expect(JSON.stringify(index().resolverFeedbackSchema)).not.toContain(
+      '"$ref"',
+    )
 
-    const branches = index.resolverFeedbackSchema.anyOf as {
+    const branches = index().resolverFeedbackSchema.anyOf as {
       properties: { kind: { const: string } }
     }[]
     const kinds = branches.map(b => b.properties.kind.const).sort()
@@ -123,16 +128,14 @@ describe("generated JSON is a release asset, not a registry payload", () => {
       Object.values(fixture.cases)
         .flat()
         .map(c => c.feedback?.kind)
-        .filter(k => k !== undefined),
+        .filter(isDefined),
     )
     expect([...seen].sort()).toEqual(kinds)
   })
 
   test("index.dataHash is the SHA-256 of the emitted record file", () => {
     const text = readFileSync(join(jsonDir, recordsFile), "utf8")
-    expect(readJson("artifacts/json/index.json").dataHash).toBe(
-      hashRecords(text),
-    )
+    expect(index().dataHash).toBe(hashRecords(text))
     expect(hashRecords(text)).toBe(
       createHash("sha256").update(text).digest("hex"),
     )
@@ -144,8 +147,6 @@ describe("generated JSON is a release asset, not a registry payload", () => {
 // mid-iteration `vitest` run before a rebuild fails here.
 describe("index.dataHash", () => {
   test("equals the hash of the record file rebuilt from source", () => {
-    expect(hashRecords(jsonRecordsText(loadCorpus()))).toBe(
-      readJson("artifacts/json/index.json").dataHash,
-    )
+    expect(hashRecords(jsonRecordsText(loadCorpus()))).toBe(index().dataHash)
   })
 })

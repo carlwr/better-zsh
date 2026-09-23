@@ -3,6 +3,7 @@ import { existsSync, readdirSync, readFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 import { test } from "node:test"
 import { fileURLToPath } from "node:url"
+import { withoutFirstSubstring } from "@carlwr/typescript-extra"
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..")
 const packagesDir = join(repoRoot, "packages")
@@ -43,7 +44,7 @@ test("package.json exports map to package-root facades", () => {
     for (const key of Object.keys(exp)) {
       if (key === "./package.json") continue
       if (key.includes("*")) continue
-      const base = key === "." ? "index" : key.slice(2)
+      const base = key === "." ? "index" : withoutFirstSubstring("./", key)
       const facade = join(pkgRoot, `${base}.ts`)
       assert.ok(
         existsSync(facade),
