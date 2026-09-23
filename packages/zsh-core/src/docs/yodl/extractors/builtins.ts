@@ -3,7 +3,13 @@ import { identity, mkDocumented } from "../../brands.ts"
 import { type ModuleName, parseModuleName } from "../../taxonomy.ts"
 import type { BuiltinDoc } from "../../types.ts"
 import { collectAliasedEntries, extractItems } from "../core/doc.ts"
-import { asNodes, isMacro, type YNodeSeq, type YodlSrc } from "../core/nodes.ts"
+import {
+  asNodes,
+  isMacro,
+  macroArg,
+  type YNodeSeq,
+  type YodlSrc,
+} from "../core/nodes.ts"
 import { normalizeHeader, stripYodl } from "../core/text.ts"
 import { splitFlagBody } from "./flag-section.ts"
 
@@ -128,8 +134,8 @@ function macroDocs(nodes: YNodeSeq): BuiltinDoc[] {
 
   for (const node of nodes) {
     if (isMacro(node, "alias")) {
-      const name = normalizeHeader(node.args[0] ?? [])
-      const target = normalizeHeader(node.args[1] ?? [])
+      const name = normalizeHeader(macroArg(node, 0))
+      const target = normalizeHeader(macroArg(node, 1))
       if (!name || !target) continue
       docs.push({
         ...identity("builtin", name),
@@ -141,8 +147,8 @@ function macroDocs(nodes: YNodeSeq): BuiltinDoc[] {
     }
 
     if (isMacro(node, "module")) {
-      const name = normalizeHeader(node.args[0] ?? [])
-      const module = parseModuleName(normalizeHeader(node.args[1] ?? []))
+      const name = normalizeHeader(macroArg(node, 0))
+      const module = parseModuleName(normalizeHeader(macroArg(node, 1)))
       if (!name || !module) continue
       // Skip the stub when modules/ already emits a full record — the stub
       // would be a low-quality duplicate (no synopsis or desc).
@@ -157,7 +163,7 @@ function macroDocs(nodes: YNodeSeq): BuiltinDoc[] {
     }
 
     if (isMacro(node, "zlecmd")) {
-      const name = normalizeHeader(node.args[0] ?? [])
+      const name = normalizeHeader(macroArg(node, 0))
       if (!name) continue
       docs.push({
         ...identity("builtin", name),

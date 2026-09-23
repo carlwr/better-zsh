@@ -15,19 +15,19 @@ export interface YodlToken {
 
 type RenderMode = "text" | "code"
 
-const SPECIAL_MACROS: Readonly<Record<string, string>> = {
-  AMP: "&",
-  DASH: "-",
-  HASH: "#",
-  LPAR: "(",
-  LSQUARE: "[",
-  PIPE: "|",
-  PLUS: "+",
-  RPAR: ")",
-  RSQUARE: "]",
-  SP: " ",
-  SPACES: " ",
-}
+const SPECIAL_MACROS: ReadonlyMap<string, string> = new Map([
+  ["AMP", "&"],
+  ["DASH", "-"],
+  ["HASH", "#"],
+  ["LPAR", "("],
+  ["LSQUARE", "["],
+  ["PIPE", "|"],
+  ["PLUS", "+"],
+  ["RPAR", ")"],
+  ["RSQUARE", "]"],
+  ["SP", " "],
+  ["SPACES", " "],
+])
 
 /**
  * Render Yodl nodes to a flat string.
@@ -133,8 +133,7 @@ function foldAliasItems(nodes: YNodeSeq): YNodeSeq {
 
 function promoteEmHeadings(nodes: YNodeSeq): YNodeSeq {
   const out: YNode[] = []
-  for (let i = 0; i < nodes.length; i++) {
-    const node = nodes[i] as YNode
+  for (const [i, node] of nodes.entries()) {
     if (isMacro(node, "em") && isParagraphStandalone(nodes, i)) {
       const heading = stripYodl(macroArg(node, 0), "text").trim()
       if (heading) {
@@ -310,16 +309,17 @@ const EMPTY_RENDER_MACROS: ReadonlySet<string> = new Set([
 function renderNode(node: YNode, mode: RenderMode): string {
   if (node.kind === "text") return node.text
 
-  if (node.name in SPECIAL_MACROS) return SPECIAL_MACROS[node.name] ?? ""
+  const special = SPECIAL_MACROS.get(node.name)
+  if (special !== undefined) return special
   if (EMPTY_RENDER_MACROS.has(node.name)) return ""
 
   switch (node.name) {
     case "tt":
-      return wrapTt(renderSeq(node.args[0] ?? [], "code"), mode)
+      return wrapTt(renderSeq(macroArg(node, 0), "code"), mode)
     case "var":
-      return wrapVar(renderSeq(node.args[0] ?? [], "code"), mode)
+      return wrapVar(renderSeq(macroArg(node, 0), "code"), mode)
     case "example":
-      return `\n\n\`\`\`zsh\n${finishPlain(renderSeq(node.args[0] ?? [], "code"))}\n\`\`\`\n\n`
+      return `\n\n\`\`\`zsh\n${finishPlain(renderSeq(macroArg(node, 0), "code"))}\n\`\`\`\n\n`
     default: {
       const inner = node.args.map(arg => renderSeq(arg, mode))
       const [a = "", b = ""] = inner
@@ -426,7 +426,7 @@ function walkTokens(nodes: YNodeSeq, out: YodlToken[]) {
     if (node.name === "tt" || node.name === "var") {
       out.push({
         kind: node.name,
-        text: renderSeq(node.args[0] ?? [], "code"),
+        text: renderSeq(macroArg(node, 0), "code"),
       })
       continue
     }

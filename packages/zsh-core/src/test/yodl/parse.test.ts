@@ -40,6 +40,11 @@ describe("stripYodl", () => {
     ["startsitem/endsitem", "startsitem()\nendsitem()", ""],
     ["startitem/enditem", "startitem()\nenditem()", ""],
     ["sitem", "sitem(tt(\\a))(bell character)", "- \\a: bell character"],
+    [
+      "Object.prototype names are plain macros",
+      "constructor(x) toString(y)(z)",
+      "x yz",
+    ],
   ])("%s", (_label, input, expected) => {
     expect(stripYodl(input)).toBe(expected)
   })

@@ -108,11 +108,11 @@ function parseSeq(src: string, start: number, stop?: ")"): ParseResult {
 // 1-arg: e.g. `tt(SP())(single unquoted space)` is meant to be `tt(SP())`
 // followed by literal `(single unquoted space)`, but without the cap the
 // trailing `(...)` becomes a discarded args[1] of tt.
-const KNOWN_ARITY: Readonly<Record<string, number>> = {
-  tt: 1,
-  var: 1,
-  em: 1,
-}
+const KNOWN_ARITY: ReadonlyMap<string, number> = new Map([
+  ["tt", 1],
+  ["var", 1],
+  ["em", 1],
+])
 
 function parseMacroAt(
   src: string,
@@ -127,7 +127,7 @@ function parseMacroAt(
   let next = pos + name.length
   if (src[next] !== "(") return undefined
 
-  const maxArgs = KNOWN_ARITY[name] ?? Infinity
+  const maxArgs = KNOWN_ARITY.get(name) ?? Infinity
   const args: YNode[][] = []
   while (src[next] === "(" && args.length < maxArgs) {
     const inner = parseSeq(src, next + 1, ")")

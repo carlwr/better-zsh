@@ -11,7 +11,7 @@
 import { isDefined, type NonEmpty } from "@carlwr/typescript-extra"
 import { identity } from "../../../brands.ts"
 import type { MathfuncDoc } from "../../../types.ts"
-import type { YNodeSeq, YodlSrc } from "../../core/nodes.ts"
+import { macroArg, type YNodeSeq, type YodlSrc } from "../../core/nodes.ts"
 
 const MODULE = "zsh/mathfunc" as const
 
@@ -33,7 +33,7 @@ function rawYodlText(nodes: YNodeSeq): string {
       out += node.text
     } else {
       // Flatten first arg only — enough for `tt(name)` patterns
-      out += `${node.name}(${rawYodlText(node.args[0] ?? [])})`
+      out += `${node.name}(${rawYodlText(macroArg(node, 0))})`
     }
   }
   return out
