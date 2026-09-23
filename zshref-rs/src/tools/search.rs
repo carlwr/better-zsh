@@ -12,7 +12,7 @@ use crate::tools::{Field, Tool, ToolName, prose};
 use anyhow::Result;
 use serde::Deserialize;
 use serde_json::Value;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 
 pub fn tool(corpus: &Corpus) -> Tool {
     Tool::new(
@@ -54,21 +54,18 @@ fn run(input: Input, corpus: &Corpus) -> Result<Value> {
     }
 
     let pool = entries(corpus, input.category);
-    let q_low = query.to_ascii_lowercase();
-
-    let mut seen: HashSet<(DocCategory, &str)> = HashSet::new();
+    let starts_with_q = |s: &str| {
+        s.get(..query.len())
+            .is_some_and(|p| p.eq_ignore_ascii_case(query))
+    };
 
     let (mut exact, mut prefix, mut rest): (Vec<&Entry>, Vec<&Entry>, Vec<&Entry>) =
         (Vec::new(), Vec::new(), Vec::new());
     for e in &pool {
-        let id_low = e.id.to_ascii_lowercase();
-        let disp_low = e.display.to_ascii_lowercase();
-        if id_low == q_low || disp_low == q_low {
+        if e.id.eq_ignore_ascii_case(query) || e.display.eq_ignore_ascii_case(query) {
             exact.push(e);
-            seen.insert(e.key());
-        } else if id_low.starts_with(&q_low) || disp_low.starts_with(&q_low) {
+        } else if starts_with_q(e.id) || starts_with_q(e.display) {
             prefix.push(e);
-            seen.insert(e.key());
         } else {
             rest.push(e);
         }
@@ -78,24 +75,20 @@ fn run(input: Input, corpus: &Corpus) -> Result<Value> {
         Some(c) => std::slice::from_ref(c),
         None => &CLASSIFY_ORDER,
     };
-    let by_key: HashMap<(DocCategory, &str), &Entry> = pool.iter().map(|e| (e.key(), e)).collect();
-    let mut resolver_hits: Vec<&Entry> = Vec::new();
-    for &cat in resolver_cats {
-        if let Some(h) = resolve_in(corpus, cat, query) {
-            let k = (h.category, h.id);
-            if seen.contains(&k) {
-                continue;
-            }
-            if let Some(e) = by_key.get(&k) {
-                resolver_hits.push(*e);
-                seen.insert(k);
-            }
-        }
-    }
+    let mut seen: HashSet<(DocCategory, &str)> =
+        exact.iter().chain(&prefix).map(|e| e.key()).collect();
+    let resolver_hits: Vec<Entry> = resolver_cats
+        .iter()
+        .filter_map(|&cat| resolve_in(corpus, cat, query))
+        .filter(|h| seen.insert((h.category, h.id)))
+        .map(|h| Entry::of(h.category, h.rec))
+        .collect();
 
+    // `rest` already excludes exact and prefix; resolver hits are few, so
+    // scanning them beats hashing every `rest` entry.
     let mut fuzzy: Vec<(&Entry, u32)> = rest
         .iter()
-        .filter(|e| !seen.contains(&e.key()))
+        .filter(|e| !resolver_hits.iter().any(|r| r.key() == e.key()))
         .filter_map(|e| {
             crate::fuzzy::score(query, e.id)
                 .max(crate::fuzzy::score(query, e.display))
@@ -107,8 +100,9 @@ fn run(input: Input, corpus: &Corpus) -> Result<Value> {
     let total = exact.len() + resolver_hits.len() + prefix.len() + fuzzy.len();
     let ranked = exact
         .iter()
-        .chain(resolver_hits.iter())
-        .chain(prefix.iter())
+        .copied()
+        .chain(&resolver_hits)
+        .chain(prefix.iter().copied())
         .map(|e| scored(e, 1.0))
         .chain(fuzzy.iter().map(|(e, s)| {
             let mapped = (*s as f64 / 1000.0).min(0.999_999);

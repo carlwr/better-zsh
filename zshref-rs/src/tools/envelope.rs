@@ -1,6 +1,6 @@
 //! Result envelope + entry shape. Struct field order is wire key order.
 
-use crate::corpus::{Corpus, DocCategory};
+use crate::corpus::{Corpus, DocCategory, Record};
 use anyhow::Result;
 use serde::Serialize;
 use serde_json::Value;
@@ -51,6 +51,17 @@ impl<'c> Entry<'c> {
     pub fn key(&self) -> (DocCategory, &'c str) {
         (self.category, self.id)
     }
+
+    /// `rec` as a score-less entry.
+    pub fn of(category: DocCategory, rec: &'c Record) -> Self {
+        Self {
+            category,
+            id: rec.id(),
+            display: rec.display(),
+            sub_kind: rec.sub_kind(),
+            score: None,
+        }
+    }
 }
 
 /// Every record as a score-less `Entry`, in corpus order, optionally one
@@ -60,14 +71,6 @@ pub fn entries(corpus: &Corpus, category: Option<DocCategory>) -> Vec<Entry<'_>>
         .categories
         .iter()
         .filter(|cat| category.is_none_or(|f| cat.name == f))
-        .flat_map(|cat| {
-            cat.records.iter().map(move |rec| Entry {
-                category: cat.name,
-                id: rec.id(),
-                display: rec.display(),
-                sub_kind: rec.sub_kind(),
-                score: None,
-            })
-        })
+        .flat_map(|cat| cat.records.iter().map(|rec| Entry::of(cat.name, rec)))
         .collect()
 }

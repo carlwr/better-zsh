@@ -184,10 +184,9 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(32))]
 
     /// search dedup invariant: no two matches share `(category, id)`,
-    /// across many random queries. The seen-set is the load-bearing
-    /// structure that makes the four-tier walk (exact / resolver / prefix /
-    /// fuzzy) safe; this catches walk-order regressions wherever they
-    /// manifest.
+    /// across many random queries. Dedup across the four tiers (exact /
+    /// resolver / prefix / fuzzy) is load-bearing; this catches walk-order
+    /// regressions wherever they manifest.
     #[test]
     fn search_dedup_invariant(q in r"\PC{1,20}", n in 1u32..=200_000) {
         let n_s = n.to_string();

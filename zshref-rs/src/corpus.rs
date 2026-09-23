@@ -189,10 +189,17 @@ pub struct Category {
     pub records: Vec<Record>,
 }
 
-/// One corpus record: the baked JSON object, read by field.
+/// One corpus record: the baked JSON object, read by field. `id`, `display`
+/// and `subKind` are copied out at decode: lookups and listings read them on
+/// every record.
 #[derive(Clone, Debug, Deserialize)]
-#[serde(transparent)]
-pub struct Record(Map<String, Value>);
+#[serde(from = "Map<String, Value>")]
+pub struct Record {
+    id: String,
+    display: String,
+    sub_kind: String,
+    fields: Map<String, Value>,
+}
 
 // MIRROR-OF: packages/zsh-core/src/docs/types.ts (`DocRecordBase`: every
 // record's `category` / `id` / `display`; `subKind` on the categories that
@@ -203,15 +210,15 @@ pub struct Record(Map<String, Value>);
 impl Record {
     /// `""` when absent or not a string.
     pub fn str(&self, key: &str) -> &str {
-        self.0.get(key).and_then(Value::as_str).unwrap_or("")
+        str_field(&self.fields, key)
     }
 
     pub fn id(&self) -> &str {
-        self.str("id")
+        &self.id
     }
 
     pub fn display(&self) -> &str {
-        self.str("display")
+        &self.display
     }
 
     pub fn title(&self) -> &str {
@@ -225,13 +232,12 @@ impl Record {
 
     /// `None` for categories whose records carry no `subKind`.
     pub fn sub_kind(&self) -> Option<&str> {
-        let s = self.str("subKind");
-        (!s.is_empty()).then_some(s)
+        (!self.sub_kind.is_empty()).then_some(&self.sub_kind)
     }
 
     /// An option record's short-flag aliases (`flags[]`); empty elsewhere.
     pub fn flags(&self) -> impl Iterator<Item = OptFlagAlias<'_>> {
-        self.0
+        self.fields
             .get("flags")
             .and_then(Value::as_array)
             .into_iter()
@@ -244,6 +250,23 @@ impl Record {
                 })
             })
     }
+}
+
+impl From<Map<String, Value>> for Record {
+    fn from(fields: Map<String, Value>) -> Self {
+        let get = |key| str_field(&fields, key).to_owned();
+        Self {
+            id: get("id"),
+            display: get("display"),
+            sub_kind: get("subKind"),
+            fields,
+        }
+    }
+}
+
+/// `""` when absent or not a string.
+fn str_field<'m>(fields: &'m Map<String, Value>, key: &str) -> &'m str {
+    fields.get(key).and_then(Value::as_str).unwrap_or("")
 }
 
 // MIRROR-OF: packages/zsh-core/src/docs/types.ts (`OptFlagAlias`)

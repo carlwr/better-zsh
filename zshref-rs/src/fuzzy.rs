@@ -19,41 +19,38 @@ pub fn score(pattern: &str, haystack: &str) -> Option<u32> {
         return Some(u32::MAX);
     }
 
-    // Greedy left-to-right walk: ids are short and structured (`AUTO_PUSHD_MINUS`),
-    // so backtracking for the best subsequence is not worth its complexity.
-    let mut positions: Vec<usize> = Vec::with_capacity(pat.len());
-    let mut i = 0usize;
-    for (j, &h) in hay.iter().enumerate() {
-        if i == pat.len() {
-            break;
-        }
-        if h.eq_ignore_ascii_case(&pat[i]) {
-            positions.push(j);
-            i += 1;
-        }
-    }
-    if i < pat.len() {
-        return None;
-    }
-
+    // Greedy left-to-right walk, scored in place (hot path: no per-call
+    // buffer). Ids are short and structured (`AUTO_PUSHD_MINUS`), so
+    // backtracking for the best subsequence is not worth its complexity.
+    //
     // Additive weights; the length penalty favours denser hits. i64 so the
     // penalties may take the sum below zero before the ≥ 1 clamp (`score`
     // promises a positive value).
     let mut s: i64 = 100;
-    if positions[0] == 0 {
-        s += 200;
-    }
-    s -= positions[0] as i64;
-    for w in positions.windows(2) {
-        if w[1] == w[0] + 1 {
-            s += 15;
+    let mut i = 0usize;
+    let mut prev: Option<usize> = None;
+    for (j, &h) in hay.iter().enumerate() {
+        if i == pat.len() {
+            break;
         }
-    }
-    for &p in &positions {
-        let at_boundary = p == 0 || matches!(hay[p - 1], b'_' | b'-' | b'.' | b'/' | b' ' | b'\t');
+        if !h.eq_ignore_ascii_case(&pat[i]) {
+            continue;
+        }
+        match prev {
+            None if j == 0 => s += 200,
+            None => s -= j as i64,
+            Some(p) if p + 1 == j => s += 15,
+            Some(_) => {}
+        }
+        let at_boundary = j == 0 || matches!(hay[j - 1], b'_' | b'-' | b'.' | b'/' | b' ' | b'\t');
         if at_boundary {
             s += 10;
         }
+        prev = Some(j);
+        i += 1;
+    }
+    if i < pat.len() {
+        return None;
     }
     s -= (hay.len() as i64) / 8;
     Some(s.max(1) as u32)
