@@ -125,7 +125,8 @@ export function continuedLineBlock(
   while (start > 0 && (lines[start - 1] ?? "").trimEnd().endsWith("\\")) start--
 
   let end = line
-  while ((lines[end] ?? "").trimEnd().endsWith("\\")) end++
+  while (end < lines.length - 1 && (lines[end] ?? "").trimEnd().endsWith("\\"))
+    end++
 
   return { start, end }
 }

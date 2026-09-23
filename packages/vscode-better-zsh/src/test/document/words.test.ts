@@ -36,7 +36,8 @@ describe("wordMatches", () => {
     ";",
     " ",
   )
-  const lineArb = fc.array(vocab, { maxLength: 6 }).map(xs => xs.join(" "))
+  const itemsArb = fc.array(vocab, { maxLength: 6 })
+  const lineArb = itemsArb.map(xs => xs.join(" "))
 
   test("ranges hold the word, don't overlap, ascend, and stay clear of comments", () => {
     fc.assert(
@@ -57,6 +58,30 @@ describe("wordMatches", () => {
           )
           prev = [line, col]
         }
+      }),
+    )
+  })
+
+  test("each line matches once per standalone, `$`- or quote-wrapped `foo` before its comment", () => {
+    const standalone: ReadonlySet<string> = new Set([
+      "foo",
+      "$foo",
+      '"foo"',
+      "'foo'",
+    ])
+    fc.assert(
+      fc.property(fc.array(itemsArb, { minLength: 1, maxLength: 4 }), items => {
+        const ranges = wordMatches(
+          lineDoc(items.map(xs => xs.join(" ")).join("\n")),
+          "foo",
+        )
+        items.forEach((xs, line) => {
+          const cut = xs.indexOf("# foo")
+          const active = cut < 0 ? xs : xs.slice(0, cut)
+          expect(ranges.filter(r => r.start.line === line)).toHaveLength(
+            active.filter(x => standalone.has(x)).length,
+          )
+        })
       }),
     )
   })

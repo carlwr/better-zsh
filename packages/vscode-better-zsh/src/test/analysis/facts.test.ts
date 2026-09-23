@@ -1,3 +1,4 @@
+import * as fcu from "@carlwr/fastcheck-utils"
 import fc from "fast-check"
 import { describe, expect, test } from "vitest"
 import type { LineFact } from "../../analysis/fact-types"
@@ -15,9 +16,10 @@ import {
   isReservedWordFact,
   lineStarts,
   offsetAt,
+  textDoc,
 } from "../../analysis/facts"
 import { cmdHeadFactsOnLine } from "../../analysis/line-facts"
-import { mockDoc } from "./test-util"
+import { mockDoc, stringOver } from "./test-util"
 
 const textsOf =
   <F extends LineFact & { text: string }>(is: (f: LineFact) => f is F) =>
@@ -259,12 +261,7 @@ describe("document facts", () => {
 describe("cmdHeadFactsOnLine invariants", () => {
   const SHELL_CHARS =
     " \t;|&(){}><'\"\\#abcdefghijklmnopqrstuvwxyz0123456789$!_-=+"
-  const shellCharArb = fc.mapToConstant(
-    ...SHELL_CHARS.split("").map(ch => ({ num: 1, build: () => ch })),
-  )
-  const lineArb = fc
-    .array(shellCharArb, { maxLength: 120 })
-    .map(chars => chars.join(""))
+  const lineArb = stringOver(SHELL_CHARS, 120)
 
   test("never throws", () => {
     fc.assert(
@@ -278,6 +275,46 @@ describe("cmdHeadFactsOnLine invariants", () => {
     fc.assert(
       fc.property(lineArb, line => {
         assertFactInvariants(line, cmdHeadFactsOnLine(line))
+      }),
+    )
+  })
+})
+
+describe("analyzeDoc invariants", () => {
+  const word = fcu.element([
+    "setopt",
+    "set -o",
+    "autocd",
+    "echo",
+    "\\",
+    "\n",
+    ";",
+    "[[",
+    "]]",
+    "((",
+    "))",
+    "'",
+    '"',
+    "#",
+    "f()",
+    "{",
+    "}",
+    "x=1",
+  ])
+  const textArb = fc.array(word, { maxLength: 10 }).map(ws => ws.join(" "))
+
+  test("every span satisfies 0 <= start <= end <= text length", () => {
+    fc.assert(
+      fc.property(textArb, text => {
+        for (const fact of analyzeDoc(textDoc(text)))
+          for (const span of [
+            fact.span,
+            ...("nameSpan" in fact ? [fact.nameSpan] : []),
+          ]) {
+            expect(span.start).toBeGreaterThanOrEqual(0)
+            expect(span.end).toBeGreaterThanOrEqual(span.start)
+            expect(span.end).toBeLessThanOrEqual(text.length)
+          }
       }),
     )
   })

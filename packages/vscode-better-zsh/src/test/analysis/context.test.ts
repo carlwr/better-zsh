@@ -28,6 +28,7 @@ describe("syntacticContext", () => {
     ["quoted [[", ["echo '[[' && do_stuff"], 0, 18, "general"],
     ["quoted ((", ["echo '((' && do_stuff"], 0, 18, "general"],
     ["setopt cont.", ["setopt \\", "  autocd"], 1, 5, "setopt"],
+    ["setopt cont. at EOF", ["echo", "setopt auto \\"], 1, 13, "setopt"],
     ["set +o line", ["set +o extendedglob"], 0, 10, "setopt"],
     ["set flags line", ["set -e -o pipefail"], 0, 12, "setopt"],
     ["setopt after command", ["command setopt extendedglob"], 0, 20, "general"],

@@ -1,6 +1,8 @@
+import * as fcu from "@carlwr/fastcheck-utils"
 import fc from "fast-check"
 import { describe, expect, test } from "vitest"
 import {
+  continuedLineBlock,
   continuedText,
   lineStarts,
   offsetAt,
@@ -93,5 +95,26 @@ describe("continuedText", () => {
     ],
   ])("%s", (_desc, lines, startLine, endLine, expected) => {
     expect(continuedText(lines, startLine, endLine)).toBe(expected)
+  })
+})
+
+describe("continuedLineBlock", () => {
+  test("a line's block contains it, stays in range, and is shared by its lines", () => {
+    const linesArb = fcu.nonEmptyArray(fcu.element(["\\", "x \\", "", "a"]), {
+      maxLength: 6,
+    })
+    const arb = linesArb.chain(ls =>
+      fc.tuple(fc.constant(ls), fc.nat({ max: ls.length - 1 })),
+    )
+    fc.assert(
+      fc.property(arb, ([ls, k]) => {
+        const block = continuedLineBlock(ls, k)
+        expect(block.start).toBeLessThanOrEqual(k)
+        expect(block.end).toBeGreaterThanOrEqual(k)
+        expect(block.end).toBeLessThan(ls.length)
+        for (let j = block.start; j <= block.end; j++)
+          expect(continuedLineBlock(ls, j)).toEqual(block)
+      }),
+    )
   })
 })

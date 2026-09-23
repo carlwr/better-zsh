@@ -1,3 +1,4 @@
+import * as fcu from "@carlwr/fastcheck-utils"
 import { allUnique } from "@carlwr/typescript-extra"
 import fc from "fast-check"
 import { describe, expect, test } from "vitest"
@@ -38,9 +39,8 @@ describe("matchOptions", () => {
     expect(labels(typed)).toEqual(want)
   })
 
-  const optionArb = fc.uniqueArray(fc.stringMatching(/^[a-z][a-z0-9]{1,8}$/), {
-    maxLength: 6,
-  })
+  const nameArb = fc.stringMatching(/^[a-z][a-z0-9]{1,8}$/)
+  const optionArb = fc.uniqueArray(nameArb, { maxLength: 6 })
   const typedArb = fc.stringMatching(/^[a-z0-9]{0,4}$/)
   // Random case flips and underscore insertions.
   const mangle = (s: string) =>
@@ -90,6 +90,25 @@ describe("matchOptions", () => {
         for (const m of negated)
           expect(`no${m.canonical}`.startsWith(typed)).toBe(true)
         expect(allUnique(plain.map(m => m.canonical))).toBe(true)
+      }),
+    )
+  })
+
+  test("every prefix of an option, plain, `no_`- or `NO`-typed, offers its form", () => {
+    const arb = fcu
+      .nonEmptyUniqueArray(nameArb, { maxLength: 6 })
+      .chain(raw => fc.tuple(fc.constant(raw), fcu.element(raw)))
+      .chain(([raw, o]) =>
+        fc.tuple(fc.constant(raw), fc.constant(o), fc.nat({ max: o.length })),
+      )
+    fc.assert(
+      fc.property(arb, ([raw, o, n]) => {
+        const p = o.slice(0, n)
+        const offered = (typed: string) =>
+          matchOptions(mkOpts(raw), typed).map(m => m.label)
+        expect(offered(p)).toContain(o)
+        expect(offered(`no_${p}`)).toContain(`no_${o}`)
+        expect(offered(`NO${p.toUpperCase()}`)).toContain(`no_${o}`)
       }),
     )
   })

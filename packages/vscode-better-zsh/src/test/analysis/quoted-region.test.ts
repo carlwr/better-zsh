@@ -8,7 +8,7 @@ import {
   textDoc,
 } from "../../analysis/facts"
 import { quotedRegionFacts } from "../../analysis/quoted-region"
-import { mockDoc } from "./test-util"
+import { mockDoc, stringOver } from "./test-util"
 
 function texts(lines: readonly string[]): string[] {
   const text = lines.join("\n")
@@ -101,12 +101,9 @@ describe("quotedRegionFacts", () => {
 
   test("never throws and emits valid non-overlapping spans", () => {
     const chars = " \t#'\"\\abcdefghijklmnopqrstuvwxyz0123456789$`(){}\n"
-    const charArb = fc.mapToConstant(
-      ...chars.split("").map(ch => ({ num: 1, build: () => ch })),
-    )
     fc.assert(
-      fc.property(fc.array(charArb, { maxLength: 120 }), chars => {
-        assertQuotedInvariants(chars.join("").split("\n"))
+      fc.property(stringOver(chars, 120), text => {
+        assertQuotedInvariants(text.split("\n"))
       }),
     )
   })
