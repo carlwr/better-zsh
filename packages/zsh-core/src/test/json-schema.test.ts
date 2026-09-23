@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
+import { withoutFirstSubstring } from "@carlwr/typescript-extra"
 import Ajv2020, { type AnySchema } from "ajv/dist/2020"
 import { describe, expect, test } from "vitest"
 import {
@@ -35,7 +36,8 @@ const records = (cat: DocCategory): Rec[] => all[cat] as Rec[]
 const defs = bundle.$defs as Record<string, Rec>
 const deref = (schema: Rec): Rec => {
   if (typeof schema.$ref !== "string") return schema
-  const def = defs[decodeURIComponent(schema.$ref.replace(/^#\/\$defs\//, ""))]
+  const def =
+    defs[decodeURIComponent(withoutFirstSubstring("#/$defs/", schema.$ref))]
   if (!def) throw new Error(`unresolved $ref ${schema.$ref}`)
   return def
 }

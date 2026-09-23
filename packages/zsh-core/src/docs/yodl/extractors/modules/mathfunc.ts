@@ -8,7 +8,7 @@
  *
  * `min`, `max`, `sum` are excluded (autoloadable, not in this module).
  */
-import type { NonEmpty } from "@carlwr/typescript-extra"
+import { isDefined, type NonEmpty } from "@carlwr/typescript-extra"
 import { identity } from "../../../brands.ts"
 import type { MathfuncDoc } from "../../../types.ts"
 import type { YNodeSeq, YodlSrc } from "../../core/nodes.ts"
@@ -183,13 +183,8 @@ function parseMathfuncSource(src: string): MathfuncDoc[] {
 }
 
 function extractTtNames(fragment: string): string[] {
-  const names: string[] = []
-  const rx = /tt\(([^)]+)\)/g
-  let m: RegExpExecArray | null
-  // biome-ignore lint/suspicious/noAssignInExpressions: standard regex loop
-  while ((m = rx.exec(fragment)) !== null) {
-    const name = m[1]?.trim()
-    if (name && /^[a-zA-Z_]\w*$/.test(name)) names.push(name)
-  }
-  return names
+  return [...fragment.matchAll(/tt\(([^)]+)\)/g)]
+    .map(m => m[1]?.trim())
+    .filter(isDefined)
+    .filter(name => /^[a-zA-Z_]\w*$/.test(name))
 }

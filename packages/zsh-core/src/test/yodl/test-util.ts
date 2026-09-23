@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs"
 import { resolve } from "node:path"
-import { allUnique } from "@carlwr/typescript-extra"
+import { allUnique, isSingle } from "@carlwr/typescript-extra"
 import { expect } from "vitest"
 
 export function readVendoredYo(name: string): string {
@@ -9,9 +9,8 @@ export function readVendoredYo(name: string): string {
 
 export function only<T>(xs: readonly T[]): T {
   expect(xs).toHaveLength(1)
-  const [x] = xs
-  if (x === undefined) throw new Error("expected one item")
-  return x
+  if (!isSingle(xs)) throw new Error("expected one item")
+  return xs[0]
 }
 
 export function by<T, K extends PropertyKey>(

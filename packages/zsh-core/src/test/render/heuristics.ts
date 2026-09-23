@@ -6,6 +6,7 @@
  * frozen offender list (contract: `known-offenders.ts`).
  */
 
+import { withoutFirstSubstring } from "@carlwr/typescript-extra"
 import { moduleNames } from "../../docs/taxonomy.ts"
 import { proseLines, stripInlineCode } from "../../render/prose-walk.ts"
 
@@ -197,7 +198,7 @@ const paramShouldBeCoded = {
 } satisfies Heuristic
 
 const ZSH_MODULES: ReadonlySet<string> = new Set(
-  moduleNames.map(m => m.slice("zsh/".length)),
+  moduleNames.map(m => withoutFirstSubstring("zsh/", m)),
 )
 
 /**

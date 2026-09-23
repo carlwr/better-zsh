@@ -3,6 +3,7 @@
 // `build.ts` writes them; nothing here touches the filesystem.
 
 import { join } from "node:path"
+import { withoutFirstSubstring } from "@carlwr/typescript-extra"
 import { createGenerator, type Schema } from "ts-json-schema-generator"
 import { displayPattern, idPattern } from "../src/docs/brands.ts"
 import {
@@ -73,7 +74,7 @@ function toDraft2020(schema: Schema, file: string): Obj {
 
 /** Record definition a `#/$defs/<name>` reference points at. */
 function defOf(defs: Defs, ref: string): { name: string; def: Obj } {
-  const name = decodeURIComponent(ref.replace(/^#\/\$defs\//, ""))
+  const name = decodeURIComponent(withoutFirstSubstring("#/$defs/", ref))
   const def = defs[name]
   if (!def) throw new Error(`unresolved $ref ${ref}`)
   return { name, def }

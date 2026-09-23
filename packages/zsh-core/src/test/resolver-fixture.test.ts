@@ -1,3 +1,4 @@
+import { allUnique } from "@carlwr/typescript-extra"
 import { describe, expect, test } from "vitest"
 import { buildResolverFixture } from "../../scripts/resolver-fixture"
 import { loadCorpus } from "../docs/corpus"
@@ -25,13 +26,13 @@ describe("resolver conformance fixture", () => {
 
   test.each(docCategories)("%s: inputs are unique and a miss occurs", cat => {
     const inputs = fixture.cases[cat].map(c => c.input)
-    expect(new Set(inputs).size).toBe(inputs.length)
+    expect(allUnique(inputs)).toBe(true)
     expect(fixture.cases[cat].some(c => c.id === null)).toBe(true)
   })
 
   test("walk: inputs are unique; every id is walked; a miss occurs", () => {
     const inputs = fixture.walk.map(c => c.input)
-    expect(new Set(inputs).size).toBe(inputs.length)
+    expect(allUnique(inputs)).toBe(true)
     const walked = new Set(inputs)
     for (const cat of docCategories) {
       for (const id of corpus[cat].keys()) expect(walked.has(id)).toBe(true)
@@ -44,7 +45,7 @@ describe("resolver conformance fixture", () => {
     for (const c of fixture.walk) {
       const ranks = c.hits.map(h => rank.get(h.category) ?? -1)
       expect(ranks).toEqual([...ranks].sort((a, b) => a - b))
-      expect(new Set(ranks).size).toBe(ranks.length)
+      expect(allUnique(ranks)).toBe(true)
     }
   })
 

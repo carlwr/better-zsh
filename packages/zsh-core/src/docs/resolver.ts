@@ -34,7 +34,7 @@
  * §"Resolver feedback (lossy normalization)".
  */
 
-import { escapeRegExp, isSingle } from "@carlwr/typescript-extra"
+import { escapeRegExp, isDefined, isSingle } from "@carlwr/typescript-extra"
 import { mkDocumented, redirSlugFromSig } from "./brands.ts"
 import type { DocCorpus } from "./corpus.ts"
 import {
@@ -519,12 +519,9 @@ export function resolveAll(
   corpus: DocCorpus,
   raw: string,
 ): readonly ResolvedHit<DocCategory>[] {
-  const hits: ResolvedHit<DocCategory>[] = []
-  for (const cat of classifyOrder) {
-    const hit = resolveAdmitted(corpus, cat, raw)
-    if (hit) hits.push(hit)
-  }
-  return hits
+  return classifyOrder
+    .map(cat => resolveAdmitted(corpus, cat, raw))
+    .filter(isDefined)
 }
 
 /** Scoped `resolve` under the walk's admission rule. */

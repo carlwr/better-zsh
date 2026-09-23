@@ -1,4 +1,3 @@
-import { isNonEmpty, type NonEmpty, nonEmpty } from "@carlwr/typescript-extra"
 import { identity } from "../../brands.ts"
 import type { ParamExpnDoc, ParamExpnSubKind } from "../../types.ts"
 import {
@@ -8,6 +7,7 @@ import {
 } from "../core/doc.ts"
 import type { YodlSrc } from "../core/nodes.ts"
 import { normalizeBody, normalizeHeader } from "../core/text.ts"
+import { itemSigs } from "./item-entries.ts"
 
 // Sigs here are literal doc templates — e.g. `${name:-word}` — not live
 // user-code tokens. Placeholder names mirror the upstream manual; an
@@ -122,15 +122,12 @@ export function parseParamExpns(yo: YodlSrc): readonly ParamExpnDoc[] {
     SECTION,
   )
   const out: ParamExpnDoc[] = []
-  for (const { head, aliases, entry } of collectAliasedEntries(
+  for (const grp of collectAliasedEntries(
     extractItems(section, 1),
     normalizeHeader,
   )) {
-    const desc = normalizeBody(entry.body ?? [])
-    // Source order: preceding xitems (`aliases`) first, then body-carrying head.
-    const groupSigs: NonEmpty<string> = isNonEmpty(aliases)
-      ? [...aliases, head]
-      : nonEmpty(head)
+    const desc = normalizeBody(grp.entry.body ?? [])
+    const groupSigs = itemSigs(grp)
     groupSigs.forEach((sig, i) => {
       const cls = SIG_CLASSIFICATION[sig]
       if (!cls) {

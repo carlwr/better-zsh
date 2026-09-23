@@ -1,4 +1,4 @@
-import { isNonEmpty, nonEmpty } from "@carlwr/typescript-extra"
+import { isNonEmpty, type NonEmpty } from "@carlwr/typescript-extra"
 import { identity, mkDocumented } from "../../brands.ts"
 import { type ModuleName, parseModuleName } from "../../taxonomy.ts"
 import type { BuiltinDoc } from "../../types.ts"
@@ -91,7 +91,7 @@ export function parseBuiltins(
     // new group. All groups share the same body (`desc`/`flagGroups`/etc.).
     interface HeadGroup {
       readonly name: string
-      readonly synopses: string[]
+      readonly synopses: NonEmpty<string>
     }
     const groups: HeadGroup[] = []
     for (const head of heads) {
@@ -107,9 +107,7 @@ export function parseBuiltins(
       else groups.push({ name, synopses: [head.text] })
     }
     for (const g of groups) {
-      const [first, ...rest] = g.synopses
-      if (!first) continue
-      const synopsis = nonEmpty(first, ...rest, ...synopsisTail)
+      const synopsis: NonEmpty<string> = [...g.synopses, ...synopsisTail]
       byName.set(g.name, {
         ...identity("builtin", g.name),
         synopsis,

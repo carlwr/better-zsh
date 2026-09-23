@@ -1,6 +1,8 @@
 import {
   escapeRegExp,
   hasAtleastTwo,
+  isEmpty,
+  isNonEmpty,
   type NonEmpty,
   nonEmpty,
 } from "@carlwr/typescript-extra"
@@ -18,7 +20,7 @@ import { normalizeHeader } from "../core/text.ts"
 import { splitFlagBody } from "./flag-section.ts"
 
 interface FindexAssoc {
-  readonly findexNames: readonly string[]
+  readonly findexNames: NonEmpty<string>
   /**
    * One element per logical synopsis line. xitems beginning with `SPACES()`
    * are continuation lines (upstream uses SPACES() to indent wrapped forms);
@@ -42,11 +44,10 @@ export function parseCompUtils(yo: YodlSrc): readonly CompUtilityDoc[] {
     const fromFindex = a.findexNames.find(n => n.startsWith("_"))
     const synopsisName = first.match(/^(_[a-zA-Z0-9_]+)/)?.[1]
     const primary = fromFindex ?? synopsisName ?? a.findexNames[0]
-    if (!primary) return []
 
     const names = fromFindex ? a.findexNames : [primary]
     return names.flatMap(n => {
-      if (!n || seen.has(n)) return []
+      if (seen.has(n)) return []
       seen.add(n)
       // When multiple findex names share one upstream item, the upstream
       // synopsis joins them with "and" (e.g. `_options_set and _options_unset`);
@@ -91,19 +92,13 @@ function collectFindexAssociations(body: YNodeSeq): FindexAssoc[] {
 
     if (isMacro(node, "item") && hasAtleastTwo(node.args)) {
       const itemBody = node.args[1]
-      if (findex.length === 0 || itemBody.length === 0) {
+      if (!isNonEmpty(findex) || isEmpty(itemBody)) {
         reset()
         continue
       }
       const lines = buildSynopsisLines([...xitems, node.args[0]])
-      const [first, ...rest] = lines
-      if (first) {
-        out.push({
-          findexNames: [...findex],
-          synopsis: nonEmpty(first, ...rest),
-          body: itemBody,
-        })
-      }
+      if (isNonEmpty(lines))
+        out.push({ findexNames: [...findex], synopsis: lines, body: itemBody })
       reset()
       continue
     }

@@ -1,3 +1,4 @@
+import { withoutFirstSubstring } from "@carlwr/typescript-extra"
 import type { DocCorpus } from "../src/docs/corpus.ts"
 import type {
   ResolverFixtureCase,
@@ -231,7 +232,7 @@ const redirTailExamples: Readonly<Record<string, string>> = {
 }
 
 const redirInputs: ExtraInputs<"redirection"> = ({ sig, groupOp }) => {
-  const tail = sig.slice(groupOp.length).trim()
+  const tail = withoutFirstSubstring(groupOp, sig).trim()
   const ex = redirTailExamples[tail]
   if (ex === undefined) throw new Error(`no operand example for tail ${tail}`)
   const ops = groupOp === "<<[-]" ? ["<<", "<<-"] : [groupOp]

@@ -12,6 +12,7 @@ import {
 import { tmpdir } from "node:os"
 import { basename, dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
+import { allUnique } from "@carlwr/typescript-extra"
 import Ajv2020, { type AnySchema } from "ajv/dist/2020"
 import {
   hashRecords,
@@ -91,8 +92,7 @@ const jsonAsset: Asset = {
       )
     }
     const categoryIds = index.categories.map(c => c.id)
-    if (new Set(categoryIds).size !== categoryIds.length)
-      fail("index.categories contains duplicate ids")
+    if (!allUnique(categoryIds)) fail("index.categories contains duplicate ids")
 
     const recordsText = read(join(jsonDir, recordsFile))
     if (index.dataHash !== hashRecords(recordsText)) {

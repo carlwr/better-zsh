@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs"
 import { join } from "node:path"
+import type { NonEmpty } from "@carlwr/typescript-extra"
 import { describe, expect, test } from "vitest"
 import {
   dumpFile,
@@ -207,7 +208,7 @@ const mf: MathfuncDoc = {
 
 type DocArrays = { readonly [K in DocCategory]: readonly DocRecordMap[K][] }
 
-const baseArrays: DocArrays = {
+const baseArrays: { readonly [K in DocCategory]: NonEmpty<DocRecordMap[K]> } = {
   option: [cd],
   conditional_op: [cu],
   builtin: [bi],
@@ -399,7 +400,6 @@ describe("render markdown", () => {
   // per-category strings it replaced.
   test.each(docCategories)("%s category line; body without one", cat => {
     const doc = baseArrays[cat][0]
-    if (doc === undefined) throw new Error(`no fixture for ${cat}`)
     const sub = subKindOf(doc)
     const label = docCategoryLabels[cat]
     const want = sub === undefined ? label : `${label} (${sub})`
@@ -442,7 +442,6 @@ describe("render markdown", () => {
   // `head` is the block `mdBody` opens with, never something to prepend.
   test.each(docCategories)("%s head opens the body", cat => {
     const doc = baseArrays[cat][0]
-    if (doc === undefined) throw new Error(`no fixture for ${cat}`)
     const r = renderRecord(noOpts, doc)
     if (r.head === undefined) return
     expect(

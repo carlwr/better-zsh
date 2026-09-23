@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
+import { cached } from "@carlwr/typescript-extra"
 import { describe, expect, test } from "vitest"
 import { recordsFile } from "../docs/json-artifacts"
 import { type DocCategory, docCategories } from "../docs/taxonomy"
@@ -19,12 +20,14 @@ import { type DocCategory, docCategories } from "../docs/taxonomy"
 const pkgDir = join(dirname(fileURLToPath(import.meta.url)), "..", "..")
 const jsonDir = join(pkgDir, "artifacts", "json")
 
-const loadRecs = <T>(cat: DocCategory): T[] => {
-  const all = JSON.parse(
-    readFileSync(join(jsonDir, recordsFile), "utf8"),
-  ) as Record<DocCategory, T[]>
-  return all[cat]
-}
+const allRecs = cached(
+  () =>
+    JSON.parse(readFileSync(join(jsonDir, recordsFile), "utf8")) as Record<
+      DocCategory,
+      unknown[]
+    >,
+)
+const loadRecs = <T>(cat: DocCategory): T[] => allRecs()[cat] as T[]
 
 describe.runIf(existsSync(jsonDir))(
   "emitted JSON records carry rendered markdown body",
