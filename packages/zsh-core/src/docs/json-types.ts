@@ -35,6 +35,7 @@ export type JsonSchemaObject = Readonly<Record<string, unknown>>
 export interface JsonCategoryDescriptor {
   readonly id: DocCategory
   readonly label: string
+  /** How to interpret this category's record fields, where the records are not intelligible without it (`docCategoryPreamble`). */
   readonly preamble?: string
 }
 

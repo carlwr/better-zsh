@@ -153,8 +153,9 @@ pub struct Index {
 pub struct CategoryDescriptor {
     pub id: String,
     pub label: String,
-    /// Category-level reading context; tools currently have no natural slot
-    /// for it, but decoding keeps the released descriptor whole.
+    /// How to read the category's record fields, where needed. Deliberately
+    /// unshown: tools have no natural slot for category-level prose; decoding
+    /// keeps the released descriptor whole.
     pub preamble: Option<String>,
 }
 
