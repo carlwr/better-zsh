@@ -3,6 +3,7 @@ import { dirname, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 import ts from "typescript"
 import { describe, expect, test } from "vitest"
+import { publicEntries } from "../../scripts/pkg-entries.ts"
 
 /**
  * Structural scope fence for zsh-core's public surface.
@@ -21,17 +22,10 @@ import { describe, expect, test } from "vitest"
 const here = dirname(fileURLToPath(import.meta.url))
 const pkgDir = resolve(here, "..", "..")
 
-// Derive static entrypoints from package.json so new shared subpaths are
-// auto-checked. Excludes glob patterns (data/schema JSON) and the manifest.
-const EXCLUDED_KEYS: ReadonlySet<string> = new Set(["./package.json"])
-const pkgExports = (
-  JSON.parse(readFileSync(resolve(pkgDir, "package.json"), "utf8")) as {
-    exports: Record<string, unknown>
-  }
-).exports
-const STATIC_ENTRIES: readonly string[] = Object.keys(pkgExports)
-  .filter(k => !k.includes("*") && !EXCLUDED_KEYS.has(k))
-  .map(k => (k === "." ? "index.ts" : `${k.slice(2)}.ts`))
+// Derived from package.json, so new shared subpaths are auto-checked.
+const STATIC_ENTRIES: readonly string[] = publicEntries(pkgDir).map(
+  name => `${name}.ts`,
+)
 
 const forbidden = [
   /\bnode:child_process\b/,

@@ -1,7 +1,8 @@
-import { cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import { cpSync, mkdirSync, rmSync, writeFileSync } from "node:fs"
 import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 import { build } from "tsup"
+import { publicEntries } from "./scripts/pkg-entries.ts"
 import { buildResolverFixture } from "./scripts/resolver-fixture.ts"
 import {
   createSchemaGen,
@@ -42,21 +43,6 @@ const distDir = join(pkgDir, "dist")
 const jsonDir = join(pkgDir, "artifacts", "json")
 const fixtureDir = join(pkgDir, "artifacts", resolverFixture.dir)
 const schemaDir = join(pkgDir, "artifacts", "schema")
-
-/**
- * One bundle per non-glob `exports` subpath, read from the manifest rather
- * than restated: a subpath added without a bundle would resolve to nothing.
- */
-const publicEntries: string[] = Object.keys(
-  (
-    JSON.parse(readFileSync(join(pkgDir, "package.json"), "utf8")) as {
-      exports: Record<string, unknown>
-    }
-  ).exports,
-)
-  .filter(sub => !sub.includes("*") && sub !== "./package.json")
-  .map(sub => (sub === "." ? "index" : sub.slice(2)))
-  .sort()
 
 function writeJson(path: string, data: unknown) {
   writeFileSync(path, fmtJson(data), "utf8")
@@ -112,7 +98,8 @@ function writeJsonArtifacts() {
 
 ;(async () => {
   await build({
-    entry: publicEntries.map(name => resolve(pkgDir, `${name}.ts`)),
+    // One bundle per public entry: a subpath without one resolves to nothing.
+    entry: publicEntries(pkgDir).map(name => resolve(pkgDir, `${name}.ts`)),
     outDir: distDir,
     tsconfig: resolve(pkgDir, "tsconfig.build.json"),
     format: ["cjs", "esm"],

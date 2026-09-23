@@ -3,6 +3,7 @@ import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { escapeRegExp } from "@carlwr/typescript-extra"
 import { describe, expect, test } from "vitest"
+import { publicEntries, sharedSubpaths } from "../../scripts/pkg-entries.ts"
 import {
   PKG_LICENSE,
   PKG_NAME,
@@ -22,18 +23,11 @@ const deno = readJson("deno.json")
 const typedoc = readJson("typedoc.json")
 const tsconfigBuild = readJson("tsconfig.build.json")
 
-// Shared surface: every non-glob `exports` subpath. Derived from the npm
-// manifest rather than restated, so a new subpath cannot silently skip the
-// JSR manifest, the docs build, or the build tsconfig. `./data/*`,
-// `./schema/*` and `./package.json` are npm-only.
-const sharedExports: string[] = Object.keys(pkg.exports)
-  .filter(sub => !sub.includes("*") && sub !== "./package.json")
-  .sort()
-
-// Package-root facade behind each shared subpath (`STYLE-CODE.md` §"Module
-// layout").
-const entryModules: string[] = sharedExports
-  .map(sub => (sub === "." ? "./index.ts" : `${sub}.ts`))
+// Shared surface, derived from the npm manifest: a new subpath cannot
+// silently skip the JSR manifest, the docs build, or the build tsconfig.
+const sharedExports = sharedSubpaths(pkgDir)
+const entryModules = publicEntries(pkgDir)
+  .map(name => `./${name}.ts`)
   .sort()
 
 describe("pkg-info constants stay in sync with manifests", () => {

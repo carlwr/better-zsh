@@ -1,28 +1,17 @@
 import { execFileSync } from "node:child_process"
-import { mkdtempSync, readFileSync, rmSync } from "node:fs"
+import { mkdtempSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 import { escapeRegExp } from "@carlwr/typescript-extra"
 import { corpusYodlFiles } from "../src/docs/source-files.ts"
+import { publicEntries } from "./pkg-entries.ts"
 
 const pkgDir = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const pnpm = process.platform === "win32" ? "pnpm.cmd" : "pnpm"
 const tmp = mkdtempSync(join(tmpdir(), "better-zsh-zsh-core-pack-"))
 
-const pkgJson = JSON.parse(
-  readFileSync(join(pkgDir, "package.json"), "utf8"),
-) as { exports: Record<string, unknown> }
-
-/**
- * Entry name behind every non-glob `exports` subpath, read from the manifest
- * rather than restated, so a new subpath cannot be added without the pack
- * assertions following it. Facade rule: `STYLE-CODE.md` §"Module layout".
- */
-const publicEntries = Object.keys(pkgJson.exports)
-  .filter(sub => !sub.includes("*") && sub !== "./package.json")
-  .map(sub => (sub === "." ? "index" : sub.slice(2)))
-  .sort()
+const entries = publicEntries(pkgDir)
 const vendoredDocs = [
   "SOURCE.md",
   "THIRD_PARTY_NOTICES.md",
@@ -67,9 +56,9 @@ try {
     "THIRD_PARTY_NOTICES.md",
     "package.json",
     "deno.json",
-    ...publicEntries.flatMap(bundleFiles),
-    ...publicEntries.map(apiFile),
-    ...publicEntries.map(apiTypesFile),
+    ...entries.flatMap(bundleFiles),
+    ...entries.map(apiFile),
+    ...entries.map(apiTypesFile),
     ...vendoredDocs.map(file => `dist/data/zsh-docs/${file}`),
   ]
 
@@ -78,7 +67,7 @@ try {
     [/^scripts\//, "script file"],
     [
       new RegExp(
-        `^(?:${[...publicEntries, "build"].map(escapeRegExp).join("|")})\\.ts$`,
+        `^(?:${[...entries, "build"].map(escapeRegExp).join("|")})\\.ts$`,
       ),
       "top-level TypeScript source",
     ],
