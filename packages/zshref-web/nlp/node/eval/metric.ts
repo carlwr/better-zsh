@@ -20,7 +20,9 @@ export function gain(rank: number, d: number, beta: number = BETA): number {
 
 /** Tune-on (`train`) vs held-out (`holdout`): the ranker is tuned against
  * `train` only; a tune that lifts `train` but not `holdout` is overfitting. */
-export type Split = "train" | "holdout"
+export type Split = (typeof SPLITS)[number]
+/** Every `Split`. */
+export const SPLITS = ["train", "holdout"] as const
 
 /** One scored unit: an expected item's contribution on its own rank. */
 export interface Vote {

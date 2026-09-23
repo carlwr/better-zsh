@@ -15,7 +15,7 @@ import {
   type View,
 } from "../nlp/core/types"
 import { syntheticVec } from "../nlp/core/vec"
-import type { Split } from "../nlp/node/eval/metric"
+import { SPLITS, type Split } from "../nlp/node/eval/metric"
 import { makeRecordText, syntheticIndexOf, syntheticVectors } from "./_fixtures"
 
 // --- records and indexes --------------------------------------------------------
@@ -166,7 +166,7 @@ export const arbLookup = (index: VectorIndex): fc.Arbitrary<LookupIndex> =>
 
 // --- evals ---------------------------------------------------------------------
 
-export const arbSplit: fc.Arbitrary<Split> = fcu.element(["train", "holdout"])
+export const arbSplit: fc.Arbitrary<Split> = fcu.element(SPLITS)
 
 // --- tuning -------------------------------------------------------------------
 
