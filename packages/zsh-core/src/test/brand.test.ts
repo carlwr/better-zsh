@@ -19,13 +19,10 @@ describe("mkDocumented", () => {
     )
   })
 
-  // Underscores are stripped after the trim (as in resolver.rs), so an
-  // underscore next to whitespace can surface an edge space: `_ a` -> ` a`.
-  test("is idempotent unless an underscore touches whitespace", () => {
-    expect(opt("_ a") as string).toBe(" a")
+  test("is idempotent", () => {
+    expect(opt("_ a") as string).toBe("a")
     fc.assert(
       fc.property(fcu.element(docCategories), fc.string(), (cat, s) => {
-        fc.pre(!/_\s|\s_/.test(s))
         const once = mkDocumented(cat, s)
         expect(mkDocumented(cat, once)).toBe(once)
       }),

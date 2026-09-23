@@ -13,7 +13,7 @@ import type { DocRecordBase, Documented } from "./types.ts"
 const normOverrides: {
   readonly [K in DocCategory]?: (s: string) => string
 } = {
-  option: s => normalizeOptName(s.trim()),
+  option: normalizeOptName,
 }
 const norm = (cat: DocCategory, raw: string) =>
   (normOverrides[cat] ?? trim)(raw)

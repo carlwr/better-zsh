@@ -21,13 +21,14 @@ pub fn strip_no_prefix(raw: &str) -> Option<String> {
         .map(str::to_string)
 }
 
-/// Lowercase + strip underscores. Mirrors `normalizeOptName` in `normalize-option.ts`.
+/// Lowercase + strip underscores, then trim. Mirrors `normalizeOptName` in `normalize-option.ts`.
 pub fn normalize_option(raw: &str) -> String {
-    raw.trim()
+    let norm: String = raw
         .chars()
         .filter(|c| *c != '_')
         .flat_map(char::to_lowercase)
-        .collect()
+        .collect();
+    norm.trim().to_string()
 }
 
 /// Lossy-resolution feedback from a per-category resolver: an option input

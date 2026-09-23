@@ -27,6 +27,7 @@ const pinnedInputs: { readonly [K in DocCategory]?: Inputs } = {
     "auto_cd",
     "au_to_cd",
     "  AUTO_CD  ",
+    "_ AUTO_CD_ ",
     "NO_AUTO_CD",
     "noautocd",
     "notify",
