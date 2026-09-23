@@ -1,4 +1,4 @@
-import { memoized } from "@carlwr/typescript-extra"
+import { assertNever, memoized } from "@carlwr/typescript-extra"
 import { debug, log, warn } from "./log"
 import { settings, ZSH_PATH_OFF } from "./manifest/settings"
 import type { ZshConfig } from "./settings"
@@ -91,13 +91,26 @@ const unavailable = (errCode: string): ZshRunResult => ({
   errCode,
 })
 
+// Exhaustive: a new mode fails to compile until it is refused here.
+function blockedCode(mode: Exclude<ZshMode, { kind: "available" }>): string {
+  switch (mode.kind) {
+    case "disabled":
+      return "DISABLED"
+    case "invalid-config":
+      return "EINVAL"
+    case "untrusted":
+      return "UNTRUSTED"
+    case "unavailable":
+      return mode.errCode
+    default:
+      return assertNever(mode)
+  }
+}
+
 async function runZsh(req: ZshRunReq): Promise<ZshRunResult> {
   const thunk = getMode
   const mode = await thunk()
-  if (mode.kind === "disabled") return unavailable("DISABLED")
-  if (mode.kind === "invalid-config") return unavailable("EINVAL")
-  if (mode.kind === "untrusted") return unavailable("UNTRUSTED")
-  if (mode.kind === "unavailable") return unavailable(mode.errCode)
+  if (mode.kind !== "available") return unavailable(blockedCode(mode))
 
   const result = await execZsh(mode.binary, req)
   const { errCode } = result

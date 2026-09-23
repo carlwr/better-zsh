@@ -1,3 +1,4 @@
+import { allUnique } from "@carlwr/typescript-extra"
 import fc from "fast-check"
 import { describe, expect, test } from "vitest"
 import { matchOptions } from "../../editor/option-match"
@@ -88,7 +89,7 @@ describe("matchOptions", () => {
         for (const m of plain) expect(m.canonical.startsWith(typed)).toBe(true)
         for (const m of negated)
           expect(`no${m.canonical}`.startsWith(typed)).toBe(true)
-        expect(new Set(plain.map(m => m.canonical)).size).toBe(plain.length)
+        expect(allUnique(plain.map(m => m.canonical))).toBe(true)
       }),
     )
   })
