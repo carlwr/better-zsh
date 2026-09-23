@@ -5,6 +5,7 @@
 import { mkdtemp } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
+import * as fcu from "@carlwr/fastcheck-utils"
 import { escapeRegExp, memoized } from "@carlwr/typescript-extra"
 import { rm_rf } from "@carlwr/typescript-extra/node"
 import { loadCorpus } from "@carlwr/zsh-core"
@@ -160,17 +161,16 @@ describe("writeIndex / readIndex", () => {
         corpus_hash: fc.string(),
         records: fc.array(
           fc.record({
-            text: fc
-              .record({
-                id: fc.string(),
-                body: fc.string(),
-                sub_kind: fc.option(fc.string({ minLength: 1 }), {
-                  nil: undefined,
-                }),
-              })
-              .map(({ sub_kind, ...t }) =>
-                makeRecordText(sub_kind === undefined ? t : { ...t, sub_kind }),
-              ),
+            text: fcu
+              .record(
+                {
+                  id: fc.string(),
+                  body: fc.string(),
+                  sub_kind: fc.string({ minLength: 1 }),
+                },
+                { requiredKeys: ["id", "body"] },
+              )
+              .map(makeRecordText),
             vectors: arbViewVectors(dims),
           }),
           { maxLength: 3 },

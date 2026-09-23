@@ -1,6 +1,7 @@
 // fast-check arbitraries over the NLP's shapes, shared by the property tests.
 // Pure; excluded from the test glob (not *.test.ts).
 
+import * as fcu from "@carlwr/fastcheck-utils"
 import fc from "fast-check"
 
 import { type LookupIndex, lookupIndex } from "../nlp/core/lookup-map"
@@ -9,20 +10,23 @@ import {
   type IndexedRecord,
   perView,
   type RecordId,
+  type RecordText,
   type VectorIndex,
-  VIEWS,
   type View,
 } from "../nlp/core/types"
 import { syntheticVec } from "../nlp/core/vec"
+import type { Split } from "../nlp/node/eval/metric"
 import { makeRecordText, syntheticIndexOf, syntheticVectors } from "./_fixtures"
 
 // --- records and indexes --------------------------------------------------------
 
+type Cat = Pick<RecordText, "category" | "category_label">
+type Ident = Pick<RecordText, "id" | "display">
 const CATEGORIES = [
   { category: "option", category_label: "option" },
   { category: "builtin", category_label: "builtin" },
   { category: "special_param", category_label: "special parameter" },
-]
+] satisfies readonly [Cat, ...Cat[]]
 const IDENTITIES = [
   { id: "aliases", display: "ALIASES" },
   { id: "autocd", display: "AUTO_CD" },
@@ -30,7 +34,7 @@ const IDENTITIES = [
   { id: "echo", display: "echo" },
   { id: "?", display: "?" },
   { id: ">>_word", display: ">> word" },
-]
+] satisfies readonly [Ident, ...Ident[]]
 // Discriminating words, stopwords (`that`, `with`), category names, a
 // too-short word, and the symbols the lexical path special-cases.
 const WORDS = [
@@ -56,30 +60,26 @@ const WORDS = [
   ">>",
   '"$0"',
   "<<<",
-]
+] satisfies readonly [string, ...string[]]
 
 /** A record's view vectors, all `dims` wide — the only width a fixed-stride
  * artifact can hold. Finite: the blob decoder rejects anything else. */
 export const arbViewVectors = (
   dims: number,
 ): fc.Arbitrary<Record<View, Float32Array<ArrayBuffer>>> =>
-  fc
-    .tuple(
-      ...VIEWS.map(() =>
-        fc.float32Array({
-          minLength: dims,
-          maxLength: dims,
-          noNaN: true,
-          noDefaultInfinity: true,
-        }),
-      ),
-    )
-    .map(vs => perView((_, at) => vs[at] ?? new Float32Array()))
+  fcu.record(
+    perView(() =>
+      fc.float32Array({
+        minLength: dims,
+        maxLength: dims,
+        noNaN: true,
+        noDefaultInfinity: true,
+      }),
+    ),
+  )
 
 export const arbText = (max: number): fc.Arbitrary<string> =>
-  fc
-    .array(fc.constantFrom(...WORDS), { maxLength: max })
-    .map(ws => ws.join(" "))
+  fc.array(fcu.element(WORDS), { maxLength: max }).map(ws => ws.join(" "))
 
 /** A query of corpus-like words, then some ASCII noise. */
 export const arbQuery: fc.Arbitrary<string> = fc
@@ -88,8 +88,8 @@ export const arbQuery: fc.Arbitrary<string> = fc
 
 export const arbRecord: fc.Arbitrary<IndexedRecord> = fc
   .record({
-    cat: fc.constantFrom(...CATEGORIES),
-    ident: fc.constantFrom(...IDENTITIES),
+    cat: fcu.element(CATEGORIES),
+    ident: fcu.element(IDENTITIES),
     structured: arbText(6),
     body: arbText(30),
     expanded: arbText(6),
@@ -134,13 +134,10 @@ export const arbRecordIds = (index: VectorIndex): fc.Arbitrary<RecordId[]> =>
           weight: 3,
           arbitrary: fc.constantFrom(...index.records.map(r => r.text)),
         },
-        fc
-          .constantFrom(...CATEGORIES, { category: "absent" })
-          .chain(c =>
-            fc
-              .constantFrom(...IDENTITIES, { id: "missing" })
-              .map(i => ({ category: c.category, id: i.id })),
-          ),
+        fc.record({
+          category: fcu.element(["absent", ...CATEGORIES.map(c => c.category)]),
+          id: fcu.element(["missing", ...IDENTITIES.map(i => i.id)]),
+        }),
       )
       .map(({ category, id }) => ({ category, id })),
     { maxLength: 4 },
@@ -166,6 +163,10 @@ export const arbLookup = (index: VectorIndex): fc.Arbitrary<LookupIndex> =>
       { maxLength: 4, selector: e => e.raw },
     )
     .map(entries => lookupIndex({ version: 1, entries }))
+
+// --- evals ---------------------------------------------------------------------
+
+export const arbSplit: fc.Arbitrary<Split> = fcu.element(["train", "holdout"])
 
 // --- tuning -------------------------------------------------------------------
 

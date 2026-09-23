@@ -58,6 +58,7 @@ import {
   type SanityFixture,
 } from "../../../nlp/node/fixtures"
 import { loadRulesYaml } from "../../../nlp/node/rules-load"
+import { arbSplit } from "../../_arbs"
 import { parityRankAssets } from "../../_helpers"
 
 const corpus = loadCorpus()
@@ -257,22 +258,30 @@ describe("churn", () => {
     expect(() => churn(base, cand.slice(1), false)).toThrow(/aligned/)
   })
 
+  const arbRank = fc.integer({ min: 1, max: 12 })
+  const arbGain = fc.double({ min: 0, max: 1, noNaN: true })
   const arbItem: fc.Arbitrary<ItemRes> = fc.record({
     query: fc.constantFrom("q", "r"),
     cat: fc.constantFrom("option", "builtin"),
     id: fc.constantFrom("x", "y"),
-    split: fc.constantFrom("train" as const, "holdout" as const),
-    rank: fc.integer({ min: 1, max: 12 }),
-    gain: fc.double({ min: 0, max: 1, noNaN: true }),
+    split: arbSplit,
+    rank: arbRank,
+    gain: arbGain,
     depth: fc.integer({ min: 1, max: 4 }),
   })
-  const arbPair = fc
-    .array(fc.tuple(arbItem, arbItem), { maxLength: 8 })
-    .map(ps => [ps.map(([b]) => b), ps.map(([, c]) => c)] as const)
+  // One item under two configs: only its rank and gain may differ.
+  const arbPairs = fc.array(
+    fc
+      .tuple(arbItem, arbRank, arbGain)
+      .map(([b, rank, gain]) => [b, { ...b, rank, gain }] as const),
+    { maxLength: 8 },
+  )
 
   it("the same items churn nothing; crossings are movers; netGain is the gain sum of the scope", () => {
     fc.assert(
-      fc.property(arbPair, fc.boolean(), ([base, cand], trainOnly) => {
+      fc.property(arbPairs, fc.boolean(), (pairs, trainOnly) => {
+        const base = pairs.map(([b]) => b)
+        const cand = pairs.map(([, a]) => a)
         expect(churn(base, base, trainOnly)).toEqual({
           moved: 0,
           up: 0,
@@ -281,14 +290,10 @@ describe("churn", () => {
         })
         const c = churn(base, cand, trainOnly)
         expect(c.up + c.down).toBeLessThanOrEqual(c.moved)
-        const scope = base.flatMap((b, i) =>
-          !trainOnly || b.split === "train" ? [[b, cand[i]] as const] : [],
-        )
-        expect(c.moved).toBe(
-          scope.filter(([b, a]) => a && b.rank !== a.rank).length,
-        )
+        const scope = pairs.filter(([b]) => !trainOnly || b.split === "train")
+        expect(c.moved).toBe(scope.filter(([b, a]) => b.rank !== a.rank).length)
         expect(c.netGain).toBeCloseTo(
-          scope.reduce((s, [b, a]) => s + ((a?.gain ?? 0) - b.gain), 0),
+          scope.reduce((s, [b, a]) => s + a.gain - b.gain, 0),
           9,
         )
       }),

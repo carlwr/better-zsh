@@ -1,6 +1,7 @@
 // Pure — synthetic records, no corpus, no staged assets.
 
-import { allUnique } from "@carlwr/typescript-extra"
+import * as fcu from "@carlwr/fastcheck-utils"
+import { allUnique, mapNonEmpty } from "@carlwr/typescript-extra"
 import fc from "fast-check"
 import { describe, expect, it } from "vitest"
 
@@ -314,6 +315,32 @@ describe("string helpers", () => {
           )
         },
       ),
+    )
+  })
+
+  it("hayHasWord: a single-word needle ignores ASCII case", () => {
+    const word = fc.stringMatching(/^[a-cA-C0-9]{1,3}$/)
+    // The needle is mostly one of the hay's words, so hits are common.
+    const hayNeedle = fcu
+      .nonEmptyArray(fc.tuple(word, fcu.element([" ", "-", ".", "/"])), {
+        maxLength: 6,
+      })
+      .chain(ps =>
+        fc.tuple(
+          fc.constant(ps.flat().join("")),
+          fc.oneof(fcu.element(mapNonEmpty(ps, ([w]) => w)), word),
+        ),
+      )
+    const swapCase = (c: string) =>
+      c === c.toLowerCase() ? c.toUpperCase() : c.toLowerCase()
+    fc.assert(
+      fc.property(hayNeedle, fc.func(fc.boolean()), ([hay, needle], flip) => {
+        const recase = (s: string) =>
+          [...s].map((c, i) => (flip(s, i) ? swapCase(c) : c)).join("")
+        expect(hayHasWord(recase(hay), recase(needle))).toBe(
+          hayHasWord(hay, needle),
+        )
+      }),
     )
   })
 })

@@ -36,6 +36,7 @@ import {
   rulesJsonSchemas,
   SENTENCE_FIXTURE_SCHEMA_FILE,
 } from "../../../nlp/node/rules-schema"
+import { arbSplit } from "../../_arbs"
 import {
   artifactGate,
   inCorpus,
@@ -181,7 +182,7 @@ describe("score properties", () => {
     category: fc.constantFrom("a", "b", "c"),
     weight: fc.double({ min: 0.1, max: 5, noNaN: true }),
     gain: fc.double({ min: 0, max: 1, noNaN: true }),
-    split: fc.constantFrom<Split>("train", "holdout"),
+    split: arbSplit,
   })
 
   it("every score is in [0, 1]; per category the weighted mean, sorted; the total their plain mean", () => {

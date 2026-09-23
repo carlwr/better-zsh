@@ -37,6 +37,7 @@ import {
   arbLookup,
   arbQuery,
   arbRecordIds,
+  arbSplit,
   arbTuning,
 } from "../../_arbs"
 import { artifactGate, parityRankAssets, STAGED } from "../../_helpers"
@@ -157,7 +158,7 @@ const arbEntries = (index: VectorIndex) =>
       want: arbRecordIds(index).map(ids =>
         ids.map((id, i) => ({ ...id, targetDepth: 1 + (i % 3), weight: 1 })),
       ),
-      split: fc.constantFrom("train" as const, "holdout" as const),
+      split: arbSplit,
     }),
     { maxLength: 4 },
   )
