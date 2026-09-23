@@ -27,6 +27,10 @@ describe("parseZshPath", () => {
   test.each<[unknown, ZshPathConfig]>([
     [false, { kind: "invalid", raw: "false", reason: "not a string" }],
     [123, { kind: "invalid", raw: "123", reason: "not a string" }],
+    [
+      { toString: 1 },
+      { kind: "invalid", raw: '{"toString":1}', reason: "not a string" },
+    ],
     [null, { kind: "default", binary: mkZshBinary("zsh") }],
   ])("setting %j", (value, want) => {
     stub.config.set(settings.zshPath.key, value)

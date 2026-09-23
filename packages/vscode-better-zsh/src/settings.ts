@@ -13,7 +13,11 @@ export type ZshPathConfig =
 /** The settings boundary: relative paths are rejected, never resolved; settings JSON may hold any type. */
 export function parseZshPath(raw: unknown): ZshPathConfig {
   if (typeof raw !== "string")
-    return { kind: "invalid", raw: String(raw), reason: "not a string" }
+    return {
+      kind: "invalid",
+      raw: String(JSON.stringify(raw)),
+      reason: "not a string",
+    }
   if (raw === ZSH_PATH_OFF) return { kind: "disabled" }
   if (raw === "")
     return { kind: "default", binary: mkZshBinary(ZSH_BINARY_DEFAULT) }
