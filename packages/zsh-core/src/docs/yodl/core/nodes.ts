@@ -119,7 +119,7 @@ function parseMacroAt(
   pos: number,
 ): { node: YMacro; pos: number } | undefined {
   // A preceding digit is allowed: the corpus contains forms like `1tt(})`.
-  if (isNamePrefix(src[pos - 1])) return undefined
+  if (isNamePrefix(src.charCodeAt(pos - 1))) return undefined
 
   const name = macroNameAt(src, pos)
   if (!name) return undefined
@@ -143,18 +143,24 @@ function parseMacroAt(
 }
 
 function macroNameAt(src: string, pos: number): string | undefined {
-  const first = src[pos]
-  if (!first || !/[A-Za-z]/.test(first)) return undefined
+  if (!isAlpha(src.charCodeAt(pos))) return undefined
 
   let end = pos + 1
-  while (isWordChar(src[end])) end++
+  while (isWordChar(src.charCodeAt(end))) end++
   return src.slice(pos, end)
 }
 
-function isWordChar(ch: string | undefined): boolean {
-  return !!ch && /[A-Za-z0-9_]/.test(ch)
+// Char codes, not regexes: these run per input character, the parse's hot
+// path. Past either end of the string, `charCodeAt` is NaN, which every
+// test rejects.
+function isAlpha(c: number): boolean {
+  return (c >= 65 && c <= 90) || (c >= 97 && c <= 122) // A-Z, a-z
 }
 
-function isNamePrefix(ch: string | undefined): boolean {
-  return !!ch && /[A-Za-z_]/.test(ch)
+function isNamePrefix(c: number): boolean {
+  return isAlpha(c) || c === 95 // _
+}
+
+function isWordChar(c: number): boolean {
+  return isNamePrefix(c) || (c >= 48 && c <= 57) // 0-9
 }
