@@ -73,6 +73,9 @@ Accidental similarity of conceptually-different values may stay duplicated; when
 - Smart constructors (e.g. `mkBrand`) are the trusted cast points for brands.
 - On a public surface, a brand only where the surface both mints it (a checking constructor or resolver) and requires it (an operation that takes it).
   - a field consumers only read, compare or display stays `string`: a brand there guarantees nothing and forces a cast on every fixture
+- On a public surface, spell non-empty arrays `readonly [T, ...T[]]`, not a helper-package alias; internally, the alias is fine:
+  - the `.d.ts` stays self-describing, free of third-party types
+  - generated JSON Schema gets `minItems: 1`, not the alias's doc comment as field description
 - Named type aliases for literal unions.
 - Short field names where clear.
 - If a value deserves to travel, give it a type.

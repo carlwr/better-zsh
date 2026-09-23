@@ -1,5 +1,3 @@
-import type { NonEmpty } from "@carlwr/typescript-extra"
-
 import type { DocCategory, ModuleName } from "./taxonomy.ts"
 import type {
   emulations,
@@ -85,7 +83,7 @@ export interface OptFlagAlias {
    * Emulation modes whose single-letter option table maps this flag to this
    * option; plain zsh is `zsh`. Alphabetical.
    */
-  readonly emulations: NonEmpty<Emulation>
+  readonly emulations: readonly [Emulation, ...Emulation[]]
 }
 
 export type OptSection = (typeof optSections)[number]
@@ -132,7 +130,7 @@ export interface ItemEntry {
    * Every header sharing the row's body, as the manual writes them and in
    * its order: an upstream alias chain is one entry, not one per alias.
    */
-  readonly sigs: NonEmpty<string>
+  readonly sigs: readonly [string, ...string[]]
   readonly desc: string
 }
 
@@ -144,12 +142,12 @@ export interface ItemEntry {
  */
 export interface FlagGroup {
   readonly intro: string
-  readonly flags: NonEmpty<ItemEntry>
+  readonly flags: readonly [ItemEntry, ...ItemEntry[]]
 }
 
 /** Parsed builtin command doc block. */
 export interface BuiltinDoc extends DocRecordBase<"builtin"> {
-  readonly synopsis: NonEmpty<string>
+  readonly synopsis: readonly [string, ...string[]]
   /**
    * Body prose. With `flagGroups`, the intro before the first group; the
    * renderer composes desc → (group intro → flag list)+ → `outro`. Without
@@ -164,19 +162,19 @@ export interface BuiltinDoc extends DocRecordBase<"builtin"> {
    */
   readonly aliasOf?: {
     readonly target: Documented<"builtin">
-    readonly args?: NonEmpty<string>
+    readonly args?: readonly [string, ...string[]]
   }
   /** Upstream zsh recommends against new use. */
   readonly deprecated?: boolean
   /** Per-group flags when upstream documents nested item lists inside the body. */
-  readonly flagGroups?: NonEmpty<FlagGroup>
+  readonly flagGroups?: readonly [FlagGroup, ...FlagGroup[]]
   /** Prose after the last flag group. */
   readonly outro?: string
 }
 
 /** Parsed precommand modifier doc block. */
 export interface PrecmdDoc extends DocRecordBase<"precmd_modifier"> {
-  readonly synopsis: NonEmpty<string>
+  readonly synopsis: readonly [string, ...string[]]
   readonly desc: string
 }
 
@@ -209,7 +207,7 @@ export type ShellParamScope =
  * `compstate.context`). No deeper nesting is captured.
  */
 export interface ShellParamKey extends ItemEntry {
-  readonly values?: NonEmpty<ItemEntry>
+  readonly values?: readonly [ItemEntry, ...ItemEntry[]]
 }
 
 /**
@@ -229,7 +227,7 @@ export interface ShellParamDoc extends DocRecordBase<"special_param"> {
   readonly desc: string
   readonly subKind: ShellParamScope
   readonly tied?: Documented<"special_param">
-  readonly keys?: NonEmpty<ShellParamKey>
+  readonly keys?: readonly [ShellParamKey, ...ShellParamKey[]]
   /** Prose after the key list. */
   readonly outro?: string
   readonly module?: ModuleName
@@ -262,7 +260,7 @@ export interface AlternateForm {
    * activates the form (e.g. `["SHORT_LOOPS", "SHORT_REPEAT"]` for `repeat`).
    * Absent when the form is always available.
    */
-  readonly requires?: NonEmpty<string>
+  readonly requires?: readonly [string, ...string[]]
 }
 
 /**
@@ -333,7 +331,7 @@ export interface ParamExpnDoc
   extends DocRecordBase<"param_expn">,
     SyntaxDocBase {
   /** Every sig sharing this record's desc, in manual source order. */
-  readonly groupSigs: NonEmpty<string>
+  readonly groupSigs: readonly [string, ...string[]]
   /** Zero-based position of `sig` within `groupSigs`. */
   readonly orderInGroup: number
   readonly subKind: ParamExpnSubKind
@@ -417,7 +415,7 @@ export type ZleBindingKeymap = "emacs" | "vicmd" | "viins" | "viopp" | "visual"
  */
 export interface ZleDefaultBinding {
   readonly keymap: ZleBindingKeymap
-  readonly keys: NonEmpty<string>
+  readonly keys: readonly [string, ...string[]]
 }
 
 /**
@@ -443,7 +441,7 @@ export interface ZleWidgetDoc extends DocRecordBase<"zle_widget"> {
    * `history-incremental-search-backward`). When present, `desc` is the
    * intro; renderer composes intro → sub-items → `outro`.
    */
-  readonly subItems?: NonEmpty<ItemEntry>
+  readonly subItems?: readonly [ItemEntry, ...ItemEntry[]]
   /** Prose after the sub-item list. */
   readonly outro?: string
   readonly module?: ModuleName
@@ -513,10 +511,10 @@ export interface SpecialFunctionDoc
  * canonical line.
  */
 export interface CompUtilityDoc extends DocRecordBase<"comp_utility"> {
-  readonly synopsis: NonEmpty<string>
+  readonly synopsis: readonly [string, ...string[]]
   readonly desc: string
   /** Per-group flags; same posture as `BuiltinDoc.flagGroups`. */
-  readonly flagGroups?: NonEmpty<FlagGroup>
+  readonly flagGroups?: readonly [FlagGroup, ...FlagGroup[]]
   /** Prose after the last flag group. */
   readonly outro?: string
 }
@@ -528,7 +526,7 @@ export interface CompUtilityDoc extends DocRecordBase<"comp_utility"> {
  */
 export interface MathfuncDoc extends DocRecordBase<"mathfunc"> {
   /** Call signature(s) — multiple forms render as separate lines. */
-  readonly synopsis: NonEmpty<string>
+  readonly synopsis: readonly [string, ...string[]]
   readonly desc: string
   readonly module: ModuleName
 }

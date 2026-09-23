@@ -1,4 +1,4 @@
-import { isSingle, mapNonEmpty, type NonEmpty } from "@carlwr/typescript-extra"
+import { isSingle, mapNonEmpty } from "@carlwr/typescript-extra"
 import type { DocCorpus } from "../docs/corpus.ts"
 import { flipOptFlagSign } from "../docs/normalize-option.ts"
 import { resolve } from "../docs/resolver.ts"
@@ -35,7 +35,7 @@ import { splitInlineCode, walkProseLines } from "./prose-walk.ts"
  */
 export interface DocHead {
   readonly lang: string
-  readonly lines: NonEmpty<string>
+  readonly lines: readonly [string, ...string[]]
 }
 
 /**
@@ -93,12 +93,12 @@ export function isDocoptSig(sig: string): boolean {
 
 /** A depth-1 bullet-list item; `subItems` render as depth-2 leaf bullets. */
 interface MemberItem extends ItemEntry {
-  readonly subItems?: NonEmpty<ItemEntry>
+  readonly subItems?: readonly [ItemEntry, ...ItemEntry[]]
 }
 
 function renderMemberList(
   intro: string,
-  members: NonEmpty<MemberItem> | undefined,
+  members: readonly [MemberItem, ...MemberItem[]] | undefined,
   outro?: string,
 ): string {
   return docBlock(
@@ -117,7 +117,7 @@ function renderMemberBullet(m: MemberItem): string {
 
 /** Inline form: `- \`s1\`, \`s2\`: <desc>` with 2-space continuation. */
 function renderInlineBullet(
-  sigs: NonEmpty<string>,
+  sigs: readonly [string, ...string[]],
   desc: string,
   subBlock: string,
 ): string {
@@ -135,7 +135,7 @@ function renderInlineBullet(
  * (indent < 4 cols relative to the list-item content column).
  */
 function renderDocoptBullet(
-  sigs: NonEmpty<string>,
+  sigs: readonly [string, ...string[]],
   desc: string,
   subBlock: string,
 ): string {
@@ -166,7 +166,7 @@ function composeBody(desc: string, subBlock: string): string {
  */
 function renderFlagGroupBody(
   desc: string,
-  groups: NonEmpty<FlagGroup> | undefined,
+  groups: readonly [FlagGroup, ...FlagGroup[]] | undefined,
   outro?: string,
 ): string {
   if (!groups) return desc
@@ -343,7 +343,7 @@ function canonicalCondForm(cop: CondOpDoc): string {
     : `[[ ${cop.operands[0]} ${cop.id} ${cop.operands[1]} ]]`
 }
 
-function canonicalArithForm(doc: ArithOpDoc): NonEmpty<string> {
+function canonicalArithForm(doc: ArithOpDoc): readonly [string, ...string[]] {
   const op = doc.id
   switch (doc.subKind) {
     case "unary":
@@ -395,7 +395,7 @@ function paramExpnHead(doc: ParamExpnDoc): DocHead | undefined {
 }
 
 function builtinSynopsisHead(
-  synopsis: NonEmpty<string>,
+  synopsis: readonly [string, ...string[]],
   name: string,
 ): DocHead | undefined {
   if (isTrivialSynopsis(synopsis, name)) return undefined
