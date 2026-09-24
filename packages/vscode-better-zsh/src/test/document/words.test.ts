@@ -2,7 +2,7 @@ import * as fcu from "@carlwr/fastcheck-utils"
 import fc from "fast-check"
 import { describe, expect, test } from "vitest"
 import { wordMatches } from "../../document/words"
-import { lineDoc } from "../test-util"
+import { expectStrictlyAscending, lineDoc } from "../test-util"
 
 describe("wordMatches", () => {
   test("skips comments, keeps strings, whole words only", () => {
@@ -43,9 +43,8 @@ describe("wordMatches", () => {
   test("ranges hold the word, don't overlap, ascend, and stay clear of comments", () => {
     fc.assert(
       fc.property(fcu.nonEmptyArray(lineArb, { maxLength: 4 }), lines => {
-        const doc = lineDoc(lines.join("\n"))
-        let prev: [number, number] = [-1, -1]
-        for (const r of wordMatches(doc, "foo")) {
+        const rs = wordMatches(lineDoc(lines.join("\n")), "foo")
+        for (const r of rs) {
           const text = lines[r.start.line] ?? ""
           expect(r.end.line).toBe(r.start.line)
           expect(text.slice(r.start.character, r.end.character)).toBe("foo")
@@ -53,12 +52,8 @@ describe("wordMatches", () => {
           expect(/[\w-]/.test(text[r.end.character] ?? "")).toBe(false)
           const cut = text.indexOf("#")
           if (cut >= 0) expect(r.end.character).toBeLessThanOrEqual(cut)
-          const [line, col] = [r.start.line, r.start.character]
-          expect(line > prev[0] || (line === prev[0] && col > prev[1])).toBe(
-            true,
-          )
-          prev = [line, col]
         }
+        expectStrictlyAscending(rs.map(r => [r.start.line, r.start.character]))
       }),
     )
   })

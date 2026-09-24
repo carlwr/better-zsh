@@ -9,7 +9,12 @@ import {
   textDoc,
 } from "../../analysis/facts"
 import { quotedRegionFacts } from "../../analysis/quoted-region"
-import { commentyLine, mockDoc, stringOver } from "./test-util"
+import {
+  commentyLine,
+  expectOrderedSpans,
+  mockDoc,
+  stringOver,
+} from "./test-util"
 
 function texts(lines: readonly string[]): string[] {
   const text = lines.join("\n")
@@ -26,20 +31,16 @@ function assertQuotedInvariants(lines: readonly string[]): void {
   const text = lines.join("\n")
   const facts = quotedRegionFacts(lines)
 
+  expectOrderedSpans(
+    facts.map(f => f.span),
+    text.length,
+  )
   for (const fact of facts) {
-    expect(fact.span.start).toBeGreaterThanOrEqual(0)
-    expect(fact.span.end).toBeLessThanOrEqual(text.length)
-    expect(fact.span.start).toBeLessThan(fact.span.end)
     expect(text[fact.span.start]).toBe(fact.quote)
     expect(text[fact.span.end - 1]).toBe(fact.quote)
     expect(text.slice(fact.span.start, fact.span.end).includes("\n")).toBe(
       fact.multiline,
     )
-  }
-
-  for (let i = 1; i < facts.length; i++) {
-    // biome-ignore lint/style/noNonNullAssertion: loop bounds guarantee presence
-    expect(facts[i - 1]!.span.end).toBeLessThanOrEqual(facts[i]!.span.start)
   }
 }
 

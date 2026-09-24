@@ -42,31 +42,19 @@ describe("matchOptions", () => {
   const nameArb = fc.stringMatching(/^[a-z][a-z0-9]{1,8}$/)
   const optionArb = fc.uniqueArray(nameArb, { maxLength: 6 })
   const typedArb = fc.stringMatching(/^[a-z0-9]{0,4}$/)
-  // Random case flips and underscore insertions.
-  const mangle = (s: string) =>
-    fc
-      .tuple(
-        fc.array(fc.boolean(), { minLength: s.length, maxLength: s.length }),
-        fc.array(fc.boolean(), {
-          minLength: s.length + 1,
-          maxLength: s.length + 1,
-        }),
-      )
-      .map(
-        ([flip, us]) =>
-          [...s]
-            .map(
-              (c, i) => `${us[i] ? "_" : ""}${flip[i] ? c.toUpperCase() : c}`,
-            )
-            .join("") + (us[s.length] ? "_" : ""),
-      )
-
   test("matching ignores case and underscores in the typed text", () => {
     fc.assert(
       fc.property(
         optionArb,
-        typedArb.chain(t => fc.tuple(fc.constant(t), mangle(t))),
-        (raw, [typed, mangled]) => {
+        typedArb,
+        fcu.infiniteStream(fc.boolean()),
+        (raw, typed, coins) => {
+          const flip = () => fcu.getNext(coins)
+          const us = () => (flip() ? "_" : "")
+          const mangled =
+            [...typed]
+              .map(c => us() + (flip() ? c.toUpperCase() : c))
+              .join("") + us()
           expect(matchOptions(mkOpts(raw), mangled)).toEqual(
             matchOptions(mkOpts(raw), typed),
           )

@@ -33,7 +33,7 @@ describe("parseZshError", () => {
   })
 
   test("round-trips any `<script>:<line>: <msg>` line", () => {
-    const msg = fc.stringMatching(/^[!-~][ -~]*$/).filter(s => !s.endsWith(" "))
+    const msg = fc.stringMatching(/^[!-~](?:[ -~]*[!-~])?$/)
     fc.assert(
       fc.property(
         fcu.element(["/tmp/better-zsh-ab12/script.zsh", "C:\\T\\s.zsh", "zsh"]),

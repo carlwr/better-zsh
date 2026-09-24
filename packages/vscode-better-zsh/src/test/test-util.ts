@@ -1,3 +1,4 @@
+import { allUnique } from "@carlwr/typescript-extra"
 import {
   type DocCategory,
   type DocCorpus,
@@ -5,6 +6,7 @@ import {
   docCategories,
   normalizeOptName,
 } from "@carlwr/zsh-core"
+import { expect } from "vitest"
 import type * as vscode from "vscode"
 import { WORD } from "../document/words"
 
@@ -56,6 +58,13 @@ export function wordDoc(text: string, scope = "doc") {
 
 export const pos = (line: number, character: number) =>
   ({ line, character }) as vscode.Position
+
+/** `[line, character]` pairs, strictly ascending. */
+export function expectStrictlyAscending(ps: readonly [number, number][]) {
+  const sorted = [...ps].sort(([l1, c1], [l2, c2]) => l1 - l2 || c1 - c2)
+  expect(ps).toEqual(sorted)
+  expect(allUnique(ps.map(String))).toBe(true)
+}
 
 /** Index records by their `id`, as a corpus category map does. */
 export const by = <I, T extends { readonly id: I }>(xs: readonly T[]) =>

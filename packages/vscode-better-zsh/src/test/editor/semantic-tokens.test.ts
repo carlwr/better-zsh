@@ -4,7 +4,13 @@ import fc from "fast-check"
 import { describe, expect, test } from "vitest"
 import { SemanticTokensProvider } from "../../editor/semantic-tokens"
 import { tokenModifiers, tokenTypes } from "../../manifest/semantic-tokens"
-import { by, emptyCorpus, ident, lineDoc } from "../test-util"
+import {
+  by,
+  emptyCorpus,
+  expectStrictlyAscending,
+  ident,
+  lineDoc,
+} from "../test-util"
 import type { RawToken } from "../vscode-stub"
 
 const KEYWORD = tokenTypes.indexOf("keyword")
@@ -91,6 +97,8 @@ describe("SemanticTokensProvider", () => {
   })
 
   test("tokens never span a line end, ascend, and paint only listed names", () => {
+    const builtins = ["echo", "read"]
+    const reservedWords = ["declare"]
     const line = fc
       .array(
         fcu.element([
@@ -122,21 +130,17 @@ describe("SemanticTokensProvider", () => {
       fc.property(fcu.nonEmptyArray(line, { maxLength: 5 }), lines => {
         const doc = lineDoc(lines.join("\n"))
         const raw = provider(
-          ["echo", "read"],
-          ["declare"],
+          builtins,
+          reservedWords,
         ).provideDocumentSemanticTokens(doc).data as unknown as RawToken[]
-        let prev: [number, number] = [-1, -1]
         for (const t of raw) {
           const text = lines[t.line] ?? ""
           expect(t.start + t.length).toBeLessThanOrEqual(text.length)
           const word = text.slice(t.start, t.start + t.length)
-          if (t.type === FUNCTION) expect(["echo", "read"]).toContain(word)
-          else expect(["declare", "if", "then", "fi"]).toContain(word)
-          expect(
-            t.line > prev[0] || (t.line === prev[0] && t.start > prev[1]),
-          ).toBe(true)
-          prev = [t.line, t.start]
+          if (t.type === FUNCTION) expect(builtins).toContain(word)
+          else expect([...reservedWords, "if", "then", "fi"]).toContain(word)
         }
+        expectStrictlyAscending(raw.map(t => [t.line, t.start]))
       }),
     )
   })

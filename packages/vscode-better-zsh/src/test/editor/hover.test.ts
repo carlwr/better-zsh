@@ -223,6 +223,9 @@ describe("HoverProvider on the real corpus", () => {
     ["set +f", 5, "option", "rcs"], // GLOB only under sh/ksh emulation
     ["set -X", 5, "option", "listtypes"], // MARK_DIRS only under sh/ksh
     ["set +o pipefail", 7, "option", "pipefail"],
+    // `functions` and `history` are both builtins and special parameters.
+    ["functions -t foo", 2, "builtin", "functions"],
+    ["echo $functions", 8, "special_param", "functions"],
   ])("%s @%d -> %s %s", (line, char, cat, id) => {
     expect(realAt(line, 0, char)?.value).toBe(rendered(cat, docId(cat, id)))
   })
@@ -232,14 +235,6 @@ describe("HoverProvider on the real corpus", () => {
     ["set -b", 5], // sh/ksh-only letter (NOTIFY)
   ])("%s @%d: no hover", (line, char) => {
     expect(realAt(line, 0, char)).toBeUndefined()
-  })
-
-  // `functions` and `history` are both builtins and special parameters.
-  test.each<[string, number, DocCategory, string]>([
-    ["functions -t foo", 2, "builtin", "functions"],
-    ["echo $functions", 8, "special_param", "functions"],
-  ])("%s @%d -> %s", (line, char, cat, id) => {
-    expect(realAt(line, 0, char)?.value).toBe(rendered(cat, docId(cat, id)))
   })
 
   test("process substitution hovers on its opener only", () => {

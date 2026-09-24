@@ -19,7 +19,7 @@ import {
   textDoc,
 } from "../../analysis/facts"
 import { cmdHeadFactsOnLine } from "../../analysis/line-facts"
-import { mockDoc, stringOver } from "./test-util"
+import { expectOrderedSpans, mockDoc, stringOver } from "./test-util"
 
 const textsOf =
   <F extends LineFact & { text: string }>(is: (f: LineFact) => f is F) =>
@@ -43,20 +43,11 @@ function expectTexts(
 }
 
 function assertFactInvariants(line: string, facts: LineFact[]): void {
-  for (const fact of facts) {
-    expect(fact.span.start).toBeGreaterThanOrEqual(0)
-    expect(fact.span.end).toBeLessThanOrEqual(line.length)
-    expect(fact.span.start).toBeLessThan(fact.span.end)
-    if ("text" in fact) {
+  for (const fact of facts)
+    if ("text" in fact)
       expect(line.slice(fact.span.start, fact.span.end)).toBe(fact.text)
-    }
-  }
-
-  const sorted = [...facts].sort((a, b) => a.span.start - b.span.start)
-  for (let i = 1; i < sorted.length; i++) {
-    // biome-ignore lint/style/noNonNullAssertion: loop bounds guarantee presence
-    expect(sorted[i - 1]!.span.end).toBeLessThanOrEqual(sorted[i]!.span.start)
-  }
+  const spans = facts.map(f => f.span).sort((a, b) => a.start - b.start)
+  expectOrderedSpans(spans, line.length)
 }
 
 describe("command/precommand analysis", () => {

@@ -1,3 +1,4 @@
+import * as fcu from "@carlwr/fastcheck-utils"
 import fc from "fast-check"
 import { describe, expect, test } from "vitest"
 import {
@@ -18,18 +19,19 @@ describe("advanceQuote", () => {
     expect(isQuoted(mkQuoteState())).toBe(false)
   })
 
-  test.each([
-    ["'", "''"],
-    ['"', '""'],
-    ["`", "``"],
-  ])("%s opens then closes", (q, pair) => {
-    expect(isQuoted(scan(q))).toBe(true)
-    expect(isQuoted(scan(pair))).toBe(false)
-  })
-
-  test("backslash escapes next char", () => {
-    expect(isQuoted(scan("\\"))).toBe(true)
-    expect(isQuoted(scan("\\x"))).toBe(false)
+  test("outside single quotes, a backslash quotes; with the next character, it leaves the state unchanged", () => {
+    const next = fc.oneof(
+      fcu.element(["'", '"', "`", "\\"]),
+      fc.string({ minLength: 1, maxLength: 1 }),
+    )
+    fc.assert(
+      fc.property(fc.string(), next, (s, c) => {
+        const st = scan(s)
+        fc.pre(!st.sq && !st.esc)
+        expect(isQuoted(scan(`${s}\\`))).toBe(true)
+        expect(scan(`${s}\\${c}`)).toEqual(st)
+      }),
+    )
   })
 
   test("backslash inside double quotes escapes", () => {
@@ -67,19 +69,14 @@ describe("advanceQuote", () => {
     )
   })
 
-  // Matched-pair property holds for each quote style: a body with the active
-  // quote's char replaced (so the pair is the only closing token) round-trips
-  // to unquoted. Backslashes are also replaced, otherwise they'd escape the
-  // closing quote in double/backtick contexts.
-  test.each([
-    ["'", "\\'"],
-    ['"', '\\"'],
-    ["`", "\\`"],
-  ] as const)("matched %s pairs leave unquoted", (q, escapes) => {
-    const escRe = new RegExp(`[${escapes}\\\\]`, "g")
+  // The body's own quote char and backslashes are neutralized, so the closing
+  // quote is the only one that can close.
+  test("an opening quote quotes; closing it unquotes", () => {
     fc.assert(
-      fc.property(fc.string(), s => {
-        expect(isQuoted(scan(`${q}${s.replace(escRe, "x")}${q}`))).toBe(false)
+      fc.property(fcu.element(["'", '"', "`"]), fc.string(), (q, s) => {
+        expect(isQuoted(scan(q))).toBe(true)
+        const body = s.replace(new RegExp(`[\\\\${q}]`, "g"), "x")
+        expect(isQuoted(scan(q + body + q))).toBe(false)
       }),
     )
   })
