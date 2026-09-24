@@ -25,6 +25,8 @@ export const yodlish = fc.string({
   maxLength: 40,
 })
 
+export const anyYodl = fc.oneof(yodlish, fc.string())
+
 export function only<T>(xs: readonly T[]): T {
   expect(xs).toHaveLength(1)
   if (!isSingle(xs)) throw new Error("expected one item")

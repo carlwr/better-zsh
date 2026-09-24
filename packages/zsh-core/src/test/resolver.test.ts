@@ -144,18 +144,27 @@ describe("resolveRedir", () => {
 })
 
 describe("parens-agnostic flag resolvers", () => {
-  // Verified via `zsh-data-assets.test.ts`: real corpus has bare-letter keys
-  // (`w` subscript, `@` / `a` param, `i` glob). The resolver must accept both
-  // the corpus-key form and the user-code parenthesized form.
+  // Corpus keys are bare (`w` subscript, `@` param, `i` glob); user code
+  // writes them parenthesized.
+  test.each([
+    ["subscript_flag", ["(%)"]],
+    ["param_expn_flag", ["(%)"]],
+    ["glob_flag", ["(%)", "(#%)"]],
+    ["glob_qualifier", ["(%)", "(#q%)"]],
+  ] as const)("every %s id resolves in its wrapped forms %j", (cat, wraps) => {
+    const { hit } = cases(cat)
+    for (const id of corpus[cat].keys())
+      for (const w of wraps)
+        hit(
+          w.replace("%", () => id),
+          id,
+        )
+  })
 
   describe("subscript_flag", () => {
     const sub = cases("subscript_flag")
+    // full-sig close-variant: strip args down to the bare flag letter
     test.each([
-      ["w", "w"],
-      ["(w)", "w"],
-      ["e", "e"],
-      ["(e)", "e"],
-      // full-sig close-variant: strip args down to the bare flag letter
       ["e:string:", "e"],
       ["(e:string:)", "e"],
     ])("%s -> %s", sub.hit)
@@ -165,39 +174,21 @@ describe("parens-agnostic flag resolvers", () => {
   describe("param_expn_flag", () => {
     const par = cases("param_expn_flag")
     test.each([
-      ["@", "@"],
-      ["(@)", "@"],
-      ["U", "U"],
-      ["(U)", "U"],
       ["j:string:", "j"],
       ["(j:string:)", "j"],
     ])("%s -> %s", par.hit)
     test.each(["Y", "(Y)", ""])("%s -> undefined", par.miss)
   })
 
-  describe("glob_flag", () => {
-    const gl = cases("glob_flag")
-    test.each([
-      ["i", "i"],
-      ["(i)", "i"],
-      ["(#i)", "i"],
-      ["I", "I"],
-      ["(#I)", "I"],
-    ])("%s -> %s", gl.hit)
-    test.each(["Z", "(Z)", "(#Z)", "(#)", ""])("%s -> undefined", gl.miss)
-  })
+  test.each(["Z", "(Z)", "(#Z)", "(#)", ""])(
+    "glob_flag: %s -> undefined",
+    cases("glob_flag").miss,
+  )
 
-  describe("glob_qualifier", () => {
-    const gq = cases("glob_qualifier")
-    test.each([
-      ["/", "/"],
-      ["(/)", "/"],
-      ["(#q/)", "/"],
-      ["@", "@"],
-      ["(#q@)", "@"],
-    ])("%s -> %s", gq.hit)
-    test.each(["Z", "(Z)", "(#qZ)", "(#q)", ""])("%s -> undefined", gq.miss)
-  })
+  test.each(["Z", "(Z)", "(#qZ)", "(#q)", ""])(
+    "glob_qualifier: %s -> undefined",
+    cases("glob_qualifier").miss,
+  )
 })
 
 describe("resolveJobSpec", () => {
@@ -300,10 +291,14 @@ describe("resolve round-trip (corpus-wide)", () => {
 
   // Categories whose id is a shell-safe slug distinct from the human-readable
   // `sig` (whitespace, argument placeholders): the close-variant resolver
-  // must take the full-sig form to the slug id.
-  test.each(["redirection", "param_expn_flag", "subscript_flag"] as const)(
-    "%s sigs resolve to their slug id",
-    cat => {
+  // must take the full-sig form (a flag's also parenthesized) to the slug id.
+  test.each([
+    ["redirection", ["%"]],
+    ["param_expn_flag", ["%", "(%)"]],
+    ["subscript_flag", ["%", "(%)"]],
+  ] as const)(
+    "%s sigs, in forms %j, resolve to their slug id",
+    (cat, wraps) => {
       const map = corpus[cat] as ReadonlyMap<string, { readonly sig: string }>
       const mismatched: { sig: string; id: string; got: string | undefined }[] =
         []
@@ -311,13 +306,10 @@ describe("resolve round-trip (corpus-wide)", () => {
       for (const [id, rec] of map) {
         if (!rec.sig || rec.sig === id) continue
         n++
-        const pid = resolve(corpus, cat, rec.sig)
-        if (pid?.record.id !== id)
-          mismatched.push({
-            sig: rec.sig,
-            id,
-            got: pid?.record.id as string | undefined,
-          })
+        for (const sig of wraps.map(w => w.replace("%", () => rec.sig))) {
+          const got = resolve(corpus, cat, sig)?.record.id as string | undefined
+          if (got !== id) mismatched.push({ sig, id, got })
+        }
       }
       expect(n).toBeGreaterThan(0)
       expect(mismatched).toEqual([])
@@ -367,6 +359,36 @@ describe("resolve properties (corpus-wide)", () => {
           })
         },
       ),
+    )
+  })
+
+  test.each([
+    ["job_spec", "%", "%number"],
+    ["history_expn", "!", "!n"],
+    ["history_expn", "!-", "!-n"],
+  ] as const)("%s: %s + any digit run hits %s", (cat, pre, id) => {
+    const { hit } = cases(cat)
+    fc.assert(fc.property(fc.stringMatching(/^\d+$/), n => hit(pre + n, id)))
+  })
+
+  test("TRAP + [A-Z0-9]+ resolves to its literal record, else TRAPNAL", () => {
+    const fn = (id: string) =>
+      corpus.special_function.get(mkDocumented("special_function", id))
+    const literals = [...corpus.special_function.keys()]
+      .filter(id => /^TRAP[A-Z0-9]+$/.test(id))
+      .map(id => id.slice("TRAP".length))
+    if (!isNonEmpty(literals)) throw new Error("no TRAP records")
+    const tail = fc.oneof(
+      fcu.element(literals),
+      fc.stringMatching(/^[A-Z0-9]+$/),
+    )
+    fc.assert(
+      fc.property(tail, tail => {
+        const raw = `TRAP${tail}`
+        expect(resolve(corpus, "special_function", raw)?.record).toBe(
+          fn(raw) ?? fn("TRAPNAL"),
+        )
+      }),
     )
   })
 
