@@ -11,7 +11,7 @@ import {
   stripYodl,
 } from "../../docs/yodl/core/text"
 import { splitInlineCode } from "../../render/prose-walk"
-import { anyYodl, expectNoYodlLeaks, yodlish } from "./test-util"
+import { anyYodl, expectNoYodlLeaks, only, yodlish } from "./test-util"
 
 /* **don't remove**: this function, together with the qualified import of yodl/core/doc, is a conciseness move. Don't remove this move. Instead, if you are a machine: _study this conciseness improvement and learn from it_.
  */
@@ -185,8 +185,8 @@ describe("parseNodes", () => {
   })
 
   test("keeps literal parens inside macro args balanced", () => {
-    const items = extract(`item(tt(AUTO_CD) (tt(-J)))(desc)`)
-    expect(stripYodl(items[0]?.header ?? [])).toBe("AUTO_CD (-J)")
+    const { header } = only(extract(`item(tt(AUTO_CD) (tt(-J)))(desc)`))
+    expect(stripYodl(header)).toBe("AUTO_CD (-J)")
   })
 
   describe("yodl `+macro()` separator marker", () => {
@@ -259,20 +259,18 @@ describe("extractItems", () => {
 item(tt(FOO))(
 body text
 )`
-    const items = extract(yo)
-    expect(items).toHaveLength(1)
-    expect(stripYodl(items[0]?.header ?? [])).toBe("FOO")
-    expect(stripYodl(items[0]?.body ?? [])).toBe("body text")
-    expect(items[0]?.section).toBe("Cat")
+    const item = only(extract(yo))
+    expect(stripYodl(item.header)).toBe("FOO")
+    expect(stripYodl(item.body ?? [])).toBe("body text")
+    expect(item.section).toBe("Cat")
   })
 
   test("extracts xitem (no body)", () => {
     const yo = `subsect(Cat)
 xitem(tt(BAR))`
-    const items = extract(yo)
-    expect(items).toHaveLength(1)
-    expect(stripYodl(items[0]?.header ?? [])).toBe("BAR")
-    expect(items[0]?.body).toBeUndefined()
+    const item = only(extract(yo))
+    expect(stripYodl(item.header)).toBe("BAR")
+    expect(item.body).toBeUndefined()
   })
 
   test("extracts xitem + item pair", () => {
@@ -385,15 +383,18 @@ describe("extractSectionBody", () => {
 
 describe("collectAliasedEntries", () => {
   test("groups xitems with the following item", () => {
-    const grouped = doc.collectAliasedEntries(
-      extract(`xitem(tt(alias))\nitem(tt(main))(desc)`),
-      header => stripYodl(header),
+    const { head, aliases, entry } = only(
+      doc.collectAliasedEntries(
+        extract(`xitem(tt(alias))\nitem(tt(main))(desc)`),
+        stripYodl,
+      ),
     )
-    expect(grouped).toHaveLength(1)
-    expect(grouped[0]?.head).toBe("main")
-    expect(grouped[0]?.aliases).toEqual(["alias"])
-    expect(stripYodl(grouped[0]?.entry.header ?? [])).toBe("main")
-    expect(stripYodl(grouped[0]?.entry.body ?? [])).toBe("desc")
-    expect(grouped[0]?.entry.section).toBe("")
+    expect({ head, aliases, section: entry.section }).toEqual({
+      head: "main",
+      aliases: ["alias"],
+      section: "",
+    })
+    expect(stripYodl(entry.header)).toBe("main")
+    expect(stripYodl(entry.body ?? [])).toBe("desc")
   })
 })

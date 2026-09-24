@@ -141,6 +141,28 @@ describe("resolveRedir", () => {
     "<&file",
     "<& file",
   ])("%s does not resolve", redir.miss)
+
+  test("a leading fd number never changes the answer", () => {
+    const ops = [
+      ...new Set(
+        [...corpus.redirection.values()].flatMap(d =>
+          d.groupOp === "<<[-]" ? ["<<", "<<-"] : [d.groupOp],
+        ),
+      ),
+    ]
+    if (!isNonEmpty(ops)) throw new Error("no redirections")
+    // Generated tails, not ids: a literal id (`>&_number`) hits verbatim,
+    // while its fd-prefixed form resolves through tail matching.
+    const tail = fcu.element(["", "file", " file", "1", " 2", "-", "p", "EOF"])
+    const raw = fc.tuple(fcu.element(ops), tail).map(([op, t]) => op + t)
+    fc.assert(
+      fc.property(fc.stringMatching(/^\d+$/), raw, (fd, r) => {
+        expect(resolve(corpus, "redirection", fd + r)).toEqual(
+          resolve(corpus, "redirection", r),
+        )
+      }),
+    )
+  })
 })
 
 describe("parens-agnostic flag resolvers", () => {
@@ -284,7 +306,7 @@ describe("resolve round-trip (corpus-wide)", () => {
     for (const [id, rec] of map) {
       const hit = resolve(corpus, cat, id)
       if (hit?.record.id !== id || hit.record !== rec)
-        mismatched.push({ id, got: hit?.record.id as string | undefined })
+        mismatched.push({ id, got: hit?.record.id })
     }
     expect(mismatched).toEqual([])
   })

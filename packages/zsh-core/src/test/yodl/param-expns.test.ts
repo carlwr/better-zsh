@@ -30,10 +30,7 @@ describe("parseParamExpns", () => {
       ")",
     )
     const docs = parseParamExpns(yo)
-    expect(docs.map(d => d.sig as string)).toEqual([
-      "${name-word}",
-      "${name:-word}",
-    ])
+    expect(docs.map(d => d.sig)).toEqual(["${name-word}", "${name:-word}"])
     expect(docs.map(d => d.orderInGroup)).toEqual([0, 1])
     expect(docs.every(d => d.subKind === "default")).toBe(true)
     expect(docs.every(d => d.groupSigs.length === 2)).toBe(true)
@@ -49,7 +46,7 @@ describe("parseParamExpns", () => {
       "item(tt(${)var(name)tt(:/)var(pattern)tt(/)var(repl)tt(}))(Replace.)",
     )
     const docs = parseParamExpns(yo)
-    expect(docs.map(d => d.sig as string)).toEqual([
+    expect(docs.map(d => d.sig)).toEqual([
       "${name/pattern/repl}",
       "${name//pattern/repl}",
       "${name:/pattern/repl}",
@@ -94,7 +91,7 @@ describe("parseParamExpns", () => {
       expectDocCorpus({
         docs,
         minCount: 25,
-        keyOf: d => d.sig as string,
+        keyOf: d => d.sig,
         descOf: d => d.desc,
         known: [
           "${name}",

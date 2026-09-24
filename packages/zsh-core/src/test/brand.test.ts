@@ -11,13 +11,13 @@ describe("mkDocumented", () => {
     const nonOption = fcu.element(docCategories).filter(c => c !== "option")
     fc.assert(
       fc.property(nonOption, fc.string(), (cat, s) => {
-        expect(mkDocumented(cat, s) as string).toBe(s.trim())
+        expect(mkDocumented(cat, s)).toBe(s.trim())
       }),
     )
   })
 
   test("is idempotent", () => {
-    expect(opt("_ a") as string).toBe("a")
+    expect(opt("_ a")).toBe("a")
     fc.assert(
       fc.property(fcu.element(docCategories), fc.string(), (cat, s) => {
         const once = mkDocumented(cat, s)
@@ -39,7 +39,7 @@ describe("mkDocumented option (normalizes case + strips underscores)", () => {
     ["NOTIFY", "notify"],
     ["no_autocd", "noautocd"],
   ])("%s -> %s", (raw, want) => {
-    expect(opt(raw) as string).toBe(want)
+    expect(opt(raw)).toBe(want)
   })
 
   test("result is lowercase, no underscores", () => {

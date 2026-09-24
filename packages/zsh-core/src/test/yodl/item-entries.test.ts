@@ -7,7 +7,7 @@
 import { describe, expect, test } from "vitest"
 import { loadCorpus } from "../../docs/corpus"
 import { docCategories } from "../../docs/taxonomy"
-import type { ItemEntry } from "../../docs/types"
+import type { ItemEntry, ZleWidgetDoc } from "../../docs/types"
 import { asNodes } from "../../docs/yodl/core/nodes"
 import { splitFlagBody } from "../../docs/yodl/extractors/flag-section"
 import { splitParamBody } from "../../docs/yodl/extractors/param-keys"
@@ -66,7 +66,7 @@ const summary = (entries: readonly ItemEntry[]): string[] =>
   entries.map(e => line(e.sigs, e.desc))
 
 // Only reachable through the section walk, unlike the other two.
-const widgetRecord = (body: string): unknown =>
+const widgetRecord = (body: string): ZleWidgetDoc | undefined =>
   parseZleWidgets(
     [
       "sect(Standard Widgets)",
@@ -81,7 +81,7 @@ const widgetRecord = (body: string): unknown =>
   )[0]
 
 const widgetSubItems = (body: string): readonly ItemEntry[] =>
-  (widgetRecord(body) as { subItems?: readonly ItemEntry[] }).subItems ?? []
+  widgetRecord(body)?.subItems ?? []
 
 const producers: readonly (readonly [
   string,
