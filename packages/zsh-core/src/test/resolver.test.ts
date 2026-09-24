@@ -5,6 +5,7 @@ import { describe, expect, test } from "vitest"
 import { buildResolverFixture } from "../../scripts/resolver-fixture"
 import { mkDocumented } from "../docs/brands"
 import { loadCorpus } from "../docs/corpus"
+import { flipOptFlagSign } from "../docs/normalize-option"
 import { type ResolverFeedback, resolve, resolveAll } from "../docs/resolver"
 import { type DocCategory, docCategories } from "../docs/taxonomy"
 
@@ -38,9 +39,17 @@ describe("resolveOption (single-letter flags)", () => {
     ["-f", "rcs", NEGATED],
     ["-T", "cdablevars"],
     ["-e", "errexit"],
-    ["+e", "errexit", NEGATED],
-    ["-J", "autocd"],
   ])("%s -> %s", option.hit)
+
+  test("every zsh-table flag resolves to its option; flipped sign negated", () => {
+    for (const o of corpus.option.values())
+      for (const f of o.flags.filter(f => f.emulations.includes("zsh"))) {
+        expect(resolve(corpus, "option", f.on + f.char)).toEqual({ record: o })
+        expect(
+          resolve(corpus, "option", flipOptFlagSign(f.on) + f.char),
+        ).toEqual({ record: o, feedback: NEGATED })
+      }
+  })
 
   test.each([
     // sh/ksh-only letter (NOTIFY): a bad option in plain zsh
@@ -325,11 +334,17 @@ describe("resolve properties (corpus-wide)", () => {
       .tuple(
         ...[...o.id].map(ch => {
           const up = ch.toUpperCase()
-          return fc.constantFrom(ch, up, `_${ch}`, `_${up}`)
+          return fcu.element([ch, up, `_${ch}`, `_${up}`])
         }),
       )
       .map(cs => ({ o, raw: cs.join("") })),
   )
+
+  test("every special param resolves through $id and ${id}", () => {
+    for (const [id, record] of corpus.special_param)
+      for (const raw of [`$${id}`, `\${${id}}`])
+        expect(resolve(corpus, "special_param", raw)).toEqual({ record })
+  })
 
   // Sound only while no option `x` coexists with an option `nox`.
   test("any case/underscore spelling of an option id resolves to it", () => {
@@ -366,7 +381,7 @@ describe("resolve properties (corpus-wide)", () => {
       const raw = isNonEmpty(inputs)
         ? fc.oneof(fcu.element(inputs), fc.string())
         : fc.string()
-      return fc.tuple(fc.constant(cat), raw)
+      return raw.map(r => [cat, r] as const)
     })
     const ws = fc.string({
       unit: fcu.element([" ", "\t", "\n", "\r", "\v", "\f"]),

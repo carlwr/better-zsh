@@ -1,5 +1,4 @@
 import * as fcu from "@carlwr/fastcheck-utils"
-import { isNonEmpty } from "@carlwr/typescript-extra"
 import fc from "fast-check"
 import { describe, expect, test } from "vitest"
 import { mkDocumented } from "../docs/brands"
@@ -8,12 +7,10 @@ import { mkDocumented_ } from "./id-fns"
 
 const opt = mkDocumented_("option")
 describe("mkDocumented", () => {
-  const nonOption = docCategories.filter(c => c !== "option")
-  if (!isNonEmpty(nonOption)) throw new Error("no non-option category")
-
   test("equals trim for every category but option", () => {
+    const nonOption = fcu.element(docCategories).filter(c => c !== "option")
     fc.assert(
-      fc.property(fcu.element(nonOption), fc.string(), (cat, s) => {
+      fc.property(nonOption, fc.string(), (cat, s) => {
         expect(mkDocumented(cat, s) as string).toBe(s.trim())
       }),
     )

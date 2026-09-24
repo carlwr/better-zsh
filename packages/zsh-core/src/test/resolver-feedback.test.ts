@@ -8,6 +8,8 @@
  * subscript).
  */
 
+import * as fcu from "@carlwr/fastcheck-utils"
+import fc from "fast-check"
 import { describe, expect, test } from "vitest"
 import { identity, mkDocumented } from "../docs/brands"
 import type { DocCorpus } from "../docs/corpus"
@@ -157,16 +159,21 @@ describe("resolve(corpus, 'option', raw) — short flags", () => {
 })
 
 describe("resolve(corpus, 'special_param', raw) — subscripted", () => {
-  test.each([
-    ["compstate[context]", "context"],
-    ["pipestatus[1]", "1"],
-    ["compstate[a.b]", "a.b"],
-  ])("%s → subscript %j", (raw, subscript) => {
-    const parent = raw.slice(0, raw.indexOf("["))
-    expect(resolve(spCorpus, "special_param", raw)).toEqual(
-      hitIn(spCorpus, "special_param", parent, {
-        kind: "subscripted",
-        subscript,
+  test("any subscript of a known name, bare or sigiled, surfaces as feedback", () => {
+    const input = fcu.record({
+      id: fcu.element(["compstate", "pipestatus"]),
+      subscript: fc.string({ minLength: 1 }),
+      wrap: fcu.element(["%", "$%", "${%}"]),
+    })
+    fc.assert(
+      fc.property(input, ({ id, subscript, wrap }) => {
+        const raw = wrap.replace("%", () => `${id}[${subscript}]`)
+        expect(resolve(spCorpus, "special_param", raw)).toEqual(
+          hitIn(spCorpus, "special_param", id, {
+            kind: "subscripted",
+            subscript,
+          }),
+        )
       }),
     )
   })
@@ -199,17 +206,6 @@ describe("resolve(corpus, 'special_param', raw) — $/${…} sigil strip", () =>
   ])("%s -> %s", (raw, id) => {
     expect(resolve(sigilCorpus, "special_param", raw)).toEqual(
       hitIn(sigilCorpus, "special_param", id),
-    )
-  })
-
-  test("sigiled subscript strips both sigil and `[...]`, with feedback", () => {
-    expect(
-      resolve(sigilCorpus, "special_param", "$compstate[context]"),
-    ).toEqual(
-      hitIn(sigilCorpus, "special_param", "compstate", {
-        kind: "subscripted",
-        subscript: "context",
-      }),
     )
   })
 
