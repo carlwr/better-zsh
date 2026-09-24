@@ -40,16 +40,21 @@ function provider(
   return new SemanticTokensProvider(corpus)
 }
 
+const rawTokens = (
+  text: string,
+  builtins: readonly string[],
+  reservedWords: readonly string[],
+) =>
+  provider(builtins, reservedWords).provideDocumentSemanticTokens(lineDoc(text))
+    .data as unknown as RawToken[]
+
 function tokens(
   text: string,
   builtins: readonly string[],
   reservedWords: readonly string[] = [],
 ) {
   const lines = text.split("\n")
-  const raw = provider(builtins, reservedWords).provideDocumentSemanticTokens(
-    lineDoc(text),
-  ).data as unknown as RawToken[]
-  return raw.map(t => ({
+  return rawTokens(text, builtins, reservedWords).map(t => ({
     word: lines[t.line]?.slice(t.start, t.start + t.length) ?? "",
     type: t.type,
     modifiers: t.modifiers,
@@ -97,14 +102,14 @@ describe("SemanticTokensProvider", () => {
   })
 
   test("tokens never span a line end, ascend, and paint only listed names", () => {
-    const builtins = ["echo", "read"]
-    const reservedWords = ["declare"]
+    const listed = fc.subarray(["echo", "read", "declare", "export"])
     const line = fc
       .array(
         fcu.element([
           "echo",
           "read",
           "declare",
+          "export",
           "if",
           "then",
           "fi",
@@ -127,21 +132,22 @@ describe("SemanticTokensProvider", () => {
       )
       .map(ws => ws.join(" "))
     fc.assert(
-      fc.property(fcu.nonEmptyArray(line, { maxLength: 5 }), lines => {
-        const doc = lineDoc(lines.join("\n"))
-        const raw = provider(
-          builtins,
-          reservedWords,
-        ).provideDocumentSemanticTokens(doc).data as unknown as RawToken[]
-        for (const t of raw) {
-          const text = lines[t.line] ?? ""
-          expect(t.start + t.length).toBeLessThanOrEqual(text.length)
-          const word = text.slice(t.start, t.start + t.length)
-          if (t.type === FUNCTION) expect(builtins).toContain(word)
-          else expect([...reservedWords, "if", "then", "fi"]).toContain(word)
-        }
-        expectStrictlyAscending(raw.map(t => [t.line, t.start]))
-      }),
+      fc.property(
+        fcu.nonEmptyArray(line, { maxLength: 5 }),
+        listed,
+        listed,
+        (lines, builtins, reservedWords) => {
+          const raw = rawTokens(lines.join("\n"), builtins, reservedWords)
+          for (const t of raw) {
+            const text = lines[t.line] ?? ""
+            expect(t.start + t.length).toBeLessThanOrEqual(text.length)
+            const word = text.slice(t.start, t.start + t.length)
+            if (t.type === FUNCTION) expect(builtins).toContain(word)
+            else expect([...reservedWords, "if", "then", "fi"]).toContain(word)
+          }
+          expectStrictlyAscending(raw.map(t => [t.line, t.start]))
+        },
+      ),
     )
   })
 })

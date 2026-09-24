@@ -55,11 +55,16 @@ export function wordMatches(
   return out
 }
 
-/** Whole-word occurrences, outside comments, of the word at `pos`. */
+/** Whole-word occurrences, outside comments, of the word at `pos`; undefined unless that word is one of them (not `foo` in `-foo`). */
 export function wordMatchesAt(
   doc: vscode.TextDocument,
   pos: vscode.Position,
 ): vscode.Range[] | undefined {
   const range = activeWordRangeAt(doc, pos)
-  return range && wordMatches(doc, doc.getText(range))
+  if (!range) return
+  const ms = wordMatches(doc, doc.getText(range))
+  const { line, character } = range.start
+  return ms.some(r => r.start.line === line && r.start.character === character)
+    ? ms
+    : undefined
 }

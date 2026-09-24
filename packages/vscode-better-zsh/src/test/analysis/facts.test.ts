@@ -254,15 +254,7 @@ describe("cmdHeadFactsOnLine invariants", () => {
     " \t;|&(){}><'\"\\#abcdefghijklmnopqrstuvwxyz0123456789$!_-=+"
   const lineArb = stringOver(SHELL_CHARS, 120)
 
-  test("never throws", () => {
-    fc.assert(
-      fc.property(lineArb, line => {
-        expect(() => cmdHeadFactsOnLine(line)).not.toThrow()
-      }),
-    )
-  })
-
-  test("emits non-overlapping facts with valid spans", () => {
+  test("never throws; emits non-overlapping facts with valid spans", () => {
     fc.assert(
       fc.property(lineArb, line => {
         assertFactInvariants(line, cmdHeadFactsOnLine(line))

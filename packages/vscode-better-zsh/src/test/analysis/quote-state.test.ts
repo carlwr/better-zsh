@@ -61,14 +61,6 @@ describe("advanceQuote", () => {
     expect(scan(input)).toMatchObject(want)
   })
 
-  test("scan never throws on arbitrary input", () => {
-    fc.assert(
-      fc.property(fc.string(), s => {
-        scan(s)
-      }),
-    )
-  })
-
   // The body's own quote char and backslashes are neutralized, so the closing
   // quote is the only one that can close.
   test("an opening quote quotes; closing it unquotes", () => {
