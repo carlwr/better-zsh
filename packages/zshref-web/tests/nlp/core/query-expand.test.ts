@@ -1,5 +1,6 @@
 // Named cases, then properties over generated rule sets and queries.
 
+import * as fcu from "@carlwr/fastcheck-utils"
 import { allUnique, withoutFirstSubstring } from "@carlwr/typescript-extra"
 import fc from "fast-check"
 import { describe, expect, it } from "vitest"
@@ -55,8 +56,8 @@ const arbTerm = fc.oneof(
   fc.tuple(arbWord, arbWord).map(ws => ws.join(" ")),
 )
 const arbRules = fc.array(
-  fc.record({
-    when: fc.array(arbTerm, { minLength: 1, maxLength: 3 }),
+  fcu.record({
+    when: fcu.nonEmptyArray(arbTerm, { maxLength: 3 }),
     add: arbWord,
   }),
   { maxLength: 6 },

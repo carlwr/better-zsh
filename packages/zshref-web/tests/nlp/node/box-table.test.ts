@@ -1,3 +1,4 @@
+import * as fcu from "@carlwr/fastcheck-utils"
 import { trim } from "@carlwr/typescript-extra"
 import fc from "fast-check"
 import { describe, expect, it } from "vitest"
@@ -33,8 +34,7 @@ describe("box table", () => {
       .filter(s => !/[\n│]/.test(s))
     fc.assert(
       fc.property(
-        fc.array(fc.record({ head: cell, right: fc.boolean() }), {
-          minLength: 1,
+        fcu.nonEmptyArray(fcu.record({ head: cell, right: fc.boolean() }), {
           maxLength: 4,
         }),
         fc.array(fc.array(cell, { maxLength: 4 }), { maxLength: 4 }),

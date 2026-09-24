@@ -2,6 +2,7 @@
 // what the arithmetic must mean — unit cases, then properties over small
 // synthetic indexes (`tests/_arbs.ts`).
 
+import * as fcu from "@carlwr/fastcheck-utils"
 import fc from "fast-check"
 import { beforeAll, describe, expect, it } from "vitest"
 import {
@@ -238,10 +239,8 @@ describe("rank properties", () => {
         expect(ranked.map(m => recordKey(m.rec)).sort()).toEqual(
           r.index.records.map(x => recordKey(x.text)).sort(),
         )
-        for (let i = 1; i < ranked.length; i++) {
-          const [a, b] = [ranked[i - 1], ranked[i]]
-          if (a && b) expect(a.score).toBeGreaterThanOrEqual(b.score)
-        }
+        const scores = ranked.map(m => m.score)
+        expect(scores).toEqual([...scores].sort((a, b) => b - a))
       }),
       INDEX_RUNS,
     )
@@ -304,7 +303,7 @@ describe("rank properties", () => {
     fc.assert(
       fc.property(
         arbRanking,
-        fc.array(fc.boolean(), { minLength: 8, maxLength: 8 }),
+        fcu.nonEmptyArray(fc.boolean(), { maxLength: 8 }),
         (r, flips) => {
           expect(
             rank(recase(r.query, flips), r.queryVec, r.index, rules),

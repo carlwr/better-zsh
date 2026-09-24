@@ -3,6 +3,7 @@
 // checks and one synthetic entry through the whole pipeline. The held-out
 // corpus is loaded (that is the loader's job) and never printed.
 
+import * as fcu from "@carlwr/fastcheck-utils"
 import { docCategories, loadCorpus } from "@carlwr/zsh-core"
 import fc from "fast-check"
 import { beforeAll, describe, expect, it } from "vitest"
@@ -127,24 +128,28 @@ describe("scoreEntry", () => {
 })
 
 describe("scoreEntry properties", () => {
-  const arbHit = fc.record({
-    category: fc.constantFrom("option", "builtin"),
-    id: fc.constantFrom("a", "b", "c"),
-  })
-  const arbEntry = fc
-    .record({
-      limit: fc.integer({ min: 1, max: 4 }),
-      topN: fc.option(fc.integer({ min: 1, max: 4 }), { nil: undefined }),
-      weight: fc.double({ min: 0, max: 3, noNaN: true }),
-      expected: fc.array(
-        arbHit.chain(h =>
-          fc
-            .double({ min: -3, max: 3, noNaN: true })
-            .map(score => ({ ...h, score })),
+  const hit = {
+    category: fcu.element(["option", "builtin"]),
+    id: fcu.element(["a", "b", "c"]),
+  }
+  const arbHit = fcu.record(hit)
+  // limit, topN and weight may be absent: the schema defaults are in play too
+  const arbEntry = fcu
+    .record(
+      {
+        limit: fc.integer({ min: 1, max: 4 }),
+        topN: fc.integer({ min: 1, max: 4 }),
+        weight: fc.double({ min: 0, max: 3, noNaN: true }),
+        expected: fcu.nonEmptyArray(
+          fcu.record({
+            ...hit,
+            score: fc.double({ min: -3, max: 3, noNaN: true }),
+          }),
+          { maxLength: 5 },
         ),
-        { minLength: 1, maxLength: 5 },
-      ),
-    })
+      },
+      { requiredKeys: ["expected"] },
+    )
     .map(e => entry({ ...q, ...e }))
 
   it("the score: per negative its magnitude when absent, its score when present; per positive its score once per record when present; a warning per item missed", () => {
@@ -212,7 +217,7 @@ describe("aggregateScores", () => {
   })
 
   it("sums the entries; the average is 0 without expected weight", () => {
-    const arbScored = fc.record({
+    const arbScored = fcu.record({
       score: fc.double({ min: -5, max: 5, noNaN: true }),
       expectedWeight: fc.double({ min: 0, max: 5, noNaN: true }),
       matched: fc.nat({ max: 3 }),

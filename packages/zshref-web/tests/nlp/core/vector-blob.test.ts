@@ -1,6 +1,7 @@
 // The binary codec on its own: what it round-trips, and every way a blob is
 // rejected. Runtime-agnostic — no corpus, no model, no files.
 
+import * as fcu from "@carlwr/fastcheck-utils"
 import fc from "fast-check"
 import { describe, expect, it } from "vitest"
 import { perView } from "../../../nlp/core/types"
@@ -17,7 +18,7 @@ import { arbViewVectors } from "../../_arbs"
 const arbBlob: fc.Arbitrary<VectorBlob> = fc
   .integer({ min: 0, max: 5 })
   .chain(dims =>
-    fc.record({
+    fcu.record({
       dims: fc.constant(dims),
       corpusHash: fc.string(),
       vectors: fc.array(arbViewVectors(dims), { maxLength: 4 }),
@@ -121,5 +122,20 @@ describe("decode rejections", () => {
     ],
   ])("rejects a blob %s", (_label, mangle, reason) => {
     expect(() => decodeOf(mangle(bytesOf(tinyBlob)))).toThrow(reason)
+  })
+
+  it("rejects every blob cut short or grown", () => {
+    fc.assert(
+      fc.property(
+        arbBlob,
+        fc.nat(),
+        fc.integer({ min: 1, max: 8 }),
+        (blob, cut, extra) => {
+          const b = bytesOf(blob)
+          expect(() => decodeOf(b.slice(0, cut % b.length))).toThrow()
+          expect(() => decodeOf(grow(extra)(b))).toThrow()
+        },
+      ),
+    )
   })
 })

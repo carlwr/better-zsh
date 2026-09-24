@@ -2,6 +2,7 @@
 // Pure; excluded from the test glob (not *.test.ts).
 
 import * as fcu from "@carlwr/fastcheck-utils"
+import { mapNonEmpty, type NonEmpty } from "@carlwr/typescript-extra"
 import fc from "fast-check"
 
 import { type LookupIndex, lookupIndex } from "../nlp/core/lookup-map"
@@ -86,7 +87,7 @@ export const arbQuery: fc.Arbitrary<string> = fc
   .tuple(arbText(6), fc.string({ unit: "grapheme-ascii", maxLength: 6 }))
   .map(([words, noise]) => `${words} ${noise}`)
 
-export const arbRecord: fc.Arbitrary<IndexedRecord> = fc
+export const arbRecord: fc.Arbitrary<IndexedRecord> = fcu
   .record({
     cat: fcu.element(CATEGORIES),
     ident: fcu.element(IDENTITIES),
@@ -107,17 +108,18 @@ export const arbRecord: fc.Arbitrary<IndexedRecord> = fc
     vectors: syntheticVectors(cat.category, ident.id),
   }))
 
+export type NonEmptyIndex = VectorIndex & { records: NonEmpty<IndexedRecord> }
+
 /** Identities unique, as in a real index: the sort is total only then. */
-export const arbIndex: fc.Arbitrary<VectorIndex> = fc
-  .uniqueArray(arbRecord, {
-    minLength: 1,
+export const arbIndex: fc.Arbitrary<NonEmptyIndex> = fcu
+  .nonEmptyUniqueArray(arbRecord, {
     maxLength: 7,
     selector: r => `${r.text.category}\0${r.text.id}`,
   })
   .map(syntheticIndexOf)
 
 /** A query and its synthetic vector over an index. */
-export const arbRanking = fc
+export const arbRanking = fcu
   .record({ index: arbIndex, query: arbQuery })
   .map(({ index, query }) => ({
     index,
@@ -126,15 +128,15 @@ export const arbRanking = fc
   }))
 
 /** Some of the index's identities, and some it lacks. */
-export const arbRecordIds = (index: VectorIndex): fc.Arbitrary<RecordId[]> =>
+export const arbRecordIds = (index: NonEmptyIndex): fc.Arbitrary<RecordId[]> =>
   fc.array(
     fc
       .oneof(
         {
           weight: 3,
-          arbitrary: fc.constantFrom(...index.records.map(r => r.text)),
+          arbitrary: fcu.element(mapNonEmpty(index.records, r => r.text)),
         },
-        fc.record({
+        fcu.record({
           category: fcu.element(["absent", ...CATEGORIES.map(c => c.category)]),
           id: fcu.element(["missing", ...IDENTITIES.map(i => i.id)]),
         }),
@@ -149,11 +151,11 @@ export const arbLookup = (index: VectorIndex): fc.Arbitrary<LookupIndex> =>
     .uniqueArray(
       fc
         .tuple(
-          fc.constantFrom(...index.records.map(r => r.text), {
-            category: "builtin",
-            id: "missing",
-          }),
-          fc.constantFrom("", "the ", "Option "),
+          fcu.element<RecordId>([
+            { category: "builtin", id: "missing" },
+            ...index.records.map(r => r.text),
+          ]),
+          fcu.element(["", "the ", "Option "]),
         )
         .map(([rec, prefix]) => ({
           raw: `${prefix}${rec.id}`,
@@ -176,7 +178,7 @@ export type BoostWeights = Tuning["boosts"]
 const unit = fc.double({ min: 0, max: 1, noNaN: true })
 
 /** structured ≤ 1 − body, as the range check admits. */
-export const arbSemanticWeights: fc.Arbitrary<SemanticWeights> = fc
+export const arbSemanticWeights: fc.Arbitrary<SemanticWeights> = fcu
   .record({
     body: unit,
     frac: unit,
@@ -192,21 +194,21 @@ export const arbSemanticWeights: fc.Arbitrary<SemanticWeights> = fc
 /** Boost weights on a 1e-3 grid. */
 const grid = (max: number): fc.Arbitrary<number> =>
   fc.integer({ min: 0, max: max * 1000 }).map(i => i / 1000)
-export const arbBoostWeights: fc.Arbitrary<BoostWeights> = fc.record({
+export const arbBoostWeights: fc.Arbitrary<BoostWeights> = fcu.record({
   category: grid(0.3),
   exact_word_increment: grid(0.1),
-  word_overlap: fc.record({
+  word_overlap: fcu.record({
     scale: grid(0.5),
     half_sat: fc.integer({ min: 1, max: 16 }),
   }),
 })
 
 /** A whole tuning; the sweep's knob ranges, not the load-time range checks. */
-export const arbTuning: fc.Arbitrary<Tuning> = fc.record({
+export const arbTuning: fc.Arbitrary<Tuning> = fcu.record({
   semantic_weights: arbSemanticWeights,
   boosts: arbBoostWeights,
-  penalties: fc.record({ category_rarity_max: grid(0.2) }),
-  lexical: fc.record({
+  penalties: fcu.record({ category_rarity_max: grid(0.2) }),
+  lexical: fcu.record({
     min_discriminating_word_len: fc.integer({ min: 1, max: 6 }),
     min_significant_word_len: fc.integer({ min: 1, max: 4 }),
   }),

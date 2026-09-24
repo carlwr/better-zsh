@@ -4,6 +4,7 @@
 // itself runs over the parity fixture's miniature index, so it needs no
 // model.
 
+import * as fcu from "@carlwr/fastcheck-utils"
 import { loadCorpus } from "@carlwr/zsh-core"
 import fc from "fast-check"
 import { describe, expect, it } from "vitest"
@@ -178,8 +179,8 @@ describe("gain", () => {
 })
 
 describe("score properties", () => {
-  const arbVote: fc.Arbitrary<Vote> = fc.record({
-    category: fc.constantFrom("a", "b", "c"),
+  const arbVote: fc.Arbitrary<Vote> = fcu.record({
+    category: fcu.element(["a", "b", "c"]),
     weight: fc.double({ min: 0.1, max: 5, noNaN: true }),
     gain: fc.double({ min: 0, max: 1, noNaN: true }),
     split: arbSplit,
@@ -211,29 +212,37 @@ describe("score properties", () => {
 
 describe("fixture shape", () => {
   const arbNum = fc.double({ min: 0.5, max: 8, noNaN: true })
-  const optional = <T>(arb: fc.Arbitrary<T>) =>
-    fc.option(arb, { nil: undefined })
-  const arbRaw = fc.record({
-    version: fc.constant(SENTENCE_FIXTURE_VERSION),
-    "default-weight": optional(arbNum),
-    "default-target-depth": optional(arbNum),
-    entries: fc.array(
-      fc.record({
-        query: fc.constantFrom("a", "b"),
-        want: fc.array(
-          fc.record({
-            cat: fc.constantFrom("c", "d"),
-            id: fc.constantFrom("x", "y"),
-            d: optional(arbNum),
-            w: optional(arbNum),
-          }),
-          { minLength: 1, maxLength: 3 },
+  // Optional keys absent, never `undefined`: as YAML leaves them.
+  const arbRaw = fcu.record(
+    {
+      version: fc.constant(SENTENCE_FIXTURE_VERSION),
+      "default-weight": arbNum,
+      "default-target-depth": arbNum,
+      entries: fc.array(
+        fcu.record(
+          {
+            query: fcu.element(["a", "b"]),
+            want: fcu.nonEmptyArray(
+              fcu.record(
+                {
+                  cat: fcu.element(["c", "d"]),
+                  id: fcu.element(["x", "y"]),
+                  d: arbNum,
+                  w: arbNum,
+                },
+                { requiredKeys: ["cat", "id"] },
+              ),
+              { maxLength: 3 },
+            ),
+            holdout: fc.boolean(),
+          },
+          { requiredKeys: ["query", "want"] },
         ),
-        holdout: optional(fc.boolean()),
-      }),
-      { maxLength: 3 },
-    ),
-  })
+        { maxLength: 3 },
+      ),
+    },
+    { requiredKeys: ["version", "entries"] },
+  )
 
   it("resolves an item's depth and weight: its own, else the fixture's default, else the built-in; the split from the flag", () => {
     fc.assert(

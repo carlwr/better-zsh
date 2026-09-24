@@ -4,12 +4,14 @@
 // model), over generated indexes, entries, lookups and tunings, and over a
 // capped slice of the real bench when staged.
 
+import * as fcu from "@carlwr/fastcheck-utils"
+import { mapNonEmpty } from "@carlwr/typescript-extra"
 import { loadCorpus } from "@carlwr/zsh-core"
 import fc from "fast-check"
 import { describe, expect, it } from "vitest"
 import { LookupMapSchema, lookupIndex } from "../../../nlp/core/lookup-map"
 import type { Tuning } from "../../../nlp/core/rules"
-import { DIMS, type VectorIndex } from "../../../nlp/core/types"
+import { DIMS } from "../../../nlp/core/types"
 import { syntheticVec } from "../../../nlp/core/vec"
 import { loadEvalAssets } from "../../../nlp/node/eval/assets"
 import { buildMechanical } from "../../../nlp/node/eval/mechanical"
@@ -39,6 +41,7 @@ import {
   arbRecordIds,
   arbSplit,
   arbTuning,
+  type NonEmptyIndex,
 } from "../../_arbs"
 import { artifactGate, parityRankAssets, STAGED } from "../../_helpers"
 
@@ -147,12 +150,12 @@ describe("over the parity index", () => {
 
 // --- generated ------------------------------------------------------------------
 
-const arbEntries = (index: VectorIndex) =>
+const arbEntries = (index: NonEmptyIndex) =>
   fc.array(
-    fc.record({
+    fcu.record({
       query: fc.oneof(
         arbQuery,
-        fc.constantFrom(...index.records.map(r => r.text.id)),
+        fcu.element(mapNonEmpty(index.records, r => r.text.id)),
         fc.constant(""),
       ),
       want: arbRecordIds(index).map(ids =>
@@ -166,7 +169,7 @@ const arbEntries = (index: VectorIndex) =>
 describe("over generated inputs", () => {
   it("grades as gradeEntries does for any index, entries, lookup and tuning", () => {
     const arb = arbIndex.chain(index =>
-      fc.record({
+      fcu.record({
         index: fc.constant(index),
         lookup: arbLookup(index),
         entries: arbEntries(index),

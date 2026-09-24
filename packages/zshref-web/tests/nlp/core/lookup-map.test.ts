@@ -2,6 +2,7 @@
 // hand-made maps and rankings, then as properties (the build side and the
 // map's coverage: tests/nlp/node/lookup-map.test.ts).
 
+import * as fcu from "@carlwr/fastcheck-utils"
 import fc from "fast-check"
 import { describe, expect, it } from "vitest"
 import { lookupIndex, promoteToTop } from "../../../nlp/core/lookup-map"
@@ -53,8 +54,8 @@ describe("promoteToTop", () => {
 // --- properties ---------------------------------------------------------------
 
 const arbId = fc.stringMatching(/^[a-z?>_]{1,3}$/)
-const arbRecordId: fc.Arbitrary<RecordId> = fc.record({
-  category: fc.constantFrom("option", "builtin", "redirection"),
+const arbRecordId: fc.Arbitrary<RecordId> = fcu.record({
+  category: fcu.element(["option", "builtin", "redirection"]),
   id: arbId,
 })
 /** Distinct identities, scores descending as the ranker leaves them. */
@@ -87,7 +88,7 @@ describe("promoteToTop properties", () => {
 })
 
 const arbMap = fc.uniqueArray(
-  fc.record({
+  fcu.record({
     raw: fc.stringMatching(/^[A-Za-z_]{1,4}$/),
     category: fc.constant("option"),
     id: arbId,
@@ -101,7 +102,7 @@ describe("lookupIndex properties", () => {
       fc.property(
         arbMap,
         fc.stringMatching(/^[A-Za-z_]{0,4}$/),
-        fc.constantFrom("", " ", "\t", "  "),
+        fcu.element(["", " ", "\t", "  "]),
         (entries, q, pad) => {
           const idx = lookupIndex({ version: 1, entries })
           const byRaw = new Map(

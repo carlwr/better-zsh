@@ -2,7 +2,8 @@
 // the embed text, the category set, the promote, the cut. Scores are the
 // parity fixture's business.
 
-import { allUnique } from "@carlwr/typescript-extra"
+import * as fcu from "@carlwr/fastcheck-utils"
+import { allUnique, mapNonEmpty } from "@carlwr/typescript-extra"
 import fc from "fast-check"
 import { beforeAll, describe, expect, it } from "vitest"
 import { lookupIndex } from "../../../nlp/core/lookup-map"
@@ -88,19 +89,17 @@ describe("search", () => {
 
 describe("search properties", () => {
   const arbArgs = arbIndex.chain(index =>
-    fc.record({
+    fcu.record({
       index: fc.constant(index),
       lookup: arbLookup(index),
       query: fc.oneof(
         arbQuery,
-        fc.constantFrom(...index.records.map(r => ` ${r.text.id} `)),
+        fcu.element(mapNonEmpty(index.records, r => ` ${r.text.id} `)),
       ),
       limit: fc.integer({ min: 0, max: 8 }),
       categories: fc.option(
         fc
-          .uniqueArray(
-            fc.constantFrom("option", "builtin", "special_param", "x"),
-          )
+          .uniqueArray(fcu.element(["option", "builtin", "special_param", "x"]))
           .map(cs => new Set<string>(cs)),
         { nil: null },
       ),

@@ -3,6 +3,7 @@
 // reporters over the staged assets are smoked in reporters.test.ts. No
 // assertion holds a number from a real eval.
 
+import * as fcu from "@carlwr/fastcheck-utils"
 import { loadCorpus } from "@carlwr/zsh-core"
 import fc from "fast-check"
 import { describe, expect, it } from "vitest"
@@ -227,6 +228,25 @@ describe("overrides", () => {
   })
 })
 
+const arbRank = fc.integer({ min: 1, max: 12 })
+const arbGain = fc.double({ min: 0, max: 1, noNaN: true })
+const arbItem: fc.Arbitrary<ItemRes> = fcu.record({
+  query: fcu.element(["q", "r"]),
+  cat: fcu.element(["option", "builtin"]),
+  id: fcu.element(["x", "y"]),
+  split: arbSplit,
+  rank: arbRank,
+  gain: arbGain,
+  depth: fc.integer({ min: 1, max: 4 }),
+})
+// One item under two configs: only its rank and gain may differ.
+const arbPairs = fc.array(
+  fc
+    .tuple(arbItem, arbRank, arbGain)
+    .map(([b, rank, gain]) => [b, { ...b, rank, gain }] as const),
+  { maxLength: 8 },
+)
+
 describe("churn", () => {
   it("counts moved, up, down grossly and nets the gain", () => {
     const base = [
@@ -258,25 +278,6 @@ describe("churn", () => {
     expect(() => churn(base, cand.slice(1), false)).toThrow(/aligned/)
   })
 
-  const arbRank = fc.integer({ min: 1, max: 12 })
-  const arbGain = fc.double({ min: 0, max: 1, noNaN: true })
-  const arbItem: fc.Arbitrary<ItemRes> = fc.record({
-    query: fc.constantFrom("q", "r"),
-    cat: fc.constantFrom("option", "builtin"),
-    id: fc.constantFrom("x", "y"),
-    split: arbSplit,
-    rank: arbRank,
-    gain: arbGain,
-    depth: fc.integer({ min: 1, max: 4 }),
-  })
-  // One item under two configs: only its rank and gain may differ.
-  const arbPairs = fc.array(
-    fc
-      .tuple(arbItem, arbRank, arbGain)
-      .map(([b, rank, gain]) => [b, { ...b, rank, gain }] as const),
-    { maxLength: 8 },
-  )
-
   it("the same items churn nothing; crossings are movers; netGain is the gain sum of the scope", () => {
     fc.assert(
       fc.property(arbPairs, fc.boolean(), (pairs, trainOnly) => {
@@ -295,6 +296,30 @@ describe("churn", () => {
         expect(c.netGain).toBeCloseTo(
           scope.reduce((s, [b, a]) => s + a.gain - b.gain, 0),
           9,
+        )
+      }),
+    )
+  })
+
+  it("swapping base and candidate swaps crossings and negates netGain; train-only is the train pairs' churn", () => {
+    fc.assert(
+      fc.property(arbPairs, fc.boolean(), (pairs, trainOnly) => {
+        const base = pairs.map(([b]) => b)
+        const cand = pairs.map(([, a]) => a)
+        const c = churn(base, cand, trainOnly)
+        expect(churn(cand, base, trainOnly)).toEqual({
+          moved: c.moved,
+          up: c.down,
+          down: c.up,
+          netGain: expect.closeTo(-c.netGain, 9),
+        })
+        const train = pairs.filter(([b]) => b.split === "train")
+        expect(churn(base, cand, true)).toEqual(
+          churn(
+            train.map(([b]) => b),
+            train.map(([, a]) => a),
+            false,
+          ),
         )
       }),
     )
@@ -354,6 +379,22 @@ describe("diff report", () => {
       "[x] 6 items, 5 moved rank; depth-crossings: 2 fail→pass, 2 pass→fail;",
     )
     expect(all).toContain('q="hidden" ⬆PASS')
+  })
+
+  it("a train-only report prints a line per mover, none for a holdout query", () => {
+    const hide = (x: ItemRes): ItemRes =>
+      x.split === "holdout" ? { ...x, query: "hidden" } : x
+    fc.assert(
+      fc.property(arbPairs, pairs => {
+        const base = pairs.map(([b]) => hide(b))
+        const cand = pairs.map(([, a]) => hide(a))
+        const r = renderDiffReport("t", base, cand, true)
+        expect(r).not.toContain('q="hidden"')
+        expect(r.split("\n").filter(l => l.includes(" q="))).toHaveLength(
+          churn(base, cand, true).moved,
+        )
+      }),
+    )
   })
 
   it("caps the movers at 40 and counts the rest", () => {

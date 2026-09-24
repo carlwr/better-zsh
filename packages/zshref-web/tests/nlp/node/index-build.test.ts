@@ -153,14 +153,14 @@ describe("writeIndex / readIndex", () => {
   const arbIndex: fc.Arbitrary<VectorIndex> = fc
     .integer({ min: 0, max: 4 })
     .chain(dims =>
-      fc.record({
+      fcu.record({
         version: fc.constant(INDEX_VERSION),
         model: fc.string(),
         dims: fc.constant(dims),
         normalized: fc.boolean(),
         corpus_hash: fc.string(),
         records: fc.array(
-          fc.record({
+          fcu.record({
             text: fcu
               .record(
                 {

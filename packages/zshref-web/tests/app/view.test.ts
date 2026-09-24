@@ -1,3 +1,4 @@
+import * as fcu from "@carlwr/fastcheck-utils"
 import fc from "fast-check"
 import { describe, expect, it } from "vitest"
 
@@ -44,27 +45,32 @@ describe("viewState", () => {
     expect(viewState({ ...RESULTS, ...patch }).kind).toBe(kind)
   })
 
-  it("artifacts error outranks all", () => {
-    const v = viewState({
-      artifactsErr: "boom",
-      hasArtifacts: false,
-      searching: true,
-      embedderReady: false,
-      searchErr: "nope",
-      firstRun: true,
-      matchCount: 0,
+  it("an artifacts error outranks all, a cold search any search error; results or empty only after a settled search", () => {
+    const inputs: fc.Arbitrary<ViewInputs> = fcu.record({
+      artifactsErr: fcu.element(["", "boom"]),
+      hasArtifacts: fc.boolean(),
+      searching: fc.boolean(),
+      embedderReady: fc.boolean(),
+      searchErr: fcu.element(["", "nope"]),
+      firstRun: fc.boolean(),
+      matchCount: fc.nat({ max: 3 }),
     })
-    expect(v.kind).toBe("artifacts-error")
-  })
-
-  it("cold search outranks stale error", () => {
-    const v = viewState({
-      ...RESULTS,
-      searching: true,
-      embedderReady: false,
-      searchErr: "stale",
-    })
-    expect(v.kind).toBe("searching-cold")
+    fc.assert(
+      fc.property(inputs, s => {
+        const { kind } = viewState(s)
+        if (s.artifactsErr) expect(kind).toBe("artifacts-error")
+        else if (s.hasArtifacts && s.searching && !s.embedderReady)
+          expect(kind).toBe("searching-cold")
+        if (kind === "results" || kind === "empty")
+          expect(s).toMatchObject({
+            artifactsErr: "",
+            hasArtifacts: true,
+            searching: false,
+            searchErr: "",
+            firstRun: false,
+          })
+      }),
+    )
   })
 
   it("error branches carry the message", () => {
@@ -150,13 +156,13 @@ describe("record links", () => {
     expect(recordHref({ category: "special_param", id })).toBe(href)
   })
 
-  it("href is two decodable segments for any id", () => {
+  it("href is two decodable segments for any identity", () => {
+    const segment = fc.string({ minLength: 1 })
     fc.assert(
-      fc.property(fc.string({ minLength: 1 }), id => {
-        const href = recordHref({ ...rec, id })
-        const [, r, category, encoded, ...rest] = href.split("/")
-        expect([r, category, rest]).toEqual(["r", "builtin", []])
-        expect(decodeURIComponent(encoded ?? "")).toBe(id)
+      fc.property(fcu.record({ category: segment, id: segment }), want => {
+        const [, r, ...segs] = recordHref(want).split("/")
+        expect(r).toBe("r")
+        expect(segs.map(decodeURIComponent)).toEqual([want.category, want.id])
       }),
     )
   })

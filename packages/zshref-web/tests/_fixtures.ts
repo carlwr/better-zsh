@@ -32,7 +32,9 @@ export const syntheticVectors = (category: string, id: string): ViewVectors =>
   perView(view => syntheticVec([category, id, view]))
 
 /** The index envelope around `records` (synthetic vectors expected). */
-export const syntheticIndexOf = (records: IndexedRecord[]): VectorIndex => ({
+export const syntheticIndexOf = <R extends IndexedRecord[]>(
+  records: R,
+): VectorIndex & { records: R } => ({
   version: INDEX_VERSION,
   model: "synthetic",
   dims: DIMS,
