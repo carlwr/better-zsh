@@ -133,7 +133,7 @@ describe("slices", () => {
   const classify = (id: string): string[] =>
     SLICES.filter(s => s.pred(id)).map(s => s.label)
 
-  it("bucket by code-point length and punctuation, overlapping", () => {
+  it("are the length buckets and punctuation-only; `_` is punctuation", () => {
     expect(SLICES.map(s => s.label)).toEqual([
       "id length 1",
       "id length 2",
@@ -141,14 +141,30 @@ describe("slices", () => {
       "id length 4",
       "punctuation-only",
     ])
-    expect(classify("#")).toEqual(["id length 1", "punctuation-only"])
-    expect(classify("fc")).toEqual(["id length 2"])
+    expect(classify("_")).toEqual(["id length 1", "punctuation-only"])
     expect(classify(">>_word")).toEqual([])
-    expect(classify("${")).toEqual(["id length 2", "punctuation-only"])
-    expect(classify("_arguments")).toEqual([])
-    expect(classify("")).toEqual([])
-    // Code points, not UTF-16 units; letters of any script are alphanumeric.
-    expect(classify("é😀")).toEqual(["id length 2"])
+  })
+
+  // Code points, not UTF-16 units; letters and digits of any script are alphanumeric.
+  it("length slices count code points; punctuation-only means no alphanumeric", () => {
+    const char = fc.oneof(
+      fcu
+        .element(["a", "Z", "1", "é", "٣", "𝐀"])
+        .map(c => ({ c, alnum: true })),
+      fcu
+        .element(["#", "$", "{", "_", ">", "😀"])
+        .map(c => ({ c, alnum: false })),
+    )
+    fc.assert(
+      fc.property(fc.array(char, { maxLength: 6 }), cs => {
+        const n = cs.length
+        const punct = n > 0 && cs.every(x => !x.alnum)
+        expect(classify(cs.map(x => x.c).join(""))).toEqual([
+          ...(n >= 1 && n <= 4 ? [`id length ${n}`] : []),
+          ...(punct ? ["punctuation-only"] : []),
+        ])
+      }),
+    )
   })
 })
 

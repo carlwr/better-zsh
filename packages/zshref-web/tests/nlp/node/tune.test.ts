@@ -441,26 +441,20 @@ describe("sweep marks and rows", () => {
     expect(sweepMarks([], 0.6)).toEqual([])
   })
 
-  it("exactly one best row when there are rows, the last maximum; (base) only within the epsilon", () => {
-    // A coarse grid, so maxima tie.
+  it("the last maximum is the one best row; every other base-valued row is (base)", () => {
+    // A coarse grid, so maxima tie; grid steps dwarf the epsilon.
     const score = fc.integer({ min: 0, max: 5 }).map(i => i / 5)
     fc.assert(
       fc.property(
-        fc.array(score, { maxLength: 8 }),
+        fcu.nonEmptyArray(score, { maxLength: 8 }),
         score,
         (combined, base) => {
-          const marks = sweepMarks(combined, base)
-          expect(marks).toHaveLength(combined.length)
-          expect(marks.filter(m => m === " ◄ best")).toHaveLength(
-            combined.length === 0 ? 0 : 1,
+          const best = combined.lastIndexOf(Math.max(...combined))
+          expect(sweepMarks(combined, base)).toEqual(
+            combined.map((c, i) =>
+              i === best ? " ◄ best" : c === base ? " (base)" : "",
+            ),
           )
-          const best = marks.indexOf(" ◄ best")
-          if (best !== -1)
-            expect(best).toBe(combined.lastIndexOf(Math.max(...combined)))
-          marks.forEach((m, i) => {
-            if (m === " (base)") expect(combined[i]).toBe(base)
-            if (m === "") expect(combined[i]).not.toBe(base)
-          })
         },
       ),
     )
