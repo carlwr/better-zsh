@@ -1,6 +1,9 @@
+import * as fcu from "@carlwr/fastcheck-utils"
+import fc from "fast-check"
 import { describe, expect, test } from "vitest"
-import { funcDecl, funcDecls } from "../../document/funcs"
-import { lineDoc } from "../test-util"
+import { funcAt, funcDecl, funcDecls } from "../../document/funcs"
+import { wordMatches } from "../../document/words"
+import { lineDoc, pos, wordDoc } from "../test-util"
 
 describe("funcDecls", () => {
   test("both declaration forms, in order; first declaration wins by name", () => {
@@ -90,5 +93,41 @@ describe("function docs", () => {
       ["a", "doc a"],
       ["b", "doc b"],
     ])
+  })
+})
+
+describe("funcAt", () => {
+  test("hits a declared function's call, not a `-`-glued word", () => {
+    const doc = wordDoc("foo() {}\nfoo -foo")
+    expect(funcAt(doc, pos(1, 1))?.decl.name).toBe("foo")
+    expect(funcAt(doc, pos(1, 6))).toBeUndefined()
+  })
+
+  // Rename edits `wordMatches` of the hit's name: the word under the cursor
+  // must be among them.
+  test("a hit's range is among its name's whole-word matches", () => {
+    const lineArb = fc
+      .array(fcu.element(["foo", "-foo", "foo-x", "--foo", "# foo", ";"]), {
+        maxLength: 5,
+      })
+      .map(ws => ws.join(" "))
+    fc.assert(
+      fc.property(fc.array(lineArb, { maxLength: 3 }), lines => {
+        const doc = wordDoc(["foo() {}", ...lines].join("\n"))
+        lines.forEach((text, i) => {
+          for (let c = 0; c <= text.length; c++) {
+            const hit = funcAt(doc, pos(i + 1, c))
+            if (!hit) continue
+            const at = [hit.range.start.line, hit.range.start.character]
+            expect(
+              wordMatches(doc, hit.decl.name).map(r => [
+                r.start.line,
+                r.start.character,
+              ]),
+            ).toContainEqual(at)
+          }
+        })
+      }),
+    )
   })
 })

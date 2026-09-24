@@ -2,7 +2,7 @@ import * as vscode from "vscode"
 import { isFuncDeclFact, positionAt } from "../analysis/facts"
 import { docCache } from "./cache"
 import { docAnalysis } from "./facts"
-import { activeWordRangeAt } from "./words"
+import { wholeWordRangeAt } from "./words"
 
 // A `#!` line is never a docstring.
 const COMMENT = /^\s*#(?!!)(.*)$/
@@ -28,9 +28,9 @@ export const funcDecls = (doc: vscode.TextDocument) => getData(doc).decls
 export const funcDecl = (doc: vscode.TextDocument, name: string) =>
   getData(doc).byName.get(name)
 
-/** A function declared in `doc` whose name is the word at `pos`. */
+/** A function declared in `doc` whose name is the whole word at `pos`. */
 export function funcAt(doc: vscode.TextDocument, pos: vscode.Position) {
-  const range = activeWordRangeAt(doc, pos)
+  const range = wholeWordRangeAt(doc, pos)
   if (!range) return
   const decl = funcDecl(doc, doc.getText(range))
   return decl && { range, decl }

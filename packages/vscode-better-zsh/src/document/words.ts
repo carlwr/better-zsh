@@ -6,6 +6,8 @@ import { activeText } from "../analysis/doc"
 /** Word-like token pattern used by editor range lookups and validation. */
 export const WORD = /[\w][\w-]*/
 export const WORD_EXACT = new RegExp(`^${WORD.source}$`)
+/** A whole word has none of these on either side; `WORD`'s greedy end rules out the right. */
+const WORD_CHAR = /[\w-]/
 
 /** Where a line's code ends: its comment start, else its length. */
 export const activeEnd = (line: string) => commentStart(line) ?? line.length
@@ -39,13 +41,25 @@ export function activeWordRangeAt(
   return range
 }
 
+/** The word at `pos`, unless in a comment or not whole (`foo` in `-foo`). */
+export function wholeWordRangeAt(
+  doc: vscode.TextDocument,
+  pos: vscode.Position,
+): vscode.Range | undefined {
+  const range = activeWordRangeAt(doc, pos)
+  if (!range) return
+  const before = doc.lineAt(pos.line).text[range.start.character - 1] ?? ""
+  return WORD_CHAR.test(before) ? undefined : range
+}
+
 /** Whole-word occurrences of `word` outside comments. */
 export function wordMatches(
   doc: vscode.TextDocument,
   word: string,
 ): vscode.Range[] {
   if (!WORD_EXACT.test(word)) return []
-  const re = new RegExp(`(?<![\\w-])${escapeRegExp(word)}(?![\\w-])`, "g")
+  const w = WORD_CHAR.source
+  const re = new RegExp(`(?<!${w})${escapeRegExp(word)}(?!${w})`, "g")
   const out: vscode.Range[] = []
   for (let line = 0; line < doc.lineCount; line++) {
     const active = activeText(doc.lineAt(line).text)
@@ -55,16 +69,11 @@ export function wordMatches(
   return out
 }
 
-/** Whole-word occurrences, outside comments, of the word at `pos`; undefined unless that word is one of them (not `foo` in `-foo`). */
+/** Whole-word occurrences, outside comments, of the whole word at `pos`. */
 export function wordMatchesAt(
   doc: vscode.TextDocument,
   pos: vscode.Position,
 ): vscode.Range[] | undefined {
-  const range = activeWordRangeAt(doc, pos)
-  if (!range) return
-  const ms = wordMatches(doc, doc.getText(range))
-  const { line, character } = range.start
-  return ms.some(r => r.start.line === line && r.start.character === character)
-    ? ms
-    : undefined
+  const range = wholeWordRangeAt(doc, pos)
+  return range && wordMatches(doc, doc.getText(range))
 }

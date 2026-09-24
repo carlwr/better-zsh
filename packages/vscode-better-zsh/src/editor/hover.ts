@@ -11,7 +11,7 @@ import {
   isTokenDelimiter,
   symbolicOpRangeAt,
 } from "../document/tokens"
-import { activeLineAt, activeWordRangeAt } from "../document/words"
+import { activeLineAt, wholeWordRangeAt } from "../document/words"
 import { recordMarkdown } from "./record-markdown"
 
 // `setopt NO_AUTO_CD` and `set +J` hover as `AUTO_CD`: the hit's
@@ -80,12 +80,12 @@ export class HoverProvider implements vscode.HoverProvider {
   }
 
   private paramHover(doc: vscode.TextDocument, pos: vscode.Position) {
-    const range = activeWordRangeAt(doc, pos)
+    const range = wholeWordRangeAt(doc, pos)
     if (range) return this.hoverFor("special_param", doc.getText(range), range)
     return this.punctParamHover(doc, pos)
   }
 
-  // Punctuation-named special params (`$$`, `$@`, `$?`, …) miss `activeWordRangeAt`'s `\w`-only token. Match a `$X` or `${X` anchor instead.
+  // Punctuation-named special params (`$$`, `$@`, `$?`, …) miss `wholeWordRangeAt`'s `\w`-only token. Match a `$X` or `${X` anchor instead.
   private punctParamHover(doc: vscode.TextDocument, pos: vscode.Position) {
     const active = activeLineAt(doc, pos)
     if (!active) return

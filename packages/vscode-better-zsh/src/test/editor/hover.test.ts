@@ -233,6 +233,7 @@ describe("HoverProvider on the real corpus", () => {
   test.each([
     ["setopt -?", 8], // not a flag letter
     ["set -b", 5], // sh/ksh-only letter (NOTIFY)
+    ["find . -path x", 9], // `path` glued to `-`: not the parameter
   ])("%s @%d: no hover", (line, char) => {
     expect(realAt(line, 0, char)).toBeUndefined()
   })
