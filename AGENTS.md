@@ -41,6 +41,28 @@ All symlinked files are printed by the `overview` script. For symlinked files, e
 
 Pre-1.0 everything (including public APIs) can still move freely.
 
+## Deferred
+
+### Coverage assertions for property tests
+
+A property can pass while rarely reaching the case its title claims — typically independently drawn inputs that seldom meet. fast-check has no Hedgehog-style `cover`, so nothing catches this or its later decay. Candidate future facility: `@carlwr/fastcheck-utils`.
+
+A few sites where coverage assertions would pin the interesting case; observations, not an exhaustive list: <!-- concrete enumeration: file + identifier -->
+
+- already fixed once, found by hand — pin against regression:
+  - `packages/zshref-web/tests/nlp/core/query-expand.test.ts`: `arbWord`, `arbRules`, `arbQuery` — rules fire; append cap binds
+  - `packages/zshref-web/tests/nlp/core/lookup-map.test.ts`:
+    - `arbRankedHit` — hit present, below slot 0
+    - `arbMapQuery` — verbatim vs lowercase-fallback hit
+  - `packages/zshref-web/tests/nlp/node/tune.test.ts`: sweep-marks property's `score` — tied maxima
+  - `packages/zshref-web/tests/nlp/node/sentence.test.ts`: `arbVote` — byte order differs from locale order; no votes
+  - `packages/zsh-core/src/test/resolver.test.ts`: TRAP property's `tail` — literal TRAP record vs `TRAPNAL` fallback
+  - `packages/vscode-better-zsh/src/test/analysis/quote-state.test.ts`: `next` — escaped quote or backslash
+- not yet measured:
+  - `packages/zsh-core/src/test/resolver.test.ts`: `spelled`, `catRaw` — hit vs miss share
+  - `packages/vscode-better-zsh/src/test/analysis/test-util.ts`: `commentyLine` — its JSDoc claims comments and quoted regions "occur often"
+  - `packages/vscode-better-zsh/src/test/document/tokens.test.ts`: `lineArb` — cursor on token vs delimiter vs comment
+
 ## Project-specific code rules
 
 ### zsh-core package imports
