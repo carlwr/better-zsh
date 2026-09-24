@@ -138,12 +138,18 @@ describe("resolve(corpus, 'option', raw) — short flags", () => {
     // not a single-letter flag
     "-",
     "--",
-    "-JJ",
-    "-ex",
     "set -J",
     "J",
   ])("%s → undefined", raw => {
     expect(resolve(flagCorpus, "option", raw)).toBeUndefined()
+  })
+
+  test("a flag letter with trailing characters never resolves", () => {
+    fc.assert(
+      fc.property(fc.stringMatching(/^[+-][J5fQb][A-Za-z0-9]+$/), raw => {
+        expect(resolve(flagCorpus, "option", raw)).toBeUndefined()
+      }),
+    )
   })
 
   // Literal and `no_`-stripped forms are tried before the flag path (no input

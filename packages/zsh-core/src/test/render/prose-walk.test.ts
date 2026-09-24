@@ -1,9 +1,54 @@
 import * as fcu from "@carlwr/fastcheck-utils"
 import fc from "fast-check"
 import { describe, expect, test } from "vitest"
-import { splitInlineCode } from "../../render/prose-walk"
+import {
+  anyProseLine,
+  proseLines,
+  splitInlineCode,
+  stripInlineCode,
+  walkProseLines,
+} from "../../render/prose-walk"
 
 const tickish = fc.string({ unit: fcu.element(["`", "``", "a", " "]) })
+
+describe("prose lines", () => {
+  const mdArb = fc
+    .array(
+      fcu.element([
+        "```",
+        "```zsh",
+        "   ```",
+        "- ```",
+        "    ```",
+        "a",
+        "`b`",
+        "",
+      ]),
+    )
+    .map(ls => ls.join("\n"))
+
+  test("walkProseLines transforms exactly the proseLines", () => {
+    fc.assert(
+      fc.property(mdArb, md => {
+        const marked = walkProseLines(md, l => `\0${l}`)
+          .split("\n")
+          .filter(l => l.startsWith("\0"))
+          .map(l => l.slice(1))
+        expect(marked).toEqual([...proseLines(md)])
+        expect(walkProseLines(md, l => l)).toBe(md)
+      }),
+    )
+  })
+
+  test("anyProseLine agrees with proseLines", () => {
+    const hasA = (l: string) => l.includes("a")
+    fc.assert(
+      fc.property(mdArb, md => {
+        expect(anyProseLine(md, hasA)).toBe([...proseLines(md)].some(hasA))
+      }),
+    )
+  })
+})
 
 describe("splitInlineCode", () => {
   test.each([
@@ -51,6 +96,17 @@ describe("splitInlineCode", () => {
             expect(later ?? []).not.toContain(run[0])
           }
         })
+      }),
+    )
+  })
+})
+
+describe("stripInlineCode", () => {
+  test("leaves no code span", () => {
+    fc.assert(
+      fc.property(tickish, s => {
+        const t = stripInlineCode(s)
+        expect(splitInlineCode(t)).toEqual([t])
       }),
     )
   })

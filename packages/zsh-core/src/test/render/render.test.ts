@@ -29,6 +29,7 @@ import type {
   JobSpecDoc,
   KeymapDoc,
   MathfuncDoc,
+  OptFlagAlias,
   ParamExpnDoc,
   PrecmdDoc,
   ProcessSubstDoc,
@@ -344,23 +345,20 @@ describe("render markdown", () => {
   // A letter from the sh/ksh table only is not plain-zsh syntax: rendered
   // after the plain-zsh flags (whatever the record order) and annotated.
   test("option head — sh/ksh-only flags last, annotated", () => {
-    const opt: ZshOption = {
-      ...cd,
-      flags: [
-        { char: "b", on: "-", emulations: ["ksh", "sh"] },
-        { char: "5", on: "-", emulations: ["csh", "zsh"] },
-      ],
-    }
-    expect(head(opt)?.lines.join("\n")).toBe(
-      [
-        "setopt auto_cd     # on",
-        "unsetopt auto_cd   # off",
-        "set -5             # on",
-        "set +5             # off",
-        "set -b             # on (sh/ksh emulation only)",
-        "set +b             # off (sh/ksh emulation only)",
-      ].join("\n"),
-    )
+    const flags: OptFlagAlias[] = [
+      { char: "b", on: "-", emulations: ["ksh", "sh"] },
+      { char: "5", on: "-", emulations: ["csh", "zsh"] },
+    ]
+    const want = [
+      "setopt auto_cd     # on",
+      "unsetopt auto_cd   # off",
+      "set -5             # on",
+      "set +5             # off",
+      "set -b             # on (sh/ksh emulation only)",
+      "set +b             # off (sh/ksh emulation only)",
+    ].join("\n")
+    for (const fs of [flags, [...flags].reverse()])
+      expect(head({ ...cd, flags: fs })?.lines.join("\n")).toBe(want)
   })
 
   // Backticked option references (e.g. from `tt(AUTO_CD)` upstream) are

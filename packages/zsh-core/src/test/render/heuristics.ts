@@ -65,7 +65,7 @@ const unbalancedBackticks = {
   name: "unbalanced-backticks",
   describe: "prose line contains an unmatched inline-code opener",
   detects(md) {
-    return [...proseLines(md)].filter(hasUnmatchedCodeSpanOpener)
+    return [...proseLines(md)].filter(l => stripInlineCode(l).includes("`"))
   },
 } satisfies Heuristic
 
@@ -272,42 +272,6 @@ const moduleShouldBeCoded = {
     })
   },
 } satisfies Heuristic
-
-// --- code-span scanner ------------------------------------------------------
-
-function hasUnmatchedCodeSpanOpener(line: string): boolean {
-  let i = 0
-  while (i < line.length) {
-    if (line[i] !== "`") {
-      i++
-      continue
-    }
-    const open = countRun(line, i, "`")
-    let j = i + open
-    let closed = false
-    while (j < line.length) {
-      if (line[j] === "`") {
-        const close = countRun(line, j, "`")
-        if (close === open) {
-          i = j + close
-          closed = true
-          break
-        }
-        j += close
-      } else {
-        j++
-      }
-    }
-    if (!closed) return true
-  }
-  return false
-}
-
-function countRun(s: string, start: number, ch: string): number {
-  let n = 0
-  while (start + n < s.length && s[start + n] === ch) n++
-  return n
-}
 
 // --- registry ---------------------------------------------------------------
 
