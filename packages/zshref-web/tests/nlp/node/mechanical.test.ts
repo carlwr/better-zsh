@@ -33,6 +33,7 @@ import { hardCheckTemplates } from "../../../nlp/node/eval/qa-score"
 import { evalSentence } from "../../../nlp/node/eval/sentence"
 import { loadSentenceFixture } from "../../../nlp/node/eval/sentence-fixture"
 import { loadRulesYaml } from "../../../nlp/node/rules-load"
+import { wantOf } from "../../_fixtures"
 import {
   artifactGate,
   inCorpus,
@@ -160,14 +161,7 @@ describe("eval over the parity index", () => {
     const vecs = new Map([[query, syntheticVec(["query", query])]])
     const entries = index.records.map(r => ({
       query,
-      want: [
-        {
-          category: r.text.category,
-          id: r.text.id,
-          targetDepth: TARGET_DEPTH,
-          weight: 1,
-        },
-      ],
+      want: [wantOf(r, TARGET_DEPTH)],
       split: "train" as const,
     }))
     const r = evalMechanicalCached(entries, vecs, assets)

@@ -99,7 +99,7 @@ describe("search properties", () => {
       limit: fc.integer({ min: 0, max: 8 }),
       categories: fc.option(
         fc
-          .uniqueArray(fcu.element(["x", ...CATEGORIES.map(c => c.category)]))
+          .subarray(["x", ...CATEGORIES.map(c => c.category)])
           .map(cs => new Set<string>(cs)),
         { nil: null },
       ),

@@ -43,6 +43,7 @@ import {
   arbTuning,
   type NonEmptyIndex,
 } from "../../_arbs"
+import { wantOf } from "../../_fixtures"
 import { artifactGate, parityRankAssets, STAGED } from "../../_helpers"
 
 const corpus = loadCorpus()
@@ -100,17 +101,7 @@ describe("over the parity index", () => {
     lookupIndex(LookupMapSchema.parse(buildLookupMap(corpus))),
   )
   const { index } = assets
-  const ref = (i: number) => {
-    const r = index.records[i]
-    if (!r) throw new Error("parity index has 9 records")
-    return {
-      category: r.text.category,
-      id: r.text.id,
-      targetDepth: 3,
-      weight: 1,
-    }
-  }
-  const every = index.records.map((_, i) => ref(i))
+  const every = index.records.map(r => wantOf(r, 3))
   const entry = (query: string, want = every): SentenceEntry => ({
     query,
     want,

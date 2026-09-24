@@ -12,6 +12,7 @@ import {
   perView,
   type RecordId,
   type RecordText,
+  recordKey,
   type VectorIndex,
   type View,
 } from "../nlp/core/types"
@@ -114,7 +115,7 @@ export type NonEmptyIndex = VectorIndex & { records: NonEmpty<IndexedRecord> }
 export const arbIndex: fc.Arbitrary<NonEmptyIndex> = fcu
   .nonEmptyUniqueArray(arbRecord, {
     maxLength: 7,
-    selector: r => `${r.text.category}\0${r.text.id}`,
+    selector: r => recordKey(r.text),
   })
   .map(syntheticIndexOf)
 

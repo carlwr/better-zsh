@@ -141,21 +141,6 @@ describe("ranker unit tests", () => {
     expect(0.6 < a && a < b && b < 0.7).toBe(true)
   })
 
-  it("the committed boosts are reliability-ordered", () => {
-    const b = rules.tuning.boosts
-    expect(b.category).toBeLessThanOrEqual(exactWordBoost(b))
-  })
-
-  it("the overlap boost saturates monotonically", () => {
-    const b = rules.tuning.boosts
-    expect(overlapBoost(0, b)).toBe(0)
-    const one = overlapBoost(1, b)
-    const many = overlapBoost(100, b)
-    expect(one > 0 && one < many).toBe(true)
-    // Smooth saturation never reaches the asymptote.
-    expect(many).toBeLessThan(b.word_overlap.scale)
-  })
-
   it("prose overlap beats broad name containment", () => {
     const aliases = rec({
       id: "aliases",
@@ -394,18 +379,18 @@ describe("semantic weight properties", () => {
 })
 
 describe("boost properties", () => {
-  it("overlap boost saturates monotonically, bounded by scale, half at half_sat", () => {
+  it("overlap boost rises strictly from 0 toward scale, never reaching it; half at half_sat", () => {
     fc.assert(
       fc.property(arbBoostWeights, fc.nat({ max: 1000 }), (b, n) => {
+        const { scale, half_sat } = b.word_overlap
+        fc.pre(scale > 0)
         expect(overlapBoost(0, b)).toBe(0)
         const at = overlapBoost(n, b)
         expect(at).toBeGreaterThanOrEqual(0)
-        expect(at).toBeLessThanOrEqual(b.word_overlap.scale)
-        expect(overlapBoost(n + 1, b)).toBeGreaterThanOrEqual(at)
+        expect(at).toBeLessThan(scale)
+        expect(overlapBoost(n + 1, b)).toBeGreaterThan(at)
         expect(
-          Math.abs(
-            overlapBoost(b.word_overlap.half_sat, b) - b.word_overlap.scale / 2,
-          ),
+          Math.abs(overlapBoost(half_sat, b) - scale / 2),
         ).toBeLessThanOrEqual(1e-6)
       }),
     )

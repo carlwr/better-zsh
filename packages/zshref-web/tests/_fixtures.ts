@@ -54,5 +54,12 @@ export const syntheticIndex = (
     })),
   )
 
+/** A graded want-item naming the record. */
+export const wantOf = (
+  { text: { category, id } }: IndexedRecord,
+  targetDepth: number,
+  weight = 1,
+) => ({ category, id, targetDepth, weight })
+
 /** A lookup that hits nothing: the ranker alone decides the order. */
 export const emptyLookup = () => lookupIndex({ version: 1, entries: [] })

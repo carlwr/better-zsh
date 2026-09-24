@@ -61,6 +61,7 @@ import {
 } from "../../../nlp/node/fixtures"
 import { loadRulesYaml } from "../../../nlp/node/rules-load"
 import { arbSplit } from "../../_arbs"
+import { wantOf } from "../../_fixtures"
 import { parityRankAssets } from "../../_helpers"
 
 const corpus = loadCorpus()
@@ -174,16 +175,19 @@ describe("overrides", () => {
     expect(() => composedBase(committed, "cat=0.02,nope=1")).toThrow(/unknown/)
   })
 
+  // Any finite double; `-0` prints as `0`, so it reads back as `0`.
+  const arbFloat = fc
+    .double({ noNaN: true, noDefaultInfinity: true })
+    .map(x => x + 0)
   // Any assignment of knob values, in any order, reads back through the
   // spec — the last one for a repeated key — and touches no other knob.
   const arbAssignments = fc.array(
     fcu
       .element(KNOB_KEYS)
       .chain(key =>
-        (KNOBS[key].kind === "int"
-          ? fc.integer({ min: 0, max: 9 })
-          : fc.integer({ min: 0, max: 999 }).map(i => i / 1000)
-        ).map(v => [key, v] as const),
+        (KNOBS[key].kind === "int" ? fc.nat() : arbFloat).map(
+          v => [key, v] as const,
+        ),
       ),
     { maxLength: 6 },
   )
@@ -496,16 +500,11 @@ describe("sweep marks and rows", () => {
 // --- over the parity fixture's miniature index (no model) ---------------------
 
 const parityAssets = parityRankAssets(corpus, rules)
-const record = (i: number) => {
+const want = (i: number, targetDepth = 3, weight = 1) => {
   const r = parityAssets.index.records[i]
   if (!r) throw new Error("parity index has 9 records")
-  return { category: r.text.category, id: r.text.id }
+  return wantOf(r, targetDepth, weight)
 }
-const want = (i: number, targetDepth = 3, weight = 1) => ({
-  ...record(i),
-  targetDepth,
-  weight,
-})
 const parityEntries: SentenceEntry[] = [
   { query: "alpha", want: [want(0), want(3, 1)], split: "train" },
   { query: "beta", want: [want(5)], split: "holdout" },
@@ -515,9 +514,9 @@ const parityVecs = new Map(
   parityEntries.map(e => [e.query, syntheticVec(["query", e.query])]),
 )
 const paritySet = buildQuerySet(parityEntries, parityVecs, parityAssets)
-const mechEntries: SentenceEntry[] = parityAssets.index.records.map((r, i) => ({
+const mechEntries: SentenceEntry[] = parityAssets.index.records.map(r => ({
   query: `alpha ${r.text.id}`,
-  want: [want(i, 1)],
+  want: [wantOf(r, 1)],
   split: "train",
 }))
 const mechSet = buildQuerySet(
