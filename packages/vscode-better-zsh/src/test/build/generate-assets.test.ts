@@ -1,4 +1,6 @@
 import { readFileSync } from "node:fs"
+import * as fcu from "@carlwr/fastcheck-utils"
+import fc from "fast-check"
 import { describe, expect, test } from "vitest"
 import {
   buildChatInstructions,
@@ -43,19 +45,25 @@ describe("generated assets", () => {
       expect(shipped).toMatch(/^[\x20-\x7E\n]*$/)
     })
 
-    test.each(["\u2014", "\u200b", "\t", "\r", "\u00e9"])(
-      "the build refuses %j rather than converting it",
-      ch => {
-        // Line 9: the frontmatter is five lines, then blank, `# Zsh`, blank.
-        expect(() =>
-          buildChatInstructions(
-            chatInstructionsMeta,
-            `# Zsh\n\nbo${ch}dy\n`,
-            [],
-          ),
-        ).toThrow(/non-ASCII U\+[0-9a-f]{4} on line 9$/)
-      },
-    )
+    test("the build refuses any other character, naming it and its line", () => {
+      const bad = fc.oneof(
+        fcu.element([0x09, 0x0d, 0x7f, 0xe9, 0x2014, 0x200b]),
+        fc
+          .integer({ min: 0, max: 0xffff })
+          .filter(c => c !== 0x0a && (c < 0x20 || c > 0x7e)),
+      )
+      const line = fc.stringMatching(/^[ -~]*$/)
+      fc.assert(
+        fc.property(bad, fc.array(line, { maxLength: 3 }), (c, pre) => {
+          const md = `# Zsh\n\n${[...pre, `bo${String.fromCharCode(c)}dy`].join("\n")}\n`
+          const hex = c.toString(16).padStart(4, "0")
+          // The frontmatter is five lines, then blank, `# Zsh`, blank.
+          expect(() =>
+            buildChatInstructions(chatInstructionsMeta, md, []),
+          ).toThrow(`non-ASCII U+${hex} on line ${9 + pre.length}`)
+        }),
+      )
+    })
 
     test("no links, no HTML comments", () => {
       expect(shipped).not.toMatch(/:\/\//)

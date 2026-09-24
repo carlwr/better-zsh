@@ -32,18 +32,19 @@ describe("parseZshError", () => {
     expect(parseZshError(stderr)).toEqual(want)
   })
 
-  test("round-trips any `<script>:<line>: <msg>` line", () => {
+  test("round-trips any `<script>:<line>: <msg>` line among noise lines", () => {
     const msg = fc.stringMatching(/^[!-~](?:[ -~]*[!-~])?$/)
+    const noise = fc.array(fc.stringMatching(/^[a-z :]*$/), { maxLength: 3 })
     fc.assert(
       fc.property(
         fcu.element(["/tmp/better-zsh-ab12/script.zsh", "C:\\T\\s.zsh", "zsh"]),
         fc.nat({ max: 99999 }),
         msg,
-        (src, line, m) => {
-          expect(parseZshError(`${src}:${line}: ${m}\n`)).toEqual({
-            line,
-            msg: m,
-          })
+        noise,
+        noise,
+        (src, line, m, pre, post) => {
+          const stderr = [...pre, `${src}:${line}: ${m}`, ...post].join("\n")
+          expect(parseZshError(stderr)).toEqual({ line, msg: m })
         },
       ),
     )
