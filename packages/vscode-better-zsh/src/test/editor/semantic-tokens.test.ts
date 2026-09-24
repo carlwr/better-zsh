@@ -1,3 +1,4 @@
+import * as fcu from "@carlwr/fastcheck-utils"
 import type { BuiltinDoc, DocCorpus, ReservedWordDoc } from "@carlwr/zsh-core"
 import fc from "fast-check"
 import { describe, expect, test } from "vitest"
@@ -92,7 +93,7 @@ describe("SemanticTokensProvider", () => {
   test("tokens never span a line end, ascend, and paint only listed names", () => {
     const line = fc
       .array(
-        fc.constantFrom(
+        fcu.element([
           "echo",
           "read",
           "declare",
@@ -113,12 +114,12 @@ describe("SemanticTokensProvider", () => {
           "'#'",
           ";",
           "&&",
-        ),
+        ]),
         { maxLength: 6 },
       )
       .map(ws => ws.join(" "))
     fc.assert(
-      fc.property(fc.array(line, { minLength: 1, maxLength: 5 }), lines => {
+      fc.property(fcu.nonEmptyArray(line, { maxLength: 5 }), lines => {
         const doc = lineDoc(lines.join("\n"))
         const raw = provider(
           ["echo", "read"],

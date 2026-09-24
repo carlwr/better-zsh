@@ -1,3 +1,4 @@
+import * as fcu from "@carlwr/fastcheck-utils"
 import {
   type BuiltinDoc,
   type ComplexCommandDoc,
@@ -260,7 +261,7 @@ describe("HoverProvider on the real corpus", () => {
   // A hover's range is the whole token: every position inside it hovers alike;
   // nothing hovers inside a comment.
   test("hover is stable across its own range", () => {
-    const vocab = fc.constantFrom(
+    const vocab = fcu.element([
       "echo",
       "noglob",
       "setopt",
@@ -287,7 +288,7 @@ describe("HoverProvider on the real corpus", () => {
       "|",
       "{",
       "}",
-    )
+    ])
     fc.assert(
       fc.property(fc.array(vocab, { maxLength: 8 }), words => {
         const line = words.join(" ")

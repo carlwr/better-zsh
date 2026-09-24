@@ -1,3 +1,4 @@
+import * as fcu from "@carlwr/fastcheck-utils"
 import fc from "fast-check"
 import { describe, expect, test } from "vitest"
 import { wordMatches } from "../../document/words"
@@ -24,7 +25,7 @@ describe("wordMatches", () => {
     ])
   })
 
-  const vocab = fc.constantFrom(
+  const vocab = fcu.element([
     "foo",
     "foo-bar",
     "foobar",
@@ -35,13 +36,13 @@ describe("wordMatches", () => {
     "# foo",
     ";",
     " ",
-  )
+  ])
   const itemsArb = fc.array(vocab, { maxLength: 6 })
   const lineArb = itemsArb.map(xs => xs.join(" "))
 
   test("ranges hold the word, don't overlap, ascend, and stay clear of comments", () => {
     fc.assert(
-      fc.property(fc.array(lineArb, { minLength: 1, maxLength: 4 }), lines => {
+      fc.property(fcu.nonEmptyArray(lineArb, { maxLength: 4 }), lines => {
         const doc = lineDoc(lines.join("\n"))
         let prev: [number, number] = [-1, -1]
         for (const r of wordMatches(doc, "foo")) {
@@ -70,7 +71,7 @@ describe("wordMatches", () => {
       "'foo'",
     ])
     fc.assert(
-      fc.property(fc.array(itemsArb, { minLength: 1, maxLength: 4 }), items => {
+      fc.property(fcu.nonEmptyArray(itemsArb, { maxLength: 4 }), items => {
         const ranges = wordMatches(
           lineDoc(items.map(xs => xs.join(" ")).join("\n")),
           "foo",

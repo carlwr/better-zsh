@@ -12,3 +12,26 @@ export function stringOver(chars: string, maxLength: number) {
   if (!isNonEmpty(units)) throw new RangeError("stringOver: no characters")
   return fc.string({ unit: fcu.element(units), maxLength })
 }
+
+/** Space-joined shell tokens dense in `#` and quotes: comments and quoted regions both occur often. */
+export const commentyLine = fc
+  .array(
+    fcu.element([
+      "a",
+      "#",
+      "#x",
+      "a#b",
+      "$#",
+      "${#}",
+      "(#",
+      "'a #b'",
+      '"a #b"',
+      "$'#'",
+      "\\#",
+      "'",
+      '"',
+      ";",
+    ]),
+    { maxLength: 6 },
+  )
+  .map(ws => ws.join(" "))

@@ -14,9 +14,7 @@ import { mockDoc } from "./test-util"
 
 describe("textDoc", () => {
   test("lines round-trip through the text", () => {
-    const lines = fc.array(fc.stringMatching(/^[a-z \r]{0,5}$/), {
-      minLength: 1,
-    })
+    const lines = fcu.nonEmptyArray(fc.stringMatching(/^[a-z \r]{0,5}$/))
     fc.assert(
       fc.property(lines, ls => {
         expect(readLines(textDoc(ls.join("\n")))).toEqual(ls)
@@ -39,8 +37,7 @@ describe("offset model", () => {
   })
 
   test("positionAt inverts offsetAt for every character of every line", () => {
-    const lines = fc.array(fc.stringMatching(/^[a-z ]{0,5}$/), {
-      minLength: 1,
+    const lines = fcu.nonEmptyArray(fc.stringMatching(/^[a-z ]{0,5}$/), {
       maxLength: 6,
     })
     fc.assert(

@@ -1,5 +1,7 @@
+import fc from "fast-check"
 import { describe, expect, test } from "vitest"
 import { commentStart } from "../../analysis/comment"
+import { commentyLine } from "./test-util"
 
 describe("commentStart", () => {
   test.each([
@@ -28,5 +30,16 @@ describe("commentStart", () => {
     ["close brace then comment", "echo ${x} # c", 10],
   ])("%s", (_desc, line, expected) => {
     expect(commentStart(line)).toBe(expected)
+  })
+
+  test("a comment start is a `#` fixed by the text up to it", () => {
+    fc.assert(
+      fc.property(commentyLine, fc.string({ maxLength: 10 }), (line, tail) => {
+        const i = commentStart(line)
+        if (i === undefined) return
+        expect(line[i]).toBe("#")
+        expect(commentStart(line.slice(0, i + 1) + tail)).toBe(i)
+      }),
+    )
   })
 })

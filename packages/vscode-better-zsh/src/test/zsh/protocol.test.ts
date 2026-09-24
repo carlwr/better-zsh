@@ -1,3 +1,4 @@
+import * as fcu from "@carlwr/fastcheck-utils"
 import fc from "fast-check"
 import { describe, expect, test } from "vitest"
 import { parseZshError } from "../../zsh/protocol"
@@ -35,11 +36,7 @@ describe("parseZshError", () => {
     const msg = fc.stringMatching(/^[!-~][ -~]*$/).filter(s => !s.endsWith(" "))
     fc.assert(
       fc.property(
-        fc.constantFrom(
-          "/tmp/better-zsh-ab12/script.zsh",
-          "C:\\T\\s.zsh",
-          "zsh",
-        ),
+        fcu.element(["/tmp/better-zsh-ab12/script.zsh", "C:\\T\\s.zsh", "zsh"]),
         fc.nat({ max: 99999 }),
         msg,
         (src, line, m) => {

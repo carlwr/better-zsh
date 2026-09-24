@@ -1,5 +1,6 @@
 import type { ExecFileException } from "node:child_process"
 import { existsSync } from "node:fs"
+import * as fcu from "@carlwr/fastcheck-utils"
 import fc from "fast-check"
 import { describe, expect, test } from "vitest"
 import { mkZshBinary } from "../../zsh/binary"
@@ -33,7 +34,7 @@ describe("buildZshEnv", () => {
   const KEEP = ["HOME", "PATH", "LANG", "USER"]
   const DROP = ["BASH_ENV", "ENV", "FPATH", "ZDOTDIR"]
   const envArb = fc.dictionary(
-    fc.constantFrom(...KEEP, ...DROP, "SRC", "JUNK"),
+    fcu.element(["SRC", "JUNK", ...KEEP, ...DROP]),
     fc.string(),
   )
 

@@ -98,11 +98,9 @@ describe("matchOptions", () => {
     const arb = fcu
       .nonEmptyUniqueArray(nameArb, { maxLength: 6 })
       .chain(raw => fc.tuple(fc.constant(raw), fcu.element(raw)))
-      .chain(([raw, o]) =>
-        fc.tuple(fc.constant(raw), fc.constant(o), fc.nat({ max: o.length })),
-      )
+    // names are at most 9 long, so `n` spans every prefix, the name included
     fc.assert(
-      fc.property(arb, ([raw, o, n]) => {
+      fc.property(arb, fc.nat({ max: 9 }), ([raw, o], n) => {
         const p = o.slice(0, n)
         const offered = (typed: string) =>
           matchOptions(mkOpts(raw), typed).map(m => m.label)

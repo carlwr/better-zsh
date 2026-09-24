@@ -1,5 +1,6 @@
 import fc from "fast-check"
 import { describe, expect, test } from "vitest"
+import { commentStart } from "../../analysis/comment"
 import {
   analyzeDoc,
   factText,
@@ -8,7 +9,7 @@ import {
   textDoc,
 } from "../../analysis/facts"
 import { quotedRegionFacts } from "../../analysis/quoted-region"
-import { mockDoc, stringOver } from "./test-util"
+import { commentyLine, mockDoc, stringOver } from "./test-util"
 
 function texts(lines: readonly string[]): string[] {
   const text = lines.join("\n")
@@ -104,6 +105,17 @@ describe("quotedRegionFacts", () => {
     fc.assert(
       fc.property(stringOver(chars, 120), text => {
         assertQuotedInvariants(text.split("\n"))
+      }),
+    )
+  })
+
+  test("no comment starts inside a quoted region", () => {
+    fc.assert(
+      fc.property(commentyLine, line => {
+        const i = commentStart(line)
+        if (i === undefined) return
+        for (const { span } of quotedRegionFacts([line]))
+          expect(i < span.start || i >= span.end).toBe(true)
       }),
     )
   })
