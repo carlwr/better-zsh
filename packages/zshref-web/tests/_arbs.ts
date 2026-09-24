@@ -23,7 +23,7 @@ import { makeRecordText, syntheticIndexOf, syntheticVectors } from "./_fixtures"
 
 type Cat = Pick<RecordText, "category" | "category_label">
 type Ident = Pick<RecordText, "id" | "display">
-const CATEGORIES = [
+export const CATEGORIES = [
   { category: "option", category_label: "option" },
   { category: "builtin", category_label: "builtin" },
   { category: "special_param", category_label: "special parameter" },

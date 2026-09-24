@@ -12,6 +12,7 @@ import {
   ruleArtifact,
 } from "../../../nlp/core/artifact-files"
 import { RULE_FILES } from "../../../nlp/core/rules"
+import { DIMS } from "../../../nlp/core/types"
 import { readBytes } from "../../../nlp/node/io"
 import { artifactGate, PATHS, readData, STAGED } from "../../_helpers"
 
@@ -62,7 +63,7 @@ describe("artifact loader", () => {
     const { index, rules, categories } = await loadArtifacts({ fetch })
 
     expect(index.records.length).toBeGreaterThan(0)
-    expect(index.dims).toBe(384)
+    expect(index.dims).toBe(DIMS)
     expect(categories.length).toBeGreaterThan(0)
     expect(rules.tuning.boosts.category).toBeTypeOf("number")
 

@@ -10,7 +10,7 @@ import type { QueryExpansion } from "./rules"
 // A short cap: even with one canonical term per rule, several rules firing on a
 // 1-2 word query would pull its embedding toward a generic centroid. Bounding
 // the appended terms keeps the user's actual words dominant.
-const MAX_APPENDED = 2
+export const MAX_APPENDED = 2
 
 /**
  * Return the query text to embed: the raw query with up to `MAX_APPENDED`

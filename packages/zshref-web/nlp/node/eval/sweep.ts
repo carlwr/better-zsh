@@ -7,7 +7,7 @@
 // fold the best row into `BZ_TUNE_BASE`, repeat (one knob at a time misses
 // interactions).
 
-import { trim } from "@carlwr/typescript-extra"
+import { type NonEmpty, trim } from "@carlwr/typescript-extra"
 
 import type { Tuning } from "../../core/rules"
 import type { EvalAssets } from "./assets"
@@ -115,7 +115,8 @@ export const KNOBS = {
   sig_len: knob("int", range(1, 4), t => t.lexical, "min_significant_word_len"),
 } satisfies Record<string, Knob>
 export type KnobKey = keyof typeof KNOBS
-export const KNOB_KEYS = Object.keys(KNOBS) as KnobKey[]
+/** Invariant: `KNOBS` is a non-empty literal. */
+export const KNOB_KEYS = Object.keys(KNOBS) as NonEmpty<KnobKey>
 
 const isKnobKey = (s: string): s is KnobKey => Object.hasOwn(KNOBS, s)
 

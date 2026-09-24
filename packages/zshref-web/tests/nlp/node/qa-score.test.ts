@@ -128,11 +128,11 @@ describe("scoreEntry", () => {
 })
 
 describe("scoreEntry properties", () => {
-  const hit = {
+  const hitModel = {
     category: fcu.element(["option", "builtin"]),
     id: fcu.element(["a", "b", "c"]),
   }
-  const arbHit = fcu.record(hit)
+  const arbHit = fcu.record(hitModel)
   // limit, topN and weight may be absent: the schema defaults are in play too
   const arbEntry = fcu
     .record(
@@ -142,7 +142,7 @@ describe("scoreEntry properties", () => {
         weight: fc.double({ min: 0, max: 3, noNaN: true }),
         expected: fcu.nonEmptyArray(
           fcu.record({
-            ...hit,
+            ...hitModel,
             score: fc.double({ min: -3, max: 3, noNaN: true }),
           }),
           { maxLength: 5 },

@@ -13,6 +13,8 @@ import {
   queryWords,
   rank,
   recordTerms,
+  type ScoreInputs,
+  scoreOf,
   semanticWeights,
   symbolHead,
   symbolTokens,
@@ -23,13 +25,14 @@ import {
   type Rules,
   type Tuning,
 } from "../../../nlp/core/rules"
-import { type RecordText, recordKey } from "../../../nlp/core/types"
+import { perView, type RecordText, recordKey } from "../../../nlp/core/types"
 import { loadRulesYaml } from "../../../nlp/node/rules-load"
 import {
   arbBoostWeights,
   arbIndex,
   arbRanking,
   arbSemanticWeights,
+  arbTuning,
   type SemanticWeights,
 } from "../../_arbs"
 import { makeRecordText } from "../../_fixtures"
@@ -415,6 +418,40 @@ describe("boost properties", () => {
         if (b.exact_word_increment > 0)
           expect(exactWordBoost(b)).toBeGreaterThan(b.category)
       }),
+    )
+  })
+})
+
+describe("score properties", () => {
+  const arbInputs: fc.Arbitrary<ScoreInputs> = fcu.record({
+    semantic: fcu.record(
+      perView(() => fc.double({ min: -1, max: 1, noNaN: true })),
+    ),
+    categoryNamed: fc.boolean(),
+    exactWord: fc.boolean(),
+    overlap: fc.nat({ max: 20 }),
+    bodyWords: arbBodyWords,
+  })
+
+  it("a lexical signal never lowers the score; the penalty subtracts", () => {
+    fc.assert(
+      fc.property(
+        arbInputs,
+        arbTuning,
+        fc.double({ min: 0, max: 1, noNaN: true }),
+        (s, t, penalty) => {
+          const score = (x: ScoreInputs): number => scoreOf(x, t, penalty).score
+          const at = score(s)
+          expect(at).toBeCloseTo(scoreOf(s, t, 0).score - penalty, 12)
+          expect(score({ ...s, categoryNamed: true })).toBeGreaterThanOrEqual(
+            at,
+          )
+          expect(score({ ...s, exactWord: true })).toBeGreaterThanOrEqual(at)
+          expect(
+            score({ ...s, overlap: s.overlap + 1 }),
+          ).toBeGreaterThanOrEqual(at)
+        },
+      ),
     )
   })
 })

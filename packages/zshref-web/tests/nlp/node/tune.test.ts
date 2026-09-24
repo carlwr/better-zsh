@@ -17,6 +17,7 @@ import {
   churn,
   type ItemRes,
   itemsOf,
+  passed,
   renderDiffReport,
   signed,
 } from "../../../nlp/node/eval/diff"
@@ -176,15 +177,13 @@ describe("overrides", () => {
   // Any assignment of knob values, in any order, reads back through the
   // spec — the last one for a repeated key — and touches no other knob.
   const arbAssignments = fc.array(
-    fc
-      .constantFrom(...KNOB_KEYS)
+    fcu
+      .element(KNOB_KEYS)
       .chain(key =>
-        fc.tuple(
-          fc.constant(key),
-          KNOBS[key].kind === "int"
-            ? fc.integer({ min: 0, max: 9 })
-            : fc.integer({ min: 0, max: 999 }).map(i => i / 1000),
-        ),
+        (KNOBS[key].kind === "int"
+          ? fc.integer({ min: 0, max: 9 })
+          : fc.integer({ min: 0, max: 999 }).map(i => i / 1000)
+        ).map(v => [key, v] as const),
       ),
     { maxLength: 6 },
   )
@@ -278,7 +277,7 @@ describe("churn", () => {
     expect(() => churn(base, cand.slice(1), false)).toThrow(/aligned/)
   })
 
-  it("the same items churn nothing; crossings are movers; netGain is the gain sum of the scope", () => {
+  it("the same items churn nothing; moved, up, down count the scope's rank changes and pass crossings; netGain is its gain sum", () => {
     fc.assert(
       fc.property(arbPairs, fc.boolean(), (pairs, trainOnly) => {
         const base = pairs.map(([b]) => b)
@@ -290,9 +289,13 @@ describe("churn", () => {
           netGain: 0,
         })
         const c = churn(base, cand, trainOnly)
-        expect(c.up + c.down).toBeLessThanOrEqual(c.moved)
         const scope = pairs.filter(([b]) => !trainOnly || b.split === "train")
-        expect(c.moved).toBe(scope.filter(([b, a]) => b.rank !== a.rank).length)
+        const count = (p: (b: ItemRes, a: ItemRes) => boolean): number =>
+          scope.filter(([b, a]) => p(b, a)).length
+        expect(c.moved).toBe(count((b, a) => b.rank !== a.rank))
+        expect(c.up + c.down).toBeLessThanOrEqual(c.moved)
+        expect(c.up).toBe(count((b, a) => !passed(b) && passed(a)))
+        expect(c.down).toBe(count((b, a) => passed(b) && !passed(a)))
         expect(c.netGain).toBeCloseTo(
           scope.reduce((s, [b, a]) => s + a.gain - b.gain, 0),
           9,
@@ -434,8 +437,9 @@ describe("sweep marks and rows", () => {
     expect(sweepMarks([], 0.6)).toEqual([])
   })
 
-  it("exactly one best row when there are rows; (base) only within the epsilon", () => {
-    const score = fc.integer({ min: 0, max: 1000 }).map(i => i / 1000)
+  it("exactly one best row when there are rows, the last maximum; (base) only within the epsilon", () => {
+    // A coarse grid, so maxima tie.
+    const score = fc.integer({ min: 0, max: 5 }).map(i => i / 5)
     fc.assert(
       fc.property(
         fc.array(score, { maxLength: 8 }),
@@ -447,10 +451,11 @@ describe("sweep marks and rows", () => {
             combined.length === 0 ? 0 : 1,
           )
           const best = marks.indexOf(" ◄ best")
-          if (best !== -1) expect(combined[best]).toBe(Math.max(...combined))
+          if (best !== -1)
+            expect(best).toBe(combined.lastIndexOf(Math.max(...combined)))
           marks.forEach((m, i) => {
             if (m === " (base)") expect(combined[i]).toBe(base)
-            if (m === "" && i !== best) expect(combined[i]).not.toBe(base)
+            if (m === "") expect(combined[i]).not.toBe(base)
           })
         },
       ),

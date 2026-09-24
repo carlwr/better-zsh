@@ -7,6 +7,7 @@ import { readFileSync } from "node:fs"
 import { mkdir, mkdtemp, utimes, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
+import * as fcu from "@carlwr/fastcheck-utils"
 import { rm_rf } from "@carlwr/typescript-extra/node"
 import fc from "fast-check"
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest"
@@ -44,21 +45,31 @@ function counting(): Embedder & { asked: string[] } {
 }
 
 describe("cachedEmbedder", () => {
-  it("embeds a text once, serves repeats and duplicates in order, as copies", async () => {
-    const inner = counting()
-    const e = cachedEmbedder(inner, join(dir, "none.json"), "id")
-    const first = await e.embed(["a", "b", "a"])
-    expect(inner.asked).toEqual(["a", "b"])
-    expect(first.map(v => v.length)).toEqual([DIMS, DIMS, DIMS])
-    expect(first[0]).toEqual(syntheticVec(["a"]))
-    expect(first[2]).toEqual(first[0])
+  it("serves every batch in order; asks the inner embedder each distinct text once, first-seen order", async () => {
+    let run = 0
+    await fc.assert(
+      fc.asyncProperty(
+        fc.array(
+          fc.array(fcu.element(["a", "b", "c", "d"]), { maxLength: 5 }),
+          { maxLength: 4 },
+        ),
+        async batches => {
+          const inner = counting()
+          const e = cachedEmbedder(inner, join(dir, `q${run++}.json`), "id")
+          for (const b of batches)
+            expect(await e.embed(b)).toEqual(b.map(t => syntheticVec([t])))
+          expect(inner.asked).toEqual([...new Set(batches.flat())])
+        },
+      ),
+      { numRuns: 30 },
+    )
+  })
 
-    const second = await e.embed(["b", "c", "a"])
-    expect(inner.asked).toEqual(["a", "b", "c"])
-    expect(second[2]).toEqual(first[0])
-    // A copy: what a caller does to its vector stays out of the cache.
-    second[2]?.fill(0)
-    expect((await e.embed(["a"]))[0]).toEqual(first[0])
+  it("serves copies: what a caller does to its vector stays out of the cache", async () => {
+    const e = cachedEmbedder(counting(), join(dir, "none.json"), "id")
+    const [v] = await e.embed(["a"])
+    v?.fill(0)
+    expect((await e.embed(["a"]))[0]).toEqual(syntheticVec(["a"]))
   })
 })
 

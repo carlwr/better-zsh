@@ -17,7 +17,7 @@ import {
 import { recordKey } from "../../../nlp/core/types"
 import { syntheticVec } from "../../../nlp/core/vec"
 import { loadRulesYaml } from "../../../nlp/node/rules-load"
-import { arbIndex, arbLookup, arbQuery } from "../../_arbs"
+import { arbIndex, arbLookup, arbQuery, CATEGORIES } from "../../_arbs"
 import { syntheticIndex } from "../../_fixtures"
 
 const index = syntheticIndex([
@@ -99,7 +99,7 @@ describe("search properties", () => {
       limit: fc.integer({ min: 0, max: 8 }),
       categories: fc.option(
         fc
-          .uniqueArray(fcu.element(["option", "builtin", "special_param", "x"]))
+          .uniqueArray(fcu.element(["x", ...CATEGORIES.map(c => c.category)]))
           .map(cs => new Set<string>(cs)),
         { nil: null },
       ),

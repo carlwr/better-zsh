@@ -80,12 +80,10 @@ describe("f32Shortest", () => {
 })
 
 describe("fixtureJson", () => {
-  it("reads back as JSON.stringify's value would, for any JSON value", () => {
+  it("lays out any JSON value exactly as 2-space JSON.stringify, plus a newline", () => {
     fc.assert(
       fc.property(fc.jsonValue(), value => {
-        const text = fixtureJson(value)
-        expect(text.endsWith("\n")).toBe(true)
-        expect(JSON.parse(text)).toEqual(JSON.parse(JSON.stringify(value)))
+        expect(fixtureJson(value)).toBe(`${JSON.stringify(value, null, 2)}\n`)
       }),
     )
   })

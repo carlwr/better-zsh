@@ -8,8 +8,10 @@
 // stays at the capped smoke; `pnpm nlp:eval-mechanical` is the report's
 // day-to-day form.
 
+import * as fcu from "@carlwr/fastcheck-utils"
 import { isSingle, memoized } from "@carlwr/typescript-extra"
 import { docCategories, loadCorpus } from "@carlwr/zsh-core"
+import fc from "fast-check"
 import { describe, expect, it } from "vitest"
 import { syntheticVec } from "../../../nlp/core/vec"
 import { buildLookupContract } from "../../../nlp/node/contract"
@@ -27,6 +29,7 @@ import {
   TARGET_DEPTH,
 } from "../../../nlp/node/eval/mechanical"
 import { gain } from "../../../nlp/node/eval/metric"
+import { hardCheckTemplates } from "../../../nlp/node/eval/qa-score"
 import { evalSentence } from "../../../nlp/node/eval/sentence"
 import { loadSentenceFixture } from "../../../nlp/node/eval/sentence-fixture"
 import { loadRulesYaml } from "../../../nlp/node/rules-load"
@@ -43,25 +46,26 @@ const corpus = loadCorpus()
 const MECHANICAL_SMOKE_LIMIT = 16
 
 describe("nl questions", () => {
-  it("every templated category yields a question of its display form", () => {
-    for (const [cat, display] of [
-      ["builtin", "fc"],
-      ["special_param", "PATH"],
-      ["option", "AUTO_CD"],
-      ["reserved_word", "if"],
-      ["mathfunc", "abs"],
-      ["comp_utility", "_arguments"],
-      ["zle_widget", "accept-line"],
-    ] as const) {
-      expect(nlQuestions(cat, display), `${cat} templated`).not.toEqual([])
-    }
-    // special_param yields the plain + a `$`-prefixed variant.
+  it("a hard-check category leads with its hard-check question; at most two questions, each of the display form", () => {
+    fc.assert(
+      fc.property(fcu.element(docCategories), fc.string(), (cat, d) => {
+        const qs = nlQuestions(cat, d)
+        const t = hardCheckTemplates[cat]
+        if (t) expect(qs[0]).toBe(t(d))
+        expect(qs.length).toBeLessThanOrEqual(2)
+        for (const q of qs) expect(q).toContain(d)
+      }),
+    )
+  })
+
+  it("adds a `$` form for special_param and a zle_widget question; none for redirection", () => {
     const sp = nlQuestions("special_param", "#")
     expect(sp).toHaveLength(2)
     expect(
       sp.some(q => q.includes("$#")),
       `$-prefixed form: ${sp}`,
     ).toBe(true)
+    expect(nlQuestions("zle_widget", "accept-line")).toHaveLength(1)
     // Intentionally NOT templated (not a hard-check category).
     expect(nlQuestions("redirection", ">")).toEqual([])
   })

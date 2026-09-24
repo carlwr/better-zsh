@@ -3,6 +3,7 @@
 // map's coverage: tests/nlp/node/lookup-map.test.ts).
 
 import * as fcu from "@carlwr/fastcheck-utils"
+import { isNonEmpty } from "@carlwr/typescript-extra"
 import fc from "fast-check"
 import { describe, expect, it } from "vitest"
 import { lookupIndex, promoteToTop } from "../../../nlp/core/lookup-map"
@@ -28,26 +29,9 @@ const ranked: readonly RankedMatch[] = [
 const ids = (rs: readonly RankedMatch[]): string[] => rs.map(m => m.rec.id)
 
 describe("promoteToTop", () => {
-  it.each([
-    [
-      "a hit below slot 0 moves to slot 0, the rest in order",
-      { category: "option", id: "c" },
-      ["c", "a", "b"],
-    ],
-    [
-      "a hit already at slot 0 stays",
-      { category: "option", id: "a" },
-      ["a", "b", "c"],
-    ],
-    [
-      "category and id must both match",
-      { category: "builtin", id: "c" },
-      ["a", "b", "c"],
-    ],
-    ["no hit, no change", null, ["a", "b", "c"]],
-  ])("%s", (_, hit, want) => {
-    expect(ids(promoteToTop(ranked, hit))).toEqual(want)
-    expect(ids(ranked)).toEqual(["a", "b", "c"])
+  it("category and id must both match", () => {
+    const hit = { category: "builtin", id: "c" }
+    expect(ids(promoteToTop(ranked, hit))).toEqual(["a", "b", "c"])
   })
 })
 
@@ -63,55 +47,80 @@ const arbRanked: fc.Arbitrary<RankedMatch[]> = fc
   .uniqueArray(arbRecordId, { maxLength: 8, selector: recordKey })
   .map(recs => recs.map((r, i) => match(r.category, r.id, 1 - i / 10)))
 
+/** A ranking and a hit, drawn from the ranking half the time it is non-empty. */
+const arbRankedHit = arbRanked.chain(before => {
+  const recIds = before.map(m => ({ category: m.rec.category, id: m.rec.id }))
+  return fcu.record({
+    before: fc.constant(before),
+    hit: fc.option(
+      isNonEmpty(recIds)
+        ? fc.oneof(arbRecordId, fcu.element(recIds))
+        : arbRecordId,
+      { nil: null },
+    ),
+  })
+})
+
 describe("promoteToTop properties", () => {
-  it("a permutation: the hit at slot 0 when present, the others in their order; else no change", () => {
+  it("a permutation: the hit at slot 0 when present, the others in their order; else no change; the input untouched", () => {
     fc.assert(
-      fc.property(
-        arbRanked,
-        fc.option(arbRecordId, { nil: null }),
-        (before, hit) => {
-          const after = promoteToTop(before, hit)
-          const present =
-            hit !== null && before.some(m => sameRecord(m.rec, hit))
-          if (!present) {
-            expect(after).toEqual(before)
-            return
-          }
-          expect(after[0]?.rec).toEqual(expect.objectContaining(hit))
-          expect(after.slice(1)).toEqual(
-            before.filter(m => !sameRecord(m.rec, hit)),
-          )
-        },
-      ),
+      fc.property(arbRankedHit, ({ before, hit }) => {
+        const snapshot = structuredClone(before)
+        const after = promoteToTop(before, hit)
+        expect(before).toEqual(snapshot)
+        const present = hit !== null && before.some(m => sameRecord(m.rec, hit))
+        if (!present) {
+          expect(after).toEqual(before)
+          return
+        }
+        expect(after[0]?.rec).toEqual(expect.objectContaining(hit))
+        expect(after.slice(1)).toEqual(
+          before.filter(m => !sameRecord(m.rec, hit)),
+        )
+      }),
     )
   })
 })
 
+// Lowercase keys half the time, so an uppercased query takes the fallback.
+const arbRaw = fc.oneof(
+  fc.stringMatching(/^[A-Za-z_]{1,4}$/),
+  fc.stringMatching(/^[a-z_]{1,4}$/),
+)
 const arbMap = fc.uniqueArray(
-  fcu.record({
-    raw: fc.stringMatching(/^[A-Za-z_]{1,4}$/),
-    category: fc.constant("option"),
-    id: arbId,
-  }),
+  fcu.record({ raw: arbRaw, category: fc.constant("option"), id: arbId }),
   { maxLength: 6, selector: e => e.raw },
 )
+/** A map and a query that often names a key: verbatim, upper- or lowercased. */
+const arbMapQuery = arbMap.chain(entries => {
+  const raws = entries.map(e => e.raw)
+  const arbQ = fc.stringMatching(/^[A-Za-z_]{0,4}$/)
+  const key = isNonEmpty(raws) ? fcu.element(raws) : null
+  return fcu.record({
+    entries: fc.constant(entries),
+    q: key
+      ? fc.oneof(
+          arbQ,
+          key,
+          key.map(k => k.toUpperCase()),
+          key.map(k => k.toLowerCase()),
+        )
+      : arbQ,
+    pad: fcu.element(["", " ", "\t", "  "]),
+  })
+})
 
 describe("lookupIndex properties", () => {
   it("resolves the trimmed query verbatim, else lowercased, else not at all", () => {
     fc.assert(
-      fc.property(
-        arbMap,
-        fc.stringMatching(/^[A-Za-z_]{0,4}$/),
-        fcu.element(["", " ", "\t", "  "]),
-        (entries, q, pad) => {
-          const idx = lookupIndex({ version: 1, entries })
-          const byRaw = new Map(
-            entries.map(e => [e.raw, { category: e.category, id: e.id }]),
-          )
-          const want = byRaw.get(q) ?? byRaw.get(q.toLowerCase()) ?? null
-          expect(idx.lookup(`${pad}${q}${pad}`)).toEqual(q === "" ? null : want)
-        },
-      ),
+      fc.property(arbMapQuery, ({ entries, q, pad }) => {
+        const idx = lookupIndex({ version: 1, entries })
+        const byRaw = new Map(
+          entries.map(e => [e.raw, { category: e.category, id: e.id }]),
+        )
+        const want = byRaw.get(q) ?? byRaw.get(q.toLowerCase()) ?? null
+        expect(idx.lookup(`${pad}${q}${pad}`)).toEqual(q === "" ? null : want)
+      }),
     )
   })
 })

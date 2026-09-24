@@ -136,16 +136,6 @@ describe("score", () => {
     expect(scoreSplit(votes, "train").total).toBeCloseTo(0, 6)
     expect(scoreSplit(votes, "holdout").total).toBeCloseTo(1, 6)
   })
-
-  it("scores nothing as zero, categories in byte order", () => {
-    expect(score([])).toEqual({ perCategory: new Map(), total: 0 })
-    const s = score([
-      vote("b", 1, 1, "train"),
-      vote("B", 1, 0, "train"),
-      vote("a", 1, 1, "train"),
-    ])
-    expect([...s.perCategory.keys()]).toEqual(["B", "a", "b"])
-  })
 })
 
 describe("gain", () => {
@@ -180,13 +170,14 @@ describe("gain", () => {
 
 describe("score properties", () => {
   const arbVote: fc.Arbitrary<Vote> = fcu.record({
-    category: fcu.element(["a", "b", "c"]),
+    // Mixed case: the category order is byte order, not locale order.
+    category: fcu.element(["a", "B", "b"]),
     weight: fc.double({ min: 0.1, max: 5, noNaN: true }),
     gain: fc.double({ min: 0, max: 1, noNaN: true }),
     split: arbSplit,
   })
 
-  it("every score is in [0, 1]; per category the weighted mean, sorted; the total their plain mean", () => {
+  it("every score is in [0, 1]; per category the weighted mean, in byte order; the total their plain mean (0 for no votes)", () => {
     fc.assert(
       fc.property(fc.array(arbVote, { maxLength: 12 }), votes => {
         const s = score(votes)

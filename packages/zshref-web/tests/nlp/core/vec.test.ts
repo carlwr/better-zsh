@@ -2,6 +2,7 @@
 
 import fc from "fast-check"
 import { describe, expect, it } from "vitest"
+import { DIMS } from "../../../nlp/core/types"
 import { dot, normalizeF32, syntheticVec } from "../../../nlp/core/vec"
 
 const norm = (v: Float32Array): number => Math.sqrt(dot(v, v))
@@ -52,15 +53,27 @@ describe("normalizeF32", () => {
 })
 
 describe("syntheticVec", () => {
-  it("is deterministic and unit", () => {
-    const v = syntheticVec(["option", "autocd", "body"])
-    expect(v).toEqual(syntheticVec(["option", "autocd", "body"]))
-    expect(Math.abs(norm(v) - 1)).toBeLessThanOrEqual(1e-6)
+  it("is keyed by identity", () => {
+    expect(syntheticVec(["option", "autocd", "expanded"])).not.toEqual(
+      syntheticVec(["option", "autocd", "body"]),
+    )
   })
 
-  it("is keyed by identity; the part separator keeps (ab,c) off (a,bc)", () => {
-    const v = syntheticVec(["option", "autocd", "body"])
-    expect(syntheticVec(["option", "autocd", "expanded"])).not.toEqual(v)
-    expect(syntheticVec(["ab", "c"])).not.toEqual(syntheticVec(["a", "bc"]))
+  it("is deterministic, DIMS long and unit; the part separator keeps (a+b, c) off (a, b+c)", () => {
+    fc.assert(
+      fc.property(
+        fc.string(),
+        fc.string({ minLength: 1 }),
+        fc.string(),
+        (a, b, c) => {
+          const v = syntheticVec([a + b, c])
+          expect(v).toHaveLength(DIMS)
+          expect(v).toEqual(syntheticVec([a + b, c]))
+          expect(Math.abs(norm(v) - 1)).toBeLessThanOrEqual(1e-6)
+          expect(v).not.toEqual(syntheticVec([a, b + c]))
+        },
+      ),
+      { numRuns: 50 },
+    )
   })
 })

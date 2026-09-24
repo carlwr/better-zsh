@@ -5,7 +5,10 @@ import { allUnique, withoutFirstSubstring } from "@carlwr/typescript-extra"
 import fc from "fast-check"
 import { describe, expect, it } from "vitest"
 
-import { expandQueryForEmbedding } from "../../../nlp/core/query-expand"
+import {
+  expandQueryForEmbedding,
+  MAX_APPENDED,
+} from "../../../nlp/core/query-expand"
 import type { QueryExpansion } from "../../../nlp/core/rules"
 
 const rule = (when: string[], add: string): QueryExpansion => ({ when, add })
@@ -48,9 +51,20 @@ describe("expandQueryForEmbedding", () => {
 
 // --- properties ---------------------------------------------------------------
 
-// Lowercase alphanumeric words, so a term compares as it is stored (the
-// loader lowercases) and the whole-word split is the only tokenization.
-const arbWord = fc.stringMatching(/^[a-z0-9]{1,6}$/)
+// One small shared vocabulary, so triggers and canonical terms actually occur
+// in queries (independent draws almost never meet). Lowercase alphanumeric:
+// a term compares as stored (the loader lowercases), and the whole-word split
+// is the only tokenization.
+const arbWord = fcu.element([
+  "set",
+  "setting",
+  "option",
+  "env",
+  "var",
+  "file",
+  "glob",
+  "a1",
+])
 const arbTerm = fc.oneof(
   { weight: 3, arbitrary: arbWord },
   fc.tuple(arbWord, arbWord).map(ws => ws.join(" ")),
@@ -62,11 +76,12 @@ const arbRules = fc.array(
   }),
   { maxLength: 6 },
 )
-// Words from the same small alphabet, so triggers and canonical terms
-// actually occur; the casing noise must not matter.
+// The casing noise must not matter.
 const arbQuery = fc
   .array(
-    arbWord.map(w => (w.length > 2 ? w.toUpperCase() : w)),
+    fc
+      .tuple(arbWord, fc.boolean())
+      .map(([w, up]) => (up ? w.toUpperCase() : w)),
     { maxLength: 6 },
   )
   .map(ws => ws.join(" "))
@@ -85,18 +100,23 @@ const appended = (query: string, expanded: string): string[] =>
   words(withoutFirstSubstring(query, expanded))
 
 describe("expandQueryForEmbedding properties", () => {
-  it("is deterministic and append-only: ≤ 2 distinct canonical terms absent from the query", () => {
+  it("is deterministic and append-only: ≤ cap distinct fired-rule terms absent from the query; below the cap, every fired rule's term", () => {
     fc.assert(
       fc.property(arbRules, arbQuery, (rules, q) => {
         const e = expandQueryForEmbedding(q, rules)
         expect(expandQueryForEmbedding(q, rules)).toBe(e)
+        expect(e.startsWith(q)).toBe(true)
+        const fired = rules.filter(r => r.when.some(w => wordIn(q, w)))
         const adds = appended(q, e)
-        expect(adds.length).toBeLessThanOrEqual(2)
+        expect(adds.length).toBeLessThanOrEqual(MAX_APPENDED)
         expect(allUnique(adds)).toBe(true)
         for (const a of adds) {
-          expect(rules.some(r => r.add === a)).toBe(true)
+          expect(fired.some(r => r.add === a)).toBe(true)
           expect(wordIn(q, a)).toBe(false)
         }
+        if (adds.length < MAX_APPENDED)
+          for (const r of fired)
+            expect(wordIn(q, r.add) || adds.includes(r.add)).toBe(true)
       }),
     )
   })
@@ -107,14 +127,15 @@ describe("expandQueryForEmbedding properties", () => {
         const e1 = expandQueryForEmbedding(q, rules)
         const e2 = expandQueryForEmbedding(e1, rules)
         const again = appended(e1, e2)
-        expect(again.length).toBeLessThanOrEqual(2)
+        expect(again.length).toBeLessThanOrEqual(MAX_APPENDED)
         for (const a of again) expect(wordIn(e1, a)).toBe(false)
         // Below the cap, every firing rule's term is already in e1 — unless
         // an appended term is itself a trigger (a chain), which may fire anew.
         const chained = rules.some(r =>
           r.when.some(w => !wordIn(q, w) && wordIn(e1, w)),
         )
-        if (appended(q, e1).length < 2 && !chained) expect(e2).toBe(e1)
+        if (appended(q, e1).length < MAX_APPENDED && !chained)
+          expect(e2).toBe(e1)
       }),
     )
   })
