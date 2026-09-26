@@ -404,13 +404,17 @@ describe("resolve properties (corpus-wide)", () => {
       fcu.element(literals),
       fc.stringMatching(/^[A-Z0-9]+$/),
     )
+    const cov = fcu.coverage({ literal: 20, fallback: 20 })
     fc.assert(
       fc.property(tail, tail => {
         const raw = `TRAP${tail}`
+        const literal = fn(raw)
+        cov.hit(literal ? "literal" : "fallback")
         expect(resolve(corpus, "special_function", raw)?.record).toBe(
-          fn(raw) ?? fn("TRAPNAL"),
+          literal ?? fn("TRAPNAL"),
         )
       }),
+      { plugins: [cov.plugin] },
     )
   })
 
@@ -430,13 +434,16 @@ describe("resolve properties (corpus-wide)", () => {
     const ws = fc.string({
       unit: fcu.element([" ", "\t", "\n", "\r", "\v", "\f"]),
     })
+    const cov = fcu.coverage({ hit: 15, miss: 25 })
     fc.assert(
       fc.property(catRaw, ws, ws, ([cat, raw], w1, w2) => {
         const bare = resolve(corpus, cat, raw)
         const padded = resolve(corpus, cat, w1 + raw + w2)
         expect(padded?.record).toBe(bare?.record)
         expect(padded?.feedback).toEqual(bare?.feedback)
+        cov.hit(bare ? "hit" : "miss")
       }),
+      { plugins: [cov.plugin] },
     )
   })
 })

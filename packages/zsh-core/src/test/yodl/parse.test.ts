@@ -350,6 +350,7 @@ describe("findAllBracketRanges", () => {
   const opensForever = (p: string) => depths(p).every(d => d > 0)
 
   test("ranges are the balanced top-level spans; any opener after the last never closes", () => {
+    const cov = fcu.coverage({ range: 15, tailOpener: 25 })
     fc.assert(
       fc.property(
         fc.string({ unit: fcu.element(["o", "c", "t"]), maxLength: 30 }),
@@ -360,6 +361,7 @@ describe("findAllBracketRanges", () => {
             "o",
             "c",
           )) {
+            cov.hit("range")
             expect(start).toBeGreaterThan(prev)
             expect(p.slice(prev + 1, start)).not.toContain("o")
             expect(opensForever(p.slice(start, end))).toBe(true)
@@ -367,9 +369,11 @@ describe("findAllBracketRanges", () => {
             prev = end
           }
           const fromTailOpener = p.slice(prev + 1).replace(/^[^o]*/, "")
+          if (fromTailOpener) cov.hit("tailOpener")
           expect(opensForever(fromTailOpener)).toBe(true)
         },
       ),
+      { plugins: [cov.plugin] },
     )
   })
 })

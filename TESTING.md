@@ -75,3 +75,9 @@ Property tests call `fast-check` directly (`fc.assert(fc.property(...))`). Consi
 - one more 0.x wrapper in the vitest-major-bump path
 - vitest-only; plain `fast-check` is runner-agnostic and matches its own docs
 - a test body mixing examples and a property still needs `fc.assert` — two idioms
+
+A property can pass while seldom reaching the case its title claims; pin that case with `fcu.coverage`:
+
+- threshold well below the fixed-seed rate — generator tweaks pass, decay fails
+- skip where construction guarantees the case
+- near-zero rate: bias the generator first (e.g. `chain` one input from another)

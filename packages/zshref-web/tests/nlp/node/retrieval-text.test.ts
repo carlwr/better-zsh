@@ -1,7 +1,7 @@
 // Pure — synthetic records, no corpus, no staged assets.
 
 import * as fcu from "@carlwr/fastcheck-utils"
-import { allUnique, mapNonEmpty } from "@carlwr/typescript-extra"
+import { allUnique, isNonEmpty, mapNonEmpty } from "@carlwr/typescript-extra"
 import fc from "fast-check"
 import { describe, expect, it } from "vitest"
 
@@ -149,15 +149,18 @@ describe("compactValue", () => {
   }
 
   it("is undefined or one non-blank line of single-spaced words, each from a leaf or a key", () => {
+    const cov = fcu.coverage({ defined: 30 })
     fc.assert(
       fc.property(arbJson, value => {
         const s = compactValue(value)
         if (s === undefined) return
+        cov.hit("defined")
         expect(s).toBe(normalizeWs(s))
         expect(s).not.toBe("")
         const allowed = new Set(wordsOf(value))
         for (const w of s.split(" ")) expect(allowed).toContain(w)
       }),
+      { plugins: [cov.plugin] },
     )
   })
 
@@ -225,11 +228,22 @@ describe("expandedText", () => {
     fc.uniqueArray(arbWord, { minLength: 2, maxLength: 3 }),
     { maxLength: 4 },
   )
-  const arbBody = fc.array(arbWord, { maxLength: 8 }).map(ws => ws.join(" "))
+  /** Groups and a body whose words are often group members, so groups hit. */
+  const arbGroupsBody = arbGroups.chain(groups => {
+    const members = groups.flat()
+    const word = isNonEmpty(members)
+      ? fc.oneof(arbWord, fcu.element(members))
+      : arbWord
+    return fc.tuple(
+      fc.constant(groups),
+      fc.array(word, { maxLength: 8 }).map(ws => ws.join(" ")),
+    )
+  })
 
   it("the identity's word forms first, then per group hit as a whole word its absent members; no hint twice", () => {
+    const cov = fcu.coverage({ hint: 20 })
     fc.assert(
-      fc.property(arbGroups, arbBody, (groups, body) => {
+      fc.property(arbGroupsBody, ([groups, body]) => {
         const hints = expandedText(ident, body, groups).split("\n")
         const own = [
           "special parameter",
@@ -252,8 +266,10 @@ describe("expandedText", () => {
             ? g.filter(m => !hayHasWord(hay, m))
             : [],
         )
+        if (want.length > 0) cov.hit("hint")
         expect(hints.slice(own.length)).toEqual([...new Set(want)])
       }),
+      { plugins: [cov.plugin] },
     )
   })
 
@@ -302,19 +318,29 @@ describe("string helpers", () => {
 
   it("hayHasWord: a hit is a substring hit; a plain word hits itself", () => {
     const word = fc.stringMatching(/^[a-z0-9]{1,5}$/)
+    // The needle is often one of the hay's words, so hits occur.
+    const hayNeedle = fc
+      .array(word, { maxLength: 6 })
+      .chain(ws =>
+        fc.tuple(
+          fc.constant(ws.join(" ")),
+          isNonEmpty(ws) ? fc.oneof(word, fcu.element(ws)) : word,
+        ),
+      )
+    const cov = fcu.coverage({ hit: 15 })
     fc.assert(
-      fc.property(
-        fc.array(word, { maxLength: 6 }).map(ws => ws.join(" ")),
-        word,
-        (hay, needle) => {
-          if (hayHasWord(hay, needle)) expect(hay).toContain(needle)
-          expect(hayHasWord(needle, needle)).toBe(true)
-          expect(hayHasWord(`${hay} ${needle}`, needle)).toBe(true)
-          expect(hayHasWord(`${hay} x${needle}`, needle)).toBe(
-            hayHasWord(hay, needle),
-          )
-        },
-      ),
+      fc.property(hayNeedle, ([hay, needle]) => {
+        if (hayHasWord(hay, needle)) {
+          cov.hit("hit")
+          expect(hay).toContain(needle)
+        }
+        expect(hayHasWord(needle, needle)).toBe(true)
+        expect(hayHasWord(`${hay} ${needle}`, needle)).toBe(true)
+        expect(hayHasWord(`${hay} x${needle}`, needle)).toBe(
+          hayHasWord(hay, needle),
+        )
+      }),
+      { plugins: [cov.plugin] },
     )
   })
 
@@ -333,14 +359,16 @@ describe("string helpers", () => {
       )
     const swapCase = (c: string) =>
       c === c.toLowerCase() ? c.toUpperCase() : c.toLowerCase()
+    const cov = fcu.coverage({ hit: 25 })
     fc.assert(
       fc.property(hayNeedle, fc.func(fc.boolean()), ([hay, needle], flip) => {
         const recase = (s: string) =>
           [...s].map((c, i) => (flip(s, i) ? swapCase(c) : c)).join("")
-        expect(hayHasWord(recase(hay), recase(needle))).toBe(
-          hayHasWord(hay, needle),
-        )
+        const want = hayHasWord(hay, needle)
+        if (want) cov.hit("hit")
+        expect(hayHasWord(recase(hay), recase(needle))).toBe(want)
       }),
+      { plugins: [cov.plugin] },
     )
   })
 })

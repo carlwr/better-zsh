@@ -63,6 +63,7 @@ const arbRankedHit = arbRanked.chain(before => {
 
 describe("promoteToTop properties", () => {
   it("a permutation: the hit at slot 0 when present, the others in their order; else no change; the input untouched", () => {
+    const cov = fcu.coverage({ belowTop: 10, absent: 20 })
     fc.assert(
       fc.property(arbRankedHit, ({ before, hit }) => {
         const snapshot = structuredClone(before)
@@ -70,14 +71,17 @@ describe("promoteToTop properties", () => {
         expect(before).toEqual(snapshot)
         const present = hit !== null && before.some(m => sameRecord(m.rec, hit))
         if (!present) {
+          cov.hit("absent")
           expect(after).toEqual(before)
           return
         }
+        if (!sameRecord(before[0]?.rec ?? hit, hit)) cov.hit("belowTop")
         expect(after[0]?.rec).toEqual(expect.objectContaining(hit))
         expect(after.slice(1)).toEqual(
           before.filter(m => !sameRecord(m.rec, hit)),
         )
       }),
+      { plugins: [cov.plugin] },
     )
   })
 })
@@ -112,6 +116,7 @@ const arbMapQuery = arbMap.chain(entries => {
 
 describe("lookupIndex properties", () => {
   it("resolves the trimmed query verbatim, else lowercased, else not at all", () => {
+    const cov = fcu.coverage({ verbatim: 15, lowercased: 5, miss: 20 })
     fc.assert(
       fc.property(arbMapQuery, ({ entries, q, pad }) => {
         const idx = lookupIndex({ version: 1, entries })
@@ -120,7 +125,10 @@ describe("lookupIndex properties", () => {
         )
         const want = byRaw.get(q) ?? byRaw.get(q.toLowerCase()) ?? null
         expect(idx.lookup(`${pad}${q}${pad}`)).toEqual(q === "" ? null : want)
+        if (q === "" || want === null) cov.hit("miss")
+        else cov.hit(byRaw.has(q) ? "verbatim" : "lowercased")
       }),
+      { plugins: [cov.plugin] },
     )
   })
 })

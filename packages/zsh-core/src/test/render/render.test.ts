@@ -413,10 +413,13 @@ describe("render markdown", () => {
     })
 
     test("is idempotent", () => {
+      const cov = fcu.coverage({ bolded: 4 })
       fc.assert(
         fc.property(md, s => {
+          if (fmt(s) !== s) cov.hit("bolded")
           expect(fmt(fmt(s))).toBe(fmt(s))
         }),
+        { plugins: [cov.plugin] },
       )
     })
 

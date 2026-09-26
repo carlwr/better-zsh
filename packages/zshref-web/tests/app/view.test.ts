@@ -46,7 +46,7 @@ describe("viewState", () => {
   })
 
   it("an artifacts error outranks all, a cold search any search error; results or empty only after a settled search", () => {
-    const inputs: fc.Arbitrary<ViewInputs> = fcu.record({
+    const anyInputs: fc.Arbitrary<ViewInputs> = fcu.record({
       artifactsErr: fcu.element(["", "boom"]),
       hasArtifacts: fc.boolean(),
       searching: fc.boolean(),
@@ -55,9 +55,23 @@ describe("viewState", () => {
       firstRun: fc.boolean(),
       matchCount: fc.nat({ max: 3 }),
     })
+    // Half the inputs settled: drawn independently, a settled search is rare.
+    const inputs = fc.oneof(
+      anyInputs,
+      anyInputs.map(s => ({
+        ...s,
+        artifactsErr: "",
+        hasArtifacts: true,
+        searching: false,
+        searchErr: "",
+        firstRun: false,
+      })),
+    )
+    const cov = fcu.coverage({ settled: 25 })
     fc.assert(
       fc.property(inputs, s => {
         const { kind } = viewState(s)
+        if (kind === "results" || kind === "empty") cov.hit("settled")
         if (s.artifactsErr) expect(kind).toBe("artifacts-error")
         else if (s.hasArtifacts && s.searching && !s.embedderReady)
           expect(kind).toBe("searching-cold")
@@ -70,6 +84,7 @@ describe("viewState", () => {
             firstRun: false,
           })
       }),
+      { plugins: [cov.plugin] },
     )
   })
 

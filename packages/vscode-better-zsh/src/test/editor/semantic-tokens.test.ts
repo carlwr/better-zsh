@@ -131,6 +131,7 @@ describe("SemanticTokensProvider", () => {
         { maxLength: 6 },
       )
       .map(ws => ws.join(" "))
+    const cov = fcu.coverage({ func: 5, keyword: 25 })
     fc.assert(
       fc.property(
         fcu.nonEmptyArray(line, { maxLength: 5 }),
@@ -142,12 +143,18 @@ describe("SemanticTokensProvider", () => {
             const text = lines[t.line] ?? ""
             expect(t.start + t.length).toBeLessThanOrEqual(text.length)
             const word = text.slice(t.start, t.start + t.length)
-            if (t.type === FUNCTION) expect(builtins).toContain(word)
-            else expect([...reservedWords, "if", "then", "fi"]).toContain(word)
+            if (t.type === FUNCTION) {
+              cov.hit("func")
+              expect(builtins).toContain(word)
+            } else {
+              cov.hit("keyword")
+              expect([...reservedWords, "if", "then", "fi"]).toContain(word)
+            }
           }
           expectStrictlyAscending(raw.map(t => [t.line, t.start]))
         },
       ),
+      { plugins: [cov.plugin] },
     )
   })
 })

@@ -1,3 +1,4 @@
+import * as fcu from "@carlwr/fastcheck-utils"
 import fc from "fast-check"
 import { describe, expect, test } from "vitest"
 import { commentStart } from "../../analysis/comment"
@@ -111,13 +112,17 @@ describe("quotedRegionFacts", () => {
   })
 
   test("no comment starts inside a quoted region", () => {
+    const cov = fcu.coverage({ commentAndQuoted: 5 })
     fc.assert(
       fc.property(commentyLine, line => {
         const i = commentStart(line)
         if (i === undefined) return
-        for (const { span } of quotedRegionFacts([line]))
+        const facts = quotedRegionFacts([line])
+        if (facts.length > 0) cov.hit("commentAndQuoted")
+        for (const { span } of facts)
           expect(i < span.start || i >= span.end).toBe(true)
       }),
+      { plugins: [cov.plugin] },
     )
   })
 })

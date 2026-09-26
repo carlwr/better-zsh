@@ -155,15 +155,18 @@ describe("slices", () => {
         .element(["#", "$", "{", "_", ">", "😀"])
         .map(c => ({ c, alnum: false })),
     )
+    const cov = fcu.coverage({ punct: 8 })
     fc.assert(
       fc.property(fc.array(char, { maxLength: 6 }), cs => {
         const n = cs.length
         const punct = n > 0 && cs.every(x => !x.alnum)
+        if (punct) cov.hit("punct")
         expect(classify(cs.map(x => x.c).join(""))).toEqual([
           ...(n >= 1 && n <= 4 ? [`id length ${n}`] : []),
           ...(punct ? ["punctuation-only"] : []),
         ])
       }),
+      { plugins: [cov.plugin] },
     )
   })
 })

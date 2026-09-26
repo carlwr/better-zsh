@@ -1,4 +1,5 @@
 import { basename, dirname, join } from "node:path"
+import * as fcu from "@carlwr/fastcheck-utils"
 import fc from "fast-check"
 import { describe, expect, test } from "vitest"
 import type * as vscode from "vscode"
@@ -34,16 +35,19 @@ describe("extractSourcePaths", () => {
       word.map(w => `. ${w}`),
       fc.constant("# tail"),
     )
+    const cov = fcu.coverage({ path: 20 })
     fc.assert(
       fc.property(fc.array(chunk, { maxLength: 5 }), chunks => {
         const line = chunks.join(" ")
         const cut = line.indexOf("#") < 0 ? line.length : line.indexOf("#")
         for (const { path, start } of extractSourcePaths(line)) {
+          cov.hit("path")
           expect(line.slice(start, start + path.length)).toBe(path)
           expect(line.slice(0, start)).toMatch(/(?:^|\s)(?:source|\.)\s+$/)
           expect(start + path.length).toBeLessThanOrEqual(cut)
         }
       }),
+      { plugins: [cov.plugin] },
     )
   })
 })

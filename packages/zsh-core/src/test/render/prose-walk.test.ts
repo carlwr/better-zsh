@@ -42,10 +42,14 @@ describe("prose lines", () => {
 
   test("anyProseLine agrees with proseLines", () => {
     const hasA = (l: string) => l.includes("a")
+    const cov = fcu.coverage({ some: 12, none: 30 })
     fc.assert(
       fc.property(mdArb, md => {
-        expect(anyProseLine(md, hasA)).toBe([...proseLines(md)].some(hasA))
+        const want = [...proseLines(md)].some(hasA)
+        cov.hit(want ? "some" : "none")
+        expect(anyProseLine(md, hasA)).toBe(want)
       }),
+      { plugins: [cov.plugin] },
     )
   })
 })
@@ -72,15 +76,18 @@ describe("splitInlineCode", () => {
 
   // CommonMark: a span is closed by the first later run of its opener's length.
   test("code parts open and close on one run length, absent inside", () => {
+    const cov = fcu.coverage({ code: 8 })
     fc.assert(
       fc.property(tickish, s => {
         for (const code of splitInlineCode(s).filter((_, i) => i % 2 === 1)) {
+          cov.hit("code")
           const fence = code.match(/^`+/)?.[0] ?? ""
           const inner = code.slice(fence.length, code.length - fence.length)
           expect(code.endsWith(fence) && inner.length > 0).toBe(true)
           expect(inner.match(/`+/g) ?? []).not.toContain(fence)
         }
       }),
+      { plugins: [cov.plugin] },
     )
   })
 

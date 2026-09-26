@@ -33,6 +33,7 @@ const lineArb = fc.array(word, { maxLength: 8 }).map(ws => ws.join(" "))
 
 describe("activeTokenRangeAt", () => {
   test("off a delimiter and before the comment, yields the maximal delimiter-free run around the cursor", () => {
+    const cov = fcu.coverage({ token: 35, delimiter: 35, comment: 8 })
     fc.assert(
       fc.property(lineArb, line => {
         const doc = lineDoc(line)
@@ -48,7 +49,12 @@ describe("activeTokenRangeAt", () => {
           expect(s === 0 || delim(s - 1)).toBe(true)
           expect(e === cut || delim(e)).toBe(true)
         }
+        const before = [...line.slice(0, cut)]
+        if (before.some(ch => !isTokenDelimiter(ch))) cov.hit("token")
+        if (before.some(isTokenDelimiter)) cov.hit("delimiter")
+        if (cut < line.length) cov.hit("comment")
       }),
+      { plugins: [cov.plugin] },
     )
   })
 })

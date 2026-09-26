@@ -444,19 +444,25 @@ describe("sweep marks and rows", () => {
   it("the last maximum is the one best row; every other base-valued row is (base)", () => {
     // A coarse grid, so maxima tie; grid steps dwarf the epsilon.
     const score = fc.integer({ min: 0, max: 5 }).map(i => i / 5)
+    const cov = fcu.coverage({ tiedMax: 15, baseRow: 20 })
     fc.assert(
       fc.property(
         fcu.nonEmptyArray(score, { maxLength: 8 }),
         score,
         (combined, base) => {
-          const best = combined.lastIndexOf(Math.max(...combined))
+          const max = Math.max(...combined)
+          const best = combined.lastIndexOf(max)
           expect(sweepMarks(combined, base)).toEqual(
             combined.map((c, i) =>
               i === best ? " ◄ best" : c === base ? " (base)" : "",
             ),
           )
+          if (combined.indexOf(max) < best) cov.hit("tiedMax")
+          if (combined.some((c, i) => i !== best && c === base))
+            cov.hit("baseRow")
         },
       ),
+      { plugins: [cov.plugin] },
     )
   })
 

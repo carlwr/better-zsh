@@ -101,6 +101,7 @@ const appended = (query: string, expanded: string): string[] =>
 
 describe("expandQueryForEmbedding properties", () => {
   it("is deterministic and append-only: ≤ cap distinct fired-rule terms absent from the query; below the cap, every fired rule's term", () => {
+    const cov = fcu.coverage({ appends: 15, capped: 5 })
     fc.assert(
       fc.property(arbRules, arbQuery, (rules, q) => {
         const e = expandQueryForEmbedding(q, rules)
@@ -114,14 +115,18 @@ describe("expandQueryForEmbedding properties", () => {
           expect(fired.some(r => r.add === a)).toBe(true)
           expect(wordIn(q, a)).toBe(false)
         }
+        if (adds.length > 0) cov.hit("appends")
+        if (adds.length === MAX_APPENDED) cov.hit("capped")
         if (adds.length < MAX_APPENDED)
           for (const r of fired)
             expect(wordIn(q, r.add) || adds.includes(r.add)).toBe(true)
       }),
+      { plugins: [cov.plugin] },
     )
   })
 
   it("re-expanding appends nothing already present; nothing at all below the cap, chains aside", () => {
+    const cov = fcu.coverage({ settled: 3 })
     fc.assert(
       fc.property(arbRules, arbQuery, (rules, q) => {
         const e1 = expandQueryForEmbedding(q, rules)
@@ -134,9 +139,13 @@ describe("expandQueryForEmbedding properties", () => {
         const chained = rules.some(r =>
           r.when.some(w => !wordIn(q, w) && wordIn(e1, w)),
         )
-        if (appended(q, e1).length < MAX_APPENDED && !chained)
+        const n = appended(q, e1).length
+        if (n < MAX_APPENDED && !chained) {
           expect(e2).toBe(e1)
+          if (n > 0) cov.hit("settled")
+        }
       }),
+      { plugins: [cov.plugin] },
     )
   })
 })

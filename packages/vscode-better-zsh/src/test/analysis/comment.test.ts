@@ -1,3 +1,4 @@
+import * as fcu from "@carlwr/fastcheck-utils"
 import fc from "fast-check"
 import { describe, expect, test } from "vitest"
 import { commentStart } from "../../analysis/comment"
@@ -33,13 +34,16 @@ describe("commentStart", () => {
   })
 
   test("a comment start is a `#` fixed by the text up to it", () => {
+    const cov = fcu.coverage({ comment: 20 })
     fc.assert(
       fc.property(commentyLine, fc.string({ maxLength: 10 }), (line, tail) => {
         const i = commentStart(line)
         if (i === undefined) return
+        cov.hit("comment")
         expect(line[i]).toBe("#")
         expect(commentStart(line.slice(0, i + 1) + tail)).toBe(i)
       }),
+      { plugins: [cov.plugin] },
     )
   })
 })

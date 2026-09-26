@@ -38,7 +38,7 @@
     "test:pack": "pnpm build"
   },
   "devDependencies": {
-    "@carlwr/fastcheck-utils": "^0.7.0",
+    "@carlwr/fastcheck-utils": "^0.7.1",
     "@carlwr/zsh-core": "workspace:*",
     "@sveltejs/adapter-static": "^3.0.10",
     "@sveltejs/kit": "^2.70.3",

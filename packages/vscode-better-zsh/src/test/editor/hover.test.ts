@@ -285,17 +285,20 @@ describe("HoverProvider on the real corpus", () => {
       "{",
       "}",
     ])
+    const cov = fcu.coverage({ hover: 25 })
     fc.assert(
       fc.property(fc.array(vocab, { maxLength: 8 }), words => {
         const line = words.join(" ")
         for (let c = 0; c < line.length; c++) {
           const h = realAt(line, 0, c)
           if (!h) continue
+          cov.hit("hover")
           expect(c).toBeLessThan(activeEnd(line))
           for (let q = h.range[0]; q < h.range[1]; q++)
             expect(realAt(line, 0, q)).toEqual(h)
         }
       }),
+      { plugins: [cov.plugin] },
     )
   })
 })

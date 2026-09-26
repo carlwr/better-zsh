@@ -20,17 +20,21 @@ describe("advanceQuote", () => {
   })
 
   test("outside single quotes, a backslash quotes; with the next character, it leaves the state unchanged", () => {
+    const special = ["'", '"', "`", "\\"] as const
     const next = fc.oneof(
-      fcu.element(["'", '"', "`", "\\"]),
+      fcu.element(special),
       fc.string({ minLength: 1, maxLength: 1 }),
     )
+    const cov = fcu.coverage({ special: 25 })
     fc.assert(
       fc.property(fc.string(), next, (s, c) => {
         const st = scan(s)
         fc.pre(!st.sq && !st.esc)
         expect(isQuoted(scan(`${s}\\`))).toBe(true)
         expect(scan(`${s}\\${c}`)).toEqual(st)
+        if ((special as readonly string[]).includes(c)) cov.hit("special")
       }),
+      { plugins: [cov.plugin] },
     )
   })
 

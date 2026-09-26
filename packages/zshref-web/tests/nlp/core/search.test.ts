@@ -3,7 +3,7 @@
 // parity fixture's business.
 
 import * as fcu from "@carlwr/fastcheck-utils"
-import { allUnique, mapNonEmpty } from "@carlwr/typescript-extra"
+import { allUnique, isNonEmpty, mapNonEmpty } from "@carlwr/typescript-extra"
 import fc from "fast-check"
 import { beforeAll, describe, expect, it } from "vitest"
 import { lookupIndex } from "../../../nlp/core/lookup-map"
@@ -17,7 +17,7 @@ import {
 import { recordKey } from "../../../nlp/core/types"
 import { syntheticVec } from "../../../nlp/core/vec"
 import { loadRulesYaml } from "../../../nlp/node/rules-load"
-import { arbIndex, arbLookup, arbQuery, CATEGORIES } from "../../_arbs"
+import { arbIndex, arbLookupEntries, arbQuery, CATEGORIES } from "../../_arbs"
 import { syntheticIndex } from "../../_fixtures"
 
 const index = syntheticIndex([
@@ -88,25 +88,35 @@ describe("search", () => {
 })
 
 describe("search properties", () => {
+  // The query is often a lookup key or a record id, padded; the category set
+  // often absent, so a lookup hit is often kept.
   const arbArgs = arbIndex.chain(index =>
-    fcu.record({
-      index: fc.constant(index),
-      lookup: arbLookup(index),
-      query: fc.oneof(
-        arbQuery,
-        fcu.element(mapNonEmpty(index.records, r => ` ${r.text.id} `)),
-      ),
-      limit: fc.integer({ min: 0, max: 8 }),
-      categories: fc.option(
-        fc
-          .subarray(["x", ...CATEGORIES.map(c => c.category)])
-          .map(cs => new Set<string>(cs)),
-        { nil: null },
-      ),
-    }),
+    arbLookupEntries(index).chain(entries =>
+      fcu.record({
+        index: fc.constant(index),
+        lookup: fc.constant(lookupIndex({ version: 1, entries })),
+        query: fc.oneof(
+          arbQuery,
+          ...[
+            mapNonEmpty(index.records, r => r.text.id),
+            entries.map(e => e.raw),
+          ]
+            .filter(isNonEmpty)
+            .map(qs => fcu.element(qs).map(q => ` ${q} `)),
+        ),
+        limit: fc.integer({ min: 0, max: 8 }),
+        categories: fc.option(
+          fc
+            .subarray(["x", ...CATEGORIES.map(c => c.category)])
+            .map(cs => new Set<string>(cs)),
+          { nil: null, freq: 2 },
+        ),
+      }),
+    ),
   )
 
   it("total is the kept records' count, the matches its first `limit`, the lookup hit first when kept", async () => {
+    const cov = fcu.coverage({ lookupFirst: 8 })
     await fc.assert(
       fc.asyncProperty(arbArgs, async a => {
         const r = await search({ ...a, embed, rules })
@@ -123,14 +133,17 @@ describe("search properties", () => {
         const hit = a.lookup.lookup(q)
         const hitKept =
           hit && kept.some(x => recordKey(x.text) === recordKey(hit))
-        if (hitKept && a.limit > 0) expect(keys(r)[0]).toBe(recordKey(hit))
+        if (hitKept && a.limit > 0) {
+          cov.hit("lookupFirst")
+          expect(keys(r)[0]).toBe(recordKey(hit))
+        }
         // Every match is a kept record, each at most once.
         const ks = keys(r)
         expect(allUnique(ks)).toBe(true)
         for (const k of ks)
           expect(kept.map(x => recordKey(x.text))).toContain(k)
       }),
-      { numRuns: 60 },
+      { numRuns: 60, plugins: [cov.plugin] },
     )
   })
 })

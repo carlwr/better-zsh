@@ -111,6 +111,7 @@ describe("funcAt", () => {
         maxLength: 5,
       })
       .map(ws => ws.join(" "))
+    const cov = fcu.coverage({ hit: 12 })
     fc.assert(
       fc.property(fc.array(lineArb, { maxLength: 3 }), lines => {
         const doc = wordDoc(["foo() {}", ...lines].join("\n"))
@@ -118,6 +119,7 @@ describe("funcAt", () => {
           for (let c = 0; c <= text.length; c++) {
             const hit = funcAt(doc, pos(i + 1, c))
             if (!hit) continue
+            cov.hit("hit")
             const at = [hit.range.start.line, hit.range.start.character]
             expect(
               wordMatches(doc, hit.decl.name).map(r => [
@@ -128,6 +130,7 @@ describe("funcAt", () => {
           }
         })
       }),
+      { plugins: [cov.plugin] },
     )
   })
 })

@@ -178,11 +178,15 @@ describe("score properties", () => {
   })
 
   it("every score is in [0, 1]; per category the weighted mean, in byte order; the total their plain mean (0 for no votes)", () => {
+    const cov = fcu.coverage({ byteNotLocale: 30, noVotes: 3 })
     fc.assert(
       fc.property(fc.array(arbVote, { maxLength: 12 }), votes => {
         const s = score(votes)
         const cats = [...new Set(votes.map(v => v.category))].sort()
         expect([...s.perCategory.keys()]).toEqual(cats)
+        const byLocale = [...cats].sort((a, b) => a.localeCompare(b))
+        if (cats.some((c, i) => c !== byLocale[i])) cov.hit("byteNotLocale")
+        if (votes.length === 0) cov.hit("noVotes")
         for (const c of cats) {
           const mine = votes.filter(v => v.category === c)
           const w = mine.reduce((a, v) => a + v.weight, 0)
@@ -197,6 +201,7 @@ describe("score properties", () => {
         expect(s.total).toBeGreaterThanOrEqual(0)
         expect(s.total).toBeLessThanOrEqual(1 + 1e-12)
       }),
+      { plugins: [cov.plugin] },
     )
   })
 })

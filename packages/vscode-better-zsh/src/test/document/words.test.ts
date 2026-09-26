@@ -97,6 +97,7 @@ describe("wordMatchesAt", () => {
 
   test("the word at the cursor is among its matches; a `-`-glued one has none", () => {
     const at = (r: vscode.Range) => [r.start.line, r.start.character]
+    const cov = fcu.coverage({ glued: 25, matched: 30 })
     fc.assert(
       fc.property(fcu.nonEmptyArray(lineArb, { maxLength: 3 }), lines => {
         const doc = wordDoc(lines.join("\n"))
@@ -105,12 +106,17 @@ describe("wordMatchesAt", () => {
             const own = activeWordRangeAt(doc, pos(l, c))
             const rs = wordMatchesAt(doc, pos(l, c))
             if (!own) expect(rs).toBeUndefined()
-            else if (text[own.start.character - 1] === "-")
+            else if (text[own.start.character - 1] === "-") {
+              cov.hit("glued")
               expect(rs).toBeUndefined()
-            else expect(rs?.map(at)).toContainEqual(at(own))
+            } else {
+              cov.hit("matched")
+              expect(rs?.map(at)).toContainEqual(at(own))
+            }
           }
         })
       }),
+      { plugins: [cov.plugin] },
     )
   })
 })

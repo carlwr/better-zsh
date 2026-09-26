@@ -5,7 +5,11 @@ import * as fcu from "@carlwr/fastcheck-utils"
 import { mapNonEmpty, type NonEmpty } from "@carlwr/typescript-extra"
 import fc from "fast-check"
 
-import { type LookupIndex, lookupIndex } from "../nlp/core/lookup-map"
+import {
+  type LookupEntry,
+  type LookupIndex,
+  lookupIndex,
+} from "../nlp/core/lookup-map"
 import type { Tuning } from "../nlp/core/rules"
 import {
   type IndexedRecord,
@@ -146,26 +150,30 @@ export const arbRecordIds = (index: NonEmptyIndex): fc.Arbitrary<RecordId[]> =>
     { maxLength: 4 },
   )
 
-/** A lookup over `index`: a few of its records under raw forms the queries may hit, plus one it lacks. */
+/** Lookup entries over `index`: a few of its records under raw forms the queries may hit, plus one it lacks. */
+export const arbLookupEntries = (
+  index: VectorIndex,
+): fc.Arbitrary<LookupEntry[]> =>
+  fc.uniqueArray(
+    fc
+      .tuple(
+        fcu.element<RecordId>([
+          { category: "builtin", id: "missing" },
+          ...index.records.map(r => r.text),
+        ]),
+        fcu.element(["", "the ", "Option "]),
+      )
+      .map(([rec, prefix]) => ({
+        raw: `${prefix}${rec.id}`,
+        category: rec.category,
+        id: rec.id,
+      })),
+    { maxLength: 4, selector: e => e.raw },
+  )
+
+/** A lookup over `index`, of `arbLookupEntries`. */
 export const arbLookup = (index: VectorIndex): fc.Arbitrary<LookupIndex> =>
-  fc
-    .uniqueArray(
-      fc
-        .tuple(
-          fcu.element<RecordId>([
-            { category: "builtin", id: "missing" },
-            ...index.records.map(r => r.text),
-          ]),
-          fcu.element(["", "the ", "Option "]),
-        )
-        .map(([rec, prefix]) => ({
-          raw: `${prefix}${rec.id}`,
-          category: rec.category,
-          id: rec.id,
-        })),
-      { maxLength: 4, selector: e => e.raw },
-    )
-    .map(entries => lookupIndex({ version: 1, entries }))
+  arbLookupEntries(index).map(entries => lookupIndex({ version: 1, entries }))
 
 // --- evals ---------------------------------------------------------------------
 

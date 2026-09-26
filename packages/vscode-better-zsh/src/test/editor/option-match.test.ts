@@ -1,5 +1,5 @@
 import * as fcu from "@carlwr/fastcheck-utils"
-import { allUnique } from "@carlwr/typescript-extra"
+import { allUnique, isNonEmpty } from "@carlwr/typescript-extra"
 import fc from "fast-check"
 import { describe, expect, test } from "vitest"
 import { matchOptions } from "../../editor/option-match"
@@ -64,8 +64,26 @@ describe("matchOptions", () => {
   })
 
   test("plain matches (label = id) precede `no_` matches (label = no_ + id); each id at most once per form", () => {
+    // Typed text is often a prefix of an option, bare or `no`-prefixed: random
+    // text alone next to never matches.
+    const arb = optionArb.chain(raw => {
+      const prefix = isNonEmpty(raw)
+        ? fc
+            .tuple(fcu.element(raw), fc.integer({ min: 1, max: 4 }))
+            .map(([o, n]) => o.slice(0, n))
+        : typedArb
+      return fc.tuple(
+        fc.constant(raw),
+        fc.oneof(
+          typedArb,
+          prefix,
+          prefix.map(p => `no${p}`),
+        ),
+      )
+    })
+    const cov = fcu.coverage({ plain: 8, negated: 12 })
     fc.assert(
-      fc.property(optionArb, typedArb, (raw, typed) => {
+      fc.property(arb, ([raw, typed]) => {
         const ms = matchOptions(mkOpts(raw), typed)
         const split = ms.findIndex(m => m.label.startsWith("no_"))
         const [plain, negated] =
@@ -78,7 +96,11 @@ describe("matchOptions", () => {
         for (const m of negated)
           expect(`no${m.canonical}`.startsWith(typed)).toBe(true)
         expect(allUnique(plain.map(m => m.canonical))).toBe(true)
+        // Empty typed text matches everything, vacuously.
+        if (typed && plain.length > 0) cov.hit("plain")
+        if (typed && negated.length > 0) cov.hit("negated")
       }),
+      { plugins: [cov.plugin] },
     )
   })
 

@@ -184,9 +184,11 @@ describe("query token properties", () => {
   })
 
   it("symbol head: a non-empty prefix of the display bearing no alphanumeric or space, else null", () => {
+    const cov = fcu.coverage({ head: 15, none: 30 })
     fc.assert(
       fc.property(arbAsciiText, display => {
         const head = symbolHead(display)
+        cov.hit(head === null ? "none" : "head")
         if (head === null)
           expect(display === "" || /^[A-Za-z0-9 ]/.test(display)).toBe(true)
         else {
@@ -195,6 +197,7 @@ describe("query token properties", () => {
           expect(display.slice(head.length)).toMatch(/^$|^[A-Za-z0-9 ]/)
         }
       }),
+      { plugins: [cov.plugin] },
     )
   })
 
