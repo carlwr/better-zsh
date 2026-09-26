@@ -72,12 +72,12 @@
     "verifyREGISTRY": "pnpm run testREGISTRY:install && pnpm run jsrREGISTRY:check"
   },
   "dependencies": {
-    "@carlwr/typescript-extra": "0.12.2"
+    "@carlwr/typescript-extra": "0.13.0"
   },
   "devDependencies": {
-    "@carlwr/fastcheck-utils": "^0.5.2",
+    "@carlwr/fastcheck-utils": "^0.7.0",
     "ajv": "^8.20.0",
     "ts-json-schema-generator": "^2.9.0",
-    "vitest": "^5.0.1"
+    "vitest": "^5.0.2"
   }
 }

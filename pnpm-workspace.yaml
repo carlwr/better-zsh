@@ -18,4 +18,5 @@ allowBuilds:
 # refuses a lockfile entry younger than that. Own upstreams get bumped within
 # hours of publish.
 minimumReleaseAgeExclude:
+  - "@carlwr/fastcheck-utils"
   - "@carlwr/typescript-extra"
