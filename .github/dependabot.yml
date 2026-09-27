@@ -8,10 +8,12 @@ updates:
     groups:
       minor-and-patch:
         update-types: ["minor", "patch"]
-    # Keep @types/node on the `engines.node` major; raise both together.
+    # Keep @types/node on the `engines.node` major, and @types/vscode on the
+    # extension's `engines.vscode`; raise each pair together.
     ignore:
       - dependency-name: "@types/node"
         update-types: ["version-update:semver-major"]
+      - dependency-name: "@types/vscode"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
@@ -26,3 +28,11 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
+  - package-ecosystem: "cargo"
+    directory: "/zshref-rs"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types: ["minor", "patch"]

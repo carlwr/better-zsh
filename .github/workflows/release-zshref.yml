@@ -66,6 +66,14 @@ jobs:
           tag_version=${GITHUB_REF#refs/tags/zshref-v}
           [ "$tag_version" = "$VERSION" ] || { echo "tag $tag_version vs crate $VERSION"; exit 1; }
 
+      # The tag guard and tag-bound steps below run on tag refs only, so a
+      # real publish must come from one; elsewhere a manual run only rehearses.
+      - name: Refuse a real publish off-tag
+        if: inputs.dry_run == false && !startsWith(github.ref, 'refs/tags/zshref-v')
+        run: |
+          echo "real publish needs a zshref-v* tag ref; got $GITHUB_REF"
+          exit 1
+
       - name: Publish or dry-run
         id: mode
         run: echo "publish=${{ github.event_name == 'push' || inputs.dry_run == false }}" | tee -a "$GITHUB_OUTPUT"
@@ -179,7 +187,8 @@ jobs:
           TAG: ${{ github.ref_name }}
           VERSION: ${{ needs.check.outputs.version }}
         run: |
-          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" \
+          pre=; [[ "$VERSION" != *-* ]] || pre=--prerelease
+          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" $pre \
             --title "zshref $VERSION" \
             --notes "Prebuilt \`zshref\` and \`zshref-mcp\` binaries for zshref $VERSION. Also on crates.io (\`cargo install zshref --features mcp\`, \`cargo binstall zshref\`) and npm (\`@carlwr/zshref\`, \`@carlwr/zshref-mcp\`)."
           gh release upload "$TAG" --clobber zshref-* SHA256SUMS

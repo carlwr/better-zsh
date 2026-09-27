@@ -27,6 +27,14 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # The tag guard and tag-bound steps below run on tag refs only, so a
+      # real publish must come from one; elsewhere a manual run only rehearses.
+      - name: Refuse a real publish off-tag
+        if: inputs.dry_run == false && !startsWith(github.ref, 'refs/tags/ext-v')
+        run: |
+          echo "real publish needs a ext-v* tag ref; got $GITHUB_REF"
+          exit 1
+
       - uses: ./.github/actions/setup-node-pnpm
 
       - name: Verify tag matches package version
@@ -51,7 +59,10 @@ jobs:
         id: prerelease
         run: |
           version=$(node -p "require('./packages/vscode-better-zsh/package.json').version")
-          if [[ "$version" == *-* ]]; then flag=--pre-release; else flag=""; fi
+          # The Marketplace rejects semver prerelease suffixes; odd minor it is.
+          [[ "$version" != *-* ]] || { echo "no -suffix versions on the Marketplace: $version"; exit 1; }
+          minor=$(cut -d. -f2 <<<"$version")
+          if (( minor % 2 )); then flag=--pre-release; else flag=""; fi
           echo "flag=$flag" >> "$GITHUB_OUTPUT"
           echo "resolved version=$version pre-release-flag='$flag'"
 
