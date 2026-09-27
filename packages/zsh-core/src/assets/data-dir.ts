@@ -3,11 +3,13 @@ import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 import { corpusYodlFiles } from "../docs/source-files.ts"
 
-// Dual CJS/ESM resolution for the module's own directory.
-const thisDir: string =
-  typeof __dirname !== "undefined"
-    ? resolve(__dirname)
-    : dirname(fileURLToPath(import.meta.url))
+// Dual CJS/ESM resolution for the module's own directory. ESM checks
+// `import.meta.url` first: a global `__dirname` (`node -e`, REPL) would
+// otherwise shadow it with the working directory.
+const metaUrl: string | undefined = import.meta.url
+const thisDir: string = metaUrl
+  ? dirname(fileURLToPath(metaUrl))
+  : resolve(__dirname)
 
 /** The one directory name the runtime lookup accepts beside the module. */
 export const runtimeZshDataDir = "zsh-core-data"

@@ -1,5 +1,7 @@
+import { execFileSync } from "node:child_process"
 import { existsSync, mkdirSync, writeFileSync } from "node:fs"
-import { join } from "node:path"
+import { dirname, join } from "node:path"
+import { fileURLToPath, pathToFileURL } from "node:url"
 import { describe, expect, test } from "vitest"
 import {
   copyRuntimeZshData,
@@ -19,6 +21,24 @@ describe("resolveZshDataDir", () => {
       const dataDir = join(dir, sub)
       mkdirSync(dataDir, { recursive: true })
       expect(resolveZshDataDir(dir)).toBe(dataDir)
+    })
+  })
+
+  // `node -e` defines a global `__dirname` (the working directory); the
+  // default lookup must still start from the module, not from there.
+  test("defaults to the module's directory under `node -e`", () => {
+    const here = dirname(fileURLToPath(import.meta.url))
+    const module = pathToFileURL(join(here, "..", "assets", "data-dir.ts"))
+    withTmpDir("better-zsh-zsh-core-", dir => {
+      const out = execFileSync(
+        process.execPath,
+        [
+          "-e",
+          `import(${JSON.stringify(module.href)}).then(m => process.stdout.write(m.resolveZshDataDir()))`,
+        ],
+        { cwd: dir, encoding: "utf8" },
+      )
+      expect(out).toBe(join(here, "..", "data", "zsh-docs"))
     })
   })
 })
