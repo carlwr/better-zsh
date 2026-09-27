@@ -6,6 +6,7 @@ import { pkgDir, stagedExtensionDir } from "./paths"
 const copiedEntries = [
   ".vscodeignore",
   "LICENSE",
+  "README.md",
   "THIRD_PARTY_NOTICES.md",
   "out",
   "syntaxes",

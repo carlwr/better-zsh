@@ -38,6 +38,7 @@ const referenced = [
 
 const required = [
   "LICENSE",
+  "README.md",
   "THIRD_PARTY_NOTICES.md",
   "package.json",
   "syntaxes/THIRD_PARTY_NOTICES.md",

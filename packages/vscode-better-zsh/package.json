@@ -1,23 +1,39 @@
 {
   "name": "better-zsh",
-  "description": "Improved zsh shellscript code editing experience",
+  "description": "Zsh language support: hovers and completions from the zsh manual, syntax checks, snippets, and function navigation",
   "version": "0.0.1",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/carlwr/better-zsh"
+    "url": "https://github.com/carlwr/better-zsh",
+    "directory": "packages/vscode-better-zsh"
   },
+  "homepage": "https://github.com/carlwr/better-zsh/tree/main/packages/vscode-better-zsh#readme",
+  "bugs": "https://github.com/carlwr/better-zsh/issues",
   "author": {
     "name": "carlwr",
     "url": "https://github.com/carlwr"
   },
   "publisher": "carlwr",
   "engines": {
-    "vscode": "^1.96.0",
+    "vscode": "^1.110.0",
     "node": ">=22"
   },
   "categories": [
-    "Programming Languages"
+    "Programming Languages",
+    "Linters",
+    "Snippets"
+  ],
+  "keywords": [
+    "zsh",
+    "zshrc",
+    "shell",
+    "shellscript",
+    "setopt",
+    "builtins",
+    "hover",
+    "completion",
+    "documentation"
   ],
   "main": "./out/extension.js",
   "scripts": {

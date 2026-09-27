@@ -3,6 +3,6 @@
   "publisher": "test",
   "version": "0.0.0",
   "engines": {
-    "vscode": "^1.96.0"
+    "vscode": "^1.110.0"
   }
 }
