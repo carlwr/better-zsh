@@ -25,8 +25,10 @@ pnpm add @carlwr/zsh-core
 
 Deno / JSR:
 
-```ts
-import { loadCorpus } from "jsr:@carlwr/zsh-core"
+```sh
+deno add jsr:@carlwr/zsh-core
+# or, from Node
+npx jsr add @carlwr/zsh-core
 ```
 
 ## Minimal usage

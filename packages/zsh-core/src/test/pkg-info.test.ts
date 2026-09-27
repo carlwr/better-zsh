@@ -44,6 +44,11 @@ describe("pkg-info constants stay in sync with manifests", () => {
   })
 })
 
+test("repo-derived manifest URLs follow PKG_REPO_URL", () => {
+  expect(pkg.homepage).toMatch(new RegExp(`^${escapeRegExp(PKG_REPO_URL)}/`))
+  expect(pkg.bugs).toBe(`${PKG_REPO_URL}/issues`)
+})
+
 describe("shared-surface exports stay in sync", () => {
   test("deno.json.exports is exactly the shared subpaths", () => {
     expect(Object.keys(deno.exports).sort()).toEqual(sharedExports)

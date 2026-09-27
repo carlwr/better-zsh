@@ -5,8 +5,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/carlwr/better-zsh"
+    "url": "https://github.com/carlwr/better-zsh",
+    "directory": "packages/zsh-core"
   },
+  "homepage": "https://github.com/carlwr/better-zsh/tree/main/packages/zsh-core#readme",
+  "bugs": "https://github.com/carlwr/better-zsh/issues",
   "main": "./dist/index.js",
   "types": "./dist/types/index.d.ts",
   "engines": {
