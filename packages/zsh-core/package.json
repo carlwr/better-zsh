@@ -121,6 +121,7 @@
   },
   "devDependencies": {
     "@carlwr/fastcheck-utils": "^0.7.1",
+    "@types/node": "^22.20.4",
     "ajv": "^8.20.0",
     "ts-json-schema-generator": "^2.9.0",
     "vitest": "^5.0.2"
