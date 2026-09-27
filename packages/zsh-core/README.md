@@ -13,7 +13,7 @@ Library-first: the VS Code extension, the web SPA, and the Rust crate (CLI + MCP
 - **Orthogonal primitives** — raw-to-doc resolution and markdown rendering stay separate.
 - **Release assets** — a versioned index plus one record file (every category's records under its category), one JSON Schema bundle (the record file validates against its root, a category's records against `#/$defs/<category>`), and a resolver conformance fixture for resolver mirrors; attached to the GitHub release tag for consumers outside TypeScript.
 
-Public reading surface: `dist/types/*.d.ts` after `pnpm build`.
+Public reading surface: `dist/types/*.d.mts` after `pnpm build`.
 
 ## Install
 
@@ -22,6 +22,8 @@ npm install @carlwr/zsh-core
 # or
 pnpm add @carlwr/zsh-core
 ```
+
+Node ≥ 22; ESM (`import`) and CommonJS (`require`), typed for both.
 
 Deno / JSR:
 

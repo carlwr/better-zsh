@@ -7,8 +7,8 @@ import { join } from "node:path"
 import { withoutFirstSubstring } from "@carlwr/typescript-extra"
 
 /**
- * Every non-glob `exports` subpath, sorted. `./data/*`, `./schema/*` and
- * `./package.json` are npm-only; the rest is the surface shared with JSR.
+ * Every non-glob `exports` subpath, sorted. `./package.json` is npm-only; the
+ * rest is the surface shared with JSR.
  */
 export function sharedSubpaths(pkgDir: string): string[] {
   const { exports } = JSON.parse(

@@ -69,7 +69,8 @@ const offenders = []
 for (const name of ["zsh-core"]) {
   const dir = join(pkgsDir, name)
   const pkg = readJson(join(dir, "package.json"))
-  const cjs = pkg.exports?.["."]?.require
+  const req = pkg.exports?.["."]?.require
+  const cjs = typeof req === "object" ? req.default : req
   if (cjs === undefined) continue
   const entry = join(dir, cjs)
   if (!existsSync(entry)) continue // not built; other gates cover that

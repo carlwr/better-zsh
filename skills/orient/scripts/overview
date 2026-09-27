@@ -71,7 +71,7 @@ list-nonignored-files \
 print
 
 () {
-  local glob='*/dist/types/*.d.ts'
+  local glob='*/dist/types/*.d.mts'
   local matches
   section "rolled-up public APIs with JSDoc ($glob)"
   print

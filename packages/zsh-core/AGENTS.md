@@ -8,7 +8,7 @@
 
 ## Package imports
 
-Canonical subpath list: `package.json` `exports`; per-subpath surface: `dist/types/*.d.ts`.
+Canonical subpath list: `package.json` `exports`; per-subpath surface: `dist/types/*.d.mts`.
 
 ## Gotchas
 

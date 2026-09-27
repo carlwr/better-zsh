@@ -56,7 +56,7 @@ try {
   // Representative subpaths, not every one.
   const driver = `
 import { loadCorpus } from "@carlwr/zsh-core"
-import { runtimeZshDataDir } from "@carlwr/zsh-core/assets"
+import { runtimeZshDataPaths } from "@carlwr/zsh-core/assets"
 import { ZSH_UPSTREAM } from "@carlwr/zsh-core/meta"
 import { renderRecord } from "@carlwr/zsh-core/render"
 import { resolve } from "@carlwr/zsh-core/resolver"
@@ -76,8 +76,8 @@ if (title !== "\`AUTO_CD\`" || typeof mdBody !== "string" || mdBody.length === 0
 if (!/AUTO[_ ]?CD/i.test(mdBody)) {
   throw new Error("renderRecord body missing expected AUTO_CD reference")
 }
-if (typeof runtimeZshDataDir !== "string" || runtimeZshDataDir.length === 0) {
-  throw new Error("runtimeZshDataDir is not a non-empty string")
+if (!Array.isArray(runtimeZshDataPaths) || runtimeZshDataPaths.length === 0) {
+  throw new Error("runtimeZshDataPaths is not a non-empty array")
 }
 if (!/^zsh-/.test(ZSH_UPSTREAM.tag)) {
   throw new Error("ZSH_UPSTREAM tag missing expected prefix")
@@ -93,6 +93,24 @@ process.stdout.write("ok")
   }).trim()
   if (result !== "ok") {
     throw new Error(`driver output mismatch: got "${result}"`)
+  }
+
+  // The CJS build, through `require`: the same loader from the other format.
+  const cjsDriver = `
+const { loadCorpus } = require("@carlwr/zsh-core")
+const { resolve } = require("@carlwr/zsh-core/resolver")
+const hit = resolve(loadCorpus(), "option", "AUTO_CD")
+if (hit?.record.id !== "autocd") throw new Error("CJS resolve failed")
+process.stdout.write("ok")
+`
+  const cjsDriverPath = join(instDir, "driver.cjs")
+  writeFileSync(cjsDriverPath, cjsDriver)
+  const cjsResult = execFileSync("node", [cjsDriverPath], {
+    cwd: instDir,
+    encoding: "utf8",
+  }).trim()
+  if (cjsResult !== "ok") {
+    throw new Error(`CJS driver output mismatch: got "${cjsResult}"`)
   }
 
   process.stdout.write("zsh-core install-smoke: OK\n")

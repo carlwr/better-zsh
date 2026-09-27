@@ -1,9 +1,11 @@
 import { execFileSync } from "node:child_process"
-import { mkdtempSync, rmSync } from "node:fs"
+import { mkdtempSync, readFileSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 import { escapeRegExp } from "@carlwr/typescript-extra"
+import { publint } from "publint"
+import { formatMessage } from "publint/utils"
 import { corpusYodlFiles } from "../src/docs/source-files.ts"
 import { publicEntries } from "./pkg-entries.ts"
 
@@ -19,21 +21,15 @@ const vendoredDocs = [
 ] as const
 
 function bundleFiles(entry: string): readonly string[] {
-  return [
-    `dist/${entry}.d.ts`,
-    `dist/${entry}.js`,
-    `dist/${entry}.js.map`,
-    `dist/${entry}.mjs`,
-    `dist/${entry}.mjs.map`,
-  ]
+  return [`dist/${entry}.cjs`, `dist/${entry}.mjs`]
 }
 
 function apiFile(entry: string): string {
   return `dist/api/${entry}.api.json`
 }
 
-function apiTypesFile(entry: string): string {
-  return `dist/types/${entry}.d.ts`
+function apiTypesFiles(entry: string): readonly string[] {
+  return [`dist/types/${entry}.d.mts`, `dist/types/${entry}.d.cts`]
 }
 
 try {
@@ -58,7 +54,7 @@ try {
     "deno.json",
     ...entries.flatMap(bundleFiles),
     ...entries.map(apiFile),
-    ...entries.map(apiTypesFile),
+    ...entries.flatMap(apiTypesFiles),
     ...vendoredDocs.map(file => `dist/data/zsh-docs/${file}`),
   ]
 
@@ -76,6 +72,9 @@ try {
     // Generated JSON is not a registry payload.
     [/^artifacts\//, "generated JSON artifact"],
     [/^node_modules\//, "node_modules content"],
+    // The bundler's per-entry declarations: API Extractor's rollups under
+    // `dist/types/` are what `exports` names.
+    [/^dist\/[^/]+\.d\.[mc]ts$/, "unrolled declaration file"],
   ] as const
 
   const missing = required.filter(file => !packed.has(file))
@@ -155,6 +154,27 @@ try {
     }
     throw new Error(parts.join("\n\n"))
   }
+
+  // What consumers' resolvers see: publint for the manifest, attw for types
+  // under each resolution mode. node10 predates `exports`, so it cannot
+  // reach subpaths at all; TS 6 deprecates it.
+  const tarball = resolve(tmp, filename)
+  const lint = await publint({
+    pack: { tarball: readFileSync(tarball).buffer as ArrayBuffer },
+    level: "warning",
+    strict: true,
+  })
+  const lintIssues = lint.messages.map(
+    m => formatMessage(m, lint.pkg) ?? m.code,
+  )
+  if (lintIssues.length > 0) {
+    throw new Error(`publint:\n- ${lintIssues.join("\n- ")}`)
+  }
+  execFileSync(
+    pnpm,
+    ["exec", "attw", tarball, "--profile", "node16", "--format", "ascii"],
+    { cwd: pkgDir, encoding: "utf8", stdio: ["ignore", "ignore", "inherit"] },
+  )
 
   process.stdout.write("zsh-core pack: OK\n")
 } finally {

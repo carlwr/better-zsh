@@ -10,46 +10,76 @@
   },
   "homepage": "https://github.com/carlwr/better-zsh/tree/main/packages/zsh-core#readme",
   "bugs": "https://github.com/carlwr/better-zsh/issues",
-  "main": "./dist/index.js",
-  "types": "./dist/types/index.d.ts",
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/types/index.d.cts",
   "engines": {
     "node": ">=22"
   },
   "files": [
     "dist",
+    "!dist/*.d.mts",
+    "!dist/*.d.cts",
     "LICENSE",
     "THIRD_PARTY_NOTICES.md",
     "deno.json"
   ],
   "exports": {
     ".": {
-      "types": "./dist/types/index.d.ts",
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.js",
+      "import": {
+        "types": "./dist/types/index.d.mts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/types/index.d.cts",
+        "default": "./dist/index.cjs"
+      },
       "default": "./dist/index.mjs"
     },
     "./assets": {
-      "types": "./dist/types/assets.d.ts",
-      "import": "./dist/assets.mjs",
-      "require": "./dist/assets.js",
+      "import": {
+        "types": "./dist/types/assets.d.mts",
+        "default": "./dist/assets.mjs"
+      },
+      "require": {
+        "types": "./dist/types/assets.d.cts",
+        "default": "./dist/assets.cjs"
+      },
       "default": "./dist/assets.mjs"
     },
     "./meta": {
-      "types": "./dist/types/meta.d.ts",
-      "import": "./dist/meta.mjs",
-      "require": "./dist/meta.js",
+      "import": {
+        "types": "./dist/types/meta.d.mts",
+        "default": "./dist/meta.mjs"
+      },
+      "require": {
+        "types": "./dist/types/meta.d.cts",
+        "default": "./dist/meta.cjs"
+      },
       "default": "./dist/meta.mjs"
     },
     "./render": {
-      "types": "./dist/types/render.d.ts",
-      "import": "./dist/render.mjs",
-      "require": "./dist/render.js",
+      "import": {
+        "types": "./dist/types/render.d.mts",
+        "default": "./dist/render.mjs"
+      },
+      "require": {
+        "types": "./dist/types/render.d.cts",
+        "default": "./dist/render.cjs"
+      },
       "default": "./dist/render.mjs"
     },
     "./resolver": {
-      "types": "./dist/types/resolver.d.ts",
-      "import": "./dist/resolver.mjs",
-      "require": "./dist/resolver.js",
+      "import": {
+        "types": "./dist/types/resolver.d.mts",
+        "default": "./dist/resolver.mjs"
+      },
+      "require": {
+        "types": "./dist/types/resolver.d.cts",
+        "default": "./dist/resolver.cjs"
+      },
       "default": "./dist/resolver.mjs"
     },
     "./package.json": "./package.json"
