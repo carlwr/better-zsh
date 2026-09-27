@@ -102,6 +102,20 @@ describe("artifact loader", () => {
     expect(timesAsked(asked, ARTIFACT.searchVectors)).toBe(1)
   })
 
+  // Another model's vectors would rank as noise against the queries'.
+  it("a full load rejects an index of another model revision", async ctx => {
+    if (bothGate) ctx.skip(bothGate)
+
+    const { fetch } = recordingFetch()
+    const text = loadTextArtifacts({ fetch }).then(t => ({
+      ...t,
+      index: { ...t.index, model_revision: "other" },
+    }))
+    await expect(loadArtifacts({ fetch }, text)).rejects.toThrow(
+      /model revision is other, expected/,
+    )
+  })
+
   // No gate: every URL misses, which is what proves the base was used.
   it("fetches from a base the caller gives it", async () => {
     const { fetch, asked } = recordingFetch()

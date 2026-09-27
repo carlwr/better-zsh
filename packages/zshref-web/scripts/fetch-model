@@ -10,11 +10,14 @@ me=${0:t}
 webDir=${0:A:h:h}
 dst=$webDir/.aux/model
 
-repo=BAAI/bge-small-en-v1.5  # = the embedder's MODEL_ID; a test checks the pin
-
-# Pinned revision: on a moving ref, new weights would silently change every
-# vector in the index and every score derived from it.
+# = MODEL_ID and MODEL_REVISION (nlp/core/types.ts; a test checks both): the
+# browser loads the same commit, so the index and the queries share weights.
+repo=BAAI/bge-small-en-v1.5
 rev=5c38ec7c405ec4b44b94cc5a9bb96e735b38267a
+
+# The revision the files in $dst came from; a file at the right size but from
+# another revision is fetched again.
+stamp=$dst/.revision
 
 # <path>:<bytes>. The revision pins the content; the size catches a
 # truncated or interrupted download.
@@ -31,7 +34,8 @@ files=(
 help="
 Download the local NLP model into packages/zshref-web/.aux/model/ (~127M).
 
-Idempotent: a file already present at the pinned size is left alone.
+Idempotent: a file already present from the pinned revision, at its size, is
+left alone.
 
 USAGE:
   $me [--help]
@@ -59,11 +63,15 @@ esac
 (( $+commands[curl] )) \
   || die "curl not found" "install curl, or place $repo files under $dst by hand"
 
+haveRev=
+[[ -f $stamp ]] && haveRev=$(<$stamp)
+[[ $haveRev == $rev ]] || rm -f $stamp  # written once every file is at $rev
+
 for entry in $files ; do
   rel=${entry%:*}
   want=${entry##*:}
   out=$dst/$rel
-  if [[ -f $out ]] && (( $(size-of $out) == want )) ; then
+  if [[ $haveRev == $rev && -f $out ]] && (( $(size-of $out) == want )) ; then
     msg "have  $rel"
     continue
   fi
@@ -79,4 +87,5 @@ for entry in $files ; do
   mv $out.tmp $out
 done
 
+[[ $haveRev == $rev ]] || print -r -- $rev > $stamp
 msg "model → $dst"

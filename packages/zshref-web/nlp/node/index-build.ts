@@ -11,6 +11,8 @@ import {
   DIMS,
   type IndexedRecord,
   MODEL_ID,
+  MODEL_REVISION,
+  modelMismatch,
   perView,
   type VectorIndex,
   VIEWS,
@@ -83,6 +85,7 @@ export async function buildIndex({
   const index: VectorIndex = {
     version: INDEX_VERSION,
     model: MODEL_ID,
+    model_revision: MODEL_REVISION,
     dims: DIMS,
     normalized: true,
     corpus_hash: corpusFingerprint(corpus),
@@ -105,8 +108,8 @@ export function validateIndex(
   const fail = (reason: string): IndexValidation => ({ ok: false, reason })
   if (index.version !== INDEX_VERSION)
     return fail(`unsupported nlp index version ${index.version}`)
-  if (index.model !== MODEL_ID)
-    return fail(`nlp index model is ${index.model}, expected ${MODEL_ID}`)
+  const mismatch = modelMismatch(index)
+  if (mismatch) return fail(mismatch)
   if (index.dims !== DIMS)
     return fail(`nlp index dims is ${index.dims}, expected ${DIMS}`)
   if (index.corpus_hash !== corpusFingerprint(corpus)) {

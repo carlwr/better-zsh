@@ -37,6 +37,7 @@ export const syntheticIndexOf = <R extends IndexedRecord[]>(
 ): VectorIndex & { records: R } => ({
   version: INDEX_VERSION,
   model: "synthetic",
+  model_revision: "synthetic",
   dims: DIMS,
   normalized: true,
   corpus_hash: "synthetic",

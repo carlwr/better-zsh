@@ -5,7 +5,7 @@
 
 import { memoizedRetry } from "@carlwr/typescript-extra"
 import type { ProgressInfo } from "@huggingface/transformers"
-import { DIMS, MODEL_ID } from "../core/types"
+import { DIMS, MODEL_ID, MODEL_REVISION } from "../core/types"
 
 export type FeatureExtractionPipeline = (
   inputs: string | string[],
@@ -30,6 +30,9 @@ const defaultPipeline = memoizedRetry(
     env.allowRemoteModels = true
     return (await pipeline("feature-extraction", MODEL_ID, {
       dtype: "fp32",
+      // The weights, config and tokenizer load at the pin; transformers.js
+      // 4.3's upfront file-size probe (progress totals only) still asks `main`.
+      revision: MODEL_REVISION,
       // `progress_total` is the pipeline's own aggregate over its files.
       progress_callback: (e: ProgressInfo) => {
         if (e.status === "progress_total")

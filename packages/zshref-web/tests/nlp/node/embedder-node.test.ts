@@ -1,12 +1,12 @@
 // Node embedder over the local model; skipped without it
-// (`scripts/fetch-model`). The fetch script's model-id pin always runs.
+// (`scripts/fetch-model`). The fetch script's model pin always runs.
 
 import { readFileSync } from "node:fs"
 import { resolve } from "node:path"
 import { isSingle } from "@carlwr/typescript-extra"
 import { beforeAll, describe, expect, it } from "vitest"
 
-import { DIMS, MODEL_ID } from "../../../nlp/core/types"
+import { DIMS, MODEL_ID, MODEL_REVISION } from "../../../nlp/core/types"
 import { dot } from "../../../nlp/core/vec"
 import {
   createNodeEmbedder,
@@ -25,13 +25,14 @@ function expectUnit(v: Float32Array): void {
   expect(Math.abs(Math.sqrt(dot(v, v)) - 1)).toBeLessThanOrEqual(UNIT_TOL)
 }
 
-/** The fetch script names the model too (a shell script cannot import it); `MODEL_ID` is the definition. */
-it("fetch-model pins MODEL_ID", () => {
+/** The fetch script names the model too (a shell script cannot import it); `MODEL_ID` and `MODEL_REVISION` are the definition. */
+it("fetch-model pins MODEL_ID at MODEL_REVISION", () => {
   const script = readFileSync(
     resolve(PATHS.pkgDir, "scripts/fetch-model"),
     "utf8",
   )
   expect(/^repo=(\S+)/m.exec(script)?.[1]).toBe(MODEL_ID)
+  expect(/^rev=(\S+)/m.exec(script)?.[1]).toBe(MODEL_REVISION)
 })
 
 const skipReason = artifactGate("node embedder", [...STAGED.model])

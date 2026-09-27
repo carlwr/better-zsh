@@ -17,6 +17,7 @@ import {
   DIMS,
   type IndexedRecord,
   MODEL_ID,
+  MODEL_REVISION,
   perView,
   type VectorIndex,
   VIEWS,
@@ -72,6 +73,7 @@ const tinyIndex = (): VectorIndex => {
   return {
     version: INDEX_VERSION,
     model: MODEL_ID,
+    model_revision: MODEL_REVISION,
     dims: 3,
     normalized: true,
     corpus_hash: "ab".repeat(32),
@@ -101,7 +103,7 @@ describe("writeIndex / readIndex", () => {
     expect(json).not.toContain("\n")
     expect(
       json.startsWith(
-        `{"version":${INDEX_VERSION},"model":"${MODEL_ID}","dims":3,"normalized":true,"corpus_hash":"`,
+        `{"version":${INDEX_VERSION},"model":"${MODEL_ID}","model_revision":"${MODEL_REVISION}","dims":3,"normalized":true,"corpus_hash":"`,
       ),
     ).toBe(true)
     expect(json).toContain('"records":[{"category":"option",')
@@ -156,6 +158,7 @@ describe("writeIndex / readIndex", () => {
       fcu.record({
         version: fc.constant(INDEX_VERSION),
         model: fc.string(),
+        model_revision: fc.string(),
         dims: fc.constant(dims),
         normalized: fc.boolean(),
         corpus_hash: fc.string(),
@@ -197,6 +200,7 @@ describe("validateIndex", () => {
   const zeroIndex = (): VectorIndex => ({
     version: INDEX_VERSION,
     model: MODEL_ID,
+    model_revision: MODEL_REVISION,
     dims: DIMS,
     normalized: true,
     corpus_hash: corpusFingerprint(corpus),
@@ -225,6 +229,11 @@ describe("validateIndex", () => {
         /unsupported nlp index version 1/,
       ],
       ["model", { model: "other", dims: 1 }, /model is other, expected/],
+      [
+        "model revision",
+        { model_revision: "other", dims: 1 },
+        /model revision is other, expected/,
+      ],
       ["dims", { dims: 1, corpus_hash: "x" }, /dims is 1, expected/],
       [
         "corpus hash",

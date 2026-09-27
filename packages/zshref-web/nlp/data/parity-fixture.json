@@ -2,8 +2,9 @@
   "version": 5,
   "limit": 5,
   "index": {
-    "version": 3,
+    "version": 4,
     "model": "synthetic:parity-fixture",
+    "model_revision": "synthetic:parity-fixture",
     "dims": 384,
     "normalized": true,
     "corpus_hash": "synthetic:parity-fixture",

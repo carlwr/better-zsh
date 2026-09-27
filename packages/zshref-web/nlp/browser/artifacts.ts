@@ -18,6 +18,7 @@ import {
 import {
   CategoriesSchema,
   type Category,
+  modelMismatch,
   type VectorIndex,
 } from "../core/types"
 
@@ -62,7 +63,9 @@ export async function loadTextArtifacts(
 }
 
 /** `text` is a seam: passing an in-flight text load shares it instead of
- * fetching the JSON half twice. A partial failure rejects the whole load. */
+ * fetching the JSON half twice. A partial failure rejects the whole load, as
+ * does an index of another model than the queries': its scores would be noise.
+ * The text alone stays loadable — a record page needs no vectors. */
 export async function loadArtifacts(
   src: ArtifactSource = {},
   text: Promise<TextArtifacts> = loadTextArtifacts(src),
@@ -71,6 +74,8 @@ export async function loadArtifacts(
     text,
     getBytes(src, ARTIFACT.searchVectors),
   ])
+  const mismatch = modelMismatch(loaded.index)
+  if (mismatch) throw new Error(mismatch)
   return { ...loaded, index: joinSearchIndex(loaded.index, vectors) }
 }
 

@@ -165,6 +165,7 @@ export function buildParityIndex(
   return {
     version: INDEX_VERSION,
     model: PARITY_INDEX_TAG,
+    model_revision: PARITY_INDEX_TAG,
     dims: DIMS,
     normalized: true,
     corpus_hash: PARITY_INDEX_TAG,

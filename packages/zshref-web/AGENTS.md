@@ -36,8 +36,9 @@ Two, both pinned:
   - every script reading it carries a `pre*` hook -> `upstream-ready.mjs ensure` (`PACKAGING.md`; `BZ_SKIP_UPSTREAM`: root `AGENTS.md`)
   - the browser bundle is zsh-core-free: the index carries each record's markdown body
 - **Hugging Face Hub** at runtime — the browser embedder downloads the model on first visit
-  - model id: `MODEL_ID` in `nlp/core/types.ts`; `scripts/fetch-model` repeats it, drift-checked by a test
-  - the revision is pinned in `scripts/fetch-model` only; the browser pipeline names none
+  - model id and revision (a commit SHA): `MODEL_ID`, `MODEL_REVISION` in `nlp/core/types.ts`; `scripts/fetch-model` repeats both, drift-checked by a test
+  - the browser pipeline loads `MODEL_REVISION`
+  - the index header records both; the browser's search load rejects a mismatch
 
 ## Model and artifacts
 

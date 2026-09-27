@@ -8,6 +8,9 @@ import { byteOrder } from "./text"
 
 /** The one embedding model, whichever runtime embeds; and its vector width. */
 export const MODEL_ID = "BAAI/bge-small-en-v1.5"
+/** The Hub commit both runtimes load: on a moving ref, new weights would
+ * silently mismatch query vectors against the index's. */
+export const MODEL_REVISION = "5c38ec7c405ec4b44b94cc5a9bb96e735b38267a"
 export const DIMS = 384
 
 /** A record's identity: its category and its id within it. */
@@ -79,6 +82,7 @@ export type IndexedRecord = z.infer<typeof IndexedRecordSchema>
 /** What every index shape declares about itself; `search-index.ts` reuses it. */
 export const indexHeaderShape = {
   model: z.string(),
+  model_revision: z.string(),
   dims: z.number().int(),
   normalized: z.boolean(),
   corpus_hash: z.string(),
@@ -92,6 +96,19 @@ export const VectorIndexSchema = z.object({
   records: z.array(IndexedRecordSchema),
 })
 export type VectorIndex = z.infer<typeof VectorIndexSchema>
+
+/** Why vectors under this header would not match the queries' — another
+ * model, or another revision of it; `undefined` when they would. */
+export function modelMismatch(header: {
+  model: string
+  model_revision: string
+}): string | undefined {
+  if (header.model !== MODEL_ID)
+    return `nlp index model is ${header.model}, expected ${MODEL_ID}`
+  if (header.model_revision !== MODEL_REVISION)
+    return `nlp index model revision is ${header.model_revision}, expected ${MODEL_REVISION}; rebuild it`
+  return undefined
+}
 
 /** Parse + validate an index in inline JSON form (the parity fixture); the
  * vectors come back as `Float32Array`s. The built artifact: `search-index.ts`. */

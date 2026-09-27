@@ -24,7 +24,7 @@ import { decodeVectorBlob } from "./vector-blob"
 
 /** Bumped when either half's shape changes; the JSON half pins it, so a
  * cached artifact of an older build is rejected rather than ranked with. */
-export const INDEX_VERSION = 3
+export const INDEX_VERSION = 4
 
 export const SearchIndexTextSchema = z.object({
   version: z.literal(INDEX_VERSION),
