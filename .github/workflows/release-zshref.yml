@@ -22,6 +22,10 @@ on:
         type: boolean
         default: true
 
+concurrency:
+  group: release-zshref
+  cancel-in-progress: false
+
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -228,8 +232,8 @@ jobs:
           if [[ "$VERSION" == *-* ]]; then tag=next; else tag=latest; fi
           echo "tag=$tag" | tee -a "$GITHUB_OUTPUT"
 
-      # The npm the Node image ships predates npm's OIDC exchange, so the
-      # latest runs through npx — a global self-upgrade breaks under act.
+      # The npm the Node image ships predates npm's OIDC exchange, so a pinned
+      # newer one runs through npx — a global self-upgrade breaks under act.
       # Fat package first: the thin one depends on it at this exact version.
       # A version already on the registry is skipped, so a re-run after a
       # partial failure — or after a manual first publish — completes the pair.
@@ -237,10 +241,11 @@ jobs:
       - name: npm publish (Trusted Publishing + provenance)
         env:
           DRY: ${{ needs.check.outputs.publish != 'true' && '--dry-run' || '' }}
+          NPM: 11.20.0
           TAG: ${{ steps.disttag.outputs.tag }}
           VERSION: ${{ needs.check.outputs.version }}
         run: |
-          npx -y npm@latest --version
+          npx -y npm@$NPM --version
           for pkg in zshref zshref-mcp; do
             dir=zshref-rs/.aux/npm/$pkg
             name=$(node -p "require('./$dir/package.json').name")
@@ -248,7 +253,7 @@ jobs:
               echo "$name@$VERSION is already published — skipping"
               continue
             fi
-            npx -y npm@latest publish $DRY --provenance --access public --tag "$TAG" "$dir"
+            npx -y npm@$NPM publish $DRY --provenance --access public --tag "$TAG" "$dir"
           done
 
   publish-crate:

@@ -19,6 +19,10 @@ on:
         type: boolean
         default: true
 
+concurrency:
+  group: release-extension
+  cancel-in-progress: false
+
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -45,16 +49,6 @@ jobs:
           echo "tag=$tag_version pkg=$pkg_version"
           [ "$tag_version" = "$pkg_version" ] || { echo "tag mismatch vs package.json"; exit 1; }
 
-      - working-directory: packages/vscode-better-zsh
-        run: pnpm vsix
-
-      - name: Upload VSIX as workflow artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: better-zsh-vsix
-          path: packages/vscode-better-zsh/better-zsh.vsix
-          if-no-files-found: error
-
       - name: Determine pre-release flag
         id: prerelease
         run: |
@@ -66,16 +60,29 @@ jobs:
           echo "flag=$flag" >> "$GITHUB_OUTPUT"
           echo "resolved version=$version pre-release-flag='$flag'"
 
+      # vsce refuses `publish --pre-release` on a VSIX not packaged with it.
+      - working-directory: packages/vscode-better-zsh
+        run: pnpm vsix ${{ steps.prerelease.outputs.flag }}
+
+      - name: Upload VSIX as workflow artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: better-zsh-vsix
+          path: packages/vscode-better-zsh/better-zsh.vsix
+          if-no-files-found: error
+
+      # `--skip-duplicate` on both: a re-run after one registry failed
+      # completes the other.
       - name: Publish to VS Code Marketplace (vsce)
         if: github.event_name == 'push' || inputs.dry_run == false
         working-directory: packages/vscode-better-zsh
         env:
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
-        run: pnpm exec vsce publish --packagePath better-zsh.vsix --no-dependencies ${{ steps.prerelease.outputs.flag }}
+        run: pnpm exec vsce publish --packagePath better-zsh.vsix --no-dependencies --skip-duplicate ${{ steps.prerelease.outputs.flag }}
 
       - name: Publish to Open VSX (ovsx)
         if: github.event_name == 'push' || inputs.dry_run == false
         working-directory: packages/vscode-better-zsh
         env:
           OVSX_PAT: ${{ secrets.OPEN_VSX_TOKEN }}
-        run: npx -y ovsx publish better-zsh.vsix ${{ steps.prerelease.outputs.flag }}
+        run: npx -y ovsx@1.2.0 publish better-zsh.vsix --skip-duplicate ${{ steps.prerelease.outputs.flag }}

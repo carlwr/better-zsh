@@ -1,7 +1,7 @@
 {
   "name": "better-zsh",
   "description": "Zsh language support: hovers and completions from the zsh manual, syntax checks, snippets, and function navigation",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -55,7 +55,7 @@
     "vscode:publish:dry": "pnpm build && export BZ_SKIP_UPSTREAM=1 && pnpm check && pnpm test && node scripts/check-package.mjs && echo '---\n(DRY-RUN; ran staged vsce ls above.)'",
     "vscode:publish": "pnpm build && export BZ_SKIP_UPSTREAM=1 && pnpm check && pnpm test && scripts/package-vsix /tmp/better-zsh-publish.vsix && pnpm exec vsce publish --packagePath /tmp/better-zsh-publish.vsix --no-dependencies",
     "ovsx:publish:dry": "pnpm build && export BZ_SKIP_UPSTREAM=1 && pnpm check && pnpm test && node scripts/check-package.mjs && echo '---\n(DRY-RUN for open-vsx; ran staged vsce ls above.)'",
-    "ovsx:publish": "pnpm build && export BZ_SKIP_UPSTREAM=1 && pnpm check && pnpm test && scripts/package-vsix /tmp/better-zsh-publish.vsix && npx -y ovsx publish /tmp/better-zsh-publish.vsix -p $OPEN_VSX_TOKEN"
+    "ovsx:publish": "pnpm build && export BZ_SKIP_UPSTREAM=1 && pnpm check && pnpm test && scripts/package-vsix /tmp/better-zsh-publish.vsix && npx -y ovsx@1.2.0 publish /tmp/better-zsh-publish.vsix -p $OPEN_VSX_TOKEN"
   },
   "dependencies": {
     "@carlwr/typescript-extra": "0.13.0",

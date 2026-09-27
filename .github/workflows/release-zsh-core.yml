@@ -14,6 +14,10 @@ on:
         type: boolean
         default: true
 
+concurrency:
+  group: release-zsh-core
+  cancel-in-progress: false
+
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -42,10 +46,10 @@ jobs:
           deno-version: v2.x
 
       # The npm the Node image ships predates npm's OIDC exchange; without the
-      # upgrade, publishing falls back to an empty token and 404s.
+      # upgrade, publishing falls back to an empty token and 404s. Pinned.
       - name: Upgrade npm for Trusted Publishing
         run: |
-          npm i -g npm@latest
+          npm i -g npm@11.20.0
           npm --version
 
       # package.json only — the tests below already tie the other version
@@ -76,12 +80,19 @@ jobs:
           echo "resolved version=$version dist-tag=$tag"
 
       # Runs on dry runs too: skipping it would leave packing and npm's
-      # publish preflight untested until a real tag.
+      # publish preflight untested until a real tag. A version already on the
+      # registry is skipped, as is JSR's below, so a re-run after a partial
+      # failure completes the release.
       - name: npm publish (Trusted Publishing + provenance)
         working-directory: packages/zsh-core
         env:
           DRY: ${{ (github.event_name != 'push' && inputs.dry_run) && '--dry-run' || '' }}
         run: |
+          version=$(node -p "require('./package.json').version")
+          if [ -z "$DRY" ] && npm view "@carlwr/zsh-core@$version" version >/dev/null 2>&1; then
+            echo "@carlwr/zsh-core@$version is already on npm — skipping"
+            exit 0
+          fi
           pnpm build
           # npm publishes this directory as-is and only pnpm resolves
           # `workspace:` deps, so publish the manifest pnpm packed — then put
@@ -99,7 +110,13 @@ jobs:
       - name: JSR publish
         if: github.event_name == 'push' || inputs.dry_run == false
         working-directory: packages/zsh-core
-        run: deno publish
+        run: |
+          version=$(node -p "require('./package.json').version")
+          if curl -sfo /dev/null "https://jsr.io/@carlwr/zsh-core/${version}_meta.json"; then
+            echo "@carlwr/zsh-core@$version is already on JSR — skipping"
+            exit 0
+          fi
+          deno publish
 
       # Repacked rather than reused: keeps the uploaded bytes tied to the
       # build this job last ran.

@@ -2,18 +2,19 @@
 
 # Precondition: the extension and its upstream deps are built (`pnpm build`;
 # its `prebuild` hook covers upstream). Callers: see `package.json`.
+# Usage: package-vsix [OUT] [VSCE_PACKAGE_ARGS...], e.g. `--pre-release`.
 
 set -eu
 
 pkg_dir=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 repo_root=$(CDPATH= cd -- "$pkg_dir/../.." && pwd)
 stage=$pkg_dir/.tmp/staged-extension
-out=${1:-better-zsh.vsix}
 
 if [ "${1:-}" = -- ]; then
 	shift
-	out=${1:-better-zsh.vsix}
 fi
+out=${1:-better-zsh.vsix}
+[ $# -eq 0 ] || shift
 
 case $out in
 	/*) abs_out=$out ;;
@@ -21,4 +22,4 @@ case $out in
 esac
 
 node "$pkg_dir/scripts/check-package.mjs"
-(cd "$stage" && "$repo_root/node_modules/.bin/vsce" package --no-dependencies --out "$abs_out")
+(cd "$stage" && "$repo_root/node_modules/.bin/vsce" package --no-dependencies --out "$abs_out" "$@")

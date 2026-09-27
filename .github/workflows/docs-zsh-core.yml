@@ -1,8 +1,11 @@
 name: zsh-core Docs
 
+# The site documents the latest release, so it deploys from release tags;
+# a manual run deploys whatever ref it is dispatched on.
 on:
   push:
-    branches: [main]
+    tags:
+      - "zsh-core-v*"
   workflow_dispatch:
 
 permissions:
