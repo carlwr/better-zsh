@@ -1,16 +1,21 @@
+# Pre-release: `open-pull-requests-limit: 0` pauses version-update PRs
+# (security updates still open); restore to 5 at release.
 version: 2
 updates:
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 0
     groups:
       minor-and-patch:
         update-types: ["minor", "patch"]
     # Keep @types/node on the `engines.node` major, and @types/vscode on the
-    # extension's `engines.vscode`; raise each pair together.
+    # extension's `engines.vscode`; raise each pair together. TypeScript 7
+    # drops the JS compiler API that tsup's dts build and api-extractor use.
     ignore:
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
       - dependency-name: "@types/node"
         update-types: ["version-update:semver-major"]
       - dependency-name: "@types/vscode"
@@ -18,7 +23,7 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 0
   # `/` covers workflows only; composite actions pin their own `uses:`. Kept
   # separate because a non-`/` directory is undocumented here: if rejected, it
   # must not take workflow coverage with it. Glob survives a rename.
@@ -27,12 +32,12 @@ updates:
       - "/.github/actions/*"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 0
   - package-ecosystem: "cargo"
     directory: "/zshref-rs"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 0
     groups:
       minor-and-patch:
         update-types: ["minor", "patch"]

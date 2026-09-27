@@ -88,7 +88,7 @@ jobs:
       # The build matrix has no Node: the vendored data travels as an artifact.
       # upload-artifact v5: the newest whose upload protocol act's artifact
       # server accepts (`make cli-release-act`); downloads are unaffected.
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v7
         with:
           name: vendored-data
           path: zshref-rs/data
@@ -142,7 +142,7 @@ jobs:
         shell: bash
         run: zshref-rs/scripts/archive-bins ${{ matrix.target }} zshref-rs/.aux/dist
 
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v7
         with:
           name: zshref-${{ matrix.target }}
           path: zshref-rs/.aux/dist/*
