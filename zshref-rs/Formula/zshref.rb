@@ -5,8 +5,8 @@
 class Zshref < Formula
   desc "Query a bundled static zsh reference from the command line"
   homepage "https://github.com/carlwr/better-zsh"
-  url "https://static.crates.io/crates/zshref/zshref-0.1.0-alpha.2.crate"
-  sha256 "522419b9c0b854bef43ced596982fbc6f0bf2fb6b08a4dac213a35a8bc402137"
+  url "https://static.crates.io/crates/zshref/zshref-0.1.0-alpha.3.crate"
+  sha256 "e73a8d75f2def52c17512a935e771eb42024bdd3c76a052ccbaf70c5ff7e87d0"
   license "MIT"
 
   head "https://github.com/carlwr/better-zsh.git", branch: "main"
@@ -23,7 +23,7 @@ class Zshref < Formula
     output = shell_output("#{bin}/zshref --version")
     assert_match "zshref", output
 
-    docs = shell_output("#{bin}/zshref docs --raw AUTO_CD")
+    docs = shell_output("#{bin}/zshref docs --key AUTO_CD")
     assert_match(/"category"\s*:\s*"option"/, docs)
   end
 end

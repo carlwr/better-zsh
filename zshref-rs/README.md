@@ -290,4 +290,4 @@ Companion project sharing the same underlying reference: the [`better-zsh`](http
 
 ## License
 
-MIT. See [LICENSE](./LICENSE). Upstream zsh documentation notices: see the root [THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md). Bundled Rust crate notices: see [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md).
+MIT. See [LICENSE](./LICENSE). Third-party notices — the zsh documentation behind the embedded data, and the bundled Rust crates: [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md).

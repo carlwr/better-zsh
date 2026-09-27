@@ -13,6 +13,7 @@ The day `zshref` (this crate) leaves the `better-zsh` monorepo for its own repo,
   - the npm packages and the `binstall` `pkg-url` follow: `npm/assemble.mjs` reads the manifest
 - `build.rs`: drop the `monorepo` arm — vendored becomes the only data source
 - `data/`: stays gitignored (generated, never committed); `make vendor` populates it
+- `scripts/third-party-notices`: take the zsh licence from the vendored tarball's `THIRD_PARTY_NOTICES.md`
 
 ## Build and CI
 
@@ -21,6 +22,7 @@ The day `zshref` (this crate) leaves the `better-zsh` monorepo for its own repo,
   - `vendor`: download zsh-core's two release assets at a pinned tag and check their `.sha256`, instead of copying the sibling's `artifacts/`
 - `ci-rust.yml`: drop the `packages/zsh-core/**` and `Makefile` path filters and the `setup-node-pnpm` step (the composite action stays behind)
 - `release-zshref.yml`: the same edits; re-point Trusted Publishing at the new repo before releasing from it — crates.io, and npm for both packages (`DISTRIBUTION.md`)
+- `.github/dependabot.yml`: the `cargo` entry moves out, pointed at `/`
 - root `package.json`: `format:root` / `lint:root` drop `zshref-rs/npm`; the crate repo needs its own Biome config for `npm/`
 - Homebrew — `Formula/zshref.rb` already sits at the default tap scan path and pulls the crates.io `.crate`:
   - decide whether it builds with `--features mcp`
@@ -29,7 +31,6 @@ The day `zshref` (this crate) leaves the `better-zsh` monorepo for its own repo,
 ## Docs
 
 - `README.md`:
-  - `../THIRD_PARTY_NOTICES.md` → `./THIRD_PARTY_NOTICES.md`
   - install: `cargo install zshref` (`--features mcp` for both binaries) instead of monorepo checkout + `make cli`
   - drop the pre-release banner and the "planned" caveats
 - `DEVELOPMENT.md`:
