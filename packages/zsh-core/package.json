@@ -3,6 +3,18 @@
   "description": "Structured zsh reference data parsed from official zsh documentation",
   "version": "0.1.0-alpha.2",
   "license": "MIT",
+  "author": {
+    "name": "carlwr",
+    "url": "https://github.com/carlwr"
+  },
+  "keywords": [
+    "zsh",
+    "shell",
+    "documentation",
+    "reference",
+    "yodl",
+    "parser"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/carlwr/better-zsh",

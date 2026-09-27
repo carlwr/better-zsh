@@ -11,9 +11,9 @@ Library-first: the VS Code extension, the web SPA, and the Rust crate (CLI + MCP
 - **The data model at the root** — the corpus (`loadCorpus`, `DocCorpus`), the category ontology (`DocCategory`, `docCategories`, `DocRecordMap`) and the record types, each carrying its `category` and its identity brand (`Documented<K>`).
 - **Operations as subpaths** — `./resolver`, `./render`, `./assets`, `./meta`.
 - **Orthogonal primitives** — raw-to-doc resolution and markdown rendering stay separate.
-- **Release assets** — a versioned index plus one record file (every category's records under its category), one JSON Schema bundle (the record file validates against its root, a category's records against `#/$defs/<category>`), and a resolver conformance fixture for resolver mirrors; attached to the GitHub release tag for consumers outside TypeScript.
+- **Release assets** — a versioned index plus one record file (every category's records under its category), and a resolver conformance fixture for resolver mirrors, each with a JSON Schema (the record file validates against its schema's root, a category's records against `#/$defs/<category>`); attached to the GitHub release tag for consumers outside TypeScript.
 
-Public reading surface: `dist/types/*.d.mts` after `pnpm build`.
+API reference: <https://carlwr.github.io/better-zsh/>, built from the latest release. Public reading surface: `dist/types/*.d.mts` after `pnpm build`.
 
 ## Install
 

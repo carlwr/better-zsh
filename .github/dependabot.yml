@@ -12,7 +12,7 @@ updates:
         update-types: ["minor", "patch"]
     # Keep @types/node on the `engines.node` major, and @types/vscode on the
     # extension's `engines.vscode`; raise each pair together. TypeScript 7
-    # drops the JS compiler API that tsup's dts build and api-extractor use.
+    # drops the JS compiler API that the dts build and api-extractor use.
     ignore:
       - dependency-name: "typescript"
         update-types: ["version-update:semver-major"]

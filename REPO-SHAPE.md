@@ -52,7 +52,7 @@ The shape before the 2026 reorg, and why it changed: the tag `pre-reorg` (its `.
 
 ## Extraction
 
-One planned: `zshref-rs/` → its own repo, `zshref`. Checklist: `zshref-rs/EXTRACTION.md`; vendoring mechanics: `zshref-rs/DATA-SYNC.md`. Everything else stays; this repo keeps the name `better-zsh`.
+One planned: `zshref-rs/` → its own repo, `zshref`. Checklist: `zshref-rs/EXTRACTION.md`; vendoring mechanics: `zshref-rs/DATA-SYNC.md`. Everything else stays; this repo's post-split name is TBD.
 
 ## Detail scope
 

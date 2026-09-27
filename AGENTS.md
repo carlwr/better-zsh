@@ -41,6 +41,8 @@ All symlinked files are printed by the `overview` script. For symlinked files, e
 
 Pre-1.0 everything (including public APIs) can still move freely.
 
+Pushed tags and registry alphas exist to exercise CI and release workflows, not to work. Stale URLs and install commands, there or in READMEs, are fixed at release; don't flag them.
+
 ## Project-specific code rules
 
 ### zsh-core package imports

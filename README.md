@@ -1,6 +1,6 @@
 # better-zsh
 
-> **Status: pre-release.** Alphas published from this repo exercise CI and packaging. The first non-alpha release has not yet been cut.
+> **Status: pre-release.** Published alphas exist to exercise CI and release workflows, not for use: they may not work, and their docs and links may be stale. The first non-alpha release has not yet been cut.
 
 Improved zsh tooling, packaged as a set of focused libraries and adapters over a shared structured zsh reference.
 

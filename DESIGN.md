@@ -197,7 +197,7 @@ Per-category resolver table:
 Authoritative homes:
 
 - contract + identity/feedback split — PRINCIPLES.md
-- JSDoc on `ResolverFeedback` / `ResolvedHit`, `zsh-core/docs/resolver.ts`:
+- JSDoc on `ResolverFeedback` / `ResolvedHit`, zsh-core `src/docs/resolver.ts`:
   - kinds
   - where feedback rides (the `resolve` hit)
   - the schema: generated from the type; `index.json` carries the fixture schema's def (`JsonIndex` JSDoc)
@@ -417,7 +417,7 @@ Enforcement:
 `resolveAll` (`zsh-core/resolver`) resolves a token in every category, `classifyOrder` first to last, keeping the hits the categories admit; tight identity resolvers thereby beat `option`'s `no_` stripping and `redirection`'s loose matching (`nocorrect` must not shadow-resolve as a negated option).
 
 - order, per-entry rationale: inline comments on `classifyOrderTuple`, `taxonomy.ts`
-- admission — a category declining a scoped hit that is no token on its own (history modifiers): `walkAdmits`, `zsh-core/resolver.ts`
+- admission — a category declining a scoped hit that is no token on its own (history modifiers): `walkAdmits`, zsh-core `src/docs/resolver.ts`
 
 Owned by zsh-core, not the tools: order and admission are corpus properties (PRINCIPLES.md §"Push decisions downstream"); a walk re-derived per consumer had drifted — one applied the history rule, one did not. Callers: `zsh_docs` with `category` omitted, zshref-web's lookup canonicalizer. The fixture's `walk` section pins it for the Rust mirror.
 
