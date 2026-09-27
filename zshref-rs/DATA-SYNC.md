@@ -61,7 +61,7 @@ A feature flag (`--features vendored`) would need `default-features = ["vendored
 
 ## Testability
 
-Both modes have make targets (the repo-root `Makefile`); `make cli-package` is the extraction simulation: cargo unpacks the tarball into `target/package/zshref-<version>/` and compiles it standalone — no monorepo visible. If that build passes, extraction-day `cargo build` will too.
+Both modes have make targets (the repo-root `Makefile`); `make cli-package` is the extraction simulation: cargo unpacks the tarball into `target/package/zshref-<version>/` and compiles it standalone — no monorepo visible; CI then runs the unpacked crate's tests (`ci-rust.yml`). If both pass, extraction-day `cargo build` and `cargo test` will too.
 
 ## Drift guarantees
 

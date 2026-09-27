@@ -53,6 +53,12 @@ fn binary_tools() -> Vec<String> {
 
 #[test]
 fn print_tools_matches_binary_tool_set() {
+    // `scripts/` stays out of the `.crate`: from an unpacked package there is
+    // no script to drift.
+    if !dump_help_script().exists() {
+        eprintln!("skipped: no scripts/dump-help (packaged crate)");
+        return;
+    }
     assert_eq!(
         script_tools(),
         binary_tools(),

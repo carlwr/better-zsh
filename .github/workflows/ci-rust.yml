@@ -67,4 +67,15 @@ jobs:
           make cli-vendored-test
           make cli-package
 
+      # `cargo package` only builds the unpacked tarball; this runs its test
+      # suite too — the extraction simulation, tests included. Shared target
+      # dir: dependencies come from the steps above.
+      - name: Test the packaged crate standalone
+        run: |
+          version=$(cargo metadata --no-deps --format-version 1 --manifest-path zshref-rs/Cargo.toml \
+                    | jq -r '.packages[0].version')
+          cd "zshref-rs/target/package/zshref-$version"
+          ZSHREF_DATA_SOURCE=vendored CARGO_TARGET_DIR=$GITHUB_WORKSPACE/zshref-rs/target \
+            cargo test --all-features --locked
+
       - run: make cli-npm-check

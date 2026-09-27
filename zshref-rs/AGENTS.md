@@ -2,6 +2,10 @@
 
 The `zshref` CLI and, behind the `mcp` feature, the `zshref-mcp` MCP server: one tool set, owned here (`src/tools.rs`). Semantic search is `zshref-web`'s (`packages/zshref-web/`); this crate has none.
 
+## Repo URL
+
+`github.com/carlwr/zshref` (`project_url!`, `src/lib.rs`) is the settled post-extraction repo; links to it stay dead until extraction, by design.
+
 ## MSRV
 
 One floor: `rust-version` in `Cargo.toml` — what `cargo install zshref` needs, features included; the comment beside it names the dependency that sets it. Guard: `tests/msrv.rs`.

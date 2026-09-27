@@ -10,11 +10,11 @@ use serde_json::{Value, json};
 
 pub const BIN: &str = "zshref";
 
-pub const ROOT_ABOUT: &str = indoc! {"
-    Query a bundled static zsh reference.
-
-    github.com/carlwr/zshref
-    "};
+pub const ROOT_ABOUT: &str = concat!(
+    "Query a bundled static zsh reference.\n\n",
+    crate::project_url!(),
+    "\n"
+);
 
 // Hand-aligned so tool subcommands line up across columns.
 //

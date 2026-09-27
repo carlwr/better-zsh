@@ -18,7 +18,8 @@ use zshref::{cli, corpus, tools};
 
 const BIN: &str = "zshref-mcp";
 
-const HELP: &str = "\
+const HELP: &str = concat!(
+    "\
 zshref-mcp — static zsh reference as Model Context Protocol tools
 
 An MCP server: speaks JSON-RPC over stdio and is launched by an MCP client
@@ -33,8 +34,10 @@ Client configuration:
   command: zshref-mcp
   args:    none
 
-Setup per client: github.com/carlwr/zshref
-";
+Setup per client: ",
+    zshref::project_url!(),
+    "\n"
+);
 
 const TTY_HINT: &str = "\
 zshref-mcp: MCP server; speaks JSON-RPC on stdio.

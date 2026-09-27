@@ -341,12 +341,7 @@ fn help_is_on_stdout_within_80_columns() {
         assert!(out.status.success());
         assert!(out.stderr.is_empty());
         let help = String::from_utf8(out.stdout).expect("utf-8");
-        for needle in [
-            "zshref-mcp",
-            "--help",
-            "--version",
-            "github.com/carlwr/zshref",
-        ] {
+        for needle in ["zshref-mcp", "--help", "--version", zshref::project_url!()] {
             assert!(help.contains(needle), "{flag} lacks {needle:?}");
         }
         for line in help.lines() {

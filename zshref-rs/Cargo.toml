@@ -23,6 +23,7 @@ include = [
     "/src/**/*.rs",
     "/build.rs",
     "/tests/**/*.rs",
+    "/tests/*.proptest-regressions",
     "/Cargo.toml",
     "/Cargo.lock",
     "/README.md",
