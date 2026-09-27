@@ -3,7 +3,7 @@
 use anyhow::Result;
 use rmcp::model::{
     CallToolRequestParams, CallToolResponse, CallToolResult, ContentBlock, Implementation,
-    JsonObject, ListToolsResult, PaginatedRequestParams, ServerCapabilities, ServerInfo,
+    JsonObject, ListToolsResult, PaginatedRequestParams, ServerCapabilities, ServerConfig,
     Tool as McpTool,
 };
 use rmcp::service::{RequestContext, ServerInitializeError};
@@ -149,8 +149,8 @@ fn error(message: String) -> CallToolResult {
 }
 
 impl ServerHandler for Server {
-    fn get_info(&self) -> ServerInfo {
-        ServerInfo::new(ServerCapabilities::builder().enable_tools().build())
+    fn get_info(&self) -> ServerConfig {
+        ServerConfig::new(ServerCapabilities::builder().enable_tools().build())
             .with_server_info(Implementation::new(BIN, env!("CARGO_PKG_VERSION")))
             .with_instructions(tools::prose::preamble(Target::Json).to_string())
     }

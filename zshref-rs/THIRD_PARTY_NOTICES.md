@@ -53,12 +53,12 @@ maintenance, support, updates, enhancements, or modifications.
 
 ## Apache-2.0
 
-- rmcp 3.3.0
+- rmcp 3.4.1
 
 ## Apache-2.0 OR MIT
 
 - equivalent 1.0.2
-- indexmap 2.14.0
+- indexmap 2.14.2
 - pin-project-lite 0.2.17
 - utf8parse 0.2.2
 - uuid 1.26.1
@@ -66,7 +66,7 @@ maintenance, support, updates, enhancements, or modifications.
 ## Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT
 
 - linux-raw-sys 0.12.1
-- rustix 1.1.4
+- rustix 1.1.5
 
 ## MIT
 
@@ -88,13 +88,13 @@ maintenance, support, updates, enhancements, or modifications.
 - anstyle-query 1.1.5
 - anstyle-wincon 3.0.11
 - anyhow 1.0.104
-- bitflags 2.11.1
-- cfg-if 1.0.4
+- bitflags 2.13.2
+- cfg-if 1.0.5
 - chrono 0.4.45
-- clap 4.6.6
-- clap_builder 4.6.6
-- clap_complete 4.6.9
-- clap_lex 1.1.0
+- clap 4.6.7
+- clap_builder 4.6.7
+- clap_complete 4.6.11
+- clap_lex 1.1.1
 - colorchoice 1.0.5
 - dyn-clone 1.0.20
 - errno 0.3.14
@@ -106,23 +106,23 @@ maintenance, support, updates, enhancements, or modifications.
 - futures-sink 0.3.34
 - futures-task 0.3.34
 - futures-util 0.3.34
-- getrandom 0.4.2
-- hashbrown 0.17.0
+- getrandom 0.4.3
+- hashbrown 0.17.1
 - is_terminal_polyfill 1.70.2
 - itoa 1.0.18
-- libc 0.2.185
+- libc 0.2.189
 - num-traits 0.2.19
 - once_cell 1.21.4
 - once_cell_polyfill 1.70.2
 - ref-cast 1.0.27
-- serde 1.0.228
-- serde_core 1.0.228
+- serde 1.0.229
+- serde_core 1.0.229
 - serde_json 1.0.151
 - terminal_size 0.4.4
-- thiserror 2.0.20
+- thiserror 2.0.21
 - windows-link 0.2.1
 - windows-sys 0.61.2
 
 ## Unlicense OR MIT
 
-- memchr 2.8.0
+- memchr 2.8.3

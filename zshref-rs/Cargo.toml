@@ -65,7 +65,7 @@ serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["preserve_order"] }
 anyhow = "1"
 indoc = "2"
-rmcp = { version = "3.3", default-features = false, features = ["server", "transport-io"], optional = true }
+rmcp = { version = "3.4", default-features = false, features = ["server", "transport-io"], optional = true }
 tokio = { version = "1", features = ["rt", "macros"], optional = true }
 
 # `build.rs` checks `index.json.version` before the crate compiles against a
