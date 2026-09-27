@@ -46,6 +46,7 @@
     "cli:qa": "node scripts/build/quiet-run.mjs cli:qa"
   },
   "devDependencies": {
+    "@arethetypeswrong/cli": "^0.18.5",
     "@biomejs/biome": "^2.5.14",
     "@carlwr/fastcheck-utils": "^0.7.1",
     "@carlwr/typescript-extra": "0.13.0",
@@ -57,7 +58,8 @@
     "@vscode/test-electron": "^3.1.0",
     "@vscode/vsce": "^4.0.0",
     "fast-check": "^4.10.2",
-    "tsup": "^8.5.1",
+    "publint": "^0.3.24",
+    "tsdown": "^0.23.0",
     "tsx": "^4.23.15",
     "typedoc": "^0.28.20",
     "typescript": "^6.0.3",

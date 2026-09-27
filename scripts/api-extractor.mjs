@@ -1,4 +1,5 @@
 import {
+  copyFileSync,
   existsSync,
   mkdirSync,
   readFileSync,
@@ -87,7 +88,7 @@ function prepareConfig({ entry, pkgDir }) {
 
   return ExtractorConfig.prepare({
     configObject: {
-      mainEntryPointFilePath: `<projectFolder>/dist/${entry}.d.ts`,
+      mainEntryPointFilePath: `<projectFolder>/dist/${entry}.d.mts`,
       compiler: {
         tsconfigFilePath: "<projectFolder>/tsconfig.build.json",
       },
@@ -98,7 +99,7 @@ function prepareConfig({ entry, pkgDir }) {
       },
       dtsRollup: {
         enabled: true,
-        untrimmedFilePath: `<projectFolder>/dist/${typesDirName}/${entry}.d.ts`,
+        untrimmedFilePath: `<projectFolder>/dist/${typesDirName}/${entry}.d.mts`,
       },
       tsdocMetadata: {
         enabled: true,
@@ -131,10 +132,10 @@ export async function buildApi({ entries, packageDir, packageScriptUrl }) {
   let ok = true
 
   for (const { entry, subpath } of entries) {
-    const rawDtsPath = join(distDir, `${entry}.d.ts`)
+    const rawDtsPath = join(distDir, `${entry}.d.mts`)
     const sourcePath = join(pkgDir, `${entry}.ts`)
     const apiJsonPath = join(apiDir, `${entry}.api.json`)
-    const rollupPath = join(typesDir, `${entry}.d.ts`)
+    const rollupPath = join(typesDir, `${entry}.d.mts`)
     const packageDoc = packageDocFromSource(sourcePath)
 
     await waitForFile(rawDtsPath)
@@ -166,6 +167,9 @@ export async function buildApi({ entries, packageDir, packageScriptUrl }) {
 
     assertApiJsonHasPackageDoc(apiJsonPath)
     assertDtsHasPackageDoc(rollupPath)
+    // Self-contained rollup: the same text serves CJS consumers as `.d.cts`;
+    // the extension is what types each as ESM or CJS under node16 resolution.
+    copyFileSync(rollupPath, join(typesDir, `${entry}.d.cts`))
     writeManifest({
       apiDir,
       entry,

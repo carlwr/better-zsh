@@ -1,0 +1,13 @@
+// Compiler options every workspace package shares; each package's own
+// tsconfig adds its module system, types and file set.
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    // Builds transpile file by file (tsdown, Vite); `tsc` only type-checks.
+    "isolatedModules": true,
+    "skipLibCheck": true
+  }
+}

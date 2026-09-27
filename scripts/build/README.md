@@ -22,7 +22,7 @@ Rationale only. Exact commands live in `package.json` and nearby scripts.
 - Per-task verbose aliases.
   Worked, but made the root manifest harder to scan.
 - Raw recursive pnpm for guarded tasks.
-  Simpler text, unsafe with upstream rebuild hooks and tsup `clean`.
+  Simpler text, unsafe with upstream rebuild hooks and the bundler's `clean`.
 - Static policing of script and workflow text.
   Pattern-matched shell strings to forbid raw upstream builds; the stamp checks the same claim at the point of use, where it cannot be spelled around.
 - Rationale comments in one `.mjs` file.

@@ -1,15 +1,10 @@
 {
+  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "target": "ES2022",
-    "lib": ["ES2022"],
     "outDir": "out",
     "sourceMap": true,
-    "strict": true,
-    "forceConsistentCasingInFileNames": true,
-    "skipLibCheck": true,
-    "noUncheckedIndexedAccess": true,
     "types": ["mocha", "node", "vscode", "vitest/globals"]
   },
   "include": ["src/**/*.ts", "build.ts"],

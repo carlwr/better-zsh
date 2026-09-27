@@ -1,14 +1,11 @@
 {
+  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    // Source-form `.ts` specifiers: JSR publishes the sources as they are.
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "allowImportingTsExtensions": true,
-    "target": "ES2022",
-    "lib": ["ES2022"],
-    "strict": true,
-    "forceConsistentCasingInFileNames": true,
-    "skipLibCheck": true,
-    "noUncheckedIndexedAccess": true,
+    "verbatimModuleSyntax": true,
     "types": ["node", "vitest/globals"]
   },
   "include": ["*.ts", "scripts/**/*.ts", "src/**/*.ts"],

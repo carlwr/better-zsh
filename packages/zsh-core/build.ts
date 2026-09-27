@@ -1,7 +1,6 @@
 import { cpSync, mkdirSync, rmSync, writeFileSync } from "node:fs"
-import { dirname, join, resolve } from "node:path"
-import { fileURLToPath } from "node:url"
-import { build } from "tsup"
+import { join, resolve } from "node:path"
+import { build } from "tsdown"
 import { publicEntries } from "./scripts/pkg-entries.ts"
 import { buildResolverFixture } from "./scripts/resolver-fixture.ts"
 import {
@@ -35,10 +34,7 @@ import {
 import { PKG_VERSION } from "./src/meta/pkg-info.ts"
 import { ZSH_UPSTREAM } from "./src/meta/zsh-upstream.ts"
 
-const pkgDir =
-  typeof __dirname !== "undefined"
-    ? __dirname
-    : dirname(fileURLToPath(import.meta.url))
+const pkgDir = import.meta.dirname
 const distDir = join(pkgDir, "dist")
 const jsonDir = join(pkgDir, "artifacts", "json")
 const fixtureDir = join(pkgDir, "artifacts", resolverFixture.dir)
@@ -98,22 +94,19 @@ function writeJsonArtifacts() {
 
 ;(async () => {
   await build({
+    config: false,
+    cwd: pkgDir,
     // One bundle per public entry: a subpath without one resolves to nothing.
     entry: publicEntries(pkgDir).map(name => resolve(pkgDir, `${name}.ts`)),
     outDir: distDir,
     tsconfig: resolve(pkgDir, "tsconfig.build.json"),
-    format: ["cjs", "esm"],
-    // tsup injects `baseUrl` into its dts build; TS6 rejects it (TS5101).
-    dts: { compilerOptions: { ignoreDeprecations: "6.0" } },
+    platform: "node",
+    format: ["esm", "cjs"],
+    dts: true,
     clean: true,
     sourcemap: true,
     target: "es2022",
-    esbuildOptions(options) {
-      options.logOverride = {
-        ...(options.logOverride ?? {}),
-        "empty-import-meta": "silent",
-      }
-    },
+    logLevel: "warn",
   })
 
   mkdirSync(join(distDir, "data"), { recursive: true })
