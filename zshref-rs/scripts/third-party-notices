@@ -17,10 +17,11 @@ triples=(
 )
 
 # one "name version<TAB>license" per crate; build-only, dev and proc-macro
-# deps excluded — they never reach the binaries
+# deps excluded — they never reach the binaries. No color: CI forces it, and
+# escapes around the " (*)" repeat marker defeat the sed that strips it
 lines=()
 for t in $triples
-  lines+=( "${(@f)$(cd $crate && cargo tree -e normal,no-proc-macro --all-features \
+  lines+=( "${(@f)$(cd $crate && cargo tree --color never -e normal,no-proc-macro --all-features \
                       --target $t --prefix none --format $'{p}\t{l}' \
                       | sed -E 's/ v([0-9])/ \1/; s/ \(.*\)//')}" )
 lines=( ${(u)lines} )
