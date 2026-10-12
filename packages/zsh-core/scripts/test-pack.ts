@@ -51,7 +51,6 @@ try {
     "LICENSE",
     "THIRD_PARTY_NOTICES.md",
     "package.json",
-    "deno.json",
     ...entries.flatMap(bundleFiles),
     ...entries.map(apiFile),
     ...entries.flatMap(apiTypesFiles),

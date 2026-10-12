@@ -33,8 +33,6 @@
     "vsix": "node scripts/build/quiet-run.mjs vsix",
     "test:pack": "node scripts/build/quiet-run.mjs test:pack",
     "docs:zsh-core": "pnpm --filter @carlwr/zsh-core docs:build",
-    "jsrREGISTRY:zsh-core:dry": "pnpm --filter @carlwr/zsh-core jsrREGISTRY:dry",
-    "jsrREGISTRY:zsh-core:check": "pnpm --filter @carlwr/zsh-core jsrREGISTRY:check",
     "vscode:publish:dry": "pnpm --filter better-zsh vscode:publish:dry",
     "vscode:publish": "pnpm --filter better-zsh vscode:publish",
     "ovsx:publish:dry": "pnpm --filter better-zsh ovsx:publish:dry",

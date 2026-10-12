@@ -12,17 +12,6 @@ Universal patterns for build, packaging, and release. Project-specific package n
 - per-target `.PHONY` directly above each target block — not one grouped declaration at the top. Keeps diffs minimal as targets come and go.
 - No top-of-file prose duplicating the target list.
 
-## Dual-registry publishing (npm + JSR)
-
-When a TS package targets both npm (compiled `dist`) and JSR (source-form):
-
-- No runtime `package.json` reads in library code; JSR consumers receive source-form packages plus declared data/assets, not npm `dist`.
-- Package identity (name, version) lives in a package-local source module; runtime and build code import from there.
-- Add a drift guard on package identity (`pkg-info.test.ts` style).
-- Shared subpath exports must stay aligned across `package.json` and `deno.json`.
-- npm-only generated artifacts and workspace-internal entrypoints stay out of `deno.json.exports`.
-- Deno and pnpm both default to a 24h release-age floor: a fresh install refuses a version published minutes earlier, lockfile or not. A dependency released and consumed in one cycle — a sibling, an own upstream — is exempted per package: `minimumDependencyAge.exclude` (`deno.json`), `minimumReleaseAgeExclude` (`pnpm-workspace.yaml`).
-
 ## Release wiring
 
 `.github/workflows/release-*.yml` own each package's trigger (the `on:` block) and auth prerequisites (the header). Don't restate them.
@@ -32,7 +21,7 @@ Invariants those headers don't carry:
 - Every publishable package needs its own release workflow; before tagging, walk `release-*.yml` against the publishable set and close gaps first.
 - `engines.node` and CI's `node-version` move together.
 - A version bump updates every site the workflow's tag guard checks — the guard fails the release, it does not warn.
-- Tokenless publishing is granted registry-side, per package — npm publishing-access settings, a JSR repo link, crates.io trusted-publishing settings.
+- Tokenless publishing is granted registry-side, per package — npm publishing-access settings, crates.io trusted-publishing settings.
   - the grant names one repo, and usually one workflow filename
   - renaming the file or moving the repo breaks the next publish until it is re-pointed
 - Generated data artifacts ship as GitHub release assets on the package's own tag, never as a registry payload — a registry tarball carries code, and a data blob there is weight every consumer pays for.
@@ -50,23 +39,14 @@ Invariants those headers don't carry:
 
 Workflows are the normal path: npm provenance plus tokenless OIDC. Publish by hand only to recover a partial release, or for a package that has no workflow yet. Topological order when packages share workspace deps.
 
-npm — uses the `~/.npmrc` login (`npm whoami` to check); `--tag next` for any version containing `-`, keeping `latest` on the most recent stable:
+Login: `~/.npmrc` (`npm whoami` to check); `--tag next` for any version containing `-`, keeping `latest` on the most recent stable:
 
 ```sh
 cd packages/<pkg>
 pnpm publish --access public --tag next --no-git-checks
 ```
 
-JSR — browser auth, per process, and requires a real TTY; piped or otherwise non-interactive shells fall through to `deno publish`'s "No means to authenticate" error:
-
-```sh
-cd packages/<pkg>
-pnpm dlx jsr publish --allow-dirty
-```
-
-`--allow-dirty` whenever the tree is dirty, e.g. an uncommitted version bump.
-
-After a first publish of a new scoped package, `npm view <pkg> versions` can lag several minutes behind the tarball URL; fetch the tarball to confirm, rather than re-publishing. JSR propagates faster — `curl -sfI https://jsr.io/<scope>/<pkg>/meta.json`.
+After a first publish of a new scoped package, `npm view <pkg> versions` can lag several minutes behind the tarball URL; fetch the tarball to confirm, rather than re-publishing.
 
 ## Linguist hints
 

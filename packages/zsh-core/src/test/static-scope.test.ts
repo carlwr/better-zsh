@@ -23,7 +23,7 @@ import { publicEntries } from "../../scripts/pkg-entries.ts"
 const here = dirname(fileURLToPath(import.meta.url))
 const pkgDir = resolve(here, "..", "..")
 
-// Derived from package.json, so new shared subpaths are auto-checked.
+// Derived from package.json, so new public subpaths are auto-checked.
 const STATIC_ENTRIES: readonly string[] = publicEntries(pkgDir).map(
   name => `${name}.ts`,
 )

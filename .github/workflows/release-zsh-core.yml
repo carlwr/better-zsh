@@ -1,7 +1,7 @@
 name: Release zsh-core
 
 # A real release needs tokenless OIDC granted to this repo for
-# @carlwr/zsh-core, on npm (Trusted Publisher) and on JSR (linked repo).
+# @carlwr/zsh-core on npm (Trusted Publisher).
 
 on:
   push:
@@ -23,7 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      # OIDC: npm provenance + JSR tokenless publish + asset attestation.
+      # OIDC: npm provenance + tokenless publish + asset attestation.
       id-token: write
       attestations: write
     steps:
@@ -40,10 +40,6 @@ jobs:
       - uses: ./.github/actions/setup-node-pnpm
         with:
           registry-url: https://registry.npmjs.org
-
-      - uses: denoland/setup-deno@v2
-        with:
-          deno-version: v2.x
 
       # The npm the Node image ships predates npm's OIDC exchange; without the
       # upgrade, publishing falls back to an empty token and 404s. Pinned.
@@ -69,7 +65,6 @@ jobs:
       - run: pnpm --filter @carlwr/zsh-core run test
       - run: pnpm --filter @carlwr/zsh-core run test:pack
       - run: pnpm --filter @carlwr/zsh-core run testREGISTRY:install
-      - run: pnpm --filter @carlwr/zsh-core run jsrREGISTRY:check
 
       - name: Determine npm dist-tag
         id: disttag
@@ -81,8 +76,8 @@ jobs:
 
       # Runs on dry runs too: skipping it would leave packing and npm's
       # publish preflight untested until a real tag. A version already on the
-      # registry is skipped, as is JSR's below, so a re-run after a partial
-      # failure completes the release.
+      # registry is skipped, so a re-run after a partial failure completes the
+      # release.
       - name: npm publish (Trusted Publishing + provenance)
         working-directory: packages/zsh-core
         env:
@@ -96,7 +91,7 @@ jobs:
           pnpm build
           # npm publishes this directory as-is and only pnpm resolves
           # `workspace:` deps, so publish the manifest pnpm packed — then put
-          # the original back: `deno publish` refuses a dirty tree.
+          # the original back, so later steps see the checked-out tree.
           tgz=$(pnpm pack --json --pack-destination "$RUNNER_TEMP" \
                 | node -p 'JSON.parse(require("fs").readFileSync(0,"utf8")).filename')
           cp package.json "$RUNNER_TEMP/manifest.orig.json"
@@ -106,17 +101,6 @@ jobs:
             --access public \
             --tag "${{ steps.disttag.outputs.tag }}"
           cp "$RUNNER_TEMP/manifest.orig.json" package.json
-
-      - name: JSR publish
-        if: github.event_name == 'push' || inputs.dry_run == false
-        working-directory: packages/zsh-core
-        run: |
-          version=$(node -p "require('./package.json').version")
-          if curl -sfo /dev/null "https://jsr.io/@carlwr/zsh-core/${version}_meta.json"; then
-            echo "@carlwr/zsh-core@$version is already on JSR — skipping"
-            exit 0
-          fi
-          deno publish
 
       # Repacked rather than reused: keeps the uploaded bytes tied to the
       # build this job last ran.

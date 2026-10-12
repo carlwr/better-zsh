@@ -1,10 +1,12 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    // Source-form `.ts` specifiers: JSR publishes the sources as they are.
+    // Source-form `.ts` specifiers and erasable syntax: the sources run
+    // unbuilt under Node type stripping.
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "allowImportingTsExtensions": true,
+    "erasableSyntaxOnly": true,
     "verbatimModuleSyntax": true,
     "types": ["node", "vitest/globals"]
   },

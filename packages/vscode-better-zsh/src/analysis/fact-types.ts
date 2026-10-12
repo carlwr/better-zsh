@@ -92,7 +92,6 @@ const guardFor =
   (fact: Fact): fact is Extract<Fact, { kind: K }> =>
     fact.kind === kind
 
-// Explicit return types are required for JSR slow-types compliance.
 type FactGuard<F extends Fact> = (fact: Fact) => fact is F
 
 export const isCmdHeadFact: FactGuard<CmdHeadFact> = guardFor("cmd-head")

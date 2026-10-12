@@ -220,7 +220,7 @@ The arrows and their invariants: `REPO-SHAPE.md`. The principles behind them:
 - **A mirror is owned by its dependent**, tested against a fixture the source ships (the resolvers: `DESIGN.md` §"TS ↔ Rust mirrors"). A binary spawned as an oracle is the shape to avoid.
 - **Leaves have no consumers.** A package nothing depends on needs no freshness oracle and no fingerprint.
 - **Derived data stays downstream.** Data a producer emits for consumers that cannot run its code is a projection; the producer's own runtime never reads it back — that caps the API's fidelity at the projection's and adds a second data path.
-- **A runtime reads committed files only**, beside its own compiled code — what a source-form registry publishes and what an unbuilt checkout has.
+- **A runtime reads committed files only**, beside its own compiled code — what an unbuilt checkout has.
 
 ## Maintenance posture
 

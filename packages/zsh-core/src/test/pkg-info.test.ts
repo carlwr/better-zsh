@@ -3,11 +3,10 @@ import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { escapeRegExp } from "@carlwr/typescript-extra"
 import { describe, expect, test } from "vitest"
-import { publicEntries, sharedSubpaths } from "../../scripts/pkg-entries.ts"
+import { publicEntries } from "../../scripts/pkg-entries.ts"
 import {
   PKG_LICENSE,
   PKG_NAME,
-  PKG_NAME_JSR,
   PKG_REPO_URL,
   PKG_VERSION,
 } from "../meta/pkg-info.ts"
@@ -19,26 +18,21 @@ const readJson = (file: string) =>
 const readText = (file: string) => readFileSync(join(pkgDir, file), "utf8")
 
 const pkg = readJson("package.json")
-const deno = readJson("deno.json")
 const typedoc = readJson("typedoc.json")
 const tsconfigBuild = readJson("tsconfig.build.json")
 
-// Shared surface, derived from the npm manifest: a new subpath cannot
-// silently skip the JSR manifest, the docs build, or the build tsconfig.
-const sharedExports = sharedSubpaths(pkgDir)
+// Public surface, derived from the npm manifest: a new subpath cannot
+// silently skip the docs build or the build tsconfig.
 const entryModules = publicEntries(pkgDir)
   .map(name => `./${name}.ts`)
   .sort()
 
-describe("pkg-info constants stay in sync with manifests", () => {
+describe("pkg-info constants stay in sync with package.json", () => {
   test.each([
     ["PKG_NAME", PKG_NAME, pkg.name],
-    ["PKG_NAME_JSR", PKG_NAME_JSR, deno.name],
-    ["PKG_VERSION (npm)", PKG_VERSION, pkg.version],
-    ["PKG_VERSION (jsr)", PKG_VERSION, deno.version],
+    ["PKG_VERSION", PKG_VERSION, pkg.version],
     ["PKG_REPO_URL", PKG_REPO_URL, pkg.repository?.url],
-    ["PKG_LICENSE (npm)", PKG_LICENSE, pkg.license],
-    ["PKG_LICENSE (jsr)", PKG_LICENSE, deno.license],
+    ["PKG_LICENSE", PKG_LICENSE, pkg.license],
   ])("%s matches manifest", (_label, constant, manifest) => {
     expect(constant).toBe(manifest)
   })
@@ -49,22 +43,15 @@ test("repo-derived manifest URLs follow PKG_REPO_URL", () => {
   expect(pkg.bugs).toBe(`${PKG_REPO_URL}/issues`)
 })
 
-describe("shared-surface exports stay in sync", () => {
-  test("deno.json.exports is exactly the shared subpaths", () => {
-    expect(Object.keys(deno.exports).sort()).toEqual(sharedExports)
-  })
-  test("typedoc entryPoints are exactly the shared entry modules", () => {
+describe("public-surface entries stay in sync", () => {
+  test("typedoc entryPoints are exactly the public entry modules", () => {
     expect([...typedoc.entryPoints].sort()).toEqual(entryModules)
   })
   // Hand-listed and read by tsc, so nothing can derive it and a missing entry
   // fails silently: the module is simply never built.
-  test.each([
-    ["tsconfig.build.json include", tsconfigBuild.include],
-    ["deno.json publish.include", deno.publish.include],
-    ["deno.json lint.include", deno.lint.include],
-  ])("%s lists every shared entry module", (_label, listed) => {
+  test("tsconfig.build.json include lists every public entry module", () => {
     const bare = entryModules.map(mod => mod.replace(/^\.\//, ""))
-    expect(bare.filter(mod => !listed.includes(mod))).toEqual([])
+    expect(bare.filter(mod => !tsconfigBuild.include.includes(mod))).toEqual([])
   })
 })
 

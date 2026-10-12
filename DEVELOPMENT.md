@@ -23,7 +23,7 @@ Use `pnpm docs:zsh-core` to build the local `zsh-core` API site under `packages/
 
 Notes:
 - The published docs site intentionally lives under `.aux/`, not `dist/`; `dist/` is packed for npm.
-- `zsh-core` source uses explicit relative `.ts` import specifiers so native Deno/JSR checks work from source, not only from bundled output.
+- `zsh-core` source uses explicit relative `.ts` import specifiers so it runs unbuilt under Node type stripping (`erasableSyntaxOnly` enforces the rest).
 - Structured JSON artifacts are formatted by the build writer itself; keep formatting policy in generation code rather than a post-process step.
 
 ## Integration tests via `act`

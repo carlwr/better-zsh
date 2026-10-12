@@ -74,7 +74,7 @@ jobs:
       - run: pnpm --filter zshref-web run test
       - run: pnpm --filter zshref-web build
 
-  # Published-state checks: they resolve currently-published npm/JSR versions,
+  # Published-state checks: they resolve currently-published npm versions,
   # so they fail legitimately until an upstream republish lands. Manual-only,
   # and a job of their own so nothing else can reach them.
   registry:
@@ -85,9 +85,6 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/setup-node-pnpm
-      - uses: denoland/setup-deno@v2
-        with:
-          deno-version: v2.x
       - run: pnpm --filter @carlwr/zsh-core run verifyREGISTRY
 
   integration:
@@ -102,9 +99,6 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/setup-node-pnpm
-      - uses: denoland/setup-deno@v2
-        with:
-          deno-version: v2.x
       - name: Install early CI deps
         run: |
           # zsh backs repo scripts used by pnpm check
@@ -120,7 +114,6 @@ jobs:
       # The host half of `qa` (no Rust toolchain here); these gates must not be
       # local-only.
       - run: pnpm test:scripts
-      - run: pnpm --filter @carlwr/zsh-core run lint:slowtypes
       - run: pnpm test:pack
       - name: Install Linux test deps
         run: |

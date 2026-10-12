@@ -337,11 +337,25 @@ Per-category renderers are internal; public entry is `renderRecord`. The JSON st
 
 The TS API is the root; the JSON is a derived view of it, for consumers that cannot run the TypeScript — renderer and resolvers included (e.g. Rust `include_bytes!`). Library consumers parse the vendored Yodl at runtime; loading a pre-parsed corpus instead was considered and rejected — the instance of PRINCIPLES.md §"Cross-project structure" (derived data, committed files) and §"Cost and laziness":
 
-- the vendored `.yo` is committed; a generated corpus is not — JSR publishes only the former, and tests and scripts run on an unbuilt checkout, so the runtime would need a parse fallback
+- the vendored `.yo` is committed; a generated corpus is not — tests and scripts run on an unbuilt checkout, so the runtime would need a parse fallback
 - the projection is a seam: the JSON may lag or omit without touching the runtime API
 - parse cost is met by per-category laziness, not by shipping a different form
 
 Parser and renderer are layered: the parser may capture structure the renderer chooses to flatten or compose. Rendered markdown is the byte-equal contract surface; record-shape changes (new typed fields) stay below it until they cross into the wire schema. Records carry prose twice — typed fields for routing, `_mdBody` for reading — roughly a third to a half of the payload; accepted. Cross-cutting "records are self-contained" framing: PRINCIPLES.md.
+
+### Why zsh-core is npm-only
+
+JSR modules load from URLs, not files, so the runtime lookup of the vendored `.yo` would fail. Fixes considered:
+
+- `import … with { type: "text" }` — not yet stable in Node (experimental in Node 26)
+- `.yo` as TS string modules — vendoring would stop being a plain download
+
+Revisit once Node's text imports are stable.
+
+`typecheck` still enforces JSR's no-slow-types rule (`--isolatedDeclarations`), so that a later return to JSR is easy. The flag sits on the `tsc` command line because in `tsconfig.build.json` it would:
+
+- break the schema generator, which drops `declaration` (the flag requires it)
+- switch tsdown's `.d.ts` emitter
 
 ---
 

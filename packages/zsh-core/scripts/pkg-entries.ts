@@ -6,11 +6,8 @@ import { readFileSync } from "node:fs"
 import { join } from "node:path"
 import { withoutFirstSubstring } from "@carlwr/typescript-extra"
 
-/**
- * Every non-glob `exports` subpath, sorted. `./package.json` is npm-only; the
- * rest is the surface shared with JSR.
- */
-export function sharedSubpaths(pkgDir: string): string[] {
+/** Every non-glob `exports` subpath but `./package.json`, sorted. */
+function publicSubpaths(pkgDir: string): string[] {
   const { exports } = JSON.parse(
     readFileSync(join(pkgDir, "package.json"), "utf8"),
   ) as { exports: Record<string, unknown> }
@@ -27,7 +24,7 @@ function entryName(subpath: string): string {
   return subpath === "." ? "index" : withoutFirstSubstring("./", subpath)
 }
 
-/** Entry names behind {@link sharedSubpaths}, sorted. */
+/** Entry names behind {@link publicSubpaths}, sorted. */
 export function publicEntries(pkgDir: string): string[] {
-  return sharedSubpaths(pkgDir).map(entryName).sort()
+  return publicSubpaths(pkgDir).map(entryName).sort()
 }

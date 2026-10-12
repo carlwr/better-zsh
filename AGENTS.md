@@ -101,17 +101,13 @@ pnpm format && pnpm qa && pnpm test:pack && pnpm test:integration
 Universal pattern: `TESTING.md`. Project-specific consent-required markers:
 
 - `*INTERACTIVE*` — takes over the desktop (VS Code/Electron); macOS steals focus.
-- `*REGISTRY*` / `verifyREGISTRY` — depends on currently-published npm/JSR state.
+- `*REGISTRY*` / `verifyREGISTRY` — depends on currently-published npm state.
 
 Discover scary scripts via the markers: `jq '.scripts | keys' package.json packages/*/package.json | rg 'REGISTRY|INTERACTIVE'`.
 
 Per-package `test:integration` is intentionally not one mechanism; each `packages/*/package.json` picks its own.
 
 ## Packaging
-
-### npm + JSR dual publish
-
-Universal pattern: `PACKAGING.md`. Project-specific package targeting both registries: `@carlwr/zsh-core`.
 
 ### `BZ_SKIP_UPSTREAM`
 

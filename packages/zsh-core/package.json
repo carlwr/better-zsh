@@ -35,8 +35,7 @@
     "!dist/*.d.mts",
     "!dist/*.d.cts",
     "LICENSE",
-    "THIRD_PARTY_NOTICES.md",
-    "deno.json"
+    "THIRD_PARTY_NOTICES.md"
   ],
   "exports": {
     ".": {
@@ -103,10 +102,7 @@
     "docs:typedoc:html": "typedoc",
     "docs:api": "node scripts/build-api.mjs",
     "docs:build": "pnpm build && pnpm docs:typedoc:html && node scripts/build-docs.mjs",
-    "jsrREGISTRY:dry": "pnpm dlx jsr publish --dry-run --allow-dirty",
-    "jsrREGISTRY:check": "deno publish --dry-run --allow-dirty",
-    "lint:slowtypes": "deno publish --dry-run --allow-dirty --no-check",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.build.json --declaration --isolatedDeclarations",
     "format": "biome check --error-on-warnings --write .",
     "lint": "biome check --error-on-warnings .",
     "check": "pnpm typecheck && pnpm lint",
@@ -114,7 +110,7 @@
     "test:pack": "pnpm build && tsx scripts/test-pack.ts && pnpm pack:release",
     "testREGISTRY:install": "pnpm build && node scripts/test-install.mjs",
     "test:integration": "pnpm run check && pnpm run test && pnpm run test:pack",
-    "verifyREGISTRY": "pnpm run testREGISTRY:install && pnpm run jsrREGISTRY:check"
+    "verifyREGISTRY": "pnpm run testREGISTRY:install"
   },
   "dependencies": {
     "@carlwr/typescript-extra": "0.13.0"

@@ -16,7 +16,7 @@ export function schemaFile(file: string): string {
  * The record file's schema bundle; `$defs` are named by category
  * (`recordsSchemaDefs`), never by TS type.
  */
-export const recordsSchemaFile = schemaFile(recordsFile)
+export const recordsSchemaFile: string = schemaFile(recordsFile)
 
 /**
  * The records bundle's per-category `$defs` entries: `records` describes the
@@ -25,16 +25,15 @@ export const recordsSchemaFile = schemaFile(recordsFile)
  * category holds.
  */
 export const recordsSchemaDefs = {
-  records: (cat: DocCategory) => cat,
-  record: (cat: DocCategory) => `${cat}.record`,
-  id: (cat: DocCategory) => `${cat}.id`,
+  records: (cat: DocCategory): DocCategory => cat,
+  record: (cat: DocCategory): string => `${cat}.record`,
+  id: (cat: DocCategory): string => `${cat}.id`,
 } as const
 
 // The resolver conformance fixture is a release asset of its own.
-const fixtureBase = "resolver-fixture"
 export const resolverFixture = {
-  dir: fixtureBase,
-  file: `${fixtureBase}.json`,
+  dir: "resolver-fixture",
+  file: "resolver-fixture.json",
   schema: "ResolverFixtureJson",
 } as const
 

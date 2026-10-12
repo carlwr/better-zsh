@@ -33,16 +33,13 @@ const index = cached(
 )
 
 const pkgExports = readJson("package.json").exports as Record<string, unknown>
-const denoExports = readJson("deno.json").exports as Record<string, unknown>
 
 describe("generated JSON is a release asset, not a registry payload", () => {
-  test("no manifest exposes a data or schema subpath", () => {
-    for (const exports of [pkgExports, denoExports]) {
-      const subpaths = Object.keys(exports).filter(
-        k => k.startsWith("./data/") || k.startsWith("./schema/"),
-      )
-      expect(subpaths).toEqual([])
-    }
+  test("the manifest exposes no data or schema subpath", () => {
+    const subpaths = Object.keys(pkgExports).filter(
+      k => k.startsWith("./data/") || k.startsWith("./schema/"),
+    )
+    expect(subpaths).toEqual([])
   })
 
   test("the index and the record file are the emitted data files", () => {

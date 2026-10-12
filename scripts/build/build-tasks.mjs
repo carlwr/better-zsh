@@ -12,9 +12,7 @@ export const buildTasks = {
   test: "pnpm lint && pnpm test:unit",
   "test:unit": recursive("test"),
   "test:scripts": "node --test 'scripts/build/*.test.mjs'",
-  // `lint:slowtypes` earns its place in the gate: registry-independent, and
-  // catches JSR slow-types regressions in seconds.
-  qa: `pnpm check && ${pkg("@carlwr/zsh-core")} run lint:slowtypes && pnpm test:unit && pnpm test:scripts && pnpm cli:qa`,
+  qa: `pnpm check && pnpm test:unit && pnpm test:scripts && pnpm cli:qa`,
   "test:integration": recursive("test:integration"),
   vsix: `${pkg("better-zsh")} vsix`,
   // Recursive, not a per-package chain: every member self-builds, so without

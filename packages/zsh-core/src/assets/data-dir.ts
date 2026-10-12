@@ -19,11 +19,11 @@ export const runtimeZshDataDir = "zsh-core-data"
  * `dist/`, what `copyRuntimeZshData` copies on. Pinned against the source
  * tree by `zsh-data-assets.test.ts`.
  */
-export const vendoredZshDocFiles = [
+export const vendoredZshDocFiles: readonly [
   "SOURCE.md",
   "THIRD_PARTY_NOTICES.md",
-  ...corpusYodlFiles,
-] as const
+  ...typeof corpusYodlFiles,
+] = ["SOURCE.md", "THIRD_PARTY_NOTICES.md", ...corpusYodlFiles] as const
 
 /**
  * Every path `copyRuntimeZshData(outDir)` creates, relative to `outDir` and
@@ -39,7 +39,7 @@ export const runtimeZshDataPaths: readonly string[] = vendoredZshDocFiles.map(
 //   dev:     <baseDir>/../data/zsh-docs      (source tree, running from src/assets/)
 //   runtime: <baseDir>/zsh-core-data         (consumer copied via copyRuntimeZshData)
 /** Locate the vendored Yodl data directory, trying dev/built/runtime candidate paths. */
-export function resolveZshDataDir(baseDir = thisDir): string {
+export function resolveZshDataDir(baseDir: string = thisDir): string {
   const candidates = [
     join(baseDir, "data", "zsh-docs"),
     join(baseDir, "..", "data", "zsh-docs"),
@@ -57,7 +57,10 @@ export function resolveZshDataDir(baseDir = thisDir): string {
  * `baseDir` is where the sources are looked up; the default is the installed
  * package.
  */
-export function copyRuntimeZshData(outDir: string, baseDir = thisDir): void {
+export function copyRuntimeZshData(
+  outDir: string,
+  baseDir: string = thisDir,
+): void {
   cpSync(resolveZshDataDir(baseDir), join(outDir, runtimeZshDataDir), {
     recursive: true,
   })

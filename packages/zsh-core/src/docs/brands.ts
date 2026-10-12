@@ -48,9 +48,9 @@ export function identity<K extends DocCategory>(
 
 // MIRRORED-IN: zshref-rs/src/tools/schema.rs
 /** `DocRecordBase.id`: printable ASCII, no whitespace, non-empty. */
-export const idPattern = /^[\x21-\x7E]+$/
+export const idPattern: RegExp = /^[\x21-\x7E]+$/
 /** `DocRecordBase.display`: printable ASCII, non-empty. */
-export const displayPattern = /^[\x20-\x7E]+$/
+export const displayPattern: RegExp = /^[\x20-\x7E]+$/
 
 /** A redirection's `id` from its sig (whitespace → `_`). See `RedirDoc`. */
 export const redirSlugFromSig = (sig: string): string =>

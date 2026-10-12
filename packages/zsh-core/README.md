@@ -1,6 +1,6 @@
 # @carlwr/zsh-core
 
-> **Status: pre-release (alpha).** API surface is still free to move. Published on npm and JSR as part of the [`better-zsh`](https://github.com/carlwr/better-zsh) monorepo. First non-alpha release has not yet been cut.
+> **Status: pre-release (alpha).** API surface is still free to move. Published on npm as part of the [`better-zsh`](https://github.com/carlwr/better-zsh) monorepo. First non-alpha release has not yet been cut.
 
 Structured zsh reference knowledge as a typed TypeScript library. Parses vendored Yodl (`.yo`) source from upstream zsh-5.9 into typed records, exposes a closed taxonomy of doc categories, and ships markdown rendering.
 
@@ -25,13 +25,7 @@ pnpm add @carlwr/zsh-core
 
 Node ≥ 22; ESM (`import`) and CommonJS (`require`), typed for both.
 
-Deno / JSR:
-
-```sh
-deno add jsr:@carlwr/zsh-core
-# or, from Node
-npx jsr add @carlwr/zsh-core
-```
+Deno: `deno add npm:@carlwr/zsh-core`; run with `--allow-read` — the vendored data is read at runtime.
 
 ## Minimal usage
 

@@ -67,7 +67,7 @@ print
 section 'packages/projects manifests'
 print
 list-nonignored-files \
-| grep -E 'pnpm-workspace.yaml|package.json|deno.json|Cargo.toml|Makefile'
+| grep -E 'pnpm-workspace.yaml|package.json|Cargo.toml|Makefile'
 print
 
 () {
