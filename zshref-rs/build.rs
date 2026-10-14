@@ -98,8 +98,10 @@ fn data_source<'s>(manifest: &Path, vendored: &'s Source, monorepo: &'s Source) 
             }
         }
         Ok(s) => panic!("ZSHREF_DATA_SOURCE must be vendored or monorepo, got {s:?}"),
-        Err(_) if vendored.index().exists() => vendored,
+        // Monorepo first: always fresh, unlike a possibly stale `data/`.
+        // Absent in a published `.crate`, which falls through to vendored.
         Err(_) if monorepo.index().exists() => monorepo,
+        Err(_) if vendored.index().exists() => vendored,
         Err(_) => panic_with_help(manifest),
     }
 }

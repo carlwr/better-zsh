@@ -50,7 +50,7 @@ The vendored half of (5) for post-extraction, combined with monorepo-path auto-d
 
 ### Why auto-detect, not a feature flag?
 
-A feature flag (`--features vendored`) would need `default-features = ["vendored"]` in the published crate and `--no-default-features` for monorepo dev. Too easy to get wrong. `build.rs` detection makes plain `cargo build` invisible: whichever data is present wins. Make targets set `ZSHREF_DATA_SOURCE` explicitly so neither check accidentally picks the other path.
+A feature flag (`--features vendored`) would need `default-features = ["vendored"]` in the published crate and `--no-default-features` for monorepo dev. Too easy to get wrong. `build.rs` detection makes plain `cargo build` invisible: monorepo data when present, else `data/`. Make targets set `ZSHREF_DATA_SOURCE` explicitly so neither check accidentally picks the other path.
 
 ### Mechanics — see code
 
