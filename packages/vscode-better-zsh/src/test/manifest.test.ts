@@ -1,7 +1,11 @@
 import { readFileSync } from "node:fs"
 import { resolve } from "node:path"
 import { describe, expect, test } from "vitest"
-import { BETTER_ZSH_CTX_ZSH_VISIBLE } from "../ids"
+import {
+  BETTER_ZSH_CONFIG,
+  BETTER_ZSH_CTX_ZSH_VISIBLE,
+  ZSH_LANG_ID,
+} from "../ids"
 import { manifest } from "../manifest"
 import { associations } from "../manifest/associations"
 import { langConfig } from "../manifest/lang-config"
@@ -9,6 +13,20 @@ import { settings } from "../manifest/settings"
 import { snippets } from "../manifest/snippets"
 
 describe("manifest", () => {
+  // Users' settings, keybindings and installs key on these; once published,
+  // changing one breaks them (a new `name` is a new extension).
+  test("published identity: extension ID, language, config section, grammar scope", () => {
+    const pkg = JSON.parse(
+      readFileSync(resolve(__dirname, "../..", "package.json"), "utf8"),
+    ) as { name: string; publisher: string }
+    expect(`${pkg.publisher}.${pkg.name}`).toBe("carlwr.better-zsh")
+    expect(ZSH_LANG_ID).toBe("zsh")
+    expect(BETTER_ZSH_CONFIG).toBe("betterZsh")
+    expect(manifest.contributes.grammars.map(g => g.scopeName)).toEqual([
+      "source.shell.zsh",
+    ])
+  })
+
   // The host zsh is the only trust-sensitive feature; the manifest must not
   // silently drift to fully disabled or fully enabled.
   test("Workspace Trust: limited support, declared", () => {

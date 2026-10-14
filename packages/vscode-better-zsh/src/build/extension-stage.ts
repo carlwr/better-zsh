@@ -25,15 +25,19 @@ export function stageExtension(): void {
   const workspacePkg = JSON.parse(
     readFileSync(join(pkgDir, "package.json"), "utf8"),
   ) as Record<string, unknown>
-  // Drop pnpm-workspace plumbing irrelevant to the published extension manifest.
+  // Drop pnpm-workspace plumbing irrelevant to the published extension manifest;
+  // `engines.node` too: the extension runs on the editor's bundled Node.
   const {
     scripts: _s,
     dependencies: _d,
     devDependencies: _dd,
+    engines: { node: _n, ...engines } = {},
     ...keep
-  } = workspacePkg
+  } = workspacePkg as Record<string, unknown> & {
+    engines?: Record<string, string>
+  }
   writeFileSync(
     join(stagedExtensionDir, "package.json"),
-    `${JSON.stringify({ ...keep, ...manifest }, null, 2)}\n`,
+    `${JSON.stringify({ ...keep, engines, ...manifest }, null, 2)}\n`,
   )
 }

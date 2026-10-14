@@ -223,9 +223,6 @@ importers:
       yaml:
         specifier: ^2.9.1
         version: 2.9.1
-      zod:
-        specifier: ^4.6.5
-        version: 4.6.5
       zzz_LAST_dummy:
         specifier: npm:empty-npm-package@1.0.0
         version: empty-npm-package@1.0.0
@@ -322,9 +319,6 @@ importers:
       svelte-check:
         specifier: ^4.7.6
         version: 4.7.6(picomatch@4.0.7)(svelte@5.57.1)(typescript@6.0.3)
-      tslib:
-        specifier: ^2.8.1
-        version: 2.8.1
       tsx:
         specifier: ^4.23.15
         version: 4.23.15

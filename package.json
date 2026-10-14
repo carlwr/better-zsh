@@ -34,9 +34,6 @@
     "test:pack": "node scripts/build/quiet-run.mjs test:pack",
     "docs:zsh-core": "pnpm --filter @carlwr/zsh-core docs:build",
     "vscode:publish:dry": "pnpm --filter better-zsh vscode:publish:dry",
-    "vscode:publish": "pnpm --filter better-zsh vscode:publish",
-    "ovsx:publish:dry": "pnpm --filter better-zsh ovsx:publish:dry",
-    "ovsx:publish": "pnpm --filter better-zsh ovsx:publish",
     "cli": "node scripts/build/quiet-run.mjs cli",
     "cli:debug": "node scripts/build/quiet-run.mjs cli:debug",
     "cli:test": "node scripts/build/quiet-run.mjs cli:test",
@@ -63,7 +60,6 @@
     "typescript": "^6.0.3",
     "vitest": "^5.0.2",
     "yaml": "^2.9.1",
-    "zod": "^4.6.5",
     "zzz_LAST_dummy": "npm:empty-npm-package@1.0.0"
   }
 }

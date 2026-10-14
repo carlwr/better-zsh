@@ -56,7 +56,9 @@ Settled public names — the binary, the pnpm package, or the repo if dedicated:
 
 - CLI `zshref`; MCP server `zshref-mcp`
 - SPA `zshref-web`
-- extension `better-zsh`, displayed "Better Zsh"; internal handles (repo, pnpm package) likely `vscode-better-zsh`
+- extension `better-zsh`, displayed "Better Zsh"
+  - pnpm package name: the extension ID's, so stays `better-zsh`
+  - a dedicated repo: likely `vscode-better-zsh`
 
 Open: this repo's name; zsh-core's.
 
