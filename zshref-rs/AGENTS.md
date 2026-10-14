@@ -2,6 +2,8 @@
 
 The `zshref` CLI and, behind the `mcp` feature, the `zshref-mcp` MCP server: one tool set, owned here (`src/tools.rs`). Semantic search is `zshref-web`'s (`packages/zshref-web/`); this crate has none.
 
+Crate rationale: `DESIGN.md`; CLI output rules: `CLI-POLICY.md` — both here, not the root's.
+
 ## Repo URL
 
 `github.com/carlwr/zshref` (`project_url!`, `src/lib.rs`) is the settled post-extraction repo; links to it stay dead until extraction, by design.
