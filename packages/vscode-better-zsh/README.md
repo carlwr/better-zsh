@@ -56,7 +56,7 @@ What the extension does on your machine, and what it never does. "Pinned" means 
   - argument arrays, never a shell command line; file text travels as data — a private temp file, deleted after the check
   - 5 s timeout, 1 MiB output cap
   - one spawn site in the extension's source. Pinned.
-- **A repository cannot redirect the spawn.** `betterZsh.zshPath` is machine-scoped, so workspace settings cannot set it, and relative paths are rejected. `"off"` is a kill switch.
+- **A repository cannot redirect the spawn.** `betterZsh.zshPath` is machine-scoped, so workspace settings cannot set it, and relative paths are rejected. `"off"` is a kill switch no workspace can undo; `diagnostics.enabled`, which a workspace can set, is not.
 - **Restricted Mode (Workspace Trust): limited.** In an untrusted workspace the host zsh is not spawned, so no diagnostics; everything else keeps working.
 - **Filesystem.** Reads: open documents and the bundled data. Existence checks: the zsh binary, and `source` targets — never network paths. Writes: the temp file above.
 - **Logs** (Output › Better Zsh): the extension's version banner, the resolved zsh path, the `zshPath` value, error codes; at the *Debug* log level, each `zsh -n` run's outcome (`ok` or the error's line number). Never file contents or the environment, at any level.

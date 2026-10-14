@@ -63,6 +63,8 @@ The zsh-path matrix harness (`scripts/testINTERACTIVE-zsh-path-matrix`) is CI/Do
 
 **Zsh binary setting is hardened at the settings boundary** (`parseZshPath`, `src/settings.ts`): relative paths are rejected as invalid config, never resolved against workspace or cwd. Workspace Trust gates the spawn at the same boundary (`readZshConfig`); the manifest declares `limited` support.
 
+**`zshPath: "off"` overlaps `diagnostics.enabled: false` on purpose.** Both stop every spawn, but a workspace can override only `diagnostics.enabled` (`zshPath` is machine-scoped): `"off"` is the user's guarantee; `diagnostics.enabled`, a per-project toggle.
+
 **Virtual workspaces: declared `true`, not `limited`**, though diagnostics and `source` links need on-disk files. VS Code's guidance allows `true` for partial support; `limited` would surface a notice for minor features. Disclose a limitation only where required, as unobtrusively as possible.
 
 **Two fence tests pin the trust surface** (`src/test/scope-fence.test.ts`, the chat-instructions fence under `src/test/build/`): a new spawn site, env read, filesystem write, or a non-ASCII character in the instructions fails them. Extend the allowlist deliberately; the extension `README.md` advertises what they pin.
