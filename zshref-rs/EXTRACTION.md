@@ -48,7 +48,7 @@ The day `zshref` (this crate) leaves the `better-zsh` monorepo for its own repo,
   - drop the `zshref-rs/` path prefixes
 - `AGENTS.md`, `DATA-SYNC.md`, `DISTRIBUTION.md`: re-point monorepo references
   - the repo-root `Makefile`, `pnpm cli*`, `packages/zsh-core/`
-  - root docs that stay behind, among `rg -oI '\b[A-Z-]+\.md\b' zshref-rs/*.md | sort -u`
+  - root docs that stay behind, among `rg -oI '\b[A-Z-]+\.md\b' zshref-rs/*.md zshref-rs/src zshref-rs/tests | sort -u`
   - `DISTRIBUTION.md`'s `gh attestation verify --repo`: releases cut before extraction stay attested to `better-zsh`
 - this file: deleted
 
