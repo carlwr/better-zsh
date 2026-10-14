@@ -112,7 +112,7 @@ Parity asserts equality (the ranker is deterministic); sanity a tolerance (the e
 - Pages hosts one site per repo, and `docs-zsh-core.yml` already claims it: the SPA takes the site root, the zsh-core docs move under `/zsh-core-docs/`, one deployment carries both
 - before publishing:
   - `svelte.config.js` sets no `kit.paths.base`; the final URL decides
-  - `THIRD_PARTY_NOTICES.md` — the bundle ships transformers.js, shiki and fonts; a real obligation, and this package has none of the user-facing docs its siblings carry
+  - ship `THIRD_PARTY_NOTICES.md` with the site, full licence texts included — the bundle ships transformers.js, shiki and fonts
 
 ## Deferred
 
