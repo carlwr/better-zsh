@@ -1,8 +1,8 @@
-// Body-splitting for `ShellParamDoc.keys`; the nested key-list shape is
+// Body-splitting for `SpecialParamDoc.keys`; the nested key-list shape is
 // identical across special-param extractors.
 
 import { isNonEmpty, type NonEmpty } from "@carlwr/typescript-extra"
-import type { ItemEntry, ShellParamKey } from "../../types.ts"
+import type { ItemEntry, SpecialParamKey } from "../../types.ts"
 import { splitBodyAtNestedList } from "../core/doc.ts"
 import type { YNodeSeq } from "../core/nodes.ts"
 import { normalizeBody } from "../core/text.ts"
@@ -10,7 +10,7 @@ import { aliasedItems, collectItemEntries, itemSigs } from "./item-entries.ts"
 
 export interface SplitParamBody {
   readonly desc: string
-  readonly keys?: NonEmpty<ShellParamKey>
+  readonly keys?: NonEmpty<SpecialParamKey>
   readonly outro?: string
 }
 
@@ -31,7 +31,7 @@ export function splitParamBody(body: YNodeSeq): SplitParamBody {
   return outro ? { desc, keys, outro } : { desc, keys }
 }
 
-function buildKey(sigs: ItemEntry["sigs"], body: YNodeSeq): ShellParamKey {
+function buildKey(sigs: ItemEntry["sigs"], body: YNodeSeq): SpecialParamKey {
   const inner = splitBodyAtNestedList(body)
   if (!inner) return { sigs, desc: normalizeBody(body) }
   const values = collectItemEntries(inner.entries)

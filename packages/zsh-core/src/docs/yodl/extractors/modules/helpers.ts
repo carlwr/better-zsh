@@ -10,8 +10,8 @@ import type {
   BuiltinDoc,
   CondOpDoc,
   Documented,
-  ShellParamDoc,
-  ShellParamScope,
+  SpecialParamDoc,
+  SpecialParamScope,
 } from "../../../types.ts"
 import {
   collectAliasedEntries,
@@ -159,17 +159,17 @@ export function mergeBuiltinsByName(
 export function parseModuleParams(
   yo: YodlSrc,
   moduleName: ModuleName,
-  scope: ShellParamScope = "shell-set",
-): readonly ShellParamDoc[] {
+  scope: SpecialParamScope = "shell-set",
+): readonly SpecialParamDoc[] {
   return parseModuleParamsFromList(extractFirstItemList(yo), moduleName, scope)
 }
 
 export function parseModuleParamsFromList(
   items: ReturnType<typeof extractFirstItemList>,
   moduleName: ModuleName,
-  scope: ShellParamScope,
-): readonly ShellParamDoc[] {
-  const out: ShellParamDoc[] = []
+  scope: SpecialParamScope,
+): readonly SpecialParamDoc[] {
+  const out: SpecialParamDoc[] = []
   let pending: string[] = []
 
   for (const item of items) {
@@ -208,12 +208,12 @@ export function extractTopLevelItemRegions(nodes: YNodeSeq): YNodeSeq[] {
 
 export type RegionSpec =
   | { readonly kind: "builtins" }
-  | { readonly kind: "params"; readonly scope: ShellParamScope }
+  | { readonly kind: "params"; readonly scope: SpecialParamScope }
   | { readonly kind: "condOps" }
 
 export interface ModuleRegionResult {
   readonly builtins: readonly BuiltinDoc[]
-  readonly params: readonly ShellParamDoc[]
+  readonly params: readonly SpecialParamDoc[]
   readonly condOps: readonly CondOpDoc[]
 }
 
@@ -231,7 +231,7 @@ export function parseModuleByRegions(
 ): ModuleRegionResult {
   const found = extractTopLevelItemRegions(asNodes(yo))
   const builtins: BuiltinDoc[] = []
-  const params: ShellParamDoc[] = []
+  const params: SpecialParamDoc[] = []
   const condOps: CondOpDoc[] = []
   regions.forEach((spec, i) => {
     const region = found[i]

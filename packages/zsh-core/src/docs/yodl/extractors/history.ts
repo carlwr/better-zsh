@@ -1,5 +1,5 @@
 import { identity } from "../../brands.ts"
-import type { HistoryDoc, HistoryKind } from "../../types.ts"
+import type { HistoryExpnDoc, HistoryExpnKind } from "../../types.ts"
 import {
   extractFirstItemList,
   extractFirstSitemList,
@@ -17,7 +17,7 @@ const WORD_DESIG_SECTION = "Word Designators"
 const sigKey = (sig: string) => sig
 const modifierBareKey = (sig: string) => /^[A-Za-z&]+/.exec(sig)?.[0] ?? sig
 
-export function parseHistory(yo: YodlSrc): readonly HistoryDoc[] {
+export function parseHistory(yo: YodlSrc): readonly HistoryExpnDoc[] {
   return [
     ...parseSection(yo, EVENT_SECTION, "event-designator", sigKey),
     ...parseWordDesignators(yo),
@@ -28,9 +28,9 @@ export function parseHistory(yo: YodlSrc): readonly HistoryDoc[] {
 function parseSection(
   yo: YodlSrc,
   section: string,
-  kind: HistoryKind,
+  kind: HistoryExpnKind,
   toKey: (sig: string) => string,
-): HistoryDoc[] {
+): HistoryExpnDoc[] {
   return flattenAliasedEntries(
     extractFirstItemList(extractSectionBody(yo, section)),
     normalizeHeader,
@@ -43,7 +43,7 @@ function parseSection(
   )
 }
 
-function parseWordDesignators(yo: YodlSrc): HistoryDoc[] {
+function parseWordDesignators(yo: YodlSrc): HistoryExpnDoc[] {
   return withBody(
     extractFirstSitemList(extractSectionBody(yo, WORD_DESIG_SECTION)),
   ).map(item => {
@@ -53,6 +53,6 @@ function parseWordDesignators(yo: YodlSrc): HistoryDoc[] {
       subKind: "word-designator",
       sig,
       desc: normalizeBody(item.body),
-    } satisfies HistoryDoc
+    } satisfies HistoryExpnDoc
   })
 }

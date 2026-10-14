@@ -19,7 +19,7 @@ import {
   resolve,
 } from "../docs/resolver"
 import type { DocCategory } from "../docs/taxonomy"
-import type { OptFlagAlias, ZshOption } from "../docs/types"
+import type { OptFlagAlias, OptionDoc } from "../docs/types"
 import { emptyCorpus, membershipCorpus, mkDocumented_ } from "./id-fns"
 
 const opt = mkDocumented_("option")
@@ -56,7 +56,7 @@ const KSH: OptFlagAlias["emulations"] = ["ksh", "sh"]
 const option = (
   name: string,
   flags: readonly OptFlagAlias[],
-): readonly [ZshOption["id"], ZshOption] => [
+): readonly [OptionDoc["id"], OptionDoc] => [
   opt(name),
   {
     ...identity("option", name, name),

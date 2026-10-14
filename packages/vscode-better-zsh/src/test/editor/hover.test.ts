@@ -7,9 +7,9 @@ import {
   type Documented,
   loadCorpus,
   type OptFlagAlias,
+  type OptionDoc,
   type ReservedWordDoc,
-  type ShellParamDoc,
-  type ZshOption,
+  type SpecialParamDoc,
 } from "@carlwr/zsh-core"
 import { categoryFooter, renderRecord } from "@carlwr/zsh-core/render"
 import fc from "fast-check"
@@ -31,7 +31,7 @@ const o = (
   name: string,
   desc: string,
   emulations: OptFlagAlias["emulations"],
-): ZshOption => ({
+): OptionDoc => ({
   ...ident("option", name, name),
   flags: [{ char: "f", on: "+", emulations }],
   defaultIn: ["zsh"],
@@ -39,7 +39,7 @@ const o = (
   desc,
 })
 
-const p = (name: string, desc: string): ShellParamDoc => ({
+const p = (name: string, desc: string): SpecialParamDoc => ({
   ...ident("special_param", name),
   desc,
   subKind: "shell-set",

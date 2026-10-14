@@ -14,7 +14,7 @@ import type {
   CondOpDoc,
   Documented,
   MathfuncDoc,
-  ShellParamDoc,
+  SpecialParamDoc,
 } from "./types.ts"
 import { extractSectionBody } from "./yodl/core/doc.ts"
 import { parseNodes, type YNodeSeq } from "./yodl/core/nodes.ts"
@@ -139,7 +139,7 @@ function loadBuiltins(gn: GetNodes): readonly BuiltinDoc[] {
   ])
 }
 
-function loadSpecialParams(gn: GetNodes): readonly ShellParamDoc[] {
+function loadSpecialParams(gn: GetNodes): readonly SpecialParamDoc[] {
   return [
     ...parseShellParams(gn("params.yo")),
     ...parseWidgetParams(gn("zle.yo")),

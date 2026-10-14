@@ -30,16 +30,16 @@ import type {
   KeymapDoc,
   MathfuncDoc,
   OptFlagAlias,
+  OptionDoc,
   ParamExpnDoc,
   PrecmdDoc,
   ProcessSubstDoc,
   PromptEscapeDoc,
   RedirDoc,
   ReservedWordDoc,
-  ShellParamDoc,
   SpecialFunctionDoc,
+  SpecialParamDoc,
   ZleWidgetDoc,
-  ZshOption,
 } from "../../docs/types"
 import {
   categoryFooter,
@@ -53,7 +53,7 @@ import { withTmpDirAsync } from "../tmp-dir"
 
 // --- fixtures ---------------------------------------------------------------
 
-const cd: ZshOption = {
+const cd: OptionDoc = {
   ...identity("option", "AUTO_CD", "AUTO_CD"),
   flags: [{ char: "J", on: "-", emulations: ["csh", "zsh"] }],
   defaultIn: ["csh", "ksh", "sh", "zsh"],
@@ -61,7 +61,7 @@ const cd: ZshOption = {
   desc: "d:o",
 }
 // An option whose name is also a category-label word (`ZLE widget`).
-const zleOpt: ZshOption = {
+const zleOpt: OptionDoc = {
   ...identity("option", "ZLE", "ZLE"),
   flags: [],
   defaultIn: ["zsh"],
@@ -128,7 +128,7 @@ const cc: ComplexCommandDoc = {
   alternateForms: [{ template: "if list { list }", keywords: [] }],
   bodyKeywords: ["then", "fi"],
 }
-const sec: ShellParamDoc = {
+const sec: SpecialParamDoc = {
   ...identity("special_param", "SECONDS"),
   desc: "d:p",
   subKind: "shell-set",
@@ -521,7 +521,7 @@ describe("render markdown", () => {
   // Typed extras end the body, and pass through bolding (the alias target is
   // an option reference).
   test("typed extras end the body", () => {
-    const alias: ZshOption = {
+    const alias: OptionDoc = {
       ...cd,
       ...identity("option", "CDABLE_VARS", "CDABLE_VARS"),
       aliasOf: { target: cd.id, negated: false },
@@ -726,7 +726,7 @@ describe("render markdown", () => {
   })
 
   test("member-list bullets — fenced docopt, inline, folded aliases", () => {
-    const doc: ShellParamDoc = {
+    const doc: SpecialParamDoc = {
       ...sec,
       ...identity("special_param", "PSEUDO"),
       desc: "intro",

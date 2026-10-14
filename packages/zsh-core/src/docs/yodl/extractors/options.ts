@@ -8,7 +8,7 @@ import type {
   Emulation,
   OptFlagAlias,
   OptFlagSign,
-  ZshOption,
+  OptionDoc,
 } from "../../types.ts"
 import { emulations, optSections } from "../../vocab.ts"
 import {
@@ -89,7 +89,7 @@ export function fixupOptionsYo(yo: string): string {
   )
 }
 
-export function parseOptions(yo: YodlSrc): readonly ZshOption[] {
+export function parseOptions(yo: YodlSrc): readonly OptionDoc[] {
   const nodes = asNodes(typeof yo === "string" ? fixupOptionsYo(yo) : yo)
   const tableFlags = parseFlagTables(nodes)
   return withBody(extractItems(nodes)).map(item => {
@@ -106,7 +106,7 @@ export function parseOptions(yo: YodlSrc): readonly ZshOption[] {
       subKind: section,
       desc: normalizeBody(item.body),
       ...(aliasOf && { aliasOf }),
-    } satisfies ZshOption
+    } satisfies OptionDoc
   })
 }
 
@@ -114,7 +114,7 @@ export function parseOptions(yo: YodlSrc): readonly ZshOption[] {
 // `em(NO_)` tokens render as `var` tokens via the yodl parser (em == var-style
 // emphasis). The tt() is the target; the preceding em()/var() text signals
 // negation.
-function parseAliasTarget(body: YodlSrc): ZshOption["aliasOf"] {
+function parseAliasTarget(body: YodlSrc): OptionDoc["aliasOf"] {
   const target = firstTt(body)?.trim()
   if (!target) return undefined
   const negated = /\bNO_/.test(stripYodl(body))

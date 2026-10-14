@@ -17,14 +17,14 @@ import type {
   KeymapDoc,
   MathfuncDoc,
   OptFlagAlias,
+  OptionDoc,
   ParamExpnDoc,
   PromptEscapeDoc,
   ReservedWordDoc,
-  ShellParamDoc,
   SpecialFunctionDoc,
+  SpecialParamDoc,
   ZleDefaultBinding,
   ZleWidgetDoc,
-  ZshOption,
 } from "../docs/types.ts"
 import { mdInlineCode } from "../docs/yodl/core/text.ts"
 import { splitInlineCode, walkProseLines } from "./prose-walk.ts"
@@ -385,7 +385,7 @@ function canonicalArithForm(doc: ArithOpDoc): readonly [string, ...string[]] {
   }
 }
 
-function optHead(opt: ZshOption): DocHead {
+function optHead(opt: OptionDoc): DocHead {
   const long = opt.display.toLowerCase()
   // Pad to the widest `cmd arg` cell — `unsetopt <name>` is always widest —
   // plus a 2-space gap before the trailing `# on`/`# off`.
@@ -515,7 +515,7 @@ function headFor<K extends DocCategory>(
 // What follows the head: `renderRecord` prepends the head (`headFor`) and
 // applies option-ref bolding. No title, no category line — see `RenderedRecord`.
 
-function mdOpt(opt: ZshOption, corpus: DocCorpus): string {
+function mdOpt(opt: OptionDoc, corpus: DocCorpus): string {
   return docBlock(
     `**Default in zsh: ${bt(defaultStateIn(opt, "zsh"))}**`,
     fmtOptRefsInMd(opt.desc, corpus),
@@ -531,7 +531,7 @@ function mdOpt(opt: ZshOption, corpus: DocCorpus): string {
  * casing when known so e.g. `NO_IGNORE_BRACES` wins over `NO_ignorebraces`.
  */
 function aliasTargetDisplay(
-  aliasOf: NonNullable<ZshOption["aliasOf"]>,
+  aliasOf: NonNullable<OptionDoc["aliasOf"]>,
   corpus: DocCorpus,
 ): string {
   const display = corpus.option.get(aliasOf.target)?.display ?? aliasOf.target
@@ -542,7 +542,7 @@ function mdCondOp(cop: CondOpDoc, corpus: DocCorpus): string {
   return docBlock(fmtOptRefsInMd(cop.desc, corpus), ...modulePart(cop.module))
 }
 
-function mdShellParam(doc: ShellParamDoc): string {
+function mdSpecialParam(doc: SpecialParamDoc): string {
   const keys =
     doc.keys &&
     mapNonEmpty(
@@ -668,7 +668,7 @@ function mdMathfunc(doc: MathfuncDoc): string {
 type OptState = "on" | "off"
 
 /** Whether an option defaults on/off under an emulation mode. */
-export function defaultStateIn(opt: ZshOption, emulation: Emulation): OptState {
+export function defaultStateIn(opt: OptionDoc, emulation: Emulation): OptState {
   return opt.defaultIn.includes(emulation) ? "on" : "off"
 }
 
@@ -696,7 +696,7 @@ const mdRenderer: {
   conditional_op: mdCondOp,
   builtin: mdBuiltin,
   precmd_modifier: mdDesc,
-  special_param: mdShellParam,
+  special_param: mdSpecialParam,
   complex_command: mdComplexCommand,
   reserved_word: mdReservedWord,
   redirection: mdDesc,

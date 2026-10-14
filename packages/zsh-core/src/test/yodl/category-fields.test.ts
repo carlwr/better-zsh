@@ -138,7 +138,7 @@ describe("parsePromptEscapes — typed subsection (enrichment)", () => {
 })
 
 describe("parseShellParams — typed scope (enrichment)", () => {
-  // Subset of `ShellParamScope` covering params.yo; zle.yo and compwid.yo
+  // Subset of `SpecialParamScope` covering params.yo; zle.yo and compwid.yo
   // carry the other two scopes.
   test("every record lands on a shell-set or shell-used scope", () => {
     for (const d of parseShellParams(readVendoredYo("params.yo"))) {

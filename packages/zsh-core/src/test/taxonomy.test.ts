@@ -8,7 +8,7 @@ import {
   docCategories,
   isDocCategory,
 } from "../docs/taxonomy"
-import type { BuiltinDoc, ComplexCommandDoc, ZshOption } from "../docs/types"
+import type { BuiltinDoc, ComplexCommandDoc, OptionDoc } from "../docs/types"
 
 const corpus = loadCorpus()
 
@@ -31,7 +31,7 @@ describe("ResolvedHit types", () => {
   test("a K-shaped hit carries the K-shaped record", () => {
     const hit = resolve(corpus, "option", "AUTO_CD")
     if (hit === undefined) throw new Error("AUTO_CD did not resolve")
-    expectTypeOf(hit.record).toEqualTypeOf<ZshOption>()
+    expectTypeOf(hit.record).toEqualTypeOf<OptionDoc>()
     expectTypeOf(hit.record.category).toEqualTypeOf<"option">()
     expectTypeOf(hit.record).toMatchTypeOf<DocRecord>()
 

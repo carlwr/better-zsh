@@ -1,6 +1,6 @@
 import { escapeRegExp } from "@carlwr/typescript-extra"
 import { identity, mkDocumented } from "../../brands.ts"
-import type { ShellParamDoc, ShellParamScope } from "../../types.ts"
+import type { SpecialParamDoc, SpecialParamScope } from "../../types.ts"
 import {
   extractFirstItemList,
   extractSectBody,
@@ -10,7 +10,7 @@ import type { YNodeSeq, YodlSrc } from "../core/nodes.ts"
 import { stripYodl, trimmedTtTexts } from "../core/text.ts"
 import { splitParamBody } from "./param-keys.ts"
 
-const PARAM_SECTIONS: Readonly<Record<string, ShellParamScope>> = {
+const PARAM_SECTIONS: Readonly<Record<string, SpecialParamScope>> = {
   "Parameters Set By The Shell": "shell-set",
   "Parameters Used By The Shell": "shell-used",
 }
@@ -24,7 +24,7 @@ interface SectionOpts {
   readonly allowTied: boolean
 }
 
-export function parseShellParams(yo: YodlSrc): readonly ShellParamDoc[] {
+export function parseShellParams(yo: YodlSrc): readonly SpecialParamDoc[] {
   return Object.entries(PARAM_SECTIONS).flatMap(([long, scope]) =>
     emitParams(extractSectionBody(yo, long), scope, { allowTied: true }),
   )
@@ -32,13 +32,13 @@ export function parseShellParams(yo: YodlSrc): readonly ShellParamDoc[] {
 
 // `extractSectBody` spans subsections; the depth=1 `extractFirstItemList`
 // inside filters out the nested CONTEXT list.
-export function parseWidgetParams(yo: YodlSrc): readonly ShellParamDoc[] {
+export function parseWidgetParams(yo: YodlSrc): readonly SpecialParamDoc[] {
   return emitParams(extractSectBody(yo, "User-Defined Widgets"), "zle-widget", {
     allowTied: false,
   })
 }
 
-export function parseCompletionParams(yo: YodlSrc): readonly ShellParamDoc[] {
+export function parseCompletionParams(yo: YodlSrc): readonly SpecialParamDoc[] {
   return emitParams(
     extractSectionBody(yo, "Completion Special Parameters"),
     "completion-widget",
@@ -48,10 +48,10 @@ export function parseCompletionParams(yo: YodlSrc): readonly ShellParamDoc[] {
 
 function emitParams(
   body: YNodeSeq,
-  scope: ShellParamScope,
+  scope: SpecialParamScope,
   opts: SectionOpts,
-): ShellParamDoc[] {
-  const out: ShellParamDoc[] = []
+): SpecialParamDoc[] {
+  const out: SpecialParamDoc[] = []
   let pending: ParamHead[] = []
 
   for (const item of extractFirstItemList(body)) {

@@ -6,8 +6,8 @@ import type { CorpusYodlFile } from "../../../source-files.ts"
 import type { ModuleName } from "../../../taxonomy.ts"
 import type {
   BuiltinDoc,
-  ShellParamDoc,
-  ShellParamScope,
+  SpecialParamDoc,
+  SpecialParamScope,
 } from "../../../types.ts"
 import type { YNodeSeq } from "../../core/nodes.ts"
 import { parseModuleBuiltins, parseModuleParams } from "./helpers.ts"
@@ -22,7 +22,7 @@ interface TrivialBuiltinModule {
 interface TrivialParamModule {
   readonly file: CorpusYodlFile
   readonly module: ModuleName
-  readonly scope: ShellParamScope
+  readonly scope: SpecialParamScope
 }
 
 const TRIVIAL_BUILTIN_MODULES: readonly TrivialBuiltinModule[] = [
@@ -58,7 +58,7 @@ export function extractTrivialBuiltinModules(
 
 export function extractTrivialParamModules(
   gn: GetNodes,
-): readonly ShellParamDoc[] {
+): readonly SpecialParamDoc[] {
   return TRIVIAL_PARAM_MODULES.flatMap(({ file, module, scope }) =>
     parseModuleParams(gn(file), module, scope),
   )

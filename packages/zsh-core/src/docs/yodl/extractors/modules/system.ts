@@ -5,7 +5,11 @@
  * separate items sharing head name `zsystem`; `mergeBuiltinsByName` folds them.
  */
 import { identity } from "../../../brands.ts"
-import type { BuiltinDoc, MathfuncDoc, ShellParamDoc } from "../../../types.ts"
+import type {
+  BuiltinDoc,
+  MathfuncDoc,
+  SpecialParamDoc,
+} from "../../../types.ts"
 import { extractFirstItemList } from "../../core/doc.ts"
 import type { YNodeSeq, YodlSrc } from "../../core/nodes.ts"
 import { asNodes } from "../../core/nodes.ts"
@@ -19,7 +23,7 @@ import {
 
 export function extractSystem(yo: YodlSrc): {
   builtins: readonly BuiltinDoc[]
-  params: readonly ShellParamDoc[]
+  params: readonly SpecialParamDoc[]
   mathfuncs: readonly MathfuncDoc[]
 } {
   const [builtinsRegion, mathfuncsRegion, paramsRegion] =

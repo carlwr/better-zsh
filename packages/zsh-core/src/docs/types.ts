@@ -67,7 +67,10 @@ export type OptFlagSign = "+" | "-"
 /** Position where zsh treats the word as reserved. */
 export type ReservedWordPos = "command" | "any"
 
-export type HistoryKind = "event-designator" | "word-designator" | "modifier"
+export type HistoryExpnKind =
+  | "event-designator"
+  | "word-designator"
+  | "modifier"
 
 // MIRRORED-IN: zshref-rs/src/corpus.rs
 /**
@@ -90,7 +93,7 @@ export interface OptFlagAlias {
 export type OptSection = (typeof optSections)[number]
 
 /** Parsed zsh option metadata normalized from upstream docs. */
-export interface ZshOption extends DocRecordBase<"option"> {
+export interface OptionDoc extends DocRecordBase<"option"> {
   readonly flags: readonly OptFlagAlias[]
   readonly defaultIn: readonly Emulation[]
   /** The manual section this option sits under; `Option Aliases` entries carry `aliasOf`. */
@@ -196,7 +199,7 @@ export interface SyntaxDocBase {
  * - `zle-widget`: widget-local (BUFFER, CURSOR, ...).
  * - `completion-widget`: completion-widget-local (CURRENT, PREFIX, compstate, ...).
  */
-export type ShellParamScope =
+export type SpecialParamScope =
   | "shell-set"
   | "shell-used"
   | "zle-widget"
@@ -207,7 +210,7 @@ export type ShellParamScope =
  * and `values` the sub-list (depth-2 from the parameter, e.g.
  * `compstate.context`). No deeper nesting is captured.
  */
-export interface ShellParamKey extends ItemEntry {
+export interface SpecialParamKey extends ItemEntry {
   readonly values?: readonly [ItemEntry, ...ItemEntry[]]
 }
 
@@ -220,15 +223,15 @@ export interface ShellParamKey extends ItemEntry {
  * `WATCHFMT` escapes); the renderer composes the visible body from `desc`
  * plus `keys`. See PRINCIPLES.md §"Records are self-contained".
  */
-export interface ShellParamDoc extends DocRecordBase<"special_param"> {
+export interface SpecialParamDoc extends DocRecordBase<"special_param"> {
   /**
    * Body prose. With `keys`, the intro before the key list; the renderer
    * composes intro → key headings → `outro`. Without `keys`, the full body.
    */
   readonly desc: string
-  readonly subKind: ShellParamScope
+  readonly subKind: SpecialParamScope
   readonly tied?: Documented<"special_param">
-  readonly keys?: readonly [ShellParamKey, ...ShellParamKey[]]
+  readonly keys?: readonly [SpecialParamKey, ...SpecialParamKey[]]
   /** Prose after the key list. */
   readonly outro?: string
   readonly module?: ModuleName
@@ -349,17 +352,17 @@ export interface SubscriptFlagDoc
 }
 
 /** Parameter-expansion flags -- e.g. `(U)`, `(L)` inside `${(...)var}`. */
-export interface ParamFlagDoc
+export interface ParamExpnFlagDoc
   extends DocRecordBase<"param_expn_flag">,
     SyntaxDocBase {
   readonly args: readonly string[]
 }
 
 // MIRRORED-IN: zshref-rs/src/resolver.rs
-export interface HistoryDoc
+export interface HistoryExpnDoc
   extends DocRecordBase<"history_expn">,
     SyntaxDocBase {
-  readonly subKind: HistoryKind
+  readonly subKind: HistoryExpnKind
 }
 
 export type GlobOpKind = "standard" | "ksh-like"

@@ -154,10 +154,10 @@ Not a separate type or interface — both roles use the same `DocCategory` machi
 
 Existing precedents to compare new records against — recur because they model zsh's regularities:
 
-- array fields for composite data (`ZshOption.flags`, `ParamExpnDoc.groupSigs`)
+- array fields for composite data (`OptionDoc.flags`, `ParamExpnDoc.groupSigs`)
 - `SyntaxDocBase` extension for sig-shaped records
 - `args` arrays for parameterized flags
-- `ItemEntry` for nested item-list rows (`BuiltinDoc.flagGroups`, `ShellParamDoc.keys`, `ZleWidgetDoc.subItems`)
+- `ItemEntry` for nested item-list rows (`BuiltinDoc.flagGroups`, `SpecialParamDoc.keys`, `ZleWidgetDoc.subItems`)
 
 Follow when the domain calls for it; deviate when it doesn't. The containers around `ItemEntry` stay per-category: grouping with intro prose and depth-2 nesting are not general, and a shared wrapper would advertise shapes the parser never emits.
 

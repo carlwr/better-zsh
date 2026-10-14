@@ -164,7 +164,7 @@ Raised by API reviews; each a decision, not an oversight:
   - the release files' contract is their schema; a TS reader generates types from it
   - a content hash answers "which corpus?": for a registry consumer the package version does; the web build, tracking an unreleased corpus, fingerprints its projected corpus
 - **A runtime array for every closed union**
-  - a tuple exists where the library itself iterates or validates against the union, as the type's single source, and stays internal; tag-only unions (`HistoryKind`, `JobSpecKind`, `ResolverFeedback["kind"]`, …) have none
+  - a tuple exists where the library itself iterates or validates against the union, as the type's single source, and stays internal; tag-only unions (`HistoryExpnKind`, `JobSpecKind`, `ResolverFeedback["kind"]`, …) have none
   - the values ship as the released schema's enums; in-process, a fold over the corpus
   - public only where a consumer cannot recover the list from the corpus: the taxonomy itself, a vocabulary with members the corpus does not exhibit
   - `ResolverFeedback`: a runtime kinds list and hand-authored per-kind schemas, pinned equal to the generated schema by a test, were two peers with no owner — the build now lifts the generated def into `index.json`; nothing runtime remains
@@ -253,7 +253,7 @@ Identity is the full sig (e.g. `${name:-word}` vs `${name-word}` as distinct rec
 `ComplexCommandDoc` models `grammar.yo` "Complex Commands" plus "Alternate Forms". Record shape and the `reserved_word` / `classifyOrder` overlap: `ComplexCommandDoc` / `AlternateForm` JSDoc in `zsh-core`.
 
 - **Head-keyword identity** — closed key set; `for` and arithmetic `for ((…))` stay separate records to preserve structure.
-- **`alternateForms: readonly AlternateForm[]`** — variable-length composite data on one record (precedent: `ZshOption.flags`, `ParamExpnDoc.groupSigs`).
+- **`alternateForms: readonly AlternateForm[]`** — variable-length composite data on one record (precedent: `OptionDoc.flags`, `ParamExpnDoc.groupSigs`).
 
 ### Glob qualifiers vs glob flags vs glob operators
 

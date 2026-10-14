@@ -10,22 +10,22 @@ import type {
   GlobFlagDoc,
   GlobOpDoc,
   GlobQualifierDoc,
-  HistoryDoc,
+  HistoryExpnDoc,
   JobSpecDoc,
   KeymapDoc,
   MathfuncDoc,
+  OptionDoc,
   ParamExpnDoc,
-  ParamFlagDoc,
+  ParamExpnFlagDoc,
   PrecmdDoc,
   ProcessSubstDoc,
   PromptEscapeDoc,
   RedirDoc,
   ReservedWordDoc,
-  ShellParamDoc,
   SpecialFunctionDoc,
+  SpecialParamDoc,
   SubscriptFlagDoc,
   ZleWidgetDoc,
-  ZshOption,
 } from "./types.ts"
 
 export const docCategories = [
@@ -160,19 +160,19 @@ export const docCategoryLabels: Readonly<Record<DocCategory, string>> = {
 }
 
 export interface DocRecordMap {
-  option: ZshOption
+  option: OptionDoc
   conditional_op: CondOpDoc
   builtin: BuiltinDoc
   precmd_modifier: PrecmdDoc
-  special_param: ShellParamDoc
+  special_param: SpecialParamDoc
   complex_command: ComplexCommandDoc
   reserved_word: ReservedWordDoc
   redirection: RedirDoc
   process_subst: ProcessSubstDoc
   param_expn: ParamExpnDoc
   subscript_flag: SubscriptFlagDoc
-  param_expn_flag: ParamFlagDoc
-  history_expn: HistoryDoc
+  param_expn_flag: ParamExpnFlagDoc
+  history_expn: HistoryExpnDoc
   glob_op: GlobOpDoc
   glob_flag: GlobFlagDoc
   glob_qualifier: GlobQualifierDoc
@@ -225,7 +225,7 @@ export const genericId = <K extends DocCategory>(
 ): Documented<K> => rec.id as Documented<K>
 
 /**
- * A record's typed sub-facet (`HistoryKind`, `ParamExpnSubKind`, a
+ * A record's typed sub-facet (`HistoryExpnKind`, `ParamExpnSubKind`, a
  * cond-op's arity, ...) under a generic `K`; `undefined` for a category
  * that declares no `subKind`. A category declares it on every record or on
  * none, and its closed value set is the field's union — the released

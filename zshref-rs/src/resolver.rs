@@ -5,7 +5,7 @@
 // MIRROR-OF: packages/zsh-core/src/docs/normalize-option.ts
 // MIRROR-OF: packages/zsh-core/src/docs/types.ts (record fields read by
 // name: `sig` / `groupOp` of `RedirDoc`, `hookArray` of `SpecialFunctionDoc`,
-// `subKind` of `HistoryDoc`)
+// `subKind` of `HistoryExpnDoc`)
 
 use crate::corpus::{CLASSIFY_ORDER, Category, Corpus, DocCategory, INDEX, Record};
 use serde::Serialize;
