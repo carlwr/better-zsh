@@ -14,8 +14,6 @@ One floor: `rust-version` in `Cargo.toml` — what `cargo install zshref` needs,
 
 `// MIRRORED-IN:` (TS) ↔ `// MIRROR-OF:` (Rust) mark what this crate re-implements from `packages/zsh-core/` (resolvers, record-field projection): orientation only, no checker; rename rule: root `AGENTS.md`. A resolver change lands TS-side first; the conformance fixture (`DATA-SYNC.md`) then names every input the Rust side must follow.
 
-Known divergence the fixture does not yet pin: `history_expn` caret shorthand with text after the final `^` (`^a^b^:G`, `^a^^`) — `history_key` answers `!!`, the TS regex nothing. `man zshexpn` sides with Rust (`^foo^bar^` is `!!:s^foo^bar^`; modifiers may follow): pin it, align TS.
-
 ## Iteration
 
 - Rust-only edits: `cargo build --all-features` + `cargo test --all-features` (skip `pnpm qa`); without `--all-features` the MCP binary and its test are skipped.
@@ -47,3 +45,7 @@ Known divergence the fixture does not yet pin: `history_expn` caret shorthand wi
 ## npm packaging
 
 `npm/` — not part of the `.crate`. Design and release mechanics: `DISTRIBUTION.md`. Formatted and linted by the root `pnpm format` / `pnpm lint`; the generated `bin/` stubs and `package.json` never enter the tree.
+
+## Deferred
+
+- `history_expn` caret shorthand with text after the final `^` (`^a^b^:G`, `^a^^`): `history_key` answers `!!`, the TS regex nothing; the fixture does not pin it. `man zshexpn` sides with Rust (`^foo^bar^` is `!!:s^foo^bar^`; modifiers may follow): pin it, align TS

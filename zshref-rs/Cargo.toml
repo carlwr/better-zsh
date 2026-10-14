@@ -12,7 +12,7 @@ homepage = "https://github.com/carlwr/better-zsh"
 readme = "README.md"
 keywords = ["zsh", "shell", "cli", "reference", "mcp"]
 categories = ["command-line-utilities", "development-tools"]
-rust-version = "1.88"                   # floor: rmcp 3.3
+rust-version = "1.88"                   # floor: rmcp
 
 # Gitignored files can still be included here (cargo's packaging layer takes
 # precedence over .gitignore — exactly what lets the dual-mode build ship
