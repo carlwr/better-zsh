@@ -15,6 +15,10 @@ describe("manifest", () => {
     expect(manifest.capabilities.untrustedWorkspaces.supported).toBe("limited")
   })
 
+  test("virtual workspaces: supported, no limitation notice", () => {
+    expect(manifest.capabilities.virtualWorkspaces).toBe(true)
+  })
+
   test("chat instructions are gated on the extension's own context key", () => {
     expect(manifest.contributes.chatInstructions.map(c => c.when)).toEqual([
       BETTER_ZSH_CTX_ZSH_VISIBLE,

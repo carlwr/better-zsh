@@ -28,6 +28,8 @@ export const manifest = {
       description:
         "In Restricted Mode the host zsh is not spawned, so there are no `zsh -n` diagnostics. Everything else works as usual.",
     },
+    // Partial support: diagnostics and `source` links need on-disk files.
+    virtualWorkspaces: true,
   },
   contributes: {
     languages: [
@@ -50,12 +52,6 @@ export const manifest = {
       { language: ZSH_LANG_ID, scopes: semanticTokenScopes },
     ],
     configuration,
-    configurationDefaults: {
-      [`[${ZSH_LANG_ID}]`]: {
-        "editor.tabSize": 2,
-        "editor.insertSpaces": false,
-      },
-    },
     // `when` is evaluated against the workbench-root context, which has no
     // editor-scoped keys (`resourceLangId`, `editorLangId`): the extension
     // sets its own key.
