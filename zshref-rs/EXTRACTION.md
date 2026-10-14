@@ -13,7 +13,7 @@ The day `zshref` (this crate) leaves the `better-zsh` monorepo for its own repo,
   - the npm packages and the `binstall` `pkg-url` follow: `npm/assemble.mjs` reads the manifest
   - npm provenance rejects a `repository` other than the publishing repo: this move and the first release from the new repo land together
 - `build.rs`: drop the `monorepo` arm — vendored becomes the only data source
-- failure hints naming root make targets (`build.rs`, the resolver conformance test): follow the crate `Makefile`
+- failure hints naming root make targets (`` rg -F '`make ' build.rs src scripts ``): follow the crate `Makefile`
 - `MIRROR-OF` markers name `packages/zsh-core/` paths: qualify them with the `better-zsh` repo
 - `project_url!` (`src/lib.rs`): the URL the binaries print; a repo name other than `zshref` changes it and every `rg -F github.com/carlwr/zshref` hit
 - `data/`: stays gitignored (generated, never committed); `make vendor` populates it

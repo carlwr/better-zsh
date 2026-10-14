@@ -1,5 +1,5 @@
 //! Per-category resolver dispatch, the category walk, and lossy-resolution
-//! feedback. See DESIGN.md §"Resolver feedback channel".
+//! feedback. See root DESIGN.md §"Resolver feedback channel".
 //
 // MIRROR-OF: packages/zsh-core/src/docs/resolver.ts
 // MIRROR-OF: packages/zsh-core/src/docs/normalize-option.ts
@@ -65,8 +65,8 @@ pub struct ResolvedHit<'c> {
     pub feedback: Option<ResolverFeedback>,
 }
 
-/// Per-category resolver dispatch. See DESIGN.md §"`resolve`: direct ∥
-/// resolver" and `resolve` in zsh-core.
+/// Per-category resolver dispatch. See root DESIGN.md §"`resolve`: direct
+/// ∥ resolver" and `resolve` in zsh-core.
 pub fn resolve_in<'c>(corpus: &'c Corpus, cat: DocCategory, raw: &str) -> Option<ResolvedHit<'c>> {
     if let Some(h) = direct_lookup(corpus, cat, raw) {
         return Some(h);
@@ -543,8 +543,10 @@ mod tests {
         let fixture: Fixture = serde_json::from_str(&text).expect("fixture parses");
 
         assert_eq!(
-            fixture.version, FIXTURE_VERSION,
-            "fixture is version {}; this test reads version {FIXTURE_VERSION} — re-vendor `data/` (DATA-SYNC.md)",
+            fixture.version,
+            FIXTURE_VERSION,
+            "{} is version {}; this test reads version {FIXTURE_VERSION} — stale data, or a test behind the format (DATA-SYNC.md)",
+            path.display(),
             fixture.version
         );
         let same_build = "fixture and embedded index.json come from different zsh-core builds \

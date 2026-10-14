@@ -7,7 +7,7 @@
 //! `ZSHREF_RESOLVER_FIXTURE`.
 //!
 //! `index.json.version` is checked here first, so a stale data source fails
-//! the build with the re-vendor hint rather than on whichever field moved.
+//! the build on the version rather than on whichever field moved.
 //!
 //! Design: DATA-SYNC.md.
 
@@ -66,7 +66,7 @@ fn main() {
         println!("cargo:rerun-if-changed={}", path.display());
     }
     let source = data_source(&manifest, &vendored, &monorepo);
-    check_version(&source.index());
+    check_version(source);
     println!(
         "cargo:rustc-env=ZSHREF_INDEX_JSON={}",
         source.index().display()
@@ -106,19 +106,21 @@ fn data_source<'s>(manifest: &Path, vendored: &'s Source, monorepo: &'s Source) 
     }
 }
 
-fn check_version(index: &Path) {
+fn check_version(source: &Source) {
     #[derive(serde::Deserialize)]
     struct Versioned {
         version: u32,
     }
-    let bytes = fs::read(index).unwrap_or_else(|e| panic!("read {}: {e}", index.display()));
+    let index = source.index();
+    let bytes = fs::read(&index).unwrap_or_else(|e| panic!("read {}: {e}", index.display()));
     let Versioned { version } =
         serde_json::from_slice(&bytes).unwrap_or_else(|e| panic!("parse {}: {e}", index.display()));
     assert_eq!(
         version,
         INDEX_VERSION,
-        "{} is version {version}; this crate reads version {INDEX_VERSION} — re-vendor `data/` (DATA-SYNC.md)",
-        index.display()
+        "{} is version {version}; this crate reads version {INDEX_VERSION} — stale {} data, or a crate behind the format (DATA-SYNC.md)",
+        index.display(),
+        source.name
     );
 }
 
