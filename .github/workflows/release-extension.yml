@@ -1,4 +1,4 @@
-name: Release better-zsh (VS Code extension)
+name: Release VS Code extension
 
 # Auth for a real release:
 #   - secrets.VSCE_PAT — Azure DevOps PAT, Marketplace publish rights for
