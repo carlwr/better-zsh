@@ -29,6 +29,7 @@ export type Documented<K extends DocCategory> = string & {
   readonly __documented: K
 }
 
+// MIRRORED-IN: zshref-rs/src/corpus.rs
 /**
  * What every record carries: its category, its corpus identity and its
  * surface form — the structural identity invariant (PRINCIPLES.md). A
@@ -280,6 +281,7 @@ export interface ComplexCommandDoc
   readonly bodyKeywords: readonly string[]
 }
 
+// MIRRORED-IN: zshref-rs/src/resolver.rs
 /**
  * Redirection. `id` is `sig` with whitespace replaced by `_` (`"> word"` →
  * `">_word"`, `"<<[-] word"` → `"<<[-]_word"`); `display` is `sig`.
@@ -353,6 +355,7 @@ export interface ParamFlagDoc
   readonly args: readonly string[]
 }
 
+// MIRRORED-IN: zshref-rs/src/resolver.rs
 export interface HistoryDoc
   extends DocRecordBase<"history_expn">,
     SyntaxDocBase {
@@ -492,6 +495,7 @@ export interface ArithOpDoc extends DocRecordBase<"arith_op">, SyntaxDocBase {
  */
 export type SpecialFunctionKind = "hook" | "trap-literal" | "trap-template"
 
+// MIRRORED-IN: zshref-rs/src/resolver.rs
 /** Special function — hooks and TRAP* from `func.yo` §Special Functions. */
 export interface SpecialFunctionDoc
   extends DocRecordBase<"special_function">,

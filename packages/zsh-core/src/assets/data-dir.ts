@@ -54,13 +54,13 @@ export function resolveZshDataDir(baseDir: string = thisDir): string {
  * Copy the vendored Yodl sources into `outDir`, so `loadCorpus` works from a
  * bundle: `outDir` is the directory the bundled zsh-core module runs from
  * (the lookup is relative to the module, not to the working directory).
- * `baseDir` is where the sources are looked up; the default is the installed
- * package.
  */
-export function copyRuntimeZshData(
-  outDir: string,
-  baseDir: string = thisDir,
-): void {
+export function copyRuntimeZshData(outDir: string): void {
+  copyZshDataFrom(outDir, thisDir)
+}
+
+/** `copyRuntimeZshData`, looking the sources up from `baseDir` instead of the installed package. */
+export function copyZshDataFrom(outDir: string, baseDir: string): void {
   cpSync(resolveZshDataDir(baseDir), join(outDir, runtimeZshDataDir), {
     recursive: true,
   })

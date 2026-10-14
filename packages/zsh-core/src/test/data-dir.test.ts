@@ -4,7 +4,7 @@ import { dirname, join } from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
 import { describe, expect, test } from "vitest"
 import {
-  copyRuntimeZshData,
+  copyZshDataFrom,
   resolveZshDataDir,
   runtimeZshDataDir,
   runtimeZshDataPaths,
@@ -43,7 +43,7 @@ describe("resolveZshDataDir", () => {
   })
 })
 
-describe("copyRuntimeZshData", () => {
+describe("copyZshDataFrom", () => {
   test("creates runtimeZshDataPaths under outDir, where the lookup finds them", () => {
     withTmpDir("better-zsh-zsh-core-", dir => {
       const srcBase = join(dir, "dist")
@@ -55,7 +55,7 @@ describe("copyRuntimeZshData", () => {
         writeFileSync(join(srcData, name), name, "utf8")
       }
 
-      copyRuntimeZshData(outDir, srcBase)
+      copyZshDataFrom(outDir, srcBase)
 
       expect(resolveZshDataDir(outDir)).toBe(join(outDir, runtimeZshDataDir))
       for (const path of runtimeZshDataPaths) {

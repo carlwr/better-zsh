@@ -12,10 +12,7 @@ export function schemaFile(file: string): string {
   return file.replace(/\.json$/, ".schema.json")
 }
 
-/**
- * The record file's schema bundle; `$defs` are named by category
- * (`recordsSchemaDefs`), never by TS type.
- */
+/** The record file's schema bundle. */
 export const recordsSchemaFile: string = schemaFile(recordsFile)
 
 /**
