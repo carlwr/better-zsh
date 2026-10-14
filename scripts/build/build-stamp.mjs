@@ -60,6 +60,7 @@ export function inputFiles(pkgDir) {
     ...filesUnder(join(repoRoot, "scripts"), generated),
     join(repoRoot, "pnpm-lock.yaml"),
     join(repoRoot, "package.json"),
+    join(repoRoot, "tsconfig.base.json"),
   ]
     .filter(existsSync)
     .map(path => relative(repoRoot, path))

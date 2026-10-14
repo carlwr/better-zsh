@@ -85,6 +85,7 @@ test("inputs cover the whole package tree, plus the shared repo files", () => {
   assert.ok(rels.includes("scripts/api-extractor.mjs"))
   assert.ok(rels.includes("pnpm-lock.yaml"))
   assert.ok(rels.includes("package.json"))
+  assert.ok(rels.includes("tsconfig.base.json"))
 })
 
 test("a file appearing anywhere in the package tree moves the hash", () => {
