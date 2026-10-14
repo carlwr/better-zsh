@@ -331,7 +331,12 @@ Vendored `.yo` is consumed three ways:
     - precision posture: PRINCIPLES.md §"Schema precision when schemas are co-released"
 - **Raw Yodl** — not an export subpath; bundlers ship it through the `/assets` subpath (`copyRuntimeZshData`, `runtimeZshDataPaths`).
 
-Per-category renderers are internal; public entry is `renderRecord`. The JSON stays in zsh-core for build convenience — package split deferred.
+Per-category renderers are internal; public entry is `renderRecord`.
+
+The JSON stays in zsh-core — a projection of its types, released on its tag at its version:
+
+- a data-only package: a second release workflow and tag series, no consumer-visible gain
+- consumers pin the tag; moving the JSON later breaks their download URLs
 
 ### Why the library parses at runtime
 
