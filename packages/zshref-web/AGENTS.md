@@ -28,7 +28,7 @@ The seams are a static import fence, not package boundaries — `tests/import-fe
 
 ## Upstreams
 
-Two, both pinned:
+Three, all pinned:
 
 - **`@carlwr/zsh-core`** at build time — `workspace:*`; corpus, taxonomy, resolver
   - through its declared export subpaths only, never a file inside the package (`tests/import-fence.test.ts`)
@@ -39,6 +39,12 @@ Two, both pinned:
   - model id and revision (a commit SHA): `MODEL_ID`, `MODEL_REVISION` in `nlp/core/types.ts`; `scripts/fetch-model` repeats both, drift-checked by a test
   - the browser pipeline loads `MODEL_REVISION`
   - the index header records both; the browser's search load rejects a mismatch
+- **jsDelivr** at runtime — ORT-Web's `.wasm` and its loader
+  - transformers.js's default: `nlp/browser/embedder.ts` sets no `wasmPaths`
+  - the URL pins the `onnxruntime-web` version transformers.js pins
+  - no copy in the build (`vite.config.ts`)
+  - chosen over self-hosting; may change with the hosting setup
+    - the `.wasm` (~27 MB) exceeds Cloudflare Pages' 25 MiB file cap
 
 ## Model and artifacts
 
@@ -122,7 +128,6 @@ One route, `src/routes/+page.svelte`: the search, or the record its URL links to
 
 - the SPA deploy: §"Hosting intent"
 - search state across a record visit: Back from a record remounts the search, losing query and results; SvelteKit snapshots could keep them
-- ORT's `.wasm`: transformers.js fetches it from jsDelivr at runtime (`nlp/browser/embedder.ts` sets no `wasmPaths`) — a third upstream, and the site not offline; self-host it, or document it as an upstream
 - a split into its own repo: no technical driver; the payoff: the SPA's toolchain and dependency churn (SvelteKit, Vite, transformers.js) leave the workspace lockfile and root `qa`
 
 ## See also

@@ -1,4 +1,5 @@
 import { sveltekit } from "@sveltejs/kit/vite"
+import { defaultClientConditions } from "vite"
 import { defineConfig } from "vitest/config"
 
 export default defineConfig({
@@ -6,6 +7,13 @@ export default defineConfig({
   // transformers.js + ORT-Web ship WASM/binary assets that should not be
   // touched by Vite's optimizer; the runtime fetches them from a CDN.
   optimizeDeps: { exclude: ["@huggingface/transformers"] },
+  // ORT-Web's default build embeds its loader and references its `.wasm`,
+  // which Vite then emits (~27 MB) — dead weight: transformers.js points
+  // `wasmPaths` at jsDelivr. This export condition picks ORT's build that
+  // loads both from `wasmPaths` only.
+  resolve: {
+    conditions: ["onnxruntime-web-use-extern-wasm", ...defaultClientConditions],
+  },
   ssr: { noExternal: ["shiki"] },
   test: {
     include: ["tests/**/*.test.ts"],

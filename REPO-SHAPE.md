@@ -31,9 +31,10 @@ An arrow reads "consumes, pinned by version"; its label is the mechanism:
       (built dist/)     (built dist/)     (corpus JSON, resolver fixture)
             ▼                ▼                      ▼
     vscode-better-zsh    zshref-web              zshref-rs
-                             ▼
-                       HuggingFace Hub
-                     (model, at runtime)
+                      ┌──────┴──────┐
+                      ▼             ▼
+              HuggingFace Hub    jsDelivr
+            (model, at runtime) (ORT .wasm, at runtime)
 ```
 
 - workspace link: pnpm `workspace:*` onto the upstream's built `dist/`; freshness: `scripts/build/README.md`
