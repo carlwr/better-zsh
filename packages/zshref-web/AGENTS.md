@@ -111,6 +111,7 @@ One route, `src/routes/+page.svelte`: the search, or the record its URL links to
   - both parts `encodeURIComponent`-encoded: ids are zsh syntax (`/`, `%`, `+`, `&`, `#`)
   - not path routes: they need a host fallback and break relative asset paths; not hash routing: SvelteKit decodes the hash repeatedly, breaking ids with `%`, `/`, `?` or `#`
 - ids are best-effort, not a declared-stable contract; a stale link renders not-found
+- Back from a record restores the search as left: a SvelteKit snapshot, which the page relays
 
 ## Theming
 
@@ -127,7 +128,6 @@ One route, `src/routes/+page.svelte`: the search, or the record its URL links to
 ## Deferred
 
 - the SPA deploy: §"Hosting intent"
-- search state across a record visit: Back from a record remounts the search, losing query and results; SvelteKit snapshots could keep them
 - a split into its own repo: no technical driver; the payoff: the SPA's toolchain and dependency churn (SvelteKit, Vite, transformers.js) leave the workspace lockfile and root `qa`
 
 ## See also

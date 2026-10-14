@@ -1,11 +1,18 @@
 <script lang="ts">
   // The search: mounting it loads the full artifacts, vectors included.
+  import { tick } from "svelte"
   import { errMsg } from "$lib/errors"
   import {
     allTicked,
     coldMessage,
     DEFAULT_LIMIT,
     effectiveLimit,
+    type Hit,
+    parseSavedSearch,
+    restoreSearch,
+    type SavedSearch,
+    type SearchResult,
+    saveSearch,
     summaryLine,
     viewState,
   } from "$lib/view"
@@ -16,7 +23,6 @@
     getArtifacts,
     type ModelProgress,
     onModelProgress,
-    type RankedMatch,
     recordKey,
     search,
   } from "$nlp"
@@ -29,12 +35,19 @@
   let query = $state("")
   let selectedCats = $state<string[]>([]) // ticked categories; initialised to all on load
   let limit = $state<number | null>(DEFAULT_LIMIT) // null once cleared
-  let matches = $state<RankedMatch[]>([])
+  let matches = $state<Hit[]>([])
   let total = $state(0)
   let searching = $state(false)
   let firstRun = $state(true)
   let embedderReady = $state(false) // gates the first-run download hint
   let modelProgress = $state<ModelProgress | null>(null) // live one-time download
+  let section: HTMLElement | undefined = $state()
+
+  // What a snapshot saves: the last completed search, never one in flight —
+  // its results are still the previous one's until it settles.
+  let done: SearchResult | undefined
+  // A snapshot restored before the artifacts it rebuilds from have loaded.
+  let pending: SavedSearch | undefined
 
   // The embedder's one listener slot: taken for this view's life, released
   // on leave so a stale view never receives progress.
@@ -66,8 +79,11 @@
     void (async () => {
       try {
         artifacts = await getArtifacts()
+        // A restored search brings its own filter: applied instead, never
+        // after, or the default would overwrite it.
+        if (pending) apply(pending)
         // Start with every category ticked; filtering is by un-ticking.
-        selectedCats = artifacts.categories.map(c => c.id)
+        else selectedCats = artifacts.categories.map(c => c.id)
       } catch (e) {
         artifactsErr = errMsg(e)
       }
@@ -78,11 +94,13 @@
     if (!artifacts || query.trim() === "") {
       matches = []
       total = 0
+      done = undefined
       return
     }
     searching = true
     firstRun = false
     searchErr = ""
+    const asked = { query, cats: [...selectedCats], limit }
     try {
       const r = await search({
         query,
@@ -96,10 +114,12 @@
       matches = r.matches
       total = r.total
       embedderReady = true
+      done = { ...asked, total: r.total, matches: r.matches }
     } catch (e) {
       searchErr = errMsg(e)
       matches = []
       total = 0
+      done = undefined
     } finally {
       searching = false
     }
@@ -124,9 +144,63 @@
     query = q
     run()
   }
+
+  /** For the page's snapshot; nothing when no search has completed. */
+  export function capture(): SavedSearch | undefined {
+    return done && saveSearch(done, scrollY)
+  }
+
+  /** For the page's snapshot: the saved value is untrusted, a malformed one
+   * leaves the view as is. */
+  export function restore(raw: unknown) {
+    pending = parseSavedSearch(raw)
+    if (pending && artifacts) apply(pending)
+  }
+
+  // Rebuilt from the index by key: no embedding, no model download.
+  function apply(s: SavedSearch) {
+    if (!artifacts) return
+    pending = undefined
+    done = restoreSearch(s, {
+      records: artifacts.index.records.map(r => r.text),
+      categories: artifacts.categories,
+    })
+    query = done.query
+    selectedCats = [...done.cats] // the filter mutates its own copy
+    limit = done.limit
+    total = done.total
+    matches = done.matches
+    firstRun = false
+    void tick().then(() => holdScroll(s.scrollY))
+  }
+
+  // SvelteKit's own scroll restore ran on a page still short of results, and
+  // result bodies render async — a cold highlighter late, once the page is
+  // already tall — so re-apply on every growth until the user takes over or
+  // a deadline. Tall enough is no stop: bodies rendering above would carry
+  // the view off (scroll anchoring).
+  let stopHold: (() => void) | undefined
+  $effect(() => () => stopHold?.()) // leaving mid-hold must not scroll the next view
+
+  function holdScroll(y: number) {
+    if (!section) return
+    stopHold?.()
+    const inputs = ["wheel", "touchstart", "pointerdown", "keydown"] as const
+    const stop = () => {
+      ro.disconnect()
+      clearTimeout(timer)
+      for (const ev of inputs) removeEventListener(ev, stop)
+      stopHold = undefined
+    }
+    stopHold = stop
+    const ro = new ResizeObserver(() => scrollTo(0, y))
+    const timer = setTimeout(stop, 5000)
+    for (const ev of inputs) addEventListener(ev, stop, { passive: true })
+    ro.observe(section)
+  }
 </script>
 
-<section>
+<section bind:this={section}>
   <form onsubmit={handleSubmit}>
     <input
       type="search"

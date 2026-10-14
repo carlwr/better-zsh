@@ -1,9 +1,10 @@
 <script lang="ts">
   // One record, whole: the permalink's view.
+  import { afterNavigate } from "$app/navigation"
   import { resolve } from "$app/paths"
   import { errMsg } from "$lib/errors"
   import { renderInline } from "$lib/markdown"
-  import { findRecord, recordView } from "$lib/view"
+  import { findRecord, plainClick, recordView, searchIsBehind } from "$lib/view"
   import { getTextArtifacts, type RecordId, type TextArtifacts } from "$nlp"
   import Md from "./Md.svelte"
 
@@ -11,6 +12,17 @@
 
   let artifacts = $state<TextArtifacts | null>(null)
   let loadError = $state("")
+
+  // Back to a search entry restores it (the page's snapshot); the href, a
+  // fresh search, is the fallback when none is just behind.
+  let traverse = $state(false)
+  afterNavigate(nav => (traverse = searchIsBehind(nav)))
+
+  function back(e: MouseEvent) {
+    if (!traverse || !plainClick(e)) return
+    e.preventDefault()
+    history.back()
+  }
 
   // Load once (record-independent, memoized); the lookup is the synchronous
   // derivation below, so navigation needs no out-of-order guard.
@@ -37,7 +49,7 @@
 </script>
 
 <section>
-  <a class="back" href={resolve("/")}>← search</a>
+  <a class="back" href={resolve("/")} onclick={back}>← search</a>
   {#if view.kind === 'load-error'}
     <p class="err">{view.message}</p>
   {:else if view.kind === 'loading'}

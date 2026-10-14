@@ -1,12 +1,15 @@
 // Pure page-presentation logic: testable without a DOM, templates are thin
 // switches over it. Same posture as markdown.ts.
 
+import { z } from "zod"
 import {
   type Category,
   categoryLabel,
   type ModelProgress,
+  type RankedMatch,
   type RecordId,
   type RecordText,
+  recordKey,
   sameRecord,
 } from "$nlp"
 
@@ -140,3 +143,101 @@ export function recordView(s: RecordViewInputs): RecordView {
     label: categoryLabel(s.categories, s.found.category),
   }
 }
+
+/** What a result card shows of a match. */
+export type Hit = Pick<RankedMatch, "rec" | "score">
+
+/** A completed search: its inputs as searched with, and what it found. */
+export interface SearchResult {
+  query: string
+  cats: string[]
+  limit: number | null
+  total: number
+  matches: Hit[]
+}
+
+// Search state across a record visit: SvelteKit snapshots it into
+// sessionStorage, one blob for all entries, a quota failure losing all — so
+// hits travel as keys and come back from the loaded index. Read back as
+// untrusted: another build, or anything, may have written it.
+const SavedSearchSchema = z.object({
+  v: z.literal(1),
+  query: z.string(),
+  cats: z.array(z.string()),
+  limit: z.number().nullable(),
+  total: z.number(),
+  hits: z.array(
+    z.object({ category: z.string(), id: z.string(), score: z.number() }),
+  ),
+  scrollY: z.number(),
+})
+export type SavedSearch = z.infer<typeof SavedSearchSchema>
+
+export const saveSearch = (r: SearchResult, scrollY: number): SavedSearch => ({
+  v: 1,
+  query: r.query,
+  cats: r.cats,
+  limit: r.limit,
+  total: r.total,
+  hits: r.matches.map(m => ({
+    category: m.rec.category,
+    id: m.rec.id,
+    score: m.score,
+  })),
+  scrollY,
+})
+
+export const parseSavedSearch = (raw: unknown): SavedSearch | undefined =>
+  SavedSearchSchema.safeParse(raw).data
+
+/** A saved search against the loaded artifacts; what they no longer hold
+ * (hits, categories) is dropped. */
+export function restoreSearch(
+  s: SavedSearch,
+  a: { records: readonly RecordText[]; categories: readonly Category[] },
+): SearchResult {
+  const byKey = new Map(a.records.map(r => [recordKey(r), r]))
+  const known = new Set(a.categories.map(c => c.id))
+  return {
+    query: s.query,
+    cats: s.cats.filter(c => known.has(c)),
+    limit: s.limit,
+    total: s.total,
+    matches: s.hits.flatMap(h => {
+      const rec = byKey.get(recordKey(h))
+      return rec ? [{ rec, score: h.score }] : []
+    }),
+  }
+}
+
+/** The navigation that showed a record, as far as the back link cares. */
+export interface ArrivalNav {
+  // `url` null: the client-rendered first load (`ssr = false`) arrives from
+  // `{ url: null }`, not the `null` SvelteKit's types promise
+  from: { url: URL | null } | null
+  type: string
+  delta?: number
+}
+
+// The back link can return by traversal (restoring the search's snapshot)
+// only when the entry just behind is a search: a push from one, or a
+// one-step Forward. Anything else — a deep link, a long history jump, a
+// record-to-record hop — and Back would land elsewhere, maybe off-site.
+export const searchIsBehind = (nav: ArrivalNav): boolean => {
+  const from = nav.from?.url
+  return (
+    from != null &&
+    recordParam(from) === null &&
+    (nav.type !== "popstate" || nav.delta === 1)
+  )
+}
+
+/** A primary click without modifiers: one the page may take over. */
+export const plainClick = (e: {
+  button: number
+  metaKey: boolean
+  ctrlKey: boolean
+  shiftKey: boolean
+  altKey: boolean
+}): boolean =>
+  e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey

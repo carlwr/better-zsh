@@ -9,11 +9,17 @@ import {
   DEFAULT_LIMIT,
   effectiveLimit,
   findRecord,
+  parseSavedSearch,
+  plainClick,
   type RecordView,
   type RecordViewInputs,
   recordHref,
   recordParam,
   recordView,
+  restoreSearch,
+  type SearchResult,
+  saveSearch,
+  searchIsBehind,
   summaryLine,
   type ViewInputs,
   type ViewState,
@@ -295,5 +301,151 @@ describe("recordView", () => {
       label: "Builtins",
       record,
     })
+  })
+})
+
+describe("saved search", () => {
+  const echo = makeRecordText({ category: "builtin", id: "echo" })
+  // same id, another category: the key must carry both
+  const echoParam = makeRecordText({ category: "param", id: "echo" })
+  const recs = [
+    echo,
+    echoParam,
+    makeRecordText({ category: "param", id: "a/b?" }),
+  ]
+  const categories = [
+    { id: "builtin", label: "Builtins" },
+    { id: "param", label: "Parameters" },
+  ]
+  const corpus = { records: recs, categories }
+
+  const resultArb: fc.Arbitrary<SearchResult> = fcu.record({
+    query: fc.string(),
+    cats: fc.subarray(categories.map(c => c.id)),
+    limit: fc.option(fc.integer(), { nil: null }),
+    total: fc.nat(),
+    matches: fc
+      .subarray(recs)
+      .chain(rs =>
+        fc.tuple(
+          ...rs.map(rec =>
+            fc
+              .integer({ min: -1000, max: 1000 })
+              .map(n => ({ rec, score: n / 1000 })),
+          ),
+        ),
+      ),
+  })
+
+  it("round-trips through JSON against the same artifacts", () => {
+    fc.assert(
+      fc.property(resultArb, fc.nat(), (r, y) => {
+        const s = parseSavedSearch(JSON.parse(JSON.stringify(saveSearch(r, y))))
+        expect(s?.scrollY).toBe(y)
+        if (!s) return
+        const back = restoreSearch(s, corpus)
+        expect(back).toEqual(r)
+        // the very records, not copies: the index stays the one source
+        for (const [i, m] of back.matches.entries())
+          expect(m.rec).toBe(r.matches[i]?.rec)
+      }),
+    )
+  })
+
+  it("saves hits as keys, no record text", () => {
+    const r = {
+      query: "q",
+      cats: [],
+      limit: 5,
+      total: 3,
+      matches: [{ rec: echo, score: 0.5 }],
+    }
+    expect(saveSearch(r, 0).hits).toEqual([
+      { category: "builtin", id: "echo", score: 0.5 },
+    ])
+  })
+
+  it("drops what the artifacts no longer hold", () => {
+    const s = saveSearch(
+      {
+        query: "q",
+        cats: ["builtin", "gone"],
+        limit: null,
+        total: 9,
+        matches: [
+          { rec: makeRecordText({ category: "gone", id: "x" }), score: 1 },
+          { rec: echoParam, score: 0.5 },
+        ],
+      },
+      0,
+    )
+    const r = restoreSearch(s, corpus)
+    expect(r.cats).toEqual(["builtin"])
+    expect(r.matches).toEqual([{ rec: echoParam, score: 0.5 }])
+  })
+
+  it.each([
+    ["nothing", undefined],
+    ["null", null],
+    [
+      "another version",
+      {
+        ...saveSearch(
+          { query: "", cats: [], limit: null, total: 0, matches: [] },
+          0,
+        ),
+        v: 2,
+      },
+    ],
+    ["a missing field", { v: 1, query: "q" }],
+  ])("rejects %s", (_, raw) => {
+    expect(parseSavedSearch(raw)).toBeUndefined()
+  })
+})
+
+describe("back link", () => {
+  const search = { url: new URL("https://h/repo/?") }
+  const record = { url: new URL("https://h/repo/?r=builtin/echo") }
+
+  it.each<[string, Parameters<typeof searchIsBehind>[0], boolean]>([
+    ["a link from the search", { from: search, type: "link" }, true],
+    [
+      "a one-step Forward from the search",
+      { from: search, type: "popstate", delta: 1 },
+      true,
+    ],
+    [
+      "a Back onto the record",
+      { from: search, type: "popstate", delta: -1 },
+      false,
+    ],
+    ["a long jump", { from: search, type: "popstate", delta: 2 }, false],
+    ["a deep link", { from: null, type: "enter" }, false],
+    [
+      "a client-rendered deep link",
+      { from: { url: null }, type: "enter" },
+      false,
+    ],
+    ["a record-to-record hop", { from: record, type: "link" }, false],
+  ])("traverses after %s: %s", (_, nav, want) => {
+    expect(searchIsBehind(nav)).toBe(want)
+  })
+
+  const click = {
+    button: 0,
+    metaKey: false,
+    ctrlKey: false,
+    shiftKey: false,
+    altKey: false,
+  }
+  it.each([
+    [{}, true],
+    [{ button: 1 }, false],
+    [{ metaKey: true }, false],
+    [{ ctrlKey: true }, false],
+    [{ shiftKey: true }, false],
+    [{ altKey: true }, false],
+  ])("plainClick %j → %s", (patch, want) => {
+    expect(plainClick({ ...click, ...patch })).toBe(want)
   })
 })
