@@ -50,9 +50,19 @@ Invariants — what the shape was chosen for, and the constraint on any change t
 
 The shape before the 2026 reorg, and why it changed: the tag `pre-reorg` (its `.reorg-work/`).
 
+## Names
+
+Settled public names — the binary, the pnpm package, or the repo if dedicated:
+
+- CLI `zshref`; MCP server `zshref-mcp`
+- SPA `zshref-web`
+- extension `better-zsh`, displayed "Better Zsh"; internal handles (repo, pnpm package) likely `vscode-better-zsh`
+
+Open: this repo's name; zsh-core's.
+
 ## Extraction
 
-One planned: `zshref-rs/` → its own repo, `zshref`. Checklist: `zshref-rs/EXTRACTION.md`; vendoring mechanics: `zshref-rs/DATA-SYNC.md`. Everything else stays; this repo's post-split name is TBD.
+One planned: `zshref-rs/` → its own repo, `zshref`. Checklist: `zshref-rs/EXTRACTION.md`; vendoring mechanics: `zshref-rs/DATA-SYNC.md`. Further splits: open.
 
 ## Detail scope
 

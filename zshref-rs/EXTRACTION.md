@@ -66,7 +66,7 @@ Missed by that query — the make-target wrappers:
 
 - whether a thin `zshref-mcp` repo is wanted beside `zshref`
 - history: carried over (`git filter-repo --subdirectory-filter zshref-rs`; prune tags to `zshref-v*`) or a fresh start
-- names: this monorepo's after the split, and its packages'
+- names: `REPO-SHAPE.md`
 - tag prefix: keep `zshref-v*` or move to `v*` — both workflows, the `binstall` `pkg-url` and `DISTRIBUTION.md` follow
 - sync trigger: a manual PR bumping the pinned zsh-core tag, or a scheduled job on the Rust repo that polls for a new tag and opens the PR
 - one pinned data version, not a range; the crate releases when the pin bumps, not on zsh-core's cadence
