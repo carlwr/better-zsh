@@ -77,6 +77,9 @@ describe("resolveHistory (event designators)", () => {
     // ^old^new shorthand resolves to the `!!` record
     ["^old^new", "!!"],
     ["^old^new^", "!!"],
+    // text after the final `^`: modifiers, or an empty rhs
+    ["^old^new^:G", "!!"],
+    ["^old^^", "!!"],
     // whitespace is trimmed
     ["  !42  ", "!n"],
     // word-designators / modifiers are documented records: their literal key

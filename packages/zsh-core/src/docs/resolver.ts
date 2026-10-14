@@ -183,7 +183,7 @@ const HISTORY_KEYS: readonly (readonly [RegExp, string])[] = [
   [/^!-\d+$/, "!-n"],
   [/^!\d+$/, "!n"],
   [/^![^!$^%*\s]+$/, "!str"],
-  [/^\^[^^]+\^[^^]+?\^?$/, "!!"], // documented synonym of `!!:s^foo^bar^`
+  [/^\^[^^]+\^.+$/, "!!"], // `^foo^bar^` is `!!:s^foo^bar^`; modifiers may follow
 ]
 
 function matchHistoryKey(t: string): string | undefined {

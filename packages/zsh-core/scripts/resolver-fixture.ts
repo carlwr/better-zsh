@@ -111,6 +111,8 @@ const pinnedInputs: { readonly [K in DocCategory]?: Inputs } = {
     "!{foo}",
     "^old^new",
     "^old^new^",
+    "^old^new^:G",
+    "^old^^",
     "  !42  ",
     "0",
     "a",

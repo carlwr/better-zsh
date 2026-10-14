@@ -47,7 +47,3 @@ One floor: `rust-version` in `Cargo.toml` — what `cargo install zshref` needs,
 ## npm packaging
 
 `npm/` — not part of the `.crate`. Design and release mechanics: `DISTRIBUTION.md`. Formatted and linted by the root `pnpm format` / `pnpm lint`; the generated `bin/` stubs and `package.json` never enter the tree.
-
-## Deferred
-
-- `history_expn` caret shorthand with text after the final `^` (`^a^b^:G`, `^a^^`): `history_key` answers `!!`, the TS regex nothing; the fixture does not pin it. `man zshexpn` sides with Rust (`^foo^bar^` is `!!:s^foo^bar^`; modifiers may follow): pin it, align TS
