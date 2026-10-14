@@ -5,6 +5,12 @@ on:
     paths:
       - "zshref-rs/**"
       - "packages/zsh-core/**"
+      # zsh-core build inputs outside its tree: `make` builds it first.
+      - "scripts/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "tsconfig.base.json"
       - "Makefile"
       - ".github/workflows/ci-rust.yml"
       - ".github/actions/**"
@@ -16,10 +22,21 @@ on:
     paths:
       - "zshref-rs/**"
       - "packages/zsh-core/**"
+      # zsh-core build inputs outside its tree: `make` builds it first.
+      - "scripts/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "tsconfig.base.json"
       - "Makefile"
       - ".github/workflows/ci-rust.yml"
       - ".github/actions/**"
   workflow_dispatch:
+
+# A newer push supersedes a branch's or PR's run; `main` keeps every run.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   rust:
