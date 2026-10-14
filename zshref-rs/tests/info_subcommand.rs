@@ -20,7 +20,7 @@ fn info_is_pretty_printed_by_default() {
 
     let stdout = String::from_utf8(out.stdout).expect("info stdout is utf-8");
     assert!(
-        stdout.contains("\n  \"packageVersion\":"),
+        stdout.contains("\n  \"zshrefVersion\":"),
         "info output was not pretty-printed:\n{stdout}"
     );
 

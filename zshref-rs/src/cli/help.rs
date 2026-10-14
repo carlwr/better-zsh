@@ -121,7 +121,7 @@ fn workflow_example(tool_set: &ToolSet, corpus: &Corpus) -> String {
 
 pub const BATCH_ABOUT: &str = "read JSONL requests on stdin; emit JSONL responses";
 
-pub const INFO_ABOUT: &str = "emit corpus + upstream metadata as pretty-printed JSON";
+pub const INFO_ABOUT: &str = "emit version, corpus + upstream metadata as pretty-printed JSON";
 
 // Size hint on `about` warns agents off bulk-piping into context.
 pub fn schema_about(words: usize) -> String {

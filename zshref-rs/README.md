@@ -4,7 +4,7 @@
 
 > **Status: pre-release (alpha).** This crate is developed inside the [`better-zsh`](https://github.com/carlwr/better-zsh) monorepo and will be extracted to its own repository on first stable release. Stable install docs are not live yet; alpha crates.io packages exist for packaging validation.
 
-A reference for zsh syntax, as a command-line tool and as a [Model Context Protocol](https://modelcontextprotocol.io) server. Ask what a token is, search the manual, or print the docs for a known element — from a terminal, a script, an agent pipeline, or an MCP-aware client. CLI tool subcommands emit one compact JSON line on stdout per invocation (pass `--pretty` for indented multi-line) — pipe into `jq` for projection. `zshref info` does likewise; `zshref completions` emits its shell script on stdout instead.
+A reference for zsh syntax, as a command-line tool and as a [Model Context Protocol](https://modelcontextprotocol.io) server. Ask what a token is, search the manual, or print the docs for a known element — from a terminal, a script, an agent pipeline, or an MCP-aware client. CLI tool subcommands emit one compact JSON line on stdout per invocation (pass `--pretty` for indented multi-line) — pipe into `jq` for projection. `zshref info` emits pretty-printed JSON; `zshref completions` emits its shell script on stdout instead.
 
 ## Why zshref?
 
@@ -120,7 +120,7 @@ zshref search --query echo --category builtin --limit 5
 # Enumerate records in a category — id-only, no `mdBody`.
 zshref list --category option --limit 200
 
-# Emit corpus + upstream metadata.
+# Emit version, corpus + upstream metadata.
 zshref info
 
 # Emit JSON Schema for tool inputs + outputs (codegen / programmatic

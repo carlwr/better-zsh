@@ -1,5 +1,8 @@
-//! `zshref info` — corpus-level introspection as JSON; CLI-only, not in the
-//! tool set. Counts come from the loaded corpus; `index.json` carries none.
+//! `zshref info` — version and corpus-level introspection as JSON; CLI-only,
+//! not in the tool set. Each version key names whose version it is: the binary
+//! (`zshrefVersion`) and the zsh-core release its corpus comes from
+//! (`zshCoreVersion`). Counts come from the loaded corpus; `index.json`
+//! carries none.
 
 use crate::corpus::{Corpus, DocCategory};
 use serde_json::{Map, Value, json};
@@ -13,7 +16,8 @@ pub fn run(corpus: &Corpus) -> Value {
     let categories: Vec<DocCategory> = corpus.categories.iter().map(|c| c.name).collect();
 
     json!({
-        "packageVersion": corpus.index.package_version,
+        "zshrefVersion": env!("CARGO_PKG_VERSION"),
+        "zshCoreVersion": corpus.index.package_version,
         "dataHash": corpus.index.data_hash,
         "zshUpstream": {
             "tag": corpus.index.zsh_upstream.tag,
@@ -36,7 +40,8 @@ mod tests {
         let v = run(&corpus);
         let obj = v.as_object().expect("top-level object");
         for key in [
-            "packageVersion",
+            "zshrefVersion",
+            "zshCoreVersion",
             "dataHash",
             "zshUpstream",
             "counts",
