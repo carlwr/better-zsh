@@ -9,6 +9,11 @@ mono           = cd $(crate-dir) && ZSHREF_DATA_SOURCE=monorepo
 vendored       = cd $(crate-dir) && ZSHREF_DATA_SOURCE=vendored
 host           = $(shell rustc -vV | sed -n 's/^host: //p')
 
+# `vendor`: zsh-core's release assets, as the extracted crate will download
+# them; the tarballs unpack into one merged `data/`
+release-dir    = ./packages/zsh-core/.aux/release
+release-assets = corpus.tar.gz resolver-fixture.tar.gz
+
 .DEFAULT_GOAL  = artifacts
 
 .PHONY:\
@@ -45,11 +50,12 @@ cli-check: artifacts
 .PHONY:\
 vendor
 vendor: artifacts vendor-clean
+	pnpm --filter @carlwr/zsh-core run pack:release
+	cd $(release-dir) && shasum -a 256 -c $(release-assets:=.sha256)
 	@mkdir -p $(crate-dir)/data
-	cp \
-	  ./packages/zsh-core/artifacts/json/*.json \
-	  ./packages/zsh-core/artifacts/resolver-fixture/resolver-fixture.json \
-	  $(crate-dir)/data/
+	for a in $(release-assets); do \
+	  tar -xzf $(release-dir)/$$a -C $(crate-dir)/data --strip-components=1; \
+	done
 
 .PHONY:\
 vendor-clean

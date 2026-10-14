@@ -284,7 +284,7 @@ jobs:
         if: needs.check.outputs.publish == 'true'
         uses: rust-lang/crates-io-auth-action@v1
 
-      # Vendored: the published crate carries `data/*.json` rather than
+      # Vendored: the published crate carries `data/` rather than
       # reaching across the monorepo for it.
       - name: cargo publish
         working-directory: zshref-rs

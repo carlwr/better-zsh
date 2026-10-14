@@ -10,7 +10,7 @@ Monorepo-phase workflows; what changes at extraction: `EXTRACTION.md`.
 
 Rust crate — the `zshref` CLI and, behind the `mcp` feature, the `zshref-mcp` MCP server — embedding zsh-core's corpus JSONs at compile time: rebuild after Rust or artifact changes.
 
-The `build.rs` auto-detects two data sources (monorepo paths vs. vendored `data/`) — see `DATA-SYNC.md` for the design. Pre-extraction the monorepo path is what you'll hit during normal dev; vendored mode exists for `cargo publish` validation.
+The `build.rs` auto-detects two data sources (monorepo paths vs. `data/`, vendored from zsh-core's release tarballs) — see `DATA-SYNC.md` for the design. Pre-extraction the monorepo path is what you'll hit during normal dev; vendored mode exists for `cargo publish` validation.
 
 ## Rebuild rules
 

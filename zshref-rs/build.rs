@@ -43,7 +43,7 @@ fn main() {
 
     let vendored = Source {
         name: "vendored",
-        json_dir: manifest.join("data"),
+        json_dir: manifest.join("data/json"),
         fixture: manifest.join("data/resolver-fixture.json"),
     };
     let monorepo = Source {
@@ -129,7 +129,7 @@ fn panic_with_help(manifest: &Path) -> ! {
            - {monorepo} (monorepo mode; run `make cli` from the repo root)\n\
          \n\
          See DATA-SYNC.md (crate root) for the full design.\n",
-        vendored = manifest.join("data").display(),
+        vendored = manifest.join("data/json").display(),
         monorepo = manifest
             .join("../packages/zsh-core/artifacts/json")
             .display(),

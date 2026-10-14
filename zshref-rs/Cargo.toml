@@ -29,7 +29,9 @@ include = [
     "/README.md",
     "/LICENSE",
     "/THIRD_PARTY_NOTICES.md",
-    "/data/*.json",
+    "/data/json/*.json",
+    "/data/resolver-fixture.json",
+    "/data/THIRD_PARTY_NOTICES.md",
 ]
 
 # Opt-in: a CLI-only install pulls none of the MCP dependencies.

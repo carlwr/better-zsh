@@ -17,13 +17,12 @@ The day `zshref` (this crate) leaves the `better-zsh` monorepo for its own repo,
 - `MIRROR-OF` markers name `packages/zsh-core/` paths: qualify them with the `better-zsh` repo
 - `project_url!` (`src/lib.rs`): the URL the binaries print; a repo name other than `zshref` changes it and every `rg -F github.com/carlwr/zshref` hit
 - `data/`: stays gitignored (generated, never committed); `make vendor` populates it
-- `scripts/third-party-notices`: take the zsh licence from the vendored tarball's `THIRD_PARTY_NOTICES.md`
 
 ## Build and CI
 
 - `Makefile`: crate-local, Rust-side targets only
   - `artifacts` goes: no TS build to drive
-  - `vendor`: download zsh-core's two release assets at a pinned tag and check their `.sha256`, instead of copying the sibling's `artifacts/`
+  - `vendor`: swap the local `pack:release` and its output dir for `gh release download <pinned tag>`; checksum check and unpack stay
     - prerequisite: a zsh-core GitHub release carrying them — `zsh-core-v*` tags exist, releases do not yet
     - `.sha256` proves integrity only; provenance: `gh attestation verify` against `better-zsh`, whose release workflow attests the tarballs
   - `cli-release-act` drives the root `scripts/test-integration-act`: copy it or drop the target

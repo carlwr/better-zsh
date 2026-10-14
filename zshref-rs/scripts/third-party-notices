@@ -7,7 +7,9 @@ set -eu -o pipefail
 
 crate=${0:A:h:h}
 out=$crate/THIRD_PARTY_NOTICES.md
-zsh_notice=$crate/../packages/zsh-core/src/data/zsh-docs/THIRD_PARTY_NOTICES.md
+# the notice zsh-core ships in its release tarballs
+zsh_notice=$crate/data/THIRD_PARTY_NOTICES.md
+[[ -f $zsh_notice ]] || { print -u2 -- "missing $zsh_notice:" 'run `make vendor` from the repo root'; exit 1 }
 triples=(
   aarch64-apple-darwin
   x86_64-apple-darwin
