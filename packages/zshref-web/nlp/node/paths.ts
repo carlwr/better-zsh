@@ -16,8 +16,9 @@ const rulesDir = resolve(nlpDir, "rules")
 // Committed, generated data (the `UPDATE_*` tests regenerate it) and the
 // held-out QA corpus with its editor schema.
 const dataDir = resolve(nlpDir, "data")
-// Build output (gitignored): what the SPA fetches under `/artifacts`;
-// `scripts/build-index.ts` writes it. The model: `scripts/fetch-model`.
+// Build output (gitignored): what the SPA fetches, relative to the page,
+// under `artifacts/`; `scripts/build-index.ts` writes it. The model:
+// `scripts/fetch-model`.
 const artifactsDir = resolve(pkgDir, "static", ARTIFACTS_DIR)
 // Gitignored, self-maintaining: the model, and the query vectors the
 // reporters keep across runs (`query-cache.ts`; delete to reset).

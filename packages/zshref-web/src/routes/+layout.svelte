@@ -1,6 +1,7 @@
 <script lang="ts">
   import "../app.css"
   import type { Snippet } from "svelte"
+  import { resolve } from "$app/paths"
   import ThemeToggle from "$lib/components/ThemeToggle.svelte"
   import { MODEL_ID } from "$nlp"
 
@@ -9,7 +10,7 @@
 
 <div class="shell">
   <header>
-    <a class="brand" href="/">
+    <a class="brand" href={resolve("/")}>
       <span class="logo">zshref</span>
       <span class="tagline">offline static zsh reference</span>
     </a>

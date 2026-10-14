@@ -5,8 +5,10 @@ import { vitePreprocess } from "@sveltejs/vite-plugin-svelte"
 const config = {
   preprocess: vitePreprocess(),
   kit: {
+    // No `fallback`: the one prerendered page gets relative asset paths, so
+    // the build serves from any base path; `strict` fails it if a dynamic
+    // route returns.
     adapter: adapter({
-      fallback: "index.html",
       precompress: false,
       strict: true,
     }),

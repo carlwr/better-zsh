@@ -1,16 +1,19 @@
 <script lang="ts">
-  import { page } from "$app/state"
-  import Md from "$lib/components/Md.svelte"
+  // One record, whole: the permalink's view.
+  import { resolve } from "$app/paths"
   import { errMsg } from "$lib/errors"
   import { renderInline } from "$lib/markdown"
   import { findRecord, recordView } from "$lib/view"
-  import { getTextArtifacts, type TextArtifacts } from "$nlp"
+  import { getTextArtifacts, type RecordId, type TextArtifacts } from "$nlp"
+  import Md from "./Md.svelte"
+
+  let { want }: { want: RecordId } = $props()
 
   let artifacts = $state<TextArtifacts | null>(null)
   let loadError = $state("")
 
-  // Load once (param-independent, memoized); the param-dependent lookup is the
-  // synchronous derivation below, so navigation needs no out-of-order guard.
+  // Load once (record-independent, memoized); the lookup is the synchronous
+  // derivation below, so navigation needs no out-of-order guard.
   // The text half only — showing a record needs no vectors.
   $effect(() => {
     void (async () => {
@@ -22,25 +25,19 @@
     })()
   })
 
-  // Route matches only with both segments, so always strings at runtime;
-  // Record<string,string> loses that under noUncheckedIndexedAccess.
-  let params = $derived(page.params as { category: string; id: string })
-
   let view = $derived(
     recordView({
       loadError,
       ready: artifacts !== null,
-      found: artifacts
-        ? findRecord(artifacts.index.records, params)
-        : undefined,
+      found: artifacts ? findRecord(artifacts.index.records, want) : undefined,
       categories: artifacts?.categories ?? [],
-      want: params,
+      want,
     }),
   )
 </script>
 
 <section>
-  <a class="back" href="/">← search</a>
+  <a class="back" href={resolve("/")}>← search</a>
   {#if view.kind === 'load-error'}
     <p class="err">{view.message}</p>
   {:else if view.kind === 'loading'}

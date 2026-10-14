@@ -1,7 +1,7 @@
 <script lang="ts">
   // Search-result bodies are full rendered records, which can be very long
   // (e.g. `typeset`, `_arguments`). Clamp to a preview height on the results
-  // list and reveal the rest on demand; the permalink page still shows the
+  // list and reveal the rest on demand; the record view still shows the
   // whole body. The toggle only appears when the body actually overflows the
   // clamp — measured with a ResizeObserver because <Md> renders async, so the
   // body grows after first paint.

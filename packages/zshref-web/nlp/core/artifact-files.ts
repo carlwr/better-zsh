@@ -1,5 +1,6 @@
-// The artifact files by name, relative to the artifacts root: `/artifacts`
-// in the SPA, `static/artifacts` on disk (`pnpm build:index` writes them).
+// The artifact files by name, relative to the artifacts root: `artifacts/`
+// relative to the page in the SPA, `static/artifacts` on disk
+// (`pnpm build:index` writes them).
 
 import type { RuleFile } from "./rules"
 

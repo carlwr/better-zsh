@@ -5,8 +5,8 @@ their own licences.
 zsh documentation
 -----------------
 
-The search index and record pages (`static/artifacts/`) carry text derived
-from the zsh documentation sources (tag `zsh-5.9`), under the zsh licence.
+The search index carries text derived from the zsh documentation sources
+(tag `zsh-5.9`), under the zsh licence.
 Provenance and full licence text:
 `packages/zsh-core/src/data/zsh-docs/THIRD_PARTY_NOTICES.md`.
 

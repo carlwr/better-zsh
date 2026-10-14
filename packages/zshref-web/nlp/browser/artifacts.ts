@@ -1,6 +1,7 @@
-// Centralised loader for the static artifacts under `/artifacts/`, written
-// by `pnpm build:index`. The JSON is zod-validated; the vector blob is
-// header- and length-checked instead (`nlp/core/vector-blob.ts`).
+// Centralised loader for the static artifacts, fetched from `artifacts/`
+// relative to the page; written by `pnpm build:index`. The JSON is
+// zod-validated; the vector blob is header- and length-checked instead
+// (`nlp/core/vector-blob.ts`).
 
 import { memoizedRetry } from "@carlwr/typescript-extra"
 import { ARTIFACT, ARTIFACTS_DIR, ruleArtifact } from "../core/artifact-files"
@@ -22,12 +23,13 @@ import {
   type VectorIndex,
 } from "../core/types"
 
-const BASE = `/${ARTIFACTS_DIR}`
+const BASE = ARTIFACTS_DIR
 
 export interface ArtifactSource {
   /** The test seam; the platform `fetch` otherwise. */
   fetch?: typeof fetch
-  /** The artifacts root; a subpath deploy (`kit.paths.base`) moves it. */
+  /** The artifacts root; relative to the page by default, so any base path
+   * works unconfigured. A seam for tests and other hosts. */
   base?: string
 }
 
@@ -79,9 +81,9 @@ export async function loadArtifacts(
   return { ...loaded, index: joinSearchIndex(loaded.index, vectors) }
 }
 
-// Cached production loads, shared across route navigations and deep links;
+// Cached production loads, shared across navigations and deep links;
 // a transient fetch failure is not cached, so the next call re-attempts.
-// The record page takes the text alone — a deep link never downloads the
+// The record view takes the text alone — a deep link never downloads the
 // vectors, which are most of the payload — and a search afterwards reuses
 // its text load. Tests call `loadTextArtifacts`/`loadArtifacts` directly to
 // stay network-free.

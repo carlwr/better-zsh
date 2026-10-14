@@ -12,6 +12,7 @@ import {
   type RecordView,
   type RecordViewInputs,
   recordHref,
+  recordParam,
   recordView,
   summaryLine,
   type ViewInputs,
@@ -156,30 +157,64 @@ describe("record links", () => {
   const rec = { category: "builtin", id: "typeset" }
 
   it("href is the permalink", () => {
-    expect(recordHref(rec)).toBe("/r/builtin/typeset")
+    expect(recordHref(rec)).toBe("?r=builtin/typeset")
   })
 
-  // Ids are zsh syntax: unencoded, `?` would start a query string, `#` a
-  // fragment, `%pa` a malformed escape, `/` another segment.
+  // Ids are zsh syntax: unencoded, `#` would start a fragment, `%pa` be a
+  // malformed escape, `+` read as a space, `&` start another parameter.
   it.each([
-    ["?", "/r/special_param/%3F"],
-    ["#", "/r/special_param/%23"],
-    ["${name%pattern}", "/r/special_param/%24%7Bname%25pattern%7D"],
-    ["/", "/r/special_param/%2F"],
-    [">> word", "/r/special_param/%3E%3E%20word"],
+    ["?", "?r=special_param/%3F"],
+    ["#", "?r=special_param/%23"],
+    ["${name%pattern}", "?r=special_param/%24%7Bname%25pattern%7D"],
+    ["/", "?r=special_param/%2F"],
+    [">> word", "?r=special_param/%3E%3E%20word"],
+    ["+", "?r=special_param/%2B"],
+    ["&", "?r=special_param/%26"],
   ])("href encodes the id %j", (id, href) => {
     expect(recordHref({ category: "special_param", id })).toBe(href)
   })
 
-  it("href is two decodable segments for any identity", () => {
-    const segment = fc.string({ minLength: 1 })
+  // The href is relative: from any page, under any base path, it stays on
+  // that page and links back to exactly its record.
+  it("href round-trips through recordParam and keeps the page", () => {
+    const bases = [
+      "https://h/",
+      "https://h/repo/",
+      "https://h/repo/?r=a/b",
+    ] as const
     fc.assert(
-      fc.property(fcu.record({ category: segment, id: segment }), want => {
-        const [, r, ...segs] = recordHref(want).split("/")
-        expect(r).toBe("r")
-        expect(segs.map(decodeURIComponent)).toEqual([want.category, want.id])
-      }),
+      fc.property(
+        fcu.record({
+          category: fc.stringMatching(/^[a-z_]+$/),
+          // any text, URL-significant characters favoured
+          id: fc.string({
+            unit: fc.oneof(
+              fc.constantFrom(..."/?#%+&= "),
+              fc.string({ unit: "grapheme", minLength: 1, maxLength: 1 }),
+            ),
+          }),
+        }),
+        fcu.element(bases),
+        (want, base) => {
+          const url = new URL(recordHref(want), base)
+          expect(recordParam(url)).toEqual(want)
+          expect(url.pathname).toBe(new URL(base).pathname)
+        },
+      ),
     )
+  })
+
+  it.each<[string, ReturnType<typeof recordParam>]>([
+    ["https://h/", null],
+    ["https://h/repo/?x=1", null],
+    ["https://h/?r=", { category: "", id: "" }],
+    ["https://h/?r=foo", { category: "foo", id: "" }],
+    [
+      "https://h/?r=special_param/a/b",
+      { category: "special_param", id: "a/b" },
+    ],
+  ])("recordParam(%s) → %j", (url, want) => {
+    expect(recordParam(new URL(url))).toEqual(want)
   })
 })
 
@@ -233,7 +268,7 @@ describe("recordView", () => {
     expect(v.kind).toBe("load-error")
   })
 
-  it("not-found names the permalink", () => {
+  it("not-found names the record", () => {
     expect(
       recordView({
         ...FOUND,
@@ -242,8 +277,16 @@ describe("recordView", () => {
       }),
     ).toEqual({
       kind: "not-found",
-      message: "no record at /r/param/PATH",
+      message: 'no record "PATH" in category "param"',
     })
+  })
+
+  it("a malformed link lands in not-found", () => {
+    const want = recordParam(new URL("https://h/?r=builtin"))
+    expect(want).not.toBeNull()
+    if (!want) return
+    const v = recordView({ ...FOUND, found: findRecord([record], want), want })
+    expect(v.kind).toBe("not-found")
   })
 
   it("record branch resolves the label", () => {

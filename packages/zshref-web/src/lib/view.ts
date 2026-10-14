@@ -78,10 +78,26 @@ export const categorySummary = (selected: number, all: number): string =>
       ? "none"
       : `${selected} selected`
 
-// The permalink. Ids are zsh syntax — `?`, `#`, `%`, `/` and spaces among
-// them — so each segment is percent-encoded; the route decodes its params.
+const RECORD_PARAM = "r"
+
+// The permalink: a query on the one page, a relative reference, so it holds
+// under any host and base path. Ids are zsh syntax — `?`, `#`, `%`, `/`, `+`,
+// `&` and spaces among them — so each part is percent-encoded in full.
 export function recordHref(rec: RecordId): string {
-  return `/r/${encodeURIComponent(rec.category)}/${encodeURIComponent(rec.id)}`
+  const enc = encodeURIComponent
+  return `?${RECORD_PARAM}=${enc(rec.category)}/${enc(rec.id)}`
+}
+
+/** The record a URL links to; null when it links to none (the search). Split
+ * at the first `/`: categories never hold one, ids may. A malformed value is
+ * still a record wanted — one that matches nothing. */
+export function recordParam(url: URL): RecordId | null {
+  const r = url.searchParams.get(RECORD_PARAM)
+  if (r === null) return null
+  const at = r.indexOf("/")
+  return at < 0
+    ? { category: r, id: "" }
+    : { category: r.slice(0, at), id: r.slice(at + 1) }
 }
 
 // Match category AND id: an id recurs across categories. Generic over the
@@ -106,7 +122,7 @@ export interface RecordViewInputs {
   ready: boolean // artifacts resolved
   found: RecordText | undefined
   categories: readonly Category[]
-  /** The route's (decoded) params. */
+  /** The linked record (`recordParam`). */
   want: RecordId
 }
 
@@ -114,7 +130,10 @@ export function recordView(s: RecordViewInputs): RecordView {
   if (s.loadError) return { kind: "load-error", message: s.loadError }
   if (!s.ready) return { kind: "loading" }
   if (!s.found)
-    return { kind: "not-found", message: `no record at ${recordHref(s.want)}` }
+    return {
+      kind: "not-found",
+      message: `no record "${s.want.id}" in category "${s.want.category}"`,
+    }
   return {
     kind: "record",
     record: s.found,

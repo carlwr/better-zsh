@@ -23,8 +23,9 @@ const textGate = artifactGate("artifact loader, text half", [
   ...STAGED.indexText,
 ])
 
-// Rule URLs resolve to YAML sources; `readData` handles the format switch.
-const url = (file: string) => `/${ARTIFACTS_DIR}/${file}`
+// Relative to the page, so any base path serves them. Rule URLs resolve to
+// YAML sources; `readData` handles the format switch.
+const url = (file: string) => `${ARTIFACTS_DIR}/${file}`
 const URL_TO_PATH: Record<string, string> = {
   [url(ARTIFACT.searchIndex)]: PATHS.searchIndex.json,
   [url(ARTIFACT.searchVectors)]: PATHS.searchIndex.vectors,
@@ -114,6 +115,19 @@ describe("artifact loader", () => {
     await expect(loadArtifacts({ fetch }, text)).rejects.toThrow(
       /model revision is other, expected/,
     )
+  })
+
+  // No gate: the URLs alone are the claim. A leading `/` would pin the
+  // artifacts to the host root, breaking a deploy under a base path.
+  it("fetches relative to the page by default", async () => {
+    const asked: string[] = []
+    const miss = (async (u: RequestInfo | URL) => {
+      asked.push(String(u))
+      return { ok: false, status: 404, statusText: "miss" }
+    }) as unknown as typeof fetch
+    await expect(loadTextArtifacts({ fetch: miss })).rejects.toThrow()
+    expect(asked.length).toBeGreaterThan(0)
+    expect(asked.every(u => u.startsWith(`${ARTIFACTS_DIR}/`))).toBe(true)
   })
 
   // No gate: every URL misses, which is what proves the base was used.

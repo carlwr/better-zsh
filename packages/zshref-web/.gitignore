@@ -5,7 +5,7 @@ dist
 .vite
 .env*
 !.env.example
-# `pnpm build:index` output (what the SPA fetches under /artifacts)
+# `pnpm build:index` output (what the SPA fetches from artifacts/)
 static/artifacts
 .DS_Store
 *.log
