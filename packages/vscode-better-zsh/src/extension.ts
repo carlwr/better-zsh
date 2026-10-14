@@ -6,9 +6,9 @@ import { initLog, log } from "./log"
 
 export function activate(ctx: vscode.ExtensionContext) {
   ctx.subscriptions.push(initLog())
-  const extVersion = ctx.extension.packageJSON.version ?? "unknown"
+  const { name, version = "unknown" } = ctx.extension.packageJSON
   log(
-    `better-zsh ${extVersion} | zsh-core ${PKG_VERSION} | ${ZSH_UPSTREAM.tag} (${ZSH_UPSTREAM.commit.slice(0, 7)})`,
+    `${name} ${version} | zsh-core ${PKG_VERSION} | ${ZSH_UPSTREAM.tag} (${ZSH_UPSTREAM.commit.slice(0, 7)})`,
   )
   // Reference knowledge is bundled, each doc category parsed on first use;
   // the host zsh is only spawned for what needs a zsh: the syntax check.

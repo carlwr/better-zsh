@@ -19,12 +19,12 @@ export const settings = {
   diagnosticsEnabled: setting("diagnostics.enabled", {
     default: true,
     markdownDescription:
-      "Syntax-check with `zsh -n` — the only thing the host zsh is used for.",
+      "Report syntax errors found by `zsh -n`. This is the only use of the host zsh: when off, no zsh is spawned.",
   }),
   zshPath: setting("zshPath", {
     scope: "machine",
     default: "",
-    markdownDescription: `Path to the zsh binary. Leave empty to use \`zsh\` from PATH. Set to \`${ZSH_PATH_OFF}\` to never invoke any zsh binary. Relative paths are rejected.`,
+    markdownDescription: `Absolute path to the zsh binary used for diagnostics. Leave empty to use \`zsh\` from PATH; set to \`${ZSH_PATH_OFF}\` to never run zsh. Relative paths are rejected.`,
   }),
 }
 
