@@ -13,7 +13,6 @@ import {
   schemaFile,
 } from "../src/docs/json-artifacts.ts"
 import { type DocCategory, docCategories } from "../src/docs/taxonomy.ts"
-import { PKG_REPO_URL } from "../src/meta/pkg-info.ts"
 
 export type SchemaGen = ReturnType<typeof createGenerator>
 
@@ -32,8 +31,8 @@ export function createSchemaGen(pkgDir: string): SchemaGen {
 // keyword the drafts read differently — the schema tests, which compile the
 // output with a 2020-12 validator, would flag one.
 const draft = "https://json-schema.org/draft/2020-12/schema"
-// An identity, not a location: what `$ref`s into a bundle resolve against.
-const schemaId = (file: string) => `${PKG_REPO_URL}/schema/${file}`
+// No `$id`: every `$ref` is bundle-local, so an identity would only be one
+// more name to keep current.
 
 type Obj = Record<string, unknown>
 type Defs = Record<string, Obj>
@@ -64,7 +63,6 @@ function toDraft2020(schema: Schema, file: string): Obj {
   }
   const out: Obj = {
     $schema: draft,
-    $id: schemaId(file),
     $ref,
     $defs: definitions,
   }

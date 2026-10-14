@@ -24,10 +24,10 @@ const readJson = (path: string): Rec => JSON.parse(readFileSync(path, "utf8"))
 
 const ajv = new Ajv2020({ allErrors: true, strict: true })
 const bundle = readJson(artifact("schema", recordsSchemaFile))
-ajv.addSchema(bundle as AnySchema)
+ajv.addSchema(bundle as AnySchema, recordsSchemaFile)
 
 const defValidator = (def: string) =>
-  ajv.compile({ $ref: `${String(bundle.$id)}#/$defs/${def}` })
+  ajv.compile({ $ref: `${recordsSchemaFile}#/$defs/${def}` })
 const validator = (cat: DocCategory) =>
   defValidator(recordsSchemaDefs.records(cat))
 const all = readJson(artifact("json", recordsFile))
@@ -189,7 +189,7 @@ describe.each([
   ],
 ])("%s", (_, json, schema) => {
   test("validates against its emitted schema", () => {
-    // A fresh instance: `ajv` above already holds the records bundle by `$id`.
+    // A fresh instance: `ajv` above already holds the records bundle.
     const fresh = new Ajv2020({ allErrors: true, strict: true })
     const validate = fresh.compile(readJson(schema) as AnySchema)
     expect(validate(readJson(json)), fresh.errorsText(validate.errors)).toBe(

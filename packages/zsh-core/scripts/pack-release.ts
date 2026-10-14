@@ -33,10 +33,11 @@ const outDir = join(rootDir, ".aux", "release")
 type Fail = (msg: string) => void
 
 /**
- * One release asset: a tarball `zsh-core-<name>.tar.gz` unpacking to
- * `zsh-core-<name>-<version>/`. The asset name is deliberately version-free —
- * the release tag in the download URL carries the version; the unpacked dir
- * keeps it.
+ * One release asset: a tarball `<name>.tar.gz` unpacking to
+ * `<name>-<version>/`. The asset name is deliberately version-free — the
+ * release tag in the download URL carries the version; the unpacked dir keeps
+ * it — and package-name-free: the download URL is a consumer's pin, and a
+ * package rename should not move it.
  */
 interface Asset {
   readonly name: string
@@ -48,8 +49,7 @@ interface Asset {
   readonly verify: (root: string, fail: Fail) => string
 }
 
-const baseOf = (asset: Asset) => `zsh-core-${asset.name}`
-const stemOf = (asset: Asset) => `${baseOf(asset)}-${PKG_VERSION}`
+const stemOf = (asset: Asset) => `${asset.name}-${PKG_VERSION}`
 
 const read = (path: string) => readFileSync(path, "utf8")
 const readJson = <T = Record<string, unknown>>(path: string): T =>
@@ -69,8 +69,8 @@ function validateWithSchema(json: string, schema: string, fail: Fail) {
   }
 }
 
-const jsonAsset: Asset = {
-  name: "json",
+const corpusAsset: Asset = {
+  name: "corpus",
   stage(root) {
     cpSync(join(artifactsDir, "json"), join(root, "json"), { recursive: true })
     cpSync(join(artifactsDir, "schema"), join(root, "schema"), {
@@ -171,8 +171,8 @@ function verify(asset: Asset, root: string): string {
 
 /** Returns the verified corpus identity. */
 function pack(asset: Asset): string {
-  const tarball = join(outDir, `${baseOf(asset)}.tar.gz`)
-  const tmp = mkdtempSync(join(tmpdir(), `${baseOf(asset)}-`))
+  const tarball = join(outDir, `${asset.name}.tar.gz`)
+  const tmp = mkdtempSync(join(tmpdir(), `${asset.name}-`))
   try {
     stage(asset, tmp)
     execFileSync("tar", ["-czf", tarball, "-C", tmp, stemOf(asset)])
@@ -180,7 +180,7 @@ function pack(asset: Asset): string {
     rmSync(tmp, { recursive: true, force: true })
   }
 
-  const unpacked = mkdtempSync(join(tmpdir(), `${baseOf(asset)}-verify-`))
+  const unpacked = mkdtempSync(join(tmpdir(), `${asset.name}-verify-`))
   let dataHash: string
   try {
     execFileSync("tar", ["-xzf", tarball, "-C", unpacked])
@@ -196,7 +196,7 @@ function pack(asset: Asset): string {
   return dataHash
 }
 
-const assets = [jsonAsset, fixtureAsset]
+const assets = [corpusAsset, fixtureAsset]
 
 rmSync(outDir, { recursive: true, force: true })
 mkdirSync(outDir, { recursive: true })
