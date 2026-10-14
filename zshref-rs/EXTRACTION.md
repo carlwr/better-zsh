@@ -11,6 +11,7 @@ The day `zshref` (this crate) leaves the `better-zsh` monorepo for its own repo,
 
 - `Cargo.toml`: `repository` / `homepage` → the extracted repo URL; re-verify the rest of the crates.io metadata
   - the npm packages and the `binstall` `pkg-url` follow: `npm/assemble.mjs` reads the manifest
+  - npm provenance rejects a `repository` other than the publishing repo: this move and the first release from the new repo land together
 - `build.rs`: drop the `monorepo` arm — vendored becomes the only data source
 - failure hints naming root make targets (`build.rs`, the resolver conformance test): follow the crate `Makefile`
 - `MIRROR-OF` markers name `packages/zsh-core/` paths: qualify them with the `better-zsh` repo
@@ -24,14 +25,16 @@ The day `zshref` (this crate) leaves the `better-zsh` monorepo for its own repo,
   - `artifacts` goes: no TS build to drive
   - `vendor`: download zsh-core's two release assets at a pinned tag and check their `.sha256`, instead of copying the sibling's `artifacts/`
     - prerequisite: a zsh-core GitHub release carrying them — `zsh-core-v*` tags exist, releases do not yet
+    - `.sha256` proves integrity only; provenance: `gh attestation verify` against `better-zsh`, whose release workflow attests the tarballs
   - `cli-release-act` drives the root `scripts/test-integration-act`: copy it or drop the target
-- `ci-rust.yml`: drop the `packages/zsh-core/**` and `Makefile` path filters and the `setup-node-pnpm` step (the composite action stays behind)
-- `release-zshref.yml`: the same edits — except `publish-npm` still needs Node: `actions/setup-node` replaces the composite action; re-point Trusted Publishing at the new repo before releasing from it — crates.io, and npm for both packages (`DISTRIBUTION.md`)
+- `ci-rust.yml`: the `paths` filters go — the whole repo is the crate; `actions/setup-node` replaces the `setup-node-pnpm` step (the composite action stays behind; `make cli-npm-check` still needs Node)
+- `release-zshref.yml`: `check` drops `setup-node-pnpm`; `publish-npm` swaps it for `actions/setup-node`; before releasing from the new repo, re-point Trusted Publishing (repo; workflow filename if renamed): crates.io, and npm for both packages (`DISTRIBUTION.md`)
 - both workflows: drop the `zshref-rs/` path prefixes, `working-directory` and rust-cache `workspaces`
-- `.github/dependabot.yml`: the `cargo` entry moves out, pointed at `/`
+- `.github/dependabot.yml`: the `cargo` entry moves out, pointed at `/`; the new repo needs its own `github-actions` entry
+- root `.gitattributes` and `.editorconfig`: the crate inherits both; copy them
 - root `package.json`: `format:root` / `lint:root` drop `zshref-rs/npm`; the crate repo needs its own Biome config for `npm/`
 - Homebrew — `Formula/zshref.rb` already sits at the default tap scan path and pulls the crates.io `.crate`:
-  - `head` → the new repo; until then `--HEAD` is broken (the monorepo root has no `Cargo.toml`)
+  - `homepage`, `head` → the new repo; until then `--HEAD` is broken (the monorepo root has no `Cargo.toml`)
   - decide whether it builds with `--features mcp`
   - consider `brew audit --strict --online` as a CI gate
 
@@ -62,6 +65,7 @@ Missed by that query — the make-target wrappers:
 ## Open until then
 
 - whether a thin `zshref-mcp` repo is wanted beside `zshref`
+- history: carried over (`git filter-repo --subdirectory-filter zshref-rs`; prune tags to `zshref-v*`) or a fresh start
 - names: this monorepo's after the split, and its packages'
 - tag prefix: keep `zshref-v*` or move to `v*` — both workflows, the `binstall` `pkg-url` and `DISTRIBUTION.md` follow
 - sync trigger: a manual PR bumping the pinned zsh-core tag, or a scheduled job on the Rust repo that polls for a new tag and opens the PR
