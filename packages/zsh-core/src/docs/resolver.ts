@@ -165,7 +165,7 @@ function redirTailPattern(groupOp: string, tail: string): string {
  * Word-designators (`0`, `a`, `n`, `x-y`, ...) and modifiers (`h`, `s/l/r[/]`,
  * ...) only carry meaning after an event designator; a bare `0` or `a` is
  * never a history token. Same "totality, not utility" posture as `param_expn`
- * (DESIGN.md §"History: grammar components, not independent tokens").
+ * (DESIGN.md §"History expansion: grammar components, not independent tokens").
  */
 function resolveHistory(
   c: DocCorpus,
