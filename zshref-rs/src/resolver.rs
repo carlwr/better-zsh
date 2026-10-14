@@ -495,6 +495,9 @@ mod tests {
     use serde::Deserialize;
     use serde_json::json;
 
+    /// The fixture shape this test reads: `ResolverFixtureJson.version` in zsh-core.
+    const FIXTURE_VERSION: u32 = 2;
+
     #[derive(Deserialize)]
     struct Fixture {
         version: u32,
@@ -539,7 +542,11 @@ mod tests {
         });
         let fixture: Fixture = serde_json::from_str(&text).expect("fixture parses");
 
-        assert_eq!(fixture.version, 2);
+        assert_eq!(
+            fixture.version, FIXTURE_VERSION,
+            "fixture is version {}; this test reads version {FIXTURE_VERSION} — re-vendor `data/` (DATA-SYNC.md)",
+            fixture.version
+        );
         let same_build = "fixture and embedded index.json come from different zsh-core builds \
                           — rebuild through the make target, not plain `cargo test`";
         assert_eq!(

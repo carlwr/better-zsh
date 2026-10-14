@@ -91,7 +91,7 @@ fn every_feature_build_fits_declared_rust_version() {
     assert!(
         over.is_empty(),
         "`rust-version` declares Rust {floor}, but resolved packages need newer:\n  {}\n\
-         Fix: raise `rust-version` in zshref-rs/Cargo.toml (keep its floor comment in \
+         Fix: raise `rust-version` in Cargo.toml (keep its floor comment in \
          sync), or pin the dependency back.",
         over.join("\n  ")
     );

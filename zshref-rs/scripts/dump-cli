@@ -23,7 +23,7 @@ FILES (in OUTDIR):
                     records of every category
 
 ENV:
-  ZSHREF            binary to dump (default: zshref-rs/target/debug/zshref)
+  ZSHREF            binary to dump (default: target/debug/zshref, crate-relative)
 "
 
 readonly per_category=3

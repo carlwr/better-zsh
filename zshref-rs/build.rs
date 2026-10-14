@@ -128,7 +128,7 @@ fn panic_with_help(manifest: &Path) -> ! {
            - {vendored} (vendored mode; run `make vendor` from the repo root)\n\
            - {monorepo} (monorepo mode; run `make cli` from the repo root)\n\
          \n\
-         See zshref-rs/DATA-SYNC.md for the full design.\n",
+         See DATA-SYNC.md (crate root) for the full design.\n",
         vendored = manifest.join("data").display(),
         monorepo = manifest
             .join("../packages/zsh-core/artifacts/json")

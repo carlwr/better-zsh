@@ -19,7 +19,7 @@ USAGE:
   $me --print-tools   print one tool subcommand per line, then exit
 
 ENV:
-  ZSHREF              binary to dump (default: zshref-rs/target/debug/zshref)
+  ZSHREF              binary to dump (default: target/debug/zshref, crate-relative)
 "
 
 

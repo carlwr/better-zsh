@@ -70,4 +70,4 @@ Missed by that query — the make-target wrappers:
 - tag prefix: keep `zshref-v*` or move to `v*` — both workflows, the `binstall` `pkg-url` and `DISTRIBUTION.md` follow
 - sync trigger: a manual PR bumping the pinned zsh-core tag, or a scheduled job on the Rust repo that polls for a new tag and opens the PR
 - one pinned data version, not a range; the crate releases when the pin bumps, not on zsh-core's cadence
-- size: ~1 MB embedded is fine; past ~5 MB, compress at build time or split a data-only crate
+- size: ~1.6 MB embedded is fine; past ~5 MB, compress at build time or split a data-only crate
