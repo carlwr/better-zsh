@@ -28,7 +28,7 @@
   "module": "./dist/index.mjs",
   "types": "./dist/types/index.d.cts",
   "engines": {
-    "node": ">=22"
+    "node": ">=24"
   },
   "files": [
     "dist",
@@ -117,7 +117,7 @@
   },
   "devDependencies": {
     "@carlwr/fastcheck-utils": "^0.7.1",
-    "@types/node": "^22.20.4",
+    "@types/node": "^24.19.2",
     "ajv": "^8.20.0",
     "ts-json-schema-generator": "^2.9.0",
     "vitest": "^5.0.2"
