@@ -3,6 +3,9 @@ const recursive = script =>
   `node scripts/build/upstream-ready.mjs run pnpm -r --filter './packages/*' --if-present ${script}`
 
 export const buildTasks = {
+  // `build`, `vsix`: the extension only, zsh-core as its upstream; zshref-web
+  // needs its index first (`build:index`: model, minutes of CPU). The gates
+  // recurse over every member.
   build: `${pkg("better-zsh")} build`,
   format:
     "pnpm format:root && pnpm -r --filter './packages/*' --if-present format",
