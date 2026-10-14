@@ -54,7 +54,7 @@ vendor: artifacts vendor-clean
 	cd $(release-dir) && shasum -a 256 -c $(release-assets:=.sha256)
 	@mkdir -p $(crate-dir)/data
 	for a in $(release-assets); do \
-	  tar -xzf $(release-dir)/$$a -C $(crate-dir)/data --strip-components=1; \
+	  tar -xzf $(release-dir)/$$a -C $(crate-dir)/data --strip-components=1 || exit 1; \
 	done
 
 .PHONY:\
