@@ -5,7 +5,7 @@
 
 import { mkdir, writeFile } from "node:fs/promises"
 import { join } from "node:path"
-import { docCategoryPreamble } from "../src/docs/category-preamble.ts"
+import { docCategoryPreambles } from "../src/docs/category-preamble.ts"
 import type { DocCorpus } from "../src/docs/corpus.ts"
 import {
   categoryOf,
@@ -97,7 +97,7 @@ function renderDumpText(
   const body = `${selected.map(section).join("\n\n---\n\n")}\n`
   // `all.md` intermixes categories — a per-category preamble would fragment it.
   if (kind === "all") return body
-  const preamble = docCategoryPreamble[kind]
+  const preamble = docCategoryPreambles[kind]
   if (preamble === undefined) return body
   return `<!-- preamble for category -->\n\n${preamble}\n\n---\n\n${body}`
 }

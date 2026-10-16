@@ -10,7 +10,7 @@ import {
   recordsBundle,
   resolverFeedbackDef,
 } from "./scripts/schemas.ts"
-import { docCategoryPreamble } from "./src/docs/category-preamble.ts"
+import { docCategoryPreambles } from "./src/docs/category-preamble.ts"
 import { loadCorpus } from "./src/docs/corpus.ts"
 import {
   fmtJson,
@@ -45,7 +45,7 @@ function writeJson(path: string, data: unknown) {
 }
 
 function categoryDescriptor(id: DocCategory): JsonCategoryDescriptor {
-  const preamble = docCategoryPreamble[id]
+  const preamble = docCategoryPreambles[id]
   return {
     id,
     label: docCategoryLabels[id],

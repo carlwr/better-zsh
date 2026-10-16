@@ -17,7 +17,7 @@ Word-designators and modifiers are only meaningful inside a history expansion (a
  * expansion, told apart by `subKind`. Absent for most categories; composes
  * with per-record markdown, never replaces it.
  */
-export const docCategoryPreamble: Readonly<
+export const docCategoryPreambles: Readonly<
   Partial<Record<DocCategory, string>>
 > = {
   history_expn: historyPreamble,

@@ -11,7 +11,7 @@ import {
   writeRefDump,
 } from "../../../scripts/ref-dump"
 import { identity, mkDocumented } from "../../docs/brands"
-import { docCategoryPreamble } from "../../docs/category-preamble"
+import { docCategoryPreambles } from "../../docs/category-preamble"
 import type { DocCorpus } from "../../docs/corpus"
 import * as zd from "../../docs/corpus"
 import type { DocCategory, DocRecordMap } from "../../docs/taxonomy"
@@ -766,10 +766,10 @@ describe("render dump", () => {
   })
 
   const preambleCases = docCategories.flatMap(k => {
-    const p = docCategoryPreamble[k]
+    const p = docCategoryPreambles[k]
     return p === undefined ? [] : [[k, p] as const]
   })
-  const noPreambleCats = docCategories.filter(k => !docCategoryPreamble[k])
+  const noPreambleCats = docCategories.filter(k => !docCategoryPreambles[k])
 
   test.each(preambleCases)(
     "%s dump starts with the category preamble",

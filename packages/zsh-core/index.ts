@@ -7,7 +7,7 @@
  * in the subpaths.
  */
 
-export { docCategoryPreamble } from "./src/docs/category-preamble.ts"
+export { docCategoryPreambles } from "./src/docs/category-preamble.ts"
 export { type DocCorpus, loadCorpus } from "./src/docs/corpus.ts"
 export { normalizeOptName } from "./src/docs/normalize-option.ts"
 export {

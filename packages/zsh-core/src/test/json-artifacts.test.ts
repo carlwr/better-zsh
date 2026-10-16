@@ -4,7 +4,7 @@ import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { cached, isDefined } from "@carlwr/typescript-extra"
 import { describe, expect, test } from "vitest"
-import { docCategoryPreamble } from "../docs/category-preamble"
+import { docCategoryPreambles } from "../docs/category-preamble"
 import { loadCorpus } from "../docs/corpus"
 import {
   hashRecords,
@@ -50,7 +50,7 @@ describe("generated JSON is a release asset, not a registry payload", () => {
     expect(index().version).toBe(7)
     expect(index().categories).toEqual(
       docCategories.map(id => {
-        const preamble = docCategoryPreamble[id]
+        const preamble = docCategoryPreambles[id]
         return {
           id,
           label: docCategoryLabels[id],
