@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { withoutFirstSubstring } from "@carlwr/typescript-extra"
-import { buildApi } from "../../../scripts/api-extractor.mjs"
+import { buildApi } from "./api-extractor.mjs"
 
 // One rollup per non-glob `exports` subpath, read from the manifest rather
 // than restated: a subpath added without a rollup ships no `.d.ts`.

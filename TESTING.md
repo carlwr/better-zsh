@@ -67,7 +67,7 @@ If you touch tests, look for conciseness wins unless that would hide intent.
 
 ## Testing tools
 
-Established tools: the workspace-root `devDependencies`. When property-based-test primitives are unavailable in a given version, fall back to constructive primitives (`fc.mapToConstant(...)` + `fc.array(...)`, etc.).
+Established tools: those the workspace already declares. When property-based-test primitives are unavailable in a given version, fall back to constructive primitives (`fc.mapToConstant(...)` + `fc.array(...)`, etc.).
 
 Property tests call `fast-check` directly (`fc.assert(fc.property(...))`). Considered `@fast-check/vitest`; rejected:
 

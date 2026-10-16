@@ -61,7 +61,13 @@ Hand-written category lists drift. Same posture for other closed zsh-core unions
 
 Rendered reference text is shared by extension hovers, tools, and the CLI. Treat wording as user-facing zsh documentation, not extension-local UI copy. Conventions and dump-review workflow: `packages/zsh-core/AGENTS.md`.
 
-### Root dev dependencies
+### Dependency placement
+
+- a package declares what its own code, tests and scripts import or invoke
+- the root declares:
+  - the toolchain root config owns: Biome, TypeScript
+  - what root scripts use
+- a version shared across manifests: in the `pnpm-workspace.yaml` catalog, referenced as `catalog:`
 
 `@carlwr/typescript-extra` and `@carlwr/fastcheck-utils` stay workspace-root dev dependencies even when temporarily unused; individual packages add or drop them per actual use.
 

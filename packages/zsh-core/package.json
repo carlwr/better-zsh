@@ -113,13 +113,20 @@
     "verifyREGISTRY": "pnpm run testREGISTRY:install"
   },
   "dependencies": {
-    "@carlwr/typescript-extra": "0.13.0"
+    "@carlwr/typescript-extra": "catalog:"
   },
   "devDependencies": {
-    "@carlwr/fastcheck-utils": "^0.7.1",
-    "@types/node": "^22.20.4",
+    "@arethetypeswrong/cli": "^0.18.5",
+    "@carlwr/fastcheck-utils": "catalog:",
+    "@microsoft/api-extractor": "^7.59.2",
+    "@types/node": "catalog:",
     "ajv": "^8.20.0",
+    "fast-check": "catalog:",
+    "publint": "^0.3.24",
     "ts-json-schema-generator": "^2.9.0",
-    "vitest": "^5.0.2"
+    "tsdown": "catalog:",
+    "tsx": "catalog:",
+    "typedoc": "^0.28.20",
+    "vitest": "catalog:"
   }
 }

@@ -82,7 +82,7 @@ test("inputs cover the whole package tree, plus the shared repo files", () => {
   // takes everything the exclusion rule leaves.
   assert.ok(rels.includes("packages/zsh-core/typedoc.json"))
   assert.ok(rels.includes("packages/zsh-core/scripts/build-api.mjs"))
-  assert.ok(rels.includes("scripts/api-extractor.mjs"))
+  assert.ok(rels.includes("scripts/build/build-stamp.mjs"))
   assert.ok(rels.includes("pnpm-lock.yaml"))
   assert.ok(rels.includes("package.json"))
   assert.ok(rels.includes("tsconfig.base.json"))

@@ -1,6 +1,17 @@
 packages:
   - packages/*
 
+# Versions more than one manifest declares; each manifest names `catalog:`.
+catalog:
+  "@carlwr/fastcheck-utils": ^0.7.1
+  "@carlwr/typescript-extra": 0.13.0
+  "@types/node": ^22.20.4
+  fast-check: ^4.10.2
+  tsdown: ^0.23.0
+  tsx: ^4.23.15
+  vitest: ^5.0.2
+  yaml: ^2.9.1
+
 # pnpm >=11: `allowBuilds` replaces the old `onlyBuiltDependencies` list; an
 # unlisted build script is a hard install error, so every one is decided here.
 # `onnxruntime-node` (native ORT for zshref-web's Node embedder: index build,

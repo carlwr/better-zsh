@@ -41,25 +41,11 @@
     "cli:qa": "node scripts/build/quiet-run.mjs cli:qa"
   },
   "devDependencies": {
-    "@arethetypeswrong/cli": "^0.18.5",
     "@biomejs/biome": "^2.5.14",
-    "@carlwr/fastcheck-utils": "^0.7.1",
-    "@carlwr/typescript-extra": "0.13.0",
-    "@microsoft/api-extractor": "^7.59.2",
-    "@types/mocha": "^10.0.10",
-    "@types/node": "^22.20.4",
-    "@types/vscode": "1.110.0",
-    "@vscode/test-cli": "^0.0.15",
-    "@vscode/test-electron": "^3.1.0",
-    "@vscode/vsce": "^4.0.0",
-    "fast-check": "^4.10.2",
-    "publint": "^0.3.24",
-    "tsdown": "^0.23.0",
-    "tsx": "^4.23.15",
-    "typedoc": "^0.28.20",
+    "@carlwr/fastcheck-utils": "catalog:",
+    "@carlwr/typescript-extra": "catalog:",
     "typescript": "^6.0.3",
-    "vitest": "^5.0.2",
-    "yaml": "^2.9.1",
+    "yaml": "catalog:",
     "zzz_LAST_dummy": "npm:empty-npm-package@1.0.0"
   }
 }

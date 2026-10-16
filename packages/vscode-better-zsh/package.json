@@ -55,11 +55,20 @@
     "vscode:publish:dry": "pnpm build && export BZ_SKIP_UPSTREAM=1 && pnpm check && pnpm test && node scripts/check-package.mjs && echo '---\n(DRY-RUN; ran staged vsce ls above.)'"
   },
   "dependencies": {
-    "@carlwr/typescript-extra": "0.13.0",
+    "@carlwr/typescript-extra": "catalog:",
     "@carlwr/zsh-core": "workspace:*"
   },
   "devDependencies": {
-    "@carlwr/fastcheck-utils": "^0.7.1",
-    "vitest": "^5.0.2"
+    "@carlwr/fastcheck-utils": "catalog:",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "catalog:",
+    "@types/vscode": "1.110.0",
+    "@vscode/test-cli": "^0.0.15",
+    "@vscode/test-electron": "^3.1.0",
+    "@vscode/vsce": "^4.0.0",
+    "fast-check": "catalog:",
+    "tsdown": "catalog:",
+    "tsx": "catalog:",
+    "vitest": "catalog:"
   }
 }
