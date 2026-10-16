@@ -23,6 +23,9 @@ concurrency:
   group: release-extension
   cancel-in-progress: false
 
+permissions:
+  contents: read
+
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -36,7 +39,7 @@ jobs:
       - name: Refuse a real publish off-tag
         if: inputs.dry_run == false && !startsWith(github.ref, 'refs/tags/ext-v')
         run: |
-          echo "real publish needs a ext-v* tag ref; got $GITHUB_REF"
+          echo "real publish needs an ext-v* tag ref; got $GITHUB_REF"
           exit 1
 
       - uses: ./.github/actions/setup-node-pnpm
