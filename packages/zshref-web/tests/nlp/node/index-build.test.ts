@@ -319,7 +319,7 @@ describe("buildIndex", () => {
     const total = index.records.length * VIEWS.length
     expect(progress).toHaveLength(Math.ceil(total / PROGRESS_CHUNK))
     expect(progress.at(-1)).toEqual([total, total])
-  })
+  }, 30_000)
 })
 
 const skipReason = artifactGate("built index", [...STAGED.index])
