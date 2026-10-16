@@ -4,12 +4,7 @@ import { fileURLToPath } from "node:url"
 import { escapeRegExp } from "@carlwr/typescript-extra"
 import { describe, expect, test } from "vitest"
 import { publicEntries } from "../../scripts/pkg-entries.ts"
-import {
-  PKG_LICENSE,
-  PKG_NAME,
-  PKG_REPO_URL,
-  PKG_VERSION,
-} from "../meta/pkg-info.ts"
+import { PKG_VERSION } from "../meta/pkg-info.ts"
 import { ZSH_UPSTREAM } from "../meta/zsh-upstream.ts"
 
 const pkgDir = join(dirname(fileURLToPath(import.meta.url)), "..", "..")
@@ -27,20 +22,14 @@ const entryModules = publicEntries(pkgDir)
   .map(name => `./${name}.ts`)
   .sort()
 
-describe("pkg-info constants stay in sync with package.json", () => {
-  test.each([
-    ["PKG_NAME", PKG_NAME, pkg.name],
-    ["PKG_VERSION", PKG_VERSION, pkg.version],
-    ["PKG_REPO_URL", PKG_REPO_URL, pkg.repository?.url],
-    ["PKG_LICENSE", PKG_LICENSE, pkg.license],
-  ])("%s matches manifest", (_label, constant, manifest) => {
-    expect(constant).toBe(manifest)
-  })
+test("PKG_VERSION matches package.json", () => {
+  expect(PKG_VERSION).toBe(pkg.version)
 })
 
-test("repo-derived manifest URLs follow PKG_REPO_URL", () => {
-  expect(pkg.homepage).toMatch(new RegExp(`^${escapeRegExp(PKG_REPO_URL)}/`))
-  expect(pkg.bugs).toBe(`${PKG_REPO_URL}/issues`)
+test("repo-derived manifest URLs follow repository.url", () => {
+  const repoUrl: string = pkg.repository.url
+  expect(pkg.homepage).toMatch(new RegExp(`^${escapeRegExp(repoUrl)}/`))
+  expect(pkg.bugs).toBe(`${repoUrl}/issues`)
 })
 
 describe("public-surface entries stay in sync", () => {
