@@ -25,6 +25,7 @@ The day `zshref` (this crate) leaves the `better-zsh` monorepo for its own repo,
   - `vendor`: swap the local `pack:release` and its output dir for `gh release download <pinned tag>`; checksum check and unpack stay
     - prerequisite: a zsh-core GitHub release carrying them — `zsh-core-v*` tags exist, releases do not yet
     - `.sha256` proves integrity only; provenance: `gh attestation verify` against `better-zsh`, whose release workflow attests the tarballs
+    - CI jobs that vendor set `GH_TOKEN`: `gh` refuses to run unauthenticated in Actions
   - `cli-release-act` drives the root `scripts/test-integration-act`: copy it or drop the target
 - `ci-rust.yml`: the `paths` filters go — the whole repo is the crate; `actions/setup-node` replaces the `setup-node-pnpm` step (the composite action stays behind; `make cli-npm-check` still needs Node)
 - `release-zshref.yml`: `check` drops `setup-node-pnpm`; `publish-npm` swaps it for `actions/setup-node`; before releasing from the new repo, re-point Trusted Publishing (repo; workflow filename if renamed): crates.io, and npm for both packages (`DISTRIBUTION.md`)
@@ -42,6 +43,7 @@ The day `zshref` (this crate) leaves the `better-zsh` monorepo for its own repo,
 - `README.md`:
   - install: `cargo install zshref` (`--features mcp` for both binaries) instead of monorepo checkout + `make cli`
   - drop the pre-release banner and the "planned" caveats
+- `npm/*/README.md`: drop the pre-release banner naming the monorepo
 - `DEVELOPMENT.md`:
   - drop the pre-release note
   - rebuild rules: `make vendor` instead of the artifact-building targets
@@ -50,6 +52,7 @@ The day `zshref` (this crate) leaves the `better-zsh` monorepo for its own repo,
   - the repo-root `Makefile`, `pnpm cli*`, `packages/zsh-core/`
   - root docs that stay behind, among `rg -oI '\b[A-Z-]+\.md\b' zshref-rs/*.md zshref-rs/src zshref-rs/tests | sort -u`
   - `DISTRIBUTION.md`'s `gh attestation verify --repo`: releases cut before extraction stay attested to `better-zsh`
+- monorepo-root conventions (maintainer-doc frontmatter, `CLAUDE.md` → `AGENTS.md` symlink, commit rules, md style): `AGENTS.md` adopts or drops each; their lint scripts stay behind
 - this file: deleted
 
 ## Monorepo side
