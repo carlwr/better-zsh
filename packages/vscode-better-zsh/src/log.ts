@@ -23,7 +23,7 @@ export const debug = emit("debug")
 export const log = emit("info")
 export const warn = emit("warn")
 
-/** The last few hundred log lines; for test hooks. */
+/** The last `RECENT_MAX` log lines; for test hooks. */
 export function recentLogs() {
   return [...recent]
 }

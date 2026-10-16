@@ -10,8 +10,8 @@ Upstream provenance
 - Project: Visual Studio Code
 - Source file:
   https://github.com/microsoft/vscode/blob/main/extensions/shellscript/syntaxes/shell-unix-bash.tmLanguage.json
-- Update script in this repo:
-  `packages/vscode-better-zsh/scripts/update-grammar`
+- Update script, relative to the extension's source root:
+  `scripts/update-grammar`
 - Local modification after copy:
   `scopeName = "source.shell.zsh"`
 

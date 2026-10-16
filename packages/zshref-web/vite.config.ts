@@ -14,6 +14,9 @@ export default defineConfig({
   resolve: {
     conditions: ["onnxruntime-web-use-extern-wasm", ...defaultClientConditions],
   },
+  // Bundled packages' licences; the default path, `.vite/`, never reaches
+  // `build/` (adapter-static skips it).
+  build: { license: { fileName: "THIRD_PARTY_LICENSES.md" } },
   ssr: { noExternal: ["shiki"] },
   test: {
     include: ["tests/**/*.test.ts"],

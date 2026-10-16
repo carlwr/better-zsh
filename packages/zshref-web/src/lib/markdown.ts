@@ -7,17 +7,26 @@ import { memoizedRetry } from "@carlwr/typescript-extra"
 // markdown-it v15 bundles its own types: the default export is a callable
 // back-compat wrapper (a value), so the class type is the named export.
 import MarkdownIt, { type MarkdownIt as Md } from "markdown-it"
-import { createHighlighter, type LanguageRegistration } from "shiki"
+import { createHighlighterCore, type LanguageRegistration } from "shiki/core"
+import { createOnigurumaEngine } from "shiki/engine/oniguruma"
 
+// Fine-grained imports: the `shiki` bundle would ship its whole grammar and
+// theme catalogue as lazy chunks, each under its own licence. A grammar or
+// theme added here needs its licence in the package notices.
 const THEMES = { light: "github-light", dark: "github-dark" } as const
 
-// Loading `shellscript` also registers its zsh/sh/bash/shell aliases.
-const LANGS = ["shellscript", docoptGrammar as unknown as LanguageRegistration]
-
 async function build(): Promise<Md> {
-  const hl = await createHighlighter({
-    themes: Object.values(THEMES),
-    langs: LANGS,
+  const hl = await createHighlighterCore({
+    themes: [
+      import("shiki/themes/github-light.mjs"),
+      import("shiki/themes/github-dark.mjs"),
+    ],
+    langs: [
+      // also registers its zsh/sh/bash/shell aliases
+      import("shiki/langs/shellscript.mjs"),
+      docoptGrammar as unknown as LanguageRegistration,
+    ],
+    engine: createOnigurumaEngine(import("shiki/wasm")),
   })
   const known = new Set(hl.getLoadedLanguages())
   return new MarkdownIt({

@@ -8,5 +8,5 @@ Primary notice locations:
 - Grammar notice: `syntaxes/THIRD_PARTY_NOTICES.md`
 - Vendored zsh-doc notice in built output: `out/zsh-core-data/THIRD_PARTY_NOTICES.md`
 
-The zsh-doc notice is produced from the vendored source notice in
-`packages/zsh-core/src/data/zsh-docs/THIRD_PARTY_NOTICES.md`.
+The zsh-doc notice is copied from `@carlwr/zsh-core`, which vendors the
+zsh documentation sources.
