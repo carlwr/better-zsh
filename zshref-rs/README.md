@@ -82,7 +82,7 @@ Build from source: requires the full monorepo checkout (the `better-zsh` Node/pn
 ```sh
 git clone https://github.com/carlwr/better-zsh
 cd better-zsh
-corepack enable
+corepack enable     # Node 25+ no longer bundles corepack: first `npm install -g corepack`
 pnpm install --frozen-lockfile
 make cli            # release binary at zshref-rs/target/release/zshref
 (cd zshref-rs && cargo build --release --features mcp)   # adds target/release/zshref-mcp

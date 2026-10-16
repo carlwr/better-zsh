@@ -24,6 +24,11 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 0
+    # upload-artifact v5 in `release-zshref.yml` is deliberate (act's artifact
+    # server); majors are raised by hand.
+    ignore:
+      - dependency-name: "actions/upload-artifact"
+        update-types: ["version-update:semver-major"]
   # `/` covers workflows only; composite actions pin their own `uses:`. Kept
   # separate because a non-`/` directory is undocumented here: if rejected, it
   # must not take workflow coverage with it. Glob survives a rename.

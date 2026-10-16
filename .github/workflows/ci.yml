@@ -25,7 +25,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-node-pnpm
       # zsh-core has no `pre*` hooks, and `test` resolves JSON subpaths that
       # exist only under `dist/`.
@@ -50,7 +50,7 @@ jobs:
       # later step can rebuild it mid-run.
       BZ_SKIP_UPSTREAM: "1"
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-node-pnpm
       - name: Install zsh
         run: |
@@ -61,7 +61,7 @@ jobs:
       # The fetch script pins the model revision, so its hash is the key: a
       # bumped revision misses, an unchanged one restores and the fetch is a
       # size check.
-      - uses: actions/cache@v6
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: packages/zshref-web/.aux/model
           key: nlp-model-${{ hashFiles('packages/zshref-web/scripts/fetch-model') }}
@@ -73,7 +73,7 @@ jobs:
       # `build:index` keeps an index that validates against the corpus, and
       # validation cannot see a changed embedder. Per OS: the vectors are what
       # the runner's ONNX build computes.
-      - uses: actions/cache@v6
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: packages/zshref-web/static/artifacts
           key: ${{ runner.os }}-nlp-index-${{ hashFiles('packages/zsh-core/src/**', 'packages/zsh-core/package.json', 'packages/zshref-web/nlp/**', 'packages/zshref-web/scripts/build-index.ts', 'packages/zshref-web/scripts/fetch-model', 'pnpm-lock.yaml') }}
@@ -91,7 +91,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-node-pnpm
       - run: pnpm --filter @carlwr/zsh-core run verifyREGISTRY
 
@@ -105,7 +105,7 @@ jobs:
     env:
       BZ_SKIP_UPSTREAM: "1"
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-node-pnpm
       - name: Install early CI deps
         run: |

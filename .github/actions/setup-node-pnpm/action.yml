@@ -15,13 +15,14 @@ inputs:
 runs:
   using: composite
   steps:
-    - uses: actions/setup-node@v7
+    - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
       with:
         node-version: 24
         registry-url: ${{ inputs.registry-url }}
 
-    - run: corepack enable
-      shell: bash
+    # Node 25+ no longer bundles corepack. With no `version` input it reads
+    # `packageManager`, so the root manifest stays the one pnpm pin.
+    - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
 
     # Fixed path: the cache step needs a literal, and `/tmp` is writable on
     # hosted runners and in containers alike.
@@ -32,7 +33,7 @@ runs:
     # again under the new key, so the entry only grows — and `pnpm store prune`
     # empties the store rather than trimming it. Cost: a cold install whenever
     # the lockfile changes.
-    - uses: actions/cache@v6
+    - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: /tmp/pnpm-store
         key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
