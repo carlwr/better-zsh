@@ -4,9 +4,11 @@ import { createRequire } from "node:module"
 import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 
-const pnpm = process.platform === "win32" ? "pnpm.cmd" : "pnpm"
 const require = createRequire(import.meta.url)
 const { runtimeZshDataPaths } = require("@carlwr/zsh-core/assets")
+// Resolved, not `pnpm exec`: the stage is no workspace member, so pnpm
+// there would pick any vsce on PATH and write a lockfile into the stage.
+const vsce = require.resolve("@vscode/vsce/vsce")
 const stageRoot = resolve(
   dirname(fileURLToPath(import.meta.url)),
   "..",
@@ -14,10 +16,11 @@ const stageRoot = resolve(
   "staged-extension",
 )
 
-const files = execFileSync(pnpm, ["exec", "vsce", "ls", "--no-dependencies"], {
-  cwd: stageRoot,
-  encoding: "utf8",
-})
+const files = execFileSync(
+  process.execPath,
+  [vsce, "ls", "--no-dependencies"],
+  { cwd: stageRoot, encoding: "utf8" },
+)
   .split(/\r?\n/)
   .map(line => line.trim())
   .filter(Boolean)

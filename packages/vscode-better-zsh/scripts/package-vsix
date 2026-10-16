@@ -7,7 +7,6 @@
 set -eu
 
 pkg_dir=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
-repo_root=$(CDPATH= cd -- "$pkg_dir/../.." && pwd)
 stage=$pkg_dir/.tmp/staged-extension
 
 if [ "${1:-}" = -- ]; then
@@ -22,4 +21,5 @@ case $out in
 esac
 
 node "$pkg_dir/scripts/check-package.mjs"
-(cd "$stage" && "$repo_root/node_modules/.bin/vsce" package --no-dependencies --out "$abs_out" "$@")
+vsce=$(cd "$pkg_dir" && node -p 'require.resolve("@vscode/vsce/vsce")')
+(cd "$stage" && node "$vsce" package --no-dependencies --out "$abs_out" "$@")
