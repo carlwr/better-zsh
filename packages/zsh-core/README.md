@@ -23,7 +23,7 @@ npm install @carlwr/zsh-core
 pnpm add @carlwr/zsh-core
 ```
 
-Node ≥ 24; ESM (`import`) and CommonJS (`require`), typed for both.
+Node ≥ 22; ESM (`import`) and CommonJS (`require`), typed for both.
 
 Node support: every Node.js release line that hasn't reached end of life. Support for a release line is dropped in a minor release once it reaches end of life.
 

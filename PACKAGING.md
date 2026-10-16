@@ -20,6 +20,7 @@ Invariants those headers don't carry:
 
 - Every publishable package needs its own release workflow; before tagging, walk `release-*.yml` against the publishable set and close gaps first.
 - `engines.node` and CI's `node-version` move together.
+  - the floor, 22, is provisional — chosen loosely (oldest non-EOL line; VS Code 1.110 hosts 22; nothing needs 24); revisit before 1.0
 - A version bump updates every site the workflow's tag guard checks — the guard fails the release, it does not warn.
 - Tokenless publishing is granted registry-side, per package — npm publishing-access settings, crates.io trusted-publishing settings.
   - the grant names one repo, and usually one workflow filename

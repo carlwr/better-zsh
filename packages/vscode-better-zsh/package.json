@@ -17,7 +17,7 @@
   "publisher": "carlwr",
   "engines": {
     "vscode": "^1.110.0",
-    "node": ">=24"
+    "node": ">=22"
   },
   "categories": [
     "Programming Languages",
