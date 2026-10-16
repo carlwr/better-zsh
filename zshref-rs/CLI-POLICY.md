@@ -11,7 +11,7 @@ _Opinionated, agent-era._
 
 Framework-agnostic rules for human- and agent-facing CLI output.
 
-This doc covers visual *what*/*why* and part of the behaviour contract; the CLI's own tests cover what is practical to assert. Change either, check the other. Keep even hard-to-assert rules here.
+This doc covers visual *what*/*why* and part of the behaviour contract; the CLI's own tests cover what is practical to assert. Keep even hard-to-assert rules here.
 
 Strength indicators:
 

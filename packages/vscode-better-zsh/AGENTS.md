@@ -6,7 +6,8 @@ VS Code extension package: editor providers and host-zsh execution.
 
 `src/`:
 
-- `manifest.ts` + `manifest/` — the manifest's contribution points, staged into the published `package.json`; per-point data and generated-asset sources under `manifest/`
+- `manifest.ts` + `manifest/` — the manifest's contribution points, staged into the published `package.json`
+  - per-point data and generated-asset sources under `manifest/`
 - `contributions.ts` — everything registered at activation
 - `analysis/` — the user-code analyzer: coarse zsh syntax facts
   - editor-neutral and corpus-free; a seam test under `test/analysis/` fences its imports
@@ -17,7 +18,8 @@ VS Code extension package: editor providers and host-zsh execution.
 - `settings.ts` — the settings boundary: raw configuration values parsed into domain types
 - `zsh.ts` + `zsh/` — host zsh execution; `zsh.ts` is the single gate
 - `build/` — asset generation and extension staging
-- `test/` — unit tests mirror `src/`; Electron-hosted suites in their own subdirs (`vitest.config.ts` excludes them)
+- `test/` — unit tests mirror `src/`
+  - Electron-hosted suites in their own subdirs (`vitest.config.ts` excludes them)
 - everything else at the root
 
 ### The two inventories

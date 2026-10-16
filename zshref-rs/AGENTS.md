@@ -18,9 +18,15 @@ One floor: `rust-version` in `Cargo.toml` — what `cargo install zshref` needs,
 
 ## Iteration
 
-- Rust-only edits: `cargo build --all-features` + `cargo test --all-features` (skip `pnpm qa`); without `--all-features` the MCP binary and its test are skipped.
-- From outside `zshref-rs/`: pass `--manifest-path zshref-rs/Cargo.toml`.
-- Edits touching `packages/zsh-core/`: the make targets (`DEVELOPMENT.md` §Rebuild rules) rebuild the artifacts first.
+Rust-only edits (skip `pnpm qa`):
+
+```sh
+cargo build --all-features && cargo test --all-features
+# from outside zshref-rs/, add: --manifest-path zshref-rs/Cargo.toml
+```
+
+- Without `--all-features` the MCP binary and its test are skipped.
+- Edits touching `packages/zsh-core/`: the make targets (`DEVELOPMENT.md`) rebuild the artifacts first.
 
 ## Tests
 

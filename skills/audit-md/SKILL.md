@@ -14,7 +14,7 @@ Audit and fix maintainer-audience `.md` files against the project's markdown sty
 ## Procedure
 
 1. **Enumerate target files — none skipped**, fixtures, scratch notes and the markdown-style file itself included (auditing the rule source against its own rules is not circular). The union of:
-   - maintainer-audience docs — run `scripts/list-maintainer-docs`
+   - maintainer-audience docs — the listing script named in the contributor entry-point docs
    - all `AGENTS.md` files in the repo
    - all `.md` files under `skills/`
 
@@ -30,7 +30,7 @@ Audit and fix maintainer-audience `.md` files against the project's markdown sty
 
 5. **Run any repo lints over markdown.** Identify which linting scripts (if any) the project provides whose logic may involve the files that were edited. Run and confirm no script prints a warning/error _or_ exits non-0.
 
-6. Check/read the diff of the edits, if any, you have made so far. Reason explicitly (in reasoning steps - not in a message back to the user) about _each of them separately_, regarding if the edit should be kept or not.
+6. **Diff review.** Read the diff of your edits so far, if any. Reason explicitly about _each edit separately_ — in reasoning, not in a message to the user: keep it or not?
 
 7. **Final gate.** Run the project's standard pre-return validation (consult contributor entry-point docs for the canonical command). Must pass cleanly.
 

@@ -93,7 +93,7 @@ No dollar cost emitted; derive from per-model pricing if needed. The cached-inpu
 
 Phase 1: `codex exec` (drop `--ephemeral` — session must persist). Capture `thread_id` from the `.type=="thread.started"` event. Between phases the orchestrator removes the shim symlink and runs phase 2 with the shim env vars **unset** — the AUT may have remembered the env value but the shim refuses without it, and there is no shim on PATH.
 
-`codex exec resume` accepts a **strict subset** of `codex exec`'s flags — notably **not** `--cd` or `--sandbox` (working dir + sandbox carry from the original session). Passing them errors with `unexpected argument`. Verified flags on phase 2: `--model`, `--skip-git-repo-check`, `--ignore-user-config`, `--ignore-rules`, `--json`, `--output-last-message`, `--ephemeral`, `--dangerously-bypass-approvals-and-sandbox`, `-c <key=value>`. Re-check with `codex exec resume --help` per version.
+`codex exec resume` accepts a **strict subset** of `codex exec`'s flags — notably **not** `--cd` or `--sandbox` (working dir + sandbox carry from the original session). Passing them errors with `unexpected argument`. Accepted flags: `codex exec resume --help`, per version.
 
 ```sh
 # phase 1 — same as above MINUS --ephemeral

@@ -8,8 +8,8 @@ This file is **not a skill**. It must not be auto-loaded into an orchestrator's 
 
 Two responsibilities, used singly or together depending on what the user asks:
 
-1. **Dispatch** — launch one or more orchestrator agents (Agent tool, `subagent_type: general-purpose`), each given a different runner/model/mode combination drawn from `skills/cli-ux-probe/runners/*.md`. Run independent orchestrators in parallel (single message, multiple tool uses).
-2. **Review** — fresh-eyes audit of skill `.md` files + `scripts/shim`: publishability scan, CLI-agnostic stance, load-bearing vs over-precise content. Report findings; do **not** edit unless the user asks.
+- **Dispatch** — launch one or more orchestrator agents (Agent tool, `subagent_type: general-purpose`), each given a different runner/model/mode combination drawn from `skills/cli-ux-probe/runners/*.md`. Run independent orchestrators in parallel (single message, multiple tool uses).
+- **Review** — fresh-eyes audit of skill `.md` files + `scripts/shim`: publishability scan, CLI-agnostic stance, load-bearing vs over-precise content. Report findings; do **not** edit unless the user asks.
 
 You speak for the human user when briefing orchestrators. You are not yourself an orchestrator.
 

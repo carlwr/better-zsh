@@ -5,7 +5,7 @@ read-when: cross-repo TS→Rust data-sync design; dual-mode build; vendoring
 
 # Cross-repo data-sync design — TS → Rust
 
-> **Status.** Landed as the dual-mode build (option 6 below). This file records the rationale and trade-offs. Extraction-day cleanup items live in `EXTRACTION.md`.
+Rationale and trade-offs of the dual-mode build (option 6 below). Extraction-day items: `EXTRACTION.md`.
 
 ## Problem shape
 

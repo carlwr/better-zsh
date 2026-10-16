@@ -69,7 +69,7 @@ For cost comparison: bill `completion_tokens` at the model's output rate; bill `
 
 The script is one-shot; for exam mode you can wrap two invocations and pass the post-phase-1 transcript back as conversation history into a phase-2 prompt. The shim's symlink can be removed between phases as the rug-pull (same mechanism as codex/opencode).
 
-If the eval matrix doesn't need it, skip — exam mode wasn't planned for round 3.
+If the eval matrix doesn't need it, skip.
 
 ## Caveats
 
@@ -81,4 +81,4 @@ If the eval matrix doesn't need it, skip — exam mode wasn't planned for round 
 
 ## Rate-limit posture
 
-API key, not free tier. Generous in practice (no observed throttling at ~1 req/sec sustained). The user reports much higher tolerance than opencode-Zen-free models. Suitable for large-scale matrices (3× round-2 volume).
+API key, not free tier. Generous in practice (no observed throttling at ~1 req/sec sustained); much higher tolerance than opencode-Zen-free models. Suitable for large-scale matrices.

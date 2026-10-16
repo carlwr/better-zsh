@@ -5,7 +5,11 @@ read-when: releasing the crate, or changing how its binaries are distributed
 
 # Distribution
 
-How the `zshref` binaries reach users, and why in that shape. Mechanics: `.github/workflows/release-zshref.yml`, `npm/assemble.mjs`, `scripts/`.
+How the `zshref` binaries reach users, and why in that shape. Mechanics:
+
+- `.github/workflows/release-zshref.yml`
+- `npm/assemble.mjs`
+- `scripts/`
 
 ## Channels
 

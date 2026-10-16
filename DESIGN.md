@@ -5,15 +5,13 @@ read-when: subsystem rationale and design decisions
 
 # Design
 
-**Why**, not what — for subsystems. API rollups (JSDoc in the `.d.ts` files) describe *what* the public surface does; this file explains *why* subsystems are shaped as they are.
+**Why** subsystems are shaped as they are; the *what* is the API rollups' (JSDoc in the `.d.ts` files).
 
 Layered docs:
 
 - `PRINCIPLES.md` — cross-cutting principles
 - `AGENTS.md` — contributor conventions entry point; links into topic files for universal patterns
 - maintainer-doc index: `./scripts/list-maintainer-docs`
-
-Don't duplicate JSDoc; point to it. If a rule already lives in PRINCIPLES or any contributor doc, **cross-link** instead of restating — same-layer repetition drifts.
 
 ---
 
@@ -283,7 +281,8 @@ Per-type details and the three-way distinction — JSDoc in `zsh-core`:
   - completions
   - `list`
   - syntactic checks
-- **Supplementary prose** — `desc` may appear except on `complex_command`-owned heads (which deliberately omit it). Epistemic-trap rationale + `SyntaxDocBase` non-extension: `ReservedWordDoc` JSDoc in `zsh-core`.
+- **Supplementary prose** — `desc` may appear except on `complex_command`-owned heads (which deliberately omit it)
+  - epistemic-trap rationale + `SyntaxDocBase` non-extension: `ReservedWordDoc` JSDoc in `zsh-core`
 - **Corpus identity** — every record is `Documented<"reserved_word">`, carrying `category` and `id` like other categories.
 
 Wiring:
@@ -298,7 +297,9 @@ Wiring:
   - completions
   - MCP `list`/`search`
   - extra semantic-token painting (with `cmd-head`) for words the analyzer treats only as command heads (`declare`, `typeset`, …)
-- **Analysis** — pinned `KEYWORD_HEADS` subset for command-position facts; narrower than corpus by design. Rationale + lock-in test: the extension's `src/analysis/line-facts.ts` and `src/test/analysis/`.
+- **Analysis** — pinned `KEYWORD_HEADS` subset for command-position facts
+  - narrower than corpus by design
+  - rationale + lock-in test: the extension's `src/analysis/line-facts.ts` and `src/test/analysis/`
 - **Extension** — semantic tokens: analyzer `reserved-word` facts **and** corpus-driven painting for manual reserved words in command position (`semantic-tokens.ts`).
 
 ### ZLE widget: default bindings are typed, not a header signature
@@ -323,8 +324,11 @@ Manual provenance is not a record field: where the heading varies within a categ
 
 Vendored `.yo` is consumed three ways:
 
-- **`loadCorpus()`** — runtime parse into `DocCorpus`; lazy per category, cached (its JSDoc). Rendering measured cheap for the whole corpus, so it stays unmemoized — PRINCIPLES.md §"Cost and laziness".
-- **Pre-parsed JSON** — same records; markdown bodies pre-rendered at build time. One record file keyed by category beside a versioned index (`JsonIndex` JSDoc); `dataHash` is the record file's SHA-256. Distribution: `PACKAGING.md`.
+- **`loadCorpus()`** — runtime parse into `DocCorpus`; lazy per category, cached (its JSDoc)
+  - rendering measured cheap for the whole corpus, so it stays unmemoized — PRINCIPLES.md §"Cost and laziness"
+- **Pre-parsed JSON** — same records; markdown bodies pre-rendered at build time
+  - one record file keyed by category beside a versioned index (`JsonIndex` JSDoc); `dataHash` is the record file's SHA-256
+  - distribution: `PACKAGING.md`
   - _schema:_ one bundle, generated from the TS types plus the corpus (`packages/zsh-core/scripts/schemas.ts`, written by the package build)
     - record and id `$defs` named by category (`recordsSchemaDefs` in `json-artifacts.ts`); auxiliary ones by TS type (`AlternateForm`, …) — renaming one is a schema change
     - draft 2020-12, as the crate's tool schemas

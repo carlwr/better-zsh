@@ -46,9 +46,7 @@ Per-runner specifics in `runners/*.md`.
 
 ## Modes
 
-(_Meta_: ideally, specific/named modes should be mentioned only under this section; the rest of the skill refer to "the mode/modes" etc.)
-
-modes:
+(_Meta_: ideally, specific/named modes should be mentioned only under this section; the rest of the skill refers to "the mode/modes" etc.)
 
 - **usage** — answer CLI-usage questions ("which invocation lists X?"); free CLI access for verification
 - **task** — domain task needing the CLI; signal is the journey (attempts, dead-ends, retries), not just completion
@@ -85,7 +83,7 @@ Question sets must precede the CLI knowledge that would taint them. Per selected
 - `task` / `exam`: write the set before any `--help` / source read. Brief the user; confirm "no CLI runs yet".
 - `usage`: explore the CLI first, then write the set. Always write task/exam sets *before* this exploration.
 
-### Modes
+### Signal per mode
 
 _usage_:
 
@@ -145,7 +143,7 @@ Cheap, scripted. Skip eval if any fail. Bundle into one invocation.
 - **PATH** *(required)*
   - AUT prints `$PATH`; verify scratch dir is **present** (some runners inject their own dirs ahead of yours — scratch-not-at-index-0 is fine as long as no competing binary shadows the shim)
 
-- **leakage** *(usally; and is _required_ when memory autoloading cannot otherwise be ruled out)*
+- **leakage** *(usually; and is _required_ when memory autoloading cannot otherwise be ruled out)*
   - AUT lists every file path it has context from. PASS iff no host paths appear except the per-runner baseline in `runners/<name>.md`. Plain user instructions = baseline; memory directories trigger exclusion (see "Memory files" above).
 
 - **model id self-report** *(optional)*

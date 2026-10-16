@@ -126,17 +126,19 @@ Resist restructuring the taxonomy to eliminate overlap; the resolver walk is whe
 
 ### Category roles: documentation-primary vs enumeration-primary
 
-Doc categories serve one of two primary roles. The distinction matters when reasoning about:
-
-- overlap
-- prose obligations
-- consumer paths
+Doc categories serve one of two primary roles:
 
 - **Documentation-primary** (the majority): each record is the canonical source of prose for its token. The category exists *because* that token type has documentation worth modelling structurally. The list is incidental — emitted for completeness, but the per-record markdown is the load-bearing artifact.
 - **Enumeration-primary**: the *list itself* is the load-bearing artifact; per-record prose is supplementary, often deliberately omitted when richer prose lives in an overlapping documentation-primary category. Consumers iterate the corpus map for:
   - completions
   - syntactic-class checks
   - enumeration-style tools
+
+The distinction matters when reasoning about:
+
+- overlap
+- prose obligations
+- consumer paths
 
 `reserved_word` is currently the only enumeration-primary category. `classifyOrder` encodes resolver-shadowing and product ordering; in important overlaps such as complex commands before reserved words, consumers walking the corpus reach the richer record first.
 

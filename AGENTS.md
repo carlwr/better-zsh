@@ -35,7 +35,7 @@ read:
 
 ## Symlinked files
 
-All symlinked files are printed by the `overview` script. For symlinked files, edits **must** be done by referencing the physical file/the link target - never by referencing the symlink.
+The `overview` script prints every symlink. Edits **must** reference the physical file (the link target), never the symlink.
 
 ## Project state
 
@@ -95,10 +95,8 @@ pnpm format && pnpm qa
 pnpm format && pnpm qa && pnpm test:pack && pnpm test:integration
 ```
 
-- `pnpm format` first.
 - Build-scripts may never be run in parallel (since: may race) — chain with `&&`.
 - `pnpm qa` failure blocks commit — fix and re-run.
-- `INTERACTIVE`, `REGISTRY` excluded unless asked.
 - Docs-only / non-code: skip tests unless asked.
 - `.md` edits — run the pre-return audit per `STYLE-MD.md`. Required even for "small" edits.
 

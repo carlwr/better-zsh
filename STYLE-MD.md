@@ -59,13 +59,16 @@ Per layer:
   - workarounds
   - "why not the obvious alternative"
   - kept local: no specific other-file paths or sibling-identifier names
-- **File-header comments** — the first lines of a source/config file. Locally essential only; implementing from a plan, plan prose is intent — re-derive header text from the file's own purpose. Never:
-  - claim global state about other files or packages
-  - restate what the file already expresses:
-    - filename
-    - location
-    - structure
-  - restate design decisions whose home is elsewhere
+- **File-header comments** — the first lines of a source/config file:
+  - locally essential only
+  - implementing from a plan: plan prose is intent — re-derive header text from the file's own purpose
+  - never:
+    - claim global state about other files or packages
+    - restate what the file already expresses:
+      - filename
+      - location
+      - structure
+    - restate design decisions whose home is elsewhere
 - **Cross-cutting principles doc** — read before designing a feature or doc category; edit when a tradeoff genuinely shifts.
 - **Subsystem rationale doc** — subsystem-level "why":
   - name load-bearing types and APIs

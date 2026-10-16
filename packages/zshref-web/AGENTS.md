@@ -15,23 +15,33 @@ Decisions only; the dependency list is `package.json`:
 - `zod` — artifact schemas at load time; also the source of truth for the editor schemas of the rules YAML, the sentence fixture and the QA corpus
 - fonts self-hosted (`@fontsource-variable/*`)
 
-Alternatives ruled out: React / Elm / PureScript front-ends; per-record SSG (records are dynamic at runtime); a Rust ranker compiled to WASM (the NLP is TS end-to-end: one language, one embedder); in-browser index building (too slow for first load).
+Alternatives ruled out:
+
+- React / Elm / PureScript front-ends
+- per-record SSG — records are dynamic at runtime
+- a Rust ranker compiled to WASM — the NLP is TS end-to-end: one language, one embedder
+- in-browser index building — too slow for first load
 
 ## Layout: the tiers
 
 - `nlp/` — the NLP as one unit; three tiers, each importing only downward:
   - `nlp/core/` — runtime-agnostic: artifact shapes, rules schemas, ranker, search pipeline
-  - `nlp/browser/` — the SPA's runtime: embedder (ORT-Web), search, artifact fetch; `nlp/browser.ts` — the facade, the app's one door
-  - `nlp/node/` — everything that reads the corpus or the model; the evals under `nlp/node/eval/`; every path, and what each dir holds: `nlp/node/paths.ts`
+  - `nlp/browser/` — the SPA's runtime: embedder (ORT-Web), search, artifact fetch
+    - `nlp/browser.ts` — the facade, the app's one door
+  - `nlp/node/` — everything that reads the corpus or the model
+    - the evals: `nlp/node/eval/`
+    - every path, and what each dir holds: `nlp/node/paths.ts`
 - `src/` — the app only; reaches `nlp/` through `$nlp` (`kit.alias`, `svelte.config.js`), nothing else
 - `scripts/` — the `tsx` entry points behind the `package.json` scripts, and `fetch-model`; the node tier's CLI face, so they import it deep
-- `tests/` — Vitest; `tests/app/`, `tests/nlp/{core,browser,node}/` by the tier under test; helpers and the fence at `tests/`
+- `tests/` — Vitest
+  - `tests/app/`, `tests/nlp/{core,browser,node}/` by the tier under test
+  - helpers and the fence at `tests/`
 
 The seams are a static import fence, not package boundaries — `tests/import-fence.test.ts` holds the tier table (what each may import); `vite build` is the fence's other half. `nlp/` never imports `src/`: a later package split is a `git mv` plus configs.
 
 ## Upstreams
 
-Three, all pinned:
+All pinned:
 
 - **`@carlwr/zsh-core`** at build time — `workspace:*`; corpus, taxonomy, resolver
   - through its declared export subpaths only, never a file inside the package (`tests/import-fence.test.ts`)
@@ -51,7 +61,7 @@ Three, all pinned:
 
 ## Model and artifacts
 
-Both gitignored:
+All gitignored:
 
 - `scripts/fetch-model` -> `.aux/model/` — what every reporter needs (a missing or stale index is built in memory, never written)
 - `.aux/query-cache.json` — query vectors the reporters and the gated tests keep across runs; self-invalidating (`nlp/node/query-cache.ts`), delete to reset
@@ -118,7 +128,11 @@ One route, `src/routes/+page.svelte`: the search, or the record its URL links to
 
 ## Theming
 
-`data-theme` on `<html>` drives CSS variables; mechanics: `src/app.html` (pre-paint), `src/lib/theme.ts` (toggle), `src/lib/markdown.ts` (Shiki dual theme).
+`data-theme` on `<html>` drives CSS variables; mechanics:
+
+- `src/app.html` — pre-paint
+- `src/lib/theme.ts` — toggle
+- `src/lib/markdown.ts` — Shiki dual theme
 
 ## Hosting intent
 

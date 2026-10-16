@@ -10,14 +10,14 @@
   - -> phrasing in the skill should
     - nudge toward allowing the orchestrator to use judgement
     - not be overly prescriptive in absolute terms, unless really warranted
-  - -> the skill can lean towards _what to achive_ (robust) rather than _exactly what to do/how to achieve it_ (would be less robust)
+  - -> the skill can lean towards _what to achieve_ (robust) rather than _exactly what to do/how to achieve it_ (would be less robust)
 
 
 ## Maintenance-conservative stance
 
 - maintenance burden of this skill must be kept low
 
-- actively protect SKILL.md against incuring maintenance burden e.g. by relying on accidental behaviors of runners or of the environment/platform
+- actively protect SKILL.md against incurring maintenance burden e.g. by relying on accidental behaviors of runners or of the environment/platform
 
 Note: runners (like `claude`, `codex` etc.) generally receive version updates every few days.
 
@@ -37,7 +37,7 @@ Guidelines:
 
 - the skill should document the running of the sanity probe in a way that makes it likely to float issues before the real AUT tests
 
-- some defensiveness is shell script style is warranted (early errors can be valuable in this context)
+- some defensiveness in shell script style is warranted (early errors can be valuable in this context)
 
 
 ## Documented recipes vs. committed scripts
@@ -49,22 +49,21 @@ noted asymmetry:
 
 noted tension between these two aspects:
 
-1. "do not check-in a lot of post-processing shellscripts - that's code to
-maintain, easily become stale, should preferrably have tests that check them"
-
-2. "avoid each orchestrator having to re-invent the same analysis scripts and
-jq expressions to analyze performed runs"
+- "do not check-in a lot of post-processing shellscripts - that's code to
+  maintain, easily become stale, should preferrably have tests that check them"
+- "avoid each orchestrator having to re-invent the same analysis scripts and
+  jq expressions to analyze performed runs"
 
 This tension requires good judgement and deliberate tradeoffs — there are no always-true-and-correct answers.
 
 
-## Runing the skill/acting as the orchestrator
+## Running the skill/acting as the orchestrator
 
 all meta-testing of the skill should:
 
 - use maximally cheap agents (e.g. Haiku, GPT-5.4-mini)
 
-- use AUT tasks that is expected not to invite to long chains of reasoning and invocations of the binary (still, the tasks must be tailored so that models cannot easily answer from memory, but will be likely to invoke the binary)
+- use AUT tasks that are expected not to invite to long chains of reasoning and invocations of the binary (still, the tasks must be tailored so that models cannot easily answer from memory, but will be likely to invoke the binary)
 
 - **always set a very conservative invocation budget** (`CLI_UX_PROBE_MAX_INVOCATIONS=3–5`) and pair with `claude -p --max-budget-usd` when applicable — this is infrastructure testing, not the real probe; total session cost belongs in cents
 
@@ -79,7 +78,7 @@ runners vs. models/plans available:
 
 
 ## Misc.
- 
+
 - `claude-subagent`: mostly useful as a first shake-down - `claude-process` is what exercises the skill fully
 
 - for changes/improvements of the skill, documenting why-s/rationales is generally preferred -> protects against future edits/refactoring losing the improvements
@@ -89,7 +88,7 @@ runners vs. models/plans available:
 
 ## TBD notes (ignore unless instructed by user)
 
-- Skill should tell orchestrator to create tasks and examns before it learns
+- Skill should tell orchestrator to create tasks and exams before it learns
 anything about the CLI (except for its topic etc), e.g. for zshref: don't
 read its help or its code prior to creating tasks and exams; if a zsh
 reference is needed use `man zsh` - this avoids bias/inadvertently tailoring
