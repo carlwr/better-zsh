@@ -9,6 +9,9 @@ Decisions only; the dependency list is `package.json`:
 - `adapter-static` (`svelte.config.js`) — one prerendered page, no server, no fallback; relative paths throughout
 - TypeScript strict + `noUncheckedIndexedAccess`; svelte-check's include reaches `nlp/` and `scripts/` too (`svelte.config.js`)
 - one embedder, one model (BGE-small), two runtimes: ORT-Web in the browser, `onnxruntime-node` on the Node side
+  - versions: transformers.js's pins; may differ, even be pre-releases (`pnpm why onnxruntime-web onnxruntime-node`)
+  - no test runs ORT-Web: the browser sanity test runs on `onnxruntime-node`
+  - after a transformers.js bump: compare the built site's scores with the sanity fixture, by hand
 - `zod` — artifact schemas at load time; also the source of truth for the editor schemas of the rules YAML, the sentence fixture and the QA corpus
 - fonts self-hosted (`@fontsource-variable/*`)
 
