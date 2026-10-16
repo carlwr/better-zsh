@@ -34,7 +34,7 @@ Pre-release alphas are not yet listed on either registry.
 
 ## Settings
 
-- **`betterZsh.diagnostics.enabled`** — syntax-check with `zsh -n`. Default `true`. This is the only thing the host zsh is used for; off means no zsh is spawned.
+- **`betterZsh.diagnostics.enabled`** — syntax-check with `zsh -n`. Default `true`. This is the only thing the host zsh is used for; off means no zsh is spawned for those files. Resource-scoped: a folder in a multi-root workspace can set its own value.
 - **`betterZsh.zshPath`** — path to the `zsh` binary. Empty = `zsh` from PATH; `"off"` = never invoke zsh. Machine-scoped: never read from workspace settings. Relative paths are rejected, not resolved against the workspace.
 
 ## Design posture

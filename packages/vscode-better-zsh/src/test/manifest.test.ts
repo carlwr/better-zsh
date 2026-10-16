@@ -54,6 +54,7 @@ describe("manifest", () => {
     })
     expect(props["betterZsh.diagnostics.enabled"]).toMatchObject({
       type: "boolean",
+      scope: "resource",
       default: true,
     })
   })

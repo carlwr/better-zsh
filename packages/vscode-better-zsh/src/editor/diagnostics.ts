@@ -24,7 +24,7 @@ export function setupDiagnostics(): Diagnostics {
 
   async function lint(doc: vscode.TextDocument) {
     if (!lintable(doc)) return
-    if (!readDiagnosticsEnabled()) return dc.set(doc.uri, [])
+    if (!readDiagnosticsEnabled(doc.uri)) return dc.set(doc.uri, [])
     const version = doc.version
     const r = await zshCheck(doc.getText())
     // A closed or since-edited document: the result is stale; an edit has

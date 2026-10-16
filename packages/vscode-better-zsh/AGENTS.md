@@ -63,7 +63,9 @@ The zsh-path matrix harness (`scripts/testINTERACTIVE-zsh-path-matrix`) is CI/Do
 
 **Zsh binary setting is hardened at the settings boundary** (`parseZshPath`, `src/settings.ts`): relative paths are rejected as invalid config, never resolved against workspace or cwd. Workspace Trust gates the spawn at the same boundary (`readZshConfig`); the manifest declares `limited` support.
 
-**`zshPath: "off"` overlaps `diagnostics.enabled: false` on purpose.** Both stop every spawn, but a workspace can override only `diagnostics.enabled` (`zshPath` is machine-scoped): `"off"` is the user's guarantee; `diagnostics.enabled`, a per-project toggle.
+**`zshPath: "off"` overlaps `diagnostics.enabled: false` on purpose.** Both stop every spawn, but a workspace can override only `diagnostics.enabled` (`zshPath` is machine-scoped): `"off"` is the user's guarantee; `diagnostics.enabled`, a per-folder toggle (resource-scoped, read per document). A sentinel, not a third boolean: every other non-absolute value is already invalid. No `zsh.path` group: zsh's only use is `zsh -n`.
+
+**Snippet prefixes may equal keyword completions** (`if`, `for`, `local`, …) on purpose: the keyword item carries the reference docs, the snippet inserts a template, and suggest ranking puts the keyword first. A bare prefix expands to the word's dominant use (`emulate` → `emulate -LR zsh`); a niche form takes a suffix (`typeset-g`, `local-a`), since `editor.tabCompletion` expands an exact prefix.
 
 **Virtual workspaces: declared `true`, not `limited`**, though diagnostics and `source` links need on-disk files. VS Code's guidance allows `true` for partial support; `limited` would surface a notice for minor features. Disclose a limitation only where required, as unobtrusively as possible.
 

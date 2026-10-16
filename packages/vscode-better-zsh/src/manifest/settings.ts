@@ -2,7 +2,7 @@ import { BETTER_ZSH_CONFIG, BETTER_ZSH_DISPLAY_NAME } from "../ids"
 
 interface SettingMeta {
   readonly default: boolean | string
-  readonly scope?: "machine"
+  readonly scope?: "machine" | "resource"
   readonly description?: string
   readonly markdownDescription?: string
 }
@@ -16,10 +16,11 @@ const setting = <const M extends SettingMeta>(suffix: string, meta: M) => ({
 })
 
 export const settings = {
+  // Per folder: a multi-root folder's own `.vscode/settings.json` applies.
   diagnosticsEnabled: setting("diagnostics.enabled", {
+    scope: "resource",
     default: true,
-    markdownDescription:
-      "Report syntax errors found by `zsh -n`. This is the only use of the host zsh: when off, no zsh is spawned.",
+    markdownDescription: `Report syntax errors found by \`zsh -n\`. This is the only use of the host zsh: when off, no zsh is spawned for these files. To never run zsh at all, set \`#${BETTER_ZSH_CONFIG}.zshPath#\` to \`${ZSH_PATH_OFF}\`.`,
   }),
   zshPath: setting("zshPath", {
     scope: "machine",

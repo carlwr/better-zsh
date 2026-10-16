@@ -26,9 +26,10 @@ export function parseZshPath(raw: unknown): ZshPathConfig {
   return { kind: "explicit", binary: mkZshBinary(raw) }
 }
 
-/** The raw setting value; `null`/unset read as the default. */
-const readSetting = (setting: Setting): unknown =>
-  vscode.workspace.getConfiguration().get(setting.key) ?? setting.default
+/** The raw setting value; `null`/unset read as the default. `scope`: a resource-scoped setting's document. */
+const readSetting = (setting: Setting, scope?: vscode.Uri): unknown =>
+  vscode.workspace.getConfiguration(undefined, scope).get(setting.key) ??
+  setting.default
 
 export const readZshPathConfig = () =>
   parseZshPath(readSetting(settings.zshPath))
@@ -41,8 +42,8 @@ export type ZshConfig = ZshPathConfig | { kind: "untrusted" }
 export const readZshConfig = (): ZshConfig =>
   vscode.workspace.isTrusted ? readZshPathConfig() : { kind: "untrusted" }
 
-export const readDiagnosticsEnabled = () =>
-  readSetting(settings.diagnosticsEnabled) !== false
+export const readDiagnosticsEnabled = (doc: vscode.Uri) =>
+  readSetting(settings.diagnosticsEnabled, doc) !== false
 
 /** Runs `listener` whenever `setting` changes, in any configuration scope. */
 export const onDidChangeSetting = (setting: Setting, listener: () => void) =>

@@ -138,7 +138,7 @@ export const snippets: readonly ZshSnippet[] = [
     category: "declaration",
   },
   {
-    prefix: "typeset",
+    prefix: "typeset-g",
     name: "typeset -g",
     body: ["typeset -g ${1:var}=${0}"],
     desc: "typeset global variable",
