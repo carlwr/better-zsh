@@ -1,5 +1,8 @@
 // `categories.json` drift against the committed file (the UI's category
 // order + labels). Pure on the taxonomy — always runs.
+//
+// A category id leaving the file breaks deployed `?r=` links into it; that
+// regeneration is the moment to weigh forwarding them.
 
 import { docCategories } from "@carlwr/zsh-core"
 import { describe, expect, it } from "vitest"
