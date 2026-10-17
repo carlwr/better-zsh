@@ -12,7 +12,7 @@
   <header>
     <a class="brand" href={resolve("/")}>
       <span class="logo">zshref</span>
-      <span class="tagline">offline static zsh reference</span>
+      <span class="tagline">zsh reference, searched in your browser</span>
     </a>
     <ThemeToggle />
   </header>
