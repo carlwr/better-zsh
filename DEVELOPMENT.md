@@ -1,30 +1,17 @@
 # Development
 
-Repo-level notes that do not fit better in a package-local `DEVELOPMENT.md`.
+Repo-level notes; package detail lives in each package.
 
-## Reference markdown dumps
+## zsh-core
 
-`pnpm dump:refs` writes the current static reference markdown — visual QA for zsh-core's rendered reference corpus, including the subset consumed by VS Code hovers.
+- `pnpm dump:refs` — the rendered reference corpus as markdown, for visual QA; workflow: `packages/zsh-core/AGENTS.md`
+- `pnpm docs:zsh-core` — the API site, under `packages/zsh-core/.aux/docs/site/`
 
-## Changes to the release assets
+### Changes to the release assets
 
-`zshref-rs/` embeds the JSON artifacts `zsh-core` produces and tests its
-resolvers against the conformance fixture `zsh-core` emits beside them.
-Anything that alters those artifacts — taxonomy changes, new record
-fields, resolver behaviour — is a cross-language change.
+`zshref-rs/` embeds zsh-core's JSON artifacts and tests its resolver mirror against the conformance fixture beside them. Any change to those artifacts is cross-language — taxonomy, record fields, resolver behaviour.
 
-A resolver change the Rust mirror does not follow fails `make cli-test`.
-How the artifacts reach the crate — here, and once it lives in its own repo:
-`zshref-rs/DATA-SYNC.md`.
-
-## zsh-core API docs
-
-Use `pnpm docs:zsh-core` to build the local `zsh-core` API site under `packages/zsh-core/.aux/docs/site/`.
-
-Notes:
-- The published docs site intentionally lives under `.aux/`, not `dist/`; `dist/` is packed for npm.
-- `zsh-core` source uses explicit relative `.ts` import specifiers so it runs unbuilt under Node type stripping (`erasableSyntaxOnly` enforces the rest).
-- Structured JSON artifacts are formatted by the build writer itself; keep formatting policy in generation code rather than a post-process step.
+A resolver change the mirror does not follow fails `make cli-test`. How the artifacts reach the crate: `zshref-rs/DATA-SYNC.md`.
 
 ## Integration tests via `act`
 
