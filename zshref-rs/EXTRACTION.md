@@ -49,6 +49,7 @@ The day `zshref` (this crate) leaves the `better-zsh` monorepo for its own repo,
 - `npm/*/README.md`: drop the pre-release banner naming the monorepo
 - `DEVELOPMENT.md`:
   - drop the pre-release note
+  - data-source paragraph: vendored only
   - rebuild rules: `make vendor` instead of the artifact-building targets
   - drop the `zshref-rs/` path prefixes
 - `AGENTS.md`, `DATA-SYNC.md`, `DISTRIBUTION.md`: re-point monorepo references

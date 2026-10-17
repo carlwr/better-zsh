@@ -1,16 +1,10 @@
-<!-- Not maintained during pre-release dev; re-derive at release time. -->
-
 # Development — zshref
-
-## Note: pre-release, monorepo
 
 Monorepo-phase workflows; what changes at extraction: `EXTRACTION.md`.
 
----
+The binaries embed zsh-core's corpus JSONs at compile time: rebuild after Rust or artifact changes.
 
-Rust crate — the `zshref` CLI and, behind the `mcp` feature, the `zshref-mcp` MCP server — embedding zsh-core's corpus JSONs at compile time: rebuild after Rust or artifact changes.
-
-The `build.rs` auto-detects two data sources (monorepo paths vs. `data/`, vendored from zsh-core's release tarballs) — see `DATA-SYNC.md` for the design. Pre-extraction the monorepo path is what you'll hit during normal dev; vendored mode exists for `cargo publish` validation.
+`build.rs` auto-detects the data source: the monorepo's zsh-core artifacts when present (normal dev), else `data/` — vendored from zsh-core's release tarballs; what the published `.crate` ships. Design: `DATA-SYNC.md`.
 
 ## Rebuild rules
 
@@ -31,8 +25,6 @@ cargo build && ./target/debug/zshref <args>
 cargo build --features mcp && ./target/debug/zshref-mcp --help
 ```
 
-From repo root: `./zshref-rs/target/debug/zshref <args>`.
-
 ## Testing
 
 ```sh
@@ -41,9 +33,10 @@ cargo test --all-features
 
 Manual, outside CI: `scripts/probe-opencode` (`--help`).
 
-## Test/use zsh completions manually
+## zsh completions from source
 
-Configure completions for the current zsh interactive session:
+For the current interactive session:
+
 ```sh
 source =(cd zshref-rs && cargo run --quiet -- completions zsh)
 ```
