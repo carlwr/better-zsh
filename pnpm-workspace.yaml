@@ -21,7 +21,6 @@ catalog:
 allowBuilds:
   "@vscode/vsce-sign": true
   esbuild: true
-  keytar: true
   onnxruntime-node: true
   protobufjs: true
   sharp: true

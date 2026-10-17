@@ -2,6 +2,9 @@ name: Release zsh-core
 
 # A real release needs tokenless OIDC granted to this repo for
 # @carlwr/zsh-core on npm (Trusted Publisher).
+#
+# `build` runs the workspace's dependency code without credentials; `publish`
+# holds them, installs no dependencies, and ships what `build` uploaded.
 
 on:
   push:
@@ -22,13 +25,10 @@ permissions:
   contents: read
 
 jobs:
-  release:
+  build:
     runs-on: ubuntu-latest
     permissions:
-      contents: write
-      # OIDC: npm provenance + tokenless publish + asset attestation.
-      id-token: write
-      attestations: write
+      contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -43,15 +43,6 @@ jobs:
           exit 1
 
       - uses: ./.github/actions/setup-node-pnpm
-        with:
-          registry-url: https://registry.npmjs.org
-
-      # The npm the Node image ships predates npm's OIDC exchange; without the
-      # upgrade, publishing falls back to an empty token and 404s. Pinned.
-      - name: Upgrade npm for Trusted Publishing
-        run: |
-          npm i -g npm@11.20.0
-          npm --version
 
       # package.json only — the tests below already tie the other version
       # sites to it.
@@ -71,48 +62,91 @@ jobs:
       - run: pnpm --filter @carlwr/zsh-core run test:pack
       - run: pnpm --filter @carlwr/zsh-core run testREGISTRY:install
 
-      - name: Determine npm dist-tag
-        id: disttag
-        run: |
-          version=$(node -p "require('./packages/zsh-core/package.json').version")
-          if [[ "$version" == *-* ]]; then tag=next; else tag=latest; fi
-          echo "tag=$tag" >> "$GITHUB_OUTPUT"
-          echo "resolved version=$version dist-tag=$tag"
-
-      # Runs on dry runs too: skipping it would leave packing and npm's
-      # publish preflight untested until a real tag. A version already on the
-      # registry is skipped, so a re-run after a partial failure completes the
-      # release.
-      - name: npm publish (Trusted Publishing + provenance)
+      # pnpm, not npm: only pnpm resolves `catalog:` / `workspace:` specs, and
+      # npm publishes the manifest it is handed as-is.
+      - name: Pack npm tarball
         working-directory: packages/zsh-core
-        env:
-          DRY: ${{ (github.event_name != 'push' && inputs.dry_run) && '--dry-run' || '' }}
-        run: |
-          version=$(node -p "require('./package.json').version")
-          if [ -z "$DRY" ] && npm view "@carlwr/zsh-core@$version" version >/dev/null 2>&1; then
-            echo "@carlwr/zsh-core@$version is already on npm — skipping"
-            exit 0
-          fi
-          pnpm build
-          # npm publishes this directory as-is and only pnpm resolves
-          # `catalog:` / `workspace:` specs, so publish the manifest pnpm
-          # packed — then put the original back, so later steps see the
-          # checked-out tree. A directory, not the tarball: npm's OIDC
-          # exchange does not run for a tarball spec.
-          tgz=$(pnpm pack --json --pack-destination "$RUNNER_TEMP" \
-                | node -p 'JSON.parse(require("fs").readFileSync(0,"utf8")).filename')
-          cp package.json "$RUNNER_TEMP/manifest.orig.json"
-          tar -xzOf "$tgz" package/package.json > package.json
-          npm publish $DRY \
-            --provenance \
-            --access public \
-            --tag "${{ steps.disttag.outputs.tag }}"
-          cp "$RUNNER_TEMP/manifest.orig.json" package.json
+        run: pnpm pack --pack-destination "$RUNNER_TEMP/npm"
 
       # Repacked rather than reused: keeps the uploaded bytes tied to the
       # build this job last ran.
       - name: Pack release assets
         run: pnpm --filter @carlwr/zsh-core run pack:release
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: npm-tarball
+          path: ${{ runner.temp }}/npm/*.tgz
+          retention-days: 1
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release-assets
+          path: packages/zsh-core/.aux/release/*
+          retention-days: 1
+          if-no-files-found: error
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      # OIDC: npm provenance + tokenless publish + asset attestation.
+      id-token: write
+      attestations: write
+    steps:
+      # For the local action only.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup-node-pnpm
+        with:
+          registry-url: https://registry.npmjs.org
+          install: none
+
+      # The npm the Node image ships (10.x on Node 22) predates npm's OIDC
+      # exchange (npm >= 11.5.1); without the upgrade, publishing falls back to
+      # an empty token and 404s. Pinned.
+      - name: Upgrade npm for Trusted Publishing
+        run: |
+          npm i -g npm@11.20.0
+          npm --version
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: npm-tarball
+          path: ${{ runner.temp }}/npm
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: release-assets
+          path: packages/zsh-core/.aux/release
+
+      # Runs on dry runs too: skipping it would leave npm's publish preflight
+      # untested until a real tag. A version already on the registry is
+      # skipped, so a re-run after a partial failure completes the release.
+      # The unpacked directory, not the tarball: npm's OIDC exchange does not
+      # run for a tarball spec.
+      - name: npm publish (Trusted Publishing + provenance)
+        env:
+          DRY: ${{ (github.event_name != 'push' && inputs.dry_run) && '--dry-run' || '' }}
+        run: |
+          dir=$RUNNER_TEMP/npm
+          tar -xzf "$dir"/*.tgz -C "$dir"
+          version=$(node -p 'require(process.argv[1]).version' "$dir/package/package.json")
+          if [[ "$version" == *-* ]]; then tag=next; else tag=latest; fi
+          echo "resolved version=$version dist-tag=$tag"
+          if [ -z "$DRY" ] && npm view "@carlwr/zsh-core@$version" version >/dev/null 2>&1; then
+            echo "@carlwr/zsh-core@$version is already on npm — skipping"
+            exit 0
+          fi
+          npm publish "$dir/package" $DRY \
+            --provenance \
+            --access public \
+            --tag "$tag" \
+            --ignore-scripts
 
       # Tag runs that publish only: a dry run dispatched on a tag ref must not
       # create or touch the GitHub release.

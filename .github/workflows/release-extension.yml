@@ -7,6 +7,9 @@ name: Release VS Code extension
 #
 # Marketplace convention: stable on even minors, pre-release on odd minors, so
 # `0.1.x` pre-release users roll forward to stable `0.2.0` cleanly.
+#
+# `package` runs the workspace's dependency code without secrets; `publish`
+# holds them and installs only the publish tools, without lifecycle scripts.
 
 on:
   push:
@@ -27,10 +30,12 @@ permissions:
   contents: read
 
 jobs:
-  release:
+  package:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    outputs:
+      flag: ${{ steps.prerelease.outputs.flag }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -76,6 +81,33 @@ jobs:
           path: packages/vscode-better-zsh/better-zsh.vsix
           if-no-files-found: error
 
+  publish:
+    needs: package
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup-node-pnpm
+        with:
+          install: better-zsh
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: better-zsh-vsix
+          path: packages/vscode-better-zsh
+
+      # Runs on dry runs too: the rehearsal's proof that the filtered install
+      # carries both publishers.
+      - name: Resolve publish tools
+        working-directory: packages/vscode-better-zsh
+        run: |
+          node "$(node -p 'require.resolve("@vscode/vsce/vsce")')" --version
+          node "$(node -p 'require.resolve("ovsx/bin/ovsx")')" --version
+
       # `--skip-duplicate` on both: a re-run after one registry failed
       # completes the other.
       - name: Publish to VS Code Marketplace (vsce)
@@ -83,11 +115,11 @@ jobs:
         working-directory: packages/vscode-better-zsh
         env:
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
-        run: pnpm exec vsce publish --packagePath better-zsh.vsix --no-dependencies --skip-duplicate ${{ steps.prerelease.outputs.flag }}
+        run: node "$(node -p 'require.resolve("@vscode/vsce/vsce")')" publish --packagePath better-zsh.vsix --no-dependencies --skip-duplicate ${{ needs.package.outputs.flag }}
 
       - name: Publish to Open VSX (ovsx)
         if: github.event_name == 'push' || inputs.dry_run == false
         working-directory: packages/vscode-better-zsh
         env:
           OVSX_PAT: ${{ secrets.OPEN_VSX_TOKEN }}
-        run: npx -y ovsx@1.2.0 publish better-zsh.vsix --skip-duplicate ${{ steps.prerelease.outputs.flag }}
+        run: node "$(node -p 'require.resolve("ovsx/bin/ovsx")')" publish better-zsh.vsix --skip-duplicate ${{ needs.package.outputs.flag }}

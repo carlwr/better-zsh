@@ -1,16 +1,26 @@
 name: Set up Node and pnpm
-description: Node, pnpm, a lockfile-keyed store cache, and a frozen install.
+description: Node and, per `install`, pnpm with a frozen install.
 
 # Uncached, every job re-downloads its whole dependency set; a restored store
 # leaves only linking. Central, so no job drifts on key shape, store path, Node
 # major or install flags: every job needing Node uses this, once, instead of
-# open-coding its steps — the repo's only `node-version` site. Every job shares
-# the key — a losing save logs a benign "cache already exists".
+# open-coding its steps — the repo's only `node-version` site. Every workspace
+# install shares the key — a losing save logs a benign "cache already exists".
+#
+# `none` and filters serve jobs holding publish credentials: no lifecycle
+# scripts, and no store restore — other jobs write that store after running
+# dependency code.
 
 inputs:
   registry-url:
     description: Registry to write into `.npmrc` — publishing jobs need it for OIDC.
     default: ""
+  install:
+    description: >-
+      `workspace`: the cached, frozen install of the whole workspace. `none`:
+      Node only. Anything else is a pnpm `--filter`: a frozen install of just
+      that, without lifecycle scripts or the store cache.
+    default: workspace
 
 runs:
   using: composite
@@ -22,21 +32,31 @@ runs:
 
     # Node 25+ no longer bundles corepack. With no `version` input it reads
     # `packageManager`, so the root manifest stays the one pnpm pin.
-    - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+    - if: inputs.install != 'none'
+      uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
 
     # Fixed path: the cache step needs a literal, and `/tmp` is writable on
     # hosted runners and in containers alike.
-    - run: pnpm config set store-dir /tmp/pnpm-store
+    - if: inputs.install == 'workspace'
+      run: pnpm config set store-dir /tmp/pnpm-store
       shell: bash
 
     # No `restore-keys`: an inexact hit reseeds from the old lockfile and saves
     # again under the new key, so the entry only grows — and `pnpm store prune`
     # empties the store rather than trimming it. Cost: a cold install whenever
     # the lockfile changes.
-    - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+    - if: inputs.install == 'workspace'
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: /tmp/pnpm-store
         key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
 
-    - run: pnpm install --frozen-lockfile
+    - if: inputs.install == 'workspace'
+      run: pnpm install --frozen-lockfile
       shell: bash
+
+    - if: inputs.install != 'workspace' && inputs.install != 'none'
+      run: pnpm install --frozen-lockfile --ignore-scripts --filter "$FILTER"
+      shell: bash
+      env:
+        FILTER: ${{ inputs.install }}

@@ -19,12 +19,14 @@ Universal patterns for build, packaging, and release. Project-specific bindings:
 Invariants those headers don't carry:
 
 - Every publishable package needs its own release workflow; before tagging, walk `release-*.yml` against the publishable set and close gaps first.
-- `engines.node` and CI's `node-version` move together.
+- The Node floor moves as one — sites and exemptions: `scripts/build/node-floor.test.mjs`.
   - the floor, 22, is provisional — chosen loosely (oldest non-EOL line; VS Code 1.110 hosts 22; nothing needs 24); revisit before 1.0
 - A version bump updates every site the workflow's tag guard checks — the guard fails the release, it does not warn.
 - Tokenless publishing is granted registry-side, per package — npm publishing-access settings, crates.io trusted-publishing settings.
   - the grant names one repo, and usually one workflow filename
   - renaming the file or moving the repo breaks the next publish until it is re-pointed
+- A job holding publish credentials runs no dependency code but lockfile-pinned publish tools — no workspace install, no shared cache.
+  - its artifact comes from a build job holding none
 - Generated data artifacts ship as GitHub release assets on the package's own tag, never as a registry payload — a registry tarball carries code, and a data blob there is weight every consumer pays for.
   - generated outside the tree the registry packs — no exclusion rule has to hold them back
   - the library's own runtime never reads them either; why: `DESIGN.md` §"Why the library parses at runtime"
