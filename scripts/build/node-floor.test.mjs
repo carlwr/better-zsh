@@ -5,9 +5,7 @@
 //
 // Deliberately not sites:
 // - the TS `target`/`lib`: a syntax level, not a runtime floor
-// - the crate's npm launcher `engines`: generated, and claims an older Node on
-//   purpose — nothing there runs on the repo's Node
-// - CI steps that set up a Node of their own
+// - the crate's npm launcher `engines`: generated, with a floor of its own
 
 import assert from "node:assert/strict"
 import { readFileSync } from "node:fs"
@@ -37,19 +35,15 @@ const { catalog } = readYaml("pnpm-workspace.yaml")
 const manifestSites = rel => {
   const pkg = readJson(rel)
   const types = { ...pkg.dependencies, ...pkg.devDependencies }["@types/node"]
-  return [
-    ...(pkg.engines?.node === undefined
-      ? []
-      : [[`${rel} engines.node`, pkg.engines.node]]),
-    ...(types === undefined
-      ? []
-      : [
-          [
-            `${rel} @types/node`,
-            types === "catalog:" ? catalog?.["@types/node"] : types,
-          ],
-        ]),
-  ]
+  const out = []
+  if (pkg.engines?.node !== undefined)
+    out.push([`${rel} engines.node`, pkg.engines.node])
+  if (types !== undefined)
+    out.push([
+      `${rel} @types/node`,
+      /^catalog:(default)?$/.test(types) ? catalog?.["@types/node"] : types,
+    ])
+  return out
 }
 
 /** `[site, value]` per place naming the floor. */

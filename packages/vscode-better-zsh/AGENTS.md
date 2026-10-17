@@ -43,7 +43,7 @@ A stable Marketplace release needs `icon` plus gallery presentation assets in th
 
 - checked-in `package.json` is the pnpm workspace manifest; the staged manifest derives from it plus `src/manifest.ts` (`src/build/extension-stage.ts`)
 - `pnpm build` refreshes the package-local `.tmp/staged-extension/`
-- VSIX, publish, and VS Code test entrypoints use the staged root
+- VSIX packaging and VS Code test entrypoints use the staged root; release publishes the packaged VSIX
 
 ## Agent access
 

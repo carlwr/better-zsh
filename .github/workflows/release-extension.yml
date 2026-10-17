@@ -9,7 +9,8 @@ name: Release VS Code extension
 # `0.1.x` pre-release users roll forward to stable `0.2.0` cleanly.
 #
 # `package` runs the workspace's dependency code without secrets; `publish`
-# holds them and installs only the publish tools, without lifecycle scripts.
+# holds them, installs the extension's locked dependencies without lifecycle
+# scripts, and runs only the publish tools.
 
 on:
   push:
@@ -115,11 +116,13 @@ jobs:
         working-directory: packages/vscode-better-zsh
         env:
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
-        run: node "$(node -p 'require.resolve("@vscode/vsce/vsce")')" publish --packagePath better-zsh.vsix --no-dependencies --skip-duplicate ${{ needs.package.outputs.flag }}
+          FLAG: ${{ needs.package.outputs.flag }}
+        run: node "$(node -p 'require.resolve("@vscode/vsce/vsce")')" publish --packagePath better-zsh.vsix --no-dependencies --skip-duplicate $FLAG
 
       - name: Publish to Open VSX (ovsx)
         if: github.event_name == 'push' || inputs.dry_run == false
         working-directory: packages/vscode-better-zsh
         env:
           OVSX_PAT: ${{ secrets.OPEN_VSX_TOKEN }}
-        run: node "$(node -p 'require.resolve("ovsx/bin/ovsx")')" publish better-zsh.vsix --skip-duplicate ${{ needs.package.outputs.flag }}
+          FLAG: ${{ needs.package.outputs.flag }}
+        run: node "$(node -p 'require.resolve("ovsx/bin/ovsx")')" publish better-zsh.vsix --skip-duplicate $FLAG

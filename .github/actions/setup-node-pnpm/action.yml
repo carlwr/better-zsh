@@ -29,6 +29,8 @@ runs:
       with:
         node-version: 22
         registry-url: ${{ inputs.registry-url }}
+        # `workspace` caches below; the other modes must restore nothing.
+        package-manager-cache: false
 
     # Node 25+ no longer bundles corepack. With no `version` input it reads
     # `packageManager`, so the root manifest stays the one pnpm pin.

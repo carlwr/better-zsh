@@ -25,8 +25,9 @@ Invariants those headers don't carry:
 - Tokenless publishing is granted registry-side, per package — npm publishing-access settings, crates.io trusted-publishing settings.
   - the grant names one repo, and usually one workflow filename
   - renaming the file or moving the repo breaks the next publish until it is re-pointed
-- A job holding publish credentials runs no dependency code but lockfile-pinned publish tools — no workspace install, no shared cache.
+- A job holding publish credentials runs no dependency code but pinned publish tools — no lifecycle scripts, no shared cache.
   - its artifact comes from a build job holding none
+  - residual: a compromised build job can still tamper with that artifact
 - Generated data artifacts ship as GitHub release assets on the package's own tag, never as a registry payload — a registry tarball carries code, and a data blob there is weight every consumer pays for.
   - generated outside the tree the registry packs — no exclusion rule has to hold them back
   - the library's own runtime never reads them either; why: `DESIGN.md` §"Why the library parses at runtime"
