@@ -26,10 +26,13 @@ test("PKG_VERSION matches package.json", () => {
   expect(PKG_VERSION).toBe(pkg.version)
 })
 
-test("repo-derived manifest URLs follow repository.url", () => {
+test("repository.url is npm-normalized; derived URLs follow it", () => {
   const repoUrl: string = pkg.repository.url
-  expect(pkg.homepage).toMatch(new RegExp(`^${escapeRegExp(repoUrl)}/`))
-  expect(pkg.bugs).toBe(`${repoUrl}/issues`)
+  // `npm publish` rewrites any other form, with a warning
+  expect(repoUrl).toMatch(/^git\+https:\/\/.+\.git$/)
+  const webUrl = repoUrl.slice("git+".length, -".git".length)
+  expect(pkg.homepage).toMatch(new RegExp(`^${escapeRegExp(webUrl)}/`))
+  expect(pkg.bugs).toBe(`${webUrl}/issues`)
 })
 
 describe("public-surface entries stay in sync", () => {
