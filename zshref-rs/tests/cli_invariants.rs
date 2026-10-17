@@ -250,8 +250,8 @@ fn closed_stdout_exits_zero_quietly() {
     }
 }
 
-/// Every (category, id) in the bundled corpus must round-trip through
-/// `docs --category C --key ID`; one `batch` invocation keeps the cost flat.
+/// Every (category, id) in the bundled corpus, as `docs --category C --key ID`,
+/// returns exactly that one record; one `batch` invocation keeps the cost flat.
 #[test]
 fn docs_roundtrip_over_corpus() {
     let recs = all_records();
@@ -278,12 +278,14 @@ fn docs_roundtrip_over_corpus() {
             .get("matches")
             .and_then(Value::as_array)
             .expect("matches");
-        assert!(!matches.is_empty(), "docs({cat}, {id}) returned empty");
-        let rid = matches[0].get("id").and_then(Value::as_str);
+        let got: Vec<_> = matches
+            .iter()
+            .map(|m| (m["category"].as_str(), m["id"].as_str()))
+            .collect();
         assert_eq!(
-            rid,
-            Some(id.as_str()),
-            "round-trip id mismatch for ({cat}, {id})"
+            got,
+            [(Some(cat.as_str()), Some(id.as_str()))],
+            "docs({cat}, {id}): not an exact round-trip"
         );
     }
 }

@@ -23,7 +23,7 @@ pub fn preamble(t: Target) -> Body {
           {search:<w$} → fuzzy-match on tokens/ids → returns ids
           {list:<w$} → enumerate records         → returns ids
 
-          (search/list emit `id`; feed back to {docs} as `key` for the body)
+          (feed search/list `id` back to {docs} as `key`, with its `category`)
     "}]
 }
 
@@ -73,7 +73,7 @@ pub fn docs(index: &Index) -> Prose {
             ),
             "Omitting `category` can return multiple matches for overlapping syntax.",
             RESOLUTION,
-            "Input `key` and the returned `id` may therefore differ; the returned `id` is always a valid `key` for follow-up lookups and is shell-safe (printable ASCII, no whitespace).",
+            "Input `key` and the returned `id` may therefore differ. `id` is shell-safe (printable ASCII, no whitespace); as `key`, with its `category`, it returns exactly that record.",
             indoc! {"
                 Output object properties:
                   matches[]          matched records
@@ -171,7 +171,6 @@ pub fn key() -> Prose {
                 t.tool(ToolName::Search),
                 t.tool(ToolName::List)
             ),
-            "`id` values returned by any tool are always valid `key` inputs.",
         ]
     })
 }
