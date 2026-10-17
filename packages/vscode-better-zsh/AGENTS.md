@@ -1,6 +1,6 @@
 # AGENTS.md — `better-zsh` (VS Code extension)
 
-VS Code extension package: editor providers and host-zsh execution.
+VS Code extension package: editor providers and host-zsh execution. Design posture: `README.md`; tree-sitter is the long-term direction.
 
 ## Layout
 
@@ -58,8 +58,6 @@ Extension tests cover the analyzer (`test/analysis/`, incl. the lock-in tests pi
 The zsh-path matrix harness (`scripts/testINTERACTIVE-zsh-path-matrix`) is CI/Docker-only; its header says why.
 
 ## Gotchas
-
-**Delimiter-like reserved-word facts are filtered out** in the semantic token provider (`{`, `[[`, …); the analyzer may still emit them for other editor features. Token types and modifiers are declared under `src/manifest/`, beside their TM scope mapping.
 
 **Zsh process env isolation:** spawned zsh processes receive only an explicit allowlist of env vars. Check the exec module under `src/zsh/` if a subprocess is missing an expected variable (search for `ZSH_ENV_KEEP` or `ZSH_ENV_DROP`).
 

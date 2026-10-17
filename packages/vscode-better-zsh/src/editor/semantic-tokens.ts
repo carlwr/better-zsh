@@ -10,6 +10,8 @@ import {
   tokenTypes,
 } from "../manifest/semantic-tokens"
 
+// The TM grammar already paints these, and block-`{` vs word-`{` is hairy;
+// the analyzer may still emit them for other features.
 const FILTERED_RESERVED_WORDS: ReadonlySet<string> = new Set([
   "{",
   "}",
@@ -24,6 +26,8 @@ export const SEMANTIC_LEGEND = new vscode.SemanticTokensLegend(
   [...tokenModifiers],
 )
 
+// Refines the vendored TM grammar only where static analysis is reliable,
+// consistent with it wherever it is right.
 export class SemanticTokensProvider
   implements vscode.DocumentSemanticTokensProvider
 {

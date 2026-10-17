@@ -20,7 +20,7 @@ Per MCP spec, tools register `outputSchema`; responses include `structuredConten
 
 ## Adapters of the shared tool surface
 
-Two adapters over the same `ToolSet`: the CLI and the MCP server.
+Two adapters over the same `ToolSet`: the CLI and the MCP server. Judge changes as for unknown further adapters.
 
 Adapters walk the tool set (`src/tools.rs`) and dispatch through it; nothing else — one shared request path, `Tool::call`.
 
@@ -38,6 +38,12 @@ One crate with a lib target and two bins; rejected shapes:
 - the MCP as its own crate or repo over a `zshref` lib: a public lib API to semver for one consumer; three version bumps per change
 - a TS MCP fed by a Rust-emitted metadata artifact: two behaviour implementations, so an oracle is still needed
 - prose and limits as committed YAML + JSON Schema: one consumer once the MCP is Rust; constants and strings in Rust are the source
+
+## `zsh_docs` takes `key`, not `id`
+
+Its input is resolver input — raw tokens and surface forms (`AUTO_CD`, `> word`) as well as ids.
+
+Ids round-trip: a returned `id` fed back as `key` with its `category` returns that `id` (`tests/cli_invariants.rs`); unscoped, the resolver walk may decline it (history modifiers).
 
 ## Fuzzy search rationale
 
@@ -61,7 +67,7 @@ External coverage:
 - `DATA-SYNC.md`
 - `CLI-POLICY.md`
 
-Rust, not a TS CLI: several TS CLI frameworks were tried and each fought `--help` quality (root `PRINCIPLES.md`); clap did not. A small, fast, self-contained binary is the product for a tool agents invoke hundreds of times per session; single-binary TS routes give large binaries and slow startup.
+Rust, not a TS CLI: several TS CLI frameworks were tried and each fought `--help` quality; clap did not. A small, fast, self-contained binary is the product for a tool agents invoke hundreds of times per session; single-binary TS routes give large binaries and slow startup.
 
 The tool set keeps the marginal cost of "another adapter" low — the CLI assembles its `clap::Command` by walking it (`src/cli.rs`), tool and field prose included.
 

@@ -50,13 +50,11 @@ Knows nothing about user code. The universe of documented elements is statically
 
 ### B. Fact Extraction (extension `src/analysis/`)
 
-Coarse, potentially overlapping annotations about user zsh code. A `Fact` discriminated union keyed by `FactKind` with confidence levels (`"hard"` / `"heuristic"`).
+Coarse, potentially overlapping annotations about user zsh code: the `Fact` union.
 
 The term "fact" is load-bearing: facts are what the analyzer *asserts*, not a complete description. Analysis is best-effort and partial; no claim of exhaustiveness.
 
-Payloads are raw text (`text: string`) or closed literal unions (`PrecmdName`) — **never** `Documented<K>`. Facts annotate syntax, not corpus membership.
-
-Knows nothing about doc records or markdown rendering; imports nothing from zsh-core (the extension's seam test). Its two corpus-pinned vocabularies are the extension's mirrors (`PRINCIPLES.md` §"Cross-project structure").
+Knows nothing about doc records or rendering; imports nothing from zsh-core (the extension's seam test). Payload rule: `PRINCIPLES.md` §"Facts and docs: asymmetric, not parallel".
 
 ### C. Markdown Rendering (`src/render/`)
 
@@ -227,7 +225,7 @@ Ids are **shell-safe slugs**; `display` and `sig` keep the human-readable form (
 
 - `id` is `sig` with whitespace replaced by `_` (`>_word`, `<<[-]_word`); `sig` keeps the upstream form (`> word`).
 - `groupOp` is the shared lookup bucket: the longest `groupOp` prefixing the token wins (zsh lexes the longest operator — `>&` never falls back to `>`), then the resolver disambiguates by tail — corpus-aware, not plain map lookup.
-- Both forms round-trip through `docs`: direct on `id`, close-variant resolver on `sig`.
+- Both forms `resolve`: `id` directly, `sig` through the close-variant resolver.
 - `groupOp`, like an option's flag `char`, is a plain string: a lookup facet, not a `Documented<K>` identity.
 
 ### History expansion: grammar components, not independent tokens
@@ -313,8 +311,7 @@ The manual's header groups (`(^B ESC-[D) (unbound) (unbound)`) are per-keymap de
 
 A category's record type declares `subKind` with a closed literal union, or none (`DocRecordBase` JSDoc in `zsh-core`); like `category`, it is read as a field — under a generic `K`, a `"subKind" in rec` check narrows. Presence and vocabulary follow from the type: the released schema requires the field with the union's enum, or forbids it, per category — no corpus scan, no post-processing. Same call as for `id` (PRINCIPLES.md §"The structural identity invariant"); the dropped shape: a per-category name behind an accessor table plus a generated JSON copy.
 
-- every declared literal occurs in the corpus: `packages/zsh-core/src/test/json-schema.test.ts`
-- the tool layer branches per category (`oneOf`, no schema-level optionality): `zshref-rs/src/tools/schema.rs`
+Every declared literal occurs in the corpus: `packages/zsh-core/src/test/json-schema.test.ts`.
 
 Manual provenance is not a record field: where the heading varies within a category it is the record's `subKind` (`option`, `prompt_escape`, `zle_widget`); elsewhere it is a category fact, carried by the label. The dropped shape: a `section: string` on most records — constant per category or a function of `subKind`, read only by the option renderer as a `_Section:_` body line.
 
@@ -370,7 +367,7 @@ Revisit once Node's text imports are stable.
 
 ## Crate-owned design
 
-The `zshref` crate's own rationale — tool schemas, adapters, fuzzy search, the CLI: `zshref-rs/DESIGN.md`.
+The `zshref` crate's own rationale: `zshref-rs/DESIGN.md`.
 
 ## TS ↔ Rust mirrors
 
@@ -387,27 +384,6 @@ The mirror is accepted because it is bounded — it changes only with categories
 ## `resolve`: direct ∥ resolver, direct preferred
 
 `resolve` (`zsh-core/resolver`) is the one entry: direct corpus-key lookup, then the category's resolver, one hit carrying the record — its identity with it — and feedback. Its JSDoc holds the mechanism and why direct precedence is load-bearing for template-key categories (`!n` vs `!42 → !n`). **Do not** run the paths separately for the same query; **do not** re-implement the rule in consumers.
-
-### Resolver input is wider than the id set
-
-The `zsh_docs` input parameter is intentionally named `key`, not `id`. The resolver entry is permissive — all of these resolve through it:
-
-- raw zsh tokens — `AUTO_CD`, `<<<`
-- close-variant surface forms with whitespace — `> word`
-- canonical ids — `autocd`
-
-Inputs that fall outside the id charset (whitespace, etc.) are not errors; they are normal resolver input and yield 0 matches when nothing resolves.
-
-The contract on the canonical-id subset is tight:
-
-- every corpus `id` is shell-safe (printable ASCII, no whitespace)
-- re-feeding such an `id` as `key` is guaranteed to resolve: ≥1 match overall, ≤1 per category
-- with `category` set to the resolved category, the returned `id` equals the input
-
-Enforcement:
-
-- charset — `packages/zsh-core/src/test/corpus-ascii.test.ts`
-- round-trip — `packages/zsh-core/src/test/resolver.test.ts` (TS), `zshref-rs/tests/cli_invariants.rs` (Rust)
 
 ## The category walk
 
@@ -437,20 +413,3 @@ Posture:
 - keep the dangerous path short
 
 The module that reads an external API is the policy owner.
-
----
-
-## Hover dispatch is procedural, not table-driven
-
-A table-driven rewrite was tried and rejected. Pinning comment in `packages/vscode-better-zsh/src/editor/hover.ts` (carries the "DON'T DELETE THIS COMMENT" marker). Parametric tables fit uniform domains, not every variation.
-
----
-
-## Syntax highlighting / semantic tokens
-
-Full custom zsh TextMate grammar is out of scope; tree-sitter is the long-term direction. Today:
-
-- Vendor the stock sh/bash TM grammar; add **semantic tokens** only where static analysis is reliable.
-- Stay consistent with TM where TM is right; prefer specifically qualified TextMate scope names for theme overrides.
-- Delimiter-like reserved-word facts (`{`, `[[`, …) are **skipped** in the token provider: TM already covers them, and block-`{` vs word-`{` is hairy.
-- Token types, modifiers and their TM scope mapping are declared together in the extension's manifest source.

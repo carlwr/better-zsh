@@ -38,7 +38,7 @@ An arrow reads "consumes, pinned by version"; its label is the mechanism:
 ```
 
 - workspace link: pnpm `workspace:*` onto the upstream's built `dist/`; freshness: `scripts/build/README.md`
-- release assets: tarballs on zsh-core's release tag, vendored by `make vendor` — `zshref-rs/DATA-SYNC.md`
+- release assets: zsh-core's release tarballs, packed and vendored by `make vendor` — `zshref-rs/DATA-SYNC.md`
 - `zshref-web` consumes `zsh-core` at build time only — the index build; the browser bundle is `zsh-core`-free (`packages/zshref-web/AGENTS.md`)
 - zsh-core is the only producer; the in-repo consumers are leaves with no consumer of their own
 
@@ -65,14 +65,8 @@ Open: this repo's name; zsh-core's.
 
 ## Extraction
 
-One planned: `zshref-rs/` → its own repo, `zshref`. Checklist: `zshref-rs/EXTRACTION.md`; vendoring mechanics: `zshref-rs/DATA-SYNC.md`. Further splits: open.
+One planned: `zshref-rs/` → its own repo, `zshref`. Checklist: `zshref-rs/EXTRACTION.md`. Further splits: open.
 
 ## Detail scope
 
-Web and NLP specifics live under `packages/zshref-web/`; Rust crate specifics under `zshref-rs/`. Root maintainer docs point at them; they don't restate the detail. Anti-pattern: a root-level `EXTRACTION.md` accumulating items that belong in `zshref-rs/`'s own checklist.
-
-## Pointers
-
-- `zshref-rs/AGENTS.md`
-- `packages/zshref-web/AGENTS.md`
-- `packages/zshref-web/nlp/NLP.md`
+A leaf's specifics live under its own directory. Root maintainer docs point at them; they don't restate the detail. Anti-pattern: a root-level `EXTRACTION.md` accumulating items that belong in `zshref-rs/`'s own checklist.

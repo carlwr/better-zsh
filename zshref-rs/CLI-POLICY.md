@@ -161,6 +161,7 @@ Reminder: this rule is not applicable to lines/paragraphs that start on COL=1/do
 
 ### Content & phrasing
 
+- **SHOULD** make each flag's `--help` (long) description self-contained — never send the reader elsewhere to understand the flag
 - **SHOULD** keep each flag's `--help` (long) description concise — prefer 1–2 short paragraphs; multi-paragraph is fine when it aids scannability
 - **SHOULD** keep each flag's `-h` (short) description to a single terse phrase — this is the column-constrained form
 - **MAY** add inline length cues to long-output commands/options (e.g. `--schema    emit the JSON schema (4231 words)`) — nudges humans to `| less`, agents to filter or truncate

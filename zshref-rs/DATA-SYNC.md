@@ -44,8 +44,8 @@ A monorepo gives A for free; a package ecosystem gives B for free. The chosen de
 
 The vendored half of (5) for post-extraction, combined with monorepo-path auto-detection for today. Published `.crate` files ship with `data/` populated, so vendored mode kicks in at install time without configuration.
 
-- Pre-release, dev: nothing changes — monorepo path auto-detected, no `data/` needed.
-- Pre-release, publish: the vendor target populates `data/`; `cargo publish` ships it.
+- Monorepo, dev: in-tree artifacts auto-detected; no `data/` needed.
+- Monorepo, publish: the vendor target populates `data/`; `cargo publish` ships it.
 - Post-extraction: vendored mode only.
 
 ### Why auto-detect, not a feature flag?
