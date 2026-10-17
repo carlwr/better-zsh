@@ -1,6 +1,6 @@
 # AGENTS.md — `better-zsh` (VS Code extension)
 
-VS Code extension package: editor providers and host-zsh execution. Design posture: `README.md`; tree-sitter is the long-term direction.
+VS Code extension package: editor providers and host-zsh execution. Design posture: `README.md`.
 
 ## Layout
 

@@ -73,7 +73,9 @@ jobs:
 
       # vsce refuses `publish --pre-release` on a VSIX not packaged with it.
       - working-directory: packages/vscode-better-zsh
-        run: pnpm vsix ${{ steps.prerelease.outputs.flag }}
+        env:
+          FLAG: ${{ steps.prerelease.outputs.flag }}
+        run: pnpm vsix $FLAG
 
       - name: Upload VSIX as workflow artifact
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

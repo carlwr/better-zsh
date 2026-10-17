@@ -122,7 +122,7 @@ export function cmdHeadFactsOnLine(
     const arithCondSpan = expectCmd ? matchArithCond(line, i, len) : undefined
     if (arithCondSpan) {
       // Emit (( and )) as reserved-word facts so downstream consumers can keep
-      // treating them like keywords without a separate fact kind/token type.
+      // treating them like keywords without a separate fact kind.
       out.push(
         reservedWordFact(
           "((",

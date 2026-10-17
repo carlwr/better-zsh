@@ -41,9 +41,9 @@ One crate with a lib target and two bins; rejected shapes:
 
 ## `zsh_docs` takes `key`, not `id`
 
-Its input is resolver input — raw tokens and surface forms (`AUTO_CD`, `> word`) as well as ids.
+`key` is resolver input — raw tokens and surface forms (`AUTO_CD`, `> word`) as well as ids.
 
-Ids round-trip: a returned `id` fed back as `key` with its `category` returns that `id` (`tests/cli_invariants.rs`); unscoped, the resolver walk may decline it (history modifiers).
+Ids round-trip: a returned `id` fed back as `key` with its `category` returns that `id` (`tests/cli_invariants.rs`); unscoped, the resolver walk may decline it (history word designators, modifiers).
 
 ## Fuzzy search rationale
 

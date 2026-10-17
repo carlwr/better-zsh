@@ -10,6 +10,7 @@ read-when: subsystem rationale and design decisions
 Layered docs:
 
 - `PRINCIPLES.md` — cross-cutting principles
+- `zshref-rs/DESIGN.md` — the `zshref` crate's own rationale
 - `AGENTS.md` — contributor conventions entry point; links into topic files for universal patterns
 - maintainer-doc index: `./scripts/list-maintainer-docs`
 
@@ -365,10 +366,6 @@ Revisit once Node's text imports are stable.
 
 ---
 
-## Crate-owned design
-
-The `zshref` crate's own rationale: `zshref-rs/DESIGN.md`.
-
 ## TS ↔ Rust mirrors
 
 The Rust crate re-implements one behaviour — the resolvers; the rest it consumes as baked JSON.
@@ -390,7 +387,7 @@ The mirror is accepted because it is bounded — it changes only with categories
 `resolveAll` (`zsh-core/resolver`) resolves a token in every category, `classifyOrder` first to last, keeping the hits the categories admit; tight identity resolvers thereby beat `option`'s `no_` stripping and `redirection`'s loose matching (`nocorrect` must not shadow-resolve as a negated option).
 
 - order, per-entry rationale: inline comments on `classifyOrderTuple`, `taxonomy.ts`
-- admission — a category declining a scoped hit that is no token on its own (history modifiers): `walkAdmits`, zsh-core `src/docs/resolver.ts`
+- admission — a category declining a scoped hit that is no token on its own (history word designators, modifiers): `walkAdmits`, zsh-core `src/docs/resolver.ts`
 
 Owned by zsh-core, not the tools: order and admission are corpus properties (PRINCIPLES.md §"Push decisions downstream"); a walk re-derived per consumer had drifted — one applied the history rule, one did not. Callers: `zsh_docs` with `category` omitted, zshref-web's lookup canonicalizer. The fixture's `walk` section pins it for the Rust mirror.
 
