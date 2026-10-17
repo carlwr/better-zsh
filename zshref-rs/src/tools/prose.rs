@@ -27,6 +27,15 @@ pub fn preamble(t: Target) -> Body {
     "}]
 }
 
+/// MCP `title`: the display name clients show in place of `zsh_docs`.
+pub fn title(name: ToolName) -> &'static str {
+    match name {
+        ToolName::Docs => "Look up zsh docs",
+        ToolName::Search => "Search zsh reference",
+        ToolName::List => "List zsh records",
+    }
+}
+
 /// Closes every description on the JSON side; terminal help omits it
 /// (README-like in a terminal).
 const SAFETY: &str = "No shell execution, no environment access.";

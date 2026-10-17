@@ -4,7 +4,7 @@ use anyhow::Result;
 use rmcp::model::{
     CallToolRequestParams, CallToolResponse, CallToolResult, ContentBlock, Implementation,
     JsonObject, ListToolsResult, PaginatedRequestParams, ServerCapabilities, ServerConfig,
-    Tool as McpTool,
+    Tool as McpTool, ToolAnnotations,
 };
 use rmcp::service::{RequestContext, ServerInitializeError};
 use rmcp::{ErrorData, RoleServer, ServerHandler, ServiceExt};
@@ -142,7 +142,9 @@ impl Server {
                     tool.prose.long.json.to_string(),
                     schema_object(&tool.input_schema),
                 )
+                .with_title(tools::prose::title(tool.name))
                 .with_raw_output_schema(schema_object(&tool.output_schema))
+                .with_annotations(annotations())
             })
             .collect();
         Self {
@@ -151,6 +153,17 @@ impl Server {
             tools,
         }
     }
+}
+
+/// The same hints for every tool: the tool layer only reads the embedded
+/// corpus (`tests/scope_fence.rs`). `destructive` and `idempotent` are
+/// moot once `read_only` holds; set anyway for clients that read them alone.
+fn annotations() -> ToolAnnotations {
+    ToolAnnotations::new()
+        .read_only(true)
+        .destructive(false)
+        .idempotent(true)
+        .open_world(false)
 }
 
 fn schema_object(schema: &Value) -> Arc<JsonObject> {

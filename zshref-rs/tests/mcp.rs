@@ -171,6 +171,17 @@ fn tools_list_equals_the_tool_set_in_order() {
     for (listed, tool) in listed.iter().zip(tools) {
         let name = tool.name.json();
         assert_eq!(listed["name"], name);
+        assert_eq!(listed["title"], zshref::tools::prose::title(tool.name));
+        assert_eq!(
+            listed["annotations"],
+            json!({
+                "readOnlyHint": true,
+                "destructiveHint": false,
+                "idempotentHint": true,
+                "openWorldHint": false,
+            }),
+            "{name}"
+        );
         assert_eq!(
             listed["description"],
             tool.prose.long.json.as_str(),
