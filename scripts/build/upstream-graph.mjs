@@ -1,6 +1,6 @@
 // The workspace build graph, read from the manifests that declare it.
 
-import { readdirSync, readFileSync } from "node:fs"
+import { existsSync, readdirSync, readFileSync } from "node:fs"
 import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 
@@ -13,6 +13,8 @@ const members = (root = repoRoot) =>
   readdirSync(join(root, "packages"), { withFileTypes: true })
     .filter(ent => ent.isDirectory())
     .map(ent => join(root, "packages", ent.name))
+    // as pnpm does: a dir a rename left behind (only ignored trees) is none
+    .filter(dir => existsSync(join(dir, "package.json")))
     .map(dir => ({
       dir,
       pkg: JSON.parse(readFileSync(join(dir, "package.json"), "utf8")),

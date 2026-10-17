@@ -9,10 +9,11 @@ import { createRequire } from "node:module"
 import { dirname, join } from "node:path"
 import { test } from "node:test"
 
+import { packageDirs } from "./upstream-graph.mjs"
+
 // Node version that unflagged `require(esm)`.
 const REQUIRE_ESM_SINCE = [22, 12]
 
-const pkgsDir = new URL("../../packages/", import.meta.url).pathname
 const readJson = p => JSON.parse(readFileSync(p, "utf8"))
 
 const minNode = engines => {
@@ -66,8 +67,7 @@ const esmOnlyRequires = (dir, cjsEntry) => {
 }
 
 const offenders = []
-for (const name of ["zsh-core"]) {
-  const dir = join(pkgsDir, name)
+for (const [name, dir] of packageDirs()) {
   const pkg = readJson(join(dir, "package.json"))
   const req = pkg.exports?.["."]?.require
   const cjs = typeof req === "object" ? req.default : req

@@ -9,13 +9,14 @@
 // itself a violation.
 
 import assert from "node:assert/strict"
-import { readdirSync, readFileSync } from "node:fs"
-import { dirname, join } from "node:path"
+import { readFileSync } from "node:fs"
+import { dirname, join, relative } from "node:path"
 import { test } from "node:test"
 
 import yaml from "yaml"
 
 import { actionFiles } from "./step-sites.mjs"
+import { packageDirs } from "./upstream-graph.mjs"
 
 const repoRoot = new URL("../../", import.meta.url).pathname
 const marked = /REGISTRY|INTERACTIVE/
@@ -26,9 +27,9 @@ const readYaml = rel => yaml.parse(read(rel))
 
 const manifests = [
   "package.json",
-  ...readdirSync(join(repoRoot, "packages"), { withFileTypes: true })
-    .filter(ent => ent.isDirectory())
-    .map(ent => join("packages", ent.name, "package.json")),
+  ...[...packageDirs().values()].map(dir =>
+    relative(repoRoot, join(dir, "package.json")),
+  ),
 ]
 
 test("no unmarked script reaches a consent-marked one", () => {

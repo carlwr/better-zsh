@@ -1,0 +1,9 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.5.12/schema.json",
+  "root": false,
+  "extends": "//",
+  "files": {
+    // Vendored grammar + byte-exact fixtures.
+    "includes": ["**", "!syntaxes", "!test-fixtures"]
+  }
+}
