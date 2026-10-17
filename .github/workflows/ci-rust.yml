@@ -83,6 +83,11 @@ jobs:
           make cli-vendored-test
           make cli-package
 
+      # Unlocked steps above rewrite a stale Cargo.lock, so no later `--locked`
+      # can catch it; the diff does.
+      - name: Cargo.lock is current
+        run: git diff --exit-code -- zshref-rs/Cargo.lock
+
       # `cargo package` only builds the unpacked tarball; this runs its test
       # suite too — the extraction simulation, tests included. Shared target
       # dir: dependencies come from the steps above.

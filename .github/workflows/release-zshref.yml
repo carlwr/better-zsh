@@ -95,8 +95,14 @@ jobs:
 
       - run: make cli-test
 
-      # Proves the packaged tarball compiles standalone.
+      # Proves the packaged tarball compiles standalone — every feature and the
+      # defaults.
       - run: make cli-package
+
+      # Unlocked steps above rewrite a stale Cargo.lock; `publish-crate`'s
+      # `--locked` on a fresh checkout would then fail mid-release.
+      - name: Cargo.lock is current
+        run: git diff --exit-code -- zshref-rs/Cargo.lock
 
       # The build matrix has no Node: the vendored data travels as an artifact.
       # upload-artifact v5, here and in `build`: the newest whose protocol act's

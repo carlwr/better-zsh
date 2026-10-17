@@ -67,11 +67,11 @@ cli-vendored-test
 cli-vendored-test: vendor
 	$(vendored) cargo test --all-features
 
-# Every feature, and the defaults `cargo install zshref` builds.
+# Every feature, and the default features (`cargo install zshref`).
 .PHONY:\
 cli-package
 cli-package: vendor
-	$(vendored) cargo package --allow-dirty --all-features
+	$(vendored) cargo package --allow-dirty --locked --all-features
 	$(vendored) cargo package --allow-dirty --locked
 
 .PHONY:\
