@@ -26,7 +26,8 @@ updates:
     open-pull-requests-limit: 0
     # upload-artifact stays on v5: act's artifact server rejects v6, v7
     # (nektos/act#6021, #6022), and release workflows rehearse under act.
-    # Raise by hand once those close.
+    # Hosted runners force its node20 onto Node 24, with a warning annotation.
+    # Raise by hand once those issues close.
     ignore:
       - dependency-name: "actions/upload-artifact"
         update-types: ["version-update:semver-major"]

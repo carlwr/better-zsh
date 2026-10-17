@@ -52,21 +52,27 @@ test("no unmarked script reaches a consent-marked one", () => {
 // while carrying no `if:` of its own to narrow the risk back down.
 const neutralises = {
   // published state: fails legitimately until an upstream republish lands, so
-  // nothing an ordinary run selects may reach it. Where pull requests or
-  // branch pushes trigger runs, only a dispatch-only job is out of reach;
-  // elsewhere the ordinary run is the act rehearsal, which `!env.ACT` skips.
+  // nothing an ordinary run selects may reach it. Where any trigger but a
+  // dispatch or a tag push starts runs, only a dispatch-only job is out of
+  // reach; elsewhere the ordinary run is the act rehearsal, which `!env.ACT`
+  // skips.
   REGISTRY: (step, carrier, everyday) =>
     everyday
       ? /workflow_dispatch/.test(carrier.if ?? "")
-      : /!\s*env\.ACT\b/.test(step.if ?? ""),
+      : /^(\$\{\{\s*)?!env\.ACT(\s*\}\})?$/.test(step.if ?? ""),
   // desktop takeover: a virtual display means there is no desktop to take over
   INTERACTIVE: step => /xvfb-run/.test(step.run),
 }
 
-/** Whether pull requests or branch pushes trigger the workflow. */
+const tagOnlyPush = push =>
+  push?.tags && !push.branches && !push["branches-ignore"]
+
+/** Whether any trigger but a dispatch or a tag push starts the workflow. */
 const isEveryday = on =>
-  "pull_request" in on ||
-  ("push" in on && !(on.push?.tags && !on.push.branches))
+  Object.entries(on).some(
+    ([event, cfg]) =>
+      event !== "workflow_dispatch" && !(event === "push" && tagOnlyPush(cfg)),
+  )
 
 /**
  * Every place a run reaches a step, named for the failure message, and whether

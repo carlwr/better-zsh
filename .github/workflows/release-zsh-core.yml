@@ -133,7 +133,7 @@ jobs:
           DRY: ${{ (github.event_name != 'push' && inputs.dry_run) && '--dry-run' || '' }}
           NPM: 11.20.0
         run: |
-          npx -y npm@$NPM --version
+          npx -y "npm@$NPM" --version
           dir=$RUNNER_TEMP/npm
           tar -xzf "$dir"/*.tgz -C "$dir"
           version=$(node -p 'require(process.argv[1]).version' "$dir/package/package.json")
@@ -143,7 +143,7 @@ jobs:
             echo "@carlwr/zsh-core@$version is already on npm — skipping"
             exit 0
           fi
-          npx -y npm@$NPM publish "$dir/package" $DRY \
+          npx -y "npm@$NPM" publish "$dir/package" $DRY \
             --provenance \
             --access public \
             --tag "$tag" \

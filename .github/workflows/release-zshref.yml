@@ -268,7 +268,7 @@ jobs:
           TAG: ${{ steps.disttag.outputs.tag }}
           VERSION: ${{ needs.check.outputs.version }}
         run: |
-          npx -y npm@$NPM --version
+          npx -y "npm@$NPM" --version
           for pkg in zshref zshref-mcp; do
             dir=zshref-rs/.aux/npm/$pkg
             name=$(node -p "require('./$dir/package.json').name")
@@ -276,7 +276,7 @@ jobs:
               echo "$name@$VERSION is already published — skipping"
               continue
             fi
-            npx -y npm@$NPM publish $DRY --ignore-scripts --provenance --access public --tag "$TAG" "$dir"
+            npx -y "npm@$NPM" publish $DRY --ignore-scripts --provenance --access public --tag "$TAG" "$dir"
           done
 
   publish-crate:
