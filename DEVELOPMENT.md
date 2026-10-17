@@ -5,11 +5,11 @@ Repo-level notes; package detail lives in each package.
 ## zsh-core
 
 - `pnpm dump:refs` — the rendered reference corpus as markdown, for visual QA; workflow: `packages/zsh-core/AGENTS.md`
-- `pnpm docs:zsh-core` — the API site, under `packages/zsh-core/.aux/docs/site/`
+- `pnpm docs:zsh-core` — builds the API site (as deployed to GitHub Pages) into `packages/zsh-core/.aux/docs/site/`
 
 ### Changes to the release assets
 
-`zshref-rs/` embeds zsh-core's JSON artifacts and tests its resolver mirror against the conformance fixture beside them. Any change to those artifacts is cross-language — taxonomy, record fields, resolver behaviour.
+`zshref-rs/` embeds zsh-core's JSON artifacts and tests its resolver mirror against the conformance fixture beside them. Any change to those artifacts — taxonomy, record fields, resolver behaviour — is cross-language.
 
 A resolver change the mirror does not follow fails `make cli-test`. How the artifacts reach the crate: `zshref-rs/DATA-SYNC.md`.
 

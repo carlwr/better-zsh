@@ -2,7 +2,7 @@
 
 Monorepo-phase workflows; what changes at extraction: `EXTRACTION.md`.
 
-The binaries embed zsh-core's corpus JSONs at compile time: rebuild after Rust or artifact changes.
+`zshref` and `zshref-mcp` embed zsh-core's corpus JSONs at compile time: rebuild after Rust or artifact changes.
 
 `build.rs` auto-detects the data source: the monorepo's zsh-core artifacts when present (normal dev), else `data/` — vendored from zsh-core's release tarballs; what the published `.crate` ships. Design: `DATA-SYNC.md`.
 
@@ -35,7 +35,7 @@ Manual, outside CI: `scripts/probe-opencode` (`--help`).
 
 ## zsh completions from source
 
-For the current interactive session:
+From the repo root, for the current interactive session:
 
 ```sh
 source =(cd zshref-rs && cargo run --quiet -- completions zsh)
