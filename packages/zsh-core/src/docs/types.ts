@@ -263,11 +263,11 @@ export interface AlternateForm {
   /** Keyword-position tt tokens within the alternate-form synopsis. */
   readonly keywords: readonly string[]
   /**
-   * Shell options that gate this form — **disjunctive**: enabling any one
-   * activates the form (e.g. `["SHORT_LOOPS", "SHORT_REPEAT"]` for `repeat`).
+   * Options that gate this form — **disjunctive**: enabling any one
+   * activates the form (e.g. `["shortloops", "shortrepeat"]` for `repeat`).
    * Absent when the form is always available.
    */
-  readonly requires?: readonly [string, ...string[]]
+  readonly requires?: readonly [Documented<"option">, ...Documented<"option">[]]
 }
 
 /**

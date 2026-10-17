@@ -699,24 +699,27 @@ describe("render markdown", () => {
     expect(body({ ...zw, defaultBindings: [] })).toBe("d:zw")
   })
 
-  test("alternate-form requires annotation rendered as trailing comment", () => {
+  test("alternate-form requires: trailing comment, options in display form", () => {
+    const [loops, repeat] = ["SHORT_LOOPS", "SHORT_REPEAT"].map(
+      (name): OptionDoc => ({ ...cd, ...identity("option", name, name) }),
+    ) as [OptionDoc, OptionDoc]
     const docWithReq: ComplexCommandDoc = {
       ...cc,
       alternateForms: [
         {
           template: "if list { list }",
           keywords: [],
-          requires: ["SHORT_LOOPS"],
+          requires: [loops.id],
         },
         {
           template: "repeat word sublist",
           keywords: [],
-          requires: ["SHORT_LOOPS", "SHORT_REPEAT"],
+          requires: [loops.id, repeat.id],
         },
         { template: "plain form", keywords: [] },
       ],
     }
-    const md = body(docWithReq)
+    const md = body(docWithReq, mkTestCorpus({ option: [loops, repeat] }))
     expect(md).toContain("if list { list }    # requires SHORT_LOOPS")
     expect(md).toContain(
       "repeat word sublist    # requires SHORT_LOOPS or SHORT_REPEAT",

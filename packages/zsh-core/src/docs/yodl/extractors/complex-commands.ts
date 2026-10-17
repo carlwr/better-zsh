@@ -1,6 +1,10 @@
 import { type NonEmpty, nonEmpty } from "@carlwr/typescript-extra"
-import { identity } from "../../brands.ts"
-import type { AlternateForm, ComplexCommandDoc } from "../../types.ts"
+import { identity, mkDocumented } from "../../brands.ts"
+import type {
+  AlternateForm,
+  ComplexCommandDoc,
+  Documented,
+} from "../../types.ts"
 import {
   collectAliasedEntries,
   extractFirstItemList,
@@ -101,10 +105,11 @@ function bodyKeywords(header: YNodeSeq): readonly string[] {
  * Hard-coded vs preamble-parsed: closed two-case table, and upstream embeds
  * the rationale in prose rather than per-item.
  */
-function altRequires(head: HeadKey): NonEmpty<string> {
+function altRequires(head: HeadKey): NonEmpty<Documented<"option">> {
+  const opt = (name: string) => mkDocumented("option", name)
   return head === "repeat"
-    ? nonEmpty("SHORT_LOOPS", "SHORT_REPEAT")
-    : nonEmpty("SHORT_LOOPS")
+    ? nonEmpty(opt("SHORT_LOOPS"), opt("SHORT_REPEAT"))
+    : nonEmpty(opt("SHORT_LOOPS"))
 }
 
 function altForm(item: YodlEntry, head: HeadKey): AlternateForm | undefined {

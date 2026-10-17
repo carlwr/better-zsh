@@ -2,7 +2,8 @@ import * as fcu from "@carlwr/fastcheck-utils"
 import fc from "fast-check"
 import { describe, expect, test } from "vitest"
 import { mkDocumented } from "../docs/brands"
-import { docCategories } from "../docs/taxonomy"
+import { loadCorpus } from "../docs/corpus"
+import { type DocCategory, docCategories } from "../docs/taxonomy"
 import { mkDocumented_ } from "./id-fns"
 
 const opt = mkDocumented_("option")
@@ -50,5 +51,40 @@ describe("mkDocumented option (normalizes case + strips underscores)", () => {
         expect(r).not.toContain("_")
       }),
     )
+  })
+})
+
+// Extractors mint cross-references on the trusted path, unchecked; each must
+// name a record the corpus holds.
+describe("cross-references name corpus records", () => {
+  const corpus = loadCorpus()
+  const vals = <K extends DocCategory>(cat: K) => [...corpus[cat].values()]
+  test.each<[string, DocCategory, readonly string[]]>([
+    [
+      "option alias target",
+      "option",
+      vals("option").flatMap(r => r.aliasOf?.target ?? []),
+    ],
+    [
+      "builtin alias target",
+      "builtin",
+      vals("builtin").flatMap(r => r.aliasOf?.target ?? []),
+    ],
+    [
+      "tied special param",
+      "special_param",
+      vals("special_param").flatMap(r => r.tied ?? []),
+    ],
+    [
+      "alternate-form requires",
+      "option",
+      vals("complex_command").flatMap(r =>
+        r.alternateForms.flatMap(a => a.requires ?? []),
+      ),
+    ],
+  ])("%s", (_, cat, refs) => {
+    const ids = new Set<string>(corpus[cat].keys())
+    expect(refs.length).toBeGreaterThan(0)
+    expect(refs.filter(id => !ids.has(id))).toEqual([])
   })
 })

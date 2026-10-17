@@ -11,6 +11,7 @@ import type {
   ComplexCommandDoc,
   CompUtilityDoc,
   CondOpDoc,
+  Documented,
   Emulation,
   FlagGroup,
   ItemEntry,
@@ -527,14 +528,18 @@ function mdOpt(opt: OptionDoc, corpus: DocCorpus): string {
 }
 
 /**
- * Display form of an option alias's target. Uses the target option's display
- * casing when known so e.g. `NO_IGNORE_BRACES` wins over `NO_ignorebraces`.
+ * An option's display casing when known, so e.g. `NO_IGNORE_BRACES` wins over
+ * `NO_ignorebraces`; else the id.
  */
+const optDisplay = (id: Documented<"option">, corpus: DocCorpus): string =>
+  corpus.option.get(id)?.display ?? id
+
+/** Display form of an option alias's target. */
 function aliasTargetDisplay(
   aliasOf: NonNullable<OptionDoc["aliasOf"]>,
   corpus: DocCorpus,
 ): string {
-  const display = corpus.option.get(aliasOf.target)?.display ?? aliasOf.target
+  const display = optDisplay(aliasOf.target, corpus)
   return aliasOf.negated ? `NO_${display}` : display
 }
 
@@ -600,7 +605,10 @@ function mdComplexCommand(doc: ComplexCommandDoc, corpus: DocCorpus): string {
     ...when(
       doc.alternateForms.length > 0,
       "_Alternate forms:_",
-      codeBlock("docopt", ...doc.alternateForms.map(formatAlternateForm)),
+      codeBlock(
+        "docopt",
+        ...doc.alternateForms.map(a => formatAlternateForm(a, corpus)),
+      ),
     ),
     ...when(
       doc.bodyKeywords.length > 0,
@@ -613,9 +621,10 @@ function mdComplexCommand(doc: ComplexCommandDoc, corpus: DocCorpus): string {
  * Append a trailing `# requires …` comment when the form is gated by shell
  * options; the list is disjunctive — matches `AlternateForm.requires`.
  */
-function formatAlternateForm(a: AlternateForm): string {
+function formatAlternateForm(a: AlternateForm, corpus: DocCorpus): string {
   if (!a.requires) return a.template
-  return `${a.template}    # requires ${a.requires.join(" or ")}`
+  const opts = a.requires.map(id => optDisplay(id, corpus))
+  return `${a.template}    # requires ${opts.join(" or ")}`
 }
 
 function mdKeymap(doc: KeymapDoc): string {
