@@ -28,10 +28,11 @@ const defaultPipeline = memoizedRetry(
   async (): Promise<FeatureExtractionPipeline> => {
     const { pipeline, env } = await import("@huggingface/transformers")
     env.allowRemoteModels = true
+    // Every Hub URL at the pin: transformers.js 4.3's pipeline() reads
+    // config.json and probes file sizes without `revision`, i.e. at `main`.
+    env.remotePathTemplate = `{model}/resolve/${MODEL_REVISION}/`
     return (await pipeline("feature-extraction", MODEL_ID, {
       dtype: "fp32",
-      // The weights, config and tokenizer load at the pin; transformers.js
-      // 4.3's upfront file-size probe (progress totals only) still asks `main`.
       revision: MODEL_REVISION,
       // `progress_total` is the pipeline's own aggregate over its files.
       progress_callback: (e: ProgressInfo) => {
