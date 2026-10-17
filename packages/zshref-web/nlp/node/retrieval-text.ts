@@ -13,8 +13,10 @@ import { isDefined } from "@carlwr/typescript-extra"
 import {
   type DocCategory,
   type DocCorpus,
+  type DocRecord,
   docCategoryLabels,
 } from "@carlwr/zsh-core"
+import type { WithMarkdown } from "@carlwr/zsh-core/render"
 
 import type { Synonyms } from "../core/rules"
 import { asciiLower } from "../core/text"
@@ -65,14 +67,14 @@ export function recordText(
   rec: JsonRecord,
   indexGroups: IndexGroups,
 ): RecordText {
-  const title = strField(rec, "_title")
+  const title = field(rec, "_title")
   const subKind = strField(rec, "subKind")
-  const mdBody = strField(rec, "_mdBody")
+  const mdBody = field(rec, "_mdBody")
   const ident: Identity = {
     category: cat,
     label: docCategoryLabels[cat],
-    id: strField(rec, "id"),
-    display: strField(rec, "display"),
+    id: field(rec, "id"),
+    display: field(rec, "display"),
     ...(subKind !== "" ? { subKind } : {}),
   }
   // `_mdBody` is title-less; the body view embeds the whole rendered record.
@@ -204,6 +206,10 @@ const strField = (rec: JsonRecord, key: string): string => {
   const v = rec[key]
   return typeof v === "string" ? v : ""
 }
+
+/** A field every rendered record carries; keyed against zsh-core's type, so a rename there fails here. */
+const field = (rec: JsonRecord, key: keyof WithMarkdown<DocRecord>): string =>
+  strField(rec, key)
 
 /** The rendered record as its JSON text reads back. */
 const asJson = (rec: object): JsonRecord =>

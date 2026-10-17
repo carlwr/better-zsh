@@ -17,6 +17,8 @@
     "prenlp:tune-sweep": "node ../../scripts/build/upstream-ready.mjs ensure",
     "pretypecheck": "node ../../scripts/build/upstream-ready.mjs ensure",
     "pretest": "node ../../scripts/build/upstream-ready.mjs ensure",
+    "pretest:watch": "node ../../scripts/build/upstream-ready.mjs ensure",
+    "pretypecheck:watch": "node ../../scripts/build/upstream-ready.mjs ensure",
     "dev": "vite dev",
     "build": "vite build",
     "build:index": "tsx scripts/build-index.ts",
