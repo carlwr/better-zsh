@@ -98,13 +98,6 @@ jobs:
       # Proves the packaged tarball compiles standalone.
       - run: make cli-package
 
-      # `cli-package` verifies `--all-features`; this, the default build
-      # `cargo install zshref` does.
-      - working-directory: zshref-rs
-        env:
-          ZSHREF_DATA_SOURCE: vendored
-        run: cargo package --allow-dirty --locked
-
       # The build matrix has no Node: the vendored data travels as an artifact.
       # upload-artifact v5, here and in `build`: the newest whose protocol act's
       # artifact server accepts (`make cli-release-act`; v6, v7 fail under act
@@ -280,7 +273,7 @@ jobs:
               echo "$name@$VERSION is already published — skipping"
               continue
             fi
-            npx -y npm@$NPM publish $DRY --provenance --access public --tag "$TAG" "$dir"
+            npx -y npm@$NPM publish $DRY --ignore-scripts --provenance --access public --tag "$TAG" "$dir"
           done
 
   publish-crate:

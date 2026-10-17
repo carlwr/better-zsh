@@ -26,7 +26,7 @@ export const SEMANTIC_LEGEND = new vscode.SemanticTokensLegend(
   [...tokenModifiers],
 )
 
-// Refines the vendored TM grammar where static analysis is reliable,
+// Refines the vendored TM grammar only where static analysis is reliable,
 // consistent with it wherever it is right. Long-term direction: tree-sitter.
 export class SemanticTokensProvider
   implements vscode.DocumentSemanticTokensProvider
