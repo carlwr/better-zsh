@@ -464,7 +464,7 @@ mod tests {
     /// Per field, absence or a probe value in an otherwise valid input
     /// decodes iff `input_schema` admits it.
     #[test]
-    fn decoders_agree_with_input_schemas_on_values() {
+    fn decoders_agree_with_input_schemas_per_field() {
         for tool in &TOOLS.tools {
             let name = tool.name;
             let schema = jsonschema::draft202012::options()
@@ -478,20 +478,27 @@ mod tests {
             for f in &tool.fields {
                 // Not probed: integral floats (see `Shape::Limit`).
                 let by_shape = match f.shape {
-                    Shape::Text => vec![json!(""), json!("echo"), json!(1)],
+                    Shape::Text => vec![json!(""), json!("echo")],
                     Shape::Category => vec![json!(DOC_CATEGORIES[0]), json!("bogus")],
                     Shape::Limit => vec![
                         json!(0),
                         json!(u32::MAX),
                         json!(-1),
                         json!(u64::from(u32::MAX) + 1),
-                        json!("1"),
                     ],
                 };
-                let values = [json!(null), json!(true), json!([]), json!({})]
-                    .into_iter()
-                    .chain(by_shape)
-                    .map(Some);
+                // One value per JSON type.
+                let values = [
+                    json!(null),
+                    json!(true),
+                    json!(1),
+                    json!("1"),
+                    json!([]),
+                    json!({}),
+                ]
+                .into_iter()
+                .chain(by_shape)
+                .map(Some);
                 for probe in std::iter::once(None).chain(values) {
                     let mut input = full.clone();
                     match &probe {

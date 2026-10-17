@@ -9,14 +9,14 @@ Crate-owned rationale; corpus, resolvers and the TS↔Rust mirror: root `DESIGN.
 
 ## Schemas
 
-- Each tool's `outputSchema` is generated beside its implementation (`src/tools/schema.rs`).
+- Each tool's `inputSchema` and `outputSchema` are generated beside its implementation (`src/tools/schema.rs`).
 - `subKind` enums and the record total come from the loaded corpus; the feedback schema from `index.json`.
 - Cross-cutting "co-released schema precision" rationale: root `PRINCIPLES.md`.
 - Drift guards, at test time:
-  - `outputSchema` — every tool response the tests see is validated against it (`tests/common/`)
-  - `inputSchema` ⇔ the typed `Input` decode — `src/tools.rs` tests
+  - `outputSchema` — integration tests validate CLI and MCP responses against it (`tests/common/`)
+  - `inputSchema` — probed per field against the typed `Input` decode (`src/tools.rs` tests)
 
-Per MCP spec, tools register `outputSchema`; responses include `structuredContent` for schema-aware clients while legacy clients still get JSON in `content[0].text`.
+Per MCP spec, tools register `outputSchema`; responses carry `structuredContent` for schema-aware clients and JSON in `content[0].text` for legacy ones.
 
 ## Adapters of the shared tool surface
 

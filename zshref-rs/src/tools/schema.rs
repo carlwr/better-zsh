@@ -3,10 +3,9 @@
 //! Input schemas double as the wire contract for `zshref batch` and drive
 //! the CLI's flags. Output schemas are an envelope over per-category
 //! `oneOf` match branches sharing `$defs`; category names, `subKind`
-//! enums and the record total come from the loaded corpus. Every tool
-//! response the test suite sees is validated against its output schema.
-//! `--help` long-about advertises the bundle's size to discourage piping
-//! it into agent context.
+//! enums and the record total come from the loaded corpus. `--help`
+//! long-about advertises the bundle's size to discourage piping it into
+//! agent context.
 
 use crate::corpus::{Corpus, DOC_CATEGORIES, DocCategory};
 use crate::resolver::ResolverFeedback;
