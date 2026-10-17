@@ -170,9 +170,9 @@ fn cli_equals_batch() {
 }
 
 /// `--limit` above corpus size must clamp silently: exit 0, full result
-/// set returned. Pins the schema's "no upper bound" contract (`limit` has
-/// no `maximum`). Mirrored in batch input to pin CLI ↔ batch parity under
-/// clamping.
+/// set returned. Pins the schema's "no semantic cap" contract (`limit`'s
+/// `maximum` is the `u32` range). Mirrored in batch input to pin CLI ↔
+/// batch parity under clamping.
 #[test]
 fn limit_above_corpus_clamps_silently() {
     let cases: &[(&str, &[&str], Value)] = &[

@@ -12,6 +12,7 @@ use crate::corpus::{Corpus, DOC_CATEGORIES, DocCategory};
 use crate::resolver::ResolverFeedback;
 use crate::tools::envelope::ENVELOPE_KEYS;
 use crate::tools::{Field, ToolSet};
+use serde::{Deserialize, Deserializer};
 use serde_json::{Map, Value, json};
 use std::collections::BTreeSet;
 
@@ -26,6 +27,15 @@ pub fn default_limit() -> u32 {
     DEFAULT_LIMIT
 }
 
+/// Serde side of an optional field, with `#[serde(default)]`: absent →
+/// `None`; `null` is rejected as `input_schema` does (a bare `Option<T>`
+/// reads it as absent).
+pub fn non_null<'de, D: Deserializer<'de>, T: Deserialize<'de>>(
+    d: D,
+) -> Result<Option<T>, D::Error> {
+    T::deserialize(d).map(Some)
+}
+
 /// An input field's value shape: its JSON Schema, and what the CLI flag
 /// parses.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -33,8 +43,9 @@ pub enum Shape {
     Text,
     /// Closed enum over the corpus' categories.
     Category,
-    /// Defaults to `DEFAULT_LIMIT`. No `maximum`: a `limit` above the
-    /// corpus size clamps silently.
+    /// Defaults to `DEFAULT_LIMIT`. `maximum` is the decoder's `u32` range,
+    /// not a cap: a `limit` above the corpus size clamps silently. Integral
+    /// floats (`1.0`) pass the schema, not the decode.
     Limit,
 }
 
@@ -43,7 +54,12 @@ impl Shape {
         match self {
             Self::Text => json!({ "type": "string" }),
             Self::Category => json!({ "type": "string", "enum": *DOC_CATEGORIES }),
-            Self::Limit => json!({ "type": "integer", "minimum": 0, "default": DEFAULT_LIMIT }),
+            Self::Limit => json!({
+                "type": "integer",
+                "minimum": 0,
+                "maximum": u32::MAX,
+                "default": DEFAULT_LIMIT,
+            }),
         }
     }
 }

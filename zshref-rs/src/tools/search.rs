@@ -7,7 +7,7 @@
 use crate::corpus::{CLASSIFY_ORDER, Corpus, DocCategory};
 use crate::resolver::resolve_in;
 use crate::tools::envelope::{Entry, Envelope, entries};
-use crate::tools::schema::{MatchShape, Shape, default_limit, output_schema};
+use crate::tools::schema::{MatchShape, Shape, default_limit, non_null, output_schema};
 use crate::tools::{Field, Tool, ToolName, prose};
 use anyhow::Result;
 use serde::Deserialize;
@@ -42,6 +42,7 @@ pub fn tool(corpus: &Corpus) -> Tool {
 #[serde(deny_unknown_fields)]
 struct Input {
     query: String,
+    #[serde(default, deserialize_with = "non_null")]
     category: Option<DocCategory>,
     #[serde(default = "default_limit")]
     limit: u32,

@@ -368,3 +368,17 @@ fn version_is_the_cli_version_block() {
         );
     }
 }
+
+#[test]
+fn unknown_argument_is_bad_input() {
+    for arg in ["--stdio", "--verison"] {
+        let out = run(&[arg]);
+        assert_eq!(out.status.code(), Some(2), "{arg}");
+        assert!(out.stdout.is_empty(), "{arg}");
+        let stderr = String::from_utf8(out.stderr).expect("utf-8");
+        assert!(
+            stderr.contains(arg) && stderr.contains("Usage:"),
+            "{arg}: {stderr}"
+        );
+    }
+}

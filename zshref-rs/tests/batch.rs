@@ -44,8 +44,8 @@ fn batch_stdout(reqs: &[&str]) -> String {
     String::from_utf8(out.stdout).expect("batch stdout is utf-8")
 }
 
-/// Decode failures are `ok:false` responses whose `error` carries the
-/// serde fragment.
+/// Envelope and decode failures are `ok:false` responses whose `error`
+/// names the fault (for decode failures, the serde fragment).
 #[test]
 fn invalid_input_is_an_in_band_error() {
     let cases = [
@@ -65,6 +65,14 @@ fn invalid_input_is_an_in_band_error() {
             r#"{"tool":"zsh_list","input":{"category":"bogus"}}"#,
             "unknown category `bogus`",
         ),
+        (
+            r#"{"tool":"zsh_list","input":{"category":null}}"#,
+            "invalid type: null",
+        ),
+        (
+            r#"{"tool":"zsh_list","inptu":{"limit":1}}"#,
+            "unknown field `inptu`",
+        ),
     ];
     for (req, fragment) in cases {
         let resp = batch(req);
@@ -72,18 +80,6 @@ fn invalid_input_is_an_in_band_error() {
         let error = resp["error"].as_str().expect("error string");
         assert!(error.contains(fragment), "{req}: {error}");
     }
-}
-
-#[test]
-fn null_category_equals_no_category() {
-    let stdout = batch_stdout(&[
-        r#"{"tool":"zsh_list","input":{"category":null,"limit":3}}"#,
-        r#"{"tool":"zsh_list","input":{"limit":3}}"#,
-    ]);
-    let lines: Vec<&str> = stdout.lines().collect();
-    assert_eq!(lines.len(), 2, "{stdout}");
-    assert!(lines[0].starts_with(r#"{"ok":true"#), "{stdout}");
-    assert_eq!(lines[0], lines[1]);
 }
 
 #[test]

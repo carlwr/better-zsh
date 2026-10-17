@@ -163,7 +163,7 @@ pub fn batch_long(tool_set: &ToolSet, corpus: &Corpus) -> String {
 
         Per-request errors are in-band. Exit code is 0 unless stdin I/O fails. The protocol requires one response line per request.
 
-        The request format is documented through a schema; see `zshref schema --help`.
+        `input` follows the tool's `inputSchema`; see `zshref schema --help`.
     "#}
 }
 

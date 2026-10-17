@@ -407,16 +407,20 @@ mod tests {
             .collect()
     }
 
+    /// A value both a field's schema and its decoder accept.
+    fn sample(shape: Shape) -> Value {
+        match shape {
+            Shape::Text => json!("echo"),
+            Shape::Category => json!(DOC_CATEGORIES[0]),
+            Shape::Limit => json!(1),
+        }
+    }
+
     /// The typed `Input` behind each tool decodes exactly what its
     /// `input_schema` admits: every property, only those, and the same
     /// required set.
     #[test]
     fn input_structs_mirror_the_input_schemas() {
-        let sample = |shape: Shape| match shape {
-            Shape::Text => json!("echo"),
-            Shape::Category => json!(DOC_CATEGORIES[0]),
-            Shape::Limit => json!(1),
-        };
         for tool in &TOOLS.tools {
             let name = tool.name;
             let keys: BTreeSet<String> = tool.fields.iter().map(|f| f.key.to_string()).collect();
@@ -454,6 +458,51 @@ mod tests {
             let mut expected = backticked(&e);
             expected.remove("bogus");
             assert_eq!(expected, keys, "{name}: {e}");
+        }
+    }
+
+    /// Per field, a probe swapped into an otherwise valid input decodes iff
+    /// `input_schema` admits it.
+    #[test]
+    fn decoders_agree_with_input_schemas_on_values() {
+        for tool in &TOOLS.tools {
+            let name = tool.name;
+            let schema = jsonschema::draft202012::options()
+                .build(&tool.input_schema)
+                .unwrap_or_else(|e| panic!("{name}: compile inputSchema: {e}"));
+            let full: Map<String, Value> = tool
+                .fields
+                .iter()
+                .map(|f| (f.key.to_string(), sample(f.shape)))
+                .collect();
+            for f in &tool.fields {
+                // Not probed: integral floats (see `Shape::Limit`).
+                let by_shape = match f.shape {
+                    Shape::Text => vec![json!(""), json!("echo"), json!(1)],
+                    Shape::Category => vec![json!(DOC_CATEGORIES[0]), json!("bogus")],
+                    Shape::Limit => vec![
+                        json!(0),
+                        json!(u32::MAX),
+                        json!(-1),
+                        json!(u64::from(u32::MAX) + 1),
+                        json!("1"),
+                    ],
+                };
+                for probe in [json!(null), json!(true), json!([])]
+                    .into_iter()
+                    .chain(by_shape)
+                {
+                    let mut input = full.clone();
+                    input.insert(f.key.to_string(), probe.clone());
+                    let input = Value::Object(input);
+                    let err = tool.call(&input, &CORPUS).err().map(|e| e.to_string());
+                    let at = format!("{name}.{} = {probe}", f.key);
+                    assert_eq!(schema.is_valid(&input), err.is_none(), "{at}: {err:?}");
+                    if let Some(e) = err {
+                        assert!(e.starts_with("invalid input: "), "{at}: {e}");
+                    }
+                }
+            }
         }
     }
 

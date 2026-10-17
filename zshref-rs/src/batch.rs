@@ -33,6 +33,13 @@ fn handle_request(line: &str, tool_set: &ToolSet, corpus: &Corpus) -> Value {
         Ok(v) => v,
         Err(e) => return err(format!("invalid JSON: {e}")),
     };
+    let Some(req) = req.as_object() else {
+        return err("request must be a JSON object");
+    };
+    // A typo (`inptu`) must not silently become an empty `input`.
+    if let Some(k) = req.keys().find(|k| !matches!(k.as_str(), "tool" | "input")) {
+        return err(format!("unknown field `{k}`, expected `tool` or `input`"));
+    }
     let name = match req.get("tool").and_then(Value::as_str) {
         Some(s) => s,
         None => return err("missing `tool` field"),

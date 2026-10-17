@@ -7,7 +7,7 @@
 use crate::corpus::{Corpus, DocCategory};
 use crate::resolver::{ResolvedHit, ResolverFeedback, resolve_all, resolve_in};
 use crate::tools::envelope::Envelope;
-use crate::tools::schema::{MatchShape, Shape, output_schema};
+use crate::tools::schema::{MatchShape, Shape, non_null, output_schema};
 use crate::tools::{Field, Tool, ToolName, prose};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
@@ -42,6 +42,7 @@ pub fn tool(corpus: &Corpus) -> Tool {
 #[serde(deny_unknown_fields)]
 struct Input {
     key: String,
+    #[serde(default, deserialize_with = "non_null")]
     category: Option<DocCategory>,
 }
 

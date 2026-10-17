@@ -46,7 +46,10 @@ Configure an MCP client to launch this bin, or run `zshref-mcp --help`.
 ";
 
 fn main() {
-    let args: Vec<String> = std::env::args().skip(1).collect();
+    let args: Vec<String> = std::env::args_os()
+        .skip(1)
+        .map(|a| a.to_string_lossy().into_owned())
+        .collect();
     let code = match run(&args) {
         Ok(code) => code,
         Err(err) => {
@@ -61,6 +64,10 @@ fn run(args: &[String]) -> Result<i32> {
     match decide(args, std::io::stdin().is_terminal()) {
         Action::Help => print!("{HELP}"),
         Action::Version => println!("{BIN} {}", cli::version_string(&corpus::load_corpus()?)),
+        Action::BadArg(arg) => {
+            eprintln!("{BIN}: unexpected argument '{arg}'\nUsage: {BIN} [--help | --version]");
+            return Ok(2);
+        }
         Action::TtyHint => eprint!("{TTY_HINT}"),
         Action::Run => serve()?,
     }
@@ -71,27 +78,24 @@ fn run(args: &[String]) -> Result<i32> {
 enum Action {
     Help,
     Version,
+    BadArg(String),
     TtyHint,
     Run,
 }
 
 /// An MCP client launches the bin with no flags and a piped stdin; a human
 /// typing its name in a terminal gets a hint instead of a silent process
-/// that looks hung. Flags win over the terminal check.
+/// that looks hung. The first argument decides, ahead of the terminal check;
+/// anything but a flag is bad input.
 // Considered clap; two flags with no option-arguments don't justify its help
 // layout on a bin whose help is a short note.
 fn decide(args: &[String], stdin_is_terminal: bool) -> Action {
-    for arg in args {
-        match arg.as_str() {
-            "--help" | "-h" => return Action::Help,
-            "--version" | "-V" => return Action::Version,
-            _ => {}
-        }
-    }
-    if stdin_is_terminal {
-        Action::TtyHint
-    } else {
-        Action::Run
+    match args.first().map(String::as_str) {
+        Some("--help" | "-h") => Action::Help,
+        Some("--version" | "-V") => Action::Version,
+        Some(other) => Action::BadArg(other.to_string()),
+        None if stdin_is_terminal => Action::TtyHint,
+        None => Action::Run,
     }
 }
 
@@ -196,7 +200,7 @@ mod tests {
     }
 
     #[test]
-    fn decide_flags_then_terminal_check() {
+    fn first_argument_decides_ahead_of_terminal_check() {
         let cases: &[(&[&str], bool, Action)] = &[
             (&["--help"], false, Action::Help),
             (&["-h"], false, Action::Help),
@@ -206,8 +210,14 @@ mod tests {
             (&[], false, Action::Run),
             (&["--help"], true, Action::Help),
             (&["--version"], true, Action::Version),
-            (&["--what"], false, Action::Run),
-            (&["--what"], true, Action::TtyHint),
+            (&["--what"], false, Action::BadArg("--what".into())),
+            (&["--what"], true, Action::BadArg("--what".into())),
+            (
+                &["--what", "--help"],
+                false,
+                Action::BadArg("--what".into()),
+            ),
+            (&["--help", "--what"], false, Action::Help),
             (&["--version", "--help"], false, Action::Version),
         ];
         for (list, tty, expected) in cases {
