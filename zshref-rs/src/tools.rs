@@ -484,6 +484,8 @@ mod tests {
                         json!(1.0),
                         json!(1.5),
                         json!(u32::MAX),
+                        json!(f64::from(u32::MAX)),
+                        json!(f64::from(u32::MAX) + 1.0),
                         json!(-1),
                         json!(u64::from(u32::MAX) + 1),
                     ],

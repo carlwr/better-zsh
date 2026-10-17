@@ -73,7 +73,7 @@ pub fn docs(index: &Index) -> Prose {
             ),
             "Omitting `category` can return multiple matches for overlapping syntax.",
             RESOLUTION,
-            "Input `key` and the returned `id` may therefore differ. `id` is shell-safe (printable ASCII, no whitespace); as `key`, with its `category`, it returns exactly that record.",
+            "Input `key` and the returned `id` may therefore differ; `id` fed back as `key`, with its `category`, returns exactly that record. `id` is shell-safe (printable ASCII, no whitespace).",
             indoc! {"
                 Output object properties:
                   matches[]          matched records
@@ -167,7 +167,7 @@ pub fn key() -> Prose {
         body![
             "zsh token or canonical id (lookup key)",
             format!(
-                "Accepts: raw zsh tokens (`AUTO_CD`, `[[`, `%1`, `<<<`, `> word`) and canonical ids from prior {} / {} (`autocd`).",
+                "Accepts: raw zsh tokens (`AUTO_CD`, `[[`, `%1`, `<<<`, `> word`) and canonical ids, with their `category`, from prior {} / {} (`autocd`).",
                 t.tool(ToolName::Search),
                 t.tool(ToolName::List)
             ),
