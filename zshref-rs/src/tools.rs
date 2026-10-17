@@ -476,12 +476,13 @@ mod tests {
                 .map(|f| (f.key.to_string(), sample(f.shape)))
                 .collect();
             for f in &tool.fields {
-                // Not probed: integral floats (see `Shape::Limit`).
                 let by_shape = match f.shape {
                     Shape::Text => vec![json!(""), json!("echo")],
                     Shape::Category => vec![json!(DOC_CATEGORIES[0]), json!("bogus")],
                     Shape::Limit => vec![
                         json!(0),
+                        json!(1.0),
+                        json!(1.5),
                         json!(u32::MAX),
                         json!(-1),
                         json!(u64::from(u32::MAX) + 1),

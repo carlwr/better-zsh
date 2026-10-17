@@ -11,6 +11,7 @@ use crate::corpus::{Corpus, DOC_CATEGORIES, DocCategory};
 use crate::resolver::ResolverFeedback;
 use crate::tools::envelope::ENVELOPE_KEYS;
 use crate::tools::{Field, ToolSet};
+use serde::de::{Error, Unexpected};
 use serde::{Deserialize, Deserializer};
 use serde_json::{Map, Value, json};
 use std::collections::BTreeSet;
@@ -35,6 +36,19 @@ pub fn non_null<'de, D: Deserializer<'de>, T: Deserialize<'de>>(
     T::deserialize(d).map(Some)
 }
 
+/// Serde side of `Shape::Limit`: what `input_schema` admits, integral floats
+/// (`1.0`) included.
+pub fn limit<'de, D: Deserializer<'de>>(d: D) -> Result<u32, D::Error> {
+    let n = serde_json::Number::deserialize(d)?;
+    match n.as_f64() {
+        Some(f) if f.fract() == 0.0 && (0.0..=f64::from(u32::MAX)).contains(&f) => Ok(f as u32),
+        _ => Err(D::Error::invalid_value(
+            Unexpected::Other(&n.to_string()),
+            &"an integer in u32 range",
+        )),
+    }
+}
+
 /// An input field's value shape: its JSON Schema, and what the CLI flag
 /// parses.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -43,8 +57,7 @@ pub enum Shape {
     /// Closed enum over the corpus' categories.
     Category,
     /// Defaults to `DEFAULT_LIMIT`. `maximum` is the decoder's `u32` range,
-    /// not a cap: a `limit` above the corpus size clamps silently. Integral
-    /// floats (`1.0`) pass the schema, not the decode.
+    /// not a cap: a `limit` above the corpus size clamps silently.
     Limit,
 }
 
