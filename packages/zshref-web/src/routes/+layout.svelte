@@ -20,7 +20,7 @@
     {@render children()}
   </main>
   <footer>
-    <span>powered by local <code>{MODEL_ID}</code> embeddings</span>
+    <span>powered by <code>{MODEL_ID}</code> embeddings</span>
   </footer>
 </div>
 
