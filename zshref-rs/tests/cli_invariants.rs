@@ -211,6 +211,45 @@ fn limit_above_corpus_clamps_silently() {
     }
 }
 
+/// A reader that closes stdout early (`zshref list | head`) ends the run
+/// quietly: exit 0, nothing on stderr — not a panic, not an error.
+#[test]
+fn closed_stdout_exits_zero_quietly() {
+    use std::io::Write;
+    use std::process::Stdio;
+
+    let cases: [(&[&str], &str); 3] = [
+        (&["list", "--limit", "999999"], ""),
+        (&["schema", "--pretty"], ""),
+        (&["batch"], "{\"tool\":\"zsh_list\",\"input\":{}}\n"),
+    ];
+    for (args, stdin) in cases {
+        let mut child = Command::new(BIN)
+            .args(args)
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .expect("spawn zshref");
+        drop(child.stdout.take());
+        let mut stdin_h = child.stdin.take().expect("stdin piped");
+        stdin_h.write_all(stdin.as_bytes()).expect("write stdin");
+        drop(stdin_h);
+        let out = child.wait_with_output().expect("wait zshref");
+        assert_eq!(
+            out.status.code(),
+            Some(0),
+            "{args:?}: stderr:\n{}",
+            String::from_utf8_lossy(&out.stderr)
+        );
+        assert!(
+            out.stderr.is_empty(),
+            "{args:?}: stderr not empty:\n{}",
+            String::from_utf8_lossy(&out.stderr)
+        );
+    }
+}
+
 /// Every (category, id) in the bundled corpus must round-trip through
 /// `docs --category C --key ID`; one `batch` invocation keeps the cost flat.
 #[test]

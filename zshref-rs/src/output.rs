@@ -8,13 +8,24 @@ use std::io::{IsTerminal, Write};
 
 /// Compact JSON (single line + `\n`) by default; `--pretty` → indented.
 /// `batch` never calls this — it writes its own compact lines per request.
-pub fn emit(value: &Value, pretty: bool) {
-    print!("{}", render(value, pretty));
+pub fn emit(value: &Value, pretty: bool) -> std::io::Result<()> {
+    let mut stdout = std::io::stdout().lock();
+    stdout.write_all(render(value, pretty).as_bytes())?;
+    stdout.flush()
 }
 
 /// Always emit indented JSON.
-pub fn emit_pretty(value: &Value) {
-    print!("{}", render(value, true));
+pub fn emit_pretty(value: &Value) -> std::io::Result<()> {
+    emit(value, true)
+}
+
+/// A stdout reader that stopped early (`zshref list | head`): not a failure,
+/// so the run ends quietly with `0` — as ripgrep does.
+pub fn is_broken_pipe(err: &anyhow::Error) -> bool {
+    err.chain().any(|e| {
+        e.downcast_ref::<std::io::Error>()
+            .is_some_and(|e| e.kind() == std::io::ErrorKind::BrokenPipe)
+    })
 }
 
 /// Render JSON exactly as `emit` writes it to stdout.
@@ -53,7 +64,8 @@ pub fn handle_clap_error(err: clap::Error) -> i32 {
         | ErrorKind::WrongNumberOfValues
         | ErrorKind::ArgumentConflict
         | ErrorKind::MissingRequiredArgument
-        | ErrorKind::MissingSubcommand => {
+        | ErrorKind::MissingSubcommand
+        | ErrorKind::InvalidUtf8 => {
             // `err.print()` goes through `anstream`, whose color gating is already right.
             let _ = err.print();
             if matches!(err.kind(), ErrorKind::InvalidSubcommand) {

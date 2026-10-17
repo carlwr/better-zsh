@@ -137,7 +137,7 @@ printf '%s\n' '{"tool":"zsh_docs","input":{"key":"AUTO_CD"}}' | zshref batch
 
 | Code | Meaning |
 |------|---------|
-| 0 | Well-formed invocation (including empty matches). |
+| 0 | Well-formed invocation (including empty matches); also when stdout's reader stops early (`\| head`). |
 | 1 | Unexpected internal error. |
 | 2 | Bad input (unknown flag, bad `--category` value, type mismatch, missing required). |
 

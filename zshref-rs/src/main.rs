@@ -7,6 +7,7 @@ use zshref::{cli, corpus};
 fn main() {
     let code = match run() {
         Ok(code) => code,
+        Err(err) if cli::is_broken_pipe(&err) => 0,
         Err(err) => {
             eprintln!("zshref: {err:#}");
             1

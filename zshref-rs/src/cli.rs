@@ -11,6 +11,8 @@ use anyhow::Result;
 use clap::{Arg, ArgAction, ArgMatches, Command, ValueHint};
 use serde_json::{Map, Value, json};
 
+pub use crate::output::is_broken_pipe;
+
 /// `--pretty` is accepted at any position on any subcommand, but is a no-op
 /// outside the JSON-emitting ones. `Arg::hide(true)` keeps a no-op `--pretty`
 /// out of `--help` yet not out of generated completions — hence two trees
@@ -327,11 +329,11 @@ pub fn dispatch(mut cmd: Command, tool_set: &ToolSet, corpus: &Corpus) -> Result
             Ok(0)
         }
         "info" => {
-            output::emit_pretty(&tools::info::run(corpus));
+            output::emit_pretty(&tools::info::run(corpus))?;
             Ok(0)
         }
         "schema" => {
-            output::emit(&tools::schema::run(tool_set), pretty);
+            output::emit(&tools::schema::run(tool_set), pretty)?;
             Ok(0)
         }
         "batch" => crate::batch::run(tool_set, corpus),
@@ -345,7 +347,7 @@ pub fn dispatch(mut cmd: Command, tool_set: &ToolSet, corpus: &Corpus) -> Result
                 .expect("subcommand registered from the tool set");
             let mut input = matches_to_input_value(tool, sub_matches);
             forward_root_category(&mut input, tool, &matches);
-            output::emit(&tool.call(&input, corpus)?, pretty);
+            output::emit(&tool.call(&input, corpus)?, pretty)?;
             Ok(0)
         }
     }
