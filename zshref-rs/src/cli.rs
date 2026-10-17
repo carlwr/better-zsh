@@ -8,6 +8,7 @@ use crate::tools::schema::Shape;
 use crate::tools::text::Target;
 use crate::tools::{self, Field, Tool, ToolName, ToolSet};
 use anyhow::Result;
+use clap::error::ErrorKind;
 use clap::{Arg, ArgAction, ArgMatches, Command, ValueHint};
 use serde_json::{Map, Value, json};
 
@@ -314,6 +315,19 @@ pub fn dispatch(mut cmd: Command, tool_set: &ToolSet, corpus: &Corpus) -> Result
     };
     let pretty = optional_flag(&matches, "pretty") || optional_flag(sub_matches, "pretty");
 
+    // Unlike `--pretty`, a root `--category` is never a no-op: rejected where
+    // nothing would read it.
+    let takes_category = tool_set
+        .by_stem(sub_name)
+        .is_some_and(|t| t.fields.iter().any(|f| f.key == "category"));
+    if matches.contains_id("category") && !takes_category {
+        let err = cmd.error(
+            ErrorKind::ArgumentConflict,
+            format!("'--category' does not apply to '{sub_name}'"),
+        );
+        return Ok(output::handle_clap_error(err));
+    }
+
     match sub_name {
         "completions" => {
             let shell: clap_complete::Shell = *sub_matches
@@ -346,7 +360,7 @@ pub fn dispatch(mut cmd: Command, tool_set: &ToolSet, corpus: &Corpus) -> Result
                 .by_stem(sub)
                 .expect("subcommand registered from the tool set");
             let mut input = matches_to_input_value(tool, sub_matches);
-            forward_root_category(&mut input, tool, &matches);
+            forward_root_category(&mut input, &matches);
             output::emit(&tool.call(&input, corpus)?, pretty)?;
             Ok(0)
         }
@@ -365,16 +379,13 @@ fn render_help(mut cmd: Command, subcommand: Option<&str>) -> i32 {
 }
 
 /// A root-position `--category` (`zshref --category=C docs …`) applies when
-/// the tool takes `category` and the subcommand position did not set it.
-/// clap binds a post-subcommand `--category` to the subcommand, so only the
-/// pre-subcommand form lands here.
-fn forward_root_category(input: &mut Value, tool: &Tool, root: &ArgMatches) {
+/// the subcommand position did not set it; `dispatch` has already rejected
+/// it for a subcommand without `category`. clap binds a post-subcommand
+/// `--category` to the subcommand, so only the pre-subcommand form lands here.
+fn forward_root_category(input: &mut Value, root: &ArgMatches) {
     let Ok(Some(category)) = root.try_get_one::<String>("category") else {
         return;
     };
-    if !tool.fields.iter().any(|f| f.key == "category") {
-        return;
-    }
     if let Value::Object(map) = input {
         map.entry("category".to_string())
             .or_insert_with(|| Value::String(category.clone()));

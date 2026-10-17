@@ -103,3 +103,17 @@ fn root_position_category_forwards_to_subcommand() {
         "sub-position --category must override root-position:\n{out}"
     );
 }
+
+#[test]
+fn root_position_category_is_bad_input_where_nothing_reads_it() {
+    for sub in ["info", "schema", "batch"] {
+        let out = Command::new(BIN)
+            .args(["--category=option", sub])
+            .output()
+            .expect("spawn zshref");
+        let stderr = String::from_utf8_lossy(&out.stderr);
+        assert_eq!(out.status.code(), Some(2), "{sub}; stderr:\n{stderr}");
+        assert!(out.stdout.is_empty(), "{sub}");
+        assert!(stderr.contains("'--category' does not apply"), "{stderr}");
+    }
+}
