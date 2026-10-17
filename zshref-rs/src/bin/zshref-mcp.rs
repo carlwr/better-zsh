@@ -18,6 +18,13 @@ use zshref::{cli, corpus, tools};
 
 const BIN: &str = "zshref-mcp";
 
+/// A macro, not a `const`: `concat!` takes literals only.
+macro_rules! usage {
+    () => {
+        "Usage: zshref-mcp [--help | --version]"
+    };
+}
+
 const HELP: &str = concat!(
     "\
 zshref-mcp — static zsh reference as Model Context Protocol tools
@@ -25,6 +32,10 @@ zshref-mcp — static zsh reference as Model Context Protocol tools
 An MCP server: speaks JSON-RPC over stdio and is launched by an MCP client
 (Claude Code, Claude Desktop, Cursor, Zed, VS Code, opencode, …), not run in
 a terminal.
+
+",
+    usage!(),
+    "
 
 Flags:
   -h, --help     print help
@@ -65,7 +76,7 @@ fn run(args: &[String]) -> Result<i32> {
         Action::Help => print!("{HELP}"),
         Action::Version => println!("{BIN} {}", cli::version_string(&corpus::load_corpus()?)),
         Action::BadArg(arg) => {
-            eprintln!("{BIN}: unexpected argument '{arg}'\nUsage: {BIN} [--help | --version]");
+            eprintln!("{BIN}: unexpected argument '{arg}'\n{}", usage!());
             return Ok(2);
         }
         Action::TtyHint => eprint!("{TTY_HINT}"),

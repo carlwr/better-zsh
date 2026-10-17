@@ -73,6 +73,13 @@ fn invalid_input_is_an_in_band_error() {
             r#"{"tool":"zsh_list","inptu":{"limit":1}}"#,
             "unknown field `inptu`",
         ),
+        ("[]", "request must be a JSON object"),
+        (
+            r#"{"tool":"zsh_list","input":null}"#,
+            "`input` must be a JSON object",
+        ),
+        (r#"{"tool":1}"#, "`tool` must be a string"),
+        (r#"{"input":{}}"#, "missing `tool` field"),
     ];
     for (req, fragment) in cases {
         let resp = batch(req);

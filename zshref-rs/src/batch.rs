@@ -40,8 +40,9 @@ fn handle_request(line: &str, tool_set: &ToolSet, corpus: &Corpus) -> Value {
     if let Some(k) = req.keys().find(|k| !matches!(k.as_str(), "tool" | "input")) {
         return err(format!("unknown field `{k}`, expected `tool` or `input`"));
     }
-    let name = match req.get("tool").and_then(Value::as_str) {
-        Some(s) => s,
+    let name = match req.get("tool") {
+        Some(Value::String(s)) => s,
+        Some(_) => return err("`tool` must be a string"),
         None => return err("missing `tool` field"),
     };
     let empty = Value::Object(Default::default());

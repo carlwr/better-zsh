@@ -461,8 +461,8 @@ mod tests {
         }
     }
 
-    /// Per field, a probe swapped into an otherwise valid input decodes iff
-    /// `input_schema` admits it.
+    /// Per field, absence or a probe value in an otherwise valid input
+    /// decodes iff `input_schema` admits it.
     #[test]
     fn decoders_agree_with_input_schemas_on_values() {
         for tool in &TOOLS.tools {
@@ -488,15 +488,20 @@ mod tests {
                         json!("1"),
                     ],
                 };
-                for probe in [json!(null), json!(true), json!([])]
+                let values = [json!(null), json!(true), json!([]), json!({})]
                     .into_iter()
                     .chain(by_shape)
-                {
+                    .map(Some);
+                for probe in std::iter::once(None).chain(values) {
                     let mut input = full.clone();
-                    input.insert(f.key.to_string(), probe.clone());
+                    match &probe {
+                        Some(v) => input.insert(f.key.to_string(), v.clone()),
+                        None => input.remove(f.key),
+                    };
                     let input = Value::Object(input);
                     let err = tool.call(&input, &CORPUS).err().map(|e| e.to_string());
-                    let at = format!("{name}.{} = {probe}", f.key);
+                    let shown = probe.as_ref().map_or("<absent>".into(), Value::to_string);
+                    let at = format!("{name}.{} = {shown}", f.key);
                     assert_eq!(schema.is_valid(&input), err.is_none(), "{at}: {err:?}");
                     if let Some(e) = err {
                         assert!(e.starts_with("invalid input: "), "{at}: {e}");

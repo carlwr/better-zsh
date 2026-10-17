@@ -7,12 +7,14 @@ read-when: designing the crate's tools, adapters, schemas or CLI
 
 Crate-owned rationale; corpus, resolvers and the TS↔Rust mirror: root `DESIGN.md`.
 
-## Output schemas
+## Schemas
 
 - Each tool's `outputSchema` is generated beside its implementation (`src/tools/schema.rs`).
 - `subKind` enums and the record total come from the loaded corpus; the feedback schema from `index.json`.
 - Cross-cutting "co-released schema precision" rationale: root `PRINCIPLES.md`.
-- Drift enforced at test time: every tool response the crate's test suite sees is validated against its schema (`tests/common/`).
+- Drift guards, at test time:
+  - `outputSchema` — every tool response the tests see is validated against it (`tests/common/`)
+  - `inputSchema` ⇔ the typed `Input` decode — `src/tools.rs` tests
 
 Per MCP spec, tools register `outputSchema`; responses include `structuredContent` for schema-aware clients while legacy clients still get JSON in `content[0].text`.
 
@@ -67,7 +69,7 @@ Cross-adapter notes:
 
 - **Corpus metadata** — `zshref info`; MCP `initialize` carries only the suite preamble (`instructions`) and the crate version.
 - **`zshref schema`** — one bundle, no per-tool subcommand: that would fight clap conventions.
-- **Output framing** — one JSON line per response (per request in `batch`), not per match:
+- **Output framing** — one JSON value per response (per request in `batch`), not one line per match:
   - `matchesTotal` and the shared `outputSchema` need the whole envelope
   - overrides `CLI-POLICY.md`'s line-per-record SHOULD
 - **Maintenance posture**:

@@ -197,7 +197,7 @@ pub fn schema_long(words: usize) -> String {
         Use for:
           codegen
           programmatic validation
-          `zshref batch` request shapes
+          `zshref batch` `input` shapes
 
         Size:
           ≈{words} words
