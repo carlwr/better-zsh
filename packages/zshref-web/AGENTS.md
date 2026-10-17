@@ -125,9 +125,13 @@ One route, `src/routes/+page.svelte`: the search, or the record its URL links to
   - not path routes: they need a host fallback and break relative asset paths; not hash routing: SvelteKit decodes the hash repeatedly, breaking ids with `%`, `/`, `?` or `#`
 - neither link part is a declared-stable contract: a zsh-core change to either breaks deployed links, which render not-found
   - a category rename surfaces as `categories.json` drift
+  - an id change surfaces only as lookup-golden drift (`UPDATE_LOOKUP_*`), for the ids those pin
   - not a link-only name per category: a second name for each, in a category-indexed table zsh-core would own (root `DESIGN.md`); guards category renames only
   - forwarding: deferred to the first breaking change after deploy
     - try first: on not-found, match the id alone across categories — covers category renames without an old-to-new table
+  - a deployed-ids guard: deferred to the deploy
+    - a committed list of the deployed ids, rewritten at each deploy: a vanished id fails a test — forward it, or accept the break
+    - not an `UPDATE_*` golden: regenerated on any drift, it would be a speed bump only
 - Back from a record restores the search as left: a SvelteKit snapshot, which the page relays
 
 ## Theming
@@ -155,6 +159,7 @@ One route, `src/routes/+page.svelte`: the search, or the record its URL links to
 
 - the SPA deploy: §"Hosting intent"
 - forwarding stale record links: §"Routes"
+- a deployed-ids guard: §"Routes"
 - a split into its own repo: no technical driver; the payoff: the SPA's toolchain and dependency churn (SvelteKit, Vite, transformers.js) leave the workspace lockfile and root `qa`
 
 ## See also

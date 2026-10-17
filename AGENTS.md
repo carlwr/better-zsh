@@ -47,7 +47,7 @@ Pushed tags and registry alphas exist to exercise CI and release workflows, not 
 
 ### zsh-core package imports
 
-The root of `@carlwr/zsh-core` is the corpus and its data model; import operations from their explicit subpaths so dependency arrows stay visible and rollups stay legible. Subpath inventory: `packages/zsh-core/AGENTS.md`.
+The root of `@carlwr/zsh-core` is the corpus and its data model, corpus-free helpers included (`normalizeOptName`); import operations on the corpus from their explicit subpaths so dependency arrows stay visible and rollups stay legible. Subpath inventory: `packages/zsh-core/AGENTS.md`.
 
 ### Never enumerate or count `DocCategory`
 
