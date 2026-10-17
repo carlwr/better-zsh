@@ -53,12 +53,14 @@ test("no unmarked script reaches a consent-marked one", () => {
 const neutralises = {
   // published state: fails legitimately until an upstream republish lands, so
   // nothing an ordinary run selects may reach it. Where any trigger but a
-  // dispatch or a tag push starts runs, only a dispatch-only job is out of
-  // reach; elsewhere the ordinary run is the act rehearsal, which `!env.ACT`
-  // skips.
+  // dispatch or a tag-only push starts runs, only a dispatch-only job is out
+  // of reach; elsewhere the ordinary run is the act rehearsal, which a bare
+  // `!env.ACT` step `if:` skips.
   REGISTRY: (step, carrier, everyday) =>
     everyday
-      ? /workflow_dispatch/.test(carrier.if ?? "")
+      ? /^(\$\{\{\s*)?github\.event_name == 'workflow_dispatch'(\s*\}\})?$/.test(
+          carrier.if ?? "",
+        )
       : /^(\$\{\{\s*)?!env\.ACT(\s*\}\})?$/.test(step.if ?? ""),
   // desktop takeover: a virtual display means there is no desktop to take over
   INTERACTIVE: step => /xvfb-run/.test(step.run),
@@ -67,7 +69,7 @@ const neutralises = {
 const tagOnlyPush = push =>
   push?.tags && !push.branches && !push["branches-ignore"]
 
-/** Whether any trigger but a dispatch or a tag push starts the workflow. */
+/** Whether any trigger but a dispatch or a tag-only push starts the workflow. */
 const isEveryday = on =>
   Object.entries(on).some(
     ([event, cfg]) =>
