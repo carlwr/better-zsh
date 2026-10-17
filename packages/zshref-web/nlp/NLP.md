@@ -40,7 +40,7 @@ Three layers, distinct jobs:
 
 - **A — bare lookup contract** (committed `nlp/data/lookup-contract.json`; `tests/nlp/node/lookup-contract.test.ts`) — deterministic must-pass. Every bare canonical surface form resolves via the lookup-map hard-promote. Pure corpus/resolver, no ranker.
 - **B — sentence eval** (`nlp/node/eval/`) — the tunable scoring source of truth. Two sources, one continuous discount metric:
-  - *curated* (`pnpm nlp:eval-sentence`) — the hand-authored sentence fixture; per-entry `targetDepth` + `weight` + `split`.
+  - *curated* (`pnpm nlp:eval-sentence`) — the hand-authored sentence fixture; per-item `targetDepth` + `weight`, per-entry `split`.
   - *mechanical* (`pnpm nlp:eval-mechanical`) — corpus-derived per-record entries (terse decorated forms + NL-question forms), uniform `targetDepth=1`; each has a single defined answer (one item → one vote).
   - blend `total = λ·curated_train + (1−λ)·mechanical` (λ=0.5); both evals and the dashboard print these numbers live.
   - the tuning trio (`pnpm nlp:tune-*`) moves rank-time knobs only (`BZ_TUNE_BASE` overrides; the keys: `nlp/node/eval/sweep.ts`), scores the blend, prints holdout as the overfit watch.
@@ -56,7 +56,7 @@ Metric — the scored unit is each (expectedSet item, query) pair; an entry just
 - `targetDepth`/`weight` are per-item, defaulting to fixture `default-target-depth`/`default-weight`.
 - every matching item is rewarded on its own rank — not just the best of a set, and with no diversity/anti-swamp dampening (unlike web rankers): the corpus is a fixed known set, all relevant records wanted near the top.
 - gain `g(rank; d, β) = (1+(1/d)^β)/(1+(rank/d)^β)`; per-category weighted mean over items → unweighted mean across categories.
-- β, `target_depth`, λ: fixed human-judgment values — never enter `Tuning`/`tuning.yaml`, never auto-tuned.
+- β, `targetDepth`, λ: fixed human-judgment values — never enter `Tuning`/`tuning.yaml`, never auto-tuned.
 
 ## No committed score snapshots
 

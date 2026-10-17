@@ -27,7 +27,7 @@ Static zsh knowledge is the product. We parse vendored Yodl into typed records d
   - `$commands`
   - `$aliases`
   - `$fpath` beyond system defaults
-- **Mental model:** "if we could bundle a zsh binary and run it in an isolated container, we would." System zsh is invoked only where shell execution is intrinsically required (diagnostics, completion enrichment); otherwise bundled/static.
+- **Mental model:** "if we could bundle a zsh binary and run it in an isolated container, we would." System zsh is invoked only where shell execution is intrinsically required (diagnostics); otherwise bundled/static.
 - **The extension's `analysis/`:** low-hanging fruit — what bounded, static logic can recognize. Everything else is silence.
 
 ### Resolver scope balance

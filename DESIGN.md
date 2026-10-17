@@ -295,7 +295,7 @@ Wiring:
 
 - **Corpus** — manual list from Yodl; source for:
   - completions
-  - MCP `list`/`search`
+  - `zsh_list` / `zsh_search`
   - extra semantic-token painting (with `cmd-head`) for words the analyzer treats only as command heads (`declare`, `typeset`, …)
 - **Analysis** — pinned `KEYWORD_HEADS` subset for command-position facts
   - narrower than corpus by design
@@ -376,7 +376,7 @@ The `zshref` crate's own rationale — tool schemas, adapters, fuzzy search, the
 
 The Rust crate re-implements one behaviour — the resolvers; the rest it consumes as baked JSON.
 
-- Markers (`// MIRRORED-IN:` / `// MIRROR-OF:`) on the mirrored pairs (resolvers, record-field projection): orientation, no mechanical check.
+- Markers (`// MIRRORED-IN:` / `// MIRROR-OF:`) on the mirrored pairs (`rg 'MIRRORED-IN|MIRROR-OF'`): orientation, no mechanical check.
 - Resolver conformance: the fixture zsh-core releases beside the corpus JSON (`packages/zsh-core/scripts/resolver-fixture.ts`), replayed in-crate by `zshref-rs/src/resolver.rs`.
 
 The mirror is accepted because it is bounded — it changes only with categories or normalization rules, and drifts visibly against the fixture (principle: `PRINCIPLES.md` §"Cross-project structure"). Rejected ways to remove it:

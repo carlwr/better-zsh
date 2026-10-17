@@ -13,6 +13,7 @@ The day `zshref` (this crate) leaves the `better-zsh` monorepo for its own repo,
   - the npm packages and the `binstall` `pkg-url` follow: `npm/assemble.mjs` reads the manifest
   - npm provenance rejects a `repository` other than the publishing repo: this move and the first release from the new repo land together
 - `build.rs`: drop the `monorepo` arm — vendored becomes the only data source
+  - `ZSHREF_DATA_SOURCE` loses its purpose: drop it, or keep `vendored` as its one value; setters: `rg ZSHREF_DATA_SOURCE` outside `*.md`
 - failure hints naming root make targets (`` rg -F '`make ' build.rs src scripts ``): follow the crate `Makefile`
 - `MIRROR-OF` markers name `packages/zsh-core/` paths: qualify them with the `better-zsh` repo
 - `project_url!` (`src/lib.rs`): the URL the binaries print; a repo name other than `zshref` changes it and every `rg -F github.com/carlwr/zshref` hit
@@ -31,7 +32,9 @@ The day `zshref` (this crate) leaves the `better-zsh` monorepo for its own repo,
 - `release-zshref.yml`: `check` drops `setup-node-pnpm`; `publish-npm` swaps it for `actions/setup-node`; before releasing from the new repo, re-point Trusted Publishing (repo; workflow filename if renamed): crates.io, and npm for both packages (`DISTRIBUTION.md`)
 - both workflows: drop the `zshref-rs/` path prefixes, `working-directory` and rust-cache `workspaces`
 - `.github/dependabot.yml`: the `cargo` entry moves out, pointed at `/`; the new repo needs its own `github-actions` entry
+  - the `actions/upload-artifact` major-version ignore exists for `release-zshref.yml`: it moves too
 - root `.gitattributes` and `.editorconfig`: the crate inherits both; copy them
+- root `.gitignore`: the crate's own lists build trees only; carry over the repo-generic entries
 - root `package.json`: `format:root` / `lint:root` drop `zshref-rs/npm`; the crate repo needs its own Biome config for `npm/`
 - Homebrew — `Formula/zshref.rb` already sits at the default tap scan path and pulls the crates.io `.crate`:
   - `homepage`, `head` → the new repo; until then `--HEAD` is broken (the monorepo root has no `Cargo.toml`)
@@ -52,7 +55,12 @@ The day `zshref` (this crate) leaves the `better-zsh` monorepo for its own repo,
   - the repo-root `Makefile`, `pnpm cli*`, `packages/zsh-core/`
   - root docs that stay behind, among `rg -oI '\b[A-Z-]+\.md\b' zshref-rs/*.md zshref-rs/src zshref-rs/tests | sort -u`
   - `DISTRIBUTION.md`'s `gh attestation verify --repo`: releases cut before extraction stay attested to `better-zsh`
-- monorepo-root conventions (maintainer-doc frontmatter, `CLAUDE.md` → `AGENTS.md` symlink, commit rules, md style): `AGENTS.md` adopts or drops each; their lint scripts stay behind
+- monorepo-root conventions: `AGENTS.md` adopts or drops each; their lint scripts stay behind
+  - maintainer-doc frontmatter
+  - `CLAUDE.md` → `AGENTS.md` symlink
+  - commit rules
+  - md style
+  - code rules: no `DocCategory` enumeration; mirror renames
 - this file: deleted
 
 ## Monorepo side
@@ -67,6 +75,7 @@ Missed by that query — the make-target wrappers:
 ## Open until then
 
 - whether a thin `zshref-mcp` repo is wanted beside `zshref`
+- root `skills/cli-ux-probe/`: CLI-agnostic, but this crate is its only target — moves with it (plus its per-tool links), stays, or gets its own repo
 - history: carried over (`git filter-repo --subdirectory-filter zshref-rs`; prune tags to `zshref-v*`) or a fresh start
 - names: `REPO-SHAPE.md`
 - tag prefix: keep `zshref-v*` or move to `v*` — both workflows, the `binstall` `pkg-url` and `DISTRIBUTION.md` follow

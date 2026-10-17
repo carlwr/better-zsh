@@ -41,7 +41,7 @@ One crate with a lib target and two bins; rejected shapes:
 
 `zsh_search` walks four tiers — exact → resolver → prefix → fuzzy.
 
-- Earlier tiers score `1.0`; fuzzy is `< 1.0`. `SearchMatch.score` is always set so consumers know the tier.
+- Earlier tiers score `1.0`; fuzzy is `< 1.0` — the tier is recoverable from the score (`src/tools/search.rs`).
 - Id-only tools (`zsh_search`, `zsh_list`) omit rendered markdown; compose with `zsh_docs` for bodies.
 
 Why fuzzy at all:

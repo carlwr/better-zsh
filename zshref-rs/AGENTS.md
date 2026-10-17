@@ -14,7 +14,7 @@ One floor: `rust-version` in `Cargo.toml` — what `cargo install zshref` needs,
 
 ## TS↔Rust mirror discipline
 
-`// MIRRORED-IN:` (TS) ↔ `// MIRROR-OF:` (Rust) mark what this crate re-implements from `packages/zsh-core/` (resolvers, record-field projection): orientation only, no checker; rename rule: root `AGENTS.md`. A resolver change lands TS-side first; the conformance fixture (`DATA-SYNC.md`) then names every input the Rust side must follow.
+`// MIRRORED-IN:` (TS) ↔ `// MIRROR-OF:` (Rust) mark what this crate re-implements from `packages/zsh-core/` (`rg 'MIRROR-OF'`): orientation only, no checker; rename rule: root `AGENTS.md`. A resolver change lands TS-side first; the conformance fixture (`DATA-SYNC.md`) then names every input the Rust side must follow.
 
 ## Iteration
 

@@ -20,7 +20,7 @@ One tag, `zshref-v<version>`, feeds every channel.
 - npm `@carlwr/zshref` — every target's binaries in one package, a launcher per bin (`npm/launch.js`)
 - npm `@carlwr/zshref-mcp` — bin `zshref-mcp` over an exact-version dependency on the fat package; the `npx -y` form MCP clients want
 
-Targets: the workflow's build matrix. The same list sits in `tests/msrv.rs` and `scripts/third-party-notices` — three languages, no practical single source; a target change touches all three. macOS x64 stays while it costs nothing (cross-built on the arm64 runner; ~26 % of macOS Homebrew installs at the time of writing) and goes with its GitHub runner, expected around fall 2027. No musl: no request.
+Targets: the workflow's build matrix. The same list sits in `tests/msrv.rs` and `scripts/third-party-notices` — three languages, no practical single source; a target change touches all three, plus the platform lists in `README.md` and `npm/zshref/README.md`. macOS x64 stays while it costs nothing (cross-built on the arm64 runner; ~26 % of macOS Homebrew installs at the time of writing) and goes with its GitHub runner, expected around fall 2027. No musl: no request.
 
 ## Decisions
 
@@ -42,7 +42,7 @@ Targets: the workflow's build matrix. The same list sits in `tests/msrv.rs` and 
 
 ## Rehearsal
 
-`make cli-npm-check` and `make cli-release-act` — what each covers: the repo-root `Makefile`. Only a real tag exercises:
+`make cli-npm-check` and `make cli-release-act` — what each covers: `scripts/npm-check`'s header; the repo-root `Makefile`'s comment on `cli-release-act`. Only a real tag exercises:
 
 - the macOS and Windows rows (Rosetta on the runner, `7z`)
 - OIDC: npm provenance, crates.io token exchange

@@ -6,9 +6,9 @@ Improved zsh shellscript editing for VS Code. Layers structured zsh knowledge �
 
 ## Features
 
-- **Hovers** for documented zsh syntax: builtins, precommand modifiers, shell options (also the `set -e` / `-o` forms), conditional operators, redirections, process substitution, special parameters, and complex commands / reserved words — plus the `#` docstring of a function defined in the file. Content comes from a structured reference, not a regex-scraped manpage.
+- **Hovers** for documented zsh syntax: builtins, precommand modifiers, shell options (also the `set -e` / `-o` forms), conditional operators, redirections, process substitution, special parameters, and complex commands / reserved words — plus the `#` docstring of a function defined in the file (the comment block directly above its definition, else directly below). Content comes from a structured reference, not a regex-scraped manpage.
 - **Completions** over the same structured reference, context-aware: shell options after `setopt` / `unsetopt`, conditional operators inside `[[ … ]]`, otherwise builtins, reserved words, precommand modifiers, special parameters — plus the functions (with their `#` docstring) and parameters of the file itself.
-- **Semantic tokens** that refine the vendored TM grammar where zsh needs it (reserved words such as `typeset` as keywords, known builtins as `support.function.builtin.shell`).
+- **Semantic tokens** that refine the vendored TM grammar where zsh needs it (reserved words such as `typeset` as `keyword`; known builtins as `function.defaultLibrary`, TextMate fallback `support.function.builtin.shell`). Theme overrides: `editor.semanticTokenColorCustomizations`, e.g. `"keyword:zsh"`.
 - **Go-to-definition, references, rename, highlights and outline** for functions defined in the file; **workspace symbols** across open zsh files.
 - **Links** on `source` / `.` paths.
 - **Optional diagnostics** via `zsh -n` (syntax check), on open, save, and while typing.
@@ -22,6 +22,8 @@ Opens as Zsh:
 - a file no other language claims by name whose first line declares zsh: a `zsh` shebang, `#compdef` / `#autoload`, `emulate -L zsh`, or a vim/emacs modeline
 
 Your own function dirs: `files.associations`, e.g. `"**/.zsh/functions/*": "zsh"`.
+
+These files get the language ID `zsh`, not VS Code's built-in `shellscript`: `[shellscript]` settings and extensions targeting `shellscript` no longer apply to them. To keep a file as `shellscript`, map it there in `files.associations`.
 
 ## Install
 
@@ -56,7 +58,7 @@ What the extension does on your machine, and what it never does. "Pinned" means 
   - argument arrays, never a shell command line; file text travels as data — a private temp file, deleted after the check
   - 5 s timeout, 1 MiB output cap
   - one spawn site in the extension's source. Pinned.
-- **A repository cannot redirect the spawn.** `betterZsh.zshPath` is machine-scoped, so workspace settings cannot set it, and relative paths are rejected. `"off"` is a kill switch no workspace can undo; `diagnostics.enabled`, which a workspace can set, is not.
+- **A repository cannot redirect the spawn.** `betterZsh.zshPath` is machine-scoped, so workspace settings cannot set it, and relative paths are rejected. `"off"` is a kill switch no workspace can undo; `diagnostics.enabled`, which a workspace can set, is not. Per machine: Settings Sync does not carry it, and a remote window (SSH, WSL, container) reads the remote's own settings — which a dev container's `devcontainer.json` can set.
 - **Restricted Mode (Workspace Trust): limited.** In an untrusted workspace the host zsh is not spawned, so no diagnostics; everything else keeps working.
 - **Filesystem.** Reads: open documents and the bundled data. Existence checks: the zsh binary, and `source` targets — never network paths. Writes: the temp file above.
 - **Logs** (Output › Better Zsh): the extension's version banner, the resolved zsh path, the `zshPath` value, error codes; at the *Debug* log level, each `zsh -n` run's outcome (`ok` or the error's line number). Never file contents or the environment, at any level.

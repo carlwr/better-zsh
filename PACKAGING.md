@@ -5,7 +5,7 @@ read-when: build, packaging, release patterns
 
 # PACKAGING.md
 
-Universal patterns for build, packaging, and release. Project-specific package names and env-var names live in `AGENTS.md`.
+Universal patterns for build, packaging, and release. Project-specific bindings: `AGENTS.md`; package names: `REPO-SHAPE.md`.
 
 ## Makefile conventions
 
