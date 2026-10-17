@@ -66,7 +66,7 @@ Rendered reference text is shared by extension hovers, tools, and the CLI. Treat
 - a package declares what its own code, tests and scripts import or invoke
 - the root declares:
   - the toolchain root config owns: Biome, TypeScript
-    - packages invoke these undeclared; a package importing one declares it
+    - packages invoke these undeclared; a package importing one also declares it
   - what root scripts use
 - a version shared across manifests: in the `pnpm-workspace.yaml` catalog, referenced as `catalog:`
 
