@@ -14,7 +14,7 @@ Universal patterns for build, packaging, and release. Project-specific bindings:
 
 ## Release wiring
 
-`.github/workflows/release-*.yml` own each package's trigger (the `on:` block) and auth prerequisites (the header). Don't restate them.
+`.github/workflows/release-*.yml` own each package's trigger (the `on:` block), auth prerequisites and act rehearsal (the header). Don't restate them.
 
 Invariants those headers don't carry:
 

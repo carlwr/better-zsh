@@ -92,5 +92,4 @@ cli-release-act:
 	./scripts/test-integration-act \
 	  --input dry_run=true \
 	  --matrix target:aarch64-unknown-linux-gnu \
-	  --platform ubuntu-24.04-arm=catthehacker/ubuntu:act-latest \
-	  --artifact-server-path .aux/act-artifacts
+	  --platform ubuntu-24.04-arm=catthehacker/ubuntu:act-latest

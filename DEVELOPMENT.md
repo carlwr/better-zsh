@@ -15,7 +15,7 @@ A resolver change the mirror does not follow fails `make cli-test`. How the arti
 
 ## Integration tests via `act`
 
-The extension's `test:integration` runs the `integration` CI job through `act` (`scripts/test-integration-act`).
+The extension's `test:integration` runs the `integration` CI job through `act` (`scripts/test-integration-act`). Release workflows rehearse the same way, as dry-run dispatches; each header names its entry point.
 
 Host requirements:
 - `act`

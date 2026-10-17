@@ -11,6 +11,8 @@ name: Release VS Code extension
 # `package` runs the workspace's dependency code without secrets; `publish`
 # holds them, installs the extension's locked dependencies without lifecycle
 # scripts, and runs only the publish tools.
+#
+# Local rehearsal, act: `pnpm --filter better-zsh release:act`.
 
 on:
   push:
@@ -78,7 +80,7 @@ jobs:
         run: pnpm vsix $FLAG
 
       - name: Upload VSIX as workflow artifact
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
         with:
           name: better-zsh-vsix
           path: packages/vscode-better-zsh/better-zsh.vsix

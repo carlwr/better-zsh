@@ -32,7 +32,7 @@ The day `zshref` (this crate) leaves the `better-zsh` monorepo for its own repo,
 - `release-zshref.yml`: `check` drops `setup-node-pnpm`; `publish-npm` swaps it for `actions/setup-node`; before releasing from the new repo, re-point Trusted Publishing (repo; workflow filename if renamed): crates.io, and npm for both packages (`DISTRIBUTION.md`)
 - both workflows: drop the `zshref-rs/` path prefixes, `working-directory` and rust-cache `workspaces`
 - `.github/dependabot.yml`: the `cargo` entry moves out, pointed at `/`; the new repo needs its own `github-actions` entry
-  - the `actions/upload-artifact` major-version ignore exists for `release-zshref.yml`: it moves too
+  - copy the `actions/upload-artifact` major-version ignore: release workflows on both sides rehearse under act
 - root `.gitattributes` and `.editorconfig`: the crate inherits both; copy them
 - root `.gitignore`: the crate's own lists build trees only; carry over the repo-generic entries
 - root `package.json`: `format:root` / `lint:root` drop `zshref-rs/npm`; the crate repo needs its own Biome config for `npm/`

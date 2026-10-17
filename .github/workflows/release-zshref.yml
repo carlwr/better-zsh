@@ -105,9 +105,6 @@ jobs:
         run: git diff --exit-code -- zshref-rs/Cargo.lock
 
       # The build matrix has no Node: the vendored data travels as an artifact.
-      # upload-artifact v5, here and in `build`: the newest whose protocol act's
-      # artifact server accepts (`make cli-release-act`; v6, v7 fail under act
-      # 0.2.89). Downloads are unaffected.
       - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
         with:
           name: vendored-data

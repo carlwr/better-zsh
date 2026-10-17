@@ -13,6 +13,9 @@ wf=.github/workflows/${ACT_WORKFLOW:-ci.yml}
 job=${ACT_JOB:-integration}
 # what `ubuntu-latest` maps to: act's documented medium image
 img=${ACT_RUNNER_IMAGE:-catthehacker/ubuntu:act-latest}
+# act's artifact store, wiped before each run: act reuses run id 1, so a stale
+# upload could satisfy a download
+artifacts=.aux/act-artifacts
 
 die() { print -u2 -r -- "$@"; exit 1; }
 
@@ -53,10 +56,13 @@ args+=(
 	ubuntu-latest=$img
 	--container-daemon-socket
 	-
+	--artifact-server-path
+	$artifacts
 )
 
 if [[ -n $arch ]]; then
 	args+=(--container-architecture $arch)
 fi
 
+rm -rf $artifacts
 exec act "${args[@]}" "$@"

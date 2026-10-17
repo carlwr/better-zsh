@@ -48,6 +48,7 @@
     "check": "pnpm typecheck && pnpm typecheck:vscode-test && pnpm lint",
     "test": "vitest run",
     "test:integration": "../../scripts/test-integration-act",
+    "release:act": "ACT_WORKFLOW=release-extension.yml ACT_JOB=publish ACT_EVENT=workflow_dispatch ../../scripts/test-integration-act --input dry_run=true",
     "testINTERACTIVE:electron": "pnpm build && tsc -p tsconfig.vscode-test.json && scripts/testINTERACTIVE-electron",
     "testINTERACTIVE:electron-bundled": "pnpm build && scripts/package-vsix ./better-zsh.vsix && tsc -p tsconfig.vscode-test.json && scripts/testINTERACTIVE-bundled",
     "vsix": "pnpm build && export BZ_SKIP_UPSTREAM=1 && pnpm check && pnpm test && scripts/package-vsix ./better-zsh.vsix",
