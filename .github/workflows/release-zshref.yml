@@ -112,6 +112,12 @@ jobs:
           retention-days: 1
           if-no-files-found: error
 
+      # rust-cache's post-step cleanup descends into the unpacked crate and
+      # errors on its `tests/` (Swatinem/rust-cache#387); it caches no file
+      # there anyway. Drop once that fix ships.
+      - name: Drop the unpacked crate
+        run: rm -rf zshref-rs/target/package
+
   build:
     needs: check
     strategy:
