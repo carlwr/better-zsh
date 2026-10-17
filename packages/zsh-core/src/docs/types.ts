@@ -111,7 +111,7 @@ export interface OptionDoc extends DocRecordBase<"option"> {
 }
 
 /** Parsed unary `[[ ... ]]` conditional operator docs. */
-export interface UnaryCondOpDoc extends DocRecordBase<"conditional_op"> {
+export interface UnaryConditionalOpDoc extends DocRecordBase<"conditional_op"> {
   readonly operands: readonly [string]
   readonly desc: string
   readonly subKind: "unary"
@@ -119,7 +119,8 @@ export interface UnaryCondOpDoc extends DocRecordBase<"conditional_op"> {
 }
 
 /** Parsed binary `[[ ... ]]` conditional operator docs. */
-export interface BinaryCondOpDoc extends DocRecordBase<"conditional_op"> {
+export interface BinaryConditionalOpDoc
+  extends DocRecordBase<"conditional_op"> {
   readonly operands: readonly [string, string]
   readonly desc: string
   readonly subKind: "binary"
@@ -127,7 +128,7 @@ export interface BinaryCondOpDoc extends DocRecordBase<"conditional_op"> {
 }
 
 /** Parsed `[[ ... ]]` conditional operator docs. */
-export type CondOpDoc = UnaryCondOpDoc | BinaryCondOpDoc
+export type ConditionalOpDoc = UnaryConditionalOpDoc | BinaryConditionalOpDoc
 
 /**
  * One row of a nested item list inside a record body — a builtin's flag, a
@@ -181,7 +182,7 @@ export interface BuiltinDoc extends DocRecordBase<"builtin"> {
 }
 
 /** Parsed precommand modifier doc block. */
-export interface PrecmdDoc extends DocRecordBase<"precmd_modifier"> {
+export interface PrecmdModifierDoc extends DocRecordBase<"precmd_modifier"> {
   readonly synopsis: readonly [string, ...string[]]
   readonly desc: string
 }
@@ -292,7 +293,9 @@ export interface ComplexCommandDoc
  * Redirection. `id` is `sig` with whitespace replaced by `_` (`"> word"` →
  * `">_word"`, `"<<[-] word"` → `"<<[-]_word"`); `display` is `sig`.
  */
-export interface RedirDoc extends DocRecordBase<"redirection">, SyntaxDocBase {
+export interface RedirectionDoc
+  extends DocRecordBase<"redirection">,
+    SyntaxDocBase {
   /** Grouping token; multiple redirection docs share a `groupOp`. */
   readonly groupOp: string
 }

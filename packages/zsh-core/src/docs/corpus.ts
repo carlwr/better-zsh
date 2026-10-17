@@ -11,7 +11,7 @@ import {
 } from "./taxonomy.ts"
 import type {
   BuiltinDoc,
-  CondOpDoc,
+  ConditionalOpDoc,
   Documented,
   MathfuncDoc,
   SpecialParamDoc,
@@ -109,7 +109,7 @@ const categoryLoader: CategoryLoader = {
   comp_utility: gn => parseCompUtils(gn("compsys.yo")),
 }
 
-function loadCondOps(gn: GetNodes): readonly CondOpDoc[] {
+function loadCondOps(gn: GetNodes): readonly ConditionalOpDoc[] {
   // Completion condition codes in compwid.yo §"Completion Condition Codes"
   // (`-after`, `-between`, `-prefix`, `-suffix`) need a `zsh/complete` tag
   // they don't carry upstream.

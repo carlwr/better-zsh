@@ -43,7 +43,7 @@ import {
   type DocRecordMap,
   docCategories,
 } from "./taxonomy.ts"
-import type { Documented, RedirDoc } from "./types.ts"
+import type { Documented, RedirectionDoc } from "./types.ts"
 
 // --- Resolvers --------------------------------------------------------------
 
@@ -142,7 +142,10 @@ function groupOpPrefixLen(groupOp: string, text: string): number {
   return ops.find(op => text.startsWith(op))?.length ?? 0
 }
 
-function redirTailMatches({ sig, groupOp }: RedirDoc, tail: string): boolean {
+function redirTailMatches(
+  { sig, groupOp }: RedirectionDoc,
+  tail: string,
+): boolean {
   const pat =
     groupOp === "<<[-]"
       ? String.raw`\s*\S.*`

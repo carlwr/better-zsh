@@ -52,6 +52,6 @@ export const idPattern: RegExp = /^[\x21-\x7E]+$/
 /** `DocRecordBase.display`: printable ASCII, non-empty. */
 export const displayPattern: RegExp = /^[\x20-\x7E]+$/
 
-/** A redirection's `id` from its sig (whitespace → `_`). See `RedirDoc`. */
+/** A redirection's `id` from its sig (whitespace → `_`). See `RedirectionDoc`. */
 export const redirSlugFromSig = (sig: string): string =>
   sig.replace(/\s+/g, "_")

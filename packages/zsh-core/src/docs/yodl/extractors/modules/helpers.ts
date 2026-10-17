@@ -8,7 +8,7 @@ import { identity } from "../../../brands.ts"
 import type { ModuleName } from "../../../taxonomy.ts"
 import type {
   BuiltinDoc,
-  CondOpDoc,
+  ConditionalOpDoc,
   Documented,
   SpecialParamDoc,
   SpecialParamScope,
@@ -26,7 +26,7 @@ import {
   normalizeHeader,
   trimmedTtTexts,
 } from "../../core/text.ts"
-import { buildCondOpDoc, parseCondHeader } from "../cond-ops.ts"
+import { buildConditionalOpDoc, parseCondHeader } from "../cond-ops.ts"
 import { splitFlagBody } from "../flag-section.ts"
 import { splitParamBody } from "../param-keys.ts"
 
@@ -214,7 +214,7 @@ export type RegionSpec =
 export interface ModuleRegionResult {
   readonly builtins: readonly BuiltinDoc[]
   readonly params: readonly SpecialParamDoc[]
-  readonly condOps: readonly CondOpDoc[]
+  readonly condOps: readonly ConditionalOpDoc[]
 }
 
 /**
@@ -232,7 +232,7 @@ export function parseModuleByRegions(
   const found = extractTopLevelItemRegions(asNodes(yo))
   const builtins: BuiltinDoc[] = []
   const params: SpecialParamDoc[] = []
-  const condOps: CondOpDoc[] = []
+  const condOps: ConditionalOpDoc[] = []
   regions.forEach((spec, i) => {
     const region = found[i]
     if (!region) return
@@ -259,10 +259,14 @@ export function parseModuleByRegions(
 export function parseModuleCondOps(
   yo: YodlSrc,
   moduleName: ModuleName,
-): readonly CondOpDoc[] {
+): readonly ConditionalOpDoc[] {
   return collectAliasedEntries(extractItems(yo, 1), h =>
     parseCondHeader(h, MODULE_OP_CHAR_RE),
   ).map(a =>
-    buildCondOpDoc(a.head, normalizeBody(a.entry.body ?? []), moduleName),
+    buildConditionalOpDoc(
+      a.head,
+      normalizeBody(a.entry.body ?? []),
+      moduleName,
+    ),
   )
 }

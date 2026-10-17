@@ -10,7 +10,7 @@ import type {
   BuiltinDoc,
   ComplexCommandDoc,
   CompUtilityDoc,
-  CondOpDoc,
+  ConditionalOpDoc,
   Documented,
   Emulation,
   FlagGroup,
@@ -278,7 +278,7 @@ function paramExpnTitle(doc: ParamExpnDoc): string {
   return `${bt(doc.sig)}    _(${doc.subKind}${formIdx})_`
 }
 
-function sigCond(cop: CondOpDoc): string {
+function sigCond(cop: ConditionalOpDoc): string {
   const op = bt(cop.id)
   return cop.subKind === "unary"
     ? `${op} *${cop.operands[0]}*`
@@ -361,7 +361,7 @@ function isTrivialSynopsis(synopsis: readonly string[], name: string): boolean {
   return isSingle(synopsis) && synopsis[0].trim() === name
 }
 
-function canonicalCondForm(cop: CondOpDoc): string {
+function canonicalCondForm(cop: ConditionalOpDoc): string {
   return cop.subKind === "unary"
     ? `[[ ${cop.id} ${cop.operands[0]} ]]`
     : `[[ ${cop.operands[0]} ${cop.id} ${cop.operands[1]} ]]`
@@ -543,7 +543,7 @@ function aliasTargetDisplay(
   return aliasOf.negated ? `NO_${display}` : display
 }
 
-function mdCondOp(cop: CondOpDoc, corpus: DocCorpus): string {
+function mdCondOp(cop: ConditionalOpDoc, corpus: DocCorpus): string {
   return docBlock(fmtOptRefsInMd(cop.desc, corpus), ...modulePart(cop.module))
 }
 

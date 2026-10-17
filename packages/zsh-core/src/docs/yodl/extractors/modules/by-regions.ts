@@ -1,6 +1,10 @@
 import type { CorpusYodlFile } from "../../../source-files.ts"
 import type { ModuleName } from "../../../taxonomy.ts"
-import type { BuiltinDoc, CondOpDoc, SpecialParamDoc } from "../../../types.ts"
+import type {
+  BuiltinDoc,
+  ConditionalOpDoc,
+  SpecialParamDoc,
+} from "../../../types.ts"
 import type { YNodeSeq } from "../../core/nodes.ts"
 import {
   mergeBuiltinsByName,
@@ -74,7 +78,9 @@ export const extractRegionParams = (gn: GetNodes): readonly SpecialParamDoc[] =>
     m => parseRegion(gn, m).params,
   )
 
-export const extractRegionCondOps = (gn: GetNodes): readonly CondOpDoc[] =>
+export const extractRegionCondOps = (
+  gn: GetNodes,
+): readonly ConditionalOpDoc[] =>
   REGION_MODULES.filter(m => hasKind(m, "condOps")).flatMap(
     m => parseRegion(gn, m).condOps,
   )

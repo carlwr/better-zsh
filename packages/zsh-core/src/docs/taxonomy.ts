@@ -4,7 +4,7 @@ import type {
   BuiltinDoc,
   ComplexCommandDoc,
   CompUtilityDoc,
-  CondOpDoc,
+  ConditionalOpDoc,
   DocRecordBase,
   Documented,
   GlobFlagDoc,
@@ -17,10 +17,10 @@ import type {
   OptionDoc,
   ParamExpnDoc,
   ParamExpnFlagDoc,
-  PrecmdDoc,
+  PrecmdModifierDoc,
   ProcessSubstDoc,
   PromptEscapeDoc,
-  RedirDoc,
+  RedirectionDoc,
   ReservedWordDoc,
   SpecialFunctionDoc,
   SpecialParamDoc,
@@ -161,13 +161,13 @@ export const docCategoryLabels: Readonly<Record<DocCategory, string>> = {
 
 export interface DocRecordMap {
   option: OptionDoc
-  conditional_op: CondOpDoc
+  conditional_op: ConditionalOpDoc
   builtin: BuiltinDoc
-  precmd_modifier: PrecmdDoc
+  precmd_modifier: PrecmdModifierDoc
   special_param: SpecialParamDoc
   complex_command: ComplexCommandDoc
   reserved_word: ReservedWordDoc
-  redirection: RedirDoc
+  redirection: RedirectionDoc
   process_subst: ProcessSubstDoc
   param_expn: ParamExpnDoc
   subscript_flag: SubscriptFlagDoc

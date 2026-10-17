@@ -1,6 +1,6 @@
 import { identity } from "../../brands.ts"
 import type { ModuleName } from "../../taxonomy.ts"
-import type { CondOpDoc } from "../../types.ts"
+import type { ConditionalOpDoc } from "../../types.ts"
 import { extractItems, flattenAliasedEntries } from "../core/doc.ts"
 import type { YodlSrc } from "../core/nodes.ts"
 import { extractTokens } from "../core/text.ts"
@@ -38,11 +38,11 @@ export function parseCondHeader(
 }
 
 // Branches per arity so `operands` and `subKind` stay correlated.
-export function buildCondOpDoc(
+export function buildConditionalOpDoc(
   parsed: CondHeader,
   desc: string,
   module?: ModuleName,
-): CondOpDoc {
+): ConditionalOpDoc {
   const id = identity("conditional_op", parsed.op)
   return parsed.arity === "unary"
     ? {
@@ -61,8 +61,8 @@ export function buildCondOpDoc(
       }
 }
 
-export function parseCondOps(yo: YodlSrc): readonly CondOpDoc[] {
+export function parseCondOps(yo: YodlSrc): readonly ConditionalOpDoc[] {
   return flattenAliasedEntries(extractItems(yo), parseCondHeader, (h, desc) =>
-    buildCondOpDoc(h, desc),
+    buildConditionalOpDoc(h, desc),
   )
 }

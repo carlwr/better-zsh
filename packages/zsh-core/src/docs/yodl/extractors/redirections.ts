@@ -1,5 +1,5 @@
 import { identity, redirSlugFromSig } from "../../brands.ts"
-import type { RedirDoc } from "../../types.ts"
+import type { RedirectionDoc } from "../../types.ts"
 import {
   extractItems,
   extractSectionBody,
@@ -10,7 +10,7 @@ import { normalizeHeader } from "../core/text.ts"
 
 const SECTION = "Redirection"
 
-export function parseRedirs(yo: YodlSrc): readonly RedirDoc[] {
+export function parseRedirs(yo: YodlSrc): readonly RedirectionDoc[] {
   const section = extractSectionBody(yo, SECTION)
   return flattenAliasedEntries(
     extractItems(section.length > 0 ? section : yo, 1),

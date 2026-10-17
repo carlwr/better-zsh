@@ -25,17 +25,17 @@ import type {
   BuiltinDoc,
   ComplexCommandDoc,
   CompUtilityDoc,
-  CondOpDoc,
+  ConditionalOpDoc,
   JobSpecDoc,
   KeymapDoc,
   MathfuncDoc,
   OptFlagAlias,
   OptionDoc,
   ParamExpnDoc,
-  PrecmdDoc,
+  PrecmdModifierDoc,
   ProcessSubstDoc,
   PromptEscapeDoc,
-  RedirDoc,
+  RedirectionDoc,
   ReservedWordDoc,
   SpecialFunctionDoc,
   SpecialParamDoc,
@@ -69,18 +69,18 @@ const zleOpt: OptionDoc = {
   desc: "d:zle",
 }
 
-const cond = <A extends CondOpDoc["subKind"]>(
+const cond = <A extends ConditionalOpDoc["subKind"]>(
   subKind: A,
   op: string,
-  operands: Extract<CondOpDoc, { subKind: A }>["operands"],
+  operands: Extract<ConditionalOpDoc, { subKind: A }>["operands"],
   desc: string,
-): CondOpDoc =>
+): ConditionalOpDoc =>
   ({
     ...identity("conditional_op", op),
     operands,
     desc,
     subKind,
-  }) as CondOpDoc
+  }) as ConditionalOpDoc
 
 const cu = cond("unary", "-a", ["file"], "d:u")
 const cb = cond("binary", "-nt", ["left", "right"], "d:b")
@@ -90,12 +90,12 @@ const bi: BuiltinDoc = {
   synopsis: ["echo [ -n ] [ arg ... ]"],
   desc: "d:bi",
 }
-const pc: PrecmdDoc = {
+const pc: PrecmdModifierDoc = {
   ...identity("precmd_modifier", "noglob"),
   synopsis: ["noglob command arg ..."],
   desc: "d:pc",
 }
-const rd: RedirDoc = {
+const rd: RedirectionDoc = {
   ...identity("redirection", ">>_word", ">> word"),
   groupOp: ">>",
   sig: ">> word",
