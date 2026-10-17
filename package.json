@@ -44,7 +44,7 @@
     "@biomejs/biome": "^2.5.14",
     "@carlwr/fastcheck-utils": "catalog:",
     "@carlwr/typescript-extra": "catalog:",
-    "typescript": "^6.0.3",
+    "typescript": "catalog:",
     "yaml": "catalog:",
     "zzz_LAST_dummy": "npm:empty-npm-package@1.0.0"
   }

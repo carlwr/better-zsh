@@ -127,6 +127,7 @@
     "tsdown": "catalog:",
     "tsx": "catalog:",
     "typedoc": "^0.28.20",
+    "typescript": "catalog:",
     "vitest": "catalog:"
   }
 }
