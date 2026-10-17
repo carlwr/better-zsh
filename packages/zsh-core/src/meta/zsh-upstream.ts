@@ -12,5 +12,3 @@ export const ZSH_UPSTREAM = {
   commit: "73d317384c9225e46d66444f93b46f0fbe7084ef",
   date: "2022-05-14",
 } as const
-
-export type ZshUpstream = typeof ZSH_UPSTREAM

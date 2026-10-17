@@ -61,7 +61,7 @@ export interface DocRecordBase<K extends DocCategory> {
 
 export type Emulation = (typeof emulations)[number]
 
-/** Option-flag sign — zsh convention: `-` enables, `+` disables. */
+/** Sign before a single-letter option flag (`set -J`, `set +J`). */
 export type OptFlagSign = "+" | "-"
 
 /** Position where zsh treats the word as reserved. */
@@ -82,6 +82,10 @@ export type HistoryExpnKind =
 export interface OptFlagAlias {
   /** The flag letter; case-significant (`-J` ≠ `-j`). */
   readonly char: string
+  /**
+   * The sign that turns this record's option on: `+` where the letter names
+   * the negation (`set -F` is `NO_GLOB`, so `glob` has `on: "+"`).
+   */
   readonly on: OptFlagSign
   /**
    * Emulation modes whose single-letter option table maps this flag to this
@@ -191,8 +195,7 @@ export interface SyntaxDocBase {
 }
 
 /**
- * Special-parameter scope. Values are internal identifiers, not man-page
- * section titles.
+ * Special-parameter scope. Values are slugs, not man-page section titles.
  *
  * - `shell-set`: globals the shell assigns to.
  * - `shell-used`: globals the shell reads.

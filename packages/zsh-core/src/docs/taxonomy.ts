@@ -68,7 +68,7 @@ const docCategorySet: ReadonlySet<string> = new Set(docCategories)
 export const isDocCategory = (raw: string): raw is DocCategory =>
   docCategorySet.has(raw)
 
-// Order rationale (resolver-shadowing facts) lives in DESIGN.md §"The category walk".
+// Order rationale: per entry, here. The walk's design: DESIGN.md §"The category walk".
 // `param_expn` placement: its sigs are all literal templates (e.g. `${name:-word}`)
 // that no real user-code token will match via `simpleResolver`; the category reaches
 // consumers via search/docs rather than raw-token resolution. Position is therefore
@@ -84,8 +84,7 @@ const classifyOrderTuple = [
   "builtin",
   "conditional_op",
   // special_function precedes option so `TRAPHUP` / `precmd_functions` resolve
-  // to the function record rather than misresolving; see DESIGN.md §"The
-  // category walk".
+  // to the function record rather than misresolving.
   "special_function",
   "special_param",
   "process_subst",
@@ -126,8 +125,9 @@ type _AssertClassifyOrderNoExtras = Assert<
 >
 
 /**
- * `DocCategory` list in resolver-walk order. Consumers stop on first match
- * or collect all; the per-category step is `resolve`.
+ * `DocCategory` list in resolver-walk order — the order `resolveAll` walks.
+ * To classify a token, call `resolveAll`: a `resolve` loop over this list
+ * misses the walk's admission rule.
  */
 export const classifyOrder: readonly DocCategory[] = classifyOrderTuple
 
