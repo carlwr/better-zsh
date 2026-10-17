@@ -67,6 +67,9 @@ Cross-adapter notes:
 
 - **Corpus metadata** — `zshref info`; MCP `initialize` carries only the suite preamble (`instructions`) and the crate version.
 - **`zshref schema`** — one bundle, no per-tool subcommand: that would fight clap conventions.
+- **Output framing** — one JSON line per response (per request in `batch`), not per match:
+  - `matchesTotal` and the shared `outputSchema` need the whole envelope
+  - overrides `CLI-POLICY.md`'s line-per-record SHOULD
 - **Maintenance posture**:
   - re-vendor cadence measured in years
   - no runtime plugins
