@@ -130,6 +130,29 @@ describe("generated JSON is a release asset, not a registry payload", () => {
     expect([...seen].sort()).toEqual(kinds)
   })
 
+  // Descriptions are doc comments; the generator joins a wrapped line with
+  // its indent kept, leaving a run of spaces mid-text.
+  test("schema descriptions carry no wrapped-line indent", () => {
+    const schemas = [
+      ...readdirSync(join(pkgDir, "artifacts", "schema")).map(f =>
+        join("artifacts", "schema", f),
+      ),
+      join("artifacts", resolverFixture.dir, schemaFile(resolverFixture.file)),
+    ]
+    const descriptions = (node: unknown): string[] =>
+      typeof node !== "object" || node === null
+        ? []
+        : Object.entries(node).flatMap(([k, v]) =>
+            k === "description" && typeof v === "string"
+              ? [v]
+              : descriptions(v),
+          )
+    const indented = schemas.flatMap(file =>
+      descriptions(readJson(file)).filter(d => /\S {2,}/.test(d)),
+    )
+    expect(indented).toEqual([])
+  })
+
   test("index.dataHash is the SHA-256 of the emitted record file", () => {
     const text = readFileSync(join(jsonDir, recordsFile), "utf8")
     expect(index().dataHash).toBe(hashRecords(text))

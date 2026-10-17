@@ -540,16 +540,16 @@ function resolveAdmitted<K extends DocCategory>(
 
 // --- Resolver feedback ------------------------------------------------------
 
+// The JSON Schema generated from this type takes the doc comment as its
+// `description`, so the comment is worded for any schema reader. One line per
+// bullet: the generator keeps a wrapped line's indent.
+
 /**
- * Lossy-resolution feedback, carried on the `ResolvedHit`: a closed union
- * tagged by `kind`, to route on. Its JSON Schema ships generated from this
- * type (`index.json`, the resolver fixture's schema); the kinds are
- * type-level only.
+ * Lossy-resolution feedback: what was normalized away to reach the record.
+ * Tagged by `kind`, to route on.
  *
- * - `input-negated`: input denotes the option's off state — `NO_` prefix or
- *   flipped-sign single-letter flag (canonical-form inputs do not carry this).
- * - `subscripted`: input had a trailing `[...]` stripped to reach the parent
- *   record (`compstate[context]` → `compstate`). `subscript` holds the inner.
+ * - `input-negated`: the input denotes the option's off state (`NO_` prefix, flipped-sign flag letter); an option's own name never carries it
+ * - `subscripted`: a trailing `[...]` was stripped to reach the parent record (`compstate[context]` → `compstate`); `subscript` holds the inner text
  */
 export type ResolverFeedback =
   | { readonly kind: "input-negated" }
