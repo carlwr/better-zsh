@@ -31,6 +31,8 @@ jobs:
       attestations: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       # The tag guard and tag-bound steps below run on tag refs only, so a
       # real publish must come from one; elsewhere a manual run only rehearses.
@@ -93,8 +95,10 @@ jobs:
           fi
           pnpm build
           # npm publishes this directory as-is and only pnpm resolves
-          # `workspace:` deps, so publish the manifest pnpm packed — then put
-          # the original back, so later steps see the checked-out tree.
+          # `catalog:` / `workspace:` specs, so publish the manifest pnpm
+          # packed — then put the original back, so later steps see the
+          # checked-out tree. A directory, not the tarball: npm's OIDC
+          # exchange does not run for a tarball spec.
           tgz=$(pnpm pack --json --pack-destination "$RUNNER_TEMP" \
                 | node -p 'JSON.parse(require("fs").readFileSync(0,"utf8")).filename')
           cp package.json "$RUNNER_TEMP/manifest.orig.json"
