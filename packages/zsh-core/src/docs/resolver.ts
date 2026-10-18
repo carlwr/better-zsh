@@ -516,7 +516,7 @@ const walkAdmits: {
  *
  * The walk order and the admission rule are corpus properties, owned here
  * and pinned by the resolver fixture — consumers neither re-walk nor
- * re-filter (PRINCIPLES.md §"Push decisions downstream").
+ * re-filter.
  */
 export function resolveAll(
   corpus: DocCorpus,

@@ -32,7 +32,7 @@ export type Documented<K extends DocCategory> = string & {
 // MIRRORED-IN: zshref-rs/src/corpus.rs
 /**
  * What every record carries: its category, its corpus identity and its
- * surface form — the structural identity invariant (PRINCIPLES.md). A
+ * surface form — the structural identity invariant. A
  * record is its own identity unit wherever it goes: off its corpus map, on
  * a resolver hit, in the JSON. `DocRecordMap[DocCategory]` discriminates on
  * `category`.
@@ -225,7 +225,7 @@ export interface SpecialParamKey extends ItemEntry {
  * `keys` captures an upstream-documented enumerated nested set — keys,
  * values or escapes (e.g. `compstate` keys, `zsh_eval_context` values,
  * `WATCHFMT` escapes); the renderer composes the visible body from `desc`
- * plus `keys`. See PRINCIPLES.md §"Records are self-contained".
+ * plus `keys`.
  */
 export interface SpecialParamDoc extends DocRecordBase<"special_param"> {
   /**
@@ -277,7 +277,7 @@ export interface AlternateForm {
  *
  * Overlap with `reserved_word` on head keywords (`for`, `if`, `while`, ...,
  * `[[`, `{`, `time`) is deliberate; `classifyOrder` places this category
- * first. See PRINCIPLES.md §"Overlap between categories is accepted".
+ * first.
  */
 export interface ComplexCommandDoc
   extends DocRecordBase<"complex_command">,

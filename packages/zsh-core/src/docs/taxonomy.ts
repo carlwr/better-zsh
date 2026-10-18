@@ -203,7 +203,7 @@ type _AssertRecordsExtendBase = Assert<
  * Any corpus record: the union over the categories, discriminated by
  * `category` — what the category walk hands out (`resolveAll`). For the
  * boundary where a record's category is a runtime fact; code inside stays
- * parametric over `K` (PRINCIPLES.md: no per-category branches downstream).
+ * parametric over `K`.
  */
 export type DocRecord = DocRecordMap[DocCategory]
 
