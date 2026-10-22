@@ -1,7 +1,7 @@
 import type { ResolverFeedback } from "./resolver.ts"
 import type { DocCategory, DocRecordMap } from "./taxonomy.ts"
 
-// Generated fields attached to every JSON record; the in-memory corpus omits
+// Generated fields attached to every JSON record; the in-memory lexicon omits
 // them. Both are `_`-prefixed — a namespace apart from the records' own field
 // names — and are `RenderedRecord`'s fields. Deliberately no JSDoc here: the
 // schema generator would make it the description of every record.
@@ -19,7 +19,7 @@ export type WithMarkdown<T> = T & {
   readonly _title: string
 }
 
-/** A JSON record per category: the corpus record plus the generated fields. */
+/** A JSON record per category: the lexicon record plus the generated fields. */
 export type JsonRecordMap = {
   readonly [K in DocCategory]: WithMarkdown<DocRecordMap[K]>
 }
@@ -54,7 +54,7 @@ export interface JsonIndex {
     readonly commit: string
     readonly date: string
   }
-  /** SHA-256 of `records.json`'s bytes — corpus-content identity, independent of `packageVersion`. */
+  /** SHA-256 of `records.json`'s bytes — lexicon-content identity, independent of `packageVersion`. */
   readonly dataHash: string
   /** Category identity and display metadata, in primary category order — `records.json`'s key order. */
   readonly categories: readonly JsonCategoryDescriptor[]
@@ -72,7 +72,7 @@ export interface JsonIndex {
 /** What the resolvers answer for one raw input; `null` where they answer nothing. */
 export interface ResolverFixtureCase {
   readonly input: string
-  /** The `resolve` hit — direct corpus-key lookup, then the category's resolver. */
+  /** The `resolve` hit — direct lexicon-key lookup, then the category's resolver. */
   readonly id: string | null
   readonly feedback: ResolverFeedback | null
 }
@@ -98,7 +98,7 @@ export type WalkFixtureCases = readonly WalkFixtureCase[]
 
 /**
  * Resolver conformance fixture: per category, pinned and generated inputs with
- * the answers computed over the corpus identified by `dataHash`; then the
+ * the answers computed over the lexicon identified by `dataHash`; then the
  * category walk's answers (`walk`) — order and admission — for the pinned
  * inputs and every record's id and display. A mirror resolver is conformant
  * when it gives the same answers.
@@ -106,7 +106,7 @@ export type WalkFixtureCases = readonly WalkFixtureCase[]
 export interface ResolverFixtureJson {
   readonly version: 2
   readonly packageVersion: string
-  /** `JsonIndex.dataHash` of the corpus the answers were computed over. */
+  /** `JsonIndex.dataHash` of the lexicon the answers were computed over. */
   readonly dataHash: string
   readonly cases: { readonly [K in DocCategory]: ResolverFixtureCases }
   readonly walk: WalkFixtureCases

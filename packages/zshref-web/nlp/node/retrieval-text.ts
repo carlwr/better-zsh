@@ -12,9 +12,9 @@
 import { isDefined } from "@carlwr/typescript-extra"
 import {
   type DocCategory,
-  type DocCorpus,
   type DocRecord,
   docCategoryLabels,
+  type Lexicon,
 } from "@carlwr/zsh-core"
 import type { WithMarkdown } from "@carlwr/zsh-core/render"
 
@@ -52,12 +52,12 @@ const headerFields: ReadonlySet<string> = new Set([
   "subKind",
 ])
 
-/** All records in index order: `docCategories` order, corpus map order within. */
+/** All records in index order: `docCategories` order, lexicon map order within. */
 export function corpusTexts(
-  corpus: DocCorpus,
+  lexicon: Lexicon,
   indexGroups: IndexGroups,
 ): RecordText[] {
-  return renderedCorpus(corpus).flatMap(({ category, records }) =>
+  return renderedCorpus(lexicon).flatMap(({ category, records }) =>
     records.map(rec => recordText(category, asJson(rec), indexGroups)),
   )
 }

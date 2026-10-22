@@ -1,5 +1,5 @@
-// The corpus-derived "mechanical" sentence set (NLP.md §"Eval architecture",
-// layer B): every entry is generated from the corpus, so the set is large
+// The lexicon-derived "mechanical" sentence set (NLP.md §"Eval architecture",
+// layer B): every entry is generated from the lexicon, so the set is large
 // and free, unlike the hand-curated fixture. Two registers:
 //
 // - terse decorated forms — the lookup contract's decorated phrasings
@@ -13,11 +13,7 @@
 // id-shape slices.
 
 import { isDefined } from "@carlwr/typescript-extra"
-import {
-  type DocCategory,
-  type DocCorpus,
-  docCategories,
-} from "@carlwr/zsh-core"
+import { type DocCategory, docCategories, type Lexicon } from "@carlwr/zsh-core"
 
 import type { RecordId } from "../../core/types"
 import { buildLookupContract } from "../contract"
@@ -75,14 +71,14 @@ const mechanicalEntry = (query: string, record: RecordId): SentenceEntry => ({
 /**
  * The full mechanical set: the contract's decorated phrasings in contract
  * order, each wanting the record it was generated from (not the contract's
- * OR-set), then the NL questions per record in corpus order.
+ * OR-set), then the NL questions per record in lexicon order.
  */
-export function buildMechanical(corpus: DocCorpus): SentenceEntry[] {
-  const decorated = buildLookupContract(corpus)
+export function buildMechanical(lexicon: Lexicon): SentenceEntry[] {
+  const decorated = buildLookupContract(lexicon)
     .entries.filter(e => e.phrasingKind !== "bare")
     .map(e => mechanicalEntry(e.query, e.record))
   const questions = docCategories.flatMap(cat =>
-    [...corpus[cat].values()].flatMap(rec => {
+    [...lexicon[cat].values()].flatMap(rec => {
       const record = identityOf(rec)
       if (record.id === "") return []
       return nlQuestions(cat, rec.display).map(q => mechanicalEntry(q, record))

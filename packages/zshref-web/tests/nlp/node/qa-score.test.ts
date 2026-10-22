@@ -1,22 +1,16 @@
 // The QA scoring on synthetic inputs (each case pins one scoring rule);
 // with the staged index and model, a capped slice of the hard
 // checks and one synthetic entry through the whole pipeline. The held-out
-// corpus is loaded (that is the loader's job) and never printed.
+// QA set is loaded (that is the loader's job) and never printed.
 
 import * as fcu from "@carlwr/fastcheck-utils"
-import { docCategories, loadCorpus } from "@carlwr/zsh-core"
+import { docCategories, loadLexicon } from "@carlwr/zsh-core"
 import fc from "fast-check"
 import { beforeAll, describe, expect, it } from "vitest"
 import type { z } from "zod"
 
 import { type RecordId, recordKey, sameRecord } from "../../../nlp/core/types"
 import { type EvalAssets, loadEvalAssets } from "../../../nlp/node/eval/assets"
-import {
-  loadQaCorpus,
-  QaCorpusSchema,
-  QaEntrySchema,
-  qaCorpusJsonSchema,
-} from "../../../nlp/node/eval/qa-corpus"
 import {
   aggregateScores,
   type EntryScore,
@@ -27,9 +21,15 @@ import {
   renderQa,
   scoreEntry,
   scoreHardChecks,
-  scoreQaCorpus,
+  scoreQaSet,
   summaryJson,
 } from "../../../nlp/node/eval/qa-score"
+import {
+  loadQaSet,
+  QaEntrySchema,
+  QaSetSchema,
+  qaSetJsonSchema,
+} from "../../../nlp/node/eval/qa-set"
 import type { JsonSchema } from "../../../nlp/node/rules-schema"
 import {
   artifactGate,
@@ -195,7 +195,7 @@ describe("aggregateScores", () => {
     warnings = 0,
   ): EntryScore => ({ score, expectedWeight, matched: 0, warnings })
 
-  it("an empty corpus averages zero", () => {
+  it("an empty set averages zero", () => {
     expect(aggregateScores([])).toEqual({
       avgScore: 0,
       totalWeightedScore: 0,
@@ -259,15 +259,15 @@ describe("hard-check templates", () => {
   })
 
   it("enumerate every record of a templated category", () => {
-    const corpus = loadCorpus()
-    const checks = hardChecks(corpus)
+    const lexicon = loadLexicon()
+    const checks = hardChecks(lexicon)
     const cats = hardCheckCategories()
-    expect(checks.length).toBe(cats.reduce((n, c) => n + corpus[c].size, 0))
-    // Table order across categories, corpus order within (the maps are keyed by id).
+    expect(checks.length).toBe(cats.reduce((n, c) => n + lexicon[c].size, 0))
+    // Table order across categories, lexicon order within (the maps are keyed by id).
     expect([...new Set(checks.map(c => c.category))]).toEqual(cats)
     for (const cat of cats) {
       expect(checks.filter(c => c.category === cat).map(c => c.id)).toEqual([
-        ...corpus[cat].keys(),
+        ...lexicon[cat].keys(),
       ])
     }
     expect(checks.every(c => c.query.startsWith("what "))).toBe(true)
@@ -323,34 +323,33 @@ describe("renderQa", () => {
   })
 })
 
-describe("qa corpus", () => {
-  it("the committed corpus loads", async () => {
-    const corpus = await loadQaCorpus()
-    expect(corpus.entries.length).toBeGreaterThan(0)
+describe("qa set", () => {
+  it("the committed set loads", async () => {
+    const qa = await loadQaSet()
+    expect(qa.entries.length).toBeGreaterThan(0)
   })
 
   it("rejects an unknown entry key and an empty expected set", () => {
     const ok = { entries: [{ query: "x", expected: [exp("a", 1)] }] }
-    expect(QaCorpusSchema.safeParse(ok).success).toBe(true)
+    expect(QaSetSchema.safeParse(ok).success).toBe(true)
     expect(
-      QaCorpusSchema.safeParse({ ...ok, $schema: "./nlp-corpus.schema.json" })
-        .success,
+      QaSetSchema.safeParse({ ...ok, $schema: "./qa-set.schema.json" }).success,
     ).toBe(true)
     expect(
-      QaCorpusSchema.safeParse({ entries: [{ query: "x", expected: [] }] })
+      QaSetSchema.safeParse({ entries: [{ query: "x", expected: [] }] })
         .success,
     ).toBe(false)
     expect(
-      QaCorpusSchema.safeParse({
+      QaSetSchema.safeParse({
         entries: [{ query: "x", top: 1, expected: [exp("a", 1)] }],
       }).success,
     ).toBe(false)
   })
 
   it("emits a draft 2020-12 schema with the authored fields", () => {
-    const s = qaCorpusJsonSchema()
+    const s = qaSetJsonSchema()
     expect(s.$schema).toBe("https://json-schema.org/draft/2020-12/schema")
-    expect(s.title).toBe("NLP QA Corpus")
+    expect(s.title).toBe("NLP QA Set")
     expect(s.required).toEqual(["entries"])
     const entries = s.properties?.entries
     const items = isSchema(entries) ? entries.items : undefined
@@ -371,7 +370,7 @@ describe("qa corpus", () => {
   it("the schema matches the committed file", async () => {
     await assertCommittedJson(
       PATHS.qaSchema,
-      qaCorpusJsonSchema(),
+      qaSetJsonSchema(),
       "UPDATE_SCHEMAS",
     )
   })
@@ -391,7 +390,7 @@ describe("qa scoring over the staged assets", () => {
     if (skipReason) ctx.skip(skipReason)
     const [cat] = hardCheckCategories()
     if (!cat) throw new Error("no templated category")
-    const checks = hardChecks(assets.corpus)
+    const checks = hardChecks(assets.lexicon)
       .filter(c => c.category === cat)
       .slice(0, 5)
     const r = await scoreHardChecks(checks, assets)
@@ -406,7 +405,7 @@ describe("qa scoring over the staged assets", () => {
     if (skipReason) ctx.skip(skipReason)
     // A canonical option form: the lookup map promotes it to #1; the
     // negative names no record, so it is absent for sure.
-    const corpus = QaCorpusSchema.parse({
+    const qa = QaSetSchema.parse({
       entries: [
         {
           query: "AUTO_CD",
@@ -416,7 +415,7 @@ describe("qa scoring over the staged assets", () => {
         },
       ],
     })
-    const s = await scoreQaCorpus(corpus, assets)
+    const s = await scoreQaSet(qa, assets)
     expect(s).toEqual({
       avgScore: 1,
       totalWeightedScore: 2,

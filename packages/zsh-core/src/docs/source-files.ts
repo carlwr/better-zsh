@@ -1,5 +1,5 @@
-/** Yodl source files required by the corpus loader. */
-export const corpusYodlFiles = [
+/** Yodl source files required by the lexicon loader. */
+export const yodlSourceFiles = [
   "arith.yo",
   "builtins.yo",
   "compsys.yo",
@@ -42,4 +42,4 @@ export const corpusYodlFiles = [
   "zle.yo",
 ] as const
 
-export type CorpusYodlFile = (typeof corpusYodlFiles)[number]
+export type YodlSourceFile = (typeof yodlSourceFiles)[number]

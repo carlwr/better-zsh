@@ -4,7 +4,7 @@
 //! category, in its order. Feedback (e.g. `NO_`-stripping →
 //! `input-negated`) is forwarded from the per-category resolver.
 
-use crate::corpus::{Corpus, DocCategory};
+use crate::lexicon::{DocCategory, Lexicon};
 use crate::resolver::{ResolvedHit, ResolverFeedback, resolve_all, resolve_in};
 use crate::tools::envelope::Envelope;
 use crate::tools::schema::{MatchShape, Shape, non_null, output_schema};
@@ -13,15 +13,15 @@ use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-pub fn tool(corpus: &Corpus) -> Tool {
+pub fn tool(lexicon: &Lexicon) -> Tool {
     Tool::new(
         ToolName::Docs,
-        prose::docs(corpus.index),
+        prose::docs(lexicon.index),
         vec![
             Field::required("key", prose::key(), Shape::Text),
             Field::optional(
                 "category",
-                prose::docs_category(corpus.index),
+                prose::docs_category(lexicon.index),
                 Shape::Category,
             ),
         ],
@@ -32,7 +32,7 @@ pub fn tool(corpus: &Corpus) -> Tool {
                 feedback: true,
                 ..MatchShape::default()
             },
-            corpus,
+            lexicon,
         ),
         run,
     )
@@ -48,20 +48,20 @@ struct Input {
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
-struct Match<'c> {
+struct Match<'lex> {
     category: DocCategory,
-    id: &'c str,
-    display: &'c str,
-    title: &'c str,
-    md_body: &'c str,
+    id: &'lex str,
+    display: &'lex str,
+    title: &'lex str,
+    md_body: &'lex str,
     #[serde(skip_serializing_if = "Option::is_none")]
-    sub_kind: Option<&'c str>,
+    sub_kind: Option<&'lex str>,
     #[serde(skip_serializing_if = "Option::is_none")]
     feedback: Option<ResolverFeedback>,
 }
 
-impl<'c> From<ResolvedHit<'c>> for Match<'c> {
-    fn from(h: ResolvedHit<'c>) -> Self {
+impl<'lex> From<ResolvedHit<'lex>> for Match<'lex> {
+    fn from(h: ResolvedHit<'lex>) -> Self {
         Self {
             category: h.category,
             id: h.id,
@@ -74,17 +74,17 @@ impl<'c> From<ResolvedHit<'c>> for Match<'c> {
     }
 }
 
-fn run(input: Input, corpus: &Corpus) -> Result<Value> {
+fn run(input: Input, lexicon: &Lexicon) -> Result<Value> {
     let key = input.key.as_str();
     let matches: Vec<Match> = if key.trim().is_empty() {
         Vec::new()
     } else {
         match input.category {
-            Some(cat) => resolve_in(corpus, cat, key)
+            Some(cat) => resolve_in(lexicon, cat, key)
                 .map(Match::from)
                 .into_iter()
                 .collect(),
-            None => resolve_all(corpus, key)
+            None => resolve_all(lexicon, key)
                 .into_iter()
                 .map(Match::from)
                 .collect(),
@@ -97,15 +97,15 @@ fn run(input: Input, corpus: &Corpus) -> Result<Value> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::corpus::load_corpus;
+    use crate::lexicon::load_lexicon;
     use serde_json::json;
 
     #[test]
     fn walk_skips_history_modifiers_but_scoping_finds_them() {
-        let corpus = load_corpus().expect("load_corpus");
-        let docs = tool(&corpus);
+        let lexicon = load_lexicon().expect("load_lexicon");
+        let docs = tool(&lexicon);
         let categories = |input: Value| -> Vec<Value> {
-            let out = docs.call(&input, &corpus).expect("docs");
+            let out = docs.call(&input, &lexicon).expect("docs");
             let matches = out["matches"].as_array().expect("matches");
             matches.iter().map(|m| m["category"].clone()).collect()
         };

@@ -2,14 +2,14 @@
 
 /**
  * @module
- * Resolver layer: untrusted raw user-code text → corpus identity, plus
+ * Resolver layer: untrusted raw user-code text → lexicon identity, plus
  * feedback when the normalization was lossy.
  *
- * `resolve(corpus, cat, raw)` is the sole sanctioned brand-boundary crossing
- * for raw strings: direct corpus-key lookup first, then the category's
- * resolver — per-category, corpus-aware parsing with two durable jobs:
+ * `resolve(lexicon, cat, raw)` is the sole sanctioned brand-boundary crossing
+ * for raw strings: direct lexicon-key lookup first, then the category's
+ * resolver — per-category, lexicon-aware parsing with two durable jobs:
  *
- * - Close the gap between live zsh syntax and corpus identity. Option lookup
+ * - Close the gap between live zsh syntax and lexicon identity. Option lookup
  *   is the canonical case: zsh ignores underscores, treats a leading
  *   `NO_`/`NO` as negation and names options by single-letter flags, so
  *   `auto_cd`, `NO_AUTO_CD`, `au_to_cd` and `-J` all identify the same
@@ -36,7 +36,7 @@
 
 import { escapeRegExp, isDefined, isSingle } from "@carlwr/typescript-extra"
 import { mkDocumented, redirSlugFromSig } from "./brands.ts"
-import type { DocCorpus } from "./corpus.ts"
+import type { Lexicon } from "./lexicon.ts"
 import {
   classifyOrder,
   type DocCategory,
@@ -48,22 +48,22 @@ import type { Documented, RedirectionDoc } from "./types.ts"
 // --- Resolvers --------------------------------------------------------------
 
 type Resolver<K extends DocCategory> = (
-  c: DocCorpus,
+  lexicon: Lexicon,
   raw: string,
 ) => ResolvedHit<K> | undefined
 
 /**
- * The hit for `id` when `corpus[cat]` has it — membership check and record
- * fetch in one, so no resolver answers an id the corpus lacks. Centralizes
+ * The hit for `id` when `lexicon[cat]` has it — membership check and record
+ * fetch in one, so no resolver answers an id the lexicon lacks. Centralizes
  * the brand-peel cast needed when `cat` is generic.
  */
 function hitAt<K extends DocCategory>(
-  c: DocCorpus,
+  lexicon: Lexicon,
   cat: K,
   id: Documented<K>,
   feedback?: ResolverFeedback,
 ): ResolvedHit<K> | undefined {
-  const record = (c[cat] as ReadonlyMap<string, DocRecordMap[K]>).get(
+  const record = (lexicon[cat] as ReadonlyMap<string, DocRecordMap[K]>).get(
     id as string,
   )
   if (record === undefined) return undefined
@@ -72,15 +72,15 @@ function hitAt<K extends DocCategory>(
 
 /** Resolver for categories whose raw-to-key mapping is pure normalization. */
 function simpleResolver<K extends DocCategory>(cat: K): Resolver<K> {
-  return (c, raw) => hitAt(c, cat, mkDocumented(cat, raw))
+  return (lexicon, raw) => hitAt(lexicon, cat, mkDocumented(cat, raw))
 }
 
 /**
  * Envelope for resolvers whose raw-to-key step is a pure string projection:
- * trim → match → corpus lookup. `matchKey` returns `undefined` to opt out.
+ * trim → match → lexicon lookup. `matchKey` returns `undefined` to opt out.
  */
 function resolveByKey<K extends DocCategory>(
-  c: DocCorpus,
+  lexicon: Lexicon,
   cat: K,
   raw: string,
   matchKey: (t: string) => string | undefined,
@@ -89,7 +89,7 @@ function resolveByKey<K extends DocCategory>(
   if (!t) return undefined
   const key = matchKey(t)
   if (!key) return undefined
-  return hitAt(c, cat, mkDocumented(cat, key))
+  return hitAt(lexicon, cat, mkDocumented(cat, key))
 }
 
 /**
@@ -100,18 +100,18 @@ function resolveByKey<K extends DocCategory>(
  * ("number", "word", `-`, `p`, ...) picks one of them.
  */
 function resolveRedir(
-  c: DocCorpus,
+  lexicon: Lexicon,
   raw: string,
 ): ResolvedHit<"redirection"> | undefined {
   return (
-    hitAt(c, "redirection", mkDocumented("redirection", raw)) ??
+    hitAt(lexicon, "redirection", mkDocumented("redirection", raw)) ??
     // Sig-form close-variant: doc sig (`> word`) → id (`>_word`).
     hitAt(
-      c,
+      lexicon,
       "redirection",
       mkDocumented("redirection", redirSlugFromSig(raw.trim())),
     ) ??
-    resolveByKey(c, "redirection", raw, t => matchRedirKey(c, t))
+    resolveByKey(lexicon, "redirection", raw, t => matchRedirKey(lexicon, t))
   )
 }
 
@@ -120,9 +120,9 @@ function docTail(sig: string, groupOpLen: number): string {
   return sig.slice(groupOpLen).trimStart()
 }
 
-function matchRedirKey(c: DocCorpus, t: string): string | undefined {
+function matchRedirKey(lexicon: Lexicon, t: string): string | undefined {
   const text = t.replace(/^[0-9]+/, "")
-  const docs = [...c.redirection.values()]
+  const docs = [...lexicon.redirection.values()]
   const longest = Math.max(
     0,
     ...docs.map(doc => groupOpPrefixLen(doc.groupOp, text)),
@@ -171,17 +171,17 @@ function redirTailPattern(groupOp: string, tail: string): string {
  * (DESIGN.md §"History expansion: grammar components, not independent tokens").
  */
 function resolveHistory(
-  c: DocCorpus,
+  lexicon: Lexicon,
   raw: string,
 ): ResolvedHit<"history_expn"> | undefined {
-  return resolveByKey(c, "history_expn", raw, matchHistoryKey)
+  return resolveByKey(lexicon, "history_expn", raw, matchHistoryKey)
 }
 
 // First match wins; order matters (e.g. `!!` before `!str`).
 const HISTORY_KEYS: readonly (readonly [RegExp, string])[] = [
   [/^!!$/, "!!"],
   [/^!#$/, "!#"],
-  [/^!\{.+\}$/, "!{...}"], // literal corpus template
+  [/^!\{.+\}$/, "!{...}"], // literal lexicon template
   [/^!\?.+\??$/, "!?str[?]"],
   [/^!-\d+$/, "!-n"],
   [/^!\d+$/, "!n"],
@@ -193,7 +193,7 @@ function matchHistoryKey(t: string): string | undefined {
   return HISTORY_KEYS.find(([re]) => re.test(t))?.[1]
 }
 
-// Single-letter flag categories. Corpus keys are letters (`e`, `U`, `i`);
+// Single-letter flag categories. Lexicon keys are letters (`e`, `U`, `i`);
 // user tokens may wrap in parens (`(e)`, `(#i)`, `(#qX)`) or trail args
 // (`j:string:`). Helpers narrow further when behaviour diverges.
 type FlagCategory =
@@ -209,7 +209,7 @@ const COLON_ARG_FLAG_CATS: ReadonlySet<FlagCategory> = new Set([
 ])
 
 /**
- * Resolver factory for flag categories whose corpus keys are single letters
+ * Resolver factory for flag categories whose lexicon keys are single letters
  * but whose user tokens may appear wrapped in parens or with a category-
  * specific marker prefix (`#` for `glob_flag`, `#q` for `glob_qualifier`).
  *
@@ -220,12 +220,12 @@ const COLON_ARG_FLAG_CATS: ReadonlySet<FlagCategory> = new Set([
 function parensAgnosticFlagResolver<K extends FlagCategory>(
   cat: K,
 ): Resolver<K> {
-  return (c, raw) => {
+  return (lexicon, raw) => {
     const t = raw.trim()
-    const direct = tryFlagKey(c, cat, t)
+    const direct = tryFlagKey(lexicon, cat, t)
     if (direct) return direct
     const inner = flagInnerKey(cat, t)
-    return inner ? tryFlagKey(c, cat, inner) : undefined
+    return inner ? tryFlagKey(lexicon, cat, inner) : undefined
   }
 }
 
@@ -234,16 +234,16 @@ function parensAgnosticFlagResolver<K extends FlagCategory>(
  * the full sig form (`j:string:`) by stripping to the bare letter (`j`).
  */
 function tryFlagKey<K extends FlagCategory>(
-  c: DocCorpus,
+  lexicon: Lexicon,
   cat: K,
   key: string,
 ): ResolvedHit<K> | undefined {
-  const direct = hitAt(c, cat, mkDocumented(cat, key))
+  const direct = hitAt(lexicon, cat, mkDocumented(cat, key))
   if (direct) return direct
   if (!COLON_ARG_FLAG_CATS.has(cat) || !key.includes(":")) return undefined
   const bare = key.split(":")[0]
   if (!bare) return undefined
-  return hitAt(c, cat, mkDocumented(cat, bare))
+  return hitAt(lexicon, cat, mkDocumented(cat, bare))
 }
 
 function flagInnerKey(cat: FlagCategory, t: string): string | undefined {
@@ -275,15 +275,20 @@ function stripParamSigil(t: string): string | undefined {
  * `subscripted` feedback. Mirrors resolver.rs `resolve_param_subscript`.
  */
 function resolveParamSubscript(
-  c: DocCorpus,
+  lexicon: Lexicon,
   raw: string,
 ): ResolvedHit<"special_param"> | undefined {
   const m = raw.trim().match(SUBSCRIPTED_PARAM_RE)
   if (!m) return undefined
-  return hitAt(c, "special_param", mkDocumented("special_param", m[1] ?? ""), {
-    kind: "subscripted",
-    subscript: m[2] ?? "",
-  })
+  return hitAt(
+    lexicon,
+    "special_param",
+    mkDocumented("special_param", m[1] ?? ""),
+    {
+      kind: "subscripted",
+      subscript: m[2] ?? "",
+    },
+  )
 }
 
 /**
@@ -295,19 +300,19 @@ function resolveParamSubscript(
  * parsing stays out of scope (PRINCIPLES.md §"Resolver scope balance").
  */
 function resolveSpecialParam(
-  c: DocCorpus,
+  lexicon: Lexicon,
   raw: string,
 ): ResolvedHit<"special_param"> | undefined {
   const name = stripParamSigil(raw.trim())
   if (name !== undefined) {
     return (
-      hitAt(c, "special_param", mkDocumented("special_param", name)) ??
-      resolveParamSubscript(c, name)
+      hitAt(lexicon, "special_param", mkDocumented("special_param", name)) ??
+      resolveParamSubscript(lexicon, name)
     )
   }
   return (
-    hitAt(c, "special_param", mkDocumented("special_param", raw)) ??
-    resolveParamSubscript(c, raw)
+    hitAt(lexicon, "special_param", mkDocumented("special_param", raw)) ??
+    resolveParamSubscript(lexicon, raw)
   )
 }
 
@@ -316,10 +321,10 @@ function resolveSpecialParam(
  * for `%n`, `%?str`, `%str`.
  */
 function resolveJobSpec(
-  c: DocCorpus,
+  lexicon: Lexicon,
   raw: string,
 ): ResolvedHit<"job_spec"> | undefined {
-  return resolveByKey(c, "job_spec", raw, t =>
+  return resolveByKey(lexicon, "job_spec", raw, t =>
     t.startsWith("%") ? jobSpecKey(t) : undefined,
   )
 }
@@ -349,19 +354,26 @@ function jobSpecKey(t: string): string | undefined {
  * environment-aware).
  */
 function resolveSpecialFunction(
-  c: DocCorpus,
+  lexicon: Lexicon,
   raw: string,
 ): ResolvedHit<"special_function"> | undefined {
   return (
-    hitAt(c, "special_function", mkDocumented("special_function", raw)) ??
-    resolveByKey(c, "special_function", raw, t => matchSpecialFunctionKey(c, t))
+    hitAt(lexicon, "special_function", mkDocumented("special_function", raw)) ??
+    resolveByKey(lexicon, "special_function", raw, t =>
+      matchSpecialFunctionKey(lexicon, t),
+    )
   )
 }
 
 const TRAP_TEMPLATE_RE = /^TRAP[A-Z0-9]+$/
 
-function matchSpecialFunctionKey(c: DocCorpus, t: string): string | undefined {
-  const hook = [...c.special_function.values()].find(d => d.hookArray === t)
+function matchSpecialFunctionKey(
+  lexicon: Lexicon,
+  t: string,
+): string | undefined {
+  const hook = [...lexicon.special_function.values()].find(
+    d => d.hookArray === t,
+  )
   if (hook) return hook.id
   if (TRAP_TEMPLATE_RE.test(t)) return "TRAPNAL"
   return undefined
@@ -379,40 +391,40 @@ const INPUT_NEGATED: ResolverFeedback = { kind: "input-negated" }
  * option's off state — carry `input-negated` feedback.
  */
 function resolveOption(
-  corpus: DocCorpus,
+  lexicon: Lexicon,
   raw: string,
 ): ResolvedHit<"option"> | undefined {
-  const literal = hitAt(corpus, "option", mkDocumented("option", raw))
+  const literal = hitAt(lexicon, "option", mkDocumented("option", raw))
   if (literal) return literal
   const trimmed = raw.trim()
   const m = trimmed.match(NO_PREFIX_RE)
   if (m) {
     const stripped = hitAt(
-      corpus,
+      lexicon,
       "option",
       mkDocumented("option", trimmed.slice(m[0].length)),
       INPUT_NEGATED,
     )
     if (stripped) return stripped
   }
-  return resolveOptionFlag(corpus, trimmed)
+  return resolveOptionFlag(lexicon, trimmed)
 }
 
 /**
  * `-J` / `+J` against the plain-zsh single-letter table: the first option in
- * corpus order with a `zsh`-table alias of that letter. Case is significant
+ * lexicon order with a `zsh`-table alias of that letter. Case is significant
  * (`-J` ≠ `-j`), so the raw letter is matched, not the normalized id.
  * sh/ksh-only letters (`-b`) never resolve — they are errors in plain zsh.
  */
 function resolveOptionFlag(
-  corpus: DocCorpus,
+  lexicon: Lexicon,
   trimmed: string,
 ): ResolvedHit<"option"> | undefined {
   const m = trimmed.match(OPT_FLAG_RE)
   const sign = m?.[1]
   const char = m?.[2]
   if (!sign || !char) return undefined
-  for (const opt of corpus.option.values()) {
+  for (const opt of lexicon.option.values()) {
     const alias = opt.flags.find(
       f => f.char === char && f.emulations.includes("zsh"),
     )
@@ -424,8 +436,8 @@ function resolveOptionFlag(
   return undefined
 }
 
-// Default: `simpleResolver(cat)` — trim + normalize + corpus lookup. Only
-// corpus-aware categories override.
+// Default: `simpleResolver(cat)` — trim + normalize + lexicon lookup. Only
+// lexicon-aware categories override.
 //
 // `param_expn`: ids are literal template strings (`${name:-word}`), so the
 // default will essentially never match a live token. Reached via search/docs;
@@ -451,7 +463,7 @@ const resolvers: { [K in DocCategory]: Resolver<K> } = Object.fromEntries(
 ) as { [K in DocCategory]: Resolver<K> }
 
 /**
- * What `resolve` answers: the corpus record — which carries its own
+ * What `resolve` answers: the lexicon record — which carries its own
  * identity, `category` and `id` — plus `feedback` when reaching it
  * normalized away something meaningful (absent on loss-free paths and for
  * non-lossy categories). `record` is what the renderers take, so a hit
@@ -463,9 +475,9 @@ export type ResolvedHit<K extends DocCategory> = {
 }
 
 /**
- * Resolve a raw user-code token against the corpus: direct corpus-key lookup
+ * Resolve a raw user-code token against the lexicon: direct lexicon-key lookup
  * (trimmed `raw` as the key, never lossy), then the category's resolver —
- * corpus-aware parsing such as `option`'s `no_`-stripping and `-J`/`+J`
+ * lexicon-aware parsing such as `option`'s `no_`-stripping and `-J`/`+J`
  * flags, or redirections decomposed into group-op + tail; most categories
  * just normalize + `Map.has`.
  *
@@ -476,16 +488,16 @@ export type ResolvedHit<K extends DocCategory> = {
  * categories miss the direct step and resolve (`AUTO_CD` → `autocd`).
  *
  * The sole public brand-boundary crossing for untrusted raw strings; the
- * other route to an identity is corpus iteration.
+ * other route to an identity is lexicon iteration.
  */
 export function resolve<K extends DocCategory>(
-  corpus: DocCorpus,
+  lexicon: Lexicon,
   cat: K,
   raw: string,
 ): ResolvedHit<K> | undefined {
   const key = raw.trim() as Documented<K>
   return (
-    (key ? hitAt(corpus, cat, key) : undefined) ?? resolvers[cat](corpus, raw)
+    (key ? hitAt(lexicon, cat, key) : undefined) ?? resolvers[cat](lexicon, raw)
   )
 }
 
@@ -514,26 +526,26 @@ const walkAdmits: {
  * category. Each hit's `record` is a `DocRecord`: `record.category`
  * narrows it.
  *
- * The walk order and the admission rule are corpus properties, owned here
+ * The walk order and the admission rule are lexicon properties, owned here
  * and pinned by the resolver fixture — consumers neither re-walk nor
  * re-filter.
  */
 export function resolveAll(
-  corpus: DocCorpus,
+  lexicon: Lexicon,
   raw: string,
 ): readonly ResolvedHit<DocCategory>[] {
   return classifyOrder
-    .map(cat => resolveAdmitted(corpus, cat, raw))
+    .map(cat => resolveAdmitted(lexicon, cat, raw))
     .filter(isDefined)
 }
 
 /** Scoped `resolve` under the walk's admission rule. */
 function resolveAdmitted<K extends DocCategory>(
-  corpus: DocCorpus,
+  lexicon: Lexicon,
   cat: K,
   raw: string,
 ): ResolvedHit<K> | undefined {
-  const hit = resolve(corpus, cat, raw)
+  const hit = resolve(lexicon, cat, raw)
   if (!hit) return undefined
   const admits = walkAdmits[cat] as
     | ((record: DocRecordMap[K]) => boolean)

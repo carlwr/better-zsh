@@ -1,6 +1,6 @@
 /**
- * Vendored zsh corpus identity — the upstream tag, commit, and date of
- * the `.yo` sources under `src/data/zsh-docs/`. Single runtime source
+ * Identity of the vendored zsh manual — the upstream tag, commit, and date
+ * of the `.yo` sources under `src/data/zsh-docs/`. Single runtime source
  * of truth; the sibling `SOURCE.md` and `THIRD_PARTY_NOTICES.md` in
  * that dir stay human-readable, kept in sync by a test.
  *

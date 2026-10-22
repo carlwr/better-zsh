@@ -8,7 +8,7 @@
 use super::ToolName;
 use super::schema::DEFAULT_LIMIT;
 use super::text::{Body, Prose, Target, body};
-use crate::corpus::{CLASSIFY_ORDER, Index};
+use crate::lexicon::{CLASSIFY_ORDER, Index};
 use indoc::{formatdoc, indoc};
 
 /// The suite cheat-sheet: MCP `instructions` and the tail of `zshref
@@ -71,7 +71,7 @@ fn category_table(index: &Index) -> String {
     format!("  value\n  -----\n{}", rows.join("\n"))
 }
 
-/// `docs` and `search` name the corpus' zsh tag so agents know which zsh
+/// `docs` and `search` name the lexicon's zsh tag so agents know which zsh
 /// the reference is; `list` does not repeat it (enumeration only).
 pub fn docs(index: &Index) -> Prose {
     let tag = &index.zsh_upstream.tag;
@@ -145,7 +145,7 @@ pub fn search(index: &Index) -> Prose {
 }
 
 pub fn list() -> Prose {
-    Prose::new("enumerate corpus records (id-only; no markdown)", |t| {
+    Prose::new("enumerate the zsh reference (id-only; no markdown)", |t| {
         body![
             "Return id/display records from the bundled static zsh reference.",
             format!(
@@ -155,7 +155,7 @@ pub fn list() -> Prose {
             indoc! {"
                 Order:
                   category omitted: default category order
-                  category set: that category's corpus order
+                  category set: that category's record order
             "},
             indoc! {"
                 Each matches[] element — always:
@@ -212,7 +212,7 @@ pub fn docs_category(index: &Index) -> Prose {
 
 /// For `search` and `list`, and as their common denominator the CLI's root
 /// `--category`: no order claim — `search` ranks by relevance, `list`
-/// enumerates in corpus order.
+/// enumerates in lexicon order.
 pub fn filter_category(index: &Index) -> Prose {
     Prose::new("restrict to one category", |_| {
         body![

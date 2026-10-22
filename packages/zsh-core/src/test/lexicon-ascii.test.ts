@@ -1,5 +1,5 @@
 /**
- * Global, category-agnostic string-field invariants for the corpus.
+ * Global, category-agnostic string-field invariants for the lexicon.
  *
  * Three tiers from tightest to loosest:
  * - `id` (lookup key): printable ASCII, no whitespace, non-empty.
@@ -14,14 +14,14 @@
 
 import { describe, expect, test } from "vitest"
 import { displayPattern, idPattern, mkDocumented } from "../docs/brands.ts"
-import { loadCorpus } from "../docs/corpus.ts"
 import { projectRecords } from "../docs/json-projection.ts"
+import { loadLexicon } from "../docs/lexicon.ts"
 import { docCategories } from "../docs/taxonomy.ts"
 
-const corpus = loadCorpus()
+const lexicon = loadLexicon()
 
 const records = docCategories.map(
-  cat => [cat, [...corpus[cat].values()]] as const,
+  cat => [cat, [...lexicon[cat].values()]] as const,
 )
 
 // Allows `\t` (0x09) and `\n` (0x0A); rejects all other control chars and DEL.
@@ -38,7 +38,7 @@ function isProse(s: string): boolean {
 
 // Project once: `projectRecords` re-renders every body.
 const projected = docCategories.map(
-  cat => [cat, projectRecords(corpus, cat)] as const,
+  cat => [cat, projectRecords(lexicon, cat)] as const,
 )
 
 const strField = (rec: object, key: string): string | undefined => {
@@ -46,7 +46,7 @@ const strField = (rec: object, key: string): string | undefined => {
   return typeof v === "string" ? v : undefined
 }
 
-describe("corpus string-field invariants", () => {
+describe("lexicon string-field invariants", () => {
   test("every id is printable ASCII with no whitespace", () => {
     const violations: string[] = []
     for (const [cat, recs] of records)
@@ -70,13 +70,13 @@ describe("corpus string-field invariants", () => {
   })
 
   // Catches an extractor minting a record from a non-canonical raw form
-  // (e.g. lowercase "auto_cd" instead of "autocd"): every corpus id must
-  // already be its own brand-normalized form. Corpus maps are keyed by the
-  // record's `id`, so `corpus[cat].keys()` is the canonical id list.
-  test("every corpus id is idempotent under mkDocumented", () => {
+  // (e.g. lowercase "auto_cd" instead of "autocd"): every lexicon id must
+  // already be its own brand-normalized form. Lexicon maps are keyed by the
+  // record's `id`, so `lexicon[cat].keys()` is the canonical id list.
+  test("every lexicon id is idempotent under mkDocumented", () => {
     const violations: string[] = []
     for (const cat of docCategories)
-      for (const id of corpus[cat].keys()) {
+      for (const id of lexicon[cat].keys()) {
         const s = id as string
         if ((mkDocumented(cat, s) as string) !== s)
           violations.push(`${cat}: ${s}`)

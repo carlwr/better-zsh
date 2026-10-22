@@ -33,7 +33,7 @@ cargo build --all-features && cargo test --all-features
 - `tests/` — each file's module doc says what it pins
 - `run_json` (`tests/common/`) validates every tool-subcommand response against its `outputSchema` — new tests get conformance checks for free
 - plain integration tests (exit status, stdout shape) that need no `outputSchema` validation spawn the binary directly: `Command::new(env!("CARGO_BIN_EXE_zshref"))`
-- `src/resolver.rs` `#[cfg(test)]` — conformance to zsh-core's resolver fixture; the make test targets refresh fixture and corpus together, plain `cargo test` reads what is on disk
+- `src/resolver.rs` `#[cfg(test)]` — conformance to zsh-core's resolver fixture; the make test targets refresh fixture and lexicon together, plain `cargo test` reads what is on disk
 
 ## Entry points
 

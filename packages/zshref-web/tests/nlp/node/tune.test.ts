@@ -4,7 +4,7 @@
 // assertion holds a number from a real eval.
 
 import * as fcu from "@carlwr/fastcheck-utils"
-import { loadCorpus } from "@carlwr/zsh-core"
+import { loadLexicon } from "@carlwr/zsh-core"
 import fc from "fast-check"
 import { describe, expect, it } from "vitest"
 import {
@@ -64,7 +64,7 @@ import { arbSplit } from "../../_arbs"
 import { wantOf } from "../../_fixtures"
 import { parityRankAssets } from "../../_helpers"
 
-const corpus = loadCorpus()
+const lexicon = loadLexicon()
 const rules = await loadRulesYaml()
 const committed = rules.tuning
 
@@ -99,7 +99,7 @@ describe("ablation helpers", () => {
   })
 
   it("withTuning swaps the tuning and nothing else", () => {
-    const assets = parityRankAssets(corpus, rules)
+    const assets = parityRankAssets(lexicon, rules)
     const t = zeroBoosts(committed)
     const a = withTuning(assets, t)
     expect(a.rules.tuning).toBe(t)
@@ -499,7 +499,7 @@ describe("sweep marks and rows", () => {
 
 // --- over the parity fixture's miniature index (no model) ---------------------
 
-const parityAssets = parityRankAssets(corpus, rules)
+const parityAssets = parityRankAssets(lexicon, rules)
 const want = (i: number, targetDepth = 3, weight = 1) => {
   const r = parityAssets.index.records[i]
   if (!r) throw new Error("parity index has 9 records")
@@ -529,7 +529,7 @@ const mechSet = buildQuerySet(
 const parityBench = (): Bench => ({
   assets: {
     ...parityAssets,
-    corpus,
+    lexicon,
     embedder: {
       embed: () =>
         Promise.reject(

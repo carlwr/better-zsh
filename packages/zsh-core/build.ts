@@ -11,7 +11,6 @@ import {
   resolverFeedbackDef,
 } from "./scripts/schemas.ts"
 import { docCategoryPreambles } from "./src/docs/category-preamble.ts"
-import { loadCorpus } from "./src/docs/corpus.ts"
 import {
   fmtJson,
   hashRecords,
@@ -25,6 +24,7 @@ import type {
   JsonCategoryDescriptor,
   JsonIndex,
 } from "./src/docs/json-types.ts"
+import { loadLexicon } from "./src/docs/lexicon.ts"
 import {
   classifyOrder,
   type DocCategory,
@@ -59,9 +59,9 @@ function writeJsonArtifacts() {
     mkdirSync(dir, { recursive: true })
   }
 
-  const corpus = loadCorpus()
+  const lexicon = loadLexicon()
 
-  const recordsText = jsonRecordsText(corpus)
+  const recordsText = jsonRecordsText(lexicon)
   writeFileSync(join(jsonDir, recordsFile), recordsText, "utf8")
 
   // One generator instance behind every shipped schema; the index carries
@@ -85,7 +85,7 @@ function writeJsonArtifacts() {
   writeJson(join(jsonDir, "index.json"), index)
   writeJson(
     join(fixtureDir, resolverFixture.file),
-    buildResolverFixture(corpus, { packageVersion: PKG_VERSION, dataHash }),
+    buildResolverFixture(lexicon, { packageVersion: PKG_VERSION, dataHash }),
   )
   writeJson(join(fixtureDir, schemaFile(resolverFixture.file)), fixtureSchema)
   writeJson(join(schemaDir, recordsSchemaFile), recordsBundle(gen))

@@ -7,13 +7,13 @@
 //! OS pipe buffer; otherwise the child blocks on stdout, stops reading
 //! stdin, and a parent that completes stdin before reading stdout deadlocks.
 
-use crate::corpus::Corpus;
+use crate::lexicon::Lexicon;
 use crate::tools::ToolSet;
 use anyhow::Result;
 use serde_json::{Value, json};
 use std::io::{BufRead, Write};
 
-pub fn run(tool_set: &ToolSet, corpus: &Corpus) -> Result<i32> {
+pub fn run(tool_set: &ToolSet, lexicon: &Lexicon) -> Result<i32> {
     let stdin = std::io::stdin().lock();
     let mut stdout = std::io::stdout().lock();
     for line in stdin.lines() {
@@ -21,14 +21,14 @@ pub fn run(tool_set: &ToolSet, corpus: &Corpus) -> Result<i32> {
         if line.trim().is_empty() {
             continue;
         }
-        let response = handle_request(&line, tool_set, corpus);
+        let response = handle_request(&line, tool_set, lexicon);
         let s = serde_json::to_string(&response).unwrap_or_else(|_| "null".into());
         writeln!(stdout, "{s}")?;
     }
     Ok(0)
 }
 
-fn handle_request(line: &str, tool_set: &ToolSet, corpus: &Corpus) -> Value {
+fn handle_request(line: &str, tool_set: &ToolSet, lexicon: &Lexicon) -> Value {
     let req: Value = match serde_json::from_str(line) {
         Ok(v) => v,
         Err(e) => return err(format!("invalid JSON: {e}")),
@@ -53,7 +53,7 @@ fn handle_request(line: &str, tool_set: &ToolSet, corpus: &Corpus) -> Value {
     let Some(tool) = tool_set.by_json(name) else {
         return err(format!("unknown tool: {name}"));
     };
-    match tool.call(input, corpus) {
+    match tool.call(input, lexicon) {
         Ok(output) => json!({ "ok": true, "output": output }),
         Err(e) => err(format!("{e:#}")),
     }

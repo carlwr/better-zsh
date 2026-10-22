@@ -1,6 +1,6 @@
 /**
  * @module
- * Render-quality heuristics over the rendered markdown corpus. Each entry
+ * Render-quality heuristics over the rendered reference dump. Each entry
  * is a shape-detector returning the prose / fence-open lines that matched
  * in a given record body. A drift test pins the matched set against a
  * frozen offender list (contract: `known-offenders.ts`).
@@ -223,7 +223,7 @@ const orphanLeadingPunct = {
  * being folded into the next entry's signature — the alias lost its body.
  *
  * Each token is restricted to 1-3 chars: alias markers in the upstream
- * corpus are single characters (`C`, `/`, `~`) or short flag forms (`-x`,
+ * manual are single characters (`C`, `/`, `~`) or short flag forms (`-x`,
  * `--`). Excludes identifier-shape names like `compstate` or `quoted-insert`
  * which legitimately appear standalone as record-title paragraphs.
  *

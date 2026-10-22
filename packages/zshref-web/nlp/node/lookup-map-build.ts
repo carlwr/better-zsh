@@ -5,9 +5,9 @@
 
 import {
   type DocCategory,
-  type DocCorpus,
   type DocRecordMap,
   docCategories,
+  type Lexicon,
 } from "@carlwr/zsh-core"
 import type { LookupEntry, LookupMap } from "../core/lookup-map"
 import { byteOrder } from "../core/text"
@@ -94,12 +94,12 @@ const compareEntries = (a: LookupEntry, b: LookupEntry): number =>
  * reached from several records lands on one destination — no collision
  * handling is needed, and a plain map suffices.
  */
-export function buildLookupMap(corpus: DocCorpus): LookupMap {
+export function buildLookupMap(lexicon: Lexicon): LookupMap {
   const byRaw = new Map<string, ResolverHit>()
   for (const cat of docCategories) {
-    for (const rec of corpus[cat].values()) {
+    for (const rec of lexicon[cat].values()) {
       for (const { form } of surfaceFormsFor(cat, rec)) {
-        const hit = resolverKey(corpus, form)
+        const hit = resolverKey(lexicon, form)
         if (hit) byRaw.set(form, hit)
       }
     }

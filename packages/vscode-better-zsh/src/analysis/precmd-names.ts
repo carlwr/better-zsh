@@ -1,5 +1,5 @@
 // The precommand modifiers the scanner recognizes: analysis vocabulary, not a
-// view of `corpus.precmd_modifier` — this directory imports nothing from
+// view of `lexicon.precmd_modifier` — this directory imports nothing from
 // `@carlwr/zsh-core`. The two are meant to be equal (unlike the
 // command-position keyword set, which is deliberately narrower than the
 // reserved-word category); a lock-in test under `src/test/analysis/` pins

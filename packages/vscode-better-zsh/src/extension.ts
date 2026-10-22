@@ -1,4 +1,4 @@
-import { loadCorpus } from "@carlwr/zsh-core"
+import { loadLexicon } from "@carlwr/zsh-core"
 import { PKG_VERSION, ZSH_UPSTREAM } from "@carlwr/zsh-core/meta"
 import type * as vscode from "vscode"
 import { contribute } from "./contributions"
@@ -12,5 +12,5 @@ export function activate(ctx: vscode.ExtensionContext) {
   )
   // Reference knowledge is bundled, each doc category parsed on first use;
   // the host zsh is only spawned for what needs a zsh: the syntax check.
-  contribute(ctx, loadCorpus())
+  contribute(ctx, loadLexicon())
 }

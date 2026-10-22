@@ -1,11 +1,11 @@
 // Build the SPA's artifacts under static/artifacts/ (gitignored). Everything
-// derives from zsh-core's corpus and the rules YAML; only the index needs the
+// derives from zsh-core's lexicon and the rules YAML; only the index needs the
 // model (scripts/fetch-model) and a minute of CPU, so an index that still
-// validates against the corpus is kept.
+// validates against the lexicon is kept.
 
 import { existsSync } from "node:fs"
 import { join } from "node:path"
-import { loadCorpus } from "@carlwr/zsh-core"
+import { loadLexicon } from "@carlwr/zsh-core"
 
 import { ARTIFACT } from "../nlp/core/artifact-files"
 import { categoriesJson } from "../nlp/node/categories"
@@ -35,18 +35,18 @@ const say = (msg: string) => console.log(`build-index: ${msg}`)
 const seconds = (since: number) =>
   `${((Date.now() - since) / 1000).toFixed(0)}s`
 
-const corpus = loadCorpus()
+const lexicon = loadLexicon()
 const rules = await loadRulesYaml()
 const out = PATHS.artifactsDir
 
-/** The on-disk index against this corpus; an unreadable or torn pair is
+/** The on-disk index against this lexicon; an unreadable or torn pair is
  * invalid, not fatal — it reads as a rebuild. */
 async function existingIndex(): Promise<IndexValidation> {
   const missing = Object.values(PATHS.searchIndex).filter(p => !existsSync(p))
   if (missing.length > 0)
     return { ok: false, reason: `no index at ${missing.join(", ")}` }
   try {
-    return validateIndex(await readIndex(PATHS.searchIndex), corpus, rules)
+    return validateIndex(await readIndex(PATHS.searchIndex), lexicon, rules)
   } catch (e) {
     return {
       ok: false,
@@ -59,14 +59,14 @@ const existing = await existingIndex()
 if (args.has("--validate")) {
   say(
     existing.ok
-      ? `index: valid for this corpus (${PATHS.searchIndex.json})`
+      ? `index: valid for this lexicon (${PATHS.searchIndex.json})`
       : `index: invalid — ${existing.reason}`,
   )
   process.exit(existing.ok ? 0 : 1)
 }
 
 if (existing.ok && !args.has("--force")) {
-  say("index: valid for this corpus; kept")
+  say("index: valid for this lexicon; kept")
 } else {
   say(
     existing.ok
@@ -79,7 +79,7 @@ if (existing.ok && !args.has("--force")) {
   const t1 = Date.now()
   let lastReport = t1
   const index = await buildIndex({
-    corpus,
+    lexicon,
     rules,
     embedder,
     onProgress: (done, total) => {
@@ -101,6 +101,6 @@ await writeFileDeep(
 )
 await writeFileDeep(
   join(out, ARTIFACT.lookupMap),
-  prettyJson(buildLookupMap(corpus)),
+  prettyJson(buildLookupMap(lexicon)),
 )
 say(`artifacts written to ${out}`)

@@ -3,11 +3,11 @@
 //! Input schemas double as the wire contract for `zshref batch` and drive
 //! the CLI's flags. Output schemas are an envelope over per-category
 //! `oneOf` match branches sharing `$defs`; category names, `subKind`
-//! enums and the record total come from the loaded corpus. `--help`
+//! enums and the record total come from the loaded lexicon. `--help`
 //! long-about advertises the bundle's size to discourage piping it into
 //! agent context.
 
-use crate::corpus::{Corpus, DOC_CATEGORIES, DocCategory};
+use crate::lexicon::{DOC_CATEGORIES, DocCategory, Lexicon};
 use crate::resolver::ResolverFeedback;
 use crate::tools::envelope::ENVELOPE_KEYS;
 use crate::tools::{Field, ToolSet};
@@ -54,10 +54,10 @@ pub fn limit<'de, D: Deserializer<'de>>(d: D) -> Result<u32, D::Error> {
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Shape {
     Text,
-    /// Closed enum over the corpus' categories.
+    /// Closed enum over the lexicon's categories.
     Category,
     /// Defaults to `DEFAULT_LIMIT`. `maximum` is the decoder's `u32` range,
-    /// not a cap: a `limit` above the corpus size clamps silently.
+    /// not a cap: a `limit` above the lexicon size clamps silently.
     Limit,
 }
 
@@ -111,14 +111,14 @@ pub struct MatchShape {
 }
 
 /// Envelope schema; `matches.items` is the per-category `oneOf`.
-pub fn output_schema(shape: &MatchShape, corpus: &Corpus) -> Value {
-    let sub_kinds = sub_kind_enums(corpus);
+pub fn output_schema(shape: &MatchShape, lexicon: &Lexicon) -> Value {
+    let sub_kinds = sub_kind_enums(lexicon);
     let has_sub_kind = |cat: DocCategory| sub_kinds.iter().any(|(c, _)| *c == cat);
     let branches: Vec<Value> = DOC_CATEGORIES
         .iter()
         .map(|&cat| match_schema(cat, has_sub_kind(cat), shape))
         .collect();
-    let total: usize = corpus.categories.iter().map(|c| c.records.len()).sum();
+    let total: usize = lexicon.categories.iter().map(|c| c.records.len()).sum();
     json!({
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",
@@ -176,8 +176,8 @@ fn match_schema(cat: DocCategory, sub_kind: bool, shape: &MatchShape) -> Value {
 }
 
 /// Shared fragments. `IdString` (printable ASCII, no whitespace) and
-/// `DisplayString` (printable ASCII) restate the corpus-ASCII invariant
-/// the fixture and `corpus.rs` tests hold; `MdBodyString` and
+/// `DisplayString` (printable ASCII) restate the lexicon-ASCII invariant
+/// the fixture and `lexicon.rs` tests hold; `MdBodyString` and
 /// `TitleString` allow Unicode prose. A body is empty for a record without
 /// prose (a reserved word whose head is documented as a complex command).
 // MIRROR-OF: packages/zsh-core/src/docs/brands.ts (`idPattern` / `displayPattern`)
@@ -207,8 +207,8 @@ fn defs(shape: &MatchShape, sub_kinds: &[(DocCategory, Vec<String>)]) -> Value {
 
 /// Sorted distinct `subKind` values per category, in category order;
 /// categories without any are absent.
-fn sub_kind_enums(corpus: &Corpus) -> Vec<(DocCategory, Vec<String>)> {
-    corpus
+fn sub_kind_enums(lexicon: &Lexicon) -> Vec<(DocCategory, Vec<String>)> {
+    lexicon
         .categories
         .iter()
         .filter_map(|cat| {
@@ -249,12 +249,12 @@ pub fn bundle_words(tool_set: &ToolSet) -> usize {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::corpus::load_corpus;
+    use crate::lexicon::load_lexicon;
 
     #[test]
     fn bundle_has_expected_top_level_keys() {
-        let corpus = load_corpus().expect("load_corpus");
-        let v = run(&ToolSet::build(&corpus));
+        let lexicon = load_lexicon().expect("load_lexicon");
+        let v = run(&ToolSet::build(&lexicon));
         let obj = v.as_object().expect("top-level object");
         assert_eq!(obj.get("version").and_then(Value::as_u64), Some(1));
         assert!(obj.contains_key("tools"));
@@ -262,8 +262,8 @@ mod tests {
 
     #[test]
     fn bundle_lists_every_tool_with_input_and_output_schema() {
-        let corpus = load_corpus().expect("load_corpus");
-        let tool_set = ToolSet::build(&corpus);
+        let lexicon = load_lexicon().expect("load_lexicon");
+        let tool_set = ToolSet::build(&lexicon);
         let v = run(&tool_set);
         let tools = v["tools"].as_array().expect("tools array");
         assert_eq!(tools.len(), tool_set.tools.len());
@@ -286,8 +286,8 @@ mod tests {
     #[test]
     fn sub_kind_is_always_or_never_per_category() {
         // `match_schema` requires `subKind` wherever the category has an enum.
-        let corpus = load_corpus().expect("load_corpus");
-        for cat in &corpus.categories {
+        let lexicon = load_lexicon().expect("load_lexicon");
+        for cat in &lexicon.categories {
             let with: usize = cat
                 .records
                 .iter()

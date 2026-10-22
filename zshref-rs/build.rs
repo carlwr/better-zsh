@@ -1,6 +1,6 @@
-//! Data-source auto-detect for the embedded corpus.
+//! Data-source auto-detect for the embedded lexicon.
 //!
-//! `src/corpus.rs` embeds JSONs via `include_bytes!`, which takes a literal
+//! `src/lexicon.rs` embeds JSONs via `include_bytes!`, which takes a literal
 //! path, so the source is picked at compile time here — from
 //! `ZSHREF_DATA_SOURCE` or what exists on disk — and handed over as absolute
 //! paths via `env!`: `ZSHREF_INDEX_JSON`, `ZSHREF_RECORDS_JSON`,
@@ -20,7 +20,7 @@ use std::{
 mod index_version;
 use index_version::INDEX_VERSION;
 
-/// Where one data source keeps the corpus JSONs and the resolver fixture.
+/// Where one data source keeps the lexicon JSONs and the resolver fixture.
 struct Source {
     name: &'static str,
     json_dir: PathBuf,

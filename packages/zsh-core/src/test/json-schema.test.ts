@@ -104,9 +104,9 @@ describe("records bundle", () => {
 
   // A category declares `subKind` on every record or on none; the schema
   // then requires it with the closed union, or forbids it. The union is
-  // type-derived — every declared literal is to occur in the corpus, so the
+  // type-derived — every declared literal is to occur in the lexicon, so the
   // schema names no vocabulary the data never exhibits.
-  test("subKind: required with the corpus enum, or absent, per category", () => {
+  test("subKind: required with the lexicon enum, or absent, per category", () => {
     const withSub = docCategories.filter(cat => subKindEnum(cat) !== undefined)
     expect(withSub.length).toBeGreaterThan(0)
     expect(withSub.length).toBeLessThan(docCategories.length)

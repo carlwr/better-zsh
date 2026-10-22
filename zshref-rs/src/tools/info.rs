@@ -1,28 +1,28 @@
-//! `zshref info` — version and corpus-level introspection as JSON; CLI-only,
+//! `zshref info` — version and lexicon-level introspection as JSON; CLI-only,
 //! not in the tool set. Each version key names whose version it is: the binary
-//! (`zshrefVersion`) and the zsh-core release its corpus comes from
-//! (`zshCoreVersion`). Counts come from the loaded corpus; `index.json`
+//! (`zshrefVersion`) and the zsh-core release its lexicon comes from
+//! (`zshCoreVersion`). Counts come from the loaded lexicon; `index.json`
 //! carries none.
 
-use crate::corpus::{Corpus, DocCategory};
+use crate::lexicon::{DocCategory, Lexicon};
 use serde_json::{Map, Value, json};
 
-pub fn run(corpus: &Corpus) -> Value {
-    let counts: Map<String, Value> = corpus
+pub fn run(lexicon: &Lexicon) -> Value {
+    let counts: Map<String, Value> = lexicon
         .categories
         .iter()
         .map(|c| (c.name.to_string(), Value::from(c.records.len())))
         .collect();
-    let categories: Vec<DocCategory> = corpus.categories.iter().map(|c| c.name).collect();
+    let categories: Vec<DocCategory> = lexicon.categories.iter().map(|c| c.name).collect();
 
     json!({
         "zshrefVersion": env!("CARGO_PKG_VERSION"),
-        "zshCoreVersion": corpus.index.package_version,
-        "dataHash": corpus.index.data_hash,
+        "zshCoreVersion": lexicon.index.package_version,
+        "dataHash": lexicon.index.data_hash,
         "zshUpstream": {
-            "tag": corpus.index.zsh_upstream.tag,
-            "commit": corpus.index.zsh_upstream.commit,
-            "date": corpus.index.zsh_upstream.date,
+            "tag": lexicon.index.zsh_upstream.tag,
+            "commit": lexicon.index.zsh_upstream.commit,
+            "date": lexicon.index.zsh_upstream.date,
         },
         "counts": counts,
         "categories": categories,
@@ -32,12 +32,12 @@ pub fn run(corpus: &Corpus) -> Value {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::corpus::load_corpus;
+    use crate::lexicon::load_lexicon;
 
     #[test]
     fn info_json_has_expected_top_level_keys() {
-        let corpus = load_corpus().expect("load_corpus");
-        let v = run(&corpus);
+        let lexicon = load_lexicon().expect("load_lexicon");
+        let v = run(&lexicon);
         let obj = v.as_object().expect("top-level object");
         for key in [
             "zshrefVersion",
@@ -62,26 +62,26 @@ mod tests {
     }
 
     #[test]
-    fn info_categories_match_corpus_order() {
-        let corpus = load_corpus().expect("load_corpus");
-        let v = run(&corpus);
+    fn info_categories_match_lexicon_order() {
+        let lexicon = load_lexicon().expect("load_lexicon");
+        let v = run(&lexicon);
         let listed: Vec<&str> = v["categories"]
             .as_array()
             .expect("categories array")
             .iter()
             .map(|x| x.as_str().expect("category is string"))
             .collect();
-        let expected: Vec<&str> = corpus.categories.iter().map(|c| c.name.as_str()).collect();
+        let expected: Vec<&str> = lexicon.categories.iter().map(|c| c.name.as_str()).collect();
         assert_eq!(listed, expected);
     }
 
     #[test]
     fn info_counts_nonzero_per_category() {
         // An empty category usually means the JSON artifact failed to regenerate.
-        let corpus = load_corpus().expect("load_corpus");
-        let v = run(&corpus);
+        let lexicon = load_lexicon().expect("load_lexicon");
+        let v = run(&lexicon);
         let counts = v["counts"].as_object().expect("counts object");
-        for cat in &corpus.categories {
+        for cat in &lexicon.categories {
             let n = counts
                 .get(cat.name.as_str())
                 .and_then(Value::as_u64)

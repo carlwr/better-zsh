@@ -2,7 +2,7 @@
 
 use anyhow::Result;
 use zshref::tools::ToolSet;
-use zshref::{cli, corpus};
+use zshref::{cli, lexicon};
 
 fn main() {
     let code = match run() {
@@ -17,8 +17,8 @@ fn main() {
 }
 
 fn run() -> Result<i32> {
-    let corpus = corpus::load_corpus()?;
-    let tool_set = ToolSet::build(&corpus);
-    let cmd = cli::build_cli(&tool_set, &corpus, cli::BuildMode::Parsing);
-    cli::dispatch(cmd, &tool_set, &corpus)
+    let lexicon = lexicon::load_lexicon()?;
+    let tool_set = ToolSet::build(&lexicon);
+    let cmd = cli::build_cli(&tool_set, &lexicon, cli::BuildMode::Parsing);
+    cli::dispatch(cmd, &tool_set, &lexicon)
 }

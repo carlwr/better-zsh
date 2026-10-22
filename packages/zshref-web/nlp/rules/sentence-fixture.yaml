@@ -835,7 +835,7 @@ entries:
   - { cat: zle_widget, id: transpose-chars, d: 1 }
 
 # ---
-# Resolver-boost probes: bare tokens the corpus-aware resolver canonicalizes but
+# Resolver-boost probes: bare tokens the lexicon-aware resolver canonicalizes but
 # that are NOT lookup-map keys (sig/template/subscript/hook forms), so only the
 # resolver hit (not the hard-promote) can surface the right record.
 - {query: "TRAPUSR1",want: [{cat: special_function,id: TRAPNAL,    d: 1}]}

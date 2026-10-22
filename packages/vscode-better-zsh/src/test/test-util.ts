@@ -1,9 +1,9 @@
 import { allUnique } from "@carlwr/typescript-extra"
 import {
   type DocCategory,
-  type DocCorpus,
   type Documented,
   docCategories,
+  type Lexicon,
   normalizeOptName,
 } from "@carlwr/zsh-core"
 import { expect } from "vitest"
@@ -66,7 +66,7 @@ export function expectStrictlyAscending(ps: readonly [number, number][]) {
   expect(allUnique(ps.map(String))).toBe(true)
 }
 
-/** Index records by their `id`, as a corpus category map does. */
+/** Index records by their `id`, as a lexicon category map does. */
 export const by = <I, T extends { readonly id: I }>(xs: readonly T[]) =>
   new Map<I, T>(xs.map(x => [x.id, x]))
 
@@ -87,9 +87,9 @@ export const ident = <K extends DocCategory>(
   return { category: cat, id, display: display ?? id }
 }
 
-/** A `DocCorpus` with every category as an empty Map; override per test. */
-export function emptyCorpus(): DocCorpus {
+/** A `Lexicon` with every category as an empty Map; override per test. */
+export function emptyLexicon(): Lexicon {
   return Object.fromEntries(
     docCategories.map(c => [c, new Map()]),
-  ) as unknown as DocCorpus
+  ) as unknown as Lexicon
 }

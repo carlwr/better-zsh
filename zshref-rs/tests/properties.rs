@@ -9,7 +9,7 @@ use common::{assert_envelope, doc_categories, run_json, run_raw};
 use proptest::prelude::*;
 use serde_json::Value;
 
-/// Options known to exist in the bundled corpus, used to probe `NO_*` toggle
+/// Options known to exist in the bundled lexicon, used to probe `NO_*` toggle
 /// symmetry. Each form must lookup to a stable canonical id across the
 /// bare / `NO_` variants; the `NO_` form additionally carries
 /// `feedback: { kind: "input-negated" }`.
@@ -67,7 +67,7 @@ proptest! {
     /// canonical `(category, id)` re-queries to the same id under
     /// `docs --category=C --key=ID` — pins direct-hit precedence (see
     /// root DESIGN.md §"`resolve`: direct ∥ resolver"). Property-level companion
-    /// to the exhaustive `docs_roundtrip_over_corpus` in `cli_invariants.rs`.
+    /// to the exhaustive `docs_roundtrip_over_lexicon` in `cli_invariants.rs`.
     #[test]
     fn docs_self_roundtrip(key in known_raw()) {
         let v = run_json(&["docs", "--key", key]);

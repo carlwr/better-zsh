@@ -7,7 +7,7 @@
 // name: `sig` / `groupOp` of `RedirectionDoc`, `hookArray` of `SpecialFunctionDoc`,
 // `subKind` of `HistoryExpnDoc`)
 
-use crate::corpus::{CLASSIFY_ORDER, Category, Corpus, DocCategory, INDEX, Record};
+use crate::lexicon::{CLASSIFY_ORDER, Category, DocCategory, INDEX, Lexicon, Record};
 use serde::Serialize;
 use serde_json::Value;
 
@@ -53,46 +53,50 @@ impl ResolverFeedback {
     }
 }
 
-/// Resolved corpus hit from "direct ∥ resolver, direct preferred" dispatch.
+/// Resolved lexicon hit from "direct ∥ resolver, direct preferred" dispatch.
 /// Carries enough for both docs' `{mdBody, feedback?}` and search's dedup-key + entry.
 #[derive(Clone, Debug)]
-pub struct ResolvedHit<'c> {
+pub struct ResolvedHit<'lex> {
     pub category: DocCategory,
-    pub id: &'c str,
-    pub display: &'c str,
-    pub rec: &'c Record,
+    pub id: &'lex str,
+    pub display: &'lex str,
+    pub rec: &'lex Record,
     /// `None` for loss-free paths or non-emitting categories.
     pub feedback: Option<ResolverFeedback>,
 }
 
 /// Per-category resolver dispatch. See root DESIGN.md §"`resolve`: direct
 /// ∥ resolver" and `resolve` in zsh-core.
-pub fn resolve_in<'c>(corpus: &'c Corpus, cat: DocCategory, raw: &str) -> Option<ResolvedHit<'c>> {
-    if let Some(h) = direct_lookup(corpus, cat, raw) {
+pub fn resolve_in<'lex>(
+    lexicon: &'lex Lexicon,
+    cat: DocCategory,
+    raw: &str,
+) -> Option<ResolvedHit<'lex>> {
+    if let Some(h) = direct_lookup(lexicon, cat, raw) {
         return Some(h);
     }
     match cat.as_str() {
-        "option" => resolve_option_via_resolver(corpus, cat, raw),
-        "redirection" => resolve_redir(corpus, cat, raw),
-        "history_expn" => resolve_history(corpus, cat, raw),
+        "option" => resolve_option_via_resolver(lexicon, cat, raw),
+        "redirection" => resolve_redir(lexicon, cat, raw),
+        "history_expn" => resolve_history(lexicon, cat, raw),
         "subscript_flag" | "param_expn_flag" | "glob_flag" | "glob_qualifier" => {
-            resolve_parens_agnostic_flag(corpus, cat, raw)
+            resolve_parens_agnostic_flag(lexicon, cat, raw)
         }
-        "job_spec" => resolve_job_spec(corpus, cat, raw),
-        "special_function" => resolve_special_function(corpus, cat, raw),
-        "special_param" => resolve_special_param(corpus, cat, raw),
-        _ => resolve_literal(corpus, cat, raw),
+        "job_spec" => resolve_job_spec(lexicon, cat, raw),
+        "special_function" => resolve_special_function(lexicon, cat, raw),
+        "special_param" => resolve_special_param(lexicon, cat, raw),
+        _ => resolve_literal(lexicon, cat, raw),
     }
 }
 
 /// Resolve `raw` in every category, `CLASSIFY_ORDER` first to last, keeping
 /// the hits the categories admit to a walk — one per category at most.
-/// Mirrors `resolveAll`: the order and the admission rule are corpus
+/// Mirrors `resolveAll`: the order and the admission rule are lexicon
 /// properties, pinned by the fixture's `walk` section.
-pub fn resolve_all<'c>(corpus: &'c Corpus, raw: &str) -> Vec<ResolvedHit<'c>> {
+pub fn resolve_all<'lex>(lexicon: &'lex Lexicon, raw: &str) -> Vec<ResolvedHit<'lex>> {
     CLASSIFY_ORDER
         .iter()
-        .filter_map(|&cat| resolve_in(corpus, cat, raw).filter(walk_admits))
+        .filter_map(|&cat| resolve_in(lexicon, cat, raw).filter(walk_admits))
         .collect()
 }
 
@@ -104,11 +108,11 @@ fn walk_admits(h: &ResolvedHit) -> bool {
     h.category.as_str() != "history_expn" || h.rec.sub_kind() == Some("event-designator")
 }
 
-fn make_hit<'c>(
-    cat: &'c Category,
-    rec: &'c Record,
+fn make_hit<'lex>(
+    cat: &'lex Category,
+    rec: &'lex Record,
     feedback: Option<ResolverFeedback>,
-) -> ResolvedHit<'c> {
+) -> ResolvedHit<'lex> {
     ResolvedHit {
         category: cat.name,
         id: rec.id(),
@@ -118,39 +122,43 @@ fn make_hit<'c>(
     }
 }
 
-fn find_by<'c>(
-    corpus: &'c Corpus,
+fn find_by<'lex>(
+    lexicon: &'lex Lexicon,
     cat: DocCategory,
     pred: impl Fn(&Record) -> bool,
     feedback: Option<ResolverFeedback>,
-) -> Option<ResolvedHit<'c>> {
-    let cat = corpus.category(cat);
+) -> Option<ResolvedHit<'lex>> {
+    let cat = lexicon.category(cat);
     let rec = cat.records.iter().find(|r| pred(r))?;
     Some(make_hit(cat, rec, feedback))
 }
 
-fn find_by_id<'c>(
-    corpus: &'c Corpus,
+fn find_by_id<'lex>(
+    lexicon: &'lex Lexicon,
     cat: DocCategory,
     id: &str,
     feedback: Option<ResolverFeedback>,
-) -> Option<ResolvedHit<'c>> {
-    find_by(corpus, cat, |r| r.id() == id, feedback)
+) -> Option<ResolvedHit<'lex>> {
+    find_by(lexicon, cat, |r| r.id() == id, feedback)
 }
 
-fn direct_lookup<'c>(corpus: &'c Corpus, cat: DocCategory, raw: &str) -> Option<ResolvedHit<'c>> {
+fn direct_lookup<'lex>(
+    lexicon: &'lex Lexicon,
+    cat: DocCategory,
+    raw: &str,
+) -> Option<ResolvedHit<'lex>> {
     let trimmed = raw.trim();
     if trimmed.is_empty() {
         return None;
     }
-    find_by_id(corpus, cat, trimmed, None)
+    find_by_id(lexicon, cat, trimmed, None)
 }
 
-fn resolve_job_spec<'c>(
-    corpus: &'c Corpus,
+fn resolve_job_spec<'lex>(
+    lexicon: &'lex Lexicon,
     cat: DocCategory,
     raw: &str,
-) -> Option<ResolvedHit<'c>> {
+) -> Option<ResolvedHit<'lex>> {
     let t = raw.trim();
     if !t.starts_with('%') {
         return None;
@@ -175,18 +183,18 @@ fn resolve_job_spec<'c>(
             }
         }
     };
-    find_by_id(corpus, cat, key, None)
+    find_by_id(lexicon, cat, key, None)
 }
 
 /// Special-parameter resolver. Direct lookup happens in `resolve_in`; this
 /// path strips the `$`/`${…}` sigil (the only way the punctuation params
 /// `$#`, `$?`, … arrive) and handles the close-variant `IDENT[inner]`
 /// subscript (see [`resolve_param_subscript`]).
-fn resolve_special_param<'c>(
-    corpus: &'c Corpus,
+fn resolve_special_param<'lex>(
+    lexicon: &'lex Lexicon,
     cat: DocCategory,
     raw: &str,
-) -> Option<ResolvedHit<'c>> {
+) -> Option<ResolvedHit<'lex>> {
     let t = raw.trim();
     if let Some(name) = t.strip_prefix('$') {
         let name = name
@@ -194,21 +202,21 @@ fn resolve_special_param<'c>(
             .and_then(|r| r.strip_suffix('}'))
             .unwrap_or(name);
         if !name.is_empty() {
-            return find_by_id(corpus, cat, name, None)
-                .or_else(|| resolve_param_subscript(corpus, cat, name));
+            return find_by_id(lexicon, cat, name, None)
+                .or_else(|| resolve_param_subscript(lexicon, cat, name));
         }
     }
-    resolve_param_subscript(corpus, cat, t)
+    resolve_param_subscript(lexicon, cat, t)
 }
 
 /// Close-variant `IDENT[inner]` → `IDENT` (e.g. `compstate[context]` →
 /// `compstate`, `words[CURRENT]` → `words`). Stripping is lossy; the
 /// inner-subscript text surfaces as `ResolverFeedback::Subscripted`.
-fn resolve_param_subscript<'c>(
-    corpus: &'c Corpus,
+fn resolve_param_subscript<'lex>(
+    lexicon: &'lex Lexicon,
     cat: DocCategory,
     raw: &str,
-) -> Option<ResolvedHit<'c>> {
+) -> Option<ResolvedHit<'lex>> {
     let t = raw.trim();
     let open = t.find('[')?;
     if !t.ends_with(']') || open == 0 || open + 1 >= t.len() - 1 {
@@ -231,7 +239,7 @@ fn resolve_param_subscript<'c>(
         return None;
     }
     find_by_id(
-        corpus,
+        lexicon,
         cat,
         ident,
         Some(ResolverFeedback::Subscripted {
@@ -240,17 +248,17 @@ fn resolve_param_subscript<'c>(
     )
 }
 
-fn resolve_special_function<'c>(
-    corpus: &'c Corpus,
+fn resolve_special_function<'lex>(
+    lexicon: &'lex Lexicon,
     cat: DocCategory,
     raw: &str,
-) -> Option<ResolvedHit<'c>> {
+) -> Option<ResolvedHit<'lex>> {
     let t = raw.trim();
     if t.is_empty() {
         return None;
     }
     // `<hook>_functions`: the hook record whose companion array that is.
-    if let Some(h) = find_by(corpus, cat, |r| r.str("hookArray") == t, None) {
+    if let Some(h) = find_by(lexicon, cat, |r| r.str("hookArray") == t, None) {
         return Some(h);
     }
     if t.starts_with("TRAP")
@@ -259,45 +267,49 @@ fn resolve_special_function<'c>(
             .chars()
             .all(|c| c.is_ascii_uppercase() || c.is_ascii_digit())
     {
-        return find_by_id(corpus, cat, "TRAPNAL", None);
+        return find_by_id(lexicon, cat, "TRAPNAL", None);
     }
     None
 }
 
-fn resolve_literal<'c>(corpus: &'c Corpus, cat: DocCategory, raw: &str) -> Option<ResolvedHit<'c>> {
+fn resolve_literal<'lex>(
+    lexicon: &'lex Lexicon,
+    cat: DocCategory,
+    raw: &str,
+) -> Option<ResolvedHit<'lex>> {
     let trimmed = raw.trim();
     find_by(
-        corpus,
+        lexicon,
         cat,
         |r| r.id() == trimmed || r.display() == trimmed,
         None,
     )
 }
 
-fn resolve_option_via_resolver<'c>(
-    corpus: &'c Corpus,
+fn resolve_option_via_resolver<'lex>(
+    lexicon: &'lex Lexicon,
     cat: DocCategory,
     raw: &str,
-) -> Option<ResolvedHit<'c>> {
+) -> Option<ResolvedHit<'lex>> {
     let norm = normalize_option(raw);
-    find_by_id(corpus, cat, &norm, None)
+    find_by_id(lexicon, cat, &norm, None)
         .or_else(|| {
             let stripped = strip_no_prefix(raw)?;
             let norm2 = normalize_option(&stripped);
-            find_by_id(corpus, cat, &norm2, Some(ResolverFeedback::InputNegated))
+            find_by_id(lexicon, cat, &norm2, Some(ResolverFeedback::InputNegated))
         })
-        .or_else(|| resolve_option_flag(corpus, cat, raw))
+        .or_else(|| resolve_option_flag(lexicon, cat, raw))
 }
 
 /// `-J` / `+J` against the plain-zsh single-letter table: the first record
-/// in corpus order with a `zsh`-table alias of that letter. Case is
+/// in lexicon order with a `zsh`-table alias of that letter. Case is
 /// significant (`-J` ≠ `-j`); sh/ksh-only letters never resolve. Negated
 /// when the sign is not the alias' on-form.
-fn resolve_option_flag<'c>(
-    corpus: &'c Corpus,
+fn resolve_option_flag<'lex>(
+    lexicon: &'lex Lexicon,
     cat: DocCategory,
     raw: &str,
-) -> Option<ResolvedHit<'c>> {
+) -> Option<ResolvedHit<'lex>> {
     let t = raw.trim();
     let &[b'+' | b'-', letter] = t.as_bytes() else {
         return None;
@@ -306,7 +318,7 @@ fn resolve_option_flag<'c>(
         return None;
     }
     let (sign, letter) = t.split_at(1);
-    let cat = corpus.category(cat);
+    let cat = lexicon.category(cat);
     cat.records.iter().find_map(|rec| {
         let alias = rec
             .flags()
@@ -316,9 +328,13 @@ fn resolve_option_flag<'c>(
     })
 }
 
-fn resolve_history<'c>(corpus: &'c Corpus, cat: DocCategory, raw: &str) -> Option<ResolvedHit<'c>> {
+fn resolve_history<'lex>(
+    lexicon: &'lex Lexicon,
+    cat: DocCategory,
+    raw: &str,
+) -> Option<ResolvedHit<'lex>> {
     let key = history_key(raw.trim())?;
-    find_by_id(corpus, cat, key, None)
+    find_by_id(lexicon, cat, key, None)
 }
 
 fn history_key(t: &str) -> Option<&'static str> {
@@ -371,13 +387,13 @@ fn history_key(t: &str) -> Option<&'static str> {
     None
 }
 
-fn resolve_parens_agnostic_flag<'c>(
-    corpus: &'c Corpus,
+fn resolve_parens_agnostic_flag<'lex>(
+    lexicon: &'lex Lexicon,
     cat: DocCategory,
     raw: &str,
-) -> Option<ResolvedHit<'c>> {
+) -> Option<ResolvedHit<'lex>> {
     let t = raw.trim();
-    if let Some(h) = try_flag_key(corpus, cat, t) {
+    if let Some(h) = try_flag_key(lexicon, cat, t) {
         return Some(h);
     }
     if !(t.starts_with('(') && t.ends_with(')') && t.len() >= 2) {
@@ -393,30 +409,38 @@ fn resolve_parens_agnostic_flag<'c>(
     if stripped.is_empty() {
         return None;
     }
-    try_flag_key(corpus, cat, stripped)
+    try_flag_key(lexicon, cat, stripped)
 }
 
 /// Try a key against the flag map. For categories whose sigs carry argument
 /// placeholders (`param_expn_flag`, `subscript_flag`), accepts the full sig
 /// form (`j:string:`) by stripping args down to the bare flag letter (`j`).
-fn try_flag_key<'c>(corpus: &'c Corpus, cat: DocCategory, key: &str) -> Option<ResolvedHit<'c>> {
-    if let Some(h) = find_by_id(corpus, cat, key, None) {
+fn try_flag_key<'lex>(
+    lexicon: &'lex Lexicon,
+    cat: DocCategory,
+    key: &str,
+) -> Option<ResolvedHit<'lex>> {
+    if let Some(h) = find_by_id(lexicon, cat, key, None) {
         return Some(h);
     }
     if matches!(cat.as_str(), "param_expn_flag" | "subscript_flag") && key.contains(':') {
         let bare = key.split(':').next().unwrap_or("");
         if !bare.is_empty() {
-            return find_by_id(corpus, cat, bare, None);
+            return find_by_id(lexicon, cat, bare, None);
         }
     }
     None
 }
 
-fn resolve_redir<'c>(corpus: &'c Corpus, cat: DocCategory, raw: &str) -> Option<ResolvedHit<'c>> {
+fn resolve_redir<'lex>(
+    lexicon: &'lex Lexicon,
+    cat: DocCategory,
+    raw: &str,
+) -> Option<ResolvedHit<'lex>> {
     // Sig-form close-variant: `> word` → its shell-safe id `>_word`.
     let sig_slug: String = raw.split_whitespace().collect::<Vec<_>>().join("_");
     if !sig_slug.is_empty()
-        && let Some(h) = find_by_id(corpus, cat, &sig_slug, None)
+        && let Some(h) = find_by_id(lexicon, cat, &sig_slug, None)
     {
         return Some(h);
     }
@@ -429,16 +453,16 @@ fn resolve_redir<'c>(corpus: &'c Corpus, cat: DocCategory, raw: &str) -> Option<
     }
     if let Some(delim) = text.strip_prefix("<<-") {
         if !delim.is_empty() {
-            return find_by_id(corpus, cat, "<<[-]_word", None);
+            return find_by_id(lexicon, cat, "<<[-]_word", None);
         }
     } else if text.starts_with("<<") && !text.starts_with("<<<") {
         let delim = &text[2..];
         if !delim.is_empty() {
-            return find_by_id(corpus, cat, "<<[-]_word", None);
+            return find_by_id(lexicon, cat, "<<[-]_word", None);
         }
     }
 
-    let redirs = corpus.category(cat);
+    let redirs = lexicon.category(cat);
     let docs: Vec<(&str, &str, &Record)> = redirs
         .records
         .iter()
@@ -452,10 +476,10 @@ fn resolve_redir<'c>(corpus: &'c Corpus, cat: DocCategory, raw: &str) -> Option<
         .max_by_key(|g| g.len())?;
 
     let matched: Vec<_> = docs.iter().filter(|(_, g, _)| *g == group_op).collect();
-    fn unique_hit<'c>(
-        cat: &'c Category,
-        entries: &[&(&str, &str, &'c Record)],
-    ) -> Option<ResolvedHit<'c>> {
+    fn unique_hit<'lex>(
+        cat: &'lex Category,
+        entries: &[&(&str, &str, &'lex Record)],
+    ) -> Option<ResolvedHit<'lex>> {
         if entries.len() == 1 {
             let (_, _, rec) = entries[0];
             Some(make_hit(cat, rec, None))
@@ -489,9 +513,9 @@ fn tail_kind_of(tail: &str) -> &str {
 mod tests {
     //! Behavioural conformance to zsh-core's resolver fixture: the answers the
     //! TS resolvers give for pinned and generated inputs, released with the
-    //! corpus.
+    //! lexicon.
     use super::*;
-    use crate::corpus::{DOC_CATEGORIES, load_corpus, resolver_fixture_path};
+    use crate::lexicon::{DOC_CATEGORIES, load_lexicon, resolver_fixture_path};
     use serde::Deserialize;
     use serde_json::json;
 
@@ -531,11 +555,11 @@ mod tests {
 
     #[test]
     fn resolver_conforms_to_fixture() {
-        let corpus = load_corpus().expect("load_corpus");
+        let lexicon = load_lexicon().expect("load_lexicon");
         let path = resolver_fixture_path();
         let text = std::fs::read_to_string(&path).unwrap_or_else(|e| {
             panic!(
-                "{}: {e}\nthe fixture is refreshed together with the corpus: \
+                "{}: {e}\nthe fixture is refreshed together with the lexicon: \
                  `make cli-test` (monorepo) or `make cli-vendored-test` (vendored)",
                 path.display()
             )
@@ -552,10 +576,10 @@ mod tests {
         let same_build = "fixture and embedded index.json come from different zsh-core builds \
                           — rebuild through the make target, not plain `cargo test`";
         assert_eq!(
-            fixture.package_version, corpus.index.package_version,
+            fixture.package_version, lexicon.index.package_version,
             "{same_build}"
         );
-        assert_eq!(fixture.data_hash, corpus.index.data_hash, "{same_build}");
+        assert_eq!(fixture.data_hash, lexicon.index.data_hash, "{same_build}");
         let fixture_cats: Vec<&str> = fixture.cases.keys().map(String::as_str).collect();
         let doc_cats: Vec<&str> = DOC_CATEGORIES.iter().map(|c| c.as_str()).collect();
         assert_eq!(fixture_cats, doc_cats);
@@ -566,7 +590,7 @@ mod tests {
             assert!(!cases.is_empty(), "{cat}: no cases");
             let category: DocCategory = cat.parse().expect("fixture category is documented");
             for case in cases {
-                let hit = resolve_in(&corpus, category, &case.input);
+                let hit = resolve_in(&lexicon, category, &case.input);
                 let got = (
                     hit.as_ref().map(|h| h.id.to_string()),
                     hit.as_ref()
@@ -591,7 +615,7 @@ mod tests {
         assert!(!fixture.walk.is_empty(), "walk: no cases");
         let mut walk_mismatches: Vec<String> = Vec::new();
         for case in fixture.walk {
-            let got: Vec<WalkHit> = resolve_all(&corpus, &case.input)
+            let got: Vec<WalkHit> = resolve_all(&lexicon, &case.input)
                 .iter()
                 .map(|h| WalkHit {
                     category: h.category.to_string(),

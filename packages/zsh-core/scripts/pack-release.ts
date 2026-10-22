@@ -44,7 +44,7 @@ interface Asset {
   readonly stage: (root: string) => void
   /**
    * Checks the unpacked tree as a consumer sees it — nothing from the build
-   * tree in scope — and returns the corpus identity it carries.
+   * tree in scope — and returns the `dataHash` it carries.
    */
   readonly verify: (root: string, fail: Fail) => string
 }
@@ -69,8 +69,8 @@ function validateWithSchema(json: string, schema: string, fail: Fail) {
   }
 }
 
-const corpusAsset: Asset = {
-  name: "corpus",
+const lexiconAsset: Asset = {
+  name: "lexicon",
   stage(root) {
     cpSync(join(artifactsDir, "json"), join(root, "json"), { recursive: true })
     cpSync(join(artifactsDir, "schema"), join(root, "schema"), {
@@ -169,7 +169,7 @@ function verify(asset: Asset, root: string): string {
   return dataHash
 }
 
-/** Returns the verified corpus identity. */
+/** Returns the verified `dataHash`. */
 function pack(asset: Asset): string {
   const tarball = join(outDir, `${asset.name}.tar.gz`)
   const tmp = mkdtempSync(join(tmpdir(), `${asset.name}-`))
@@ -196,7 +196,7 @@ function pack(asset: Asset): string {
   return dataHash
 }
 
-const assets = [corpusAsset, fixtureAsset]
+const assets = [lexiconAsset, fixtureAsset]
 
 rmSync(outDir, { recursive: true, force: true })
 mkdirSync(outDir, { recursive: true })

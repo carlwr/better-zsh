@@ -1,6 +1,6 @@
 /**
  * @packageDocumentation
- * Corpus-aware resolution of raw zsh tokens, per category or across the
+ * Lexicon-aware resolution of raw zsh tokens, per category or across the
  * category walk; hits carry the record and lossy-resolution feedback.
  */
 

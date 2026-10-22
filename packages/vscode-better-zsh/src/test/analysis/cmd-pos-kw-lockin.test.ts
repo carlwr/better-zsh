@@ -1,17 +1,17 @@
-import { loadCorpus } from "@carlwr/zsh-core"
+import { loadLexicon } from "@carlwr/zsh-core"
 import { describe, expect, test } from "vitest"
 import { cmdHeadFactsOnLine } from "../../analysis/line-facts"
 
-const corpus = loadCorpus()
+const lexicon = loadLexicon()
 
 // Lock-in test for the analysis layer's "command-position keywords" set.
 // `cmdHeadFactsOnLine` emits a `reserved-word` fact for a token in command
 // position iff the token is in this set. The set is intentionally distinct
-// from `corpus.reserved_word` (the zsh manual's reserved-word list); see
+// from `lexicon.reserved_word` (the zsh manual's reserved-word list); see
 // DESIGN.md §"Reserved word: an enumeration-primary doc category" and the
 // comment block above the constant in `analysis/line-facts.ts`.
 //
-// This test pins the current corpus-facing behaviour so refactors can't drift
+// This test pins the current lexicon-facing behaviour so refactors can't drift
 // it silently. If the analyzer's keyword set is intentionally changed, update
 // EXPECTED when relevant — and add prose justifying the new element in the
 // line-facts.ts comment.
@@ -51,11 +51,11 @@ describe("analysis layer: command-position keyword set lock-in", () => {
     expect(missing).toEqual([])
   })
 
-  test("no corpus reserved_word outside EXPECTED emits a reserved-word fact", () => {
-    const corpusOnly = [...corpus.reserved_word.keys()].filter(
+  test("no lexicon reserved_word outside EXPECTED emits a reserved-word fact", () => {
+    const lexiconOnly = [...lexicon.reserved_word.keys()].filter(
       w => !EXPECTED.has(w),
     )
-    const leaked = corpusOnly.filter(emitsReservedFact)
+    const leaked = lexiconOnly.filter(emitsReservedFact)
     expect(leaked).toEqual([])
   })
 })

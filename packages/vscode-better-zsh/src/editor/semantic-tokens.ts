@@ -1,5 +1,5 @@
 import { cached } from "@carlwr/typescript-extra"
-import type { DocCorpus } from "@carlwr/zsh-core"
+import type { Lexicon } from "@carlwr/zsh-core"
 import * as vscode from "vscode"
 import { positionAt, type TextSpan } from "../analysis/facts"
 import { docAnalysis } from "../document/facts"
@@ -32,19 +32,19 @@ export class SemanticTokensProvider
   implements vscode.DocumentSemanticTokensProvider
 {
   // Both name sets are built by the first request, never twice.
-  private builtins = cached(() => new Set<string>(this.corpus.builtin.keys()))
+  private builtins = cached(() => new Set<string>(this.lexicon.builtin.keys()))
   // Painting policy for command-position tokens that are zsh-manual reserved
   // words but which the analyzer treats as ordinary command heads (e.g.
   // `declare`, `local`, `repeat`). The analyzer's keyword set is deliberately
-  // narrower for command-position semantics; `corpus.reserved_word` is the
+  // narrower for command-position semantics; `lexicon.reserved_word` is the
   // painting source so the editor renders the manual's full reserved list as
   // keywords. See DESIGN.md §"Reserved word: an enumeration-primary doc
   // category".
   private reservedWordPainting = cached(
-    () => new Set<string>(this.corpus.reserved_word.keys()),
+    () => new Set<string>(this.lexicon.reserved_word.keys()),
   )
 
-  constructor(private corpus: DocCorpus) {}
+  constructor(private lexicon: Lexicon) {}
 
   provideDocumentSemanticTokens(doc: vscode.TextDocument) {
     const b = new vscode.SemanticTokensBuilder(SEMANTIC_LEGEND)

@@ -1,4 +1,4 @@
-// Model-free: a synthetic index, and `buildIndex` over the corpus with
+// Model-free: a synthetic index, and `buildIndex` over the lexicon with
 // synthetic vectors; the `built index` tests read the staged one (skipped
 // until `build:index` has run).
 
@@ -8,7 +8,7 @@ import { join } from "node:path"
 import * as fcu from "@carlwr/fastcheck-utils"
 import { escapeRegExp, memoized } from "@carlwr/typescript-extra"
 import { rm_rf } from "@carlwr/typescript-extra/node"
-import { loadCorpus } from "@carlwr/zsh-core"
+import { loadLexicon } from "@carlwr/zsh-core"
 import fc from "fast-check"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 import type { Rules } from "../../../nlp/core/rules"
@@ -41,7 +41,7 @@ import { arbViewVectors } from "../../_arbs"
 import { makeRecordText } from "../../_fixtures"
 import { artifactGate, loadIndexFromDisk, STAGED } from "../../_helpers"
 
-const corpus = loadCorpus()
+const lexicon = loadLexicon()
 let rules: Rules
 beforeAll(async () => {
   rules = await loadRulesYaml()
@@ -195,7 +195,7 @@ describe("writeIndex / readIndex", () => {
 })
 
 describe("validateIndex", () => {
-  // A structurally valid index of this corpus without the model: the vectors
+  // A structurally valid index of this lexicon without the model: the vectors
   // are zero (no unit-length check, by design — the flag is trusted).
   const zeroIndex = (): VectorIndex => ({
     version: INDEX_VERSION,
@@ -203,15 +203,15 @@ describe("validateIndex", () => {
     model_revision: MODEL_REVISION,
     dims: DIMS,
     normalized: true,
-    corpus_hash: corpusFingerprint(corpus),
-    records: corpusTexts(corpus, rules.synonyms.index_groups).map(text => ({
+    corpus_hash: corpusFingerprint(lexicon),
+    records: corpusTexts(lexicon, rules.synonyms.index_groups).map(text => ({
       text,
       vectors: perView(() => new Float32Array(DIMS)),
     })),
   })
 
-  it("accepts a zero-vector index of this corpus", () => {
-    expect(validateIndex(zeroIndex(), corpus, rules)).toEqual({ ok: true })
+  it("accepts a zero-vector index of this lexicon", () => {
+    expect(validateIndex(zeroIndex(), lexicon, rules)).toEqual({ ok: true })
   })
 
   it("checks header before records", () => {
@@ -259,7 +259,7 @@ describe("validateIndex", () => {
       ],
     ]
     for (const [label, patch, reason] of cases) {
-      const v = validateIndex({ ...base, ...patch }, corpus, rules)
+      const v = validateIndex({ ...base, ...patch }, lexicon, rules)
       expect(v.ok, label).toBe(false)
       if (!v.ok) expect(v.reason, label).toMatch(reason)
     }
@@ -274,7 +274,7 @@ describe("validateIndex", () => {
       synonyms: { ...rules.synonyms, index_groups: [group] },
     }
     rejected(
-      validateIndex(zeroIndex(), corpus, other),
+      validateIndex(zeroIndex(), lexicon, other),
       /nlp index record \d+ is /,
     )
   })
@@ -288,7 +288,7 @@ describe("buildIndex", () => {
     const embedded = new Map<string, Float32Array>()
     const progress: [number, number][] = []
     const index = await buildIndex({
-      corpus,
+      lexicon,
       rules,
       embedder: {
         embed: async texts =>
@@ -300,8 +300,8 @@ describe("buildIndex", () => {
       },
       onProgress: (done, total) => progress.push([done, total]),
     })
-    expect(validateIndex(index, corpus, rules)).toEqual({ ok: true })
-    expect(index.corpus_hash).toBe(corpusFingerprint(corpus))
+    expect(validateIndex(index, lexicon, rules)).toEqual({ ok: true })
+    expect(index.corpus_hash).toBe(corpusFingerprint(lexicon))
     // By value: view texts repeat across records, so the map holds one array per text.
     const misaligned: string[] = []
     let worst = 0
@@ -331,16 +331,16 @@ describe("built index", () => {
   it("validates the staged index and rejects it tampered", async ctx => {
     if (skipReason) ctx.skip(skipReason)
     const index = await staged()
-    expect(validateIndex(index, corpus, rules)).toEqual({ ok: true })
+    expect(validateIndex(index, lexicon, rules)).toEqual({ ok: true })
 
     rejected(
-      validateIndex({ ...index, corpus_hash: "0".repeat(64) }, corpus, rules),
+      validateIndex({ ...index, corpus_hash: "0".repeat(64) }, lexicon, rules),
       /corpus hash/,
     )
     rejected(
       validateIndex(
         { ...index, records: index.records.slice(0, -1) },
-        corpus,
+        lexicon,
         rules,
       ),
       /records, expected/,
@@ -353,7 +353,11 @@ describe("built index", () => {
       vectors: { ...first.vectors, body: first.vectors.body.slice(0, 1) },
     }
     rejected(
-      validateIndex({ ...index, records: [truncated, ...rest] }, corpus, rules),
+      validateIndex(
+        { ...index, records: [truncated, ...rest] },
+        lexicon,
+        rules,
+      ),
       /view body has 1 dims/,
     )
   })

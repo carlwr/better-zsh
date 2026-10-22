@@ -1,4 +1,4 @@
-// The lookup contract: the auto-generated corpus of canonical-identifier
+// The lookup contract: the auto-generated set of canonical-identifier
 // queries the search system must satisfy, plus its bare-layer evaluation.
 //
 // One entry per (record, surface-form kind, phrasing kind). Two phrasing
@@ -14,9 +14,9 @@
 // `${` … need a `top-K-equals-set` predicate, not `top1-in-set`.
 
 import {
-  type DocCorpus,
   docCategories,
   docCategoryLabels,
+  type Lexicon,
 } from "@carlwr/zsh-core"
 import type { LookupIndex } from "../core/lookup-map"
 import { byteOrder } from "../core/text"
@@ -69,14 +69,14 @@ export type LookupContract = {
  * with the `top1-in-set` predicate. Entries sort in field order (the
  * committed file's order); duplicate queries across records are kept.
  */
-export function buildLookupContract(corpus: DocCorpus): LookupContract {
+export function buildLookupContract(lexicon: Lexicon): LookupContract {
   const entries: ContractEntry[] = []
   for (const cat of docCategories) {
     const label = docCategoryLabels[cat]
-    for (const rec of corpus[cat].values()) {
+    for (const rec of lexicon[cat].values()) {
       const record = identityOf(rec)
       for (const { form, kind } of surfaceFormsFor(cat, rec)) {
-        const expectedSet = expectedSetFor(corpus, form)
+        const expectedSet = expectedSetFor(lexicon, form)
         if (expectedSet.length === 0) continue
         for (const [query, phrasingKind] of dedupedPhrasings(
           form,
@@ -128,12 +128,12 @@ function dedupedPhrasings(
  * verdict plus id/display equality in any category. Usually a single member;
  * `top1-in-set` accepts any member at slot 0.
  */
-function expectedSetFor(corpus: DocCorpus, query: string): readonly RecordId[] {
+function expectedSetFor(lexicon: Lexicon, query: string): readonly RecordId[] {
   const found: RecordId[] = []
-  const hit = resolverKey(corpus, query)
+  const hit = resolverKey(lexicon, query)
   if (hit) found.push(hit)
   for (const cat of docCategories) {
-    for (const rec of corpus[cat].values()) {
+    for (const rec of lexicon[cat].values()) {
       const identity = identityOf(rec)
       if (identity.id === query || rec.display === query) found.push(identity)
     }
@@ -204,7 +204,7 @@ export type BareEval = {
 
 /**
  * Bare-layer contract evaluation: every bare entry must resolve via the
- * lookup map. Pure on corpus + resolver — no embedder or index. Shared by
+ * lookup map. Pure on lexicon + resolver — no embedder or index. Shared by
  * the contract test and the tuning dashboard's fast tier.
  */
 export function evalBare(contract: LookupContract, idx: LookupIndex): BareEval {

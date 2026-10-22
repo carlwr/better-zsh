@@ -12,7 +12,7 @@ Single source of truth for the layout and the product dependency arrow set.
 ```
 .
 ├── packages/
-│   ├── zsh-core             TS lib: corpus, resolvers, rendering; emits the release assets
+│   ├── zsh-core             TS lib: lexicon, resolvers, rendering; emits the release assets
 │   ├── vscode-better-zsh    VS Code extension
 │   └── zshref-web           SPA; all NLP; index built at build time
 └── zshref-rs/               Rust crate: `zshref` CLI + `zshref-mcp` bins; not a pnpm member
@@ -28,7 +28,7 @@ An arrow reads "consumes, pinned by version"; its label is the mechanism:
                           zsh-core
             ┌────────────────┼──────────────────────┐
      workspace link    workspace link          release assets
-      (built dist/)     (built dist/)     (corpus JSON, resolver fixture)
+      (built dist/)     (built dist/)     (lexicon JSON, resolver fixture)
             ▼                ▼                      ▼
     vscode-better-zsh    zshref-web              zshref-rs
                       ┌──────┴──────┐
@@ -46,7 +46,7 @@ Invariants — what the shape was chosen for, and the constraint on any change t
 
 - one root of truth; every edge a pinned version of a standard mechanism
 - leaves have no consumers: no freshness oracles, no fingerprints
-- one behaviour mirror — the resolvers — owned by `zshref-rs`, checked against a fixture co-released with the corpus
+- one behaviour mirror — the resolvers — owned by `zshref-rs`, checked against a fixture co-released with the lexicon
 - one language crossing, one direction — TS → Rust — carried by data; the mirror above is its only behaviour component
 
 The shape before the 2026 reorg, and why it changed: the tag `pre-reorg` (its `.reorg-work/`).

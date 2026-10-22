@@ -3,7 +3,7 @@
 ## Layout rules
 
 - `src/docs/yodl/core/` — shared Yodl parsing machinery only.
-- `src/docs/yodl/extractors/` — corpus-specific extraction into zsh doc records.
+- `src/docs/yodl/extractors/` — source-specific extraction into zsh doc records.
 - `src/docs/yodl/extractors/modules/` — quirky modules get their own file; table-driven region modules go in `by-regions.ts`, flat lists in `trivial.ts`.
 
 ## Package imports
@@ -16,7 +16,7 @@ Canonical subpath list: `package.json` `exports`; per-subpath surface: `dist/typ
 
 ## Reference-dump review workflow
 
-When adding or changing parsing/rendering, dump the full rendered corpus and inspect — both parse and render bugs surface there.
+When adding or changing parsing/rendering, dump the full rendered lexicon and inspect — both parse and render bugs surface there.
 
 - Prefer actual zsh usage over raw upstream notation.
 - Option docs: `zsh` forms first, plain-zsh defaults over emulation forms.
@@ -25,4 +25,4 @@ When adding or changing parsing/rendering, dump the full rendered corpus and ins
 - Generate: `dump:refs [OUTDIR]`. Diff dumps before/after edits to spot regressions.
 - Review: for one-category changes read that category's file; for cross-cutting changes scan `all.md`.
 - Drift catchers: `src/test/render/heuristics.ts` + `known-offenders.ts` (contract in its header).
-- When a bug is found: prefer widening a heuristic so the family is caught corpus-wide; fall back to a targeted regression test only when a general heuristic is not tractable.
+- When a bug is found: prefer widening a heuristic so the family is caught lexicon-wide; fall back to a targeted regression test only when a general heuristic is not tractable.

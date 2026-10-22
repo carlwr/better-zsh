@@ -1,7 +1,7 @@
-//! `zsh_list` — enumerate corpus records (no `mdBody`), optional category filter.
+//! `zsh_list` — enumerate lexicon records (no `mdBody`), optional category filter.
 //! `limit=0` → metadata only (`matchesTotal` nonzero, `matches` empty).
 
-use crate::corpus::{Corpus, DocCategory};
+use crate::lexicon::{DocCategory, Lexicon};
 use crate::tools::envelope::{Entry, Envelope, entries};
 use crate::tools::schema::{MatchShape, Shape, default_limit, limit, non_null, output_schema};
 use crate::tools::{Field, Tool, ToolName, prose};
@@ -9,19 +9,19 @@ use anyhow::Result;
 use serde::Deserialize;
 use serde_json::Value;
 
-pub fn tool(corpus: &Corpus) -> Tool {
+pub fn tool(lexicon: &Lexicon) -> Tool {
     Tool::new(
         ToolName::List,
         prose::list(),
         vec![
             Field::optional(
                 "category",
-                prose::filter_category(corpus.index),
+                prose::filter_category(lexicon.index),
                 Shape::Category,
             ),
             Field::optional("limit", prose::limit(), Shape::Limit),
         ],
-        output_schema(&MatchShape::default(), corpus),
+        output_schema(&MatchShape::default(), lexicon),
         run,
     )
 }
@@ -35,8 +35,8 @@ struct Input {
     limit: u32,
 }
 
-fn run(input: Input, corpus: &Corpus) -> Result<Value> {
-    let pool = entries(corpus, input.category);
+fn run(input: Input, lexicon: &Lexicon) -> Result<Value> {
+    let pool = entries(lexicon, input.category);
     let total = pool.len();
     let matches: Vec<Entry> = pool.into_iter().take(input.limit as usize).collect();
     Envelope::new(matches, total).to_value()

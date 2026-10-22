@@ -26,7 +26,7 @@ const TRANSPARENT: ReadonlySet<string> = new Set([
 // Syntactic keywords in command position — `cmdHeadFactsOnLine` emits a
 // `reserved-word` fact, and (when `TRANSPARENT`) keeps `expectCmd` true.
 //
-// Deliberately *not* `corpus.reserved_word`:
+// Deliberately *not* `lexicon.reserved_word`:
 //   - Adds `]]` (analyzer-only) and keeps `in` for defensive positions.
 //   - Omits `declare`/`typeset`/`local`/`export`/`integer`/`float`/
 //     `readonly`/`foreach`/`repeat`/`end`/`nocorrect` — the analyzer treats
@@ -34,7 +34,7 @@ const TRANSPARENT: ReadonlySet<string> = new Set([
 //     past tests pinned this as load-bearing for command-position features.
 //
 // The semantic-token provider paints reserved words more broadly (it consumes
-// `corpus.reserved_word` directly). See DESIGN.md §"Reserved word: an
+// `lexicon.reserved_word` directly). See DESIGN.md §"Reserved word: an
 // enumeration-primary doc category".
 //
 // Exact membership is pinned by a lock-in test under `src/test/analysis/`.

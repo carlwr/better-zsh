@@ -1,4 +1,4 @@
-import { loadCorpus } from "@carlwr/zsh-core"
+import { loadLexicon } from "@carlwr/zsh-core"
 import { beforeEach, describe, expect, test, vi } from "vitest"
 import type * as vscode from "vscode"
 import { contribute } from "../contributions"
@@ -24,7 +24,7 @@ beforeEach(() => {
 describe("contribute", () => {
   test("registers every language feature once; the test hook only under the VS Code test runner", () => {
     vi.stubEnv("VSCODE_TEST_OPTIONS", "")
-    contribute(ctx(), loadCorpus())
+    contribute(ctx(), loadLexicon())
     expect(stub.registrations.sort()).toEqual([
       "completion",
       "definition",
@@ -40,7 +40,7 @@ describe("contribute", () => {
 
     stub.reset()
     vi.stubEnv("VSCODE_TEST_OPTIONS", "{}")
-    contribute(ctx(), loadCorpus())
+    contribute(ctx(), loadLexicon())
     expect(stub.registrations.filter(r => r === "command")).toHaveLength(1)
     vi.unstubAllEnvs()
   })
@@ -60,7 +60,7 @@ describe("contribute", () => {
       isClosed: false,
       getText: () => "echo",
     })
-    contribute(ctx(), loadCorpus())
+    contribute(ctx(), loadLexicon())
     expect(zsh.configureZsh).toHaveBeenCalledTimes(1)
     expect(zsh.zshCheck).toHaveBeenCalledTimes(1)
     configuredBeforeChecked()
@@ -88,7 +88,7 @@ describe("contribute", () => {
       uri: { scheme: "file", toString: () => "file:///notes.txt" },
       languageId: "plaintext",
     }
-    contribute(ctx(), loadCorpus())
+    contribute(ctx(), loadLexicon())
     expect(key()).toBe(false)
     window.visibleTextEditors.push({ document: { languageId: "shellscript" } })
     stub.fire("visibleEditors", undefined)

@@ -174,7 +174,7 @@ describe("parseZleWidgets — typed subsection (enrichment)", () => {
   })
 })
 
-describe("zle widgets — default bindings (corpus invariants)", () => {
+describe("zle widgets — default bindings (vendored-docs invariants)", () => {
   const zleYo = readVendoredYo("zle.yo")
   const docs = [
     ...parseZleWidgets(zleYo),
@@ -209,7 +209,7 @@ describe("zle widgets — default bindings (corpus invariants)", () => {
     ])
   })
 
-  // Vendored-corpus invariant (zle.yo + mod_deltochar.yo): 139 records list
+  // Vendored-docs invariant (zle.yo + mod_deltochar.yo): 139 records list
   // at least one binding, the rest carry `[]`. Bump on re-vendor.
   test("139 records list at least one binding", () => {
     expect(docs.filter(d => d.defaultBindings.length > 0)).toHaveLength(139)

@@ -1,5 +1,5 @@
 // Pure ranker math. Inputs are pre-computed (query string, query vector)
-// so this module has no embedder / corpus dependency.
+// so this module has no embedder / lexicon dependency.
 //
 // Vectors are f32 data (`Float32Array`); the arithmetic is plain doubles.
 // Deterministic — the summation orders are fixed — so the parity fixture (a

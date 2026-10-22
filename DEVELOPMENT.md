@@ -4,7 +4,7 @@ Repo-level notes; package detail lives in each package.
 
 ## zsh-core
 
-- `pnpm dump:refs` — the rendered reference corpus as markdown, for visual QA; workflow: `packages/zsh-core/AGENTS.md`
+- `pnpm dump:refs` — the rendered lexicon as markdown, for visual QA; workflow: `packages/zsh-core/AGENTS.md`
 - `pnpm docs:zsh-core` — builds the API site (as deployed to GitHub Pages) into `packages/zsh-core/.aux/docs/site/`
 
 ### Changes to the release assets

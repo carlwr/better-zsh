@@ -1,4 +1,4 @@
-// Pure — synthetic records, no corpus, no staged assets.
+// Pure — synthetic records, no lexicon, no staged assets.
 
 import * as fcu from "@carlwr/fastcheck-utils"
 import { allUnique, isNonEmpty, mapNonEmpty } from "@carlwr/typescript-extra"

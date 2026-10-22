@@ -11,10 +11,10 @@ use rmcp::{ErrorData, RoleServer, ServerHandler, ServiceExt};
 use serde_json::Value;
 use std::io::IsTerminal;
 use std::sync::Arc;
-use zshref::corpus::Corpus;
+use zshref::lexicon::Lexicon;
 use zshref::tools::ToolSet;
 use zshref::tools::text::Target;
-use zshref::{cli, corpus, tools};
+use zshref::{cli, lexicon, tools};
 
 const BIN: &str = "zshref-mcp";
 
@@ -74,7 +74,7 @@ fn main() {
 fn run(args: &[String]) -> Result<i32> {
     match decide(args, std::io::stdin().is_terminal()) {
         Action::Help => print!("{HELP}"),
-        Action::Version => println!("{BIN} {}", cli::version_string(&corpus::load_corpus()?)),
+        Action::Version => println!("{BIN} {}", cli::version_string(&lexicon::load_lexicon()?)),
         Action::BadArg(arg) => {
             eprintln!("{BIN}: unexpected argument '{arg}'\n{}", usage!());
             return Ok(2);
@@ -112,8 +112,8 @@ fn decide(args: &[String], stdin_is_terminal: bool) -> Action {
 
 #[tokio::main(flavor = "current_thread")]
 async fn serve() -> Result<()> {
-    let corpus = corpus::load_corpus()?;
-    let server = Server::new(ToolSet::build(&corpus), corpus);
+    let lexicon = lexicon::load_lexicon()?;
+    let server = Server::new(ToolSet::build(&lexicon), lexicon);
     let running = match server.serve(rmcp::transport::stdio()).await {
         Ok(running) => running,
         // The client went away before the handshake completed: nothing to do.
@@ -126,13 +126,13 @@ async fn serve() -> Result<()> {
 
 struct Server {
     tool_set: ToolSet,
-    corpus: Corpus,
+    lexicon: Lexicon,
     /// The `tools/list` payload, built once from `tool_set`.
     tools: Vec<McpTool>,
 }
 
 impl Server {
-    fn new(tool_set: ToolSet, corpus: Corpus) -> Self {
+    fn new(tool_set: ToolSet, lexicon: Lexicon) -> Self {
         let tools = tool_set
             .tools
             .iter()
@@ -149,14 +149,14 @@ impl Server {
             .collect();
         Self {
             tool_set,
-            corpus,
+            lexicon,
             tools,
         }
     }
 }
 
 /// The same hints for every tool: the tool layer only reads the embedded
-/// corpus (`tests/scope_fence.rs`). `destructive` and `idempotent` are
+/// lexicon (`tests/scope_fence.rs`). `destructive` and `idempotent` are
 /// moot once `read_only` holds; set anyway for clients that read them alone.
 fn annotations() -> ToolAnnotations {
     ToolAnnotations::new()
@@ -205,7 +205,7 @@ impl ServerHandler for Server {
             None => error(format!("unknown tool: {}", request.name)),
             Some(tool) => {
                 let input = Value::Object(request.arguments.unwrap_or_default());
-                match tool.call(&input, &self.corpus) {
+                match tool.call(&input, &self.lexicon) {
                     Ok(output) => CallToolResult::structured(output),
                     Err(err) => error(format!("{err:#}")),
                 }

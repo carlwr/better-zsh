@@ -7,7 +7,7 @@ me_dir=${0:A:h}
 
 help="
 Dump the CLI's output surface to a directory, for diffing across changes:
-help text, info, schema, the whole corpus as \`list\` sees it, and the
+help text, info, schema, the whole lexicon as \`list\` sees it, and the
 \`batch\` responses to a fixed request set plus a per-category sample.
 
 USAGE:

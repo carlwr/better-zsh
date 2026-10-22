@@ -17,7 +17,7 @@ const MODULE = "zsh/mathfunc" as const
 
 export function extractMathfunc(yo: YodlSrc): readonly MathfuncDoc[] {
   // Need raw yodl text (tt(...) macros intact) so tt()-token extractor and
-  // regex anchors agree. YNodeSeq (corpus path) re-serialises; string form
+  // regex anchors agree. YNodeSeq (loader path) re-serialises; string form
   // (tests) passes through.
   const raw = typeof yo === "string" ? yo : rawYodlText(yo)
   return parseMathfuncSource(raw)

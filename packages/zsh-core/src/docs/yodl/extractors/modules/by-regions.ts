@@ -1,4 +1,4 @@
-import type { CorpusYodlFile } from "../../../source-files.ts"
+import type { YodlSourceFile } from "../../../source-files.ts"
 import type { ModuleName } from "../../../taxonomy.ts"
 import type {
   BuiltinDoc,
@@ -13,16 +13,16 @@ import {
   type RegionSpec,
 } from "./helpers.ts"
 
-type GetNodes = (file: CorpusYodlFile) => YNodeSeq
+type GetNodes = (file: YodlSourceFile) => YNodeSeq
 
 interface RegionModule {
-  readonly file: CorpusYodlFile
+  readonly file: YodlSourceFile
   readonly module: ModuleName
   readonly regions: readonly RegionSpec[]
 }
 
 interface MergedBuiltinModule {
-  readonly file: CorpusYodlFile
+  readonly file: YodlSourceFile
   readonly module: ModuleName
 }
 

@@ -30,14 +30,14 @@ import {
   type SliceStat,
 } from "./mechanical"
 import type { EvalResult } from "./metric"
-import { loadQaCorpus } from "./qa-corpus"
 import {
   hardChecks,
   type QaSummary,
   scoreHardChecks,
-  scoreQaCorpus,
+  scoreQaSet,
   summaryJson,
 } from "./qa-score"
+import { loadQaSet } from "./qa-set"
 import {
   embedQuerySet,
   evalQuerySet,
@@ -106,7 +106,7 @@ export interface DashboardOptions {
   fast?: boolean
   /**
    * Smoke tier: every eval input cut to its first `cap` entries — the
-   * curated fixture, the mechanical set, the hard checks, the QA corpus.
+   * curated fixture, the mechanical set, the hard checks, the QA set.
    * The report then has the dashboard's shape and none of its meaning.
    */
   cap?: number
@@ -166,10 +166,10 @@ async function fullTier(
   const { committed, live } = t
   // `slice(0, undefined)` is the whole array: no cap, no cut.
   const set = await embedQuerySet(
-    buildMechanical(committed.corpus).slice(0, cap),
+    buildMechanical(committed.lexicon).slice(0, cap),
     committed,
   )
-  const qa = await loadQaCorpus()
+  const qa = await loadQaSet()
   const mechanical = evalMechanicalGraded(
     gradeQuerySet(set, live),
     set.entries.length,
@@ -179,8 +179,8 @@ async function fullTier(
     mech: ablation(gradings(set, t, mechanical), r => r.all.total),
     churn: candidate ? churnOf(set, t, false) : null,
     qa: summaryJson(
-      await scoreHardChecks(hardChecks(committed.corpus).slice(0, cap), live),
-      await scoreQaCorpus({ ...qa, entries: qa.entries.slice(0, cap) }, live),
+      await scoreHardChecks(hardChecks(committed.lexicon).slice(0, cap), live),
+      await scoreQaSet({ ...qa, entries: qa.entries.slice(0, cap) }, live),
     ),
   }
 }
@@ -209,7 +209,7 @@ export async function buildDashboard(
   const cur = gradings(curated, t)
   const curatedChurn = candidate ? churnOf(curated, t, true) : null
   const sanity = await buildSanityFixture(live)
-  const bare = evalBare(buildLookupContract(assets.corpus), assets.lookup)
+  const bare = evalBare(buildLookupContract(assets.lexicon), assets.lookup)
   const full = fast ? null : await fullTier(t, opts)
 
   return {

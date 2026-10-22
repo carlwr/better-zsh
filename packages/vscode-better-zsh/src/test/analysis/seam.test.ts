@@ -3,9 +3,9 @@ import { join, resolve } from "node:path"
 import { describe, expect, test } from "vitest"
 
 // `src/analysis/` is a self-contained user-code scanner: editor-neutral and
-// corpus-free, so a second host (an LSP, another editor) could lift it out
-// as a unit. The two corpus-pinned vocabularies (`precmd-names.ts`,
-// `KEYWORD_HEADS`) are the extension's mirrors of the corpus, held equal by
+// lexicon-independent, so a second host (an LSP, another editor) could lift it
+// out as a unit. The two lexicon-pinned vocabularies (`precmd-names.ts`,
+// `KEYWORD_HEADS`) are the extension's mirrors of the lexicon, held equal by
 // the lock-in tests beside this file — the modules themselves never load it.
 const DIR = resolve(__dirname, "..", "..", "analysis")
 

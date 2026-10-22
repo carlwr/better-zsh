@@ -200,7 +200,7 @@ type _AssertRecordsExtendBase = Assert<
 >
 
 /**
- * Any corpus record: the union over the categories, discriminated by
+ * Any lexicon record: the union over the categories, discriminated by
  * `category` — what the category walk hands out (`resolveAll`). For the
  * boundary where a record's category is a runtime fact; code inside stays
  * parametric over `K`.
@@ -238,7 +238,7 @@ export const subKindOf = <K extends DocCategory>(
 
 /**
  * Canonical zsh loadable-module string set. Values of any `module?:` field
- * across the corpus must come from this list.
+ * across the lexicon must come from this list.
  */
 export const moduleNames = [
   "zsh/attr",

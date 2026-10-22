@@ -5,8 +5,8 @@ import { parseOptions } from "../../docs/yodl/extractors/options"
 import { mkDocumented_ } from "../id-fns"
 import {
   by,
-  expectDocCorpus,
   expectNoYodlLeaks,
+  expectParsedDocs,
   only,
   readVendoredYo,
 } from "./test-util"
@@ -153,8 +153,8 @@ Report status of background jobs immediately.
     const opts = parseOptions(OPTS_YO)
     const byName = by(opts, o => o.id)
 
-    test("corpus parses", () =>
-      expectDocCorpus({
+    test("vendored source parses", () =>
+      expectParsedDocs({
         docs: opts,
         minCount: 100,
         keyOf: o => o.id,

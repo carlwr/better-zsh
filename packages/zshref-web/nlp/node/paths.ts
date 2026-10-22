@@ -14,7 +14,7 @@ const nlpDir = resolve(pkgDir, "nlp")
 // sentence fixture (NLP.md).
 const rulesDir = resolve(nlpDir, "rules")
 // Committed, generated data (the `UPDATE_*` tests regenerate it) and the
-// held-out QA corpus with its editor schema.
+// held-out QA set with its editor schema.
 const dataDir = resolve(nlpDir, "data")
 // Build output (gitignored): what the SPA fetches, relative to the page,
 // under `artifacts/`; `scripts/build-index.ts` writes it. The model:
@@ -34,8 +34,8 @@ export const PATHS = {
   lookupContract: resolve(dataDir, "lookup-contract.json"),
   parityFixture: resolve(dataDir, "parity-fixture.json"),
   sanityFixture: resolve(dataDir, "sanity-fixture.json"),
-  qaCorpus: resolve(dataDir, "nlp-corpus.yaml"),
-  qaSchema: resolve(dataDir, "nlp-corpus.schema.json"),
+  qaSet: resolve(dataDir, "qa-set.yaml"),
+  qaSchema: resolve(dataDir, "qa-set.schema.json"),
   modelDir: resolve(auxDir, "model"),
   queryCache: resolve(auxDir, "query-cache.json"),
   artifactsDir,

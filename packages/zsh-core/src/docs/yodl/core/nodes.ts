@@ -104,7 +104,7 @@ function parseSeq(src: string, start: number, stop?: ")"): ParseResult {
 
 // Macros with a fixed argument count. Without this cap, the parser greedily
 // consumes every adjacent `(...)` group as another macro arg, swallowing
-// trailing parenthesized literals. The vendored corpus relies on tt() being
+// trailing parenthesized literals. The vendored sources rely on tt() being
 // 1-arg: e.g. `tt(SP())(single unquoted space)` is meant to be `tt(SP())`
 // followed by literal `(single unquoted space)`, but without the cap the
 // trailing `(...)` becomes a discarded args[1] of tt.
@@ -118,7 +118,7 @@ function parseMacroAt(
   src: string,
   pos: number,
 ): { node: YMacro; pos: number } | undefined {
-  // A preceding digit is allowed: the corpus contains forms like `1tt(})`.
+  // A preceding digit is allowed: the manual contains forms like `1tt(})`.
   if (isNamePrefix(src.charCodeAt(pos - 1))) return undefined
 
   const name = macroNameAt(src, pos)

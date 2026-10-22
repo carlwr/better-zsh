@@ -1,4 +1,4 @@
-// Reference dump: every corpus record rendered to markdown, split into one
+// Reference dump: every lexicon record rendered to markdown, split into one
 // file per category plus `all.md`, for review and before/after diffing.
 // Internal — outside the published surface; used by the `dump:refs` CLI and
 // the render tests.
@@ -6,7 +6,7 @@
 import { mkdir, writeFile } from "node:fs/promises"
 import { join } from "node:path"
 import { docCategoryPreambles } from "../src/docs/category-preamble.ts"
-import type { DocCorpus } from "../src/docs/corpus.ts"
+import type { Lexicon } from "../src/docs/lexicon.ts"
 import {
   categoryOf,
   type DocCategory,
@@ -30,20 +30,20 @@ export type RefDoc = { [K in DocCategory]: RefDocK<K> }[DocCategory]
 
 function mkRefDocs<K extends DocCategory>(
   docs: readonly DocRecordMap[K][],
-  corpus: DocCorpus,
+  lexicon: Lexicon,
 ): RefDocK<K>[] {
   return docs.map(doc => ({
     kind: categoryOf(doc),
     id: genericId(doc),
     heading: doc.display,
-    md: renderRecord(corpus, doc).mdBody,
+    md: renderRecord(lexicon, doc).mdBody,
   }))
 }
 
-/** All records rendered, in corpus order — the dump never re-sorts. */
-export function refDocs(corpus: DocCorpus): readonly RefDoc[] {
+/** All records rendered, in lexicon order — the dump never re-sorts. */
+export function refDocs(lexicon: Lexicon): readonly RefDoc[] {
   return docCategories.flatMap(
-    kind => mkRefDocs([...corpus[kind].values()], corpus) as RefDoc[],
+    kind => mkRefDocs([...lexicon[kind].values()], lexicon) as RefDoc[],
   )
 }
 

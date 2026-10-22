@@ -20,7 +20,7 @@ const TRAP_SECTION = "Trap Functions"
  * Two subsections contribute:
  * - `Hook Functions`: each has a companion `${name}_functions` array,
  *   populated into `hookArray`.
- * - `Trap Functions`: the template header is `tt(TRAP)var(NAL)`; its corpus
+ * - `Trap Functions`: the template header is `tt(TRAP)var(NAL)`; its
  *   id is the literal string `TRAPNAL`.
  */
 export function parseSpecialFunctions(

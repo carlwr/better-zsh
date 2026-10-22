@@ -57,7 +57,7 @@ export async function renderMarkdown(src: string): Promise<string> {
 // `_(form N of M)_`). They carry no fenced code, so Shiki never runs — a plain
 // synchronous MarkdownIt renders them without the async highlighter build,
 // keeping headings cheap. `html: false` escapes any stray markup, so `{@html}`
-// of corpus-sourced titles stays injection-safe.
+// of record titles stays injection-safe.
 // `renderInline` emits inline HTML with no wrapping <p>.
 const inlineMd = new MarkdownIt({ html: false, linkify: false, breaks: false })
 

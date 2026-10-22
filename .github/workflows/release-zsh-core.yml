@@ -171,5 +171,5 @@ jobs:
           pre=; [[ "$version" != *-* ]] || pre=--prerelease
           gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" $pre \
             --title "zsh-core $version" \
-            --notes "Generated zsh corpus JSON, JSON Schema and resolver conformance fixture for @carlwr/zsh-core $version."
+            --notes "Generated zsh lexicon JSON, JSON Schema and resolver conformance fixture for @carlwr/zsh-core $version."
           gh release upload "$TAG" --clobber *.tar.gz *.tar.gz.sha256

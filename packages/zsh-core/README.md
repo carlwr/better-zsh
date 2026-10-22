@@ -8,7 +8,7 @@ Library-first: the VS Code extension, the web SPA, and the Rust crate (CLI + MCP
 
 ## What you get
 
-- **The data model at the root** — the corpus (`loadCorpus`, `DocCorpus`), the category ontology (`DocCategory`, `docCategories`, `DocRecordMap`) and the record types, each carrying its `category` and its identity brand (`Documented<K>`).
+- **The data model at the root** — the lexicon (`loadLexicon`, `Lexicon`), the category ontology (`DocCategory`, `docCategories`, `DocRecordMap`) and the record types, each carrying its `category` and its identity brand (`Documented<K>`).
 - **Operations as subpaths** — `./resolver`, `./render`, `./assets`, `./meta`.
 - **Orthogonal primitives** — raw-to-doc resolution and markdown rendering stay separate.
 - **Release assets** — a versioned index plus one record file (every category's records under its category), and a resolver conformance fixture for resolver mirrors, each with a JSON Schema (the record file validates against its schema's root, a category's records against `#/$defs/<category>`); attached to the GitHub release tag for consumers outside TypeScript.
@@ -32,54 +32,54 @@ Deno: `deno add npm:@carlwr/zsh-core`; run with `--allow-read` — the vendored 
 ## Minimal usage
 
 ```ts
-import { loadCorpus } from "@carlwr/zsh-core"
+import { loadLexicon } from "@carlwr/zsh-core"
 import { resolve } from "@carlwr/zsh-core/resolver"
 import { renderRecord } from "@carlwr/zsh-core/render"
 
-const corpus = loadCorpus()
-const hit = resolve(corpus, "option", "NO_AUTO_CD")
+const lexicon = loadLexicon()
+const hit = resolve(lexicon, "option", "NO_AUTO_CD")
 if (hit) {
   console.log(hit.record.id)         // → autocd
   console.log(hit.feedback)          // → { kind: "input-negated" }
-  const { title, mdBody } = renderRecord(corpus, hit.record)
+  const { title, mdBody } = renderRecord(lexicon, hit.record)
   console.log(`${title}\n\n${mdBody}`)
 }
 ```
 
 ## Design posture
 
-- **Static, not environment-aware.** The corpus is bundled; no probing of the host zsh, no `$commands` / `$aliases` / runtime `setopt` readout. Answers are the same on every machine.
-- **Lazy corpus.** `loadCorpus()` locates the data and returns; a category is parsed on first access, once. Touch few categories, parse few files.
+- **Static, not environment-aware.** The zsh manual sources are bundled; no probing of the host zsh, no `$commands` / `$aliases` / runtime `setopt` readout. Answers are the same on every machine.
+- **Lazy lexicon.** `loadLexicon()` locates the data and returns; a category is parsed on first access, once. Touch few categories, parse few files.
 - **Parametric over per-category specialisation.** `DocCategory` is a closed union; adding a category is a local drop-in that the type system propagates.
 - **Focused imports.** The root is the data model; import the operations on it — resolution, rendering, assets, metadata — from named subpaths.
 - **Orthogonal API.** `resolve` + `renderRecord` compose; a hit carries the record, so nothing is looked up twice, and no combined "raw string → markdown" convenience is exposed — that's a deliberate design choice, not an omission. See [`DESIGN.md`](https://github.com/carlwr/better-zsh/blob/main/DESIGN.md) §"API orthogonality".
 
 ## Performance
 
-Measured on an Apple M1 with Node 26, calling the built ESM entry points (`dist/*.mjs`). Median of 5–7 fresh processes for cold figures. Corpus: 40 `.yo` files (1.06 MB, 25k lines) → 1,312 records.
+Measured on an Apple M1 with Node 26, calling the built ESM entry points (`dist/*.mjs`). Median of 5–7 fresh processes for cold figures. Sources: 40 `.yo` files (1.06 MB, 25k lines) → 1,312 records.
 
 Loading, cold (fresh process):
 
 | step | time |
 |---|---|
 | import `@carlwr/zsh-core` | ~5 ms |
-| `loadCorpus()` | ~0.1 ms (locates the data; parses nothing) |
+| `loadLexicon()` | ~0.1 ms (locates the data; parses nothing) |
 | first access, one category (`option`, 197 records) | ~14 ms |
 | first access, one category (`builtin`, 131 records) | ~35 ms |
 | first access, every category | ~105 ms |
 
 Of the all-categories figure, parsing the Yodl source is ~30 ms; extracting records is the rest.
 
-Warm: `loadCorpus()` is memoized per process and each category is built once, so later calls and re-accesses cost microseconds. A long-lived host (editor, server) pays the cold cost once.
+Warm: `loadLexicon()` is memoized per process and each category is built once, so later calls and re-accesses cost microseconds. A long-lived host (editor, server) pays the cold cost once.
 
-Queries, corpus already loaded, over every record's `id` (1,312 queries):
+Queries, lexicon already loaded, over every record's `id` (1,312 queries):
 
 | operation | throughput | per op |
 |---|---|---|
-| `resolve(corpus, cat, raw)`, hit | ~7.7M/s | ~0.1 µs |
-| `resolve(corpus, cat, raw)`, miss | ~3M/s | ~0.3 µs |
-| `resolveAll(corpus, raw)` | ~250k/s | ~4 µs |
-| `renderRecord(corpus, record)` | ~180k/s | ~5.5 µs |
+| `resolve(lexicon, cat, raw)`, hit | ~7.7M/s | ~0.1 µs |
+| `resolve(lexicon, cat, raw)`, miss | ~3M/s | ~0.3 µs |
+| `resolveAll(lexicon, raw)` | ~250k/s | ~4 µs |
+| `renderRecord(lexicon, record)` | ~180k/s | ~5.5 µs |
 | `resolve` + `renderRecord` | ~190k/s | ~5 µs |
 | `resolveAll` + `renderRecord` per hit | ~90k/s | ~11 µs |
 

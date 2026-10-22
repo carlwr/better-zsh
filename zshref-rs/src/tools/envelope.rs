@@ -1,6 +1,6 @@
 //! Result envelope + entry shape. Struct field order is wire key order.
 
-use crate::corpus::{Corpus, DocCategory, Record};
+use crate::lexicon::{DocCategory, Lexicon, Record};
 use anyhow::Result;
 use serde::Serialize;
 use serde_json::Value;
@@ -36,24 +36,24 @@ impl<M: Serialize> Envelope<M> {
 /// `{category, id, display, subKind?, score?}` entry for `list`/`search`.
 #[derive(Clone, Copy, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Entry<'c> {
+pub struct Entry<'lex> {
     pub category: DocCategory,
-    pub id: &'c str,
-    pub display: &'c str,
+    pub id: &'lex str,
+    pub display: &'lex str,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub sub_kind: Option<&'c str>,
+    pub sub_kind: Option<&'lex str>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub score: Option<f64>,
 }
 
-impl<'c> Entry<'c> {
-    /// Corpus-wide identity.
-    pub fn key(&self) -> (DocCategory, &'c str) {
+impl<'lex> Entry<'lex> {
+    /// Lexicon-wide identity.
+    pub fn key(&self) -> (DocCategory, &'lex str) {
         (self.category, self.id)
     }
 
     /// `rec` as a score-less entry.
-    pub fn of(category: DocCategory, rec: &'c Record) -> Self {
+    pub fn of(category: DocCategory, rec: &'lex Record) -> Self {
         Self {
             category,
             id: rec.id(),
@@ -64,10 +64,10 @@ impl<'c> Entry<'c> {
     }
 }
 
-/// Every record as a score-less `Entry`, in corpus order, optionally one
+/// Every record as a score-less `Entry`, in lexicon order, optionally one
 /// category only.
-pub fn entries(corpus: &Corpus, category: Option<DocCategory>) -> Vec<Entry<'_>> {
-    corpus
+pub fn entries(lexicon: &Lexicon, category: Option<DocCategory>) -> Vec<Entry<'_>> {
+    lexicon
         .categories
         .iter()
         .filter(|cat| category.is_none_or(|f| cat.name == f))

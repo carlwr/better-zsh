@@ -1,4 +1,4 @@
-import type { DocCategory, DocCorpus, DocRecordMap } from "@carlwr/zsh-core"
+import type { DocCategory, DocRecordMap, Lexicon } from "@carlwr/zsh-core"
 import {
   categoryFooter,
   type RenderedRecord,
@@ -14,10 +14,10 @@ import * as vscode from "vscode"
  * bolding.
  */
 export function recordMarkdown<K extends DocCategory>(
-  corpus: DocCorpus,
+  lexicon: Lexicon,
   doc: DocRecordMap[K],
 ): vscode.MarkdownString {
-  return renderedMarkdown(renderRecord(corpus, doc), doc)
+  return renderedMarkdown(renderRecord(lexicon, doc), doc)
 }
 
 /** `recordMarkdown` for an already-rendered record (a body-less record shows title and category only). */

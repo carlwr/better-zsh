@@ -12,7 +12,7 @@ import { itemSigs } from "./item-entries.ts"
 // Sigs here are literal doc templates — e.g. `${name:-word}` — not live
 // user-code tokens. Placeholder names mirror the upstream manual; an
 // exact-string table means upstream identifier drift (e.g. `pattern` →
-// `patn`) is caught on next corpus parse rather than silently mis-classifying.
+// `patn`) is caught on next source parse rather than silently mis-classifying.
 type SigClassification = {
   readonly subKind: ParamExpnSubKind
   readonly placeholders: readonly string[]
@@ -99,7 +99,7 @@ const SIG_CLASSIFICATION: Readonly<Record<string, SigClassification>> = {
  *   `renderInlineMd` leaves a lone backtick and `#%` never becomes an
  *   inline-code span like its siblings.
  *
- * Exported so `loadCorpus` patches the shared file once; also applied here
+ * Exported so `loadLexicon` patches the shared file once; also applied here
  * for direct string callers (tests, one-off tools).
  */
 export function fixupExpnYo(yo: string): string {

@@ -13,7 +13,7 @@ import { parseShellParams } from "../../docs/yodl/extractors/shell-params"
 import { parseSubscriptFlags } from "../../docs/yodl/extractors/subscript-flags"
 import { parseZleWidgets } from "../../docs/yodl/extractors/zle-widgets"
 import { mkDocumented_ } from "../id-fns"
-import { by, expectDocCorpus, only, readVendoredYo } from "./test-util"
+import { by, expectParsedDocs, only, readVendoredYo } from "./test-util"
 
 const sp = mkDocumented_("special_param")
 const rw = mkDocumented_("reserved_word")
@@ -192,13 +192,13 @@ enditem()`
   })
 
   // `complex_command`-covered reserved-word heads intentionally omit desc;
-  // `descOf` returns `undefined` for them so `expectDocCorpus` skips the
+  // `descOf` returns `undefined` for them so `expectParsedDocs` skips the
   // desc-truthy check while still requiring ids + sections.
   test.each([
     [
       "redirections",
       () =>
-        expectDocCorpus({
+        expectParsedDocs({
           docs: parseRedirs(REDIR_YO),
           minCount: 18,
           keyOf: doc => doc.sig,
@@ -209,7 +209,7 @@ enditem()`
     [
       "reserved words",
       () =>
-        expectDocCorpus({
+        expectParsedDocs({
           docs: parseReswords(GRAMMAR_YO),
           minCount: 20,
           keyOf: doc => doc.id,
@@ -220,7 +220,7 @@ enditem()`
     [
       "subscript flags",
       () =>
-        expectDocCorpus({
+        expectParsedDocs({
           docs: parseSubscriptFlags(PARAMS_YO),
           minCount: 10,
           keyOf: doc => doc.sig,
@@ -231,7 +231,7 @@ enditem()`
     [
       "special parameters",
       () =>
-        expectDocCorpus({
+        expectParsedDocs({
           docs: parseShellParams(PARAMS_YO),
           minCount: 80,
           keyOf: doc => doc.id,
@@ -250,7 +250,7 @@ enditem()`
     [
       "parameter flags",
       () =>
-        expectDocCorpus({
+        expectParsedDocs({
           docs: parseParamFlags(EXPN_YO),
           minCount: 40,
           keyOf: doc => doc.sig,
@@ -267,7 +267,7 @@ enditem()`
     [
       "history",
       () =>
-        expectDocCorpus({
+        expectParsedDocs({
           docs: parseHistory(EXPN_YO),
           minCount: 30,
           keyOf: doc => `${doc.subKind}:${doc.id}`,
@@ -285,7 +285,7 @@ enditem()`
     [
       "glob operators",
       () =>
-        expectDocCorpus({
+        expectParsedDocs({
           docs: parseGlobOps(EXPN_YO),
           minCount: 12,
           keyOf: doc => doc.id,
@@ -296,7 +296,7 @@ enditem()`
     [
       "glob flags",
       () =>
-        expectDocCorpus({
+        expectParsedDocs({
           docs: parseGlobFlags(EXPN_YO),
           minCount: 10,
           keyOf: doc => doc.sig,
@@ -307,7 +307,7 @@ enditem()`
     [
       "glob qualifiers",
       () =>
-        expectDocCorpus({
+        expectParsedDocs({
           docs: parseGlobQualifiers(EXPN_YO),
           minCount: 30,
           keyOf: doc => doc.id,
@@ -318,7 +318,7 @@ enditem()`
     [
       "complex commands",
       () =>
-        expectDocCorpus({
+        expectParsedDocs({
           docs: parseComplexCommands(GRAMMAR_YO),
           minCount: 10,
           keyOf: doc => doc.id,
@@ -329,7 +329,7 @@ enditem()`
     [
       "prompt escapes",
       () =>
-        expectDocCorpus({
+        expectParsedDocs({
           docs: parsePromptEscapes(PROMPT_YO),
           minCount: 40,
           keyOf: doc => doc.id,
@@ -341,7 +341,7 @@ enditem()`
     [
       "zle widgets",
       () =>
-        expectDocCorpus({
+        expectParsedDocs({
           docs: parseZleWidgets(ZLE_YO),
           minCount: 180,
           keyOf: doc => doc.id,
@@ -355,5 +355,5 @@ enditem()`
           ],
         }),
     ],
-  ] as const)("vendored %s corpus parses", (_, run) => run())
+  ] as const)("vendored %s source parses", (_, run) => run())
 })

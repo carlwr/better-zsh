@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest"
 import { parseParamExpns } from "../../docs/yodl/extractors/param-expns"
 import { mkDocumented_ } from "../id-fns"
-import { by, expectDocCorpus, only, readVendoredYo } from "./test-util"
+import { by, expectParsedDocs, only, readVendoredYo } from "./test-util"
 
 const EXPN_YO = readVendoredYo("expn.yo")
 const pex = mkDocumented_("param_expn")
@@ -88,7 +88,7 @@ describe("parseParamExpns", () => {
     const bySig = by(docs, d => d.sig as string)
 
     test("overall shape", () => {
-      expectDocCorpus({
+      expectParsedDocs({
         docs,
         minCount: 25,
         keyOf: d => d.sig,

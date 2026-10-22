@@ -16,7 +16,7 @@
 //   resolution: its scores carry the embedder runtime's platform noise, so
 //   they are asserted within a tolerance, never exactly.
 
-import type { DocCategory, DocCorpus } from "@carlwr/zsh-core"
+import type { DocCategory, Lexicon } from "@carlwr/zsh-core"
 import { z } from "zod"
 
 import { rank } from "../core/rank"
@@ -114,7 +114,7 @@ export const PARITY_QUERIES: readonly string[] = [
 ]
 
 /**
- * Corpus records the fixture's miniature index is built from. Real records,
+ * Lexicon records the fixture's miniature index is built from. Real records,
  * so lexical overlap stays meaningful; curated for the branches
  * `PARITY_QUERIES` aims at. Category sizes are deliberately
  * unequal, which pins the rarity penalty the moment its weight stops being
@@ -147,15 +147,15 @@ export const PARITY_INDEX_TAG = "synthetic:parity-fixture"
 
 /** The miniature index: the curated records' real retrieval text, synthetic vectors. */
 export function buildParityIndex(
-  corpus: DocCorpus,
+  lexicon: Lexicon,
   indexGroups: IndexGroups,
 ): VectorIndex {
-  const texts = corpusTexts(corpus, indexGroups)
+  const texts = corpusTexts(lexicon, indexGroups)
   const records = PARITY_INDEX_RECORDS.map(({ category, id }) => {
     const text = texts.find(t => t.category === category && t.id === id)
     if (!text)
       throw new Error(
-        `parity index record ${category}/${id} is not in the corpus`,
+        `parity index record ${category}/${id} is not in the lexicon`,
       )
     return {
       text,
@@ -182,10 +182,10 @@ const scored = (m: RankedMatch): Scored => ({
 /** Per query: synthetic query vector, the top `PARITY_LIMIT` of the ranker
  * over the mini index. No lookup-map promote — this pins ranker math alone. */
 export function buildParityFixture(
-  corpus: DocCorpus,
+  lexicon: Lexicon,
   rules: Rules,
 ): ParityFixture {
-  const index = buildParityIndex(corpus, rules.synonyms.index_groups)
+  const index = buildParityIndex(lexicon, rules.synonyms.index_groups)
   const entries = PARITY_QUERIES.map(query => {
     const queryVec = syntheticVec(["query", query])
     const ranked = rank(query, queryVec, index, rules)

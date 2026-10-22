@@ -47,14 +47,14 @@ Pushed tags and registry alphas exist to exercise CI and release workflows, not 
 
 ### zsh-core package imports
 
-The root of `@carlwr/zsh-core` is the corpus and its data model, corpus-free helpers included (`normalizeOptName`); import operations on the corpus from their explicit subpaths so dependency arrows stay visible and rollups stay legible. Subpath inventory: `packages/zsh-core/AGENTS.md`.
+The root of `@carlwr/zsh-core` is the lexicon and its data model, lexicon-independent helpers included (`normalizeOptName`); import operations on the lexicon from their explicit subpaths so dependency arrows stay visible and rollups stay legible. Subpath inventory: `packages/zsh-core/AGENTS.md`.
 
 ### Never enumerate or count `DocCategory`
 
 Hand-written category lists drift. Same posture for other closed zsh-core unions (e.g. `ResolverFeedback` kinds).
 
 - JSDoc, comments, docs: examples, not exhaustive lists; no hard-coded counts.
-- Runtime strings and JSON Schema `enum` values interpolate from canonical zsh-core exports — in the Rust crate, from the embedded `index.json` and corpus — never hand-typed.
+- Runtime strings and JSON Schema `enum` values interpolate from canonical zsh-core exports — in the Rust crate, from the embedded `index.json` and lexicon — never hand-typed.
 - Category-indexed tables: `DESIGN.md` §"Category-indexed artifacts belong in zsh-core".
 
 ### Rendered reference prose

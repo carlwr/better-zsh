@@ -8,7 +8,7 @@ A reference for zsh syntax, as a command-line tool and as a [Model Context Proto
 
 ## Why zshref?
 
-Built for agents, acceptable for humans. One crate, two faces over the same parsed zsh reference: the `zshref` CLI and the `zshref-mcp` MCP server. What the CLI adds on top of the shared corpus:
+Built for agents, acceptable for humans. One crate, two faces over the same parsed zsh reference: the `zshref` CLI and the `zshref-mcp` MCP server. What the CLI adds:
 
 - **Single-file executable** — no Node, Python, or zsh at runtime; drops into containers, air-gapped CI, and minimal base images.
 - **Pipes and scripts.** Parseable output stays on stdout; errors and warnings stay on stderr. Explicit help/version also uses stdout. Exit codes are stable. `zshref docs --key AUTO_CD | jq ...` is the intended shape, including for LLM agents composing through `sh`.
@@ -19,7 +19,7 @@ What the MCP server adds: one line in a client config (Claude Code, Claude Deskt
 What both share — and, for most users, the reason to pick either over `man zshall | grep`:
 
 - **Structured, not textual.** Parsed from upstream Yodl source into typed per-category records, not regex-scraped from `man`. Every record carries its own shape; every category carries its own resolver.
-- **Non-trivial resolvers.** Corpus-aware `NO_*` negation (including the `NOTIFY` / `NO_NOTIFY` edge case), single-letter option flags (`-J` / `+J`), redirection decomposition into `groupOp` + tail, parameter-expansion sig matching. The real value-add.
+- **Non-trivial resolvers.** `NO_*` negation checked against the real option names (including the `NOTIFY` / `NO_NOTIFY` edge case), single-letter option flags (`-J` / `+J`), redirection decomposition into `groupOp` + tail, parameter-expansion sig matching. The real value-add.
 - **Token-efficient.** `search` and `list` return identity-only rows (no `mdBody`); only `docs` returns the rendered markdown body. The closed category enum surfaces as shell-completion values and clap `PossibleValues`, not prose — callers don't burn tokens recalling category names.
 - **No trust surface.** No shell execution, no subprocess, no network, no filesystem writes, no logs, no caches, no config files, no telemetry, no environment-variable reads beyond terminal presentation — the CLI's `NO_COLOR` / `CLICOLOR_FORCE` color gates, and clap's color and help-width detection (`TERM`, `CLICOLOR`, `CI`, `COLUMNS`, `LINES`); the MCP server reads none. The MCP server's only side effect is writing JSON-RPC frames to stdout (fatal errors to stderr). Structurally enforced by a scope-fence test, not policy.
 
@@ -77,7 +77,7 @@ cargo install zshref --version 0.1.0-alpha.3                  # the CLI
 cargo install zshref --version 0.1.0-alpha.3 --features mcp   # CLI + MCP server
 ```
 
-Build from source: requires the full monorepo checkout (the `better-zsh` Node/pnpm workspace), because the bundled JSON corpus is generated from the TypeScript side and embedded at compile time:
+Build from source: requires the full monorepo checkout (the `better-zsh` Node/pnpm workspace), because the bundled JSON reference data is generated from the TypeScript side and embedded at compile time:
 
 ```sh
 git clone https://github.com/carlwr/better-zsh
@@ -120,7 +120,7 @@ zshref search --query echo --category builtin --limit 5
 # Enumerate records in a category — id-only, no `mdBody`.
 zshref list --category option --limit 200
 
-# Emit version, corpus + upstream metadata.
+# Emit version, reference + upstream metadata.
 zshref info
 
 # Emit JSON Schema for tool inputs + outputs (codegen / programmatic
@@ -224,7 +224,7 @@ claude mcp add zshref -- npx -y @carlwr/zshref-mcp
 
 Three tools, one intent axis each; the same three the CLI exposes as subcommands. All return the envelope `{ matches, matchesReturned, matchesTotal }`; `matchesReturned < matchesTotal` means `limit` truncated the result. Only `zsh_docs` carries the rendered markdown body — pair `zsh_search` / `zsh_list` results with `zsh_docs` for the full doc. Every tool advertises an `outputSchema`; responses carry `structuredContent` alongside the JSON text block.
 
-- **`zsh_docs`** — look up the docs for a zsh key (`key`, optional `category`). Resolution is corpus-aware: case-insensitive option matching, underscore stripping, `NO_*` negation, single-letter option flags, redirection decomposition, history event designators. With `category` omitted, every category is tried; a few tokens (`for`, `[[`, `function`, `nocorrect`, `-e`) match in more than one. Rows carry `{ category, id, display, title, mdBody, subKind?, feedback? }` — `title` is the record heading, not repeated in `mdBody`; `feedback` marks a match reached through a lossy normalization.
+- **`zsh_docs`** — look up the docs for a zsh key (`key`, optional `category`). Resolvers normalize input forms: case-insensitive option matching, underscore stripping, `NO_*` negation, single-letter option flags, redirection decomposition, history event designators. With `category` omitted, every category is tried; a few tokens (`for`, `[[`, `function`, `nocorrect`, `-e`) match in more than one. Rows carry `{ category, id, display, title, mdBody, subKind?, feedback? }` — `title` is the record heading, not repeated in `mdBody`; `feedback` marks a match reached through a lossy normalization.
 
   ```json
   { "key": "NO_AUTO_CD" }
@@ -265,7 +265,7 @@ Three tools, one intent axis each; the same three the CLI exposes as subcommands
   }
   ```
 
-- **`zsh_list`** — enumerate records (optional `category`, `limit`); identity-only rows like `zsh_search`. `{}` lists the first records of every category with `matchesTotal` = the whole corpus; `limit: 0` returns counts only.
+- **`zsh_list`** — enumerate records (optional `category`, `limit`); identity-only rows like `zsh_search`. `{}` lists the first records of every category with `matchesTotal` = every record; `limit: 0` returns counts only.
 
   ```json
   { "category": "precmd_modifier", "limit": 2 }

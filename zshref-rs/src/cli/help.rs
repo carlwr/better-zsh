@@ -2,7 +2,7 @@
 
 // Prose strings in this file are hand-written by a human. Agents making changes to this file must approach with great care.
 
-use crate::corpus::Corpus;
+use crate::lexicon::Lexicon;
 use crate::output;
 use crate::tools::{ToolName, ToolSet};
 use indoc::{formatdoc, indoc};
@@ -74,8 +74,8 @@ const ROOT_AFTER_HELP_HEAD: &str = indoc! {
 
 /// Below clap's `Commands:` / `Options:`: the static head, then a workflow
 /// example run through the real tools so its JSON is what the user gets.
-pub fn root_after_help_tail(tool_set: &ToolSet, corpus: &Corpus) -> String {
-    let workflow = workflow_example(tool_set, corpus);
+pub fn root_after_help_tail(tool_set: &ToolSet, lexicon: &Lexicon) -> String {
+    let workflow = workflow_example(tool_set, lexicon);
     format!("{ROOT_AFTER_HELP_HEAD}\n\n{workflow}\n")
 }
 
@@ -83,7 +83,7 @@ pub fn root_after_help_tail(tool_set: &ToolSet, corpus: &Corpus) -> String {
 /// it to two records (`!`, `!=`), and `!`'s `mdBody` is short enough to
 /// show unelided — so the example shows both the search → docs sequence
 /// and why `category` matters.
-fn workflow_example(tool_set: &ToolSet, corpus: &Corpus) -> String {
+fn workflow_example(tool_set: &ToolSet, lexicon: &Lexicon) -> String {
     let search_tool = tool_set.get(ToolName::Search);
     let docs_tool = tool_set.get(ToolName::Docs);
 
@@ -91,10 +91,10 @@ fn workflow_example(tool_set: &ToolSet, corpus: &Corpus) -> String {
     let docs_in = json!({ "key": "!", "category": "conditional_op" });
 
     let search_out = search_tool
-        .call(&search_in, corpus)
+        .call(&search_in, lexicon)
         .expect("workflow search must run");
     let mut docs_out = docs_tool
-        .call(&docs_in, corpus)
+        .call(&docs_in, lexicon)
         .expect("workflow docs must run");
     // Must stay a no-op (step 2 promises the full body); the help-example
     // test asserts it.
@@ -121,7 +121,7 @@ fn workflow_example(tool_set: &ToolSet, corpus: &Corpus) -> String {
 
 pub const BATCH_ABOUT: &str = "read JSONL requests on stdin; emit JSONL responses";
 
-pub const INFO_ABOUT: &str = "emit version, corpus + upstream metadata as pretty-printed JSON";
+pub const INFO_ABOUT: &str = "emit version, reference + upstream metadata as pretty-printed JSON";
 
 // Size hint on `about` warns agents off bulk-piping into context.
 pub fn schema_about(words: usize) -> String {
@@ -146,8 +146,8 @@ pub const PRETTY_HELP: &str = indoc! {"
     Default: compact JSON
     "};
 
-pub fn batch_long(tool_set: &ToolSet, corpus: &Corpus) -> String {
-    let example = batch_example(tool_set, corpus);
+pub fn batch_long(tool_set: &ToolSet, lexicon: &Lexicon) -> String {
+    let example = batch_example(tool_set, lexicon);
     formatdoc! {r#"
         JSONL request/response mode for tests and IPC.
 
@@ -167,11 +167,11 @@ pub fn batch_long(tool_set: &ToolSet, corpus: &Corpus) -> String {
     "#}
 }
 
-fn batch_example(tool_set: &ToolSet, corpus: &Corpus) -> String {
+fn batch_example(tool_set: &ToolSet, lexicon: &Lexicon) -> String {
     let tool = tool_set.get(ToolName::Search);
     let input = json!({ "query": "autolo", "limit": 1 });
     let output = tool
-        .call(&input, corpus)
+        .call(&input, lexicon)
         .expect("batch help example must run");
     let envelope = json!({ "ok": true, "output": output });
     // Real output is compact JSONL — too long to fit indented at 80 cols.
@@ -299,7 +299,7 @@ fn indent_block(s: &str) -> String {
 }
 
 /// Upstream-zsh line for the `--version` block. `commit_short` is omitted
-/// in dev builds where the corpus carries no commit hash.
+/// in dev builds where the lexicon carries no commit hash.
 pub fn version_upstream_line(tag: &str, date: &str, commit_short: Option<&str>) -> String {
     match commit_short {
         Some(c) => format!("zsh upstream: {tag} ({c}, {date})"),
@@ -307,8 +307,8 @@ pub fn version_upstream_line(tag: &str, date: &str, commit_short: Option<&str>) 
     }
 }
 
-/// Corpus-totals line for the `--version` block.
-pub fn version_corpus_summary(total: usize, cats: usize) -> String {
+/// Lexicon-totals line for the `--version` block.
+pub fn version_lexicon_summary(total: usize, cats: usize) -> String {
     format!("{total} records across {cats} categories")
 }
 

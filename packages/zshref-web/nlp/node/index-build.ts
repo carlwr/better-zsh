@@ -1,9 +1,9 @@
-// The vector index: build from the corpus (embed each record's
-// retrieval-text views), validate against the corpus it claims to be built
+// The vector index: build from the lexicon (embed each record's
+// retrieval-text views), validate against the lexicon it claims to be built
 // from, read and write the two artifact files.
 
 import { isDeepStrictEqual } from "node:util"
-import type { DocCorpus } from "@carlwr/zsh-core"
+import type { Lexicon } from "@carlwr/zsh-core"
 
 import type { Rules } from "../core/rules"
 import { INDEX_VERSION, loadSearchIndex } from "../core/search-index"
@@ -36,7 +36,7 @@ export const PROGRESS_CHUNK = 32
 export type IndexValidation = { ok: true } | { ok: false; reason: string }
 
 export interface BuildInputs {
-  corpus: DocCorpus
+  lexicon: Lexicon
   rules: Rules
   embedder: Embedder
   /** After each embedded chunk: texts done so far, of how many. */
@@ -45,12 +45,12 @@ export interface BuildInputs {
 
 /** Embed every record's views. About a minute on CPU for the whole corpus. */
 export async function buildIndex({
-  corpus,
+  lexicon,
   rules,
   embedder,
   onProgress,
 }: BuildInputs): Promise<VectorIndex> {
-  const texts = corpusTexts(corpus, rules.synonyms.index_groups)
+  const texts = corpusTexts(lexicon, rules.synonyms.index_groups)
   const viewTexts = texts.flatMap(rec =>
     VIEWS.map(view => `passage: ${rec[view]}`),
   )
@@ -88,21 +88,21 @@ export async function buildIndex({
     model_revision: MODEL_REVISION,
     dims: DIMS,
     normalized: true,
-    corpus_hash: corpusFingerprint(corpus),
+    corpus_hash: corpusFingerprint(lexicon),
     records,
   }
-  const check = validateIndex(index, corpus, rules)
+  const check = validateIndex(index, lexicon, rules)
   if (!check.ok) throw new Error(check.reason)
   return index
 }
 
 /**
- * Is `index` an index of this corpus under these rules? No unit-length
+ * Is `index` an index of this lexicon under these rules? No unit-length
  * check — the `normalized` flag is trusted.
  */
 export function validateIndex(
   index: VectorIndex,
-  corpus: DocCorpus,
+  lexicon: Lexicon,
   rules: Rules,
 ): IndexValidation {
   const fail = (reason: string): IndexValidation => ({ ok: false, reason })
@@ -112,12 +112,12 @@ export function validateIndex(
   if (mismatch) return fail(mismatch)
   if (index.dims !== DIMS)
     return fail(`nlp index dims is ${index.dims}, expected ${DIMS}`)
-  if (index.corpus_hash !== corpusFingerprint(corpus)) {
+  if (index.corpus_hash !== corpusFingerprint(lexicon)) {
     return fail("nlp index corpus hash does not match this corpus; rebuild it")
   }
   if (!index.normalized)
     return fail("nlp index vectors are not marked normalized")
-  const expected = corpusTexts(corpus, rules.synonyms.index_groups)
+  const expected = corpusTexts(lexicon, rules.synonyms.index_groups)
   if (index.records.length !== expected.length) {
     return fail(
       `nlp index has ${index.records.length} records, expected ${expected.length}; rebuild it`,

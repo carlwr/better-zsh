@@ -14,7 +14,7 @@
     <a href={recordHref(match.rec)}>
       <span class="cat">{label}</span>
       <span class="sep">·</span>
-      <!-- renderInline escapes the title, keeping {@html} of corpus text safe -->
+      <!-- renderInline escapes the title, keeping {@html} of record text safe -->
       <span class="display">{@html renderInline(match.rec.title)}</span>
     </a>
     <span class="score" title="ranker score">{match.score.toFixed(3)}</span>
@@ -30,7 +30,7 @@
     padding: 1.2rem 1.1rem 1.1rem;
   }
   /* the head (category · name + score) is metadata, not documentation; give it
-     room above and below so the corpus body reads as its own block */
+     room above and below so the record body reads as its own block */
   header {
     display: flex;
     align-items: baseline;

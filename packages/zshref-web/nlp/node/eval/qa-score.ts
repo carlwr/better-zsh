@@ -1,19 +1,19 @@
 // QA scoring over the Node search runner: the hard checks (templated
 // self-retrieval per record of a few categories, limit 1, category-weighted
-// pass rate) and the scored entries of the held-out corpus (weighted
+// pass rate) and the scored entries of the held-out QA set (weighted
 // expected sets, negatives as penalties). The report is the hard-check
-// section and the summary lines; there is no per-entry section — the corpus
-// is a held-out set (NLP.md) — and a warning (an expected item's absence or
+// section and the summary lines; there is no per-entry section — the QA set
+// is held out (NLP.md) — and a warning (an expected item's absence or
 // a negative's presence) is counted, never printed with its query.
 
-import type { DocCategory, DocCorpus } from "@carlwr/zsh-core"
+import type { DocCategory, Lexicon } from "@carlwr/zsh-core"
 import { byteOrder } from "../../core/text"
 import { type RecordId, recordKey, sameRecord } from "../../core/types"
 import { identityOf } from "../resolver-key"
 import { searchNode } from "../search-node"
 import type { EvalAssets } from "./assets"
 import { mean } from "./metric"
-import type { QaCorpus, QaEntry } from "./qa-corpus"
+import type { QaEntry, QaSet } from "./qa-set"
 
 export type HardCheckTemplate = (display: string) => string
 
@@ -44,12 +44,12 @@ export interface HardCheck extends RecordId {
   query: string
 }
 
-/** One check per record of a templated category, corpus order within, table order across. */
-export function hardChecks(corpus: DocCorpus): HardCheck[] {
+/** One check per record of a templated category, lexicon order within, table order across. */
+export function hardChecks(lexicon: Lexicon): HardCheck[] {
   return hardCheckCategories().flatMap(category => {
     const template = hardCheckTemplates[category]
     if (template === undefined) return []
-    return [...corpus[category].values()].map(rec => ({
+    return [...lexicon[category].values()].map(rec => ({
       category,
       id: identityOf(rec).id,
       query: template(rec.display),
@@ -64,7 +64,7 @@ export interface CatStat {
 
 export interface HardCheckResult {
   perCat: Partial<Record<DocCategory, CatStat>>
-  /** The FAIL lines, in check order; corpus-derived, printable. */
+  /** The FAIL lines, in check order; lexicon-derived, printable. */
   details: string[]
   passed: number
   total: number
@@ -116,7 +116,7 @@ export async function scoreHardChecks(
 }
 
 export const runHardChecks = (assets: EvalAssets): Promise<HardCheckResult> =>
-  scoreHardChecks(hardChecks(assets.corpus), assets)
+  scoreHardChecks(hardChecks(assets.lexicon), assets)
 
 export interface EntryScore {
   score: number
@@ -193,12 +193,12 @@ export function aggregateScores(scores: readonly EntryScore[]): QaScore {
 }
 
 /** One search per entry: its `limit`, and `category` when set. */
-export async function scoreQaCorpus(
-  corpus: QaCorpus,
+export async function scoreQaSet(
+  qa: QaSet,
   assets: EvalAssets,
 ): Promise<QaScore> {
   const scores: EntryScore[] = []
-  for (const entry of corpus.entries) {
+  for (const entry of qa.entries) {
     const input = {
       query: entry.query,
       limit: entry.limit,

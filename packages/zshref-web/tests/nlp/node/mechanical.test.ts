@@ -10,7 +10,7 @@
 
 import * as fcu from "@carlwr/fastcheck-utils"
 import { isSingle, memoized } from "@carlwr/typescript-extra"
-import { docCategories, loadCorpus } from "@carlwr/zsh-core"
+import { docCategories, loadLexicon } from "@carlwr/zsh-core"
 import fc from "fast-check"
 import { describe, expect, it } from "vitest"
 import { syntheticVec } from "../../../nlp/core/vec"
@@ -36,12 +36,12 @@ import { loadRulesYaml } from "../../../nlp/node/rules-load"
 import { wantOf } from "../../_fixtures"
 import {
   artifactGate,
-  inCorpus,
+  inLexicon,
   parityRankAssets,
   STAGED,
 } from "../../_helpers"
 
-const corpus = loadCorpus()
+const lexicon = loadLexicon()
 
 /** Cap for the smoke: enough entries to exercise embed → rank → score → tally without the full run. */
 const MECHANICAL_SMOKE_LIMIT = 16
@@ -72,17 +72,17 @@ describe("nl questions", () => {
   })
 })
 
-// Pure on the corpus, but two contract builds each: seconds on a loaded CI worker.
+// Pure on the lexicon, but two contract builds each: seconds on a loaded CI worker.
 describe("build", () => {
   /** Non-trivial, every entry well-formed, in build order: the contract's decorated phrasings, then the questions. */
   it("is well-formed, in build order", () => {
-    const entries = buildMechanical(corpus)
-    const decorated = buildLookupContract(corpus).entries.filter(
+    const entries = buildMechanical(lexicon)
+    const decorated = buildLookupContract(lexicon).entries.filter(
       e => e.phrasingKind !== "bare",
     )
     expect(decorated.length).toBeGreaterThan(0)
     const questions = docCategories.flatMap(cat =>
-      [...corpus[cat].values()].flatMap(rec => nlQuestions(cat, rec.display)),
+      [...lexicon[cat].values()].flatMap(rec => nlQuestions(cat, rec.display)),
     )
     expect(questions.length).toBeGreaterThan(0)
     expect(entries).toHaveLength(decorated.length + questions.length)
@@ -97,14 +97,14 @@ describe("build", () => {
       if (!isSingle(e.want)) throw new Error("one item per entry")
       const [item] = e.want
       expect(item).toMatchObject({ targetDepth: TARGET_DEPTH, weight: 1 })
-      expect(inCorpus(corpus, item)).toBe(true)
+      expect(inLexicon(lexicon, item)).toBe(true)
     }
   })
 
   /** A phrasing several records share (`! reserved word` resolves five ways) wants the record it came from. */
   it("a decorated entry wants its own record, not the contract set", () => {
-    const entries = buildMechanical(corpus)
-    const shared = buildLookupContract(corpus).entries.find(
+    const entries = buildMechanical(lexicon)
+    const shared = buildLookupContract(lexicon).entries.find(
       e => e.phrasingKind !== "bare" && e.expectedSet.length > 1,
     )
     if (!shared)
@@ -174,7 +174,7 @@ describe("slices", () => {
 describe("eval over the parity index", () => {
   it("tallies violations and slices per graded item", async () => {
     // No lookup map: the ranker alone decides the order.
-    const assets = parityRankAssets(corpus, await loadRulesYaml())
+    const assets = parityRankAssets(lexicon, await loadRulesYaml())
     const { index } = assets
     const query = "alpha"
     const vecs = new Map([[query, syntheticVec(["query", query])]])
@@ -228,7 +228,7 @@ describe("mechanical eval over the staged assets", () => {
   it("a capped smoke has the eval shape", async ctx => {
     if (skipReason) ctx.skip(skipReason)
     const a = await assets()
-    const entries = buildMechanical(a.corpus).slice(0, MECHANICAL_SMOKE_LIMIT)
+    const entries = buildMechanical(a.lexicon).slice(0, MECHANICAL_SMOKE_LIMIT)
     const r = await evalMechanical(entries, a)
     expect(r.nEntries).toBe(entries.length)
     expect(r.all.total).toBeGreaterThanOrEqual(0)
@@ -243,7 +243,7 @@ describe("mechanical eval over the staged assets", () => {
       ctx.skip("slow (embeds thousands of queries) — opt in with BZ_NLP_SLOW=1")
     if (skipReason) ctx.skip(skipReason)
     const a = await assets()
-    const mech = await evalMechanical(buildMechanical(a.corpus), a)
+    const mech = await evalMechanical(buildMechanical(a.lexicon), a)
     const curated = await evalSentence(await loadSentenceFixture(), a)
     console.log(
       (

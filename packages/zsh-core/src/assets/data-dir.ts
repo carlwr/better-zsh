@@ -1,7 +1,7 @@
 import { cpSync, existsSync } from "node:fs"
 import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
-import { corpusYodlFiles } from "../docs/source-files.ts"
+import { yodlSourceFiles } from "../docs/source-files.ts"
 
 // Dual CJS/ESM resolution for the module's own directory. ESM checks
 // `import.meta.url` first: a global `__dirname` (`node -e`, REPL) would
@@ -22,13 +22,13 @@ export const runtimeZshDataDir = "zsh-core-data"
 export const vendoredZshDocFiles: readonly [
   "SOURCE.md",
   "THIRD_PARTY_NOTICES.md",
-  ...typeof corpusYodlFiles,
-] = ["SOURCE.md", "THIRD_PARTY_NOTICES.md", ...corpusYodlFiles] as const
+  ...typeof yodlSourceFiles,
+] = ["SOURCE.md", "THIRD_PARTY_NOTICES.md", ...yodlSourceFiles] as const
 
 /**
  * Every path `copyRuntimeZshData(outDir)` creates, relative to `outDir` and
  * `/`-separated — for packaging checks. All share one top-level directory,
- * the one `loadCorpus` looks for beside the loaded zsh-core module.
+ * the one `loadLexicon` looks for beside the loaded zsh-core module.
  */
 export const runtimeZshDataPaths: readonly string[] = vendoredZshDocFiles.map(
   file => `${runtimeZshDataDir}/${file}`,
@@ -51,7 +51,7 @@ export function resolveZshDataDir(baseDir: string = thisDir): string {
 }
 
 /**
- * Copy the vendored Yodl sources into `outDir`, so `loadCorpus` works from a
+ * Copy the vendored Yodl sources into `outDir`, so `loadLexicon` works from a
  * bundle: `outDir` is the directory the bundled zsh-core module runs from
  * (the lookup is relative to the module, not to the working directory).
  */

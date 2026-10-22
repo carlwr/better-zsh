@@ -12,7 +12,7 @@ Decisions only; the dependency list is `package.json`:
   - versions: transformers.js's pins; may differ, even be pre-releases (`pnpm why onnxruntime-web onnxruntime-node`)
   - no test runs ORT-Web: the browser sanity test runs on `onnxruntime-node`
   - after a transformers.js bump: compare the built site's scores with the sanity fixture, by hand
-- `zod` — artifact schemas at load time; also the source of truth for the editor schemas of the rules YAML, the sentence fixture and the QA corpus
+- `zod` — artifact schemas at load time; also the source of truth for the editor schemas of the rules YAML, the sentence fixture and the QA set
 - fonts self-hosted (`@fontsource-variable/*`)
 
 Alternatives ruled out:
@@ -28,7 +28,7 @@ Alternatives ruled out:
   - `nlp/core/` — runtime-agnostic: artifact shapes, rules schemas, ranker, search pipeline
   - `nlp/browser/` — the SPA's runtime: embedder (ORT-Web), search, artifact fetch
     - `nlp/browser.ts` — the facade, the app's one door
-  - `nlp/node/` — everything that reads the corpus or the model
+  - `nlp/node/` — everything that reads the lexicon or the model
     - the evals: `nlp/node/eval/`
     - every path, and what each dir holds: `nlp/node/paths.ts`
 - `src/` — the app only; reaches `nlp/` through `$nlp` (`kit.alias`, `svelte.config.js`), nothing else
@@ -43,7 +43,7 @@ The seams are a static import fence, not package boundaries — `tests/import-fe
 
 All pinned:
 
-- **`@carlwr/zsh-core`** at build time — `workspace:*`; corpus, taxonomy, resolver
+- **`@carlwr/zsh-core`** at build time — `workspace:*`; lexicon, taxonomy, resolver
   - through its declared export subpaths only, never a file inside the package (`tests/import-fence.test.ts`)
   - its release JSON feeds the Rust crate, not this package
   - every script reading it carries a `pre*` hook -> `upstream-ready.mjs ensure` (`PACKAGING.md`; `BZ_SKIP_UPSTREAM`: root `AGENTS.md`)
@@ -67,7 +67,7 @@ All gitignored:
 - `.aux/query-cache.json` — query vectors the reporters and the gated tests keep across runs; self-invalidating (`nlp/node/query-cache.ts`), delete to reset
 - `pnpm build:index` -> `static/artifacts/` — what `nlp/browser/artifacts.ts` fetches from `artifacts/`, relative to the page
   - the search index is a pair, record text (JSON) and vectors (binary); why: `nlp/core/search-index.ts`
-  - an index that still validates against the corpus is kept; `--force`, `--validate`: `--help`
+  - an index that still validates against the lexicon is kept; `--force`, `--validate`: `--help`
   - a rebuild embeds the corpus: a minute on CPU
   - the rules YAML is the editable form; the JSON is build output
 
@@ -96,7 +96,7 @@ One mechanism, `assertCommittedJson` (`tests/_helpers.ts`): compare, or rewrite 
 | `UPDATE_LOOKUP_CONTRACT` | `nlp/data/lookup-contract.json` | `contract.test.ts` |
 | `UPDATE_PARITY_FIXTURE` | `nlp/data/parity-fixture.json` | `fixtures.test.ts` |
 | `UPDATE_SANITY_FIXTURE` | `nlp/data/sanity-fixture.json` — needs the model and the index | `fixtures.test.ts` |
-| `UPDATE_SCHEMAS` | `nlp/rules/schema/*.schema.json`, `nlp/data/nlp-corpus.schema.json` | `rules.test.ts`, `qa-score.test.ts` |
+| `UPDATE_SCHEMAS` | `nlp/rules/schema/*.schema.json`, `nlp/data/qa-set.schema.json` | `rules.test.ts`, `qa-score.test.ts` |
 
 ## Parity and sanity fixtures
 

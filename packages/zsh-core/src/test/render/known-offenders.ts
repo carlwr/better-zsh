@@ -1,7 +1,7 @@
 /**
  * @module
  * Frozen, hand-curated list of records each render-quality heuristic is
- * expected to match in the vendored corpus.
+ * expected to match in the reference dump.
  *
  * Contract: the actual offender set must match the listed set *exactly*.
  * Both directions matter — a listed offender that no longer matches is

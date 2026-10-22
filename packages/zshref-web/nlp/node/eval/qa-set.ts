@@ -1,6 +1,6 @@
-// The QA corpus (`nlp-corpus.yaml`): its shape, the loader, and the JSON
-// Schema generated from the shape for the YAML editor. The corpus is a
-// held-out set (NLP.md): code loads it, nothing prints an entry.
+// The QA set (`qa-set.yaml`): its shape, the loader, and the JSON Schema
+// generated from the shape for the YAML editor. A held-out set (NLP.md):
+// code loads it, nothing prints an entry.
 
 import { z } from "zod"
 
@@ -64,27 +64,26 @@ export type QaEntry = z.infer<typeof QaEntrySchema>
 
 // Loose at the root only: the YAML carries a `$schema:` editor
 // hint beside `entries`; entries and expected items are strict.
-export const QaCorpusSchema = z
+export const QaSetSchema = z
   .object({
     entries: z
       .array(QaEntrySchema)
-      .describe("Corpus entries, each a query with expected record matches."),
+      .describe("Entries, each a query with expected record matches."),
   })
   .meta({
-    title: "NLP QA Corpus",
+    title: "NLP QA Set",
     description:
-      "A corpus of natural-language queries with expected record matches and scores for steering NLP retrieval quality.",
+      "A set of natural-language queries with expected record matches and scores for steering NLP retrieval quality.",
   })
-export type QaCorpus = z.infer<typeof QaCorpusSchema>
+export type QaSet = z.infer<typeof QaSetSchema>
 
-/** The corpus, validated; defaults (`limit`, `weight`) filled in. */
-export const loadQaCorpus = async (
-  path: string = PATHS.qaCorpus,
-): Promise<QaCorpus> => QaCorpusSchema.parse(await readYaml(path))
+/** The set, validated; defaults (`limit`, `weight`) filled in. */
+export const loadQaSet = async (path: string = PATHS.qaSet): Promise<QaSet> =>
+  QaSetSchema.parse(await readYaml(path))
 
 /** The editor schema for the YAML: the input side, defaulted fields optional. */
-export function qaCorpusJsonSchema(): JsonSchema {
-  return z.toJSONSchema(QaCorpusSchema, {
+export function qaSetJsonSchema(): JsonSchema {
+  return z.toJSONSchema(QaSetSchema, {
     target: "draft-2020-12",
     io: "input",
   })

@@ -5,7 +5,7 @@
 // model.
 
 import * as fcu from "@carlwr/fastcheck-utils"
-import { loadCorpus } from "@carlwr/zsh-core"
+import { loadLexicon } from "@carlwr/zsh-core"
 import fc from "fast-check"
 import { describe, expect, it } from "vitest"
 import { parse as parseYaml } from "yaml"
@@ -40,12 +40,12 @@ import {
 import { arbSplit } from "../../_arbs"
 import {
   artifactGate,
-  inCorpus,
+  inLexicon,
   parityRankAssets,
   STAGED,
 } from "../../_helpers"
 
-const corpus = loadCorpus()
+const lexicon = loadLexicon()
 
 const vote = (
   category: string,
@@ -69,13 +69,13 @@ describe("committed sentence fixture", () => {
     for (const e of f.entries) expect(e.query.trim()).not.toBe("")
   })
 
-  /** Every expected item names a corpus record. Pure on the corpus. A
+  /** Every expected item names a lexicon record. Pure on the lexicon. A
    * missing holdout item is reported by position only. */
   it("every expected record exists", async () => {
     const f = await loadSentenceFixture()
     const missing = f.entries.flatMap((e, i) =>
       e.want.flatMap((item, j) => {
-        if (inCorpus(corpus, item)) return []
+        if (inLexicon(lexicon, item)) return []
         const at = `entry ${i} item ${j}`
         return [
           e.split === "train"
@@ -294,7 +294,7 @@ describe("fixture shape", () => {
 
 describe("eval over the parity index", () => {
   it("a multi-item entry yields one vote per item", async () => {
-    const assets = parityRankAssets(corpus, await loadRulesYaml())
+    const assets = parityRankAssets(lexicon, await loadRulesYaml())
     const { index } = assets
     // Three items in one category at a depth far past the index's few
     // records, so each gains 1 to within rounding whatever its rank; a

@@ -10,7 +10,7 @@ VS Code extension package: editor providers and host-zsh execution. Design postu
   - per-point data and generated-asset sources under `manifest/`
 - `contributions.ts` — everything registered at activation
 - `analysis/` — the user-code analyzer: coarse zsh syntax facts
-  - editor-neutral and corpus-free; a seam test under `test/analysis/` fences its imports
+  - editor-neutral and lexicon-independent; a seam test under `test/analysis/` fences its imports
   - `facts.ts` is its surface; scanner mechanics stay in sibling modules
 - `editor/` — one module per language feature: providers wiring facts + doc records to VS Code APIs
   - provider-local dispatch stays here; reusable parsing goes to `document/`
@@ -52,7 +52,7 @@ No Language Model tools; the MCP server is the agent-facing surface over the sam
 
 ## Testing scope
 
-Extension tests cover the analyzer (`test/analysis/`, incl. the lock-in tests pinning its vocabularies to the corpus) and VS Code wiring: position→record dispatch, command/provider registration, priority resolution. Hover/doc-record content and formatting are `@carlwr/zsh-core`'s concern — assert them in zsh-core unit tests, not here.
+Extension tests cover the analyzer (`test/analysis/`, incl. the lock-in tests pinning its vocabularies to the lexicon) and VS Code wiring: position→record dispatch, command/provider registration, priority resolution. Hover/doc-record content and formatting are `@carlwr/zsh-core`'s concern — assert them in zsh-core unit tests, not here.
 
 ## Container-only integration tests
 

@@ -31,8 +31,8 @@ const NON_TOOL_SUBCOMMANDS: &[&str] = &["batch", "info", "schema", "completions"
 pub fn tool_set() -> &'static ToolSet {
     static TOOLS: OnceLock<ToolSet> = OnceLock::new();
     TOOLS.get_or_init(|| {
-        let corpus = zshref::corpus::load_corpus().expect("load_corpus");
-        ToolSet::build(&corpus)
+        let lexicon = zshref::lexicon::load_lexicon().expect("load_lexicon");
+        ToolSet::build(&lexicon)
     })
 }
 

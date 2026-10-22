@@ -6,7 +6,7 @@
 
 import * as fcu from "@carlwr/fastcheck-utils"
 import { mapNonEmpty } from "@carlwr/typescript-extra"
-import { loadCorpus } from "@carlwr/zsh-core"
+import { loadLexicon } from "@carlwr/zsh-core"
 import fc from "fast-check"
 import { describe, expect, it } from "vitest"
 import { LookupMapSchema, lookupIndex } from "../../../nlp/core/lookup-map"
@@ -46,7 +46,7 @@ import {
 import { wantOf } from "../../_fixtures"
 import { artifactGate, parityRankAssets, STAGED } from "../../_helpers"
 
-const corpus = loadCorpus()
+const lexicon = loadLexicon()
 const rules = await loadRulesYaml()
 
 type Labelled = [label: string, tuning: Tuning]
@@ -96,9 +96,9 @@ describe("over the parity index", () => {
   // The real map: bare names promote ("autocd" → its record; "echo" → a
   // record the mini index lacks).
   const assets = parityRankAssets(
-    corpus,
+    lexicon,
     rules,
-    lookupIndex(LookupMapSchema.parse(buildLookupMap(corpus))),
+    lookupIndex(LookupMapSchema.parse(buildLookupMap(lexicon))),
   )
   const { index } = assets
   const every = index.records.map(r => wantOf(r, 3))
@@ -202,7 +202,7 @@ describe("over the staged assets, capped", () => {
     const train = fixture.entries.filter(e => e.split === "train")
     for (const entries of [
       train.slice(0, CAP),
-      buildMechanical(assets.corpus).slice(0, CAP),
+      buildMechanical(assets.lexicon).slice(0, CAP),
     ]) {
       expectSameGrading(
         entries,

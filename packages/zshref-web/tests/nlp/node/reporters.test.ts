@@ -15,13 +15,13 @@ import { withoutFirstSubstring } from "@carlwr/typescript-extra"
 import { beforeAll, describe, expect, it } from "vitest"
 
 import { type EvalAssets, loadEvalAssets } from "../../../nlp/node/eval/assets"
-import { loadQaCorpus } from "../../../nlp/node/eval/qa-corpus"
 import {
   hardChecks,
   renderQa,
   scoreHardChecks,
-  scoreQaCorpus,
+  scoreQaSet,
 } from "../../../nlp/node/eval/qa-score"
+import { loadQaSet } from "../../../nlp/node/eval/qa-set"
 import {
   type Bench,
   composedBase,
@@ -301,11 +301,11 @@ describe("reporters over the staged assets, capped", () => {
   it("the QA report, with its summary JSON", async ctx => {
     if (skipReason) ctx.skip(skipReason)
     const hard = await scoreHardChecks(
-      hardChecks(assets.corpus).slice(0, CAP),
+      hardChecks(assets.lexicon).slice(0, CAP),
       assets,
     )
-    const qa = await loadQaCorpus()
-    const scored = await scoreQaCorpus(
+    const qa = await loadQaSet()
+    const scored = await scoreQaSet(
       { ...qa, entries: qa.entries.slice(0, CAP) },
       assets,
     )

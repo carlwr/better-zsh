@@ -1,11 +1,11 @@
-// MIRRORED-IN: zshref-rs/src/corpus.rs
+// MIRRORED-IN: zshref-rs/src/lexicon.rs
 
 import { isEmpty } from "@carlwr/typescript-extra"
 
 import { renderRecord } from "../render/md.ts"
 import { displayPattern, idPattern } from "./brands.ts"
-import type { DocCorpus } from "./corpus.ts"
 import type { WithMarkdown } from "./json-types.ts"
+import type { Lexicon } from "./lexicon.ts"
 import type { DocCategory, DocRecordMap } from "./taxonomy.ts"
 import type { DocRecordBase } from "./types.ts"
 
@@ -15,11 +15,11 @@ import type { DocRecordBase } from "./types.ts"
  * `mdBody`). Renders every record on each call.
  */
 export function projectRecords<K extends DocCategory>(
-  corpus: DocCorpus,
+  lexicon: Lexicon,
   cat: K,
 ): readonly WithMarkdown<DocRecordMap[K]>[] {
-  return [...corpus[cat].values()].map(rec => {
-    const { title, mdBody } = renderRecord(corpus, rec)
+  return [...lexicon[cat].values()].map(rec => {
+    const { title, mdBody } = renderRecord(lexicon, rec)
     return { ...rec, _mdBody: mdBody, _title: title }
   })
 }
@@ -27,7 +27,7 @@ export function projectRecords<K extends DocCategory>(
 /**
  * `id`/`display` must be shell-safe ASCII (`idPattern`, `displayPattern`) —
  * the Rust crate's fuzzy scorer is ASCII-only, and non-ASCII silently
- * degrades search for those records. Mirrors the corpus-load test on the
+ * degrades search for those records. Mirrors the lexicon-load test on the
  * Rust side.
  */
 export function assertShellSafeIdentity(

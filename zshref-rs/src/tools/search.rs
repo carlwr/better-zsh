@@ -4,7 +4,7 @@
 //! (in-tree ASCII matcher) mapped into `(0, 1)` — strictly below 1.0 so the
 //! tier is recoverable from the score. `matchesTotal` is pre-truncation.
 
-use crate::corpus::{CLASSIFY_ORDER, Corpus, DocCategory};
+use crate::lexicon::{CLASSIFY_ORDER, DocCategory, Lexicon};
 use crate::resolver::resolve_in;
 use crate::tools::envelope::{Entry, Envelope, entries};
 use crate::tools::schema::{MatchShape, Shape, default_limit, limit, non_null, output_schema};
@@ -14,15 +14,15 @@ use serde::Deserialize;
 use serde_json::Value;
 use std::collections::HashSet;
 
-pub fn tool(corpus: &Corpus) -> Tool {
+pub fn tool(lexicon: &Lexicon) -> Tool {
     Tool::new(
         ToolName::Search,
-        prose::search(corpus.index),
+        prose::search(lexicon.index),
         vec![
             Field::required("query", prose::query(), Shape::Text),
             Field::optional(
                 "category",
-                prose::filter_category(corpus.index),
+                prose::filter_category(lexicon.index),
                 Shape::Category,
             ),
             Field::optional("limit", prose::limit(), Shape::Limit),
@@ -32,7 +32,7 @@ pub fn tool(corpus: &Corpus) -> Tool {
                 score: true,
                 ..MatchShape::default()
             },
-            corpus,
+            lexicon,
         ),
         run,
     )
@@ -48,13 +48,13 @@ struct Input {
     limit: u32,
 }
 
-fn run(input: Input, corpus: &Corpus) -> Result<Value> {
+fn run(input: Input, lexicon: &Lexicon) -> Result<Value> {
     let query = input.query.trim();
     if query.is_empty() {
         return Envelope::new(Vec::<Entry>::new(), 0).to_value();
     }
 
-    let pool = entries(corpus, input.category);
+    let pool = entries(lexicon, input.category);
     let starts_with_q = |s: &str| {
         s.get(..query.len())
             .is_some_and(|p| p.eq_ignore_ascii_case(query))
@@ -80,7 +80,7 @@ fn run(input: Input, corpus: &Corpus) -> Result<Value> {
         exact.iter().chain(&prefix).map(|e| e.key()).collect();
     let resolver_hits: Vec<Entry> = resolver_cats
         .iter()
-        .filter_map(|&cat| resolve_in(corpus, cat, query))
+        .filter_map(|&cat| resolve_in(lexicon, cat, query))
         .filter(|h| seen.insert((h.category, h.id)))
         .map(|h| Entry::of(h.category, h.rec))
         .collect();

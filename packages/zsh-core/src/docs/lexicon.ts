@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs"
 import { join } from "node:path"
 import { cached, cachedUnary } from "@carlwr/typescript-extra"
 import { resolveZshDataDir } from "../assets/data-dir.ts"
-import type { CorpusYodlFile } from "./source-files.ts"
+import type { YodlSourceFile } from "./source-files.ts"
 import {
   type DocCategory,
   type DocRecordMap,
@@ -60,14 +60,14 @@ import { parseSpecialFunctions } from "./yodl/extractors/special-functions.ts"
 import { parseSubscriptFlags } from "./yodl/extractors/subscript-flags.ts"
 import { parseZleWidgets } from "./yodl/extractors/zle-widgets.ts"
 
-type GetNodes = (file: CorpusYodlFile) => YNodeSeq
+type GetNodes = (file: YodlSourceFile) => YNodeSeq
 type CategoryLoader = {
   [K in DocCategory]: (gn: GetNodes) => readonly DocRecordMap[K][]
 }
 
 // Pre-parse fixups for known upstream-doc typos.
 const fileFixups: Readonly<
-  Partial<Record<CorpusYodlFile, (yo: string) => string>>
+  Partial<Record<YodlSourceFile, (yo: string) => string>>
 > = {
   "options.yo": fixupOptionsYo,
   "expn.yo": fixupExpnYo,
@@ -157,8 +157,8 @@ function loadMathfuncs(gn: GetNodes): readonly MathfuncDoc[] {
   ]
 }
 
-/** In-memory corpus: per category, a map from identity to record. */
-export type DocCorpus = {
+/** In-memory lexicon: per category, a map from identity to record. */
+export type Lexicon = {
   readonly [K in DocCategory]: ReadonlyMap<Documented<K>, DocRecordMap[K]>
 }
 
@@ -169,13 +169,13 @@ function buildCategoryMap<K extends DocCategory>(
 }
 
 /**
- * The parsed doc corpus: immutable, cached, lazy per category. The first
+ * The parsed lexicon: immutable, cached, lazy per category. The first
  * call locates the vendored data (throws when missing); a category is
  * parsed on first access and never twice, and no `.yo` file is parsed more
  * than once however many categories share it. Importing this module touches
  * no file system.
  */
-export const loadCorpus: () => DocCorpus = cached(() => {
+export const loadLexicon: () => Lexicon = cached(() => {
   const dataDir = resolveZshDataDir()
   // Several categories share a file, and parseNodes is the dominant cost.
   const getNodes: GetNodes = cachedUnary(file => {
@@ -194,5 +194,5 @@ export const loadCorpus: () => DocCorpus = cached(() => {
       } satisfies PropertyDescriptor,
     ]),
   )
-  return Object.freeze(Object.defineProperties({}, fields)) as DocCorpus
+  return Object.freeze(Object.defineProperties({}, fields)) as Lexicon
 })

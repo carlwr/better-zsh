@@ -1,6 +1,6 @@
 //! Deterministic invariant checks for the `zshref` CLI: every-category
 //! sweeps, CLI ↔ batch parity, schema-default round-trips, and a full
-//! corpus round-trip. Pairs with the proptest sampling in
+//! lexicon round-trip. Pairs with the proptest sampling in
 //! `tests/properties.rs` by guaranteeing fixed coverage where random
 //! sampling could miss a newly added category, tool, or record.
 
@@ -107,7 +107,7 @@ fn render_default(v: &Value) -> String {
 /// `list --category C --limit 0` total equals `info.counts.C`, the sum
 /// equals the unfiltered `list --limit 0` total, and no category is empty.
 /// Catches drift between the two count paths (`info` recomputes from the
-/// corpus; `list` counts after filter), plus double-counting / leakage.
+/// lexicon; `list` counts after filter), plus double-counting / leakage.
 #[test]
 fn list_per_category_totals_sum_to_total() {
     let info_counts = run_json(&["info"]);
@@ -169,12 +169,12 @@ fn cli_equals_batch() {
     }
 }
 
-/// `--limit` above corpus size must clamp silently: exit 0, full result
+/// `--limit` above lexicon size must clamp silently: exit 0, full result
 /// set returned. Pins the schema's "no semantic cap" contract (`limit`'s
 /// `maximum` is the `u32` range). Mirrored in batch input to pin CLI ↔
 /// batch parity under clamping.
 #[test]
-fn limit_above_corpus_clamps_silently() {
+fn limit_above_lexicon_clamps_silently() {
     let cases: &[(&str, &[&str], Value)] = &[
         (
             "zsh_list",
@@ -198,7 +198,7 @@ fn limit_above_corpus_clamps_silently() {
         );
         assert_eq!(
             returned, total,
-            "{tool}: --limit far above corpus; expected matchesReturned == matchesTotal"
+            "{tool}: --limit far above lexicon; expected matchesReturned == matchesTotal"
         );
 
         let mut batch = run_batch(&[json!({ "tool": tool, "input": input })]);
@@ -250,10 +250,11 @@ fn closed_stdout_exits_zero_quietly() {
     }
 }
 
-/// Every (category, id) in the bundled corpus, as `docs --category C --key ID`,
-/// returns exactly that one record; one `batch` invocation keeps the cost flat.
+/// Every (category, id) in the bundled lexicon, as
+/// `docs --category C --key ID`, returns exactly that one record; one `batch`
+/// invocation keeps the cost flat.
 #[test]
-fn docs_roundtrip_over_corpus() {
+fn docs_roundtrip_over_lexicon() {
     let recs = all_records();
     let reqs: Vec<Value> = recs
         .iter()
@@ -290,8 +291,8 @@ fn docs_roundtrip_over_corpus() {
     }
 }
 
-/// Every `(category, id)` in the corpus, fetched once via a single
-/// unfiltered `list` call sized to the corpus total.
+/// Every `(category, id)` in the lexicon, fetched once via a single
+/// unfiltered `list` call sized to the lexicon total.
 fn all_records() -> &'static [(String, String)] {
     static RECS: OnceLock<Vec<(String, String)>> = OnceLock::new();
     RECS.get_or_init(|| {

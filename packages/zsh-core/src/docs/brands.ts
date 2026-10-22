@@ -6,9 +6,9 @@ import type { DocRecordBase, Documented } from "./types.ts"
 
 // Per-category normalization. Default is `trim`; categories below the default
 // are listed as overrides. `option` normalizes case and strips underscores,
-// but does NOT strip `no_` prefixes — negation is a corpus-aware parse
+// but does NOT strip `no_` prefixes — negation is a lexicon-aware parse
 // concern (the "NOTIFY" vs "NO_NOTIFY" ambiguity can only be resolved against
-// the actual corpus) and lives in the option resolver, which reports it as
+// the actual lexicon) and lives in the option resolver, which reports it as
 // `input-negated` feedback.
 const normOverrides: {
   readonly [K in DocCategory]?: (s: string) => string
@@ -19,12 +19,12 @@ const norm = (cat: DocCategory, raw: string) =>
   (normOverrides[cat] ?? trim)(raw)
 
 /**
- * Smart constructor for a corpus-identity brand. Normalizes `raw` per
+ * Smart constructor for a lexicon-identity brand. Normalizes `raw` per
  * category and casts to `Documented<K>`.
  *
- * **Trusted** path — no corpus check. Calling it claims the result is a key
- * in `corpus[K]`. For corpus construction (Yodl extractors) and test-corpus
- * builders. For untrusted input, go through `resolve(corpus, cat, raw)`.
+ * **Trusted** path — no lexicon check. Calling it claims the result is a key
+ * in `lexicon[K]`. For lexicon construction (Yodl extractors) and test-lexicon
+ * builders. For untrusted input, go through `resolve(lexicon, cat, raw)`.
  */
 export const mkDocumented = <K extends DocCategory>(
   cat: K,

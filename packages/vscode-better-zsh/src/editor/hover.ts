@@ -1,5 +1,5 @@
 import { cached } from "@carlwr/typescript-extra"
-import type { DocCategory, DocCorpus } from "@carlwr/zsh-core"
+import type { DocCategory, Lexicon } from "@carlwr/zsh-core"
 import { resolve } from "@carlwr/zsh-core/resolver"
 import * as vscode from "vscode"
 import { type Fact, isProcessSubstFact, isRedirFact } from "../analysis/facts"
@@ -32,12 +32,12 @@ export class HoverProvider implements vscode.HoverProvider {
   // conditional operators made entirely of those chars need a cond-only path.
   // Built by the first cond hover, never twice.
   private symbolicCondOps = cached(() =>
-    [...this.corpus.conditional_op.keys()]
+    [...this.lexicon.conditional_op.keys()]
       .filter(op => [...op].some(isTokenDelimiter))
       .sort((a, b) => b.length - a.length),
   )
 
-  constructor(private corpus: DocCorpus) {}
+  constructor(private lexicon: Lexicon) {}
 
   provideHover(doc: vscode.TextDocument, pos: vscode.Position) {
     const ctx = contextAt(doc, pos)
@@ -53,7 +53,7 @@ export class HoverProvider implements vscode.HoverProvider {
     )
   }
 
-  // Short flags (`-J` / `+J`) are corpus identity, resolved in zsh-core.
+  // Short flags (`-J` / `+J`) are lexicon identity, resolved in zsh-core.
   private setoptHover(doc: vscode.TextDocument, pos: vscode.Position) {
     const range = activeTokenRangeAt(doc, pos)
     if (!range) return
@@ -164,9 +164,9 @@ export class HoverProvider implements vscode.HoverProvider {
     raw: string,
     range?: vscode.Range,
   ): vscode.Hover | undefined {
-    const hit = resolve(this.corpus, category, raw)
+    const hit = resolve(this.lexicon, category, raw)
     if (!hit) return
-    return new vscode.Hover(recordMarkdown(this.corpus, hit.record), range)
+    return new vscode.Hover(recordMarkdown(this.lexicon, hit.record), range)
   }
 }
 

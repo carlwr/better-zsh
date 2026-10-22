@@ -1,7 +1,7 @@
 // Print every record's retrieval texts — what the index embeds — as JSON on
 // stdout, for diffing across changes: any difference here re-embeds. Model-free.
 
-import { loadCorpus } from "@carlwr/zsh-core"
+import { loadLexicon } from "@carlwr/zsh-core"
 
 import { prettyJson } from "../nlp/node/io"
 import { corpusTexts } from "../nlp/node/retrieval-text"
@@ -19,5 +19,5 @@ scriptFlags("dump-texts", usage, [])
 
 const rules = await loadRulesYaml()
 process.stdout.write(
-  `${prettyJson(corpusTexts(loadCorpus(), rules.synonyms.index_groups))}\n`,
+  `${prettyJson(corpusTexts(loadLexicon(), rules.synonyms.index_groups))}\n`,
 )

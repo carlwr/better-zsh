@@ -16,7 +16,7 @@ export interface SplitParamBody {
 
 /**
  * Keys are emitted only when the body contains a depth-1
- * `startitem()`/`enditem()` block. Observed corpus records have intro+list
+ * `startitem()`/`enditem()` block. Observed upstream entries have intro+list
  * only (no outro); the outro path is precautionary.
  */
 export function splitParamBody(body: YNodeSeq): SplitParamBody {

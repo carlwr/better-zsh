@@ -49,7 +49,7 @@ suite(`ZshPathMatrix:${caseName}`, function () {
   this.timeout(20000)
 
   test("keeps static features and gates runtime-zsh features at activation", async () => {
-    // Completions never need zsh: corpus words and the file's own symbols
+    // Completions never need zsh: lexicon words and the file's own symbols
     const compDoc = await openFixture("test.zsh")
     const labels = await completionLabels(compDoc, new vscode.Position(0, 0))
     assert.ok(labels.includes("echo"), "expected static builtin completion")

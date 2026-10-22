@@ -55,21 +55,21 @@ try {
 
   // Representative subpaths, not every one.
   const driver = `
-import { loadCorpus } from "@carlwr/zsh-core"
+import { loadLexicon } from "@carlwr/zsh-core"
 import { runtimeZshDataPaths } from "@carlwr/zsh-core/assets"
 import { ZSH_UPSTREAM } from "@carlwr/zsh-core/meta"
 import { renderRecord } from "@carlwr/zsh-core/render"
 import { resolve } from "@carlwr/zsh-core/resolver"
 
-const corpus = loadCorpus()
+const lexicon = loadLexicon()
 // Categories parse on first access: touch each so every vendored file is
 // parsed from the installed layout.
-for (const cat of Object.keys(corpus)) corpus[cat]
-const hit = resolve(corpus, "option", "AUTO_CD")
+for (const cat of Object.keys(lexicon)) lexicon[cat]
+const hit = resolve(lexicon, "option", "AUTO_CD")
 if (!hit || hit.record.category !== "option" || hit.record.id !== "autocd") {
   throw new Error("resolve('option','AUTO_CD') failed: " + JSON.stringify(hit))
 }
-const { title, mdBody } = renderRecord(corpus, hit.record)
+const { title, mdBody } = renderRecord(lexicon, hit.record)
 if (title !== "\`AUTO_CD\`" || typeof mdBody !== "string" || mdBody.length === 0) {
   throw new Error("renderRecord returned unexpected title or body")
 }
@@ -97,9 +97,9 @@ process.stdout.write("ok")
 
   // The CJS build, through `require`: the same loader from the other format.
   const cjsDriver = `
-const { loadCorpus } = require("@carlwr/zsh-core")
+const { loadLexicon } = require("@carlwr/zsh-core")
 const { resolve } = require("@carlwr/zsh-core/resolver")
-const hit = resolve(loadCorpus(), "option", "AUTO_CD")
+const hit = resolve(loadLexicon(), "option", "AUTO_CD")
 if (hit?.record.id !== "autocd") throw new Error("CJS resolve failed")
 process.stdout.write("ok")
 `

@@ -4,12 +4,12 @@ import fc from "fast-check"
 import { describe, expect, test } from "vitest"
 import { buildResolverFixture } from "../../scripts/resolver-fixture"
 import { mkDocumented } from "../docs/brands"
-import { loadCorpus } from "../docs/corpus"
+import { loadLexicon } from "../docs/lexicon"
 import { flipOptFlagSign } from "../docs/normalize-option"
 import { type ResolverFeedback, resolve, resolveAll } from "../docs/resolver"
 import { type DocCategory, docCategories } from "../docs/taxonomy"
 
-const corpus = loadCorpus()
+const lexicon = loadLexicon()
 
 // Per-cat helpers: `.hit(raw, id, feedback?)` asserts the resolved hit;
 // `.miss(raw)` asserts unresolved.
@@ -17,12 +17,12 @@ function cases<K extends DocCategory>(cat: K) {
   return {
     hit: (raw: string, id: string, feedback?: ResolverFeedback) => {
       const key = mkDocumented(cat, id)
-      expect(resolve(corpus, cat, raw)).toEqual({
-        record: corpus[cat].get(key),
+      expect(resolve(lexicon, cat, raw)).toEqual({
+        record: lexicon[cat].get(key),
         feedback,
       })
     },
-    miss: (raw: string) => expect(resolve(corpus, cat, raw)).toBeUndefined(),
+    miss: (raw: string) => expect(resolve(lexicon, cat, raw)).toBeUndefined(),
   }
 }
 
@@ -42,11 +42,11 @@ describe("resolveOption (single-letter flags)", () => {
   ])("%s -> %s", option.hit)
 
   test("every zsh-table flag resolves to its option; flipped sign negated", () => {
-    for (const o of corpus.option.values())
+    for (const o of lexicon.option.values())
       for (const f of o.flags.filter(f => f.emulations.includes("zsh"))) {
-        expect(resolve(corpus, "option", f.on + f.char)).toEqual({ record: o })
+        expect(resolve(lexicon, "option", f.on + f.char)).toEqual({ record: o })
         expect(
-          resolve(corpus, "option", flipOptFlagSign(f.on) + f.char),
+          resolve(lexicon, "option", flipOptFlagSign(f.on) + f.char),
         ).toEqual({ record: o, feedback: NEGATED })
       }
   })
@@ -148,7 +148,7 @@ describe("resolveRedir", () => {
   test("a leading fd number never changes the answer", () => {
     const ops = [
       ...new Set(
-        [...corpus.redirection.values()].flatMap(d =>
+        [...lexicon.redirection.values()].flatMap(d =>
           d.groupOp === "<<[-]" ? ["<<", "<<-"] : [d.groupOp],
         ),
       ),
@@ -160,8 +160,8 @@ describe("resolveRedir", () => {
     const raw = fc.tuple(fcu.element(ops), tail).map(([op, t]) => op + t)
     fc.assert(
       fc.property(fc.stringMatching(/^\d+$/), raw, (fd, r) => {
-        expect(resolve(corpus, "redirection", fd + r)).toEqual(
-          resolve(corpus, "redirection", r),
+        expect(resolve(lexicon, "redirection", fd + r)).toEqual(
+          resolve(lexicon, "redirection", r),
         )
       }),
     )
@@ -169,7 +169,7 @@ describe("resolveRedir", () => {
 })
 
 describe("parens-agnostic flag resolvers", () => {
-  // Corpus keys are bare (`w` subscript, `@` param, `i` glob); user code
+  // Lexicon keys are bare (`w` subscript, `@` param, `i` glob); user code
   // writes them parenthesized.
   test.each([
     ["subscript_flag", ["(%)"]],
@@ -178,7 +178,7 @@ describe("parens-agnostic flag resolvers", () => {
     ["glob_qualifier", ["(%)", "(#q%)"]],
   ] as const)("every %s id resolves in its wrapped forms %j", (cat, wraps) => {
     const { hit } = cases(cat)
-    for (const id of corpus[cat].keys())
+    for (const id of lexicon[cat].keys())
       for (const w of wraps)
         hit(
           w.replace("%", () => id),
@@ -250,7 +250,7 @@ describe("resolveSpecialFunction", () => {
     ["TRAPHUP", "TRAPNAL"],
     ["TRAPUSR1", "TRAPNAL"],
     ["TRAPINT", "TRAPNAL"],
-    // TRAPERR: not a literal corpus record (upstream treats it as xindex on
+    // TRAPERR: not a literal lexicon record (upstream treats it as xindex on
     // TRAPZERR), so it lands on the template.
     ["TRAPERR", "TRAPNAL"],
   ])("%s -> %s", fn.hit)
@@ -268,17 +268,17 @@ describe("resolveSpecialFunction", () => {
   ])("%s -> undefined", fn.miss)
 })
 
-describe("prompt_escape paired sigs (corpus-wide property)", () => {
+describe("prompt_escape paired sigs (lexicon-wide property)", () => {
   // Catches the regression where a `%X (%x)` header is parsed but only the
   // starter glyph is emitted. Pre-fix this failed on `%f`, `%b`, `%u`, `%s`,
-  // `%k`. Scoped to paired sigs only — the corpus also contains keys that
+  // `%k`. Scoped to paired sigs only — the lexicon also contains keys that
   // legitimately include parentheses (e.g. `%)`, `%(x.true.false)`), so a
   // blanket `%\S+` scan over all sigs would be ambiguous.
   test("every paired '%X (%x)' sig has both glyphs resolvable", () => {
     const pair = /^(%\S+)\s+\(\s*(%\S+)\s*\)\s*$/
     const pe = cases("prompt_escape")
     let n = 0
-    for (const doc of corpus.prompt_escape.values()) {
+    for (const doc of lexicon.prompt_escape.values()) {
       const m = pair.exec(doc.sig)
       // Both groups are mandatory in the regex; guard each to narrow TS.
       if (!m?.[1] || !m[2]) continue
@@ -297,17 +297,17 @@ describe("prompt_escape paired sigs (corpus-wide property)", () => {
   })
 })
 
-describe("resolve round-trip (corpus-wide)", () => {
+describe("resolve round-trip (lexicon-wide)", () => {
   // Every documented id round-trips through `resolve` to itself, and the hit
-  // carries the corpus's own record — pins the direct-key step ahead of the
+  // carries the lexicon's own record — pins the direct-key step ahead of the
   // resolvers, without which template-key matching would shadow a literal id
   // (history `!n` recognized as `!str`).
   test.each(docCategories)("%s ids are stable under resolve", cat => {
-    const map = corpus[cat] as ReadonlyMap<string, unknown>
+    const map = lexicon[cat] as ReadonlyMap<string, unknown>
     if (map.size === 0) return
     const mismatched: { id: string; got: string | undefined }[] = []
     for (const [id, rec] of map) {
-      const hit = resolve(corpus, cat, id)
+      const hit = resolve(lexicon, cat, id)
       if (hit?.record.id !== id || hit.record !== rec)
         mismatched.push({ id, got: hit?.record.id })
     }
@@ -324,7 +324,7 @@ describe("resolve round-trip (corpus-wide)", () => {
   ] as const)(
     "%s sigs, in forms %j, resolve to their slug id",
     (cat, wraps) => {
-      const map = corpus[cat] as ReadonlyMap<string, { readonly sig: string }>
+      const map = lexicon[cat] as ReadonlyMap<string, { readonly sig: string }>
       const mismatched: { sig: string; id: string; got: string | undefined }[] =
         []
       let n = 0
@@ -332,7 +332,9 @@ describe("resolve round-trip (corpus-wide)", () => {
         if (!rec.sig || rec.sig === id) continue
         n++
         for (const sig of wraps.map(w => w.replace("%", () => rec.sig))) {
-          const got = resolve(corpus, cat, sig)?.record.id as string | undefined
+          const got = resolve(lexicon, cat, sig)?.record.id as
+            | string
+            | undefined
           if (got !== id) mismatched.push({ sig, id, got })
         }
       }
@@ -342,8 +344,8 @@ describe("resolve round-trip (corpus-wide)", () => {
   )
 })
 
-describe("resolve properties (corpus-wide)", () => {
-  const opts = [...corpus.option.values()]
+describe("resolve properties (lexicon-wide)", () => {
+  const opts = [...lexicon.option.values()]
   if (!isNonEmpty(opts)) throw new Error("no options")
   // per-char random case, optional `_` before each char
   const spelled = fcu.element(opts).chain(o =>
@@ -358,16 +360,16 @@ describe("resolve properties (corpus-wide)", () => {
   )
 
   test("every special param resolves through $id and ${id}", () => {
-    for (const [id, record] of corpus.special_param)
+    for (const [id, record] of lexicon.special_param)
       for (const raw of [`$${id}`, `\${${id}}`])
-        expect(resolve(corpus, "special_param", raw)).toEqual({ record })
+        expect(resolve(lexicon, "special_param", raw)).toEqual({ record })
   })
 
   // Sound only while no option `x` coexists with an option `nox`.
   test("any case/underscore spelling of an option id resolves to it", () => {
     fc.assert(
       fc.property(spelled, ({ o, raw }) => {
-        expect(resolve(corpus, "option", raw)).toEqual({ record: o })
+        expect(resolve(lexicon, "option", raw)).toEqual({ record: o })
       }),
     )
   })
@@ -378,7 +380,7 @@ describe("resolve properties (corpus-wide)", () => {
         spelled,
         fcu.element(["no", "NO", "no_", "No_"]),
         ({ o, raw }, no) => {
-          expect(resolve(corpus, "option", no + raw)).toEqual({
+          expect(resolve(lexicon, "option", no + raw)).toEqual({
             record: o,
             feedback: NEGATED,
           })
@@ -398,8 +400,8 @@ describe("resolve properties (corpus-wide)", () => {
 
   test("TRAP + [A-Z0-9]+ resolves to its literal record, else TRAPNAL", () => {
     const fn = (id: string) =>
-      corpus.special_function.get(mkDocumented("special_function", id))
-    const literals = [...corpus.special_function.keys()]
+      lexicon.special_function.get(mkDocumented("special_function", id))
+    const literals = [...lexicon.special_function.keys()]
       .filter(id => /^TRAP[A-Z0-9]+$/.test(id))
       .map(id => id.slice("TRAP".length))
     if (!isNonEmpty(literals)) throw new Error("no TRAP records")
@@ -413,7 +415,7 @@ describe("resolve properties (corpus-wide)", () => {
         const raw = `TRAP${tail}`
         const literal = fn(raw)
         cov.hit(literal ? "literal" : "fallback")
-        expect(resolve(corpus, "special_function", raw)?.record).toBe(
+        expect(resolve(lexicon, "special_function", raw)?.record).toBe(
           literal ?? fn("TRAPNAL"),
         )
       }),
@@ -423,7 +425,7 @@ describe("resolve properties (corpus-wide)", () => {
 
   // ASCII only: JS `trim` and Rust `str::trim` disagree beyond it (U+FEFF, U+0085).
   test("surrounding ASCII whitespace never changes the answer", () => {
-    const { cases } = buildResolverFixture(corpus, {
+    const { cases } = buildResolverFixture(lexicon, {
       packageVersion: "0",
       dataHash: "0",
     })
@@ -440,8 +442,8 @@ describe("resolve properties (corpus-wide)", () => {
     const cov = fcu.coverage({ hit: 15, miss: 25 })
     fc.assert(
       fc.property(catRaw, ws, ws, ([cat, raw], w1, w2) => {
-        const bare = resolve(corpus, cat, raw)
-        const padded = resolve(corpus, cat, w1 + raw + w2)
+        const bare = resolve(lexicon, cat, raw)
+        const padded = resolve(lexicon, cat, w1 + raw + w2)
         expect(padded?.record).toBe(bare?.record)
         expect(padded?.feedback).toEqual(bare?.feedback)
         cov.hit(bare ? "hit" : "miss")
@@ -453,7 +455,7 @@ describe("resolve properties (corpus-wide)", () => {
 
 describe("resolveAll (category walk)", () => {
   const categoriesOf = (raw: string) =>
-    resolveAll(corpus, raw).map(hit => hit.record.category)
+    resolveAll(lexicon, raw).map(hit => hit.record.category)
 
   test("walks classifyOrder: the richer record first on overlap", () => {
     expect(categoriesOf("for")).toEqual(["complex_command", "reserved_word"])
@@ -476,17 +478,17 @@ describe("resolveAll (category walk)", () => {
   })
 
   test("hits carry their records and feedback", () => {
-    const [hit] = resolveAll(corpus, "NO_AUTO_CD")
+    const [hit] = resolveAll(lexicon, "NO_AUTO_CD")
     if (hit?.record.category !== "option") {
       throw new Error("expected an option hit")
     }
-    expect(hit.record).toBe(corpus.option.get(hit.record.id))
+    expect(hit.record).toBe(lexicon.option.get(hit.record.id))
     expect(hit.feedback).toEqual({ kind: "input-negated" })
   })
 
   test("history: only event designators are tokens in a walk", () => {
     // Scoped lookup keeps the modifier/word-designator records reachable.
-    expect(resolve(corpus, "history_expn", "h")?.record.subKind).toBe(
+    expect(resolve(lexicon, "history_expn", "h")?.record.subKind).toBe(
       "modifier",
     )
     expect(categoriesOf("h")).not.toContain("history_expn")
@@ -494,7 +496,7 @@ describe("resolveAll (category walk)", () => {
   })
 
   test("nothing resolves: empty", () => {
-    expect(resolveAll(corpus, "not-a-real-token")).toEqual([])
-    expect(resolveAll(corpus, "")).toEqual([])
+    expect(resolveAll(lexicon, "not-a-real-token")).toEqual([])
+    expect(resolveAll(lexicon, "")).toEqual([])
   })
 })

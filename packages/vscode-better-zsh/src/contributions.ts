@@ -1,4 +1,4 @@
-import type { DocCorpus } from "@carlwr/zsh-core"
+import type { Lexicon } from "@carlwr/zsh-core"
 import * as vscode from "vscode"
 import { evictDocCaches } from "./document/cache"
 import { CompletionProvider } from "./editor/completions"
@@ -29,7 +29,7 @@ import { configureZsh } from "./zsh"
 
 const { commands, languages, window, workspace } = vscode
 
-export function contribute(ctx: vscode.ExtensionContext, corpus: DocCorpus) {
+export function contribute(ctx: vscode.ExtensionContext, lexicon: Lexicon) {
   const zsh = ZSH_LANG_ID
 
   // ── Host zsh: configured before the first diagnostics pass reads it ──
@@ -49,15 +49,15 @@ export function contribute(ctx: vscode.ExtensionContext, corpus: DocCorpus) {
   syncZshVisible()
 
   ctx.subscriptions.push(
-    // ── Reference knowledge (bundled corpus) ──
-    languages.registerHoverProvider(zsh, new HoverProvider(corpus)),
+    // ── Reference knowledge (bundled lexicon) ──
+    languages.registerHoverProvider(zsh, new HoverProvider(lexicon)),
     languages.registerCompletionItemProvider(
       zsh,
-      new CompletionProvider(corpus),
+      new CompletionProvider(lexicon),
     ),
     languages.registerDocumentSemanticTokensProvider(
       zsh,
-      new SemanticTokensProvider(corpus),
+      new SemanticTokensProvider(lexicon),
       SEMANTIC_LEGEND,
     ),
 

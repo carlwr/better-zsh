@@ -1,13 +1,13 @@
 import { nonEmpty } from "@carlwr/typescript-extra"
-import type { DocCorpus } from "@carlwr/zsh-core"
+import type { Lexicon } from "@carlwr/zsh-core"
 import { categoryFooter, renderRecord } from "@carlwr/zsh-core/render"
 import { describe, expect, test } from "vitest"
 import * as vscode from "vscode"
 import { CompletionProvider } from "../../editor/completions"
-import { by, docId, emptyCorpus, ident, pos, wordDoc } from "../test-util"
+import { by, docId, emptyLexicon, ident, pos, wordDoc } from "../test-util"
 
-const corpus: DocCorpus = {
-  ...emptyCorpus(),
+const lexicon: Lexicon = {
+  ...emptyLexicon(),
   builtin: by([
     {
       ...ident("builtin", "echo"),
@@ -56,7 +56,7 @@ const corpus: DocCorpus = {
   ]),
 }
 
-const provider = new CompletionProvider(corpus)
+const provider = new CompletionProvider(lexicon)
 
 async function complete(text: string, line: number, char: number) {
   const r = await provider.provideCompletionItems(
@@ -70,7 +70,7 @@ async function complete(text: string, line: number, char: number) {
 }
 
 describe("CompletionProvider", () => {
-  test("general position: the file's functions and parameters (bar the current word and corpus names), then corpus words", async () => {
+  test("general position: the file's functions and parameters (bar the current word and lexicon names), then lexicon words", async () => {
     const text = [
       "# says hi",
       "my-func() { print $greeting $SECONDS; }",
@@ -97,9 +97,9 @@ describe("CompletionProvider", () => {
     expect(isIncomplete).toBe(true)
     // Documentation: zsh-core's titled body, then the category line the
     // editor appends (`record-markdown.ts`).
-    const doc = corpus.option.get(docId("option", "autocd"))
+    const doc = lexicon.option.get(docId("option", "autocd"))
     if (doc === undefined) throw new Error("fixture: autocd")
-    const { title, mdBody } = renderRecord(corpus, doc)
+    const { title, mdBody } = renderRecord(lexicon, doc)
     const md = `${title}\n\n${mdBody}\n\n${categoryFooter(doc)}`
     expect(items.map(i => [i.label, i.filterText, i.documentation])).toEqual([
       ["no_autocd", "no_au", new vscode.MarkdownString(md)],

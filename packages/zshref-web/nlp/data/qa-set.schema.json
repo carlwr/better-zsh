@@ -72,12 +72,12 @@
         "additionalProperties": false,
         "description": "A query with its expected record matches."
       },
-      "description": "Corpus entries, each a query with expected record matches."
+      "description": "Entries, each a query with expected record matches."
     }
   },
   "required": [
     "entries"
   ],
-  "title": "NLP QA Corpus",
-  "description": "A corpus of natural-language queries with expected record matches and scores for steering NLP retrieval quality."
+  "title": "NLP QA Set",
+  "description": "A set of natural-language queries with expected record matches and scores for steering NLP retrieval quality."
 }

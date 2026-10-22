@@ -2,7 +2,7 @@
  * Modules whose entire .yo file is a single flat builtin-list or
  * special-param-list with no quirks.
  */
-import type { CorpusYodlFile } from "../../../source-files.ts"
+import type { YodlSourceFile } from "../../../source-files.ts"
 import type { ModuleName } from "../../../taxonomy.ts"
 import type {
   BuiltinDoc,
@@ -12,15 +12,15 @@ import type {
 import type { YNodeSeq } from "../../core/nodes.ts"
 import { parseModuleBuiltins, parseModuleParams } from "./helpers.ts"
 
-type GetNodes = (file: CorpusYodlFile) => YNodeSeq
+type GetNodes = (file: YodlSourceFile) => YNodeSeq
 
 interface TrivialBuiltinModule {
-  readonly file: CorpusYodlFile
+  readonly file: YodlSourceFile
   readonly module: ModuleName
 }
 
 interface TrivialParamModule {
-  readonly file: CorpusYodlFile
+  readonly file: YodlSourceFile
   readonly module: ModuleName
   readonly scope: SpecialParamScope
 }

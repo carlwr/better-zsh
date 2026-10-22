@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest"
 import { parseCondOps } from "../../docs/yodl/extractors/cond-ops"
 import { mkDocumented_ } from "../id-fns"
-import { by, expectDocCorpus, only, readVendoredYo } from "./test-util"
+import { by, expectParsedDocs, only, readVendoredYo } from "./test-util"
 
 const COND_YO = readVendoredYo("cond.yo")
 const cond = mkDocumented_("conditional_op")
@@ -43,8 +43,8 @@ true if string matches pattern.
     const ops = parseCondOps(COND_YO)
     const byOp = by(ops, o => o.id)
 
-    test("corpus parses", () =>
-      expectDocCorpus({
+    test("vendored source parses", () =>
+      expectParsedDocs({
         docs: ops,
         minCount: 20,
         keyOf: o => o.id,

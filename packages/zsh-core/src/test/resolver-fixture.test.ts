@@ -1,12 +1,12 @@
 import { allUnique } from "@carlwr/typescript-extra"
 import { describe, expect, test } from "vitest"
 import { buildResolverFixture } from "../../scripts/resolver-fixture"
-import { loadCorpus } from "../docs/corpus"
+import { loadLexicon } from "../docs/lexicon"
 import { classifyOrder, docCategories } from "../docs/taxonomy"
 
-const corpus = loadCorpus()
+const lexicon = loadLexicon()
 const meta = { packageVersion: "0.0.0-test", dataHash: "test" }
-const fixture = buildResolverFixture(corpus, meta)
+const fixture = buildResolverFixture(lexicon, meta)
 
 describe("resolver conformance fixture", () => {
   test("carries its meta", () => {
@@ -14,12 +14,12 @@ describe("resolver conformance fixture", () => {
   })
 
   test("is deterministic", () => {
-    expect(buildResolverFixture(corpus, meta)).toEqual(fixture)
+    expect(buildResolverFixture(lexicon, meta)).toEqual(fixture)
   })
 
   test.each(docCategories)("%s: every id round-trips loss-free", cat => {
     const byInput = new Map(fixture.cases[cat].map(c => [c.input, c]))
-    for (const id of corpus[cat].keys()) {
+    for (const id of lexicon[cat].keys()) {
       expect(byInput.get(id)).toEqual({ input: id, id, feedback: null })
     }
   })
@@ -35,7 +35,7 @@ describe("resolver conformance fixture", () => {
     expect(allUnique(inputs)).toBe(true)
     const walked = new Set(inputs)
     for (const cat of docCategories) {
-      for (const id of corpus[cat].keys()) expect(walked.has(id)).toBe(true)
+      for (const id of lexicon[cat].keys()) expect(walked.has(id)).toBe(true)
     }
     expect(fixture.walk.some(c => c.hits.length === 0)).toBe(true)
   })

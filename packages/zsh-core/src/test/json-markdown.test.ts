@@ -7,7 +7,7 @@ import { recordsFile } from "../docs/json-artifacts"
 import { type DocCategory, docCategories } from "../docs/taxonomy"
 
 /**
- * Smoke test: every emitted corpus JSON record carries an `_mdBody` string —
+ * Smoke test: every emitted JSON record carries an `_mdBody` string —
  * non-empty except for the records without prose (the desc-less reserved
  * words, documented as complex commands). Rendered-markdown embedding is the
  * seam between TS (renderer) and the out-of-process Rust crate; this test

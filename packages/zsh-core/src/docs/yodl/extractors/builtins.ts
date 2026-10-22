@@ -81,7 +81,7 @@ export function parseBuiltins(
     const aliasOf = extractAlias(body)
     const module = extractModule(body)
 
-    // Two grouping patterns in this corpus:
+    // Two grouping patterns in the manual:
     //
     // (a) one builtin, multiple forms — all heads start with the same name
     //     (e.g. `cd` with 3 xitems, `fc` with 5+). Heads whose upstream

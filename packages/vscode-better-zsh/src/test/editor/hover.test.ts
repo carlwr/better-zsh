@@ -3,9 +3,9 @@ import {
   type BuiltinDoc,
   type ComplexCommandDoc,
   type DocCategory,
-  type DocCorpus,
   type Documented,
-  loadCorpus,
+  type Lexicon,
+  loadLexicon,
   type OptFlagAlias,
   type OptionDoc,
   type ReservedWordDoc,
@@ -17,7 +17,7 @@ import { describe, expect, test } from "vitest"
 import type * as vscode from "vscode"
 import { activeEnd } from "../../document/words"
 import { HoverProvider } from "../../editor/hover"
-import { by, docId, emptyCorpus, ident, pos, wordDoc } from "../test-util"
+import { by, docId, emptyLexicon, ident, pos, wordDoc } from "../test-util"
 
 // --- fixtures ---------------------------------------------------------------
 
@@ -60,9 +60,9 @@ const rw = (name: string, desc: string): ReservedWordDoc => ({
   subKind: "command",
 })
 
-// Synthetic corpus: exercises dispatch/precedence rules with `/d:.../` markers.
-const corpus: DocCorpus = {
-  ...emptyCorpus(),
+// Synthetic lexicon: exercises dispatch/precedence rules with `/d:.../` markers.
+const lexicon: Lexicon = {
+  ...emptyLexicon(),
   // Both options carry `+f`; only RCS's is in the plain-zsh letter table.
   option: by([
     o("GLOB", "d:g", ["ksh", "sh"]),
@@ -92,10 +92,10 @@ function hoverWith(provider: HoverProvider) {
   }
 }
 
-const at = hoverWith(new HoverProvider(corpus))
+const at = hoverWith(new HoverProvider(lexicon))
 const valueAt = (line: string, char: number) => at(line, 0, char)?.value
 
-const real = loadCorpus()
+const real = loadLexicon()
 const realAt = hoverWith(new HoverProvider(real))
 // What a hover shows: zsh-core's titled body, then the category line the
 // editor appends (`record-markdown.ts`).
@@ -106,7 +106,7 @@ const rendered = <K extends DocCategory>(cat: K, id: Documented<K>) => {
   return `${title}\n\n${mdBody}\n\n${categoryFooter(doc)}`
 }
 
-// --- synthetic-corpus dispatch ----------------------------------------------
+// --- synthetic-lexicon dispatch ---------------------------------------------
 
 describe("HoverProvider dispatch", () => {
   test.each<[string, number, RegExp | null]>([
@@ -155,13 +155,13 @@ describe("HoverProvider dispatch", () => {
   })
 })
 
-// --- real-corpus token extraction -------------------------------------------
+// --- real-lexicon token extraction ------------------------------------------
 //
 // Every documented entry, synthesized into a hover position: the extension's
 // range extraction must reach the resolver with the right token (punctuation
 // params, symbolic cond ops, redirection shapes). Content is zsh-core's.
 
-describe("HoverProvider on the real corpus", () => {
+describe("HoverProvider on the real lexicon", () => {
   const mismatches = <T>(
     items: Iterable<T>,
     probe: (item: T) => [got: string | undefined, want: string] | undefined,

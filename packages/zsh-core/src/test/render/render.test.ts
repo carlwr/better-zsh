@@ -12,8 +12,8 @@ import {
 } from "../../../scripts/ref-dump"
 import { identity, mkDocumented } from "../../docs/brands"
 import { docCategoryPreambles } from "../../docs/category-preamble"
-import type { DocCorpus } from "../../docs/corpus"
-import * as zd from "../../docs/corpus"
+import type { Lexicon } from "../../docs/lexicon"
+import * as zd from "../../docs/lexicon"
 import type { DocCategory, DocRecordMap } from "../../docs/taxonomy"
 import {
   docCategories,
@@ -208,7 +208,7 @@ const mf: MathfuncDoc = {
   module: "zsh/mathfunc",
 }
 
-// --- corpus builder ---------------------------------------------------------
+// --- lexicon builder --------------------------------------------------------
 
 type DocArrays = { readonly [K in DocCategory]: readonly DocRecordMap[K][] }
 
@@ -239,16 +239,16 @@ const baseArrays: { readonly [K in DocCategory]: NonEmpty<DocRecordMap[K]> } = {
   comp_utility: [cuu],
 }
 
-function mkTestCorpus(overrides: Partial<DocArrays> = {}): DocCorpus {
+function mkTestLexicon(overrides: Partial<DocArrays> = {}): Lexicon {
   const all = { ...baseArrays, ...overrides }
   const out: Record<string, unknown> = {}
   for (const k of docCategories) {
     out[k] = new Map(all[k].map(d => [d.id, d]))
   }
-  return out as unknown as DocCorpus
+  return out as unknown as Lexicon
 }
 
-const corpus = (o: Partial<DocArrays> = {}) => refDocs(mkTestCorpus(o))
+const testRefDocs = (o: Partial<DocArrays> = {}) => refDocs(mkTestLexicon(o))
 
 const containsAll = (text: string | undefined, parts: readonly string[]) => {
   for (const p of parts) expect(text).toContain(p)
@@ -258,13 +258,13 @@ const headings = (t: string | undefined) => (t?.match(/^## /gm) ?? []).length
 
 // --- case tables ------------------------------------------------------------
 
-const noOpts = mkTestCorpus({ option: [] })
-const cdCorpus = mkTestCorpus({ option: [cd] })
+const noOpts = mkTestLexicon({ option: [] })
+const cdLexicon = mkTestLexicon({ option: [cd] })
 
 const body = <K extends DocCategory>(
   doc: DocRecordMap[K],
-  corpus: DocCorpus = noOpts,
-): string => renderRecord(corpus, doc).mdBody
+  lexicon: Lexicon = noOpts,
+): string => renderRecord(lexicon, doc).mdBody
 const title = <K extends DocCategory>(doc: DocRecordMap[K]): string =>
   renderRecord(noOpts, doc).title
 const head = <K extends DocCategory>(doc: DocRecordMap[K]) =>
@@ -388,7 +388,7 @@ describe("render markdown", () => {
       "`AUTO_CD`AUTO_CD `AUTO_CD`s",
     ],
   ])("option refs — %s", (_label, input, want) => {
-    expect(fmtOptRefsInMd(input, cdCorpus)).toBe(want)
+    expect(fmtOptRefsInMd(input, cdLexicon)).toBe(want)
   })
 
   describe("option-ref bolding", () => {
@@ -401,7 +401,7 @@ describe("render markdown", () => {
         ),
       ]),
     })
-    const fmt = (s: string) => fmtOptRefsInMd(s, cdCorpus)
+    const fmt = (s: string) => fmtOptRefsInMd(s, cdLexicon)
 
     test("changes nothing but `*` and backticks", () => {
       const unmarked = (s: string) => s.replace(/[*`]/g, "")
@@ -488,7 +488,7 @@ describe("render markdown", () => {
     ["zle_widget", zw, "ZLE widget (Modifying Text)"],
     ["keymap", km, "ZLE keymap (regular)"],
   ] as const)("category line is a bolding hazard — %s", (_cat, doc, want) => {
-    const withZle = mkTestCorpus({ option: [cd, zleOpt] })
+    const withZle = mkTestLexicon({ option: [cd, zleOpt] })
     const line = categoryFooter(doc)
     expect(line).toBe(`_Category:_ ${want}`)
     expect(fmtOptRefsInMd(line, withZle)).toContain("**")
@@ -526,7 +526,7 @@ describe("render markdown", () => {
       ...identity("option", "CDABLE_VARS", "CDABLE_VARS"),
       aliasOf: { target: cd.id, negated: false },
     }
-    const opt = body(alias, cdCorpus)
+    const opt = body(alias, cdLexicon)
     expect(opt).toMatch(/_Alias of:_ \*\*`AUTO_CD`\*\*$/)
 
     const tied = body({
@@ -560,7 +560,7 @@ describe("render markdown", () => {
   })
 
   test("typed ref-doc ids distinct from display headings", () => {
-    const docs = corpus()
+    const docs = testRefDocs()
     const opt = docs.find(d => d.kind === "option")
     expect(opt?.id).toBe(mkDocumented("option", "AUTO_CD"))
     expect(opt?.heading).toBe("AUTO_CD")
@@ -719,7 +719,7 @@ describe("render markdown", () => {
         { template: "plain form", keywords: [] },
       ],
     }
-    const md = body(docWithReq, mkTestCorpus({ option: [loops, repeat] }))
+    const md = body(docWithReq, mkTestLexicon({ option: [loops, repeat] }))
     expect(md).toContain("if list { list }    # requires SHORT_LOOPS")
     expect(md).toContain(
       "repeat word sublist    # requires SHORT_LOOPS or SHORT_REPEAT",
@@ -753,13 +753,13 @@ describe("render markdown", () => {
 })
 
 describe("render dump", () => {
-  const baseDocs = corpus()
+  const baseDocs = testRefDocs()
   const refFiles = dumpText(baseDocs)
   const headingOf = (k: DocCategory) =>
     baseDocs.find(d => d.kind === k)?.heading ?? ""
 
   test("per-kind dump files", () => {
-    const docs = corpus({ conditional_op: [cb] })
+    const docs = testRefDocs({ conditional_op: [cb] })
     const files = dumpText(docs)
     for (const doc of docs) {
       const h = `## ${doc.heading}`
@@ -801,7 +801,7 @@ describe("render dump", () => {
 
   test("writes dump files", async () => {
     await withTmpDirAsync("better-zsh-ref-", async dir => {
-      const docs = corpus({ conditional_op: [cb] })
+      const docs = testRefDocs({ conditional_op: [cb] })
       await writeRefDump(dir, docs)
       const all = readFileSync(join(dir, dumpFile.all), "utf8")
       for (const doc of docs) {
@@ -814,7 +814,7 @@ describe("render dump", () => {
   })
 
   describe("vendored docs", () => {
-    const vendored = zd.loadCorpus()
+    const vendored = zd.loadLexicon()
     const docs = refDocs(vendored)
     const files = dumpText(docs)
 
@@ -825,7 +825,7 @@ describe("render dump", () => {
       expect(headings(files.get(file))).toBe(src.length)
     })
 
-    test.each(docCategories)("%s ref docs preserve corpus order", kind => {
+    test.each(docCategories)("%s ref docs preserve lexicon order", kind => {
       expect(docs.filter(d => d.kind === kind).map(d => d.id)).toEqual([
         ...vendored[kind].keys(),
       ])

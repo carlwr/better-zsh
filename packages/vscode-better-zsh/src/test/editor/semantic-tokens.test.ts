@@ -1,12 +1,12 @@
 import * as fcu from "@carlwr/fastcheck-utils"
-import type { BuiltinDoc, DocCorpus, ReservedWordDoc } from "@carlwr/zsh-core"
+import type { BuiltinDoc, Lexicon, ReservedWordDoc } from "@carlwr/zsh-core"
 import fc from "fast-check"
 import { describe, expect, test } from "vitest"
 import { SemanticTokensProvider } from "../../editor/semantic-tokens"
 import { tokenModifiers, tokenTypes } from "../../manifest/semantic-tokens"
 import {
   by,
-  emptyCorpus,
+  emptyLexicon,
   expectStrictlyAscending,
   ident,
   lineDoc,
@@ -17,7 +17,7 @@ const KEYWORD = tokenTypes.indexOf("keyword")
 const FUNCTION = tokenTypes.indexOf("function")
 const DEFAULT_LIBRARY = 1 << tokenModifiers.indexOf("defaultLibrary")
 
-/** The provider reads two name sets; a corpus holding just those. */
+/** The provider reads two name sets; a lexicon holding just those. */
 function provider(
   builtins: readonly string[],
   reservedWords: readonly string[],
@@ -32,12 +32,12 @@ function provider(
     subKind: "command",
     sig: name,
   })
-  const corpus: DocCorpus = {
-    ...emptyCorpus(),
+  const lexicon: Lexicon = {
+    ...emptyLexicon(),
     builtin: by(builtins.map(b)),
     reserved_word: by(reservedWords.map(rw)),
   }
-  return new SemanticTokensProvider(corpus)
+  return new SemanticTokensProvider(lexicon)
 }
 
 const rawTokens = (
@@ -94,7 +94,7 @@ describe("SemanticTokensProvider", () => {
       [bi("f"), bi("echo")],
     ],
     // manual reserved words the analyzer treats as command heads are painted
-    // as keywords from the corpus list — also when they are builtins
+    // as keywords from the lexicon list — also when they are builtins
     ["declare foo=bar", [], ["declare"], [kw("declare")]],
     ["export PATH=/x", ["export"], ["export"], [kw("export")]],
   ])("%s", (text, builtins, reservedWords, want) => {

@@ -206,7 +206,7 @@ export async function loadBench(
 ): Promise<Bench> {
   const fixture = await loadSentenceFixture()
   const curatedEntries = fixture.entries.slice(0, cap)
-  const mechEntries = buildMechanical(assets.corpus).slice(0, cap)
+  const mechEntries = buildMechanical(assets.lexicon).slice(0, cap)
   progress(
     `embedding ${curatedEntries.length} curated + ${mechEntries.length} mechanical queries once…`,
   )

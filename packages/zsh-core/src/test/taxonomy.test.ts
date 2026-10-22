@@ -1,5 +1,5 @@
 import { describe, expect, expectTypeOf, test } from "vitest"
-import { loadCorpus } from "../docs/corpus"
+import { loadLexicon } from "../docs/lexicon"
 import { resolve, resolveAll } from "../docs/resolver"
 import {
   type DocCategory,
@@ -10,7 +10,7 @@ import {
 } from "../docs/taxonomy"
 import type { BuiltinDoc, ComplexCommandDoc, OptionDoc } from "../docs/types"
 
-const corpus = loadCorpus()
+const lexicon = loadLexicon()
 
 describe("isDocCategory", () => {
   test("accepts every docCategories entry", () => {
@@ -29,7 +29,7 @@ describe("isDocCategory", () => {
 // its category as a literal, and `DocRecord` discriminates on it.
 describe("ResolvedHit types", () => {
   test("a K-shaped hit carries the K-shaped record", () => {
-    const hit = resolve(corpus, "option", "AUTO_CD")
+    const hit = resolve(lexicon, "option", "AUTO_CD")
     if (hit === undefined) throw new Error("AUTO_CD did not resolve")
     expectTypeOf(hit.record).toEqualTypeOf<OptionDoc>()
     expectTypeOf(hit.record.category).toEqualTypeOf<"option">()
@@ -38,7 +38,7 @@ describe("ResolvedHit types", () => {
     const viaK = <K extends DocCategory>(
       cat: K,
       raw: string,
-    ): DocRecordMap[K] | undefined => resolve(corpus, cat, raw)?.record
+    ): DocRecordMap[K] | undefined => resolve(lexicon, cat, raw)?.record
     expectTypeOf(viaK("builtin", "echo")).toEqualTypeOf<
       BuiltinDoc | undefined
     >()
@@ -46,13 +46,13 @@ describe("ResolvedHit types", () => {
   })
 
   test("a walk hit's record is a DocRecord; category narrows it", () => {
-    const [hit] = resolveAll(corpus, "for")
+    const [hit] = resolveAll(lexicon, "for")
     if (hit === undefined) throw new Error("for did not resolve")
     expectTypeOf(hit.record).toEqualTypeOf<DocRecord>()
     if (hit.record.category !== "complex_command") {
       throw new Error("expected the complex-command hit first")
     }
     expectTypeOf(hit.record).toEqualTypeOf<ComplexCommandDoc>()
-    expect(hit.record).toBe(corpus.complex_command.get(hit.record.id))
+    expect(hit.record).toBe(lexicon.complex_command.get(hit.record.id))
   })
 })

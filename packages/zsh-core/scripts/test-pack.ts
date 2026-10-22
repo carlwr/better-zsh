@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url"
 import { escapeRegExp } from "@carlwr/typescript-extra"
 import { publint } from "publint"
 import { formatMessage } from "publint/utils"
-import { corpusYodlFiles } from "../src/docs/source-files.ts"
+import { yodlSourceFiles } from "../src/docs/source-files.ts"
 import { publicEntries } from "./pkg-entries.ts"
 
 const pkgDir = resolve(dirname(fileURLToPath(import.meta.url)), "..")
@@ -17,7 +17,7 @@ const entries = publicEntries(pkgDir)
 const vendoredDocs = [
   "SOURCE.md",
   "THIRD_PARTY_NOTICES.md",
-  ...corpusYodlFiles,
+  ...yodlSourceFiles,
 ] as const
 
 function bundleFiles(entry: string): readonly string[] {

@@ -122,7 +122,7 @@ function altForm(item: YodlEntry, head: HeadKey): AlternateForm | undefined {
   }
 }
 
-// Items whose head doesn't classify (rare corpus edge cases) are dropped
+// Items whose head doesn't classify (rare upstream edge cases) are dropped
 // silently — classification is a closed enumeration so upstream-grammar drift
 // surfaces as missing records, not silent mis-routing.
 export function parseComplexCommands(

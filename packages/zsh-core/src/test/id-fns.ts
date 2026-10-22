@@ -1,5 +1,5 @@
 import { identity, mkDocumented } from "../docs/brands"
-import type { DocCorpus } from "../docs/corpus"
+import type { Lexicon } from "../docs/lexicon"
 import {
   type DocCategory,
   type DocRecordMap,
@@ -13,29 +13,29 @@ export const mkDocumented_ =
     mkDocumented(cat, raw)
 
 /**
- * Build a `DocCorpus` whose maps are all empty, then merge the given
+ * Build a `Lexicon` whose maps are all empty, then merge the given
  * per-category overrides. Single cast site for tests that need a partial
- * fixture corpus.
+ * fixture lexicon.
  */
-export function emptyCorpus(overrides: Partial<DocCorpus> = {}): DocCorpus {
+export function emptyLexicon(overrides: Partial<Lexicon> = {}): Lexicon {
   const base = Object.fromEntries(
     docCategories.map(cat => [cat, new Map()]),
-  ) as unknown as DocCorpus
+  ) as unknown as Lexicon
   return { ...base, ...overrides }
 }
 
 /**
- * `DocCorpus` populated only with ids in one category; each record carries
+ * `Lexicon` populated only with ids in one category; each record carries
  * just its identity fields — for resolver tests that exercise membership,
  * not record content. The single cast site is here.
  */
-export function membershipCorpus<K extends DocCategory>(
+export function membershipLexicon<K extends DocCategory>(
   cat: K,
   rawIds: readonly string[],
-): DocCorpus {
+): Lexicon {
   const entries = rawIds.map(raw => {
     const base = identity(cat, raw)
     return [base.id, base as unknown as DocRecordMap[K]] as const
   })
-  return emptyCorpus({ [cat]: new Map(entries) } as Partial<DocCorpus>)
+  return emptyLexicon({ [cat]: new Map(entries) } as Partial<Lexicon>)
 }

@@ -1,8 +1,8 @@
 // The fixture generators against their committed files. The parity side is
-// self-contained (generated vectors, corpus in-process); the sanity build
+// self-contained (generated vectors, lexicon in-process); the sanity build
 // needs the staged index and the model, and skips without them.
 
-import { loadCorpus } from "@carlwr/zsh-core"
+import { loadLexicon } from "@carlwr/zsh-core"
 import { describe, expect, it } from "vitest"
 
 import { createNodeEmbedder } from "../../../nlp/node/embedder-node"
@@ -24,11 +24,11 @@ import {
   withinDecimals,
 } from "../../_helpers"
 
-const corpus = loadCorpus()
+const lexicon = loadLexicon()
 
 describe("parity fixture", () => {
   it("matches the committed file", async () => {
-    const fixture = buildParityFixture(corpus, await loadRulesYaml())
+    const fixture = buildParityFixture(lexicon, await loadRulesYaml())
     await assertCommittedJson(
       PATHS.parityFixture,
       fixture,

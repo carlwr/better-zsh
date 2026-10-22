@@ -304,14 +304,14 @@ Example:
 ```diff
 Commands:
 -  info
--    The `info` command emits metadata on the corpus. It is printed as JSON,
+-    The `info` command emits metadata on the reference. It is printed as JSON,
 -    and formatting is similar to that of other subcommands if they are
 -    invoked with the `--pretty` option. Here, passing `--pretty` is not
 -    illegal, but it is a no-op. If there is other metadata on upstream
 -    sources it is also (pretty-)printed.
 -
 +  info
-+    emit metadata for corpus + upstream as pretty-printed JSON
++    emit metadata for reference + upstream as pretty-printed JSON
 +
 ```
 

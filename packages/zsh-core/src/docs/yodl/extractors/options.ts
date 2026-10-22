@@ -79,7 +79,7 @@ const parseOptionSection = mkClosedUnionParser(
  * - GLOB_ASSIGN: `` `var(name)tt(=)var(pattern) `` missing its closing `'`,
  *   leaving an unclosed backtick-quote span that renders as a lone backtick.
  *
- * Exported so `loadCorpus` patches the shared file once; also applied here
+ * Exported so `loadLexicon` patches the shared file once; also applied here
  * for direct string callers (tests, one-off tools).
  */
 export function fixupOptionsYo(yo: string): string {

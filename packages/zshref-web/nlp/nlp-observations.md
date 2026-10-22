@@ -15,7 +15,7 @@ Method: BGE-small, ON/OFF re-embed A/B (synonyms baked vs empty) + manual query 
 - Highest-value synonyms are zsh jargon the model misses, not generic English.
 - Verify any candidate synonym with an ON/OFF probe before adding it.
 
-Eval maturity (2026-05-31) — the scored corpus + sentence fixtures are still rudimentary:
+Eval maturity (2026-05-31) — the QA set + sentence fixtures are still rudimentary:
 
 - Hard-check template wording matters: a colloquial word ("command") inflated pass rates via vocabulary that echoed the test — use the canonical category word.
 

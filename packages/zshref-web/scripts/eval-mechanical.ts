@@ -18,7 +18,7 @@ scriptFlags(
 )
 
 const assets = await reporterAssets("eval-mechanical")
-const mech = await evalMechanical(buildMechanical(assets.corpus), assets)
+const mech = await evalMechanical(buildMechanical(assets.lexicon), assets)
 const curated = await evalSentence(await loadSentenceFixture(), assets)
 process.stdout.write(
   renderMechanical(mech) + renderCombined(curated.train.total, mech.all.total),

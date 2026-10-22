@@ -1,19 +1,15 @@
 // The QA scoring as a report. Prints the hard-check section and the
-// summary lines only — the QA corpus is a held-out set (NLP.md), so no
+// summary lines only — the QA set is held out (NLP.md), so no
 // per-entry line ever prints.
 
-import { loadQaCorpus } from "../nlp/node/eval/qa-corpus"
-import {
-  renderQa,
-  runHardChecks,
-  scoreQaCorpus,
-} from "../nlp/node/eval/qa-score"
+import { renderQa, runHardChecks, scoreQaSet } from "../nlp/node/eval/qa-score"
+import { loadQaSet } from "../nlp/node/eval/qa-set"
 import { reporterAssets, scriptFlags } from "./_args"
 
 scriptFlags("qa-score", "pnpm --filter zshref-web nlp:qa-score", [])
 
 const assets = await reporterAssets("qa-score")
-const corpus = await loadQaCorpus()
+const qa = await loadQaSet()
 const hard = await runHardChecks(assets)
-const scored = await scoreQaCorpus(corpus, assets)
+const scored = await scoreQaSet(qa, assets)
 process.stdout.write(renderQa(hard, scored))

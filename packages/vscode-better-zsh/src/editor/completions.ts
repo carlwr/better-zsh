@@ -1,5 +1,5 @@
 import { cached } from "@carlwr/typescript-extra"
-import type { DocCategory, DocCorpus, DocRecordMap } from "@carlwr/zsh-core"
+import type { DocCategory, DocRecordMap, Lexicon } from "@carlwr/zsh-core"
 import { renderRecord } from "@carlwr/zsh-core/render"
 import * as vscode from "vscode"
 import { contextAt } from "../document/facts"
@@ -30,41 +30,41 @@ export class CompletionProvider implements vscode.CompletionItemProvider {
   // rendered docs of another.
   private general = cached(() =>
     wordCategories.flatMap(([cat, kind]) =>
-      [...this.corpus[cat].values()]
+      [...this.lexicon[cat].values()]
         .filter(doc => WORD_EXACT.test(doc.id))
-        .map(doc => mkCompletionItem(this.corpus, doc, kind)),
+        .map(doc => mkCompletionItem(this.lexicon, doc, kind)),
     ),
   )
   private generalLabels = cached(
     () =>
       new Set<string>(
-        wordCategories.flatMap(([cat]) => [...this.corpus[cat].keys()]),
+        wordCategories.flatMap(([cat]) => [...this.lexicon[cat].keys()]),
       ),
   )
-  private options = cached(() => [...this.corpus.option.keys()])
+  private options = cached(() => [...this.lexicon.option.keys()])
   private optionDocs = cached(
     () =>
       new Map(
-        [...this.corpus.option.values()].map(doc => [
+        [...this.lexicon.option.values()].map(doc => [
           doc.id,
-          recordMarkdown(this.corpus, doc),
+          recordMarkdown(this.lexicon, doc),
         ]),
       ),
   )
   // `CompletionItemKind.Operator`'s codicon is a stacked `%/x` glyph; `Keyword`'s
   // icon reads cleaner and is semantically close (test/cond keywords).
   private condItems = cached(() =>
-    [...this.corpus.conditional_op.values()].map(cop => {
+    [...this.lexicon.conditional_op.values()].map(cop => {
       const item = new vscode.CompletionItem(cop.id, Kind.Keyword)
       item.detail = cop.desc
       item.documentation = new vscode.MarkdownString(
-        renderRecord(this.corpus, cop).title,
+        renderRecord(this.lexicon, cop).title,
       )
       return item
     }),
   )
 
-  constructor(private corpus: DocCorpus) {}
+  constructor(private lexicon: Lexicon) {}
 
   provideCompletionItems(doc: vscode.TextDocument, pos: vscode.Position) {
     switch (contextAt(doc, pos)) {
@@ -78,7 +78,7 @@ export class CompletionProvider implements vscode.CompletionItemProvider {
   }
 
   // The file's own symbols first: its functions (docstring as documentation)
-  // and its parameters; corpus words win a name clash.
+  // and its parameters; lexicon words win a name clash.
   private generalCompletions(doc: vscode.TextDocument, pos: vscode.Position) {
     const cur = wordTextAt(doc, pos)
     const labels = this.generalLabels()
@@ -121,12 +121,12 @@ function wordTextAt(doc: vscode.TextDocument, pos: vscode.Position): string {
 }
 
 function mkCompletionItem<K extends WordCategory>(
-  corpus: DocCorpus,
+  lexicon: Lexicon,
   doc: DocRecordMap[K],
   kind: vscode.CompletionItemKind,
 ): vscode.CompletionItem {
   const item = new vscode.CompletionItem(doc.id, kind)
-  const rendered = renderRecord(corpus, doc)
+  const rendered = renderRecord(lexicon, doc)
   // The one-line slot: a synopsis where the record has one; the full doc
   // travels as `documentation`.
   item.detail = rendered.head?.lines[0]

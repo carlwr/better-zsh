@@ -1,7 +1,7 @@
 // The lookup-contract gate over the committed files: `lookup-contract.json`
 // (entries) and `lookup-map.json`, read as the browser reads them — no
-// corpus, no staging — so the shipped map is checked, not a rebuilt one
-// (`contract.test.ts` beside this regenerates both from the corpus).
+// lexicon, no staging — so the shipped map is checked, not a rebuilt one
+// (`contract.test.ts` beside this regenerates both from the lexicon).
 //
 // Layer split:
 // - **Bare** entries are tested here via lookup-map only — fast, and

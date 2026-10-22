@@ -12,7 +12,7 @@ host           = $(shell rustc -vV | sed -n 's/^host: //p')
 # `vendor`: zsh-core's release assets, as the extracted crate will download
 # them; the tarballs unpack into one merged `data/`
 release-dir    = ./packages/zsh-core/.aux/release
-release-assets = corpus.tar.gz resolver-fixture.tar.gz
+release-assets = lexicon.tar.gz resolver-fixture.tar.gz
 
 .DEFAULT_GOAL  = artifacts
 

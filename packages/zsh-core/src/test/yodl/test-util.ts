@@ -54,7 +54,7 @@ export function expectNoYodlLeaks(s: string): void {
   for (const m of YODL_LEAK_MARKERS) expect(s).not.toContain(m)
 }
 
-export function expectDocCorpus<T>({
+export function expectParsedDocs<T>({
   docs,
   minCount,
   keyOf,

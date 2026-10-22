@@ -2,7 +2,7 @@
 
 mod help;
 
-use crate::corpus::{Corpus, DOC_CATEGORIES};
+use crate::lexicon::{DOC_CATEGORIES, Lexicon};
 use crate::output;
 use crate::tools::schema::Shape;
 use crate::tools::text::Target;
@@ -34,16 +34,16 @@ fn with_noop_pretty(cmd: Command, mode: BuildMode) -> Command {
     }
 }
 
-pub fn build_cli(tool_set: &ToolSet, corpus: &Corpus, mode: BuildMode) -> Command {
+pub fn build_cli(tool_set: &ToolSet, lexicon: &Lexicon, mode: BuildMode) -> Command {
     let root_after_help = format!(
         "\n{}\n\n{}",
         tools::prose::preamble(Target::Terminal),
-        help::root_after_help_tail(tool_set, corpus),
+        help::root_after_help_tail(tool_set, lexicon),
     );
 
     let mut root = Command::new(help::BIN)
         .bin_name(help::BIN)
-        .version(version_string(corpus))
+        .version(version_string(lexicon))
         .about(help::ROOT_ABOUT)
         .override_usage(help::ROOT_USAGE)
         .after_long_help(root_after_help)
@@ -57,13 +57,13 @@ pub fn build_cli(tool_set: &ToolSet, corpus: &Corpus, mode: BuildMode) -> Comman
         .arg(version_arg());
 
     for tool in &tool_set.tools {
-        root = root.subcommand(build_subcommand(tool, corpus));
+        root = root.subcommand(build_subcommand(tool, lexicon));
     }
 
     root = root.subcommand(with_noop_pretty(
         Command::new("batch")
             .about(help::BATCH_ABOUT)
-            .after_long_help(help::batch_long(tool_set, corpus))
+            .after_long_help(help::batch_long(tool_set, lexicon))
             .disable_help_flag(true)
             .arg(help_arg()),
         mode,
@@ -128,25 +128,25 @@ pub fn build_cli(tool_set: &ToolSet, corpus: &Corpus, mode: BuildMode) -> Comman
     root
 }
 
-/// Multi-line `--version` string: pkg version, zsh upstream, corpus totals.
+/// Multi-line `--version` string: pkg version, zsh upstream, lexicon totals.
 /// Shared by both binaries; each prefixes its own name.
-pub fn version_string(corpus: &Corpus) -> String {
+pub fn version_string(lexicon: &Lexicon) -> String {
     let pkg_version = env!("CARGO_PKG_VERSION");
-    let up = &corpus.index.zsh_upstream;
-    let total: usize = corpus.categories.iter().map(|c| c.records.len()).sum();
-    let cats = corpus.categories.len();
+    let up = &lexicon.index.zsh_upstream;
+    let total: usize = lexicon.categories.iter().map(|c| c.records.len()).sum();
+    let cats = lexicon.categories.len();
 
     let commit_short: Option<String> =
         (!up.commit.is_empty()).then(|| up.commit.chars().take(8).collect());
     let upstream = help::version_upstream_line(&up.tag, &up.date, commit_short.as_deref());
-    let summary = help::version_corpus_summary(total, cats);
+    let summary = help::version_lexicon_summary(total, cats);
     format!("{pkg_version}\n{upstream}\n{summary}")
 }
 
-fn build_subcommand(tool: &Tool, corpus: &Corpus) -> Command {
+fn build_subcommand(tool: &Tool, lexicon: &Lexicon) -> Command {
     let mut cmd = Command::new(tool.name.to_string())
         .about(tool.prose.brief.to_string())
-        .after_long_help(tool_after_help(tool, corpus))
+        .after_long_help(tool_after_help(tool, lexicon))
         .disable_help_flag(true)
         .arg(pretty_arg())
         .arg(help_arg());
@@ -156,17 +156,17 @@ fn build_subcommand(tool: &Tool, corpus: &Corpus) -> Command {
     cmd
 }
 
-fn tool_after_help(tool: &Tool, corpus: &Corpus) -> String {
+fn tool_after_help(tool: &Tool, lexicon: &Lexicon) -> String {
     format!(
         "{}\n\n{}",
         tool.prose.long.terminal,
-        tool_cli_example(tool, corpus)
+        tool_cli_example(tool, lexicon)
     )
 }
 
 /// Compact examples that still exercise resolver normalization, resolver
 /// feedback and help-output elision.
-fn tool_cli_example(tool: &Tool, corpus: &Corpus) -> String {
+fn tool_cli_example(tool: &Tool, lexicon: &Lexicon) -> String {
     let pairs: Vec<(&str, Value)> = match tool.name {
         ToolName::Docs => vec![
             ("zshref docs --key='(.)' --pretty", json!({ "key": "(.)" })),
@@ -191,7 +191,9 @@ fn tool_cli_example(tool: &Tool, corpus: &Corpus) -> String {
     let outputs: Vec<String> = pairs
         .iter()
         .map(|(_, input)| {
-            let mut value = tool.call(input, corpus).expect("CLI help example must run");
+            let mut value = tool
+                .call(input, lexicon)
+                .expect("CLI help example must run");
             help::elide_for_help_example(&mut value);
             output::render(&value, true)
         })
@@ -207,7 +209,7 @@ fn tool_cli_example(tool: &Tool, corpus: &Corpus) -> String {
         .collect();
     let block = help::shell_examples(&items);
     if tool.name == ToolName::Docs {
-        format!("{block}\n\n{}", docs_md_recipe(tool, corpus))
+        format!("{block}\n\n{}", docs_md_recipe(tool, lexicon))
     } else {
         block
     }
@@ -216,9 +218,9 @@ fn tool_cli_example(tool: &Tool, corpus: &Corpus) -> String {
 /// Only `docs` gets a recipe: raw JSON strings are easy to mis-handle at
 /// the terminal. Uses a compact record that needs category narrowing, so
 /// the recipe shows the intended filter without bloating help output.
-fn docs_md_recipe(tool: &Tool, corpus: &Corpus) -> String {
+fn docs_md_recipe(tool: &Tool, lexicon: &Lexicon) -> String {
     let input = json!({ "key": "!", "category": "conditional_op" });
-    let out = tool.call(&input, corpus).expect("docs md recipe must run");
+    let out = tool.call(&input, lexicon).expect("docs md recipe must run");
     let md_body = out["matches"][0]["mdBody"]
         .as_str()
         .expect("docs md recipe expects matches[0].mdBody to be a string");
@@ -305,7 +307,7 @@ fn version_arg() -> Arg {
         .help(help::VERSION_FLAG_HELP)
 }
 
-pub fn dispatch(mut cmd: Command, tool_set: &ToolSet, corpus: &Corpus) -> Result<i32> {
+pub fn dispatch(mut cmd: Command, tool_set: &ToolSet, lexicon: &Lexicon) -> Result<i32> {
     let matches = match cmd.try_get_matches_from_mut(std::env::args_os()) {
         Ok(m) => m,
         Err(err) => return Ok(output::handle_clap_error(err)),
@@ -333,7 +335,7 @@ pub fn dispatch(mut cmd: Command, tool_set: &ToolSet, corpus: &Corpus) -> Result
             let shell: clap_complete::Shell = *sub_matches
                 .get_one::<clap_complete::Shell>("shell")
                 .expect("clap enforces required");
-            let mut cmd_for_completions = build_cli(tool_set, corpus, BuildMode::Completions);
+            let mut cmd_for_completions = build_cli(tool_set, lexicon, BuildMode::Completions);
             clap_complete::generate(
                 shell,
                 &mut cmd_for_completions,
@@ -343,14 +345,14 @@ pub fn dispatch(mut cmd: Command, tool_set: &ToolSet, corpus: &Corpus) -> Result
             Ok(0)
         }
         "info" => {
-            output::emit_pretty(&tools::info::run(corpus))?;
+            output::emit_pretty(&tools::info::run(lexicon))?;
             Ok(0)
         }
         "schema" => {
             output::emit(&tools::schema::run(tool_set), pretty)?;
             Ok(0)
         }
-        "batch" => crate::batch::run(tool_set, corpus),
+        "batch" => crate::batch::run(tool_set, lexicon),
         "help" => {
             let command = sub_matches.get_one::<String>("command").map(String::as_str);
             Ok(render_help(cmd, command))
@@ -361,7 +363,7 @@ pub fn dispatch(mut cmd: Command, tool_set: &ToolSet, corpus: &Corpus) -> Result
                 .expect("subcommand registered from the tool set");
             let mut input = matches_to_input_value(tool, sub_matches);
             forward_root_category(&mut input, &matches);
-            output::emit(&tool.call(&input, corpus)?, pretty)?;
+            output::emit(&tool.call(&input, lexicon)?, pretty)?;
             Ok(0)
         }
     }

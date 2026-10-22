@@ -1,5 +1,4 @@
 import { withoutFirstSubstring } from "@carlwr/typescript-extra"
-import type { DocCorpus } from "../src/docs/corpus.ts"
 import type {
   ResolverFixtureCase,
   ResolverFixtureCases,
@@ -7,6 +6,7 @@ import type {
   WalkFixtureCase,
   WalkFixtureCases,
 } from "../src/docs/json-types.ts"
+import type { Lexicon } from "../src/docs/lexicon.ts"
 import { flipOptFlagSign } from "../src/docs/normalize-option.ts"
 import { resolve, resolveAll } from "../src/docs/resolver.ts"
 import {
@@ -278,23 +278,20 @@ const extraInputs: { readonly [K in DocCategory]?: ExtraInputs<K> } = {
 
 /** Every record's id, and its display where that differs. */
 function identityInputs<K extends DocCategory>(
-  corpus: DocCorpus,
+  lexicon: Lexicon,
   cat: K,
 ): Inputs {
-  return [...corpus[cat].values()].flatMap(({ id, display }) => [
+  return [...lexicon[cat].values()].flatMap(({ id, display }) => [
     id,
     ...(display === id ? [] : [display]),
   ])
 }
 
-function recordInputs<K extends DocCategory>(
-  corpus: DocCorpus,
-  cat: K,
-): Inputs {
+function recordInputs<K extends DocCategory>(lexicon: Lexicon, cat: K): Inputs {
   const extra = extraInputs[cat] ?? (() => [])
   return [
-    ...identityInputs(corpus, cat),
-    ...[...corpus[cat].values()].flatMap(extra),
+    ...identityInputs(lexicon, cat),
+    ...[...lexicon[cat].values()].flatMap(extra),
   ]
 }
 
@@ -314,12 +311,12 @@ function checkInput(where: string, input: string): void {
 }
 
 function caseFor(
-  corpus: DocCorpus,
+  lexicon: Lexicon,
   cat: DocCategory,
   input: string,
 ): ResolverFixtureCase {
   checkInput(cat, input)
-  const hit = resolve(corpus, cat, input)
+  const hit = resolve(lexicon, cat, input)
   return {
     input,
     id: hit?.record.id ?? null,
@@ -327,18 +324,18 @@ function caseFor(
   }
 }
 
-function casesFor(corpus: DocCorpus, cat: DocCategory): ResolverFixtureCases {
+function casesFor(lexicon: Lexicon, cat: DocCategory): ResolverFixtureCases {
   const inputs = new Set([
     ...(pinnedInputs[cat] ?? []),
     ...crossCategoryInputs,
-    ...recordInputs(corpus, cat),
+    ...recordInputs(lexicon, cat),
   ])
-  return [...inputs].map(input => caseFor(corpus, cat, input))
+  return [...inputs].map(input => caseFor(lexicon, cat, input))
 }
 
-function walkCaseFor(corpus: DocCorpus, input: string): WalkFixtureCase {
+function walkCaseFor(lexicon: Lexicon, input: string): WalkFixtureCase {
   checkInput("walk", input)
-  const hits = resolveAll(corpus, input).map(hit => ({
+  const hits = resolveAll(lexicon, input).map(hit => ({
     category: hit.record.category,
     id: hit.record.id as string,
     feedback: hit.feedback ?? null,
@@ -351,23 +348,23 @@ function walkCaseFor(corpus: DocCorpus, input: string): WalkFixtureCase {
  * inputs — the tie-break for every documented id — leaving out the
  * per-record surface variants, which the per-category cases already pin.
  */
-function walkCases(corpus: DocCorpus): WalkFixtureCases {
+function walkCases(lexicon: Lexicon): WalkFixtureCases {
   const inputs = new Set([
     ...crossCategoryInputs,
     ...docCategories.flatMap(cat => [
       ...(pinnedInputs[cat] ?? []),
-      ...identityInputs(corpus, cat),
+      ...identityInputs(lexicon, cat),
     ]),
   ])
-  return [...inputs].map(input => walkCaseFor(corpus, input))
+  return [...inputs].map(input => walkCaseFor(lexicon, input))
 }
 
 export function buildResolverFixture(
-  corpus: DocCorpus,
+  lexicon: Lexicon,
   meta: { readonly packageVersion: string; readonly dataHash: string },
 ): ResolverFixtureJson {
   const cases = Object.fromEntries(
-    docCategories.map(cat => [cat, casesFor(corpus, cat)]),
+    docCategories.map(cat => [cat, casesFor(lexicon, cat)]),
   ) as ResolverFixtureJson["cases"]
-  return { version: 2, ...meta, cases, walk: walkCases(corpus) }
+  return { version: 2, ...meta, cases, walk: walkCases(lexicon) }
 }

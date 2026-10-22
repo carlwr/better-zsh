@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto"
-import type { DocCorpus } from "./corpus.ts"
 import { assertShellSafeIdentity, projectRecords } from "./json-projection.ts"
 import type { JsonDocArrayMap } from "./json-types.ts"
+import type { Lexicon } from "./lexicon.ts"
 import { type DocCategory, docCategories } from "./taxonomy.ts"
 
 /** The record file: every category's record array under its category (`JsonDocArrayMap`). */
@@ -52,13 +52,13 @@ export function fmtJson(data: unknown): string {
 }
 
 /**
- * The record file of `corpus`' JSON build: the record arrays keyed by
- * category, in primary category order. Refuses a corpus whose identity
+ * The record file of `lexicon`'s JSON build: the record arrays keyed by
+ * category, in primary category order. Refuses a lexicon whose identity
  * fields are not shell-safe ASCII (`assertShellSafeIdentity`).
  */
-export function jsonRecords(corpus: DocCorpus): JsonDocArrayMap {
+export function jsonRecords(lexicon: Lexicon): JsonDocArrayMap {
   const entries = docCategories.map(cat => {
-    const projected = projectRecords(corpus, cat)
+    const projected = projectRecords(lexicon, cat)
     assertShellSafeIdentity(projected)
     return [cat, projected] as const
   })
@@ -67,6 +67,6 @@ export function jsonRecords(corpus: DocCorpus): JsonDocArrayMap {
 }
 
 /** `jsonRecords` as the text the build writes — what `dataHash` covers. */
-export function jsonRecordsText(corpus: DocCorpus): string {
-  return fmtJson(jsonRecords(corpus))
+export function jsonRecordsText(lexicon: Lexicon): string {
+  return fmtJson(jsonRecords(lexicon))
 }

@@ -1,11 +1,11 @@
 import { describe, expect, test } from "vitest"
 import { refDocs } from "../../../scripts/ref-dump.ts"
-import { loadCorpus } from "../../docs/corpus.ts"
+import { loadLexicon } from "../../docs/lexicon.ts"
 import { heuristics } from "./heuristics.ts"
 import { knownOffenders, type OffenderId } from "./known-offenders.ts"
 
 describe("render heuristics", () => {
-  const docs = refDocs(loadCorpus())
+  const docs = refDocs(loadLexicon())
 
   test.each(heuristics)("$name — offenders match known list", h => {
     const actual = sortPids(

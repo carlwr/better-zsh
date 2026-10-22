@@ -25,9 +25,9 @@ A standalone package of structured zsh knowledge:
 
 Surface and posture: `packages/zsh-core/README.md`. The static-scope guarantee is enforced — and described — by `packages/zsh-core/src/test/static-scope.test.ts`.
 
-Not a grammar, not a tokenizer. Zsh is not generally parseable without running zsh; we take bounded, corpus-aware wins that do not require shell execution.
+Not a grammar, not a tokenizer. Zsh is not generally parseable without running zsh; we take bounded, lexicon-aware wins that do not require shell execution.
 
-The user-code analyzer (domain B below) lives in the extension. Corpus-free and editor-neutral, it was once kept here for a future LSP or other editor; re-weighed with one consumer, a heuristic scanner inside a total reference library blurred the package's scope and shipped a mostly unused surface. The extension's seam test keeps it liftable — into its own package should a second consumer appear.
+The user-code analyzer (domain B below) lives in the extension. Lexicon-independent and editor-neutral, it was once kept here for a future LSP or other editor; re-weighed with one consumer, a heuristic scanner inside a total reference library blurred the package's scope and shipped a mostly unused surface. The extension's seam test keeps it liftable — into its own package should a second consumer appear.
 
 ---
 
@@ -44,10 +44,10 @@ Every change should preserve this decomposition. It shows up in:
 Static vendored knowledge about zsh language elements. A **closed taxonomy** of `DocCategory` values (see `docCategories`). Each category has:
 
 - A doc-record type per category (see `DocRecordMap` / per-category JSDoc).
-- A branded corpus identity: `Documented<K>` — see brand semantics below.
-- A map `DocCorpus[K]: ReadonlyMap<Documented<K>, Record>` parsed from `.yo`.
+- A branded lexicon identity: `Documented<K>` — see brand semantics below.
+- A map `Lexicon[K]: ReadonlyMap<Documented<K>, Record>` parsed from `.yo`.
 
-Knows nothing about user code. The universe of documented elements is statically enumerable from the corpus.
+Knows nothing about user code. The universe of documented elements is statically enumerable from the lexicon.
 
 ### B. Fact Extraction (extension `src/analysis/`)
 
@@ -74,7 +74,7 @@ Consumers plumb A+B→C:
 Composition:
 
 - _facts_ identify what to look up
-- _the corpus_ supplies content
+- _the lexicon_ supplies content
 - _rendering_ produces output
 
 Dispatch stays in consumer code — partial and context-dependent. Example: a `cmd-head` fact might match:
@@ -93,29 +93,29 @@ Dispatch stays in consumer code — partial and context-dependent. Example: a `c
 Two phases:
 
 - **raw** — user-code text; untyped `string`
-- **`Documented<K>`** — corpus-confirmed identity
+- **`Documented<K>`** — lexicon-confirmed identity
 
-`resolve` is the bridge: raw in, checked identity out — the one public minting path; the trusted constructor (`mkDocumented`, `brands.ts`) is internal to corpus construction. Brand contract: JSDoc on `Documented<K>` (`zsh-core`).
+`resolve` is the bridge: raw in, checked identity out — the one public minting path; the trusted constructor (`mkDocumented`, `brands.ts`) is internal to lexicon construction. Brand contract: JSDoc on `Documented<K>` (`zsh-core`).
 
-One brand for every category — none is a literal union. The analyzer's closed precommand list (`PrecmdName`, extension `src/analysis/`) is its own vocabulary — a mirror, pinned equal to the corpus by a lock-in test.
+One brand for every category — none is a literal union. The analyzer's closed precommand list (`PrecmdName`, extension `src/analysis/`) is its own vocabulary — a mirror, pinned equal to the lexicon by a lock-in test.
 
-Public-surface rule (`STYLE-CODE.md` §"Types"): a brand crosses the surface only where the surface mints and requires it — here, corpus identity alone; every other string field is plain.
+Public-surface rule (`STYLE-CODE.md` §"Types"): a brand crosses the surface only where the surface mints and requires it — here, lexicon identity alone; every other string field is plain.
 
 ### No intermediate brand
 
-A "normalized, not corpus-checked" brand for user-code tokens was removed: no API accepted it, and its one instantiation became the analysis layer's `PrecmdName`. Facts carry raw text (domain B); corpus-free normalization is `normalizeOptName`.
+A "normalized, not lexicon-checked" brand for user-code tokens was removed: no API accepted it, and its one instantiation became the analysis layer's `PrecmdName`. Facts carry raw text (domain B); lexicon-independent normalization is `normalizeOptName`.
 
-### Why the smart constructor is not corpus-aware
+### Why the smart constructor is not lexicon-aware
 
-`mkDocumented` only normalizes (the `norm` table in `brands.ts`); anything needing the corpus lives in the per-category resolver.
+`mkDocumented` only normalizes (the `norm` table in `brands.ts`); anything needing the lexicon lives in the per-category resolver.
 
-Key insight: `no_` handling is **corpus-dependent**.
+Key insight: `no_` handling is **lexicon-dependent**.
 
 - `NOTIFY` is an option
 - `TIFY` is not
 - stripping "NO" off `NOTIFY` gives a non-option
 
-Only a step with corpus access can decide. Baking this into a smart constructor conflates normalization with membership checking and produces bugs that manifest only at lookup time.
+Only a step with lexicon access can decide. Baking this into a smart constructor conflates normalization with membership checking and produces bugs that manifest only at lookup time.
 
 ---
 
@@ -129,13 +129,13 @@ The rendering path is `raw string → hit → markdown` (`resolve` + `renderReco
   - showing that feedback is a presentation choice
   - an A→C function would drop it, or return hit plus markdown — both steps again
 - Two ways to do the same thing force consumers to choose and encourage drift.
-- Each step has a crisp meaning: "is this in the corpus?" vs "render this known element."
+- Each step has a crisp meaning: "is this in the lexicon?" vs "render this known element."
 
 The hit carries the record, so the second step takes a value, not a reference:
 
 - no lookup between the steps, so no "not found" branch
 - TS cannot prove map membership from a branded key, so an id-keyed renderer would have to throw on a miss — removed for that reason
-- an id that crossed a boundary where the record was dropped — serialized, stored, from another corpus build — is a string again; `resolve` takes it back (an exact id hits directly), and there a miss is honest
+- an id that crossed a boundary where the record was dropped — serialized, stored, from another lexicon build — is a string again; `resolve` takes it back (an exact id hits directly), and there a miss is honest
 
 Not an absolute ban. A post-refactor convenience wrapper is fine as a conscious addition.
 
@@ -146,7 +146,7 @@ Not an absolute ban. A post-refactor convenience wrapper is fine as a conscious 
 
 `projectRecords` — the JSON record shape, in-process — is public:
 
-- corpus-driven rendering over known records, not A→C: no brand crossing, nothing hidden
+- lexicon-driven rendering over known records, not A→C: no brand crossing, nothing hidden
 - a shape contract: an in-process reader matching the JSON (the web index) would otherwise re-implement it and drift silently
 
 ### Off the surface by decision
@@ -156,14 +156,14 @@ Raised by API reviews; each a decision, not an oversight:
 - **JSON assets in the registry package** (schema, index)
   - the JSON side is one unit — data, index, schema, fixture — versioned by the release tag (`PACKAGING.md`)
   - a part of it in the tarball: a second channel, with a version pin between the two
-  - an in-process consumer holds the corpus the JSON is projected from
-- **The JSON build's in-process view** (corpus content hash, the release files' TS types)
+  - an in-process consumer holds the lexicon the JSON is projected from
+- **The JSON build's in-process view** (lexicon content hash, the release files' TS types)
   - the release files' contract is their schema; a TS reader generates types from it
-  - a content hash answers "which corpus?": for a registry consumer the package version does; the web build, tracking an unreleased corpus, fingerprints its projected corpus
+  - a content hash answers "which lexicon?": for a registry consumer the package version does; the web build, tracking an unreleased lexicon, fingerprints its rendered records
 - **A runtime array for every closed union**
   - a tuple exists where the library itself iterates or validates against the union, as the type's single source, and stays internal; tag-only unions (`HistoryExpnKind`, `JobSpecKind`, `ResolverFeedback["kind"]`, …) have none
-  - the values ship as the released schema's enums; in-process, a fold over the corpus
-  - public only where a consumer cannot recover the list from the corpus: the taxonomy itself, a vocabulary with members the corpus does not exhibit
+  - the values ship as the released schema's enums; in-process, a fold over the lexicon
+  - public only where a consumer cannot recover the list from the lexicon: the taxonomy itself, a vocabulary with members the lexicon does not exhibit
   - `ResolverFeedback`: a runtime kinds list and hand-authored per-kind schemas, pinned equal to the generated schema by a test, were two peers with no owner — the build now lifts the generated def into `index.json`; nothing runtime remains
 - **Option references as structure**
   - the renderer bolds option mentions by heuristic — an ALL-CAPS token that `resolve`s (`fmtOptRefsInMd`); exported as spans, a heuristic becomes a contract
@@ -176,7 +176,7 @@ Raised by API reviews; each a decision, not an oversight:
 
 raw→documented genuinely differs by category:
 
-- `option` — corpus-aware negation.
+- `option` — lexicon-aware negation.
 - `redirection` — composite-token decomposition.
 - `job_spec`, `special_function` — template + compositional fallback matching.
 - Most others — trivial lookup.
@@ -220,12 +220,12 @@ Category-level metadata — labels, orderings, notes needed to interpret a categ
 
 Every record carries `category`, `id` and `display` as fields (`DocRecordBase<K>`; `PRINCIPLES.md` §"Category types"), not behind accessors. Where `display` diverges from `id`: its JSDoc in `zsh-core`; the default is the id, the divergent extractors pass the manual's form explicitly (`identity` in `brands.ts`).
 
-Ids are **shell-safe slugs**; `display` and `sig` keep the human-readable form (spaces, placeholders). Patterns: `brands.ts`, pinned in the released schema; enforced by `packages/zsh-core/src/test/corpus-ascii.test.ts`.
+Ids are **shell-safe slugs**; `display` and `sig` keep the human-readable form (spaces, placeholders). Patterns: `brands.ts`, pinned in the released schema; enforced by `packages/zsh-core/src/test/lexicon-ascii.test.ts`.
 
 ### Redirection: shell-safe slug identity, sig surface
 
 - `id` is `sig` with whitespace replaced by `_` (`>_word`, `<<[-]_word`); `sig` keeps the upstream form (`> word`).
-- `groupOp` is the shared lookup bucket: the longest `groupOp` prefixing the token wins (zsh lexes the longest operator — `>&` never falls back to `>`), then the resolver disambiguates by tail — corpus-aware, not plain map lookup.
+- `groupOp` is the shared lookup bucket: the longest `groupOp` prefixing the token wins (zsh lexes the longest operator — `>&` never falls back to `>`), then the resolver disambiguates by tail — lexicon-aware, not plain map lookup.
 - Both forms `resolve`: `id` directly, `sig` through the close-variant resolver.
 - `groupOp`, like an option's flag `char`, is a plain string: a lookup facet, not a `Documented<K>` identity.
 
@@ -233,7 +233,7 @@ Ids are **shell-safe slugs**; `display` and `sig` keep the human-readable form (
 
 `history_expn` resembles short-key categories structurally but models **components** of `![event][:word][:modifier…]`, not parallel standalone tokens. A bare `^` or `:h` is not a zsh token in isolation — unlike `glob_op`, where each record is a single user-code token.
 
-- **Corpus keys are templates** (`!n`, `!str`, `h`, …). For modifiers, the id is the bare letter (`h`) and `sig` keeps the documented form (`h [ digits ]`).
+- **Lexicon keys are templates** (`!n`, `!str`, `h`, …). For modifiers, the id is the bare letter (`h`) and `sig` keeps the documented form (`h [ digits ]`).
 - **`resolveHistory` is intentionally narrow** — event-designators only (same "totality, not utility" posture as `param_expn`); details: its JSDoc.
 - **`subKind` is the typed facet** — event designator, word designator or modifier; the walk admits only the first.
 
@@ -276,30 +276,30 @@ Per-type details and the three-way distinction — JSDoc in `zsh-core`:
 
 `reserved_word` is the enumeration-primary category (see PRINCIPLES.md). One record type does three jobs:
 
-- **Enumeration source** — corpus map is the authoritative reserved-word list for:
+- **Enumeration source** — lexicon map is the authoritative reserved-word list for:
   - completions
   - `list`
   - syntactic checks
 - **Supplementary prose** — `desc` may appear except on `complex_command`-owned heads (which deliberately omit it)
   - epistemic-trap rationale + `SyntaxDocBase` non-extension: `ReservedWordDoc` JSDoc in `zsh-core`
-- **Corpus identity** — every record is `Documented<"reserved_word">`, carrying `category` and `id` like other categories.
+- **Lexicon identity** — every record is `Documented<"reserved_word">`, carrying `category` and `id` like other categories.
 
 Wiring:
 
 - `pos: ReservedWordPos` distinguishes command-position vs broader `}` semantics
-- analysis uses `ReservedWordFact` with raw `text: string`; no corpus-identity brand
+- analysis uses `ReservedWordFact` with raw `text: string`; no lexicon-identity brand
 - extension hover tries `complex_command` first, then `reserved_word` — mirrors `classifyOrder`
 
 **Layered consumption** — three slices of "the reserved-word list" stay **deliberately** separate:
 
-- **Corpus** — manual list from Yodl; source for:
+- **Lexicon** — manual list from Yodl; source for:
   - completions
   - `zsh_list` / `zsh_search`
   - extra semantic-token painting (with `cmd-head`) for words the analyzer treats only as command heads (`declare`, `typeset`, …)
 - **Analysis** — pinned `KEYWORD_HEADS` subset for command-position facts
-  - narrower than corpus by design
+  - narrower than lexicon by design
   - rationale + lock-in test: the extension's `src/analysis/line-facts.ts` and `src/test/analysis/`
-- **Extension** — semantic tokens: analyzer `reserved-word` facts **and** corpus-driven painting for manual reserved words in command position (`semantic-tokens.ts`).
+- **Extension** — semantic tokens: analyzer `reserved-word` facts **and** lexicon-driven painting for manual reserved words in command position (`semantic-tokens.ts`).
 
 ### ZLE widget: default bindings are typed, not a header signature
 
@@ -310,9 +310,9 @@ The manual's header groups (`(^B ESC-[D) (unbound) (unbound)`) are per-keymap de
 
 ### `subKind` is structural per category
 
-A category's record type declares `subKind` with a closed literal union, or none (`DocRecordBase` JSDoc in `zsh-core`); like `category`, it is read as a field — under a generic `K`, a `"subKind" in rec` check narrows. Presence and vocabulary follow from the type: the released schema requires the field with the union's enum, or forbids it, per category — no corpus scan, no post-processing. Same call as for `id` (PRINCIPLES.md §"The structural identity invariant"); the dropped shape: a per-category name behind an accessor table plus a generated JSON copy.
+A category's record type declares `subKind` with a closed literal union, or none (`DocRecordBase` JSDoc in `zsh-core`); like `category`, it is read as a field — under a generic `K`, a `"subKind" in rec` check narrows. Presence and vocabulary follow from the type: the released schema requires the field with the union's enum, or forbids it, per category — no lexicon scan, no post-processing. Same call as for `id` (PRINCIPLES.md §"The structural identity invariant"); the dropped shape: a per-category name behind an accessor table plus a generated JSON copy.
 
-Every declared literal occurs in the corpus: `packages/zsh-core/src/test/json-schema.test.ts`.
+Every declared literal occurs in the lexicon: `packages/zsh-core/src/test/json-schema.test.ts`.
 
 Manual provenance is not a record field: where the heading varies within a category it is the record's `subKind` (`option`, `prompt_escape`, `zle_widget`); elsewhere it is a category fact, carried by the label. The dropped shape: a `section: string` on most records — constant per category or a function of `subKind`, read only by the option renderer as a `_Section:_` body line.
 
@@ -322,12 +322,12 @@ Manual provenance is not a record field: where the heading varies within a categ
 
 Vendored `.yo` is consumed three ways:
 
-- **`loadCorpus()`** — runtime parse into `DocCorpus`; lazy per category, cached (its JSDoc)
-  - rendering measured cheap for the whole corpus, so it stays unmemoized — PRINCIPLES.md §"Cost and laziness"
+- **`loadLexicon()`** — runtime parse into `Lexicon`; lazy per category, cached (its JSDoc)
+  - rendering measured cheap for the whole lexicon, so it stays unmemoized — PRINCIPLES.md §"Cost and laziness"
 - **Pre-parsed JSON** — same records; markdown bodies pre-rendered at build time
   - one record file keyed by category beside a versioned index (`JsonIndex` JSDoc); `dataHash` is the record file's SHA-256
   - distribution: `PACKAGING.md`
-  - _schema:_ one bundle, generated from the TS types plus the corpus (`packages/zsh-core/scripts/schemas.ts`, written by the package build)
+  - _schema:_ one bundle, generated from the TS types plus the lexicon (`packages/zsh-core/scripts/schemas.ts`, written by the package build)
     - record and id `$defs` named by category (`recordsSchemaDefs` in `json-artifacts.ts`); auxiliary ones by TS type (`AlternateForm`, …) — renaming one is a schema change
     - draft 2020-12, as the crate's tool schemas
     - precision posture: PRINCIPLES.md §"Schema precision when schemas are co-released"
@@ -342,9 +342,9 @@ The JSON stays in zsh-core — a projection of its types, released on its tag at
 
 ### Why the library parses at runtime
 
-The TS API is the root; the JSON is a derived view of it, for consumers that cannot run the TypeScript — renderer and resolvers included (e.g. Rust `include_bytes!`). Library consumers parse the vendored Yodl at runtime; loading a pre-parsed corpus instead was considered and rejected — the instance of PRINCIPLES.md §"Cross-project structure" (derived data, committed files) and §"Cost and laziness":
+The TS API is the root; the JSON is a derived view of it, for consumers that cannot run the TypeScript — renderer and resolvers included (e.g. Rust `include_bytes!`). Library consumers parse the vendored Yodl at runtime; loading a pre-parsed lexicon instead was considered and rejected — the instance of PRINCIPLES.md §"Cross-project structure" (derived data, committed files) and §"Cost and laziness":
 
-- the vendored `.yo` is committed; a generated corpus is not — tests and scripts run on an unbuilt checkout, so the runtime would need a parse fallback
+- the vendored `.yo` is committed; a generated lexicon is not — tests and scripts run on an unbuilt checkout, so the runtime would need a parse fallback
 - the projection is a seam: the JSON may lag or omit without touching the runtime API
 - parse cost is met by per-category laziness, not by shipping a different form
 
@@ -371,7 +371,7 @@ Revisit once Node's text imports are stable.
 The Rust crate re-implements one behaviour — the resolvers; the rest it consumes as baked JSON.
 
 - Markers (`// MIRRORED-IN:` / `// MIRROR-OF:`) on the mirrored pairs (`rg 'MIRRORED-IN|MIRROR-OF'`): orientation, no mechanical check.
-- Resolver conformance: the fixture zsh-core releases beside the corpus JSON (`packages/zsh-core/scripts/resolver-fixture.ts`), replayed in-crate by `zshref-rs/src/resolver.rs`.
+- Resolver conformance: the fixture zsh-core releases beside the lexicon JSON (`packages/zsh-core/scripts/resolver-fixture.ts`), replayed in-crate by `zshref-rs/src/resolver.rs`.
 
 The mirror is accepted because it is bounded — it changes only with categories or normalization rules, and drifts visibly against the fixture (principle: `PRINCIPLES.md` §"Cross-project structure"). Rejected ways to remove it:
 
@@ -380,7 +380,7 @@ The mirror is accepted because it is bounded — it changes only with categories
 
 ## `resolve`: direct ∥ resolver, direct preferred
 
-`resolve` (`zsh-core/resolver`) is the one entry: direct corpus-key lookup, then the category's resolver, one hit carrying the record — its identity with it — and feedback. Its JSDoc holds the mechanism and why direct precedence is load-bearing for template-key categories (`!n` vs `!42 → !n`). **Do not** run the paths separately for the same query; **do not** re-implement the rule in consumers.
+`resolve` (`zsh-core/resolver`) is the one entry: direct lexicon-key lookup, then the category's resolver, one hit carrying the record — its identity with it — and feedback. Its JSDoc holds the mechanism and why direct precedence is load-bearing for template-key categories (`!n` vs `!42 → !n`). **Do not** run the paths separately for the same query; **do not** re-implement the rule in consumers.
 
 ## The category walk
 
@@ -389,7 +389,7 @@ The mirror is accepted because it is bounded — it changes only with categories
 - order, per-entry rationale: inline comments on `classifyOrderTuple`, `taxonomy.ts`
 - admission — a category declining a scoped hit that is no token on its own (history word designators, modifiers): `walkAdmits`, zsh-core `src/docs/resolver.ts`
 
-Owned by zsh-core, not the tools: order and admission are corpus properties (PRINCIPLES.md §"Push decisions downstream"); a walk re-derived per consumer had drifted — one applied the history rule, one did not. Callers: `zsh_docs` with `category` omitted, zshref-web's lookup canonicalizer. Rust reads order from `index.json`, mirrors admission as code; the fixture's `walk` section pins both.
+Owned by zsh-core, not the tools: order and admission are lexicon properties (PRINCIPLES.md §"Push decisions downstream"); a walk re-derived per consumer had drifted — one applied the history rule, one did not. Callers: `zsh_docs` with `category` omitted, zshref-web's lookup canonicalizer. Rust reads order from `index.json`, mirrors admission as code; the fixture's `walk` section pins both.
 
 ## Vendored `.yo` files are domain invariants
 

@@ -1,24 +1,24 @@
-// Build side of the lookup map. Pure on corpus + resolver — no staged
+// Build side of the lookup map. Pure on lexicon + resolver — no staged
 // assets, always runs.
 
-import { loadCorpus } from "@carlwr/zsh-core"
+import { loadLexicon } from "@carlwr/zsh-core"
 import { describe, expect, it } from "vitest"
 import { lookupIndex } from "../../../nlp/core/lookup-map"
 import { buildLookupMap } from "../../../nlp/node/lookup-map-build"
 import { assertCommittedJson, PATHS } from "../../_helpers"
 
-const corpus = loadCorpus()
+const lexicon = loadLexicon()
 
 describe("lookup map", () => {
   it("matches the committed file", async () => {
     await assertCommittedJson(
       PATHS.lookupMap,
-      buildLookupMap(corpus),
+      buildLookupMap(lexicon),
       "UPDATE_LOOKUP_MAP",
     )
   })
 
-  const idx = lookupIndex(buildLookupMap(corpus))
+  const idx = lookupIndex(buildLookupMap(lexicon))
 
   it.each([
     ["AUTO_CD", "option", "autocd"],

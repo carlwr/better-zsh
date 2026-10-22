@@ -32,7 +32,7 @@ Static zsh knowledge is the product. We parse vendored Yodl into typed records d
 
 ### Resolver scope balance
 
-Per-category resolvers bridge raw user text to documented identity. Corpus-aware close-variant normalization is in scope; arbitrary user-expression decomposition is not.
+Per-category resolvers bridge raw user text to documented identity. Lexicon-aware close-variant normalization is in scope; arbitrary user-expression decomposition is not.
 
 - **In:**
   - strip `NO_` and underscores from an option name
@@ -63,12 +63,12 @@ See DESIGN.md.
 
 zsh-core's `src/docs/` and the extension's `src/analysis/` are intentionally asymmetric:
 
-- **`docs/` is exhaustive over a closed `DocCategory` taxonomy** with `DocCorpus`-keyed tables. Adding a category is a structural change with type-checked completeness everywhere.
+- **`docs/` is exhaustive over a closed `DocCategory` taxonomy** with `Lexicon`-keyed tables. Adding a category is a structural change with type-checked completeness everywhere.
 - **`analysis/` is partial.** Narrow document-spanning facts exist only when they reduce false positives without claiming a full parse. `Fact` kinds overlap `DocCategory` only incidentally and don't share its parametric machinery.
 
 Different jobs:
 
-- _documentation_ — a closed corpus we enumerate
+- _documentation_ — a closed lexicon we enumerate
 - _what user code asserts_ — open-ended, best-effort
 
 Don't introduce parallel scaffolding.
@@ -129,7 +129,7 @@ Resist restructuring the taxonomy to eliminate overlap; the resolver walk is whe
 Doc categories serve one of two primary roles:
 
 - **Documentation-primary** (the majority): each record is the canonical source of prose for its token. The category exists *because* that token type has documentation worth modelling structurally. The list is incidental — emitted for completeness, but the per-record markdown is the load-bearing artifact.
-- **Enumeration-primary**: the *list itself* is the load-bearing artifact; per-record prose is supplementary, often deliberately omitted when richer prose lives in an overlapping documentation-primary category. Consumers iterate the corpus map for:
+- **Enumeration-primary**: the *list itself* is the load-bearing artifact; per-record prose is supplementary, often deliberately omitted when richer prose lives in an overlapping documentation-primary category. Consumers iterate the lexicon map for:
   - completions
   - syntactic-class checks
   - enumeration-style tools
@@ -140,9 +140,9 @@ The distinction matters when reasoning about:
 - prose obligations
 - consumer paths
 
-`reserved_word` is currently the only enumeration-primary category. `classifyOrder` encodes resolver-shadowing and product ordering; in important overlaps such as complex commands before reserved words, consumers walking the corpus reach the richer record first.
+`reserved_word` is currently the only enumeration-primary category. `classifyOrder` encodes resolver-shadowing and product ordering; in important overlaps such as complex commands before reserved words, consumers walking the lexicon reach the richer record first.
 
-Not a separate type or interface — both roles use the same `DocCategory` machinery and `DocCorpus` map. It is design vocabulary: when adding a category, name the role explicitly and justify it against existing precedent.
+Not a separate type or interface — both roles use the same `DocCategory` machinery and `Lexicon` map. It is design vocabulary: when adding a category, name the role explicitly and justify it against existing precedent.
 
 ---
 
@@ -165,10 +165,10 @@ Follow when the domain calls for it; deviate when it doesn't. The containers aro
 
 ### The structural identity invariant
 
-Every record extends `DocRecordBase<K>` — `category: K` and `id: Documented<K>` (the corpus map and key it sits under) and `display` — asserted at compile time in `taxonomy.ts`. Each field won over its alternative for one reason: a record that leaves its map is its own identity unit, and the JSON carries the field uniformly anyway.
+Every record extends `DocRecordBase<K>` — `category: K` and `id: Documented<K>` (the lexicon map and key it sits under) and `display` — asserted at compile time in `taxonomy.ts`. Each field won over its alternative for one reason: a record that leaves its map is its own identity unit, and the JSON carries the field uniformly anyway.
 
 - _`id`_ — not chosen: per-category identity fields (`name`, `op`, `slug`, ...) behind an accessor table; domain vocabulary, at the price of a dispatch per generic reader and a duplicated generated id in the JSON.
-- _`category`_ — was context first (the `DocCorpus` key, the JSON file), re-attached by `resolve` on the hit and by every reader on load. On the record, the hit is record plus feedback and the schema's per-category definitions are disjoint. Not chosen: category as context (table-per-type; a `(cat, doc)` pair on every generic signature), and a JSON-only `_category` (a fact the runtime lacks — the asymmetry `id` and `subKind` had just shed).
+- _`category`_ — was context first (the `Lexicon` key, the JSON file), re-attached by `resolve` on the hit and by every reader on load. On the record, the hit is record plus feedback and the schema's per-category definitions are disjoint. Not chosen: category as context (table-per-type; a `(cat, doc)` pair on every generic signature), and a JSON-only `_category` (a fact the runtime lacks — the asymmetry `id` and `subKind` had just shed).
 - _`subKind`_ — the per-category sub-facet follows the same rule: on the record, a closed union per category (DESIGN.md §"`subKind` is structural per category").
 
 ### Structural info beats markdown
@@ -206,7 +206,7 @@ Two roles, two postures:
 - **Parser:** captures what Yodl *literally says*. Item bodies, nested-list structure, header signatures, macro names — these are explicit signals. The parser preserves them as typed record fields and stops there.
 - **Renderer:** may apply heuristics on shape and sequence — "a lone `em()` on its own paragraph behaves like a section heading" is a shape inference, not a parse fact. Heuristics belong in the renderer (or a render-time pre-pass), not in the extractors.
 
-Why: parser output is the typed corpus and feeds every downstream consumer (TS, Rust, schemas). Heuristics in parsers leak into types and tests; renderers absorb heuristics without contaminating shapes.
+Why: parser output is the typed lexicon and feeds every downstream consumer (TS, Rust, schemas). Heuristics in parsers leak into types and tests; renderers absorb heuristics without contaminating shapes.
 
 Pragmatism carve-out: when shape inference *radically* simplifies code or removes large amounts of duplicated downstream logic, a parser-level heuristic is acceptable — but always with an in-code comment explaining the inference. Clear code beats a comment; a comment beats a hidden coupling.
 
@@ -252,7 +252,7 @@ Decisions belong close to the consumer:
 
 The adapter narrows the tool layer; the tool layer narrows zsh-core. Counterforce: over-parameterization bloats the per-call input surface. Balance consciously; default is "push downstream."
 
-Counter-example: corpus-aware identity primitives (e.g. `resolve`'s direct-or-resolver rule) live in zsh-core even where a tool is the only consumer. They are properties of *the corpus*, not the tool surface; the Rust mirror follows them under the fixture instead of re-deriving them per tool.
+Counter-example: lexicon-aware identity primitives (e.g. `resolve`'s direct-or-resolver rule) live in zsh-core even where a tool is the only consumer. They are properties of *the lexicon*, not the tool surface; the Rust mirror follows them under the fixture instead of re-deriving them per tool.
 
 ### Schema precision when schemas are co-released
 

@@ -5,12 +5,12 @@ read-when: designing the crate's tools, adapters, schemas or CLI
 
 # Design — `zshref`
 
-Crate-owned rationale; corpus, resolvers and the TS↔Rust mirror: root `DESIGN.md`.
+Crate-owned rationale; lexicon, resolvers and the TS↔Rust mirror: root `DESIGN.md`.
 
 ## Schemas
 
 - Each tool's `inputSchema` and `outputSchema` are generated beside its implementation (`src/tools/schema.rs`).
-- `subKind` enums and the record total come from the loaded corpus; the feedback schema from `index.json`.
+- `subKind` enums and the record total come from the loaded lexicon; the feedback schema from `index.json`.
 - Cross-cutting "co-released schema precision" rationale: root `PRINCIPLES.md`.
 - Drift guards, at test time:
   - `outputSchema` — integration tests validate CLI and MCP responses against it (`tests/common/`)
@@ -54,7 +54,7 @@ Ids round-trip: a returned `id` fed back as `key` with its `category` returns ex
 
 Why fuzzy at all:
 
-- Corpus spelling of identities can drift benignly — fuzzy decouples agent intent from exact strings.
+- Lexicon spelling of identities can drift benignly — fuzzy decouples agent intent from exact strings.
 - Option shapes vary (`no_errreturn` vs `NOERRRETURN`). Resolver handles the category-specific cases; fuzzy covers the rest.
 
 ---
@@ -73,7 +73,7 @@ The tool set keeps the marginal cost of "another adapter" low — the CLI assemb
 
 Cross-adapter notes:
 
-- **Corpus metadata** — `zshref info`; MCP `initialize` carries only the suite preamble (`instructions`) and the crate version.
+- **Lexicon metadata** — `zshref info`; MCP `initialize` carries only the suite preamble (`instructions`) and the crate version.
 - **`zshref schema`** — one bundle, no per-tool subcommand: that would fight clap conventions.
 - **Output framing** — one JSON value per response (per request in `batch`), not one line per match:
   - `matchesTotal` and the shared `outputSchema` need the whole envelope

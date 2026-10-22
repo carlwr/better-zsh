@@ -7,7 +7,7 @@
 //! collisions and makes logs self-describing. Adding a tool: a `ToolName`
 //! variant, a module with `run` and `tool`, a line in `ToolSet::build`, a
 //! row in `prose::preamble`. Category names, subKind values and record
-//! counts reach the metadata from the loaded corpus — never as hand-typed
+//! counts reach the metadata from the loaded lexicon — never as hand-typed
 //! lists.
 
 pub mod docs;
@@ -19,7 +19,7 @@ pub mod schema;
 pub mod search;
 pub mod text;
 
-use crate::corpus::Corpus;
+use crate::lexicon::Lexicon;
 use anyhow::{Result, anyhow};
 use schema::Shape;
 use serde::de::DeserializeOwned;
@@ -70,7 +70,7 @@ pub struct Tool {
 
 /// The implementation behind `Value` in and out; `Send + Sync` because the
 /// MCP server holds the `ToolSet` inside its handler.
-type Erased = Box<dyn Fn(&Value, &Corpus) -> Result<Value> + Send + Sync>;
+type Erased = Box<dyn Fn(&Value, &Lexicon) -> Result<Value> + Send + Sync>;
 
 /// One `input_schema` property. Key, prose and shape are declared together
 /// so a field cannot lack its brief or its schema entry.
@@ -108,11 +108,11 @@ impl Tool {
         prose: Prose,
         fields: Vec<Field>,
         output_schema: Value,
-        run: fn(I, &Corpus) -> Result<Value>,
+        run: fn(I, &Lexicon) -> Result<Value>,
     ) -> Self {
-        let run = Box::new(move |input: &Value, corpus: &Corpus| {
+        let run = Box::new(move |input: &Value, lexicon: &Lexicon| {
             let input = I::deserialize(input).map_err(|e| anyhow!("invalid input: {e}"))?;
-            run(input, corpus)
+            run(input, lexicon)
         });
         Self {
             input_schema: schema::input_schema(&fields),
@@ -126,8 +126,8 @@ impl Tool {
 
     /// The request path of every adapter: decode the typed input, then run.
     /// Decode failures read `invalid input: <serde message>`.
-    pub fn call(&self, input: &Value, corpus: &Corpus) -> Result<Value> {
-        (self.run)(input, corpus)
+    pub fn call(&self, input: &Value, lexicon: &Lexicon) -> Result<Value> {
+        (self.run)(input, lexicon)
     }
 }
 
@@ -137,11 +137,15 @@ pub struct ToolSet {
 }
 
 impl ToolSet {
-    /// Output schemas embed corpus facts (record total, subKind enums),
+    /// Output schemas embed lexicon facts (record total, subKind enums),
     /// hence the argument; build once per process.
-    pub fn build(corpus: &Corpus) -> Self {
+    pub fn build(lexicon: &Lexicon) -> Self {
         Self {
-            tools: vec![docs::tool(corpus), search::tool(corpus), list::tool(corpus)],
+            tools: vec![
+                docs::tool(lexicon),
+                search::tool(lexicon),
+                list::tool(lexicon),
+            ],
         }
     }
 
@@ -168,15 +172,15 @@ mod tests {
     //! Shape guards on the prose every adapter renders — not a review
     //! substitute: tone and length drift are the reviewer's.
     use super::*;
-    use crate::corpus::{DOC_CATEGORIES, load_corpus};
+    use crate::lexicon::{DOC_CATEGORIES, load_lexicon};
     use regex::Regex;
     use serde_json::{Map, json};
     use std::collections::BTreeSet;
     use std::sync::LazyLock;
     use text::Target;
 
-    static CORPUS: LazyLock<Corpus> = LazyLock::new(|| load_corpus().expect("load_corpus"));
-    static TOOLS: LazyLock<ToolSet> = LazyLock::new(|| ToolSet::build(&CORPUS));
+    static LEXICON: LazyLock<Lexicon> = LazyLock::new(|| load_lexicon().expect("load_lexicon"));
+    static TOOLS: LazyLock<ToolSet> = LazyLock::new(|| ToolSet::build(&LEXICON));
 
     /// Widest tool `brief` the CLI's commands column renders on one line.
     const BRIEF_MAX_LEN: usize = 50;
@@ -346,7 +350,7 @@ mod tests {
     #[test]
     fn docs_category_help_lists_every_category_label() {
         let help = field_long(TOOLS.get(ToolName::Docs), "category", Target::Json);
-        for descriptor in &CORPUS.index.categories {
+        for descriptor in &LEXICON.index.categories {
             assert!(
                 help.contains(&descriptor.label),
                 "{}: {:?}",
@@ -368,7 +372,7 @@ mod tests {
 
     #[test]
     fn entry_tools_name_the_zsh_tag() {
-        let tag = &CORPUS.index.zsh_upstream.tag;
+        let tag = &LEXICON.index.zsh_upstream.tag;
         for (sub, expected) in [
             (ToolName::Docs, true),
             (ToolName::Search, true),
@@ -429,7 +433,7 @@ mod tests {
                 .iter()
                 .map(|f| (f.key.to_string(), sample(f.shape)))
                 .collect();
-            tool.call(&Value::Object(full.clone()), &CORPUS)
+            tool.call(&Value::Object(full.clone()), &LEXICON)
                 .unwrap_or_else(|e| panic!("{name}: {e}"));
 
             let required: BTreeSet<String> = tool.input_schema["required"]
@@ -439,7 +443,7 @@ mod tests {
                 .filter_map(Value::as_str)
                 .map(str::to_string)
                 .collect();
-            match tool.call(&json!({}), &CORPUS) {
+            match tool.call(&json!({}), &LEXICON) {
                 Ok(_) => assert!(required.is_empty(), "{name}: `{{}}` decoded"),
                 Err(e) => {
                     let e = e.to_string();
@@ -451,7 +455,7 @@ mod tests {
             let mut extra = full;
             extra.insert("bogus".into(), json!(1));
             let e = tool
-                .call(&Value::Object(extra), &CORPUS)
+                .call(&Value::Object(extra), &LEXICON)
                 .unwrap_err()
                 .to_string();
             assert!(e.contains("unknown field `bogus`"), "{name}: {e}");
@@ -509,7 +513,7 @@ mod tests {
                         None => input.remove(f.key),
                     };
                     let input = Value::Object(input);
-                    let err = tool.call(&input, &CORPUS).err().map(|e| e.to_string());
+                    let err = tool.call(&input, &LEXICON).err().map(|e| e.to_string());
                     let shown = probe.as_ref().map_or("<absent>".into(), Value::to_string);
                     let at = format!("{name}.{} = {shown}", f.key);
                     assert_eq!(schema.is_valid(&input), err.is_none(), "{at}: {err:?}");
@@ -522,10 +526,10 @@ mod tests {
     }
 
     #[test]
-    fn run_wires_the_corpus_through() {
+    fn run_wires_the_lexicon_through() {
         let docs = TOOLS
             .get(ToolName::Docs)
-            .call(&json!({ "key": "echo" }), &CORPUS)
+            .call(&json!({ "key": "echo" }), &LEXICON)
             .unwrap();
         assert_eq!(docs["matches"][0]["category"], "builtin");
         assert!(!docs["matches"][0]["mdBody"].as_str().unwrap().is_empty());
@@ -534,7 +538,7 @@ mod tests {
             .get(ToolName::Search)
             .call(
                 &json!({ "query": "echo", "category": "builtin", "limit": 3 }),
-                &CORPUS,
+                &LEXICON,
             )
             .unwrap();
         assert_eq!(search["matches"][0]["id"], "echo");
@@ -543,7 +547,7 @@ mod tests {
             .get(ToolName::List)
             .call(
                 &json!({ "category": "precmd_modifier", "limit": 100 }),
-                &CORPUS,
+                &LEXICON,
             )
             .unwrap();
         let rows = list["matches"].as_array().unwrap();

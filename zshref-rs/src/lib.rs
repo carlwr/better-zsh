@@ -7,7 +7,7 @@
 #[doc(hidden)]
 pub mod cli;
 #[doc(hidden)]
-pub mod corpus;
+pub mod lexicon;
 #[doc(hidden)]
 pub mod tools;
 

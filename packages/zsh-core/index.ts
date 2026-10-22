@@ -1,6 +1,6 @@
 /**
  * @packageDocumentation
- * The zsh reference corpus and its data model: the parsed corpus, the doc
+ * The zsh reference lexicon and its data model: the parsed lexicon, the doc
  * category ontology (ordered lists, labels, a category guard, record
  * identity), and the record vocabulary (per-category record
  * types, module names, option-name normalization). Operations on it live
@@ -8,7 +8,7 @@
  */
 
 export { docCategoryPreambles } from "./src/docs/category-preamble.ts"
-export { type DocCorpus, loadCorpus } from "./src/docs/corpus.ts"
+export { type Lexicon, loadLexicon } from "./src/docs/lexicon.ts"
 export { normalizeOptName } from "./src/docs/normalize-option.ts"
 export {
   classifyOrder,

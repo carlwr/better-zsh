@@ -1,5 +1,5 @@
 import { isSingle, mapNonEmpty } from "@carlwr/typescript-extra"
-import type { DocCorpus } from "../docs/corpus.ts"
+import type { Lexicon } from "../docs/lexicon.ts"
 import { flipOptFlagSign } from "../docs/normalize-option.ts"
 import { resolve } from "../docs/resolver.ts"
 import type { DocCategory, DocRecordMap } from "../docs/taxonomy.ts"
@@ -181,9 +181,9 @@ function renderFlagGroupBody(
 // --- option-ref bolding -----------------------------------------------------
 
 /** Emphasize option references inside markdown prose, skipping fenced code. */
-export function fmtOptRefsInMd(md: string, corpus: DocCorpus): string {
-  if (corpus.option.size === 0) return md
-  return walkProseLines(md, line => fmtOptRefsInLine(line, corpus))
+export function fmtOptRefsInMd(md: string, lexicon: Lexicon): string {
+  if (lexicon.option.size === 0) return md
+  return walkProseLines(md, line => fmtOptRefsInLine(line, lexicon))
 }
 
 // Bare ALL_CAPS, optionally NO_-prefixed; `\b` anchors keep `FOO_BAR` whole.
@@ -197,7 +197,7 @@ const BACKTICKED_OPT_RE = /^`([A-Z][A-Z0-9_]*)`$/
 // re-running a no-op).
 const GLUE = /[\p{L}\p{N}`*]/u
 
-function fmtOptRefsInLine(line: string, corpus: DocCorpus): string {
+function fmtOptRefsInLine(line: string, lexicon: Lexicon): string {
   let end = 0
   const parts = splitInlineCode(line).map((text, i) => {
     const at = end
@@ -214,7 +214,7 @@ function fmtOptRefsInLine(line: string, corpus: DocCorpus): string {
   const bolds = (at: number, len: number, ref: string) =>
     !GLUE.test(line[at - 1] ?? "") &&
     !GLUE.test(line[at + len] ?? "") &&
-    resolve(corpus, "option", ref)
+    resolve(lexicon, "option", ref)
   return parts
     .map(({ text, at, code }) => {
       if (code) {
@@ -516,13 +516,13 @@ function headFor<K extends DocCategory>(
 // What follows the head: `renderRecord` prepends the head (`headFor`) and
 // applies option-ref bolding. No title, no category line — see `RenderedRecord`.
 
-function mdOpt(opt: OptionDoc, corpus: DocCorpus): string {
+function mdOpt(opt: OptionDoc, lexicon: Lexicon): string {
   return docBlock(
     `**Default in zsh: ${bt(defaultStateIn(opt, "zsh"))}**`,
-    fmtOptRefsInMd(opt.desc, corpus),
+    fmtOptRefsInMd(opt.desc, lexicon),
     ...maybe(
       opt.aliasOf,
-      a => `_Alias of:_ ${bt(aliasTargetDisplay(a, corpus))}`,
+      a => `_Alias of:_ ${bt(aliasTargetDisplay(a, lexicon))}`,
     ),
   )
 }
@@ -531,20 +531,20 @@ function mdOpt(opt: OptionDoc, corpus: DocCorpus): string {
  * An option's display casing when known, so e.g. `NO_IGNORE_BRACES` wins over
  * `NO_ignorebraces`; else the id.
  */
-const optDisplay = (id: Documented<"option">, corpus: DocCorpus): string =>
-  corpus.option.get(id)?.display ?? id
+const optDisplay = (id: Documented<"option">, lexicon: Lexicon): string =>
+  lexicon.option.get(id)?.display ?? id
 
 /** Display form of an option alias's target. */
 function aliasTargetDisplay(
   aliasOf: NonNullable<OptionDoc["aliasOf"]>,
-  corpus: DocCorpus,
+  lexicon: Lexicon,
 ): string {
-  const display = optDisplay(aliasOf.target, corpus)
+  const display = optDisplay(aliasOf.target, lexicon)
   return aliasOf.negated ? `NO_${display}` : display
 }
 
-function mdCondOp(cop: ConditionalOpDoc, corpus: DocCorpus): string {
-  return docBlock(fmtOptRefsInMd(cop.desc, corpus), ...modulePart(cop.module))
+function mdCondOp(cop: ConditionalOpDoc, lexicon: Lexicon): string {
+  return docBlock(fmtOptRefsInMd(cop.desc, lexicon), ...modulePart(cop.module))
 }
 
 function mdSpecialParam(doc: SpecialParamDoc): string {
@@ -565,9 +565,9 @@ function mdSpecialParam(doc: SpecialParamDoc): string {
 /** Desc, plus an `_Args:_` line for flag records with operand slots. */
 function mdSigDoc(
   doc: { readonly desc: string; readonly args?: readonly string[] },
-  corpus: DocCorpus,
+  lexicon: Lexicon,
 ): string {
-  return docBlock(fmtOptRefsInMd(doc.desc, corpus), ...argsPart(doc.args))
+  return docBlock(fmtOptRefsInMd(doc.desc, lexicon), ...argsPart(doc.args))
 }
 
 const argsPart = (args: readonly string[] | undefined): readonly string[] =>
@@ -598,16 +598,16 @@ function mdReservedWord(doc: ReservedWordDoc): string {
   return doc.desc ?? ""
 }
 
-function mdComplexCommand(doc: ComplexCommandDoc, corpus: DocCorpus): string {
+function mdComplexCommand(doc: ComplexCommandDoc, lexicon: Lexicon): string {
   return docBlock(
-    fmtOptRefsInMd(doc.desc, corpus),
+    fmtOptRefsInMd(doc.desc, lexicon),
     // Alternate forms are a body element (not a head), so render inline here.
     ...when(
       doc.alternateForms.length > 0,
       "_Alternate forms:_",
       codeBlock(
         "docopt",
-        ...doc.alternateForms.map(a => formatAlternateForm(a, corpus)),
+        ...doc.alternateForms.map(a => formatAlternateForm(a, lexicon)),
       ),
     ),
     ...when(
@@ -621,9 +621,9 @@ function mdComplexCommand(doc: ComplexCommandDoc, corpus: DocCorpus): string {
  * Append a trailing `# requires …` comment when the form is gated by shell
  * options; the list is disjunctive — matches `AlternateForm.requires`.
  */
-function formatAlternateForm(a: AlternateForm, corpus: DocCorpus): string {
+function formatAlternateForm(a: AlternateForm, lexicon: Lexicon): string {
   if (!a.requires) return a.template
-  const opts = a.requires.map(id => optDisplay(id, corpus))
+  const opts = a.requires.map(id => optDisplay(id, lexicon))
   return `${a.template}    # requires ${opts.join(" or ")}`
 }
 
@@ -699,7 +699,7 @@ const label = (
 // --- public dispatch -------------------------------------------------------
 
 const mdRenderer: {
-  [K in DocCategory]: (doc: DocRecordMap[K], corpus: DocCorpus) => string
+  [K in DocCategory]: (doc: DocRecordMap[K], lexicon: Lexicon) => string
 } = {
   option: mdOpt,
   conditional_op: mdCondOp,
@@ -751,18 +751,18 @@ export function categoryFooter<K extends DocCategory>(
  * them, skipping an empty body.
  */
 export function renderRecord<K extends DocCategory>(
-  corpus: DocCorpus,
+  lexicon: Lexicon,
   doc: DocRecordMap[K],
 ): RenderedRecord {
   const render = mdRenderer[categoryOf(doc)] as (
     d: DocRecordMap[K],
-    corpus: DocCorpus,
+    lexicon: Lexicon,
   ) => string
   const head = headFor(doc)
-  const body = docBlock(...headBlock(head), render(doc, corpus))
+  const body = docBlock(...headBlock(head), render(doc, lexicon))
   return {
     title: recordTitle(doc),
-    mdBody: fmtOptRefsInMd(body, corpus),
+    mdBody: fmtOptRefsInMd(body, lexicon),
     ...(head && { head }),
   }
 }

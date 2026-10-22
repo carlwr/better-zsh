@@ -6,7 +6,7 @@
 
 import { existsSync } from "node:fs"
 
-import { type DocCorpus, loadCorpus } from "@carlwr/zsh-core"
+import { type Lexicon, loadLexicon } from "@carlwr/zsh-core"
 
 import {
   type LookupIndex,
@@ -27,7 +27,7 @@ import { cachedEmbedder } from "../query-cache"
 import { loadRulesYaml } from "../rules-load"
 
 export interface EvalAssets {
-  corpus: DocCorpus
+  lexicon: Lexicon
   rules: Rules
   lookup: LookupIndex
   embedder: Embedder
@@ -40,9 +40,9 @@ export const modelMissing = (): string | null =>
     ? null
     : `no model at ${PATHS.modelDir} — run scripts/fetch-model`
 
-/** The on-disk index when it is an index of this corpus; null when missing or stale. */
+/** The on-disk index when it is an index of this lexicon; null when missing or stale. */
 async function validIndexOnDisk(
-  corpus: DocCorpus,
+  lexicon: Lexicon,
   rules: Rules,
 ): Promise<VectorIndex | null> {
   if (Object.values(PATHS.searchIndex).some(p => !existsSync(p))) return null
@@ -50,19 +50,19 @@ async function validIndexOnDisk(
   // truncated pair falls back to the in-memory build, it does not kill the
   // reporter.
   const index = await readIndex(PATHS.searchIndex).catch(() => null)
-  return index && validateIndex(index, corpus, rules).ok ? index : null
+  return index && validateIndex(index, lexicon, rules).ok ? index : null
 }
 
 export async function loadEvalAssets(): Promise<EvalAssets> {
   const missing = modelMissing()
   if (missing) throw new Error(missing)
-  const corpus = loadCorpus()
+  const lexicon = loadLexicon()
   const rules = await loadRulesYaml()
-  const lookup = lookupIndex(LookupMapSchema.parse(buildLookupMap(corpus)))
+  const lookup = lookupIndex(LookupMapSchema.parse(buildLookupMap(lexicon)))
   const raw = await createNodeEmbedder()
   const index =
-    (await validIndexOnDisk(corpus, rules)) ??
-    (await buildIndex({ corpus, rules, embedder: raw }))
+    (await validIndexOnDisk(lexicon, rules)) ??
+    (await buildIndex({ lexicon, rules, embedder: raw }))
   const embedder = cachedEmbedder(raw, PATHS.queryCache, embedderIdentity())
-  return { corpus, rules, lookup, embedder, index }
+  return { lexicon, rules, lookup, embedder, index }
 }

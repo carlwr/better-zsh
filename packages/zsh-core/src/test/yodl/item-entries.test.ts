@@ -1,11 +1,11 @@
 /**
  * Nested item lists: no producer loses a header or a line of prose, and no
- * corpus entry holds an alias chain as one joined string. Lost text leaves
+ * lexicon entry holds an alias chain as one joined string. Lost text leaves
  * nothing behind to assert on — hence generated input, whose answer is known.
  */
 
 import { describe, expect, test } from "vitest"
-import { loadCorpus } from "../../docs/corpus"
+import { loadLexicon } from "../../docs/lexicon"
 import { docCategories } from "../../docs/taxonomy"
 import type { ItemEntry, ZleWidgetDoc } from "../../docs/types"
 import { asNodes } from "../../docs/yodl/core/nodes"
@@ -168,7 +168,7 @@ describe.each(producers)(
   },
 )
 
-// --- corpus-wide entry shape -----------------------------------------------
+// --- lexicon-wide entry shape -----------------------------------------------
 
 /** Every `ItemEntry`-shaped value inside `node`, at any depth. */
 function* itemEntries(node: unknown): Generator<ItemEntry> {
@@ -184,10 +184,10 @@ function* itemEntries(node: unknown): Generator<ItemEntry> {
   for (const v of Object.values(obj)) yield* itemEntries(v)
 }
 
-describe("every nested item list in the corpus", () => {
-  const corpus = loadCorpus()
+describe("every nested item list in the lexicon", () => {
+  const lexicon = loadLexicon()
   const entries = docCategories.flatMap(cat =>
-    [...corpus[cat].values()].flatMap(rec => [...itemEntries(rec)]),
+    [...lexicon[cat].values()].flatMap(rec => [...itemEntries(rec)]),
   )
 
   test("several categories carry one", () => {

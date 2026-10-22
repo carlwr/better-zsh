@@ -3,7 +3,7 @@
 
 import { existsSync } from "node:fs"
 import { writeFile } from "node:fs/promises"
-import { type DocCorpus, docCategories } from "@carlwr/zsh-core"
+import { docCategories, type Lexicon } from "@carlwr/zsh-core"
 import { expect } from "vitest"
 import type { Rules } from "../nlp/core/rules"
 import {
@@ -23,21 +23,21 @@ export { PATHS, STAGED } from "../nlp/node/paths"
 
 /** Ranking assets over the parity fixture's miniature index (no model); the lookup hits nothing unless given. */
 export const parityRankAssets = (
-  corpus: DocCorpus,
+  lexicon: Lexicon,
   rules: Rules,
   lookup = emptyLookup(),
 ): RankAssets => ({
-  index: buildParityIndex(corpus, rules.synonyms.index_groups),
+  index: buildParityIndex(lexicon, rules.synonyms.index_groups),
   rules,
   lookup,
 })
 
-/** Whether `corpus` holds a record of that identity; an unknown category is a miss. The cast peels the key brand. */
-export const inCorpus = (corpus: DocCorpus, r: RecordId): boolean =>
+/** Whether `lexicon` holds a record of that identity; an unknown category is a miss. The cast peels the key brand. */
+export const inLexicon = (lexicon: Lexicon, r: RecordId): boolean =>
   docCategories.some(
     cat =>
       cat === r.category &&
-      (corpus[cat] as ReadonlyMap<string, unknown>).has(r.id),
+      (lexicon[cat] as ReadonlyMap<string, unknown>).has(r.id),
   )
 
 /**
@@ -111,7 +111,7 @@ export function withinDecimals(value: unknown, digits: number): unknown {
 export const readData = (path: string): Promise<unknown> =>
   path.endsWith(".yaml") ? readYaml(path) : readJson(path)
 
-/** The staged index, schema-validated (not corpus-validated: that is `validateIndex`'s test). */
+/** The staged index, schema-validated (not lexicon-validated: that is `validateIndex`'s test). */
 export const loadIndexFromDisk = (): Promise<VectorIndex> =>
   readIndex(PATHS.searchIndex)
 

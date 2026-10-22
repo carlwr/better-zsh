@@ -5,7 +5,6 @@ import { fileURLToPath } from "node:url"
 import { cached, isDefined } from "@carlwr/typescript-extra"
 import { describe, expect, test } from "vitest"
 import { docCategoryPreambles } from "../docs/category-preamble"
-import { loadCorpus } from "../docs/corpus"
 import {
   hashRecords,
   jsonRecordsText,
@@ -16,6 +15,7 @@ import {
   schemaFile,
 } from "../docs/json-artifacts"
 import type { JsonIndex } from "../docs/json-types"
+import { loadLexicon } from "../docs/lexicon"
 import {
   classifyOrder,
   docCategories,
@@ -167,6 +167,6 @@ describe("generated JSON is a release asset, not a registry payload", () => {
 // mid-iteration `vitest` run before a rebuild fails here.
 describe("index.dataHash", () => {
   test("equals the hash of the record file rebuilt from source", () => {
-    expect(hashRecords(jsonRecordsText(loadCorpus()))).toBe(index().dataHash)
+    expect(hashRecords(jsonRecordsText(loadLexicon()))).toBe(index().dataHash)
   })
 })

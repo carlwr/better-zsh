@@ -14,14 +14,14 @@ import type {
 // the `description`s of the released `records.schema.json` (scripts/schemas.ts).
 // Write for JSON consumers too — they see `$defs` names, not this file.
 
-// --- Corpus identity brand --------------------------------------------------
+// --- Lexicon identity brand -------------------------------------------------
 
 /**
  * Phantom-branded identifier of a documented zsh element for category K.
- * Holding one is a *claim* that the string is a key in `corpus[K]`. Minted
- * by zsh-core alone: `resolve` **checks** a raw string against the corpus
+ * Holding one is a *claim* that the string is a key in `lexicon[K]`. Minted
+ * by zsh-core alone: `resolve` **checks** a raw string against the lexicon
  * (lossy bits, e.g. option `NO_`-stripping, surface as the hit's
- * `feedback`), and every corpus record carries its own as `id`. A test
+ * `feedback`), and every lexicon record carries its own as `id`. A test
  * fixture casts a string already in id form — `normalizeOptName(raw)` for
  * `option`, trimmed elsewhere; a mistake there surfaces as a `Map.get` miss.
  */
@@ -29,11 +29,11 @@ export type Documented<K extends DocCategory> = string & {
   readonly __documented: K
 }
 
-// MIRRORED-IN: zshref-rs/src/corpus.rs
+// MIRRORED-IN: zshref-rs/src/lexicon.rs
 /**
- * What every record carries: its category, its corpus identity and its
+ * What every record carries: its category, its lexicon identity and its
  * surface form — the structural identity invariant. A
- * record is its own identity unit wherever it goes: off its corpus map, on
+ * record is its own identity unit wherever it goes: off its lexicon map, on
  * a resolver hit, in the JSON. `DocRecordMap[DocCategory]` discriminates on
  * `category`.
  *
@@ -44,9 +44,9 @@ export type Documented<K extends DocCategory> = string & {
  * `"subKind" in rec` narrows.
  */
 export interface DocRecordBase<K extends DocCategory> {
-  /** The record's category — the `DocCorpus` map it sits in; in the JSON, its file. One constant per record definition. */
+  /** The record's category — the `Lexicon` map it sits in; in the JSON, its file. One constant per record definition. */
   readonly category: K
-  /** The record's corpus key: a shell-safe slug — printable ASCII without whitespace, non-empty. */
+  /** The record's lexicon key: a shell-safe slug — printable ASCII without whitespace, non-empty. */
   readonly id: Documented<K>
   /**
    * Surface form for display: printable ASCII with spaces, non-empty. The
@@ -72,7 +72,7 @@ export type HistoryExpnKind =
   | "word-designator"
   | "modifier"
 
-// MIRRORED-IN: zshref-rs/src/corpus.rs
+// MIRRORED-IN: zshref-rs/src/lexicon.rs
 /**
  * Short-option alias for a long zsh option. zsh has two single-letter option
  * tables: the default one (plain zsh, csh emulation) and the sh/ksh one;
@@ -377,7 +377,7 @@ export type GlobOpKind = "standard" | "ksh-like"
  * Globbing operators (`*`, `?`, `[...]`, ...).
  *
  * No `requires` field: `ksh-like` depends on `KSH_GLOB`, but a structured
- * hint would invite an expectation the corpus can't meet generally — many
+ * hint would invite an expectation the lexicon can't meet generally — many
  * forms depend on shell state we don't model. `subKind` is the discriminator;
  * option-dependency lookup stays in rendered prose.
  */
