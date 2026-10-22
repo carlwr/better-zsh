@@ -48,9 +48,9 @@ fn main() {
     };
     let monorepo = Source {
         name: "monorepo",
-        json_dir: manifest.join("../packages/zsh-core/artifacts/json"),
+        json_dir: manifest.join("../packages/zsh-lexicon/artifacts/json"),
         fixture: manifest
-            .join("../packages/zsh-core/artifacts/resolver-fixture/resolver-fixture.json"),
+            .join("../packages/zsh-lexicon/artifacts/resolver-fixture/resolver-fixture.json"),
     };
 
     // Re-detect on the override changing or a present
@@ -133,7 +133,7 @@ fn panic_with_help(manifest: &Path) -> ! {
          See DATA-SYNC.md (crate root) for the full design.\n",
         vendored = manifest.join("data/json").display(),
         monorepo = manifest
-            .join("../packages/zsh-core/artifacts/json")
+            .join("../packages/zsh-lexicon/artifacts/json")
             .display(),
     );
 }

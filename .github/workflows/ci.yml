@@ -20,7 +20,7 @@ permissions:
 jobs:
   # Covered otherwise only via `integration`, which bootstraps builds first —
   # so a missing build here stayed invisible until release time.
-  zsh-core:
+  zsh-lexicon:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -29,12 +29,12 @@ jobs:
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup-node-pnpm
-      # zsh-core has no `pre*` hooks, and `test` resolves JSON subpaths that
+      # zsh-lexicon has no `pre*` hooks, and `test` resolves JSON subpaths that
       # exist only under `dist/`.
-      - run: pnpm --filter @carlwr/zsh-core build
-      - run: pnpm --filter @carlwr/zsh-core run check
-      - run: pnpm --filter @carlwr/zsh-core run test
-      - run: pnpm --filter @carlwr/zsh-core run test:pack
+      - run: pnpm --filter @carlwr/zsh-lexicon build
+      - run: pnpm --filter @carlwr/zsh-lexicon run check
+      - run: pnpm --filter @carlwr/zsh-lexicon run test
+      - run: pnpm --filter @carlwr/zsh-lexicon run test:pack
 
   # The NLP evals need the model (~127M, gitignored) and a built index
   # (minutes of CPU). Their tests skip without the assets everywhere else and
@@ -48,7 +48,7 @@ jobs:
       contents: read
     env:
       BZ_REQUIRE_WEB_ARTIFACTS: "1"
-      # Every readiness hook verifies: zsh-core is built once, below, and no
+      # Every readiness hook verifies: zsh-lexicon is built once, below, and no
       # later step can rebuild it mid-run.
       BZ_SKIP_UPSTREAM: "1"
     steps:
@@ -70,7 +70,7 @@ jobs:
           path: packages/zshref-web/.aux/model
           key: nlp-model-${{ hashFiles('packages/zshref-web/scripts/fetch-model') }}
       - run: packages/zshref-web/scripts/fetch-model
-      - run: pnpm --filter @carlwr/zsh-core build
+      - run: pnpm --filter @carlwr/zsh-lexicon build
       # The index derives from the lexicon as rendered, the NLP (rules,
       # schemas, the Node side), the model and the embedder's package — all in
       # the key, so a hit is an index of these exact inputs. No `restore-keys`:
@@ -80,7 +80,7 @@ jobs:
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: packages/zshref-web/static/artifacts
-          key: ${{ runner.os }}-nlp-index-${{ hashFiles('packages/zsh-core/src/**', 'packages/zsh-core/package.json', 'packages/zshref-web/nlp/**', 'packages/zshref-web/scripts/build-index.ts', 'packages/zshref-web/scripts/fetch-model', 'pnpm-lock.yaml') }}
+          key: ${{ runner.os }}-nlp-index-${{ hashFiles('packages/zsh-lexicon/src/**', 'packages/zsh-lexicon/package.json', 'packages/zshref-web/nlp/**', 'packages/zshref-web/scripts/build-index.ts', 'packages/zshref-web/scripts/fetch-model', 'pnpm-lock.yaml') }}
       - run: pnpm --filter zshref-web build:index
       - run: pnpm --filter zshref-web run check
       - run: pnpm --filter zshref-web run test
@@ -99,7 +99,7 @@ jobs:
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup-node-pnpm
-      - run: pnpm --filter @carlwr/zsh-core run verifyREGISTRY
+      - run: pnpm --filter @carlwr/zsh-lexicon run verifyREGISTRY
 
   integration:
     runs-on: ubuntu-latest
@@ -124,7 +124,7 @@ jobs:
       # Not `pnpm bootstrap:upstream`: under the job env that verifies rather
       # than builds, and a fresh checkout carries no build stamps yet.
       - name: Bootstrap build of the upstream package
-        run: pnpm --filter @carlwr/zsh-core build
+        run: pnpm --filter @carlwr/zsh-lexicon build
       - run: pnpm check
       - run: pnpm test
       # The host half of `qa` (no Rust toolchain here); these gates must not be

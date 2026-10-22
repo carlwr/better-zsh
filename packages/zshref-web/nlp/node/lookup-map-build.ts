@@ -8,7 +8,7 @@ import {
   type DocRecordMap,
   docCategories,
   type Lexicon,
-} from "@carlwr/zsh-core"
+} from "@carlwr/zsh-lexicon"
 import type { LookupEntry, LookupMap } from "../core/lookup-map"
 import { byteOrder } from "../core/text"
 import { compareRecordIds, type ResolverHit } from "../core/types"

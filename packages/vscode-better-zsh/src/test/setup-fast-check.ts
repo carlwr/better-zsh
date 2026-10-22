@@ -1,4 +1,4 @@
-// Pinned fast-check seed, the same as zsh-core's (TESTING.md: a fixed
+// Pinned fast-check seed, the same as zsh-lexicon's (TESTING.md: a fixed
 // checked-in seed), so property tests replay identically.
 import fc from "fast-check"
 

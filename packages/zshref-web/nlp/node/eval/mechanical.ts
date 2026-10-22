@@ -13,7 +13,11 @@
 // id-shape slices.
 
 import { isDefined } from "@carlwr/typescript-extra"
-import { type DocCategory, docCategories, type Lexicon } from "@carlwr/zsh-core"
+import {
+  type DocCategory,
+  docCategories,
+  type Lexicon,
+} from "@carlwr/zsh-lexicon"
 
 import type { RecordId } from "../../core/types"
 import { buildLookupContract } from "../contract"

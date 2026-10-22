@@ -10,7 +10,7 @@ me_dir=${0:A:h}
 
 help="
 Usage:
-  $me [zsh-core|vscode-better-zsh|zshref-web|zshref-rs]...
+  $me [zsh-lexicon|vscode-better-zsh|zshref-web|zshref-rs]...
 
 Print the repo overview. With subpackage args, also print file trees for those
 packages.
@@ -35,7 +35,7 @@ foreach arg ( $@ ) {
   case $arg in
        (-h|--help        ) print -r -- $help && exit 0
     ;;
-       (zsh-core         ) dirs_ts+=( packages/zsh-core          )
+       (zsh-lexicon      ) dirs_ts+=( packages/zsh-lexicon       )
     ;; (vscode-better-zsh) dirs_ts+=( packages/vscode-better-zsh )
     ;; (zshref-web       ) dirs_ts+=( packages/zshref-web        )
     ;; (zshref-rs        ) dirs_rs+=( zshref-rs                  )
@@ -99,11 +99,11 @@ print
       'only printed when requested explicitly' \
       '(tree -> not grep-friendly)' \
       'examples:' \
-      "  $me zsh-core" \
+      "  $me zsh-lexicon" \
       "  $me vscode-better-zsh" \
       "  $me zshref-web" \
       "  $me zshref-rs" \
-      "  $me zsh-core vscode-better-zsh"
+      "  $me zsh-lexicon vscode-better-zsh"
   fi
   print
 }

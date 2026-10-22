@@ -1,6 +1,6 @@
 import { cached } from "@carlwr/typescript-extra"
-import type { DocCategory, Lexicon } from "@carlwr/zsh-core"
-import { resolve } from "@carlwr/zsh-core/resolver"
+import type { DocCategory, Lexicon } from "@carlwr/zsh-lexicon"
+import { resolve } from "@carlwr/zsh-lexicon/resolver"
 import * as vscode from "vscode"
 import { type Fact, isProcessSubstFact, isRedirFact } from "../analysis/facts"
 import { contextAt, lineFacts } from "../document/facts"
@@ -53,7 +53,7 @@ export class HoverProvider implements vscode.HoverProvider {
     )
   }
 
-  // Short flags (`-J` / `+J`) are lexicon identity, resolved in zsh-core.
+  // Short flags (`-J` / `+J`) are lexicon identity, resolved in zsh-lexicon.
   private setoptHover(doc: vscode.TextDocument, pos: vscode.Position) {
     const range = activeTokenRangeAt(doc, pos)
     if (!range) return

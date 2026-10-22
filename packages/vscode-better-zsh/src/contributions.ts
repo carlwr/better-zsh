@@ -1,4 +1,4 @@
-import type { Lexicon } from "@carlwr/zsh-core"
+import type { Lexicon } from "@carlwr/zsh-lexicon"
 import * as vscode from "vscode"
 import { evictDocCaches } from "./document/cache"
 import { CompletionProvider } from "./editor/completions"

@@ -14,7 +14,7 @@ One floor: `rust-version` in `Cargo.toml` — what `cargo install zshref` needs,
 
 ## TS↔Rust mirror discipline
 
-`// MIRRORED-IN:` (TS) ↔ `// MIRROR-OF:` (Rust) mark what this crate re-implements from `packages/zsh-core/` (`rg 'MIRROR-OF'`): orientation only, no checker; rename rule: root `AGENTS.md`. A resolver change lands TS-side first; the conformance fixture (`DATA-SYNC.md`) then names every input the Rust side must follow.
+`// MIRRORED-IN:` (TS) ↔ `// MIRROR-OF:` (Rust) mark what this crate re-implements from `packages/zsh-lexicon/` (`rg 'MIRROR-OF'`): orientation only, no checker; rename rule: root `AGENTS.md`. A resolver change lands TS-side first; the conformance fixture (`DATA-SYNC.md`) then names every input the Rust side must follow.
 
 ## Iteration
 
@@ -26,14 +26,14 @@ cargo build --all-features && cargo test --all-features
 ```
 
 - Without `--all-features` the MCP binary and its test are skipped.
-- Edits touching `packages/zsh-core/`: the make targets (`DEVELOPMENT.md`) rebuild the artifacts first.
+- Edits touching `packages/zsh-lexicon/`: the make targets (`DEVELOPMENT.md`) rebuild the artifacts first.
 
 ## Tests
 
 - `tests/` — each file's module doc says what it pins
 - `run_json` (`tests/common/`) validates every tool-subcommand response against its `outputSchema` — new tests get conformance checks for free
 - plain integration tests (exit status, stdout shape) that need no `outputSchema` validation spawn the binary directly: `Command::new(env!("CARGO_BIN_EXE_zshref"))`
-- `src/resolver.rs` `#[cfg(test)]` — conformance to zsh-core's resolver fixture; the make test targets refresh fixture and lexicon together, plain `cargo test` reads what is on disk
+- `src/resolver.rs` `#[cfg(test)]` — conformance to zsh-lexicon's resolver fixture; the make test targets refresh fixture and lexicon together, plain `cargo test` reads what is on disk
 
 ## Entry points
 

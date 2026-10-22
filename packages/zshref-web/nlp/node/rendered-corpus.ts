@@ -5,8 +5,8 @@
 
 import { createHash } from "node:crypto"
 import { cachedUnary } from "@carlwr/typescript-extra"
-import { docCategories, type Lexicon } from "@carlwr/zsh-core"
-import { projectRecords } from "@carlwr/zsh-core/render"
+import { docCategories, type Lexicon } from "@carlwr/zsh-lexicon"
+import { projectRecords } from "@carlwr/zsh-lexicon/render"
 
 export const renderedCorpus = cachedUnary((lexicon: Lexicon) =>
   docCategories.map(category => ({

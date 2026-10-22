@@ -4,7 +4,7 @@
 // QA set is loaded (that is the loader's job) and never printed.
 
 import * as fcu from "@carlwr/fastcheck-utils"
-import { docCategories, loadLexicon } from "@carlwr/zsh-core"
+import { docCategories, loadLexicon } from "@carlwr/zsh-lexicon"
 import fc from "fast-check"
 import { beforeAll, describe, expect, it } from "vitest"
 import type { z } from "zod"

@@ -1,7 +1,7 @@
 //! `zshref info` — version and lexicon-level introspection as JSON; CLI-only,
 //! not in the tool set. Each version key names whose version it is: the binary
-//! (`zshrefVersion`) and the zsh-core release its lexicon comes from
-//! (`zshCoreVersion`). Counts come from the loaded lexicon; `index.json`
+//! (`zshrefVersion`) and the zsh-lexicon release its lexicon comes from
+//! (`zshLexiconVersion`). Counts come from the loaded lexicon; `index.json`
 //! carries none.
 
 use crate::lexicon::{DocCategory, Lexicon};
@@ -17,7 +17,7 @@ pub fn run(lexicon: &Lexicon) -> Value {
 
     json!({
         "zshrefVersion": env!("CARGO_PKG_VERSION"),
-        "zshCoreVersion": lexicon.index.package_version,
+        "zshLexiconVersion": lexicon.index.package_version,
         "dataHash": lexicon.index.data_hash,
         "zshUpstream": {
             "tag": lexicon.index.zsh_upstream.tag,
@@ -41,7 +41,7 @@ mod tests {
         let obj = v.as_object().expect("top-level object");
         for key in [
             "zshrefVersion",
-            "zshCoreVersion",
+            "zshLexiconVersion",
             "dataHash",
             "zshUpstream",
             "counts",

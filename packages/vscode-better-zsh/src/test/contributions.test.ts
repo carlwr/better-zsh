@@ -1,4 +1,4 @@
-import { loadLexicon } from "@carlwr/zsh-core"
+import { loadLexicon } from "@carlwr/zsh-lexicon"
 import { beforeEach, describe, expect, test, vi } from "vitest"
 import type * as vscode from "vscode"
 import { contribute } from "../contributions"

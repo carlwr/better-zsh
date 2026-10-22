@@ -10,8 +10,8 @@ import {
   type OptionDoc,
   type ReservedWordDoc,
   type SpecialParamDoc,
-} from "@carlwr/zsh-core"
-import { categoryFooter, renderRecord } from "@carlwr/zsh-core/render"
+} from "@carlwr/zsh-lexicon"
+import { categoryFooter, renderRecord } from "@carlwr/zsh-lexicon/render"
 import fc from "fast-check"
 import { describe, expect, test } from "vitest"
 import type * as vscode from "vscode"
@@ -97,7 +97,7 @@ const valueAt = (line: string, char: number) => at(line, 0, char)?.value
 
 const real = loadLexicon()
 const realAt = hoverWith(new HoverProvider(real))
-// What a hover shows: zsh-core's titled body, then the category line the
+// What a hover shows: zsh-lexicon's titled body, then the category line the
 // editor appends (`record-markdown.ts`).
 const rendered = <K extends DocCategory>(cat: K, id: Documented<K>) => {
   const doc = real[cat].get(id)
@@ -159,7 +159,7 @@ describe("HoverProvider dispatch", () => {
 //
 // Every documented entry, synthesized into a hover position: the extension's
 // range extraction must reach the resolver with the right token (punctuation
-// params, symbolic cond ops, redirection shapes). Content is zsh-core's.
+// params, symbolic cond ops, redirection shapes). Content is zsh-lexicon's.
 
 describe("HoverProvider on the real lexicon", () => {
   const mismatches = <T>(

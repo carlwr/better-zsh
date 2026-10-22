@@ -7,7 +7,7 @@ Many keys are templates, not literals: \`n\` stands for any non-negative integer
 Word-designators and modifiers are only meaningful inside a history expansion (after the event designator); in isolation they are not zsh tokens.`
 
 // Kept though no in-repo consumer shows it: neither has a natural,
-// consistent slot for category-level prose. The mechanism is zsh-core's to
+// consistent slot for category-level prose. The mechanism is zsh-lexicon's to
 // offer; showing it is each consumer's call.
 
 /**

@@ -2,7 +2,7 @@
 // self-contained (generated vectors, lexicon in-process); the sanity build
 // needs the staged index and the model, and skips without them.
 
-import { loadLexicon } from "@carlwr/zsh-core"
+import { loadLexicon } from "@carlwr/zsh-lexicon"
 import { describe, expect, it } from "vitest"
 
 import { createNodeEmbedder } from "../../../nlp/node/embedder-node"

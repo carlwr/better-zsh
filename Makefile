@@ -9,9 +9,9 @@ mono           = cd $(crate-dir) && ZSHREF_DATA_SOURCE=monorepo
 vendored       = cd $(crate-dir) && ZSHREF_DATA_SOURCE=vendored
 host           = $(shell rustc -vV | sed -n 's/^host: //p')
 
-# `vendor`: zsh-core's release assets, as the extracted crate will download
+# `vendor`: zsh-lexicon's release assets, as the extracted crate will download
 # them; the tarballs unpack into one merged `data/`
-release-dir    = ./packages/zsh-core/.aux/release
+release-dir    = ./packages/zsh-lexicon/.aux/release
 release-assets = lexicon.tar.gz resolver-fixture.tar.gz
 
 .DEFAULT_GOAL  = artifacts
@@ -50,7 +50,7 @@ cli-check: artifacts
 .PHONY:\
 vendor
 vendor: artifacts vendor-clean
-	pnpm --filter @carlwr/zsh-core run pack:release
+	pnpm --filter @carlwr/zsh-lexicon run pack:release
 	cd $(release-dir) && shasum -a 256 -c $(release-assets:=.sha256)
 	@mkdir -p $(crate-dir)/data
 	for a in $(release-assets); do \

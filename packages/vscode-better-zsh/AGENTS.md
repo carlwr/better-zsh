@@ -52,7 +52,7 @@ No Language Model tools; the MCP server is the agent-facing surface over the sam
 
 ## Testing scope
 
-Extension tests cover the analyzer (`test/analysis/`, incl. the lock-in tests pinning its vocabularies to the lexicon) and VS Code wiring: position→record dispatch, command/provider registration, priority resolution. Hover/doc-record content and formatting are `@carlwr/zsh-core`'s concern — assert them in zsh-core unit tests, not here.
+Extension tests cover the analyzer (`test/analysis/`, incl. the lock-in tests pinning its vocabularies to the lexicon) and VS Code wiring: position→record dispatch, command/provider registration, priority resolution. Hover/doc-record content and formatting are `@carlwr/zsh-lexicon`'s concern — assert them in zsh-lexicon unit tests, not here.
 
 ## Container-only integration tests
 

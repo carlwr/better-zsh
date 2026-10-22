@@ -57,7 +57,7 @@
   },
   "dependencies": {
     "@carlwr/typescript-extra": "catalog:",
-    "@carlwr/zsh-core": "workspace:*"
+    "@carlwr/zsh-lexicon": "workspace:*"
   },
   "devDependencies": {
     "@carlwr/fastcheck-utils": "catalog:",

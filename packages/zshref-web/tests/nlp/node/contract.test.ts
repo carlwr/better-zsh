@@ -3,7 +3,7 @@
 // lexicon + resolver — fast, and always runs, so drift in the surface-form
 // table or in resolver canonicalization shows without embedder or index.
 
-import { loadLexicon } from "@carlwr/zsh-core"
+import { loadLexicon } from "@carlwr/zsh-lexicon"
 import { describe, expect, it } from "vitest"
 import { lookupIndex } from "../../../nlp/core/lookup-map"
 import { buildLookupContract, evalBare } from "../../../nlp/node/contract"

@@ -7,7 +7,7 @@ set -eu -o pipefail
 
 crate=${0:A:h:h}
 out=$crate/THIRD_PARTY_NOTICES.md
-# the notice zsh-core ships in its release tarballs; vendored, so as fresh
+# the notice zsh-lexicon ships in its release tarballs; vendored, so as fresh
 # as the last `make vendor`
 zsh_notice=$crate/data/THIRD_PARTY_NOTICES.md
 [[ -f $zsh_notice ]] || { print -u2 -- "missing $zsh_notice:" 'run `make vendor` from the repo root'; exit 1 }

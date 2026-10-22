@@ -1,7 +1,7 @@
 // Build side of the lookup map. Pure on lexicon + resolver — no staged
 // assets, always runs.
 
-import { loadLexicon } from "@carlwr/zsh-core"
+import { loadLexicon } from "@carlwr/zsh-lexicon"
 import { describe, expect, it } from "vitest"
 import { lookupIndex } from "../../../nlp/core/lookup-map"
 import { buildLookupMap } from "../../../nlp/node/lookup-map-build"

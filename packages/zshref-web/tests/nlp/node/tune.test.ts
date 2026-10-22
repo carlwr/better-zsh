@@ -4,7 +4,7 @@
 // assertion holds a number from a real eval.
 
 import * as fcu from "@carlwr/fastcheck-utils"
-import { loadLexicon } from "@carlwr/zsh-core"
+import { loadLexicon } from "@carlwr/zsh-lexicon"
 import fc from "fast-check"
 import { describe, expect, it } from "vitest"
 import {

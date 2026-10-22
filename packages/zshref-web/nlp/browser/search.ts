@@ -1,5 +1,5 @@
 // The SPA's search: the core pipeline over the browser embedder. The bundle
-// carries no resolver (it is zsh-core-free): the pre-computed lookup map is
+// carries no resolver (it is zsh-lexicon-free): the pre-computed lookup map is
 // its canonical-form resolution.
 
 import type { LookupIndex } from "../core/lookup-map"

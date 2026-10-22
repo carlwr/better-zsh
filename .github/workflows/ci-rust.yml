@@ -4,8 +4,8 @@ on:
   pull_request:
     paths:
       - "zshref-rs/**"
-      - "packages/zsh-core/**"
-      # zsh-core build inputs outside its tree: `make` builds it first.
+      - "packages/zsh-lexicon/**"
+      # zsh-lexicon build inputs outside its tree: `make` builds it first.
       - "scripts/**"
       - "package.json"
       - "pnpm-lock.yaml"
@@ -21,8 +21,8 @@ on:
       - "**"
     paths:
       - "zshref-rs/**"
-      - "packages/zsh-core/**"
-      # zsh-core build inputs outside its tree: `make` builds it first.
+      - "packages/zsh-lexicon/**"
+      # zsh-lexicon build inputs outside its tree: `make` builds it first.
       - "scripts/**"
       - "package.json"
       - "pnpm-lock.yaml"

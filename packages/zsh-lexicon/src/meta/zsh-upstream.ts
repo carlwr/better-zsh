@@ -4,7 +4,7 @@
  * of truth; the sibling `SOURCE.md` and `THIRD_PARTY_NOTICES.md` in
  * that dir stay human-readable, kept in sync by a test.
  *
- * Surfaced through the zsh-core public API so every consumer names the
+ * Surfaced through the zsh-lexicon public API so every consumer names the
  * same zsh.
  */
 export const ZSH_UPSTREAM = {

@@ -7,11 +7,11 @@ me_dir=${0:A:h}
 
 help="
 Usage:
-  $me <zsh-core|vscode-better-zsh|zshref-web>...
+  $me <zsh-lexicon|vscode-better-zsh|zshref-web>...
 
 Examples:
-  $me zsh-core
-  $me zsh-core vscode-better-zsh
+  $me zsh-lexicon
+  $me zsh-lexicon vscode-better-zsh
 
 Lists all 'export' lines from source (excluding tests). Each output line is filename + first line of the export expression.
 
@@ -30,7 +30,7 @@ die() { msg "ERROR: $@ (see --help)" && exit 1; }
 dirs=()
 foreach arg ( $@ ) {
   case $arg in
-       (zsh-core         ) dirs+=( packages/zsh-core/src          )
+       (zsh-lexicon      ) dirs+=( packages/zsh-lexicon/src       )
     ;; (vscode-better-zsh) dirs+=( packages/vscode-better-zsh/src )
     ;; (zshref-web       ) dirs+=( packages/zshref-web/src packages/zshref-web/nlp )
     ;; (-h|--help        ) print -r -- $help && exit 0

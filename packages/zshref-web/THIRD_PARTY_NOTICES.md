@@ -9,7 +9,7 @@ zsh documentation
 The search index carries text derived from the zsh documentation sources
 (tag `zsh-5.9`), under the zsh licence.
 Provenance and full licence text:
-`packages/zsh-core/src/data/zsh-docs/THIRD_PARTY_NOTICES.md`.
+`packages/zsh-lexicon/src/data/zsh-docs/THIRD_PARTY_NOTICES.md`.
 
 Embedding model
 ---------------

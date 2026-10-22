@@ -1,6 +1,6 @@
 /**
  * @packageDocumentation
- * For bundlers: ship zsh-core's vendored Yodl data next to the bundle.
+ * For bundlers: ship zsh-lexicon's vendored Yodl data next to the bundle.
  */
 
 export {

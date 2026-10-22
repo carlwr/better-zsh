@@ -15,12 +15,12 @@ const distDir = join(pkgDir, "dist")
 // Keep the published site outside dist/ so docs builds cannot accidentally
 // leak HTML into the npm tarball.
 //
-// publishDir is the GitHub Pages root (served at /better-zsh/); the zsh-core
-// docs live one level down under /better-zsh/zsh-core/ so the URL names the
+// publishDir is the GitHub Pages root (served at /better-zsh/); the zsh-lexicon
+// docs live one level down under /better-zsh/zsh-lexicon/ so the URL names the
 // package rather than the repo. publishDir itself only carries a redirect +
-// .nojekyll — slot future per-package sites in as siblings of zsh-core/.
+// .nojekyll — slot future per-package sites in as siblings of zsh-lexicon/.
 const publishDir = join(pkgDir, ".aux", "docs", "site")
-const siteDir = join(publishDir, "zsh-core")
+const siteDir = join(publishDir, "zsh-lexicon")
 const apiDir = join(distDir, "api")
 const dataDir = join(pkgDir, "artifacts", "json")
 
@@ -62,9 +62,9 @@ const redirect = [
   '<html lang="en">',
   '<meta charset="utf-8">',
   `<title>${pkg.name} documentation</title>`,
-  '<meta http-equiv="refresh" content="0; url=./zsh-core/">',
-  '<link rel="canonical" href="./zsh-core/">',
-  `<a href="./zsh-core/">${pkg.name} API documentation</a>`,
+  '<meta http-equiv="refresh" content="0; url=./zsh-lexicon/">',
+  '<link rel="canonical" href="./zsh-lexicon/">',
+  `<a href="./zsh-lexicon/">${pkg.name} API documentation</a>`,
   "",
 ].join("\n")
 

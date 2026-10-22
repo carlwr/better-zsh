@@ -4,7 +4,7 @@
 // A category id leaving the file breaks deployed `?r=` links into it; that
 // regeneration is the moment to weigh forwarding them.
 
-import { docCategories } from "@carlwr/zsh-core"
+import { docCategories } from "@carlwr/zsh-lexicon"
 import { describe, expect, it } from "vitest"
 
 import { categoriesJson } from "../../../nlp/node/categories"

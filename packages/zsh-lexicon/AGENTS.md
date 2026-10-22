@@ -1,4 +1,4 @@
-# AGENTS.md — `@carlwr/zsh-core`
+# AGENTS.md — `@carlwr/zsh-lexicon`
 
 ## Layout rules
 
@@ -12,7 +12,7 @@ Canonical subpath list: `package.json` `exports`; per-subpath surface: `dist/typ
 
 ## Gotchas
 
-**Static entrypoint fence:** the whole public surface is execution-, network- and env-free; hosts that run a zsh binary own that code, never zsh-core — tests are exempt. Enforced by a test in `src/test/`.
+**Static entrypoint fence:** the whole public surface is execution-, network- and env-free; hosts that run a zsh binary own that code, never zsh-lexicon — tests are exempt. Enforced by a test in `src/test/`.
 
 ## Reference-dump review workflow
 

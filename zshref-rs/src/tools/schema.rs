@@ -180,7 +180,7 @@ fn match_schema(cat: DocCategory, sub_kind: bool, shape: &MatchShape) -> Value {
 /// the fixture and `lexicon.rs` tests hold; `MdBodyString` and
 /// `TitleString` allow Unicode prose. A body is empty for a record without
 /// prose (a reserved word whose head is documented as a complex command).
-// MIRROR-OF: packages/zsh-core/src/docs/brands.ts (`idPattern` / `displayPattern`)
+// MIRROR-OF: packages/zsh-lexicon/src/docs/brands.ts (`idPattern` / `displayPattern`)
 fn defs(shape: &MatchShape, sub_kinds: &[(DocCategory, Vec<String>)]) -> Value {
     let mut defs = Map::new();
     defs.insert(

@@ -3,7 +3,7 @@
 
 import { existsSync } from "node:fs"
 import { writeFile } from "node:fs/promises"
-import { docCategories, type Lexicon } from "@carlwr/zsh-core"
+import { docCategories, type Lexicon } from "@carlwr/zsh-lexicon"
 import { expect } from "vitest"
 import type { Rules } from "../nlp/core/rules"
 import {

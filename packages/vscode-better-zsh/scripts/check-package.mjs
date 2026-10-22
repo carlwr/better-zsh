@@ -5,7 +5,7 @@ import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 
 const require = createRequire(import.meta.url)
-const { runtimeZshDataPaths } = require("@carlwr/zsh-core/assets")
+const { runtimeZshDataPaths } = require("@carlwr/zsh-lexicon/assets")
 // Resolved, not `pnpm exec`: the stage is no workspace member, so pnpm
 // there would pick any vsce on PATH and write a lockfile into the stage.
 const vsce = require.resolve("@vscode/vsce/vsce")

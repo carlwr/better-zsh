@@ -1,7 +1,7 @@
 // Print every record's retrieval texts — what the index embeds — as JSON on
 // stdout, for diffing across changes: any difference here re-embeds. Model-free.
 
-import { loadLexicon } from "@carlwr/zsh-core"
+import { loadLexicon } from "@carlwr/zsh-lexicon"
 
 import { prettyJson } from "../nlp/node/io"
 import { corpusTexts } from "../nlp/node/retrieval-text"

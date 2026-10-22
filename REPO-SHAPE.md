@@ -12,7 +12,7 @@ Single source of truth for the layout and the product dependency arrow set.
 ```
 .
 ├── packages/
-│   ├── zsh-core             TS lib: lexicon, resolvers, rendering; emits the release assets
+│   ├── zsh-lexicon          TS lib: lexicon, resolvers, rendering; emits the release assets
 │   ├── vscode-better-zsh    VS Code extension
 │   └── zshref-web           SPA; all NLP; index built at build time
 └── zshref-rs/               Rust crate: `zshref` CLI + `zshref-mcp` bins; not a pnpm member
@@ -25,7 +25,7 @@ The crate ships as `zshref`; `zshref-rs/` is its directory here.
 An arrow reads "consumes, pinned by version"; its label is the mechanism:
 
 ```
-                          zsh-core
+                        zsh-lexicon
             ┌────────────────┼──────────────────────┐
      workspace link    workspace link          release assets
       (built dist/)     (built dist/)     (lexicon JSON, resolver fixture)
@@ -38,9 +38,9 @@ An arrow reads "consumes, pinned by version"; its label is the mechanism:
 ```
 
 - workspace link: pnpm `workspace:*` onto the upstream's built `dist/`; freshness: `scripts/build/README.md`
-- release assets: zsh-core's release tarballs, packed and vendored by `make vendor` — `zshref-rs/DATA-SYNC.md`
-- `zshref-web` consumes `zsh-core` at build time only — the index build; the browser bundle is `zsh-core`-free (`packages/zshref-web/AGENTS.md`)
-- zsh-core is the only producer; the in-repo consumers are leaves with no consumer of their own
+- release assets: zsh-lexicon's release tarballs, packed and vendored by `make vendor` — `zshref-rs/DATA-SYNC.md`
+- `zshref-web` consumes `zsh-lexicon` at build time only — the index build; the browser bundle is `zsh-lexicon`-free (`packages/zshref-web/AGENTS.md`)
+- zsh-lexicon is the only producer; the in-repo consumers are leaves with no consumer of their own
 
 Invariants — what the shape was chosen for, and the constraint on any change to it (principles: `PRINCIPLES.md` §"Cross-project structure"):
 
@@ -55,13 +55,14 @@ The shape before the 2026 reorg, and why it changed: the tag `pre-reorg` (its `.
 
 Settled public names — the binary, the pnpm package, or the repo if dedicated:
 
+- this repo `zsh-lexicon`
+- TS lib `@carlwr/zsh-lexicon`
+  - alphas up to `0.1.0-alpha.2` published as `@carlwr/zsh-core`, tagged `zsh-core-v*`
 - CLI `zshref`; MCP server `zshref-mcp`
 - SPA `zshref-web`
 - extension `better-zsh`, displayed "Better Zsh"
   - pnpm package name: the extension ID's, so stays `better-zsh`
   - a dedicated repo: likely `vscode-better-zsh`
-
-Open: this repo's name; zsh-core's.
 
 ## Extraction
 

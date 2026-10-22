@@ -207,5 +207,5 @@ if (dataHashes.size !== 1) {
 }
 
 process.stdout.write(
-  `zsh-core pack:release: OK (${assets.map(stemOf).join(", ")})\n`,
+  `zsh-lexicon pack:release: OK (${assets.map(stemOf).join(", ")})\n`,
 )

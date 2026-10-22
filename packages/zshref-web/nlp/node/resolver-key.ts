@@ -1,8 +1,8 @@
 // The resolver's verdict on a query: the canonicalizer behind the lookup
 // map and the lookup contract.
 
-import type { DocCategory, DocRecord, Lexicon } from "@carlwr/zsh-core"
-import { resolve, resolveAll } from "@carlwr/zsh-core/resolver"
+import type { DocCategory, DocRecord, Lexicon } from "@carlwr/zsh-lexicon"
+import { resolve, resolveAll } from "@carlwr/zsh-lexicon/resolver"
 import type { RecordId, ResolverHit } from "../core/types"
 
 /** A lexicon record's identity as the NLP carries it: the brand peeled. */
@@ -12,8 +12,8 @@ export const identityOf = (rec: DocRecord): RecordId => ({
 })
 
 /**
- * zsh-core's verdict on `query`: scoped to `category` if given, else the
- * category walk's first hit — its order and admission are zsh-core's.
+ * zsh-lexicon's verdict on `query`: scoped to `category` if given, else the
+ * category walk's first hit — its order and admission are zsh-lexicon's.
  */
 export function resolverKey(
   lexicon: Lexicon,

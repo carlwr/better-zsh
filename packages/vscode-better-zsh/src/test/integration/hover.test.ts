@@ -3,7 +3,7 @@ import * as vscode from "vscode"
 import { hoverText, openText } from "./helpers"
 
 // Wiring only: the right record at the cursor. Content and format are
-// zsh-core's concern, verified in its unit tests.
+// zsh-lexicon's concern, verified in its unit tests.
 
 suite("ZshHoverProvider", () => {
   test("builtin command head", async () => {

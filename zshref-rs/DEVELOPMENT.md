@@ -2,17 +2,17 @@
 
 Monorepo-phase workflows; what changes at extraction: `EXTRACTION.md`.
 
-`zshref` and `zshref-mcp` embed zsh-core's lexicon JSONs at compile time: rebuild after Rust or artifact changes.
+`zshref` and `zshref-mcp` embed zsh-lexicon's JSON artifacts at compile time: rebuild after Rust or artifact changes.
 
-`build.rs` auto-detects the data source: the monorepo's zsh-core artifacts when present (normal dev), else `data/` — vendored from zsh-core's release tarballs; what the published `.crate` ships. Design: `DATA-SYNC.md`.
+`build.rs` auto-detects the data source: the monorepo's zsh-lexicon artifacts when present (normal dev), else `data/` — vendored from zsh-lexicon's release tarballs; what the published `.crate` ships. Design: `DATA-SYNC.md`.
 
 ## Rebuild rules
 
 | What changed | What to run |
 |---|---|
 | Pure Rust only (tool prose and schemas included) | `cargo build` |
-| Lexicon (zsh-core docs/types) | `make cli-debug` |
-| Resolver behaviour (zsh-core `resolver.ts`) | `make cli-test` |
+| Lexicon (zsh-lexicon docs/types) | `make cli-debug` |
+| Resolver behaviour (zsh-lexicon `resolver.ts`) | `make cli-test` |
 
 Every target: the repo-root `Makefile`; CI's selection of them: `.github/workflows/ci-rust.yml`.
 

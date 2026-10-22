@@ -16,7 +16,7 @@
 //   resolution: its scores carry the embedder runtime's platform noise, so
 //   they are asserted within a tolerance, never exactly.
 
-import type { DocCategory, Lexicon } from "@carlwr/zsh-core"
+import type { DocCategory, Lexicon } from "@carlwr/zsh-lexicon"
 import { z } from "zod"
 
 import { rank } from "../core/rank"

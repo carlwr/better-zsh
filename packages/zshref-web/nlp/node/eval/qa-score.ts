@@ -6,7 +6,7 @@
 // is held out (NLP.md) — and a warning (an expected item's absence or
 // a negative's presence) is counted, never printed with its query.
 
-import type { DocCategory, Lexicon } from "@carlwr/zsh-core"
+import type { DocCategory, Lexicon } from "@carlwr/zsh-lexicon"
 import { byteOrder } from "../../core/text"
 import { type RecordId, recordKey, sameRecord } from "../../core/types"
 import { identityOf } from "../resolver-key"

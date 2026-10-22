@@ -17,7 +17,7 @@ import {
   docCategories,
   docCategoryLabels,
   type Lexicon,
-} from "@carlwr/zsh-core"
+} from "@carlwr/zsh-lexicon"
 import type { LookupIndex } from "../core/lookup-map"
 import { byteOrder } from "../core/text"
 import {

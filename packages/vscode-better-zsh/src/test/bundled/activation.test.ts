@@ -1,7 +1,7 @@
 import * as assert from "node:assert"
 import { existsSync, readFileSync } from "node:fs"
 import { join } from "node:path"
-import { runtimeZshDataPaths } from "@carlwr/zsh-core/assets"
+import { runtimeZshDataPaths } from "@carlwr/zsh-lexicon/assets"
 import * as vscode from "vscode"
 import { outAsset } from "../../manifest"
 import { highlightTexts, openFixture, pkgDir } from "../integration/helpers"

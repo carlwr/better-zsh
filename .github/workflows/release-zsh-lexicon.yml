@@ -1,17 +1,17 @@
-name: Release zsh-core
+name: Release zsh-lexicon
 
 # A real release needs tokenless OIDC granted to this repo for
-# @carlwr/zsh-core on npm (Trusted Publisher).
+# @carlwr/zsh-lexicon on npm (Trusted Publisher).
 #
 # `build` runs the workspace's dependency code without credentials; `publish`
 # holds them, installs no dependencies, and ships what `build` uploaded.
 #
-# Local rehearsal, act: `pnpm --filter @carlwr/zsh-core release:act`.
+# Local rehearsal, act: `pnpm --filter @carlwr/zsh-lexicon release:act`.
 
 on:
   push:
     tags:
-      - "zsh-core-v*"
+      - "zsh-lexicon-v*"
   workflow_dispatch:
     inputs:
       dry_run:
@@ -20,7 +20,7 @@ on:
         default: true
 
 concurrency:
-  group: release-zsh-core
+  group: release-zsh-lexicon
   cancel-in-progress: false
 
 permissions:
@@ -39,9 +39,9 @@ jobs:
       # The tag guard and tag-bound steps below run on tag refs only, so a
       # real publish must come from one; elsewhere a manual run only rehearses.
       - name: Refuse a real publish off-tag
-        if: inputs.dry_run == false && !startsWith(github.ref, 'refs/tags/zsh-core-v')
+        if: inputs.dry_run == false && !startsWith(github.ref, 'refs/tags/zsh-lexicon-v')
         run: |
-          echo "real publish needs a zsh-core-v* tag ref; got $GITHUB_REF"
+          echo "real publish needs a zsh-lexicon-v* tag ref; got $GITHUB_REF"
           exit 1
 
       - uses: ./.github/actions/setup-node-pnpm
@@ -49,33 +49,33 @@ jobs:
       # package.json only — the tests below already tie the other version
       # sites to it.
       - name: Verify tag matches package version
-        if: startsWith(github.ref, 'refs/tags/zsh-core-v')
+        if: startsWith(github.ref, 'refs/tags/zsh-lexicon-v')
         run: |
-          tag_version=${GITHUB_REF#refs/tags/zsh-core-v}
-          pkg_version=$(node -p "require('./packages/zsh-core/package.json').version")
+          tag_version=${GITHUB_REF#refs/tags/zsh-lexicon-v}
+          pkg_version=$(node -p "require('./packages/zsh-lexicon/package.json').version")
           echo "tag=$tag_version pkg=$pkg_version"
           [ "$tag_version" = "$pkg_version" ] || { echo "tag mismatch vs package.json"; exit 1; }
 
       # No `pre*` hooks here, and `test` resolves JSON subpaths that exist
       # only under `dist/`.
-      - run: pnpm --filter @carlwr/zsh-core build
-      - run: pnpm --filter @carlwr/zsh-core run check
-      - run: pnpm --filter @carlwr/zsh-core run test
-      - run: pnpm --filter @carlwr/zsh-core run test:pack
+      - run: pnpm --filter @carlwr/zsh-lexicon build
+      - run: pnpm --filter @carlwr/zsh-lexicon run check
+      - run: pnpm --filter @carlwr/zsh-lexicon run test
+      - run: pnpm --filter @carlwr/zsh-lexicon run test:pack
       # Published npm state (consent-marked): skipped by the act rehearsal.
       - if: ${{ !env.ACT }}
-        run: pnpm --filter @carlwr/zsh-core run testREGISTRY:install
+        run: pnpm --filter @carlwr/zsh-lexicon run testREGISTRY:install
 
       # pnpm, not npm: only pnpm resolves `catalog:` / `workspace:` specs, and
       # npm publishes the manifest it is handed as-is.
       - name: Pack npm tarball
-        working-directory: packages/zsh-core
+        working-directory: packages/zsh-lexicon
         run: pnpm pack --pack-destination "$RUNNER_TEMP/npm"
 
       # Repacked rather than reused: keeps the uploaded bytes tied to the
       # build this job last ran.
       - name: Pack release assets
-        run: pnpm --filter @carlwr/zsh-core run pack:release
+        run: pnpm --filter @carlwr/zsh-lexicon run pack:release
 
       - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
         with:
@@ -87,7 +87,7 @@ jobs:
       - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
         with:
           name: release-assets
-          path: packages/zsh-core/.aux/release/*
+          path: packages/zsh-lexicon/.aux/release/*
           retention-days: 1
           if-no-files-found: error
 
@@ -118,7 +118,7 @@ jobs:
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: release-assets
-          path: packages/zsh-core/.aux/release
+          path: packages/zsh-lexicon/.aux/release
 
       # Runs on dry runs too: skipping it would leave npm's publish preflight
       # untested until a real tag. A version already on the registry is
@@ -139,8 +139,8 @@ jobs:
           version=$(node -p 'require(process.argv[1]).version' "$dir/package/package.json")
           if [[ "$version" == *-* ]]; then tag=next; else tag=latest; fi
           echo "resolved version=$version dist-tag=$tag"
-          if [ -z "$DRY" ] && npm view "@carlwr/zsh-core@$version" version >/dev/null 2>&1; then
-            echo "@carlwr/zsh-core@$version is already on npm — skipping"
+          if [ -z "$DRY" ] && npm view "@carlwr/zsh-lexicon@$version" version >/dev/null 2>&1; then
+            echo "@carlwr/zsh-lexicon@$version is already on npm — skipping"
             exit 0
           fi
           npx -y "npm@$NPM" publish "$dir/package" $DRY \
@@ -152,24 +152,24 @@ jobs:
       # Tag runs that publish only: a dry run dispatched on a tag ref must not
       # create or touch the GitHub release.
       - name: Attest release assets
-        if: startsWith(github.ref, 'refs/tags/zsh-core-v') && (github.event_name == 'push' || inputs.dry_run == false)
+        if: startsWith(github.ref, 'refs/tags/zsh-lexicon-v') && (github.event_name == 'push' || inputs.dry_run == false)
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
-          subject-path: packages/zsh-core/.aux/release/*.tar.gz
+          subject-path: packages/zsh-lexicon/.aux/release/*.tar.gz
 
       # Create-then-upload rather than `create` with the assets inline: a
       # re-run after a partial failure finds the release already there.
       - name: Attach release assets
-        if: startsWith(github.ref, 'refs/tags/zsh-core-v') && (github.event_name == 'push' || inputs.dry_run == false)
-        working-directory: packages/zsh-core/.aux/release
+        if: startsWith(github.ref, 'refs/tags/zsh-lexicon-v') && (github.event_name == 'push' || inputs.dry_run == false)
+        working-directory: packages/zsh-lexicon/.aux/release
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           TAG: ${{ github.ref_name }}
         run: |
-          version=${TAG#zsh-core-v}
+          version=${TAG#zsh-lexicon-v}
           pre=; [[ "$version" != *-* ]] || pre=--prerelease
           gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" $pre \
-            --title "zsh-core $version" \
-            --notes "Generated zsh lexicon JSON, JSON Schema and resolver conformance fixture for @carlwr/zsh-core $version."
+            --title "zsh-lexicon $version" \
+            --notes "Generated zsh lexicon JSON, JSON Schema and resolver conformance fixture for @carlwr/zsh-lexicon $version."
           gh release upload "$TAG" --clobber *.tar.gz *.tar.gz.sha256

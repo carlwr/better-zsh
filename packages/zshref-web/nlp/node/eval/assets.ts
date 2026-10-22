@@ -6,7 +6,7 @@
 
 import { existsSync } from "node:fs"
 
-import { type Lexicon, loadLexicon } from "@carlwr/zsh-core"
+import { type Lexicon, loadLexicon } from "@carlwr/zsh-lexicon"
 
 import {
   type LookupIndex,

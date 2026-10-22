@@ -3,7 +3,7 @@ const recursive = script =>
   `node scripts/build/upstream-ready.mjs run pnpm -r --filter './packages/*' --if-present ${script}`
 
 export const buildTasks = {
-  // `build`, `vsix`: the extension only, zsh-core as its upstream; zshref-web
+  // `build`, `vsix`: the extension only, zsh-lexicon as its upstream; zshref-web
   // needs its index first (`build:index`: model, minutes of CPU). The gates
   // recurse over every member.
   build: `${pkg("better-zsh")} build`,
@@ -22,7 +22,7 @@ export const buildTasks = {
   // the readiness helper shared upstream `dist/` is rebuilt once per member.
   // Docs site is a published artifact too: typedoc / api-extractor breaks
   // belong here, not in the container run.
-  "test:pack": `${recursive("test:pack")} && pnpm docs:zsh-core`,
+  "test:pack": `${recursive("test:pack")} && pnpm docs:zsh-lexicon`,
   cli: "make cli",
   "cli:debug": "make cli-debug",
   "cli:test": "make cli-test",

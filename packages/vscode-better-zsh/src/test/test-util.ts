@@ -5,7 +5,7 @@ import {
   docCategories,
   type Lexicon,
   normalizeOptName,
-} from "@carlwr/zsh-core"
+} from "@carlwr/zsh-lexicon"
 import { expect } from "vitest"
 import type * as vscode from "vscode"
 import { WORD } from "../document/words"

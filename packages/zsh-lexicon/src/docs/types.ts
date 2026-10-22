@@ -19,7 +19,7 @@ import type {
 /**
  * Phantom-branded identifier of a documented zsh element for category K.
  * Holding one is a *claim* that the string is a key in `lexicon[K]`. Minted
- * by zsh-core alone: `resolve` **checks** a raw string against the lexicon
+ * by zsh-lexicon alone: `resolve` **checks** a raw string against the lexicon
  * (lossy bits, e.g. option `NO_`-stripping, surface as the hit's
  * `feedback`), and every lexicon record carries its own as `id`. A test
  * fixture casts a string already in id form — `normalizeOptName(raw)` for

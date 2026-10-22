@@ -6,7 +6,7 @@
 
 import * as fcu from "@carlwr/fastcheck-utils"
 import { mapNonEmpty } from "@carlwr/typescript-extra"
-import { loadLexicon } from "@carlwr/zsh-core"
+import { loadLexicon } from "@carlwr/zsh-lexicon"
 import fc from "fast-check"
 import { describe, expect, it } from "vitest"
 import { LookupMapSchema, lookupIndex } from "../../../nlp/core/lookup-map"

@@ -1,6 +1,6 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
-import { copyRuntimeZshData } from "@carlwr/zsh-core/assets"
+import { copyRuntimeZshData } from "@carlwr/zsh-lexicon/assets"
 import { type OutAsset, outAsset } from "../manifest"
 import {
   type ChatInstructionsMeta,

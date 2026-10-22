@@ -15,7 +15,7 @@ The day `zshref` (this crate) leaves the `better-zsh` monorepo for its own repo,
 - `build.rs`: drop the `monorepo` arm — vendored becomes the only data source
   - `ZSHREF_DATA_SOURCE` loses its purpose: drop it, or keep `vendored` as its one value; setters: `rg ZSHREF_DATA_SOURCE` outside `*.md`
 - failure hints naming root make targets (`` rg -F '`make ' build.rs src scripts ``): follow the crate `Makefile`
-- `MIRROR-OF` markers name `packages/zsh-core/` paths: qualify them with the `better-zsh` repo
+- `MIRROR-OF` markers name `packages/zsh-lexicon/` paths: qualify them with the `better-zsh` repo
 - `project_url!` (`src/lib.rs`): the URL the binaries print; a repo name other than `zshref` changes it and every `rg -F github.com/carlwr/zshref` hit
 - `data/`: stays gitignored (generated, never committed); `make vendor` populates it
 
@@ -24,7 +24,7 @@ The day `zshref` (this crate) leaves the `better-zsh` monorepo for its own repo,
 - `Makefile`: crate-local, Rust-side targets only
   - `artifacts` goes: no TS build to drive
   - `vendor`: swap the local `pack:release` and its output dir for `gh release download <pinned tag>`; checksum check and unpack stay
-    - prerequisite: a zsh-core GitHub release carrying them — `zsh-core-v*` tags exist, releases do not yet
+    - prerequisite: a zsh-lexicon GitHub release carrying them — none yet
     - `.sha256` proves integrity only; provenance: `gh attestation verify` against `better-zsh`, whose release workflow attests the tarballs
     - CI jobs that vendor set `GH_TOKEN`: `gh` refuses to run unauthenticated in Actions
   - `cli-release-act` drives the root `scripts/test-integration-act`: copy it or drop the target
@@ -53,7 +53,7 @@ The day `zshref` (this crate) leaves the `better-zsh` monorepo for its own repo,
   - rebuild rules: `make vendor` instead of the artifact-building targets
   - drop the `zshref-rs/` path prefixes
 - `AGENTS.md`, `DATA-SYNC.md`, `DISTRIBUTION.md`: re-point monorepo references
-  - the repo-root `Makefile`, `pnpm cli*`, `packages/zsh-core/`
+  - the repo-root `Makefile`, `pnpm cli*`, `packages/zsh-lexicon/`
   - root docs that stay behind, among `rg -oI '\b[A-Z-]+\.md\b' zshref-rs/*.md zshref-rs/src zshref-rs/tests | sort -u`
   - `DISTRIBUTION.md`'s `gh attestation verify --repo`: releases cut before extraction stay attested to `better-zsh`
 - monorepo-root conventions: `AGENTS.md` adopts or drops each; their lint scripts stay behind
@@ -66,7 +66,7 @@ The day `zshref` (this crate) leaves the `better-zsh` monorepo for its own repo,
 
 ## Monorepo side
 
-`rg zshref-rs` outside `zshref-rs/` lists every site; each is re-judged, most go. The `MIRRORED-IN` markers in zsh-core re-point to the new repo.
+`rg zshref-rs` outside `zshref-rs/` lists every site; each is re-judged, most go. The `MIRRORED-IN` markers in zsh-lexicon re-point to the new repo.
 
 Missed by that query — the make-target wrappers:
 
@@ -80,6 +80,6 @@ Missed by that query — the make-target wrappers:
 - history: carried over (`git filter-repo --subdirectory-filter zshref-rs`; prune tags to `zshref-v*`) or a fresh start
 - names: `REPO-SHAPE.md`
 - tag prefix: keep `zshref-v*` or move to `v*` — both workflows, the `binstall` `pkg-url` and `DISTRIBUTION.md` follow
-- sync trigger: a manual PR bumping the pinned zsh-core tag, or a scheduled job on the Rust repo that polls for a new tag and opens the PR
-- one pinned data version, not a range; the crate releases when the pin bumps, not on zsh-core's cadence
+- sync trigger: a manual PR bumping the pinned zsh-lexicon tag, or a scheduled job on the Rust repo that polls for a new tag and opens the PR
+- one pinned data version, not a range; the crate releases when the pin bumps, not on zsh-lexicon's cadence
 - size: ~1.6 MB embedded is fine; past ~5 MB, compress at build time or split a data-only crate

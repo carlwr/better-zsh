@@ -1,4 +1,4 @@
-`zsh-core` includes vendored zsh documentation sources and generated data
+`zsh-lexicon` includes vendored zsh documentation sources and generated data
 derived from them.
 
 Primary notice location:

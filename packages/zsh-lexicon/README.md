@@ -1,4 +1,4 @@
-# @carlwr/zsh-core
+# @carlwr/zsh-lexicon
 
 > **Status: pre-release (alpha).** API surface is still free to move. Published on npm as part of the [`better-zsh`](https://github.com/carlwr/better-zsh) monorepo. First non-alpha release has not yet been cut.
 
@@ -18,23 +18,23 @@ API reference: <https://carlwr.github.io/better-zsh/>, built from the latest rel
 ## Install
 
 ```sh
-npm install @carlwr/zsh-core
+npm install @carlwr/zsh-lexicon
 # or
-pnpm add @carlwr/zsh-core
+pnpm add @carlwr/zsh-lexicon
 ```
 
 Node ≥ 22; ESM (`import`) and CommonJS (`require`), typed for both.
 
 Node support: every Node.js release line that hasn't reached end of life. Support for a release line is dropped in a minor release once it reaches end of life.
 
-Deno: `deno add npm:@carlwr/zsh-core`; run with `--allow-read` — the vendored data is read at runtime.
+Deno: `deno add npm:@carlwr/zsh-lexicon`; run with `--allow-read` — the vendored data is read at runtime.
 
 ## Minimal usage
 
 ```ts
-import { loadLexicon } from "@carlwr/zsh-core"
-import { resolve } from "@carlwr/zsh-core/resolver"
-import { renderRecord } from "@carlwr/zsh-core/render"
+import { loadLexicon } from "@carlwr/zsh-lexicon"
+import { resolve } from "@carlwr/zsh-lexicon/resolver"
+import { renderRecord } from "@carlwr/zsh-lexicon/render"
 
 const lexicon = loadLexicon()
 const hit = resolve(lexicon, "option", "NO_AUTO_CD")
@@ -62,7 +62,7 @@ Loading, cold (fresh process):
 
 | step | time |
 |---|---|
-| import `@carlwr/zsh-core` | ~5 ms |
+| import `@carlwr/zsh-lexicon` | ~5 ms |
 | `loadLexicon()` | ~0.1 ms (locates the data; parses nothing) |
 | first access, one category (`option`, 197 records) | ~14 ms |
 | first access, one category (`builtin`, 131 records) | ~35 ms |

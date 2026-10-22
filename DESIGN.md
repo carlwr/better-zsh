@@ -16,14 +16,14 @@ Layered docs:
 
 ---
 
-## What is `zsh-core`?
+## What is `zsh-lexicon`?
 
 A standalone package of structured zsh knowledge:
 
 - parses vendored Yodl (`.yo`) into typed records
 - renders markdown
 
-Surface and posture: `packages/zsh-core/README.md`. The static-scope guarantee is enforced — and described — by `packages/zsh-core/src/test/static-scope.test.ts`.
+Surface and posture: `packages/zsh-lexicon/README.md`. The static-scope guarantee is enforced — and described — by `packages/zsh-lexicon/src/test/static-scope.test.ts`.
 
 Not a grammar, not a tokenizer. Zsh is not generally parseable without running zsh; we take bounded, lexicon-aware wins that do not require shell execution.
 
@@ -35,7 +35,7 @@ The user-code analyzer (domain B below) lives in the extension. Lexicon-independ
 
 Every change should preserve this decomposition. It shows up in:
 
-- directory layout (zsh-core `src/docs/` and `src/render/`; the extension's `src/analysis/`)
+- directory layout (zsh-lexicon `src/docs/` and `src/render/`; the extension's `src/analysis/`)
 - types
 - naming
 
@@ -55,7 +55,7 @@ Coarse, potentially overlapping annotations about user zsh code: the `Fact` unio
 
 The term "fact" is load-bearing: facts are what the analyzer *asserts*, not a complete description. Analysis is best-effort and partial; no claim of exhaustiveness.
 
-Knows nothing about doc records or rendering; imports nothing from zsh-core (the extension's seam test). Payload rule: `PRINCIPLES.md` §"Facts and docs: asymmetric, not parallel".
+Knows nothing about doc records or rendering; imports nothing from zsh-lexicon (the extension's seam test). Payload rule: `PRINCIPLES.md` §"Facts and docs: asymmetric, not parallel".
 
 ### C. Markdown Rendering (`src/render/`)
 
@@ -84,7 +84,7 @@ Dispatch stays in consumer code — partial and context-dependent. Example: a `c
 - a user function
 - nothing
 
-**zsh-core does not wire A+B→C internally.** No "candidate in, markdown out" convenience API; consumers compose `resolve()` + `renderRecord()`.
+**zsh-lexicon does not wire A+B→C internally.** No "candidate in, markdown out" convenience API; consumers compose `resolve()` + `renderRecord()`.
 
 ---
 
@@ -95,7 +95,7 @@ Two phases:
 - **raw** — user-code text; untyped `string`
 - **`Documented<K>`** — lexicon-confirmed identity
 
-`resolve` is the bridge: raw in, checked identity out — the one public minting path; the trusted constructor (`mkDocumented`, `brands.ts`) is internal to lexicon construction. Brand contract: JSDoc on `Documented<K>` (`zsh-core`).
+`resolve` is the bridge: raw in, checked identity out — the one public minting path; the trusted constructor (`mkDocumented`, `brands.ts`) is internal to lexicon construction. Brand contract: JSDoc on `Documented<K>` (`zsh-lexicon`).
 
 One brand for every category — none is a literal union. The analyzer's closed precommand list (`PrecmdName`, extension `src/analysis/`) is its own vocabulary — a mirror, pinned equal to the lexicon by a lock-in test.
 
@@ -194,7 +194,7 @@ Per-category resolver table:
 Authoritative homes:
 
 - contract + identity/feedback split — PRINCIPLES.md
-- JSDoc on `ResolverFeedback` / `ResolvedHit`, zsh-core `src/docs/resolver.ts`:
+- JSDoc on `ResolverFeedback` / `ResolvedHit`, zsh-lexicon `src/docs/resolver.ts`:
   - kinds
   - where feedback rides (the `resolve` hit)
   - the schema: generated from the type; `index.json` carries the fixture schema's def (`JsonIndex` JSDoc)
@@ -206,11 +206,11 @@ Authoritative homes:
 
 One runtime list yields the type, iteration and every category-keyed mapped type, so completeness is a compile error rather than a test. Mechanics, and the guard for a runtime tuple whose order matters: `taxonomy.ts`.
 
-### Category-indexed artifacts belong in zsh-core
+### Category-indexed artifacts belong in zsh-lexicon
 
-Any "one entry per `DocCategory`" table lives in zsh-core behind a structural completeness guard; consumers import it. Hand-maintained parallel lists drift silently when categories are added — neither tests nor types flag it. `DocCategory`-keyed tables turn that class of drift into a compile error.
+Any "one entry per `DocCategory`" table lives in zsh-lexicon behind a structural completeness guard; consumers import it. Hand-maintained parallel lists drift silently when categories are added — neither tests nor types flag it. `DocCategory`-keyed tables turn that class of drift into a compile error.
 
-Category-level metadata — labels, orderings, notes needed to interpret a category's records — is zsh-core's to offer on both surfaces (TS root, `index.json`); showing it is the consumer's call.
+Category-level metadata — labels, orderings, notes needed to interpret a category's records — is zsh-lexicon's to offer on both surfaces (TS root, `index.json`); showing it is the consumer's call.
 
 ---
 
@@ -218,9 +218,9 @@ Category-level metadata — labels, orderings, notes needed to interpret a categ
 
 ### Identity per record, display separately
 
-Every record carries `category`, `id` and `display` as fields (`DocRecordBase<K>`; `PRINCIPLES.md` §"Category types"), not behind accessors. Where `display` diverges from `id`: its JSDoc in `zsh-core`; the default is the id, the divergent extractors pass the manual's form explicitly (`identity` in `brands.ts`).
+Every record carries `category`, `id` and `display` as fields (`DocRecordBase<K>`; `PRINCIPLES.md` §"Category types"), not behind accessors. Where `display` diverges from `id`: its JSDoc in `zsh-lexicon`; the default is the id, the divergent extractors pass the manual's form explicitly (`identity` in `brands.ts`).
 
-Ids are **shell-safe slugs**; `display` and `sig` keep the human-readable form (spaces, placeholders). Patterns: `brands.ts`, pinned in the released schema; enforced by `packages/zsh-core/src/test/lexicon-ascii.test.ts`.
+Ids are **shell-safe slugs**; `display` and `sig` keep the human-readable form (spaces, placeholders). Patterns: `brands.ts`, pinned in the released schema; enforced by `packages/zsh-lexicon/src/test/lexicon-ascii.test.ts`.
 
 ### Redirection: shell-safe slug identity, sig surface
 
@@ -239,15 +239,15 @@ Ids are **shell-safe slugs**; `display` and `sig` keep the human-readable form (
 
 ### Parameter-expansion identity and shape
 
-Identity is the full sig (e.g. `${name:-word}` vs `${name-word}` as distinct records) — sigs are already shell-safe slugs (printable ASCII, no whitespace). Record details: `ParamExpnDoc` / `ParamExpnSubKind` JSDoc in `zsh-core`.
+Identity is the full sig (e.g. `${name:-word}` vs `${name-word}` as distinct records) — sigs are already shell-safe slugs (printable ASCII, no whitespace). Record details: `ParamExpnDoc` / `ParamExpnSubKind` JSDoc in `zsh-lexicon`.
 
-- **Trivial resolver for totality** — sigs are literal templates; the resolver entry exists only to keep completeness guards closed. `param_expn` entry comment in `zsh-core/resolver`.
+- **Trivial resolver for totality** — sigs are literal templates; the resolver entry exists only to keep completeness guards closed. `param_expn` entry comment in `zsh-lexicon/resolver`.
 - **Placeholders via an exact-string table** — one source of truth for `subKind` and operand-slot names; bad renames fail at extraction, not as garbage markdown.
 - **No raw-text resolver** — considered and dropped (testing cost, no practical lookup win).
 
 ### Complex commands + alternate forms
 
-`ComplexCommandDoc` models `grammar.yo` "Complex Commands" plus "Alternate Forms". Record shape and the `reserved_word` / `classifyOrder` overlap: `ComplexCommandDoc` / `AlternateForm` JSDoc in `zsh-core`.
+`ComplexCommandDoc` models `grammar.yo` "Complex Commands" plus "Alternate Forms". Record shape and the `reserved_word` / `classifyOrder` overlap: `ComplexCommandDoc` / `AlternateForm` JSDoc in `zsh-lexicon`.
 
 - **Head-keyword identity** — closed key set; `for` and arithmetic `for ((…))` stay separate records to preserve structure.
 - **`alternateForms: readonly AlternateForm[]`** — variable-length composite data on one record (precedent: `OptionDoc.flags`, `ParamExpnDoc.groupSigs`).
@@ -260,7 +260,7 @@ Three sibling categories under `glob_*` — shared prefix is labelling only:
 - `glob_flag` — in-pattern `(#…)`; needs `EXTENDED_GLOB`
 - `glob_qualifier` — pattern-trailing parenthesised filters; letter and multi-char keys
 
-Per-type details and the three-way distinction — JSDoc in `zsh-core`:
+Per-type details and the three-way distinction — JSDoc in `zsh-lexicon`:
 
 - `GlobOpDoc`
 - `GlobFlagDoc`
@@ -281,7 +281,7 @@ Per-type details and the three-way distinction — JSDoc in `zsh-core`:
   - `list`
   - syntactic checks
 - **Supplementary prose** — `desc` may appear except on `complex_command`-owned heads (which deliberately omit it)
-  - epistemic-trap rationale + `SyntaxDocBase` non-extension: `ReservedWordDoc` JSDoc in `zsh-core`
+  - epistemic-trap rationale + `SyntaxDocBase` non-extension: `ReservedWordDoc` JSDoc in `zsh-lexicon`
 - **Lexicon identity** — every record is `Documented<"reserved_word">`, carrying `category` and `id` like other categories.
 
 Wiring:
@@ -303,16 +303,16 @@ Wiring:
 
 ### ZLE widget: default bindings are typed, not a header signature
 
-The manual's header groups (`(^B ESC-[D) (unbound) (unbound)`) are per-keymap default bindings, not a usage signature — lifted into `defaultBindings`; the record carries no `sig`. Shape and edge cases (`Text Objects`, `self-insert` prose): `ZleWidgetDoc` / `ZleDefaultBinding` JSDoc in `zsh-core`.
+The manual's header groups (`(^B ESC-[D) (unbound) (unbound)`) are per-keymap default bindings, not a usage signature — lifted into `defaultBindings`; the record carries no `sig`. Shape and edge cases (`Text Objects`, `self-insert` prose): `ZleWidgetDoc` / `ZleDefaultBinding` JSDoc in `zsh-lexicon`.
 
 - **Keys stay in the manual's notation** (`^B`, `ESC-[D`) — lossless; `bindkey` syntax is a consumer or renderer concern.
 - **Rendered as one labeled paragraph** — a `bindkey`-form head was rejected: it needs notation translation plus shell quoting, and ranges (`digit-argument`) and prose (`self-insert`) have no `bindkey` form.
 
 ### `subKind` is structural per category
 
-A category's record type declares `subKind` with a closed literal union, or none (`DocRecordBase` JSDoc in `zsh-core`); like `category`, it is read as a field — under a generic `K`, a `"subKind" in rec` check narrows. Presence and vocabulary follow from the type: the released schema requires the field with the union's enum, or forbids it, per category — no lexicon scan, no post-processing. Same call as for `id` (PRINCIPLES.md §"The structural identity invariant"); the dropped shape: a per-category name behind an accessor table plus a generated JSON copy.
+A category's record type declares `subKind` with a closed literal union, or none (`DocRecordBase` JSDoc in `zsh-lexicon`); like `category`, it is read as a field — under a generic `K`, a `"subKind" in rec` check narrows. Presence and vocabulary follow from the type: the released schema requires the field with the union's enum, or forbids it, per category — no lexicon scan, no post-processing. Same call as for `id` (PRINCIPLES.md §"The structural identity invariant"); the dropped shape: a per-category name behind an accessor table plus a generated JSON copy.
 
-Every declared literal occurs in the lexicon: `packages/zsh-core/src/test/json-schema.test.ts`.
+Every declared literal occurs in the lexicon: `packages/zsh-lexicon/src/test/json-schema.test.ts`.
 
 Manual provenance is not a record field: where the heading varies within a category it is the record's `subKind` (`option`, `prompt_escape`, `zle_widget`); elsewhere it is a category fact, carried by the label. The dropped shape: a `section: string` on most records — constant per category or a function of `subKind`, read only by the option renderer as a `_Section:_` body line.
 
@@ -327,7 +327,7 @@ Vendored `.yo` is consumed three ways:
 - **Pre-parsed JSON** — same records; markdown bodies pre-rendered at build time
   - one record file keyed by category beside a versioned index (`JsonIndex` JSDoc); `dataHash` is the record file's SHA-256
   - distribution: `PACKAGING.md`
-  - _schema:_ one bundle, generated from the TS types plus the lexicon (`packages/zsh-core/scripts/schemas.ts`, written by the package build)
+  - _schema:_ one bundle, generated from the TS types plus the lexicon (`packages/zsh-lexicon/scripts/schemas.ts`, written by the package build)
     - record and id `$defs` named by category (`recordsSchemaDefs` in `json-artifacts.ts`); auxiliary ones by TS type (`AlternateForm`, …) — renaming one is a schema change
     - draft 2020-12, as the crate's tool schemas
     - precision posture: PRINCIPLES.md §"Schema precision when schemas are co-released"
@@ -335,7 +335,7 @@ Vendored `.yo` is consumed three ways:
 
 Per-category renderers are internal; public entry is `renderRecord`.
 
-The JSON stays in zsh-core — a projection of its types, released on its tag at its version:
+The JSON stays in zsh-lexicon — a projection of its types, released on its tag at its version:
 
 - a data-only package: a second release workflow and tag series, no consumer-visible gain
 - consumers pin the tag; moving the JSON later breaks their download URLs
@@ -350,7 +350,7 @@ The TS API is the root; the JSON is a derived view of it, for consumers that can
 
 Parser and renderer are layered: the parser may capture structure the renderer chooses to flatten or compose. Rendered markdown is the byte-equal contract surface; record-shape changes (new typed fields) stay below it until they cross into the wire schema. Records carry prose twice — typed fields for routing, `_mdBody` for reading — roughly a third to a half of the payload; accepted. Cross-cutting "records are self-contained" framing: PRINCIPLES.md.
 
-### Why zsh-core is npm-only
+### Why zsh-lexicon is npm-only
 
 JSR modules load from URLs, not files, so the runtime lookup of the vendored `.yo` would fail. Fixes considered:
 
@@ -371,29 +371,29 @@ Revisit once Node's text imports are stable.
 The Rust crate re-implements one behaviour — the resolvers; the rest it consumes as baked JSON.
 
 - Markers (`// MIRRORED-IN:` / `// MIRROR-OF:`) on the mirrored pairs (`rg 'MIRRORED-IN|MIRROR-OF'`): orientation, no mechanical check.
-- Resolver conformance: the fixture zsh-core releases beside the lexicon JSON (`packages/zsh-core/scripts/resolver-fixture.ts`), replayed in-crate by `zshref-rs/src/resolver.rs`.
+- Resolver conformance: the fixture zsh-lexicon releases beside the lexicon JSON (`packages/zsh-lexicon/scripts/resolver-fixture.ts`), replayed in-crate by `zshref-rs/src/resolver.rs`.
 
 The mirror is accepted because it is bounded — it changes only with categories or normalization rules, and drifts visibly against the fixture (principle: `PRINCIPLES.md` §"Cross-project structure"). Rejected ways to remove it:
 
 - resolvers as data: a table or pattern format expressive enough for the template categories is a custom DSL, and specifying, testing and tooling one costs more than a bounded dual implementation
-- zsh-core in Rust: Yodl parsing and the data model are substantial, the extension needs TS, the package's audience (IDE- and agent-adjacent tooling) is TS-centric, and the deliverable to Rust is already data
+- zsh-lexicon in Rust: Yodl parsing and the data model are substantial, the extension needs TS, the package's audience (IDE- and agent-adjacent tooling) is TS-centric, and the deliverable to Rust is already data
 
 ## `resolve`: direct ∥ resolver, direct preferred
 
-`resolve` (`zsh-core/resolver`) is the one entry: direct lexicon-key lookup, then the category's resolver, one hit carrying the record — its identity with it — and feedback. Its JSDoc holds the mechanism and why direct precedence is load-bearing for template-key categories (`!n` vs `!42 → !n`). **Do not** run the paths separately for the same query; **do not** re-implement the rule in consumers.
+`resolve` (`zsh-lexicon/resolver`) is the one entry: direct lexicon-key lookup, then the category's resolver, one hit carrying the record — its identity with it — and feedback. Its JSDoc holds the mechanism and why direct precedence is load-bearing for template-key categories (`!n` vs `!42 → !n`). **Do not** run the paths separately for the same query; **do not** re-implement the rule in consumers.
 
 ## The category walk
 
-`resolveAll` (`zsh-core/resolver`) resolves a token in every category, `classifyOrder` first to last, keeping the hits the categories admit; tight identity resolvers thereby beat `option`'s `no_` stripping and `redirection`'s loose matching (`nocorrect` must not shadow-resolve as a negated option).
+`resolveAll` (`zsh-lexicon/resolver`) resolves a token in every category, `classifyOrder` first to last, keeping the hits the categories admit; tight identity resolvers thereby beat `option`'s `no_` stripping and `redirection`'s loose matching (`nocorrect` must not shadow-resolve as a negated option).
 
 - order, per-entry rationale: inline comments on `classifyOrderTuple`, `taxonomy.ts`
-- admission — a category declining a scoped hit that is no token on its own (history word designators, modifiers): `walkAdmits`, zsh-core `src/docs/resolver.ts`
+- admission — a category declining a scoped hit that is no token on its own (history word designators, modifiers): `walkAdmits`, zsh-lexicon `src/docs/resolver.ts`
 
-Owned by zsh-core, not the tools: order and admission are lexicon properties (PRINCIPLES.md §"Push decisions downstream"); a walk re-derived per consumer had drifted — one applied the history rule, one did not. Callers: `zsh_docs` with `category` omitted, zshref-web's lookup canonicalizer. Rust reads order from `index.json`, mirrors admission as code; the fixture's `walk` section pins both.
+Owned by zsh-lexicon, not the tools: order and admission are lexicon properties (PRINCIPLES.md §"Push decisions downstream"); a walk re-derived per consumer had drifted — one applied the history rule, one did not. Callers: `zsh_docs` with `category` omitted, zshref-web's lookup canonicalizer. Rust reads order from `index.json`, mirrors admission as code; the fixture's `walk` section pins both.
 
 ## Vendored `.yo` files are domain invariants
 
-Vendored Yodl changes only on re-vendor / zsh upgrade; extending what we vendor is a **static** zsh-core change and may require type updates. **Treat properties of vendored `.yo` as domain invariants** when reasoning about extractors and tests.
+Vendored Yodl changes only on re-vendor / zsh upgrade; extending what we vendor is a **static** zsh-lexicon change and may require type updates. **Treat properties of vendored `.yo` as domain invariants** when reasoning about extractors and tests.
 
 ---
 

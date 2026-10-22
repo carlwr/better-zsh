@@ -1,4 +1,4 @@
-// Pinned fast-check seed, the same as zsh-core's test setup (TESTING.md: a
+// Pinned fast-check seed, the same as zsh-lexicon's test setup (TESTING.md: a
 // fixed checked-in seed), so property tests replay identically
 // run to run. Not a test file: `_`-prefixed and outside the test glob.
 

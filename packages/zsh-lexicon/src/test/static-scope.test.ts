@@ -7,11 +7,11 @@ import { describe, expect, test } from "vitest"
 import { publicEntries } from "../../scripts/pkg-entries.ts"
 
 /**
- * Structural scope fence for zsh-core's public surface.
+ * Structural scope fence for zsh-lexicon's public surface.
  *
  * Every non-glob `package.json` `exports` subpath is advertised as
  * execution-free, network-free, and env-agnostic: it parses bundled Yodl
- * sources and renders markdown. zsh-core never executes a shell — hosts that
+ * sources and renders markdown. zsh-lexicon never executes a shell — hosts that
  * run a zsh binary own that code (see the extension's `zsh/` modules); tests
  * are exempt, the fence covers the published surface only.
  *

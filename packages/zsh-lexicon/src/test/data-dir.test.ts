@@ -17,7 +17,7 @@ describe("resolveZshDataDir", () => {
     ["packaged", join("data", "zsh-docs")],
     ["bundled runtime", runtimeZshDataDir],
   ])("resolves %s data dir", (_label, sub) => {
-    withTmpDir("better-zsh-zsh-core-", dir => {
+    withTmpDir("zsh-lexicon-", dir => {
       const dataDir = join(dir, sub)
       mkdirSync(dataDir, { recursive: true })
       expect(resolveZshDataDir(dir)).toBe(dataDir)
@@ -29,7 +29,7 @@ describe("resolveZshDataDir", () => {
   test("defaults to the module's directory under `node -e`", () => {
     const here = dirname(fileURLToPath(import.meta.url))
     const module = pathToFileURL(join(here, "..", "assets", "data-dir.ts"))
-    withTmpDir("better-zsh-zsh-core-", dir => {
+    withTmpDir("zsh-lexicon-", dir => {
       const out = execFileSync(
         process.execPath,
         [
@@ -45,7 +45,7 @@ describe("resolveZshDataDir", () => {
 
 describe("copyZshDataFrom", () => {
   test("creates runtimeZshDataPaths under outDir, where the lookup finds them", () => {
-    withTmpDir("better-zsh-zsh-core-", dir => {
+    withTmpDir("zsh-lexicon-", dir => {
       const srcBase = join(dir, "dist")
       const srcData = join(srcBase, "data", "zsh-docs")
       const outDir = join(dir, "out")

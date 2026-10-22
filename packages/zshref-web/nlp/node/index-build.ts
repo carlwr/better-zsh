@@ -3,7 +3,7 @@
 // from, read and write the two artifact files.
 
 import { isDeepStrictEqual } from "node:util"
-import type { Lexicon } from "@carlwr/zsh-core"
+import type { Lexicon } from "@carlwr/zsh-lexicon"
 
 import type { Rules } from "../core/rules"
 import { INDEX_VERSION, loadSearchIndex } from "../core/search-index"

@@ -45,21 +45,21 @@ Pushed tags and registry alphas exist to exercise CI and release workflows, not 
 
 ## Project-specific code rules
 
-### zsh-core package imports
+### zsh-lexicon package imports
 
-The root of `@carlwr/zsh-core` is the lexicon and its data model, lexicon-independent helpers included (`normalizeOptName`); import operations on the lexicon from their explicit subpaths so dependency arrows stay visible and rollups stay legible. Subpath inventory: `packages/zsh-core/AGENTS.md`.
+The root of `@carlwr/zsh-lexicon` is the lexicon and its data model, lexicon-independent helpers included (`normalizeOptName`); import operations on the lexicon from their explicit subpaths so dependency arrows stay visible and rollups stay legible. Subpath inventory: `packages/zsh-lexicon/AGENTS.md`.
 
 ### Never enumerate or count `DocCategory`
 
-Hand-written category lists drift. Same posture for other closed zsh-core unions (e.g. `ResolverFeedback` kinds).
+Hand-written category lists drift. Same posture for other closed zsh-lexicon unions (e.g. `ResolverFeedback` kinds).
 
 - JSDoc, comments, docs: examples, not exhaustive lists; no hard-coded counts.
-- Runtime strings and JSON Schema `enum` values interpolate from canonical zsh-core exports — in the Rust crate, from the embedded `index.json` and lexicon — never hand-typed.
-- Category-indexed tables: `DESIGN.md` §"Category-indexed artifacts belong in zsh-core".
+- Runtime strings and JSON Schema `enum` values interpolate from canonical zsh-lexicon exports — in the Rust crate, from the embedded `index.json` and lexicon — never hand-typed.
+- Category-indexed tables: `DESIGN.md` §"Category-indexed artifacts belong in zsh-lexicon".
 
 ### Rendered reference prose
 
-Rendered reference text is shared by extension hovers, tools, and the CLI. Treat wording as user-facing zsh documentation, not extension-local UI copy. Conventions and dump-review workflow: `packages/zsh-core/AGENTS.md`.
+Rendered reference text is shared by extension hovers, tools, and the CLI. Treat wording as user-facing zsh documentation, not extension-local UI copy. Conventions and dump-review workflow: `packages/zsh-lexicon/AGENTS.md`.
 
 ### Dependency placement
 

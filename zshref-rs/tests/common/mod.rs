@@ -154,7 +154,7 @@ pub fn assert_envelope(v: &Value) -> (&Vec<Value>, u64, u64) {
 }
 
 /// Category list discovered from the running binary's own `info` output —
-/// the canonical taxonomy (owned by zsh-core / baked into the binary).
+/// the canonical taxonomy (owned by zsh-lexicon / baked into the binary).
 /// Using this as the source of truth for test inputs means new categories
 /// are automatically covered without hand-typed constants.
 pub fn doc_categories() -> &'static [String] {

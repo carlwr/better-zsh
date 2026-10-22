@@ -10,7 +10,7 @@
 
 import * as fcu from "@carlwr/fastcheck-utils"
 import { isSingle, memoized } from "@carlwr/typescript-extra"
-import { docCategories, loadLexicon } from "@carlwr/zsh-core"
+import { docCategories, loadLexicon } from "@carlwr/zsh-lexicon"
 import fc from "fast-check"
 import { describe, expect, it } from "vitest"
 import { syntheticVec } from "../../../nlp/core/vec"

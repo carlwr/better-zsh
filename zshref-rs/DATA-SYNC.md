@@ -13,7 +13,7 @@ The Rust binaries embed the lexicon as JSON via `include_bytes!`. Those JSONs ar
 
 A second generated file rides along: the resolver conformance fixture. Test input, not embedded — `cargo test` reads it from wherever the lexicon JSONs come from, and it ships in the `.crate` because the tests do.
 
-zsh-core releases both as assets on its release tag (`packages/zsh-core/scripts/pack-release.ts`). Vendoring is those two assets and nothing else: packed locally, `.sha256`-checked, unpacked into one `data/` tree.
+zsh-lexicon releases both as assets on its release tag (`packages/zsh-lexicon/scripts/pack-release.ts`). Vendoring is those two assets and nothing else: packed locally, `.sha256`-checked, unpacked into one `data/` tree.
 
 Two lifecycles to satisfy:
 

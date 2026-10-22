@@ -1,6 +1,6 @@
 # AGENTS.md — `zshref-web`
 
-Static SPA: NLP search over zsh-core records — plus the Node-side NLP toolchain that builds its artifacts and evaluates its ranking. Workspace member, private, not published.
+Static SPA: NLP search over zsh-lexicon records — plus the Node-side NLP toolchain that builds its artifacts and evaluates its ranking. Workspace member, private, not published.
 
 ## Stack
 
@@ -43,11 +43,11 @@ The seams are a static import fence, not package boundaries — `tests/import-fe
 
 All pinned:
 
-- **`@carlwr/zsh-core`** at build time — `workspace:*`; lexicon, taxonomy, resolver
+- **`@carlwr/zsh-lexicon`** at build time — `workspace:*`; lexicon, taxonomy, resolver
   - through its declared export subpaths only, never a file inside the package (`tests/import-fence.test.ts`)
   - its release JSON feeds the Rust crate, not this package
   - every script reading it carries a `pre*` hook -> `upstream-ready.mjs ensure` (`PACKAGING.md`; `BZ_SKIP_UPSTREAM`: root `AGENTS.md`)
-  - the browser bundle is zsh-core-free: the index carries each record's markdown body
+  - the browser bundle is zsh-lexicon-free: the index carries each record's markdown body
 - **Hugging Face Hub** at runtime — the browser embedder downloads the model on first search
   - model id and revision (a commit SHA): `MODEL_ID`, `MODEL_REVISION` in `nlp/core/types.ts`; `scripts/fetch-model` repeats both, drift-checked by a test
   - the browser pipeline loads `MODEL_REVISION`
@@ -123,10 +123,10 @@ One route, `src/routes/+page.svelte`: the search, or the record its URL links to
 - record link: `?r=<category>/<id>` (`recordHref`, `recordParam` in `src/lib/view.ts`) — relative, so it holds under any host and base path
   - both parts `encodeURIComponent`-encoded: ids are zsh syntax (`/`, `%`, `+`, `&`, `#`)
   - not path routes: they need a host fallback and break relative asset paths; not hash routing: SvelteKit decodes the hash repeatedly, breaking ids with `%`, `/`, `?` or `#`
-- neither link part is a declared-stable contract: a zsh-core change to either breaks deployed links, which render not-found
+- neither link part is a declared-stable contract: a zsh-lexicon change to either breaks deployed links, which render not-found
   - a category rename surfaces as `categories.json` drift
   - an id change surfaces only as lookup-golden drift (`UPDATE_LOOKUP_*`), for the ids those pin
-  - not a link-only name per category: a second name for each, in a category-indexed table zsh-core would own (root `DESIGN.md`); guards category renames only
+  - not a link-only name per category: a second name for each, in a category-indexed table zsh-lexicon would own (root `DESIGN.md`); guards category renames only
   - forwarding: deferred to the first breaking change after deploy
     - try first: on not-found, match the id alone across categories — covers category renames without an old-to-new table
   - a deployed-ids guard: deferred to the deploy
@@ -146,7 +146,7 @@ One route, `src/routes/+page.svelte`: the search, or the record its URL links to
 
 - static SPA, no server; deploying is a follow-up — artifacts build locally and in the CI `nlp` job, nothing publishes them
 - GitHub Pages first, Cloudflare Pages the alternative
-- Pages hosts one site per repo, and `docs-zsh-core.yml` already claims it: the SPA takes the site root, the zsh-core docs move under `/zsh-core-docs/`, one deployment carries both
+- Pages hosts one site per repo, and `docs-zsh-lexicon.yml` already claims it: the SPA takes the site root, the zsh-lexicon docs move under `/zsh-lexicon-docs/`, one deployment carries both
 - the build is base-path-agnostic: serve it under any prefix, no `kit.paths.base`, fallback or `404.html`; the host must redirect `/prefix` to `/prefix/` (relative asset paths)
 - bundled packages' licences: Vite's `build.license` (`vite.config.ts`)
   - what it misses, by hand in `THIRD_PARTY_NOTICES.md`:

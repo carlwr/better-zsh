@@ -64,7 +64,7 @@ const SPECIFIER_RES = [
   /^\s*import\s+['"]([^'"]+)['"]/gm,
 ]
 
-const UPSTREAM = "@carlwr/zsh-core"
+const UPSTREAM = "@carlwr/zsh-lexicon"
 
 const FORBIDDEN_PACKAGES = [UPSTREAM, "onnxruntime-node", "yaml", "tsx"]
 const NODE_BUILTINS: ReadonlySet<string> = new Set(builtinModules)
@@ -191,11 +191,15 @@ describe("import fence", () => {
     ["src/lib/x.ts", "node:fs", "Node builtin"],
     ["src/lib/x.ts", "fs/promises", "Node builtin"],
     ["src/lib/x.ts", "path", "Node builtin"],
-    ["src/lib/x.ts", "@carlwr/zsh-core", "Node-side package @carlwr/zsh-core"],
     [
       "src/lib/x.ts",
-      "@carlwr/zsh-core/resolver",
-      "Node-side package @carlwr/zsh-core",
+      "@carlwr/zsh-lexicon",
+      "Node-side package @carlwr/zsh-lexicon",
+    ],
+    [
+      "src/lib/x.ts",
+      "@carlwr/zsh-lexicon/resolver",
+      "Node-side package @carlwr/zsh-lexicon",
     ],
     ["src/lib/x.ts", "onnxruntime-node", "Node-side package onnxruntime-node"],
     ["src/lib/x.ts", "../../nlp/node/paths", "leaves src"],

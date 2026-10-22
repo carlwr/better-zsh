@@ -20,8 +20,8 @@ const npm = process.platform === "win32" ? "npm.cmd" : "npm"
 const here = dirname(fileURLToPath(import.meta.url))
 const pkgDir = join(here, "..")
 
-const packDir = mkdtempSync(join(tmpdir(), "better-zsh-zsh-core-pack-"))
-const instDir = mkdtempSync(join(tmpdir(), "better-zsh-zsh-core-inst-"))
+const packDir = mkdtempSync(join(tmpdir(), "zsh-lexicon-pack-"))
+const instDir = mkdtempSync(join(tmpdir(), "zsh-lexicon-inst-"))
 
 try {
   const out = execFileSync(
@@ -37,10 +37,10 @@ try {
     join(instDir, "package.json"),
     `${JSON.stringify(
       {
-        name: "zsh-core-install-smoke",
+        name: "zsh-lexicon-install-smoke",
         version: "0.0.0",
         private: true,
-        dependencies: { "@carlwr/zsh-core": `file:${tgz}` },
+        dependencies: { "@carlwr/zsh-lexicon": `file:${tgz}` },
       },
       null,
       2,
@@ -55,11 +55,11 @@ try {
 
   // Representative subpaths, not every one.
   const driver = `
-import { loadLexicon } from "@carlwr/zsh-core"
-import { runtimeZshDataPaths } from "@carlwr/zsh-core/assets"
-import { ZSH_UPSTREAM } from "@carlwr/zsh-core/meta"
-import { renderRecord } from "@carlwr/zsh-core/render"
-import { resolve } from "@carlwr/zsh-core/resolver"
+import { loadLexicon } from "@carlwr/zsh-lexicon"
+import { runtimeZshDataPaths } from "@carlwr/zsh-lexicon/assets"
+import { ZSH_UPSTREAM } from "@carlwr/zsh-lexicon/meta"
+import { renderRecord } from "@carlwr/zsh-lexicon/render"
+import { resolve } from "@carlwr/zsh-lexicon/resolver"
 
 const lexicon = loadLexicon()
 // Categories parse on first access: touch each so every vendored file is
@@ -97,8 +97,8 @@ process.stdout.write("ok")
 
   // The CJS build, through `require`: the same loader from the other format.
   const cjsDriver = `
-const { loadLexicon } = require("@carlwr/zsh-core")
-const { resolve } = require("@carlwr/zsh-core/resolver")
+const { loadLexicon } = require("@carlwr/zsh-lexicon")
+const { resolve } = require("@carlwr/zsh-lexicon/resolver")
 const hit = resolve(loadLexicon(), "option", "AUTO_CD")
 if (hit?.record.id !== "autocd") throw new Error("CJS resolve failed")
 process.stdout.write("ok")
@@ -113,7 +113,7 @@ process.stdout.write("ok")
     throw new Error(`CJS driver output mismatch: got "${cjsResult}"`)
   }
 
-  process.stdout.write("zsh-core install-smoke: OK\n")
+  process.stdout.write("zsh-lexicon install-smoke: OK\n")
 } finally {
   rmSync(packDir, { recursive: true, force: true })
   rmSync(instDir, { recursive: true, force: true })

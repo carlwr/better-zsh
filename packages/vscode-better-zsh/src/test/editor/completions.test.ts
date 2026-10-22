@@ -1,6 +1,6 @@
 import { nonEmpty } from "@carlwr/typescript-extra"
-import type { Lexicon } from "@carlwr/zsh-core"
-import { categoryFooter, renderRecord } from "@carlwr/zsh-core/render"
+import type { Lexicon } from "@carlwr/zsh-lexicon"
+import { categoryFooter, renderRecord } from "@carlwr/zsh-lexicon/render"
 import { describe, expect, test } from "vitest"
 import * as vscode from "vscode"
 import { CompletionProvider } from "../../editor/completions"
@@ -95,7 +95,7 @@ describe("CompletionProvider", () => {
   test("setopt position: option forms, incomplete list, filtered on the typed text", async () => {
     const { isIncomplete, items } = await complete("setopt no_au", 0, 12)
     expect(isIncomplete).toBe(true)
-    // Documentation: zsh-core's titled body, then the category line the
+    // Documentation: zsh-lexicon's titled body, then the category line the
     // editor appends (`record-markdown.ts`).
     const doc = lexicon.option.get(docId("option", "autocd"))
     if (doc === undefined) throw new Error("fixture: autocd")

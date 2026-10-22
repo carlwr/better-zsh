@@ -1,5 +1,5 @@
 import * as fcu from "@carlwr/fastcheck-utils"
-import type { BuiltinDoc, Lexicon, ReservedWordDoc } from "@carlwr/zsh-core"
+import type { BuiltinDoc, Lexicon, ReservedWordDoc } from "@carlwr/zsh-lexicon"
 import fc from "fast-check"
 import { describe, expect, test } from "vitest"
 import { SemanticTokensProvider } from "../../editor/semantic-tokens"

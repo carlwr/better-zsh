@@ -12,7 +12,7 @@ use std::process::Command;
 use std::sync::OnceLock;
 
 /// Every `doc_categories()` entry: `list --category C` returns only `C`
-/// records, and at least one. A new zsh-core category extends the sweep
+/// records, and at least one. A new zsh-lexicon category extends the sweep
 /// with no test change.
 #[test]
 fn every_category_list_is_pure_and_nonempty() {

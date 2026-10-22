@@ -1,4 +1,4 @@
-import { loadLexicon } from "@carlwr/zsh-core"
+import { loadLexicon } from "@carlwr/zsh-lexicon"
 import { describe, expect, test } from "vitest"
 import { cmdHeadFactsOnLine } from "../../analysis/line-facts"
 

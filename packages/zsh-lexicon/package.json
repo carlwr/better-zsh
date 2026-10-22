@@ -1,5 +1,5 @@
 {
-  "name": "@carlwr/zsh-core",
+  "name": "@carlwr/zsh-lexicon",
   "description": "Structured zsh reference data parsed from official zsh documentation",
   "version": "0.1.0-alpha.2",
   "license": "MIT",
@@ -18,9 +18,9 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/carlwr/better-zsh.git",
-    "directory": "packages/zsh-core"
+    "directory": "packages/zsh-lexicon"
   },
-  "homepage": "https://github.com/carlwr/better-zsh/tree/main/packages/zsh-core#readme",
+  "homepage": "https://github.com/carlwr/better-zsh/tree/main/packages/zsh-lexicon#readme",
   "bugs": "https://github.com/carlwr/better-zsh/issues",
   "type": "module",
   "sideEffects": false,
@@ -110,7 +110,7 @@
     "test:pack": "pnpm build && tsx scripts/test-pack.ts && pnpm pack:release",
     "testREGISTRY:install": "pnpm build && node scripts/test-install.mjs",
     "test:integration": "pnpm run check && pnpm run test && pnpm run test:pack",
-    "release:act": "ACT_WORKFLOW=release-zsh-core.yml ACT_JOB=publish ACT_EVENT=workflow_dispatch ../../scripts/test-integration-act --input dry_run=true",
+    "release:act": "ACT_WORKFLOW=release-zsh-lexicon.yml ACT_JOB=publish ACT_EVENT=workflow_dispatch ../../scripts/test-integration-act --input dry_run=true",
     "verifyREGISTRY": "pnpm run testREGISTRY:install"
   },
   "dependencies": {

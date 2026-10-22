@@ -1,11 +1,11 @@
 // Build the SPA's artifacts under static/artifacts/ (gitignored). Everything
-// derives from zsh-core's lexicon and the rules YAML; only the index needs the
+// derives from the lexicon and the rules YAML; only the index needs the
 // model (scripts/fetch-model) and a minute of CPU, so an index that still
 // validates against the lexicon is kept.
 
 import { existsSync } from "node:fs"
 import { join } from "node:path"
-import { loadLexicon } from "@carlwr/zsh-core"
+import { loadLexicon } from "@carlwr/zsh-lexicon"
 
 import { ARTIFACT } from "../nlp/core/artifact-files"
 import { categoriesJson } from "../nlp/node/categories"

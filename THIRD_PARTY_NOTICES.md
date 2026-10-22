@@ -7,7 +7,7 @@ To list them: `git ls-files '*THIRD_PARTY_NOTICES.md'`.
 
 Current copied third-party material:
 
-- zsh documentation sources vendored under `packages/zsh-core/src/data/zsh-docs/`
+- zsh documentation sources vendored under `packages/zsh-lexicon/src/data/zsh-docs/`
 - the shell TextMate grammar vendored under
   `packages/vscode-better-zsh/syntaxes/shell-unix-bash.tmLanguage.json`
 

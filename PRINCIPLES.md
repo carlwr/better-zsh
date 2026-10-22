@@ -44,7 +44,7 @@ In-context tokenization, if it belongs anywhere, belongs in the extension's `src
 
 ### Resolver feedback (lossy normalization)
 
-Resolution can be lossy (`setopt NO_AUTO_CD` resolves to `autocd`). The brand machinery keeps `Documented<K>` pure; lossy bits ride on the `resolve` hit as `feedback`. JSDoc on `ResolverFeedback` / `ResolvedHit` in `zsh-core/resolver` covers:
+Resolution can be lossy (`setopt NO_AUTO_CD` resolves to `autocd`). The brand machinery keeps `Documented<K>` pure; lossy bits ride on the `resolve` hit as `feedback`. JSDoc on `ResolverFeedback` / `ResolvedHit` in `zsh-lexicon/resolver` covers:
 
 - concrete kinds
 - "wording isn't API surface" framing
@@ -52,7 +52,7 @@ Resolution can be lossy (`setopt NO_AUTO_CD` resolves to `autocd`). The brand ma
 Cross-cutting principles:
 
 - **The brand carries only identity; the hit carries the record and feedback.** `Documented<K>` has no side-channels or hidden state; `resolve` answers all three in one value — nothing resolves or looks up twice.
-- **Per-category dispatch lives in zsh-core**, not in consumers. Consumers stay parametric over `DocCategory` — no `if (cat === "option")` branches.
+- **Per-category dispatch lives in zsh-lexicon**, not in consumers. Consumers stay parametric over `DocCategory` — no `if (cat === "option")` branches.
 - **Structured, not prose.** Closed `kind`-tagged union so consumers route programmatically.
 
 See DESIGN.md.
@@ -61,7 +61,7 @@ See DESIGN.md.
 
 ## Facts and docs: asymmetric, not parallel
 
-zsh-core's `src/docs/` and the extension's `src/analysis/` are intentionally asymmetric:
+zsh-lexicon's `src/docs/` and the extension's `src/analysis/` are intentionally asymmetric:
 
 - **`docs/` is exhaustive over a closed `DocCategory` taxonomy** with `Lexicon`-keyed tables. Adding a category is a structural change with type-checked completeness everywhere.
 - **`analysis/` is partial.** Narrow document-spanning facts exist only when they reduce false positives without claiming a full parse. `Fact` kinds overlap `DocCategory` only incidentally and don't share its parametric machinery.
@@ -73,7 +73,7 @@ Different jobs:
 
 Don't introduce parallel scaffolding.
 
-`Documented<K>` plus `resolve` are the load-bearing connection (JSDoc in `zsh-core` and `zsh-core/resolver`):
+`Documented<K>` plus `resolve` are the load-bearing connection (JSDoc in `zsh-lexicon` and `zsh-lexicon/resolver`):
 
 - _facts_ carry raw text or closed literal unions (`PrecmdName`), never `Documented<K>`
 - `Documented<K>` carries doc identity
@@ -112,14 +112,14 @@ Prefer a subKind or typed field on an existing record when finer distinctions wo
 
 ### Overlap between categories is accepted
 
-zsh-core exposes every category uniformly. Examples of overlap:
+zsh-lexicon exposes every category uniformly. Examples of overlap:
 
 - `reserved_word` ↔ `complex_command` on flow-control words (e.g. `for`)
 - `reserved_word` ↔ `builtin` on the `typeset` family
 
 Ordering resolves these, outside the taxonomy:
 
-- `resolveAll` in zsh-core, walking `classifyOrder` (the `zshref` tools, zshref-web)
+- `resolveAll` in zsh-lexicon, walking `classifyOrder` (the `zshref` tools, zshref-web)
 - fallback chains in extension hover
 
 Resist restructuring the taxonomy to eliminate overlap; the resolver walk is where overlap cost belongs.
@@ -150,7 +150,7 @@ Not a separate type or interface — both roles use the same `DocCategory` machi
 
 ### Each category is almost its own type
 
-`DocRecordMap[K]` is a custom shape per category: beyond the shared identity (`category`, `id`, `display`), field names read as domain vocabulary (`operands`, `groupOp`, `args`). Per-category record shapes: JSDoc in `zsh-core`.
+`DocRecordMap[K]` is a custom shape per category: beyond the shared identity (`category`, `id`, `display`), field names read as domain vocabulary (`operands`, `groupOp`, `args`). Per-category record shapes: JSDoc in `zsh-lexicon`.
 
 ### Shared structural patterns are a plus when genuine
 
@@ -228,7 +228,7 @@ The arrows and their invariants: `REPO-SHAPE.md`. The principles behind them:
 
 - Built for stability over time: implementation effort once, then version bumps for years; uptake expected limited but not zero.
 - Post-release maintenance must be cheap. The expensive thing is re-understanding a non-natural organization; an easy-to-understand overall structure outranks preserving effort already spent.
-- `zsh-core` is the future-proof surface; `zshref` the main one; the SPA is an NLP retrieval showcase — NLP inside the CLI is not wanted.
+- `zsh-lexicon` is the future-proof surface; `zshref` the main one; the SPA is an NLP retrieval showcase — NLP inside the CLI is not wanted.
 - Build outputs are never committed; the tree is committable in any build state.
 
 ## Cost and laziness
@@ -250,9 +250,9 @@ Decisions belong close to the consumer:
 - filtering
 - formatting
 
-The adapter narrows the tool layer; the tool layer narrows zsh-core. Counterforce: over-parameterization bloats the per-call input surface. Balance consciously; default is "push downstream."
+The adapter narrows the tool layer; the tool layer narrows zsh-lexicon. Counterforce: over-parameterization bloats the per-call input surface. Balance consciously; default is "push downstream."
 
-Counter-example: lexicon-aware identity primitives (e.g. `resolve`'s direct-or-resolver rule) live in zsh-core even where a tool is the only consumer. They are properties of *the lexicon*, not the tool surface; the Rust mirror follows them under the fixture instead of re-deriving them per tool.
+Counter-example: lexicon-aware identity primitives (e.g. `resolve`'s direct-or-resolver rule) live in zsh-lexicon even where a tool is the only consumer. They are properties of *the lexicon*, not the tool surface; the Rust mirror follows them under the fixture instead of re-deriving them per tool.
 
 ### Schema precision when schemas are co-released
 

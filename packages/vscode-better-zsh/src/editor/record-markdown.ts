@@ -1,9 +1,9 @@
-import type { DocCategory, DocRecordMap, Lexicon } from "@carlwr/zsh-core"
+import type { DocCategory, DocRecordMap, Lexicon } from "@carlwr/zsh-lexicon"
 import {
   categoryFooter,
   type RenderedRecord,
   renderRecord,
-} from "@carlwr/zsh-core/render"
+} from "@carlwr/zsh-lexicon/render"
 import * as vscode from "vscode"
 
 /**

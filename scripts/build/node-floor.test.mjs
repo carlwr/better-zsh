@@ -27,7 +27,7 @@ const manifests = [
   ),
 ]
 const action = ".github/actions/setup-node-pnpm/action.yml"
-const readme = "packages/zsh-core/README.md"
+const readme = "packages/zsh-lexicon/README.md"
 
 const { catalog } = readYaml("pnpm-workspace.yaml")
 

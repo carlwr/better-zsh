@@ -15,8 +15,8 @@ import {
   type DocRecord,
   docCategoryLabels,
   type Lexicon,
-} from "@carlwr/zsh-core"
-import type { WithMarkdown } from "@carlwr/zsh-core/render"
+} from "@carlwr/zsh-lexicon"
+import type { WithMarkdown } from "@carlwr/zsh-lexicon/render"
 
 import type { Synonyms } from "../core/rules"
 import { asciiLower } from "../core/text"
@@ -207,7 +207,7 @@ const strField = (rec: JsonRecord, key: string): string => {
   return typeof v === "string" ? v : ""
 }
 
-/** A field every rendered record carries; keyed against zsh-core's type, so a rename there fails here. */
+/** A field every rendered record carries; keyed against zsh-lexicon's type, so a rename there fails here. */
 const field = (rec: JsonRecord, key: keyof WithMarkdown<DocRecord>): string =>
   strField(rec, key)
 

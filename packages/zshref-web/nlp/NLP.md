@@ -5,7 +5,7 @@ read-when: working on zshref-web's NLP (ranker, index, rules, evals) or its held
 
 # NLP
 
-Local semantic retrieval over zsh-core records: the query embedded with BGE-small, ranked against a precomputed vector index, a lookup-map promote on top. Code: `nlp/`; layout, toolchain, tests: `../AGENTS.md`.
+Local semantic retrieval over zsh-lexicon records: the query embedded with BGE-small, ranked against a precomputed vector index, a lookup-map promote on top. Code: `nlp/`; layout, toolchain, tests: `../AGENTS.md`.
 
 ## Hard rules: holdout isolation
 

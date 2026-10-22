@@ -73,7 +73,7 @@ Vulnerability reports: `SECURITY.md` at the repository root.
 
 ## See also
 
-- [`@carlwr/zsh-core`](https://github.com/carlwr/better-zsh/tree/main/packages/zsh-core) — the structured-reference library the extension consumes.
+- [`@carlwr/zsh-lexicon`](https://github.com/carlwr/better-zsh/tree/main/packages/zsh-lexicon) — the structured-reference library the extension consumes.
 - [`zshref`](https://github.com/carlwr/zshref) — single-file executable Rust CLI over the same reference, and a Model Context Protocol server for agents.
 - [Better Zsh on GitHub](https://github.com/carlwr/better-zsh) — source, issues, companion packages.
 

@@ -12,7 +12,7 @@ const thisDir: string = metaUrl
   : resolve(__dirname)
 
 /** The one directory name the runtime lookup accepts beside the module. */
-export const runtimeZshDataDir = "zsh-core-data"
+export const runtimeZshDataDir = "zsh-lexicon-data"
 
 /**
  * The vendored data set: what the source tree holds, what `build` copies to
@@ -28,7 +28,7 @@ export const vendoredZshDocFiles: readonly [
 /**
  * Every path `copyRuntimeZshData(outDir)` creates, relative to `outDir` and
  * `/`-separated — for packaging checks. All share one top-level directory,
- * the one `loadLexicon` looks for beside the loaded zsh-core module.
+ * the one `loadLexicon` looks for beside the loaded zsh-lexicon module.
  */
 export const runtimeZshDataPaths: readonly string[] = vendoredZshDocFiles.map(
   file => `${runtimeZshDataDir}/${file}`,
@@ -37,7 +37,7 @@ export const runtimeZshDataPaths: readonly string[] = vendoredZshDocFiles.map(
 // Three candidate layouts:
 //   built:   <baseDir>/data/zsh-docs         (dist/ bundle dir or explicit dist base)
 //   dev:     <baseDir>/../data/zsh-docs      (source tree, running from src/assets/)
-//   runtime: <baseDir>/zsh-core-data         (consumer copied via copyRuntimeZshData)
+//   runtime: <baseDir>/zsh-lexicon-data         (consumer copied via copyRuntimeZshData)
 /** Locate the vendored Yodl data directory, trying dev/built/runtime candidate paths. */
 export function resolveZshDataDir(baseDir: string = thisDir): string {
   const candidates = [
@@ -52,7 +52,7 @@ export function resolveZshDataDir(baseDir: string = thisDir): string {
 
 /**
  * Copy the vendored Yodl sources into `outDir`, so `loadLexicon` works from a
- * bundle: `outDir` is the directory the bundled zsh-core module runs from
+ * bundle: `outDir` is the directory the bundled zsh-lexicon module runs from
  * (the lookup is relative to the module, not to the working directory).
  */
 export function copyRuntimeZshData(outDir: string): void {

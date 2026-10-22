@@ -4,7 +4,7 @@
  * The order of every sort (the ranker's tie-break, the lookup map, the
  * contract, report rows): UTF-16 code units, which is UTF-8 byte order for
  * ASCII — and everything ordered (ids, displays, category names, forms built
- * from them) is ASCII, which zsh-core pins. Not `localeCompare`, which is
+ * from them) is ASCII, which zsh-lexicon pins. Not `localeCompare`, which is
  * locale-dependent.
  */
 export const byteOrder = (a: string, b: string): number =>

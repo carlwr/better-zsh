@@ -20,8 +20,8 @@ Upstream provenance
 How this repository uses it
 ---------------------------
 
-- `zsh-core` ships these vendored `.yo` files in published artifacts.
-- `zsh-core` also ships generated JSON derived from these files.
+- `zsh-lexicon` ships these vendored `.yo` files in published artifacts.
+- `zsh-lexicon` also ships generated JSON derived from these files.
 - `better-zsh` ships the vendored `.yo` files as runtime data used by the
   extension.
 

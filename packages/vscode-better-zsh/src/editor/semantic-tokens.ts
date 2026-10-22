@@ -1,5 +1,5 @@
 import { cached } from "@carlwr/typescript-extra"
-import type { Lexicon } from "@carlwr/zsh-core"
+import type { Lexicon } from "@carlwr/zsh-lexicon"
 import * as vscode from "vscode"
 import { positionAt, type TextSpan } from "../analysis/facts"
 import { docAnalysis } from "../document/facts"

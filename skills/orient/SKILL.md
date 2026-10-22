@@ -21,7 +21,7 @@ Always run (general project overview):
 Run selectively (TS packages only):
 ```sh
 # print exports (see --help):
-./skills/orient/scripts/exports zsh-core
+./skills/orient/scripts/exports zsh-lexicon
 ./skills/orient/scripts/exports vscode-better-zsh
 ./skills/orient/scripts/exports zshref-web
 

@@ -3,7 +3,7 @@
   "version": "0.1.0-alpha.0",
   "private": true,
   "type": "module",
-  "description": "Static SPA: NLP search demo over zsh-core records.",
+  "description": "Static SPA: NLP search demo over zsh-lexicon records.",
   "license": "MIT",
   "scripts": {
     "prebuild": "node ../../scripts/build/upstream-ready.mjs ensure",
@@ -41,7 +41,7 @@
   },
   "devDependencies": {
     "@carlwr/fastcheck-utils": "catalog:",
-    "@carlwr/zsh-core": "workspace:*",
+    "@carlwr/zsh-lexicon": "workspace:*",
     "@sveltejs/adapter-static": "^3.0.10",
     "@sveltejs/kit": "^2.70.3",
     "@sveltejs/vite-plugin-svelte": "^7.3.1",

@@ -1,9 +1,9 @@
 //! Per-category resolver dispatch, the category walk, and lossy-resolution
 //! feedback. See root DESIGN.md §"Resolver feedback channel".
 //
-// MIRROR-OF: packages/zsh-core/src/docs/resolver.ts
-// MIRROR-OF: packages/zsh-core/src/docs/normalize-option.ts
-// MIRROR-OF: packages/zsh-core/src/docs/types.ts (record fields read by
+// MIRROR-OF: packages/zsh-lexicon/src/docs/resolver.ts
+// MIRROR-OF: packages/zsh-lexicon/src/docs/normalize-option.ts
+// MIRROR-OF: packages/zsh-lexicon/src/docs/types.ts (record fields read by
 // name: `sig` / `groupOp` of `RedirectionDoc`, `hookArray` of `SpecialFunctionDoc`,
 // `subKind` of `HistoryExpnDoc`)
 
@@ -45,7 +45,7 @@ pub enum ResolverFeedback {
 }
 
 impl ResolverFeedback {
-    /// The union's JSON Schema — zsh-core's, from `index.json`; the tool
+    /// The union's JSON Schema — zsh-lexicon's, from `index.json`; the tool
     /// output schemas embed it as `Feedback`. A variant per `anyOf` branch,
     /// matched by the branch's `kind` const (the test below).
     pub fn schema() -> Value {
@@ -66,7 +66,7 @@ pub struct ResolvedHit<'lex> {
 }
 
 /// Per-category resolver dispatch. See root DESIGN.md §"`resolve`: direct
-/// ∥ resolver" and `resolve` in zsh-core.
+/// ∥ resolver" and `resolve` in zsh-lexicon.
 pub fn resolve_in<'lex>(
     lexicon: &'lex Lexicon,
     cat: DocCategory,
@@ -511,7 +511,7 @@ fn tail_kind_of(tail: &str) -> &str {
 
 #[cfg(test)]
 mod tests {
-    //! Behavioural conformance to zsh-core's resolver fixture: the answers the
+    //! Behavioural conformance to zsh-lexicon's resolver fixture: the answers the
     //! TS resolvers give for pinned and generated inputs, released with the
     //! lexicon.
     use super::*;
@@ -519,7 +519,7 @@ mod tests {
     use serde::Deserialize;
     use serde_json::json;
 
-    /// The fixture shape this test reads: `ResolverFixtureJson.version` in zsh-core.
+    /// The fixture shape this test reads: `ResolverFixtureJson.version` in zsh-lexicon.
     const FIXTURE_VERSION: u32 = 2;
 
     #[derive(Deserialize)]
@@ -573,7 +573,7 @@ mod tests {
             path.display(),
             fixture.version
         );
-        let same_build = "fixture and embedded index.json come from different zsh-core builds \
+        let same_build = "fixture and embedded index.json come from different zsh-lexicon builds \
                           — rebuild through the make target, not plain `cargo test`";
         assert_eq!(
             fixture.package_version, lexicon.index.package_version,
@@ -637,7 +637,7 @@ mod tests {
         );
     }
 
-    // Cross-language pin: the schema is zsh-core's (`index.json`), one
+    // Cross-language pin: the schema is zsh-lexicon's (`index.json`), one
     // `anyOf` branch per kind closed on its `kind` const, so a variant
     // validating against the branch of its own tag ties the enum's serde
     // tags and arity to TS; one sample per branch ties the kind set.

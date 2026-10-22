@@ -11,7 +11,7 @@ import { publicEntries } from "./pkg-entries.ts"
 
 const pkgDir = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const pnpm = process.platform === "win32" ? "pnpm.cmd" : "pnpm"
-const tmp = mkdtempSync(join(tmpdir(), "better-zsh-zsh-core-pack-"))
+const tmp = mkdtempSync(join(tmpdir(), "zsh-lexicon-pack-"))
 
 const entries = publicEntries(pkgDir)
 const vendoredDocs = [
@@ -175,7 +175,7 @@ try {
     { cwd: pkgDir, encoding: "utf8", stdio: ["ignore", "ignore", "inherit"] },
   )
 
-  process.stdout.write("zsh-core pack: OK\n")
+  process.stdout.write("zsh-lexicon pack: OK\n")
 } finally {
   rmSync(tmp, { recursive: true, force: true })
 }

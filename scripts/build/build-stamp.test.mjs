@@ -66,10 +66,10 @@ test("the stamp path is spelled in exactly one tracked place", () => {
 })
 
 test("inputs exclude generated trees", () => {
-  const rels = inputFiles(dirs.get("@carlwr/zsh-core"))
+  const rels = inputFiles(dirs.get("@carlwr/zsh-lexicon"))
   for (const gen of [...outputDirs, "node_modules", ".aux"]) {
     assert.equal(
-      rels.some(rel => rel.startsWith(`packages/zsh-core/${gen}/`)),
+      rels.some(rel => rel.startsWith(`packages/zsh-lexicon/${gen}/`)),
       false,
       gen,
     )
@@ -77,11 +77,11 @@ test("inputs exclude generated trees", () => {
 })
 
 test("inputs cover the whole package tree, plus the shared repo files", () => {
-  const rels = inputFiles(dirs.get("@carlwr/zsh-core"))
+  const rels = inputFiles(dirs.get("@carlwr/zsh-lexicon"))
   // Build config that no entry point imports: reachable only because discovery
   // takes everything the exclusion rule leaves.
-  assert.ok(rels.includes("packages/zsh-core/typedoc.json"))
-  assert.ok(rels.includes("packages/zsh-core/scripts/build-api.mjs"))
+  assert.ok(rels.includes("packages/zsh-lexicon/typedoc.json"))
+  assert.ok(rels.includes("packages/zsh-lexicon/scripts/build-api.mjs"))
   assert.ok(rels.includes("scripts/build/build-stamp.mjs"))
   assert.ok(rels.includes("pnpm-lock.yaml"))
   assert.ok(rels.includes("package.json"))
@@ -89,7 +89,7 @@ test("inputs cover the whole package tree, plus the shared repo files", () => {
 })
 
 test("a file appearing anywhere in the package tree moves the hash", () => {
-  const name = "@carlwr/zsh-core"
+  const name = "@carlwr/zsh-lexicon"
   const probe = join(dirs.get(name), "src", "build-stamp-probe.tmp")
   const before = inputHash(name)
   writeFileSync(probe, "probe")
@@ -102,7 +102,10 @@ test("a file appearing anywhere in the package tree moves the hash", () => {
 })
 
 test("the hash is stable across calls", () => {
-  assert.equal(inputHash("@carlwr/zsh-core"), inputHash("@carlwr/zsh-core"))
+  assert.equal(
+    inputHash("@carlwr/zsh-lexicon"),
+    inputHash("@carlwr/zsh-lexicon"),
+  )
 })
 
 test("a package that never stamps is never fresh", () => {

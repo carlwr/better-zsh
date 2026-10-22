@@ -1,6 +1,6 @@
 /**
  * @packageDocumentation
- * Markdown rendering for zsh-core doc records.
+ * Markdown rendering for zsh-lexicon doc records.
  */
 
 export { projectRecords } from "./src/docs/json-projection.ts"
