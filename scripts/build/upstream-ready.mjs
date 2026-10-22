@@ -39,11 +39,11 @@ function runOk(cmd, env) {
 function buildUpstream(names) {
   // The skip variable asserts freshness. A false assertion honoured silently
   // resurfaces far from here, as unresolved types against a half-built `dist/`.
-  if (process.env.BZ_SKIP_UPSTREAM) {
+  if (process.env.ZL_SKIP_UPSTREAM) {
     const stale = names.filter(name => !isFresh(name))
     if (stale.length)
       die(
-        `BZ_SKIP_UPSTREAM is set but not fresh: ${stale.join(", ")}\nunset it, or run pnpm bootstrap:upstream first`,
+        `ZL_SKIP_UPSTREAM is set but not fresh: ${stale.join(", ")}\nunset it, or run pnpm bootstrap:upstream first`,
       )
     return
   }
@@ -53,7 +53,7 @@ function buildUpstream(names) {
     // so its own `pre*` hook has nothing left to do.
     runOk(
       ["pnpm", "--filter", name, "build"],
-      i > 0 ? { BZ_SKIP_UPSTREAM: "1" } : {},
+      i > 0 ? { ZL_SKIP_UPSTREAM: "1" } : {},
     )
   }
 }
@@ -86,7 +86,7 @@ const commands = new Map([
       if (args.length < 2)
         die("usage: node scripts/build/upstream-ready.mjs run <cmd> [args...]")
       buildUpstream(upstreamPkgs)
-      process.exit(runStatus(args.slice(1), { BZ_SKIP_UPSTREAM: "1" }))
+      process.exit(runStatus(args.slice(1), { ZL_SKIP_UPSTREAM: "1" }))
     },
   ],
 ])

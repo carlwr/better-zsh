@@ -7,9 +7,9 @@ import { fileURLToPath } from "node:url"
 const script = resolve(dirname(fileURLToPath(import.meta.url)), "quiet-run.mjs")
 
 // These cases assert quiet-mode capture. `pnpm qa:verbose` reaches them with
-// BZ_QUIET_RUN_VERBOSE set, which would turn every capture assertion red.
+// ZL_QUIET_RUN_VERBOSE set, which would turn every capture assertion red.
 function childEnv(env = {}) {
-  return { ...process.env, ...env, BZ_QUIET_RUN_VERBOSE: undefined }
+  return { ...process.env, ...env, ZL_QUIET_RUN_VERBOSE: undefined }
 }
 
 function run(args, env = {}) {
@@ -57,9 +57,9 @@ test("failure over cap: emits cap lines + trim header + 2 status lines", () => {
   assert.equal(ls[120], "L200")
 })
 
-test("BZ_QUIET_RUN_LINES override caps captured tail", () => {
+test("ZL_QUIET_RUN_LINES override caps captured tail", () => {
   const r = run(["o", "sh", "-c", `${seq(30)}; exit 1`], {
-    BZ_QUIET_RUN_LINES: "10",
+    ZL_QUIET_RUN_LINES: "10",
   })
   assert.equal(r.status, 1)
   const ls = linesOf(r.stderr)

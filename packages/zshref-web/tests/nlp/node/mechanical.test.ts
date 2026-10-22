@@ -3,8 +3,8 @@
 // smoke plus the full report.
 //
 // The full report embeds thousands of queries, so it is opt-in
-// via `BZ_NLP_SLOW=1`, on top of the artifact gate —
-// `BZ_REQUIRE_WEB_ARTIFACTS=1` alone does not run it, so the CI `nlp` job
+// via `ZL_NLP_SLOW=1`, on top of the artifact gate —
+// `ZL_REQUIRE_WEB_ARTIFACTS=1` alone does not run it, so the CI `nlp` job
 // stays at the capped smoke; `pnpm nlp:eval-mechanical` is the report's
 // day-to-day form.
 
@@ -239,8 +239,8 @@ describe("mechanical eval over the staged assets", () => {
   }, 180_000)
 
   it("the full report", async ctx => {
-    if (process.env.BZ_NLP_SLOW !== "1")
-      ctx.skip("slow (embeds thousands of queries) — opt in with BZ_NLP_SLOW=1")
+    if (process.env.ZL_NLP_SLOW !== "1")
+      ctx.skip("slow (embeds thousands of queries) — opt in with ZL_NLP_SLOW=1")
     if (skipReason) ctx.skip(skipReason)
     const a = await assets()
     const mech = await evalMechanical(buildMechanical(a.lexicon), a)

@@ -17,7 +17,7 @@ import {
 
 const script = join(repoRoot, "scripts", "build", "upstream-ready.mjs")
 
-// BZ_SKIP_UPSTREAM throughout: a regression that starts building must fail the
+// ZL_SKIP_UPSTREAM throughout: a regression that starts building must fail the
 // assertion, never spend a build doing it.
 const call = (args, env = {}) =>
   spawnSync(process.execPath, [script, ...args], {
@@ -26,7 +26,7 @@ const call = (args, env = {}) =>
     env: {
       ...process.env,
       npm_package_name: undefined,
-      BZ_SKIP_UPSTREAM: "1",
+      ZL_SKIP_UPSTREAM: "1",
       ...env,
     },
   })

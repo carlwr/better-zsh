@@ -1,14 +1,14 @@
 // The item-level tune diff of the committed tuning against the
-// `BZ_TUNE_BASE` candidate — the names behind a sweep delta. Holdout is
+// `ZL_TUNE_BASE` candidate — the names behind a sweep delta. Holdout is
 // never printed (NLP.md).
 
 import { composedBase, loadBench, renderTuneDiff } from "../nlp/node/eval/sweep"
 import { reporterAssets, scriptFlags, tuneBaseSpec } from "./_args"
 
 const usage = `\
-BZ_TUNE_BASE=key=value,… pnpm --filter zshref-web nlp:tune-diff
+ZL_TUNE_BASE=key=value,… pnpm --filter zshref-web nlp:tune-diff
 
-  BZ_TUNE_BASE  the candidate (required): overrides over the committed
+  ZL_TUNE_BASE  the candidate (required): overrides over the committed
              tuning; the keys are nlp/node/eval/sweep.ts KNOBS.\
 `
 scriptFlags("tune-diff", usage, [])
@@ -16,7 +16,7 @@ scriptFlags("tune-diff", usage, [])
 const spec = tuneBaseSpec()
 if (spec.trim() === "") {
   console.error(
-    "tune-diff: set BZ_TUNE_BASE=<candidate> (key=value,…) to diff against the committed tuning",
+    "tune-diff: set ZL_TUNE_BASE=<candidate> (key=value,…) to diff against the committed tuning",
   )
   process.exit(2)
 }

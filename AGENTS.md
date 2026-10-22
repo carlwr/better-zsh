@@ -114,11 +114,11 @@ Per-package `test:integration` is intentionally not one mechanism; each `package
 
 ## Packaging
 
-### `BZ_SKIP_UPSTREAM`
+### `ZL_SKIP_UPSTREAM`
 
 Universal pattern: `PACKAGING.md`. Project-specific bindings:
 
-- env var name: `BZ_SKIP_UPSTREAM`
+- env var name: `ZL_SKIP_UPSTREAM`
 - upstream-readiness script: `scripts/build/upstream-ready.mjs`
 - build stamp: `scripts/build/build-stamp.mjs`
 - rationale: `scripts/build/README.md`

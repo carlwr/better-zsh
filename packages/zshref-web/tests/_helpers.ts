@@ -54,8 +54,8 @@ export function artifactGate(
   const missing = needs.filter(p => !existsSync(p))
   if (missing.length === 0) return null
   const msg = `${label}: not staged locally — ${missing.join(", ")}`
-  if (process.env.BZ_REQUIRE_WEB_ARTIFACTS === "1") {
-    throw new Error(`${msg} (BZ_REQUIRE_WEB_ARTIFACTS=1)`)
+  if (process.env.ZL_REQUIRE_WEB_ARTIFACTS === "1") {
+    throw new Error(`${msg} (ZL_REQUIRE_WEB_ARTIFACTS=1)`)
   }
   return msg
 }

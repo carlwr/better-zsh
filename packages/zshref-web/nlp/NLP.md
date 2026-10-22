@@ -43,7 +43,7 @@ Three layers, distinct jobs:
   - *curated* (`pnpm nlp:eval-sentence`) — the hand-authored sentence fixture; per-item `targetDepth` + `weight`, per-entry `split`.
   - *mechanical* (`pnpm nlp:eval-mechanical`) — lexicon-derived per-record entries (terse decorated forms + NL-question forms), uniform `targetDepth=1`; each has a single defined answer (one item → one vote).
   - blend `total = λ·curated_train + (1−λ)·mechanical` (λ=0.5); both evals and the dashboard print these numbers live.
-  - the tuning trio (`pnpm nlp:tune-*`) moves rank-time knobs only (`BZ_TUNE_BASE` overrides; the keys: `nlp/node/eval/sweep.ts`), scores the blend, prints holdout as the overfit watch.
+  - the tuning trio (`pnpm nlp:tune-*`) moves rank-time knobs only (`ZL_TUNE_BASE` overrides; the keys: `nlp/node/eval/sweep.ts`), scores the blend, prints holdout as the overfit watch.
   - cost on CPU, roughly: the curated eval seconds, every other reporter about a minute on a first run and well under on repeats — embedding the mechanical set dominates and its vectors persist (`nlp/node/query-cache.ts`); a knob point regrades cached score inputs (`nlp/node/eval/query-set.ts`)
 - **C — QA scoring** (`pnpm nlp:qa-score`; `nlp/node/eval/qa-score.ts`) — in-process; an overfit watch, not where scoring quality is judged:
   - templated self-retrieval hard checks over a few categories

@@ -51,9 +51,9 @@
     "release:act": "ACT_WORKFLOW=release-extension.yml ACT_JOB=publish ACT_EVENT=workflow_dispatch ../../scripts/test-integration-act --input dry_run=true",
     "testINTERACTIVE:electron": "pnpm build && tsc -p tsconfig.vscode-test.json && scripts/testINTERACTIVE-electron",
     "testINTERACTIVE:electron-bundled": "pnpm build && scripts/package-vsix ./better-zsh.vsix && tsc -p tsconfig.vscode-test.json && scripts/testINTERACTIVE-bundled",
-    "vsix": "pnpm build && export BZ_SKIP_UPSTREAM=1 && pnpm check && pnpm test && scripts/package-vsix ./better-zsh.vsix",
+    "vsix": "pnpm build && export ZL_SKIP_UPSTREAM=1 && pnpm check && pnpm test && scripts/package-vsix ./better-zsh.vsix",
     "test:pack": "pnpm build && scripts/package-vsix /tmp/better-zsh-pack.vsix && rm /tmp/better-zsh-pack.vsix && echo 'better-zsh pack: OK'",
-    "vscode:publish:dry": "pnpm build && export BZ_SKIP_UPSTREAM=1 && pnpm check && pnpm test && node scripts/check-package.mjs && echo '---\n(DRY-RUN; ran staged vsce ls above.)'"
+    "vscode:publish:dry": "pnpm build && export ZL_SKIP_UPSTREAM=1 && pnpm check && pnpm test && node scripts/check-package.mjs && echo '---\n(DRY-RUN; ran staged vsce ls above.)'"
   },
   "dependencies": {
     "@carlwr/typescript-extra": "catalog:",

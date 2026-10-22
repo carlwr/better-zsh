@@ -15,7 +15,7 @@ import { reporterAssets, scriptFlags, tuneBaseSpec } from "./_args"
 const usage = `\
 pnpm --filter zshref-web nlp:tune-sweep
 
-  BZ_TUNE_BASE=key=value,…  the base to sweep around (the committed tuning
+  ZL_TUNE_BASE=key=value,…  the base to sweep around (the committed tuning
              with these overrides); fold a sweep's best rows in and repeat.
 
 About a minute on CPU, most of it embedding the mechanical set once;

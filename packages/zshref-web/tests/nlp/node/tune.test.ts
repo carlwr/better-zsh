@@ -148,7 +148,7 @@ describe("overrides", () => {
 
   it("applyOverride throws on an unknown key", () => {
     expect(() => applyOverride(committed, "bogus", "1")).toThrow(
-      /unknown BZ_TUNE_BASE key: "bogus"/,
+      /unknown ZL_TUNE_BASE key: "bogus"/,
     )
     expect(() => applyOverride(committed, "toString", "1")).toThrow(/unknown/)
   })
@@ -594,7 +594,7 @@ describe("sweep over the parity index", () => {
     expect(lines[0]).toBe("")
     expect(lines[1]).toBe("=== tuning sweep (one knob at a time) ===")
     expect(lines[2]).toMatch(
-      /^base: combined=\d\.\d{4} {2}train=\d\.\d{4} {2}holdout=\d\.\d{4} {2}mechanical=\d\.\d{4} {2}\(BZ_TUNE_BASE="cat=0\.02"\)$/,
+      /^base: combined=\d\.\d{4} {2}train=\d\.\d{4} {2}holdout=\d\.\d{4} {2}mechanical=\d\.\d{4} {2}\(ZL_TUNE_BASE="cat=0\.02"\)$/,
     )
     expect(
       lines.filter(l => l.startsWith("── ")).map(l => l.split(" ")[1]),
@@ -632,7 +632,7 @@ describe("sweep over the parity index", () => {
     expect(lines.slice(0, 3)).toEqual([
       "",
       "=== tune diff: base vs candidate ===",
-      'candidate BZ_TUNE_BASE="cat=0"',
+      'candidate ZL_TUNE_BASE="cat=0"',
     ])
     const heads = lines.filter(l => l.startsWith("["))
     expect(heads).toHaveLength(2)
@@ -778,7 +778,7 @@ describe("dashboard render over the parity index", () => {
       "\n[mechanical] skipped (--fast; run `pnpm nlp:tune-dashboard` without it)\n  holdout = overfit watch",
     )
     expect(text).toContain(
-      "\nchurn vs committed baseline: no candidate (set BZ_TUNE_BASE=<overrides> to diff)\n",
+      "\nchurn vs committed baseline: no candidate (set ZL_TUNE_BASE=<overrides> to diff)\n",
     )
     expect(text).toContain(
       "\n  cur.hold      1.000   0.000   0.125\n  mechanical  skipped (--fast)\n",

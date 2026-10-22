@@ -36,7 +36,7 @@ test("every upstream package clears and writes its stamp", () => {
 })
 
 // CI primes a fresh checkout by building upstreamPkgs[0] raw, under a job-level
-// BZ_SKIP_UPSTREAM. A readiness call there would assert a stamp no build has
+// ZL_SKIP_UPSTREAM. A readiness call there would assert a stamp no build has
 // written yet, failing every fresh checkout.
 test("the first upstream package asks for no readiness", () => {
   const scripts = readPkg(upstreamPkgs[0]).scripts

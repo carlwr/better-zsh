@@ -1,10 +1,10 @@
-// One-knob-at-a-time rank-time tuning sweep, and the `BZ_TUNE_BASE`
+// One-knob-at-a-time rank-time tuning sweep, and the `ZL_TUNE_BASE`
 // override syntax it shares with the dashboard and the diff. Rank-time
 // knobs never re-embed, so the curated and mechanical queries are embedded
 // and their score inputs cached once (`loadBench`), then regraded per
 // variant. The objective is the dashboard's combined blend; `holdout` is
 // printed as the overfit watch, never optimized. The greedy loop: sweep,
-// fold the best row into `BZ_TUNE_BASE`, repeat (one knob at a time misses
+// fold the best row into `ZL_TUNE_BASE`, repeat (one knob at a time misses
 // interactions).
 
 import { type NonEmpty, trim } from "@carlwr/typescript-extra"
@@ -60,7 +60,7 @@ const range = (lo: number, hi: number): number[] =>
 const sw = (t: Tuning) => t.semantic_weights
 const boosts = (t: Tuning) => t.boosts
 
-/** The rank-time knobs by `BZ_TUNE_BASE` key, in sweep order; each names one `tuning.yaml` field. */
+/** The rank-time knobs by `ZL_TUNE_BASE` key, in sweep order; each names one `tuning.yaml` field. */
 export const KNOBS = {
   body: knob("float", [0.55, 0.6, 0.65, 0.7, 0.75, 0.8], sw, "body"),
   structured: knob(
@@ -131,7 +131,7 @@ function parseKnobValue(key: KnobKey, kind: KnobKind, raw: string): number {
   const ok = (kind === "float" ? FLOAT_LITERAL : INT_LITERAL).test(raw)
   if (!ok)
     throw new Error(
-      `BZ_TUNE_BASE ${key}: ${JSON.stringify(raw)} is not a valid ${kind}`,
+      `ZL_TUNE_BASE ${key}: ${JSON.stringify(raw)} is not a valid ${kind}`,
     )
   return Number(raw)
 }
@@ -150,12 +150,12 @@ export function applyOverride(
   value: string,
 ): Tuning {
   if (!isKnobKey(key))
-    throw new Error(`unknown BZ_TUNE_BASE key: ${JSON.stringify(key)}`)
+    throw new Error(`unknown ZL_TUNE_BASE key: ${JSON.stringify(key)}`)
   return withKnob(tuning, key, parseKnobValue(key, KNOBS[key].kind, value))
 }
 
 /**
- * The committed tuning with a `BZ_TUNE_BASE` spec folded in: comma-separated
+ * The committed tuning with a `ZL_TUNE_BASE` spec folded in: comma-separated
  * `key=value` pairs, whitespace around either ignored, empty pairs skipped.
  * One definition, so a candidate reads the same in every tool.
  */
@@ -171,7 +171,7 @@ export function composedBase(
       const at = kv.indexOf("=")
       if (at === -1)
         throw new Error(
-          `BZ_TUNE_BASE entries are key=value, got ${JSON.stringify(kv)}`,
+          `ZL_TUNE_BASE entries are key=value, got ${JSON.stringify(kv)}`,
         )
       return applyOverride(t, kv.slice(0, at).trim(), kv.slice(at + 1).trim())
     }, committed)
@@ -292,7 +292,7 @@ export function sweepMarks(
 const fixed4 = (x: number): string => x.toFixed(4)
 
 export const renderSweepHeader = (base: Scores, spec: string): string =>
-  `\n=== tuning sweep (one knob at a time) ===\nbase: combined=${fixed4(base.combined)}  train=${fixed4(base.train)}  holdout=${fixed4(base.holdout)}  mechanical=${fixed4(base.mechanical)}  (BZ_TUNE_BASE=${JSON.stringify(spec)})\n`
+  `\n=== tuning sweep (one knob at a time) ===\nbase: combined=${fixed4(base.combined)}  train=${fixed4(base.train)}  holdout=${fixed4(base.holdout)}  mechanical=${fixed4(base.mechanical)}  (ZL_TUNE_BASE=${JSON.stringify(spec)})\n`
 
 export function renderKnobBlock(
   { knob, rows }: KnobSweep,
@@ -349,7 +349,7 @@ export function renderTuneDiff(
   const b = benchItems(bench, base)
   const c = benchItems(bench, cand)
   return (
-    `\n=== tune diff: base vs candidate ===\ncandidate BZ_TUNE_BASE=${JSON.stringify(spec)}\n` +
+    `\n=== tune diff: base vs candidate ===\ncandidate ZL_TUNE_BASE=${JSON.stringify(spec)}\n` +
     renderDiffReport("curated train", b.curated, c.curated, true) +
     renderDiffReport("mechanical", b.mechanical, c.mechanical, false)
   )

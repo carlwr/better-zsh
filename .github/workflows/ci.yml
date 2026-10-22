@@ -47,10 +47,10 @@ jobs:
     permissions:
       contents: read
     env:
-      BZ_REQUIRE_WEB_ARTIFACTS: "1"
+      ZL_REQUIRE_WEB_ARTIFACTS: "1"
       # Every readiness hook verifies: zsh-lexicon is built once, below, and no
       # later step can rebuild it mid-run.
-      BZ_SKIP_UPSTREAM: "1"
+      ZL_SKIP_UPSTREAM: "1"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -109,7 +109,7 @@ jobs:
     # upstream `dist/` mid-run and clobber a sibling's in-progress build ("no
     # declaration file" mid-typecheck). Hence also the priming step below.
     env:
-      BZ_SKIP_UPSTREAM: "1"
+      ZL_SKIP_UPSTREAM: "1"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

@@ -8,7 +8,7 @@ import { buildTasks } from "./build-tasks.mjs"
 const argv = process.argv.slice(2)
 const verboseFlagIdx = argv.indexOf("--verbose")
 const verbose =
-  verboseFlagIdx !== -1 || process.env.BZ_QUIET_RUN_VERBOSE === "1"
+  verboseFlagIdx !== -1 || process.env.ZL_QUIET_RUN_VERBOSE === "1"
 if (verboseFlagIdx !== -1) argv.splice(verboseFlagIdx, 1)
 
 const [label, ...cmd] = argv
@@ -34,7 +34,7 @@ const fullOutputCmd = cmd.length
 const started = performance.now()
 const chunks = []
 const maxFailLinesRaw = Number.parseInt(
-  process.env.BZ_QUIET_RUN_LINES ?? "120",
+  process.env.ZL_QUIET_RUN_LINES ?? "120",
   10,
 )
 const maxFailLines =
@@ -43,7 +43,7 @@ const maxFailLines =
     : 120
 const stdio = verbose ? "inherit" : ["inherit", "pipe", "pipe"]
 const env = verbose
-  ? { ...process.env, BZ_QUIET_RUN_VERBOSE: "1" }
+  ? { ...process.env, ZL_QUIET_RUN_VERBOSE: "1" }
   : process.env
 
 function writeFailureOutput() {

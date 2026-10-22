@@ -46,7 +46,7 @@ All pinned:
 - **`@carlwr/zsh-lexicon`** at build time — `workspace:*`; lexicon, taxonomy, resolver
   - through its declared export subpaths only, never a file inside the package (`tests/import-fence.test.ts`)
   - its release JSON feeds the Rust crate, not this package
-  - every script reading it carries a `pre*` hook -> `upstream-ready.mjs ensure` (`PACKAGING.md`; `BZ_SKIP_UPSTREAM`: root `AGENTS.md`)
+  - every script reading it carries a `pre*` hook -> `upstream-ready.mjs ensure` (`PACKAGING.md`; `ZL_SKIP_UPSTREAM`: root `AGENTS.md`)
   - the browser bundle is zsh-lexicon-free: the index carries each record's markdown body
 - **Hugging Face Hub** at runtime — the browser embedder downloads the model on first search
   - model id and revision (a commit SHA): `MODEL_ID`, `MODEL_REVISION` in `nlp/core/types.ts`; `scripts/fetch-model` repeats both, drift-checked by a test
@@ -78,10 +78,10 @@ The package-specific part of `TESTING.md`:
 - `pnpm test` is model-free by default: a test needing a gitignored input (`STAGED` in `nlp/node/paths.ts`) skips via `artifactGate` (`tests/_helpers.ts`)
   - `pnpm run test --reporter=verbose` prints the reason (bare `pnpm test` hands `--reporter` to pnpm itself)
   - committed inputs get no gate: their absence is a defect
-- `BZ_REQUIRE_WEB_ARTIFACTS=1` flips skip -> fail
+- `ZL_REQUIRE_WEB_ARTIFACTS=1` flips skip -> fail
   - the CI `nlp` job (`.github/workflows/ci.yml`) sets it after fetching the model and building the index; not part of `integration`
   - rehearse that job locally: `ACT_JOB=nlp scripts/test-integration-act` from the repo root (VM sizing: root `DEVELOPMENT.md`)
-- `BZ_NLP_SLOW=1` additionally runs the full mechanical report (embeds thousands of queries); CI stays at the capped smoke
+- `ZL_NLP_SLOW=1` additionally runs the full mechanical report (embeds thousands of queries); CI stays at the capped smoke
 
 ### `UPDATE_*`: committed generated data
 

@@ -240,7 +240,7 @@ describe("reporters over the staged assets, capped", () => {
     ])
     expect(lines[2]).toMatch(
       new RegExp(
-        `^base: combined=${NUM4}  train=${NUM4}  holdout=${NUM4}  mechanical=${NUM4}  \\(BZ_TUNE_BASE=""\\)$`,
+        `^base: combined=${NUM4}  train=${NUM4}  holdout=${NUM4}  mechanical=${NUM4}  \\(ZL_TUNE_BASE=""\\)$`,
       ),
     )
     expect(
@@ -270,7 +270,7 @@ describe("reporters over the staged assets, capped", () => {
     expect(lines.slice(0, 3)).toEqual([
       "",
       "=== tune diff: base vs candidate ===",
-      `candidate BZ_TUNE_BASE="${SPEC}"`,
+      `candidate ZL_TUNE_BASE="${SPEC}"`,
     ])
     const trainEntries = bench.curated.entries.filter(e => e.split === "train")
     const trainItems = trainEntries.reduce((n, e) => n + e.want.length, 0)

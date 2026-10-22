@@ -275,7 +275,7 @@ export function renderDashboard(d: Dashboard): string {
  */
 function churnBlock(c: Dashboard["churn"]): string {
   if (!c)
-    return "\nchurn vs committed baseline: no candidate (set BZ_TUNE_BASE=<overrides> to diff)"
+    return "\nchurn vs committed baseline: no candidate (set ZL_TUNE_BASE=<overrides> to diff)"
   const row = (name: string, x: Churn): string =>
     `  ${name.padEnd(13)}${String(x.moved).padStart(4)} moved │ ${String(x.up).padStart(3)} fail→pass ${String(x.down).padStart(3)} pass→fail │ Σgain Δ ${signed(x.netGain, 3)} (net)`
   return [
