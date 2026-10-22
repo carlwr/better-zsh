@@ -1,6 +1,6 @@
 # @carlwr/zsh-lexicon
 
-> **Status: pre-release (alpha).** API surface is still free to move. Published on npm as part of the [`better-zsh`](https://github.com/carlwr/better-zsh) monorepo. First non-alpha release has not yet been cut.
+> **Status: pre-release (alpha).** API surface is still free to move. Published on npm as part of the [`zsh-lexicon`](https://github.com/carlwr/zsh-lexicon) monorepo. First non-alpha release has not yet been cut.
 
 Structured zsh reference knowledge as a typed TypeScript library. Parses vendored Yodl (`.yo`) source from upstream zsh-5.9 into typed records, exposes a closed taxonomy of doc categories, and ships markdown rendering.
 
@@ -13,7 +13,7 @@ Library-first: the VS Code extension, the web SPA, and the Rust crate (CLI + MCP
 - **Orthogonal primitives** — raw-to-doc resolution and markdown rendering stay separate.
 - **Release assets** — a versioned index plus one record file (every category's records under its category), and a resolver conformance fixture for resolver mirrors, each with a JSON Schema (the record file validates against its schema's root, a category's records against `#/$defs/<category>`); attached to the GitHub release tag for consumers outside TypeScript.
 
-API reference: <https://carlwr.github.io/better-zsh/>, built from the latest release. Public reading surface: `dist/types/*.d.mts` after `pnpm build`.
+API reference: <https://carlwr.github.io/zsh-lexicon/>, built from the latest release. Public reading surface: `dist/types/*.d.mts` after `pnpm build`.
 
 ## Install
 
@@ -52,7 +52,7 @@ if (hit) {
 - **Lazy lexicon.** `loadLexicon()` locates the data and returns; a category is parsed on first access, once. Touch few categories, parse few files.
 - **Parametric over per-category specialisation.** `DocCategory` is a closed union; adding a category is a local drop-in that the type system propagates.
 - **Focused imports.** The root is the data model; import the operations on it — resolution, rendering, assets, metadata — from named subpaths.
-- **Orthogonal API.** `resolve` + `renderRecord` compose; a hit carries the record, so nothing is looked up twice, and no combined "raw string → markdown" convenience is exposed — that's a deliberate design choice, not an omission. See [`DESIGN.md`](https://github.com/carlwr/better-zsh/blob/main/DESIGN.md) §"API orthogonality".
+- **Orthogonal API.** `resolve` + `renderRecord` compose; a hit carries the record, so nothing is looked up twice, and no combined "raw string → markdown" convenience is exposed — that's a deliberate design choice, not an omission. See [`DESIGN.md`](https://github.com/carlwr/zsh-lexicon/blob/main/DESIGN.md) §"API orthogonality".
 
 ## Performance
 
@@ -93,8 +93,8 @@ One-shot lookup, as a CLI would do it (fresh process, wall clock; bare `node -e 
 ## See also
 
 - [`zshref`](https://github.com/carlwr/zshref) — single-file executable Rust CLI, and the same reference as a Model Context Protocol server.
-- [`better-zsh`](https://github.com/carlwr/better-zsh/tree/main/packages/vscode-better-zsh) — VS Code extension.
-- [`DESIGN.md`](https://github.com/carlwr/better-zsh/blob/main/DESIGN.md) — architectural rationale.
+- [`better-zsh`](https://github.com/carlwr/zsh-lexicon/tree/main/packages/vscode-better-zsh) — VS Code extension.
+- [`DESIGN.md`](https://github.com/carlwr/zsh-lexicon/blob/main/DESIGN.md) — architectural rationale.
 
 ## License
 

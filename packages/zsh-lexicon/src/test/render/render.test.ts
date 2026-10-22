@@ -800,7 +800,7 @@ describe("render dump", () => {
   })
 
   test("writes dump files", async () => {
-    await withTmpDirAsync("better-zsh-ref-", async dir => {
+    await withTmpDirAsync("zsh-lexicon-ref-", async dir => {
       const docs = testRefDocs({ conditional_op: [cb] })
       await writeRefDump(dir, docs)
       const all = readFileSync(join(dir, dumpFile.all), "utf8")

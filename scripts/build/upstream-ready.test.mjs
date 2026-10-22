@@ -45,7 +45,7 @@ for (const [label, args] of [
 
 for (const [label, name] of [
   ["unset", undefined],
-  ["not a workspace member", "better-zsh-workspace"],
+  ["not a workspace member", "zsh-lexicon-workspace"],
 ]) {
   test(`ensure refuses a caller that is ${label}`, () => {
     const { status, stderr } = call(["ensure"], { npm_package_name: name })

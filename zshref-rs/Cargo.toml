@@ -7,8 +7,8 @@ license = "MIT"
 publish = true
 
 authors = ["Carl (carlwr)"]
-repository = "https://github.com/carlwr/better-zsh"
-homepage = "https://github.com/carlwr/better-zsh"
+repository = "https://github.com/carlwr/zsh-lexicon"
+homepage = "https://github.com/carlwr/zsh-lexicon"
 readme = "README.md"
 keywords = ["zsh", "shell", "cli", "reference", "mcp"]
 categories = ["command-line-utilities", "development-tools"]

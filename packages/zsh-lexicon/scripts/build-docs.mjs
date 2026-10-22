@@ -15,8 +15,8 @@ const distDir = join(pkgDir, "dist")
 // Keep the published site outside dist/ so docs builds cannot accidentally
 // leak HTML into the npm tarball.
 //
-// publishDir is the GitHub Pages root (served at /better-zsh/); the zsh-lexicon
-// docs live one level down under /better-zsh/zsh-lexicon/ so the URL names the
+// publishDir is the GitHub Pages root (served at /zsh-lexicon/); the zsh-lexicon
+// docs live one level down under /zsh-lexicon/zsh-lexicon/ so the URL names the
 // package rather than the repo. publishDir itself only carries a redirect +
 // .nojekyll — slot future per-package sites in as siblings of zsh-lexicon/.
 const publishDir = join(pkgDir, ".aux", "docs", "site")
@@ -55,7 +55,7 @@ const llms = [
   "",
 ].join("\n")
 
-// Forward the bare Pages URL (/better-zsh/) to the package docs so visitors
+// Forward the bare Pages URL (/zsh-lexicon/) to the package docs so visitors
 // don't land on a 404; generated, not a hand-maintained landing page.
 const redirect = [
   "<!doctype html>",

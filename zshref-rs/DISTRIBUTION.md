@@ -55,7 +55,7 @@ npm view @carlwr/zshref dist-tags; npm view @carlwr/zshref-mcp dist-tags   # `la
 npx -y @carlwr/zshref-mcp@<version> --version                              # the npm path, end to end
 cargo binstall -y --install-path /tmp/zshref zshref@<version>              # the archive path (brew install cargo-binstall)
 gh release download zshref-v<version> -p SHA256SUMS -p 'zshref-aarch64-apple-darwin.tar.gz' -D /tmp/rel
-gh attestation verify /tmp/rel/zshref-aarch64-apple-darwin.tar.gz --repo carlwr/better-zsh
+gh attestation verify /tmp/rel/zshref-aarch64-apple-darwin.tar.gz --repo carlwr/zsh-lexicon
 ```
 
 Unpinned `cargo binstall zshref` and `cargo install zshref` fail while every version is a prerelease (`*` matches none); the README pins.

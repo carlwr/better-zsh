@@ -4,12 +4,12 @@
 
 class Zshref < Formula
   desc "Query a bundled static zsh reference from the command line"
-  homepage "https://github.com/carlwr/better-zsh"
+  homepage "https://github.com/carlwr/zsh-lexicon"
   url "https://static.crates.io/crates/zshref/zshref-0.1.0-alpha.3.crate"
   sha256 "e73a8d75f2def52c17512a935e771eb42024bdd3c76a052ccbaf70c5ff7e87d0"
   license "MIT"
 
-  head "https://github.com/carlwr/better-zsh.git", branch: "main"
+  head "https://github.com/carlwr/zsh-lexicon.git", branch: "main"
 
   depends_on "rust" => :build
 

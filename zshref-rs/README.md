@@ -2,7 +2,7 @@
 
 # zshref
 
-> **Status: pre-release (alpha).** This crate is developed inside the [`better-zsh`](https://github.com/carlwr/better-zsh) monorepo and will be extracted to its own repository on first stable release. Stable install docs are not live yet; alpha crates.io packages exist for packaging validation.
+> **Status: pre-release (alpha).** This crate is developed inside the [`zsh-lexicon`](https://github.com/carlwr/zsh-lexicon) monorepo and will be extracted to its own repository on first stable release. Stable install docs are not live yet; alpha crates.io packages exist for packaging validation.
 
 A reference for zsh syntax, as a command-line tool and as a [Model Context Protocol](https://modelcontextprotocol.io) server. Ask what a token is, search the manual, or print the docs for a known element — from a terminal, a script, an agent pipeline, or an MCP-aware client. CLI tool subcommands emit one compact JSON line on stdout per invocation (pass `--pretty` for indented multi-line) — pipe into `jq` for projection. `zshref info` emits pretty-printed JSON; `zshref completions` emits its shell script on stdout instead.
 
@@ -77,11 +77,11 @@ cargo install zshref --version 0.1.0-alpha.3                  # the CLI
 cargo install zshref --version 0.1.0-alpha.3 --features mcp   # CLI + MCP server
 ```
 
-Build from source: requires the full monorepo checkout (the `better-zsh` Node/pnpm workspace), because the bundled JSON reference data is generated from the TypeScript side and embedded at compile time:
+Build from source: requires the full monorepo checkout (the `zsh-lexicon` Node/pnpm workspace), because the bundled JSON reference data is generated from the TypeScript side and embedded at compile time:
 
 ```sh
-git clone https://github.com/carlwr/better-zsh
-cd better-zsh
+git clone https://github.com/carlwr/zsh-lexicon
+cd zsh-lexicon
 corepack enable     # Node 25+ no longer bundles corepack: first `npm install -g corepack`
 pnpm install --frozen-lockfile
 make cli            # release binary at zshref-rs/target/release/zshref
@@ -286,7 +286,7 @@ For options, `id` is the normalized lookup key (lowercase, underscores stripped)
 
 ## More
 
-Companion project sharing the same underlying reference: the [`better-zsh`](https://github.com/carlwr/better-zsh) VS Code extension.
+Companion project sharing the same underlying reference: the [`better-zsh`](https://github.com/carlwr/zsh-lexicon/tree/main/packages/vscode-better-zsh) VS Code extension.
 
 ## License
 

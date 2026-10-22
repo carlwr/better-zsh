@@ -1,6 +1,6 @@
 # @carlwr/zshref
 
-> **Status: pre-release (alpha).** Published from the [`better-zsh`](https://github.com/carlwr/better-zsh) monorepo to exercise CI and packaging; the first non-alpha release has not yet been cut.
+> **Status: pre-release (alpha).** Published from the [`zsh-lexicon`](https://github.com/carlwr/zsh-lexicon) monorepo to exercise CI and packaging; the first non-alpha release has not yet been cut.
 
 Prebuilt [`zshref`](https://github.com/carlwr/zshref) binaries for npm: the `zshref` CLI and the `zshref-mcp` MCP server — an offline, structured reference for zsh syntax, built for agent pipelines.
 

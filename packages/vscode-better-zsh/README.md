@@ -1,6 +1,6 @@
 # Better Zsh
 
-> **Status: pre-release (alpha).** This extension is developed inside the [`better-zsh`](https://github.com/carlwr/better-zsh) monorepo and has not yet cut its first non-alpha release on the VS Code Marketplace / Open VSX.
+> **Status: pre-release (alpha).** This extension is developed inside the [`zsh-lexicon`](https://github.com/carlwr/zsh-lexicon) monorepo and has not yet cut its first non-alpha release on the VS Code Marketplace / Open VSX.
 
 Improved zsh shellscript editing for VS Code. Layers structured zsh knowledge — parsed from the upstream zsh-5.9 documentation — on top of the standard bash/shell TextMate grammar.
 
@@ -73,9 +73,9 @@ Vulnerability reports: `SECURITY.md` at the repository root.
 
 ## See also
 
-- [`@carlwr/zsh-lexicon`](https://github.com/carlwr/better-zsh/tree/main/packages/zsh-lexicon) — the structured-reference library the extension consumes.
+- [`@carlwr/zsh-lexicon`](https://github.com/carlwr/zsh-lexicon/tree/main/packages/zsh-lexicon) — the structured-reference library the extension consumes.
 - [`zshref`](https://github.com/carlwr/zshref) — single-file executable Rust CLI over the same reference, and a Model Context Protocol server for agents.
-- [Better Zsh on GitHub](https://github.com/carlwr/better-zsh) — source, issues, companion packages.
+- [`zsh-lexicon` on GitHub](https://github.com/carlwr/zsh-lexicon) — source, issues, companion packages.
 
 ## License
 

@@ -1,9 +1,9 @@
 ---
 name: orient
-description: Orient quickly in the better-zsh monorepo. Use at the start of any work session, when adding features, debugging, or navigating unfamiliar code. Provides discovery scripts rather than hardcoded filenames.
+description: Orient quickly in the zsh-lexicon monorepo. Use at the start of any work session, when adding features, debugging, or navigating unfamiliar code. Provides discovery scripts rather than hardcoded filenames.
 ---
 
-# Orientation: better-zsh monorepo
+# Orientation: zsh-lexicon monorepo
 
 This skill adds navigation strategies and discovery scripts. Tool-agnostic posture: `WORKFLOW.md`.
 

@@ -1,6 +1,6 @@
 # @carlwr/zshref-mcp
 
-> **Status: pre-release (alpha).** Published from the [`better-zsh`](https://github.com/carlwr/better-zsh) monorepo to exercise CI and packaging; the first non-alpha release has not yet been cut.
+> **Status: pre-release (alpha).** Published from the [`zsh-lexicon`](https://github.com/carlwr/zsh-lexicon) monorepo to exercise CI and packaging; the first non-alpha release has not yet been cut.
 
 The `zshref-mcp` [Model Context Protocol](https://modelcontextprotocol.io) server as an `npx`-able package: an offline, structured reference for zsh syntax — look up a token, search the manual, print the docs for a known element — with no shell execution and no network.
 

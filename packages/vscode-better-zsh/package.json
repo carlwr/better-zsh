@@ -5,11 +5,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/carlwr/better-zsh",
+    "url": "https://github.com/carlwr/zsh-lexicon",
     "directory": "packages/vscode-better-zsh"
   },
-  "homepage": "https://github.com/carlwr/better-zsh/tree/main/packages/vscode-better-zsh#readme",
-  "bugs": "https://github.com/carlwr/better-zsh/issues",
+  "homepage": "https://github.com/carlwr/zsh-lexicon/tree/main/packages/vscode-better-zsh#readme",
+  "bugs": "https://github.com/carlwr/zsh-lexicon/issues",
   "author": {
     "name": "carlwr",
     "url": "https://github.com/carlwr"

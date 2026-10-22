@@ -1,8 +1,8 @@
-# better-zsh
+# zsh-lexicon
 
 > **Status: pre-release.** Published alphas exist to exercise CI and release workflows, not for use: they may not work, and their docs and links may be stale. The first non-alpha release has not yet been cut.
 
-Improved zsh tooling, packaged as a set of focused libraries and adapters over a shared structured zsh reference.
+A structured zsh reference — a typed TS library and its JSON lexicon, parsed from the zsh manual — plus the tools built on it: a VS Code extension, a CLI and MCP server, a browser search SPA.
 
 ## Packages
 

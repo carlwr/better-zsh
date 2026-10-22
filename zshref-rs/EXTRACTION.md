@@ -5,7 +5,7 @@ read-when: extraction-day checklist for zshref (Rust crate)
 
 # Extraction checklist
 
-The day `zshref` (this crate) leaves the `better-zsh` monorepo for its own repo, `zshref`. A checklist, not a spec: add items as noticed; an item a non-extraction commit satisfies is crossed off in that commit. Deleted on the extraction commit. The vendoring shape it lands on: `DATA-SYNC.md`.
+The day `zshref` (this crate) leaves the `zsh-lexicon` monorepo for its own repo, `zshref`. A checklist, not a spec: add items as noticed; an item a non-extraction commit satisfies is crossed off in that commit. Deleted on the extraction commit. The vendoring shape it lands on: `DATA-SYNC.md`.
 
 ## Crate
 
@@ -15,7 +15,7 @@ The day `zshref` (this crate) leaves the `better-zsh` monorepo for its own repo,
 - `build.rs`: drop the `monorepo` arm — vendored becomes the only data source
   - `ZSHREF_DATA_SOURCE` loses its purpose: drop it, or keep `vendored` as its one value; setters: `rg ZSHREF_DATA_SOURCE` outside `*.md`
 - failure hints naming root make targets (`` rg -F '`make ' build.rs src scripts ``): follow the crate `Makefile`
-- `MIRROR-OF` markers name `packages/zsh-lexicon/` paths: qualify them with the `better-zsh` repo
+- `MIRROR-OF` markers name `packages/zsh-lexicon/` paths: qualify them with the `zsh-lexicon` repo
 - `project_url!` (`src/lib.rs`): the URL the binaries print; a repo name other than `zshref` changes it and every `rg -F github.com/carlwr/zshref` hit
 - `data/`: stays gitignored (generated, never committed); `make vendor` populates it
 
@@ -25,7 +25,7 @@ The day `zshref` (this crate) leaves the `better-zsh` monorepo for its own repo,
   - `artifacts` goes: no TS build to drive
   - `vendor`: swap the local `pack:release` and its output dir for `gh release download <pinned tag>`; checksum check and unpack stay
     - prerequisite: a zsh-lexicon GitHub release carrying them — none yet
-    - `.sha256` proves integrity only; provenance: `gh attestation verify` against `better-zsh`, whose release workflow attests the tarballs
+    - `.sha256` proves integrity only; provenance: `gh attestation verify` against `zsh-lexicon`, whose release workflow attests the tarballs
     - CI jobs that vendor set `GH_TOKEN`: `gh` refuses to run unauthenticated in Actions
   - `cli-release-act` drives the root `scripts/test-integration-act`: copy it or drop the target
 - `ci-rust.yml`: the `paths` filters go — the whole repo is the crate; `actions/setup-node` replaces the `setup-node-pnpm` step (the composite action stays behind; `make cli-npm-check` still needs Node)
@@ -55,7 +55,7 @@ The day `zshref` (this crate) leaves the `better-zsh` monorepo for its own repo,
 - `AGENTS.md`, `DATA-SYNC.md`, `DISTRIBUTION.md`: re-point monorepo references
   - the repo-root `Makefile`, `pnpm cli*`, `packages/zsh-lexicon/`
   - root docs that stay behind, among `rg -oI '\b[A-Z-]+\.md\b' zshref-rs/*.md zshref-rs/src zshref-rs/tests | sort -u`
-  - `DISTRIBUTION.md`'s `gh attestation verify --repo`: releases cut before extraction stay attested to `better-zsh`
+  - `DISTRIBUTION.md`'s `gh attestation verify --repo`: releases cut before extraction stay attested to `zsh-lexicon`
 - monorepo-root conventions: `AGENTS.md` adopts or drops each; their lint scripts stay behind
   - maintainer-doc frontmatter
   - `CLAUDE.md` → `AGENTS.md` symlink
