@@ -25,21 +25,26 @@ The repo does not provide the container runtime.
 
 ### macOS
 
-If a CLI-first setup is preferred, `colima` works. Its default VM (2 CPUs, 2 GiB) is too small for the `nlp` job — the index build peaks above 2 GB and is OOM-killed (exit 137) — so size it at creation; the flags stick to the instance, and `colima stop` + `colima start` with new values resizes an existing one.
+If a CLI-first setup is preferred, `colima` works. Its default VM (2 CPUs, 2 GiB) is too small for the `nlp` job — the index build peaks above 2 GB and is OOM-killed (exit 137) — so size it at creation.
+
+- flags stick to the instance; `colima stop` + `colima start` with new values resizes it
+- exception: the Docker data disk never shrinks and survives `colima delete`; `--data` drops it
+- disk images are sparse: `du` shows real use; Finder and `ls -l` show nominal size
 
 ```sh
 brew install colima
 colima start --disk 20 --memory 6 --cpu 4
 
-# restart / reset
+# reset
 colima stop
-colima delete
+colima delete --data
 colima start --disk 20 --memory 6 --cpu 4
 
 # reclaim VM-backed disk space
-docker system prune -af --volumes
-colima ssh -- sudo fstrim -av
-du -h ~/.colima/_lima/_disks/colima/datadisk
+docker system prune -af
+docker volume prune -af  # named volumes too, e.g. act's
+colima ssh -- sh -c 'sync && sudo fstrim -av'
+du -sh ~/.colima
 ```
 
 ### Headless Linux
