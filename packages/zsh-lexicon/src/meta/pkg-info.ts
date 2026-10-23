@@ -5,4 +5,4 @@
  * `package.json`.
  */
 
-export const PKG_VERSION = "0.1.0-alpha.2"
+export const PKG_VERSION = "0.1.0-alpha.3"
