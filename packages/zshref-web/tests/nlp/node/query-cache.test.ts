@@ -10,7 +10,16 @@ import { join } from "node:path"
 import * as fcu from "@carlwr/fastcheck-utils"
 import { rm_rf } from "@carlwr/typescript-extra/node"
 import fc from "fast-check"
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest"
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest"
 
 import { DIMS } from "../../../nlp/core/types"
 import { syntheticVec } from "../../../nlp/core/vec"
@@ -45,6 +54,16 @@ function counting(): Embedder & { asked: string[] } {
 }
 
 describe("cachedEmbedder", () => {
+  // Small batches write after a pause: run out here, the write lands while
+  // `dir` exists — not from a timer or the exit hook after `afterAll`.
+  beforeEach(() => {
+    vi.useFakeTimers()
+  })
+  afterEach(() => {
+    vi.runAllTimers()
+    vi.useRealTimers()
+  })
+
   it("serves every batch in order; asks the inner embedder each distinct text once, first-seen order", async () => {
     let run = 0
     await fc.assert(
