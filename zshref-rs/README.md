@@ -65,7 +65,7 @@ npm i -g @carlwr/zshref          # zshref + zshref-mcp
 npx -y @carlwr/zshref-mcp        # the MCP server, no install (see "MCP server" below)
 
 # the GitHub Release archives, via cargo-binstall (no compile; pinned while no stable release exists)
-cargo binstall zshref@0.1.0-alpha.3
+cargo binstall zshref@0.1.0-alpha.4
 ```
 
 The npm packages carry every platform's binaries; the `zshref` / `zshref-mcp` commands they install are small launchers that spawn the bundled binary for the current platform, and nothing else — the binaries themselves spawn no subprocess. Install one of the two packages globally, not both: both own `zshref-mcp`. Archives and checksums: the [releases page](https://github.com/carlwr/zshref/releases).
@@ -73,8 +73,8 @@ The npm packages carry every platform's binaries; the `zshref` / `zshref-mcp` co
 From crates.io, with a stable Rust toolchain (for alpha package testing only, while no stable release exists):
 
 ```sh
-cargo install zshref --version 0.1.0-alpha.3                  # the CLI
-cargo install zshref --version 0.1.0-alpha.3 --features mcp   # CLI + MCP server
+cargo install zshref --version 0.1.0-alpha.4                  # the CLI
+cargo install zshref --version 0.1.0-alpha.4 --features mcp   # CLI + MCP server
 ```
 
 Build from source: requires the full monorepo checkout (the `zsh-lexicon` Node/pnpm workspace), because the bundled JSON reference data is generated from the TypeScript side and embedded at compile time:
